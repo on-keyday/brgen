@@ -57,7 +57,7 @@
             "name": "Debug json2cpp",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/tool/json2rust",
+            "program": "${workspaceRoot}/tool/json2cpp2",
             "args": [
                 "-f", "./ignore/sample.json"
                 /*,"-r",

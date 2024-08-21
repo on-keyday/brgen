@@ -71,6 +71,14 @@ namespace j2cp2 {
         std::shared_ptr<ast::Field> next_field;
     };
 
+    struct PrefixedBitField {
+        std::string field_name;
+        std::shared_ptr<ast::StructUnionType> union_type;
+        std::shared_ptr<ast::Field> prefix;
+        std::shared_ptr<ast::Field> union_field;
+        std::shared_ptr<ast::UnionType> candidates;
+    };
+
     struct Generator {
         brgen::writer::Writer w;
         size_t seq = 0;
@@ -85,6 +93,7 @@ namespace j2cp2 {
         std::map<ast::Field*, LaterInfo> later_size;
         std::map<std::shared_ptr<ast::StructType>, AnonymousStruct> anonymous_struct;
         std::map<ast::EnumMember*, std::string> enum_member_map;
+        std::map<ast::StructUnionType*, PrefixedBitField> prefixed_bit_field;
         std::vector<ast::LineMap> line_map;
         bool enable_line_map = false;
         bool use_error = false;
@@ -189,24 +198,27 @@ namespace j2cp2 {
             bit_fields[non_align.back().get()] = {brgen::concat("flags_", brgen::nums(seq), "_"), non_align, endian, bit_size, bit_size};
         }
 
-        void write_bit_fields_prefiexed(std::string_view prefix, std::vector<std::shared_ptr<ast::Field>>& non_align, size_t prefix_sum) {
-            if (auto t = ast::as<ast::StructUnionType>(non_align[1]->field_type); t && t->union_fields.size() == 1) {
+        void write_bit_fields_prefixed(std::string_view prefix, std::vector<std::shared_ptr<ast::Field>>& non_align, size_t prefix_sum) {
+            if (auto t = ast::as<ast::StructUnionType>(non_align[1]->field_type); t && ast::as<ast::Ident>(t->cond->expr) && t->exhaustive && t->union_fields.size() == 1) {
+                auto [base, _] = *ast::tool::lookup_base(ast::cast_to<ast::Ident>(t->cond->expr));
+                if (non_align[0]->ident != base) {
+                    return;
+                }
                 std::vector<std::shared_ptr<ast::IntType>> int_types;
                 size_t max_field_size = 0;
-                for (auto& s : t->structs) {
-                    if (s->fields.size() != 1) {
-                        return;
+                auto union_f = t->union_fields[0].lock();
+                auto union_ty = ast::cast_to<ast::UnionType>(union_f->field_type);
+                for (auto& s : union_ty->candidates) {
+                    auto field = s->field.lock();
+                    if (!field) {
+                        continue;
                     }
-                    auto f = ast::as<ast::Field>(s->fields[0]);
-                    if (!f) {
-                        return;
-                    }
-                    if (auto ty = ast::as<ast::IntType>(f->field_type); ty) {
+                    if (auto ty = ast::as<ast::IntType>(field->field_type); ty) {
                         if ((*ty->bit_size + prefix_sum) % 8 != 0) {
                             return;
                         }
                         max_field_size = std::max(max_field_size, *ty->bit_size + prefix_sum);
-                        int_types.push_back(ast::cast_to<ast::IntType>(f->field_type));
+                        int_types.push_back(ast::cast_to<ast::IntType>(field->field_type));
                     }
                     else {
                         return;
@@ -221,7 +233,16 @@ namespace j2cp2 {
                 w.writeln("bits_flag_alias_method(flags_", brgen::nums(seq), "_,0,", non_align[0]->ident->ident, ");");
                 w.writeln("bits_flag_alias_method(flags_", brgen::nums(seq), "_,1,", non_align[1]->ident->ident, ");");
                 bit_fields_part.insert(non_align[0].get());
-                bit_fields[non_align[1].get()] = {bit_field, std::move(non_align), ast::Endian::unspec, std::nullopt, prefix_sum};
+                bit_fields[non_align[1].get()] = {bit_field, non_align, ast::Endian::unspec, std::nullopt, prefix_sum};
+                str.map_ident(non_align[0]->ident, prefix, ".", non_align[0]->ident->ident + "()");
+                str.map_ident(union_f->ident, prefix, ".", union_f->ident->ident + "()");
+                prefixed_bit_field[t] = PrefixedBitField{
+                    .field_name = bit_field,
+                    .union_type = ast::cast_to<ast::StructUnionType>(non_align[1]->field_type),
+                    .prefix = non_align[0],
+                    .union_field = union_f,
+                    .candidates = union_ty,
+                };
             }
         }
 
@@ -238,7 +259,7 @@ namespace j2cp2 {
             //     0 => len :u7
             //     1 => len :u31
             else if (non_align.size() == 2 && prefix_sum == non_align[0]->field_type->bit_size && prefix_sum < 8) {
-                write_bit_fields_prefiexed(prefix, non_align, prefix_sum);
+                write_bit_fields_prefixed(prefix, non_align, prefix_sum);
             }
         }
 
@@ -826,7 +847,91 @@ namespace j2cp2 {
             }
         }
 
+        void write_prefixed_bit_field(PrefixedBitField& t) {
+            auto tmp = brgen::concat("tmp", brgen::nums(get_seq()));
+            auto cond = str.to_string(t.candidates->cond.lock());
+
+            if (ctx.encode) {
+                bool should_else = false;
+                for (auto& cand : t.candidates->candidates) {
+                    auto c = cand->cond.lock();
+                    auto cond_num = str.to_string(c);
+                    if (should_else) {
+                        w.writeln("else ");
+                    }
+                    else {
+                        should_else = true;
+                    }
+                    w.writeln("if(", cond, "==", cond_num, ") {");
+                    {
+                        auto indent = w.indent_scope();
+                        auto f = cand->field.lock();
+                        auto bit_size = *t.prefix->field_type->bit_size + *f->field_type->bit_size;
+                        w.writeln("std::uint", brgen::nums(bit_size), "_t ", tmp, " = 0;");
+                        auto ident = str.to_string(t.union_field->ident);
+                        w.writeln(tmp, " = ", ident, ";");
+                        w.writeln(tmp, " |= ", cond_num, "<<", brgen::nums(bit_size - *t.prefix->field_type->bit_size), ";");
+                        w.writeln("if (!::futils::binary::write_num(w,", tmp, ",", ctx.endian_text(ast::Endian::big), ")) {");
+                        {
+                            auto indent = w.indent_scope();
+                            write_return_error(t.union_field.get(), "write bit field failed");
+                        }
+                        w.writeln("}");
+                    }
+                    w.writeln("}");
+                }
+            }
+            else {
+                w.writeln("if(!r.load_stream(1)) {");
+                {
+                    auto indent = w.indent_scope();
+                    write_return_error(t.union_field.get(), "read bit field failed");
+                }
+                w.writeln("}");
+                auto mask = brgen::concat("0x", brgen::nums((1 << *t.prefix->field_type->bit_size) - 1, 16));
+                auto shift = brgen::nums(8 - *t.prefix->field_type->bit_size);
+                w.writeln("std::uint8_t ", tmp, " = (r.top() >> ", shift, " ) & ", mask, ";");
+                auto setter = cond;
+                setter.pop_back();  // remove ')'
+                w.writeln(setter, tmp, ");");
+                bool should_else = false;
+                for (auto& cand : t.candidates->candidates) {
+                    auto c = cand->cond.lock();
+                    auto cond_num = str.to_string(c);
+                    if (should_else) {
+                        w.writeln("else ");
+                    }
+                    else {
+                        should_else = true;
+                    }
+                    w.writeln("if(", cond, "==", cond_num, ") {");
+                    {
+                        auto indent = w.indent_scope();
+                        auto f = cand->field.lock();
+                        auto bit_size = *t.prefix->field_type->bit_size + *f->field_type->bit_size;
+                        auto tmp2 = brgen::concat("tmp", brgen::nums(get_seq()));
+                        w.writeln("std::uint", brgen::nums(bit_size), "_t ", tmp, " = 0;");
+                        w.writeln("if(!::futils::binary::read_num(r,", tmp, ",", ctx.endian_text(ast::Endian::big), ")) {");
+                        {
+                            auto indent = w.indent_scope();
+                            write_return_error(t.union_field.get(), "read bit field failed");
+                        }
+                        w.writeln("}");
+                        w.writeln(tmp, " &= ~(", mask, "<<", brgen::nums(bit_size - *t.prefix->field_type->bit_size), ");");
+                        auto setter = str.to_string(t.union_field->ident);
+                        setter.pop_back();  // remove ')'
+                        w.writeln(setter, tmp, ");");
+                    }
+                    w.writeln("}");
+                }
+            }
+        }
+
         void code_if(ast::If* if_) {
+            if (auto it = prefixed_bit_field.find(if_->struct_union_type.get()); it != prefixed_bit_field.end()) {
+                write_prefixed_bit_field(it->second);
+                return;
+            }
             auto cond = if_->cond;
             auto cond_s = str.to_string(cond);
             map_line(if_->loc);
@@ -865,6 +970,10 @@ namespace j2cp2 {
         }
 
         void code_match(ast::Match* m) {
+            if (auto it = prefixed_bit_field.find(m->struct_union_type.get()); it != prefixed_bit_field.end()) {
+                write_prefixed_bit_field(it->second);
+                return;
+            }
             std::string cond_s;
             if (m->cond) {
                 cond_s = str.to_string(m->cond);
