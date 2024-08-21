@@ -1,5 +1,20 @@
 # varint
-01
-4002
-80000003
-C000000000000004
+# prefix = 0 (8-bit data)
+3A
+12
+4F
+
+# prefix = 1 (16-bit data)
+4085
+40F3
+409B
+
+# prefix = 2 (32-bit data)
+80012B3D
+8004E67F
+8000ABCD
+
+# prefix = 3 (64-bit data)
+C0123456789ABCDEF
+C000123456789ABCD
+C0987654321FEDCBA

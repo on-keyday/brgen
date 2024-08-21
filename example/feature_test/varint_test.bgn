@@ -1,0 +1,16 @@
+
+q ::= config.import("../quic_varint.bgn")
+
+format TestVarint: # total 12 field
+    field_1 :q.VarInt
+    field_2 :q.VarInt
+    field_3 :q.VarInt
+    field_4 :q.VarInt
+    field_5 :q.VarInt
+    field_6 :q.VarInt
+    field_7 :q.VarInt
+    field_8 :q.VarInt
+    field_9 :q.VarInt
+    field_10 :q.VarInt
+    field_11 :q.VarInt
+    field_12 :q.VarInt
