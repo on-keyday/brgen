@@ -102,7 +102,7 @@ pub struct TestConfig {
     pub inputs: Vec<TestInput>,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct TestSchedule {
     pub input: Arc<TestInput>,
     pub runner: Arc<TestRunner>,

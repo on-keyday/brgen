@@ -174,8 +174,8 @@ async fn main() -> Result<(), Error> {
     if let Some(x) = parsed.expected_test_total {
         if total != x {
             return Err(testutil::Error::TestFail(format!(
-                "expect {} test load but loaded test are {}",
-                x, total
+                "expect {} test load but loaded test are {}: {:?}",
+                x, total, sched
             ))
             .into());
         }
