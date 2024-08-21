@@ -2871,7 +2871,7 @@ type StructUnionType struct {
 	NonDynamicAllocation bool
 	BitAlignment         BitAlignment
 	BitSize              *uint64
-	Cond                 Expr
+	Cond                 *Identity
 	Conds                []Expr
 	Structs              []*StructType
 	Base                 Expr
@@ -4784,7 +4784,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.BitAlignment = tmp.BitAlignment
 			v.BitSize = tmp.BitSize
 			if tmp.Cond != nil {
-				v.Cond = n.node[*tmp.Cond].(Expr)
+				v.Cond = n.node[*tmp.Cond].(*Identity)
 			}
 			v.Conds = make([]Expr, len(tmp.Conds))
 			for j, k := range tmp.Conds {

@@ -1164,7 +1164,7 @@ struct ast2c_StructUnionType {
 	int non_dynamic_allocation;
 	ast2c_BitAlignment bit_alignment;
 	uint64_t* bit_size;
-	ast2c_Expr* cond;
+	ast2c_Identity* cond;
 	ast2c_Expr** conds;
 	size_t conds_size;
 	ast2c_StructType** structs;

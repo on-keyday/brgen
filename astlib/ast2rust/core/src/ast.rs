@@ -7199,7 +7199,7 @@ pub struct StructUnionType {
 	pub non_dynamic_allocation: bool,
 	pub bit_alignment: BitAlignment,
 	pub bit_size: Option<u64>,
-	pub cond: Option<Expr>,
+	pub cond: Option<Rc<RefCell<Identity>>>,
 	pub conds: Vec<Expr>,
 	pub structs: Vec<Rc<RefCell<StructType>>>,
 	pub base: Option<ExprWeak>,
@@ -13394,7 +13394,11 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						Some(v)=>v,
 						None => return Err(Error::IndexOutOfBounds(cond_body as usize)),
 					};
-					node.borrow_mut().cond = Some(cond_body.try_into()?);
+					let cond_body = match cond_body {
+						Node::Identity(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),cond_body.into())),
+					};
+					node.borrow_mut().cond = Some(cond_body.clone());
 				}
 				let conds_body = match raw_node.body.get("conds") {
 					Some(v)=>v,

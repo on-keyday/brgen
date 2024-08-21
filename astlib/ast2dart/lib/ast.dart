@@ -803,7 +803,7 @@ factory StructType.fromJson(Map<String, dynamic> json) => _$StructTypeFromJson(j
 }
 @JsonSerializable()
 class StructUnionType extends Type {
-    Expr? cond;
+    Identity? cond;
     List<Expr>? conds = [];
     List<StructType>? structs = [];
     Expr? base;
