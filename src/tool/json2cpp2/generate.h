@@ -231,7 +231,7 @@ namespace j2cp2 {
                 auto bit_field = brgen::concat("flags_", brgen::nums(seq), "_");
                 w.writeln("::futils::binary::flags_t<std::uint", brgen::nums(max_field_size), "_t,", brgen::nums(prefix_sum), ",", brgen::nums(max_field_size - prefix_sum), "> ", bit_field, ";");
                 w.writeln("bits_flag_alias_method(flags_", brgen::nums(seq), "_,0,", non_align[0]->ident->ident, ");");
-                w.writeln("bits_flag_alias_method(flags_", brgen::nums(seq), "_,1,", non_align[1]->ident->ident, ");");
+                w.writeln("bits_flag_alias_method(flags_", brgen::nums(seq), "_,1,", union_f->ident->ident, ");");
                 bit_fields_part.insert(non_align[0].get());
                 bit_fields[non_align[1].get()] = {bit_field, non_align, ast::Endian::unspec, std::nullopt, prefix_sum};
                 str.map_ident(non_align[0]->ident, prefix, ".", non_align[0]->ident->ident + "()");
@@ -847,7 +847,7 @@ namespace j2cp2 {
             }
         }
 
-        void write_prefixed_bit_field(PrefixedBitField& t) {
+        void write_prefixed_bit_field_encode_decode(PrefixedBitField& t) {
             auto tmp = brgen::concat("tmp", brgen::nums(get_seq()));
             auto cond = str.to_string(t.candidates->cond.lock());
 
@@ -929,7 +929,7 @@ namespace j2cp2 {
 
         void code_if(ast::If* if_) {
             if (auto it = prefixed_bit_field.find(if_->struct_union_type.get()); it != prefixed_bit_field.end()) {
-                write_prefixed_bit_field(it->second);
+                write_prefixed_bit_field_encode_decode(it->second);
                 return;
             }
             auto cond = if_->cond;
@@ -971,7 +971,7 @@ namespace j2cp2 {
 
         void code_match(ast::Match* m) {
             if (auto it = prefixed_bit_field.find(m->struct_union_type.get()); it != prefixed_bit_field.end()) {
-                write_prefixed_bit_field(it->second);
+                write_prefixed_bit_field_encode_decode(it->second);
                 return;
             }
             std::string cond_s;

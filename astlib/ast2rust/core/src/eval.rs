@@ -464,7 +464,7 @@ impl Stringer {
                             "if {} {{",
                             self.eval_ephemeral_binary_op(
                                 ast::BinaryOp::Equal,
-                                cond0,
+                                &cond0.into(),
                                 &cond.into()
                             )?
                         )
