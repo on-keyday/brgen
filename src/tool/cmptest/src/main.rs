@@ -175,7 +175,9 @@ async fn main() -> Result<(), Error> {
         if total != x {
             return Err(testutil::Error::TestFail(format!(
                 "expect {} test load but loaded test are {}: {:?}",
-                x, total, sched
+                x,
+                total,
+                sched.iter().map(|x| x.test_name()).collect::<Vec<_>>()
             ))
             .into());
         }
