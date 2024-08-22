@@ -204,21 +204,19 @@ namespace j2cp2 {
                 if (non_align[0]->ident != base) {
                     return;
                 }
-                std::vector<std::shared_ptr<ast::IntType>> int_types;
                 size_t max_field_size = 0;
                 auto union_f = t->union_fields[0].lock();
                 auto union_ty = ast::cast_to<ast::UnionType>(union_f->field_type);
                 for (auto& s : union_ty->candidates) {
                     auto field = s->field.lock();
                     if (!field) {
-                        continue;
+                        return;
                     }
                     if (auto ty = ast::as<ast::IntType>(field->field_type); ty) {
                         if ((*ty->bit_size + prefix_sum) % 8 != 0) {
                             return;
                         }
                         max_field_size = std::max(max_field_size, *ty->bit_size + prefix_sum);
-                        int_types.push_back(ast::cast_to<ast::IntType>(field->field_type));
                     }
                     else {
                         return;
