@@ -54,6 +54,13 @@ type BitFields struct {
 	Fields []*ast2go.Field
 }
 
+type PrefixedBitField struct {
+	FieldName  string
+	Candidates *ast2go.UnionType
+	PrefixSize uint64
+	MaxSize    uint64
+}
+
 type UnionStruct struct {
 	Struct    *ast2go.StructType
 	TypeName  string
@@ -61,20 +68,22 @@ type UnionStruct struct {
 }
 
 type Generator struct {
-	output          bytes.Buffer
-	type_area       *bytes.Buffer
-	func_area       *bytes.Buffer
-	seq             int
-	bitFields       map[*ast2go.Field]*BitFields
-	unionStructs    map[*ast2go.StructType]*UnionStruct
-	laterSize       map[*ast2go.Field]uint64
-	terminalPattern map[*ast2go.Field]struct{}
-	imports         map[string]struct{}
-	globalAssigned  map[*ast2go.Binary]struct{}
-	exprStringer    *gen.ExprStringer
-	visitorName     string
-	defaultEndian   ast2go.Endian
-	StructNames     []string
+	output           bytes.Buffer
+	type_area        *bytes.Buffer
+	func_area        *bytes.Buffer
+	seq              int
+	bitFields        map[*ast2go.Field]*BitFields
+	bitFieldPart     map[*ast2go.Field]struct{}
+	unionStructs     map[*ast2go.StructType]*UnionStruct
+	prefixedBitField map[*ast2go.StructUnionType]*PrefixedBitField
+	laterSize        map[*ast2go.Field]uint64
+	terminalPattern  map[*ast2go.Field]struct{}
+	imports          map[string]struct{}
+	globalAssigned   map[*ast2go.Binary]struct{}
+	exprStringer     *gen.ExprStringer
+	visitorName      string
+	defaultEndian    ast2go.Endian
+	StructNames      []string
 }
 
 func (g *Generator) decideEndian(p ast2go.Endian) ast2go.Endian {
@@ -86,16 +95,18 @@ func (g *Generator) decideEndian(p ast2go.Endian) ast2go.Endian {
 
 func NewGenerator() *Generator {
 	return &Generator{
-		type_area:       &bytes.Buffer{},
-		func_area:       &bytes.Buffer{},
-		bitFields:       make(map[*ast2go.Field]*BitFields),
-		unionStructs:    make(map[*ast2go.StructType]*UnionStruct),
-		imports:         make(map[string]struct{}),
-		exprStringer:    gen.NewExprStringer(),
-		laterSize:       make(map[*ast2go.Field]uint64),
-		terminalPattern: make(map[*ast2go.Field]struct{}),
-		globalAssigned:  make(map[*ast2go.Binary]struct{}),
-		defaultEndian:   ast2go.EndianBig,
+		type_area:        &bytes.Buffer{},
+		func_area:        &bytes.Buffer{},
+		bitFields:        make(map[*ast2go.Field]*BitFields),
+		bitFieldPart:     make(map[*ast2go.Field]struct{}),
+		unionStructs:     make(map[*ast2go.StructType]*UnionStruct),
+		prefixedBitField: make(map[*ast2go.StructUnionType]*PrefixedBitField),
+		imports:          make(map[string]struct{}),
+		exprStringer:     gen.NewExprStringer(),
+		laterSize:        make(map[*ast2go.Field]uint64),
+		terminalPattern:  make(map[*ast2go.Field]struct{}),
+		globalAssigned:   make(map[*ast2go.Binary]struct{}),
+		defaultEndian:    ast2go.EndianBig,
 	}
 }
 
@@ -144,7 +155,7 @@ func (g *Generator) writeFullBitField(w printer, belong string, prefix string, s
 
 	offset := uint64(0)
 	format := fmt.Sprintf("((t.%sflags%d & 0x%%0%dx) >> %%d)", prefix, seq, MaxHexDigit(size))
-	for _, v := range fields {
+	for i, v := range fields {
 		field_size := *v.FieldType.GetBitSize()
 		typ := v.FieldType
 		if ident, ok := typ.(*ast2go.IdentType); ok {
@@ -194,6 +205,9 @@ func (g *Generator) writeFullBitField(w printer, belong string, prefix string, s
 			g.exprStringer.SetIdentMap(v.Ident, fmt.Sprintf("(func() uint%d { if %%s%s() {return 1}else {return 0}}())", size, v.Ident.Ident))
 		} else {
 			g.exprStringer.SetIdentMap(v.Ident, fmt.Sprintf("%%s%s()", v.Ident.Ident))
+		}
+		if i != len(fields)-1 {
+			g.bitFieldPart[v] = struct{}{}
 		}
 	}
 	bf := &BitFields{
@@ -252,6 +266,7 @@ func (g *Generator) writePrefixedBitField(w printer, belong string, prefix strin
 	w.Printf("return true\n")
 	w.Printf("}\n")
 	g.exprStringer.SetIdentMap(fields[0].Ident, fmt.Sprintf("%%s%s()", fields[0].Ident.Ident))
+	g.bitFieldPart[fields[0]] = struct{}{}
 	// get/set variable bit function
 	w.Printf("func (t *%s) %s() uint%d {\n", belong, unionField.Ident.Ident, maxFieldSize)
 	w.Printf("return (t.%sflags%d & 0x%x) >> %d\n", prefix, seq, (1<<maxFieldSize-prefix_size)-1, 0)
@@ -264,6 +279,29 @@ func (g *Generator) writePrefixedBitField(w printer, belong string, prefix strin
 	w.Printf("return true\n")
 	w.Printf("}\n")
 	g.exprStringer.SetIdentMap(unionField.Ident, fmt.Sprintf("%%s%s()", unionField.Ident.Ident))
+	g.prefixedBitField[t] = &PrefixedBitField{
+		FieldName:  "flags" + strconv.Itoa(seq),
+		Candidates: unionType,
+		PrefixSize: prefix_size,
+		MaxSize:    maxFieldSize,
+	}
+}
+
+func (g *Generator) writePrefixedBitFieldEncodeDecode(b *PrefixedBitField) {
+	tmpVar := fmt.Sprintf("tmp%d", g.getSeq())
+	cond := g.exprStringer.ExprString(b.Candidates.Cond)
+	shouldElse := false
+	for _, c := range b.Candidates.Candidates {
+		condNum := g.exprStringer.ExprString(c.Cond)
+		if shouldElse {
+			g.PrintfFunc("else ")
+		}
+		g.PrintfFunc("if %s == %s {\n", cond, condNum)
+		typ := fmt.Sprintf("uint%d", *c.Field.FieldType.GetBitSize()+b.PrefixSize)
+		g.PrintfFunc("var %s %s", tmpVar, typ)
+		ident := g.exprStringer.ExprString(c.Field.Ident)
+		g.PrintfFunc("%s = %s(%s)\n", tmpVar, typ, ident)
+	}
 }
 
 func (g *Generator) writeBitField(w printer, belong string, prefix string, fields []*ast2go.Field /*size uint64, intSet, simple bool*/) {
