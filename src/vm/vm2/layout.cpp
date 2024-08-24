@@ -56,6 +56,9 @@ namespace brgen::vm2 {
             str->as_field_size = 8;    // pointer to struct
             for (auto& m : s->fields) {
                 if (auto field = ast::as<ast::Field>(m)) {
+                    if (ast::as<ast::UnionType>(field->field_type)) {
+                        continue;
+                    }
                     auto name = field->ident ? field->ident->ident : "<anonymous>";
                     auto element = compute_layout(field->field_type);
                     if (!element) {

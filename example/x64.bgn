@@ -27,6 +27,7 @@ enum Register:
 enum X64OpCode:
     :u8
     ADD_REG_REG = 0x01
+    MUL_REG_REG = 0x0F
     TWO_BYTE_PREFIX = 0x0F
     CMP_REG_REG = 0x39
     PUSH_0 = 0x50
@@ -64,6 +65,8 @@ enum X64OpCode:
     MOV_REG_IMM_7 = 0xBF
     RET = 0xC3
     MOV_MEM_IMM = 0xC7
+    SHL_REG_IMM = 0xC1
+    SHL_REG_CL = 0xD3
     CALL = 0xE8
     JMP_REL6 = 0xE9
     INVALID_1 = 0xEA
@@ -230,6 +233,28 @@ format CallReg64:
     rex_prefix :RexPrefix
     opcode :X64OpCode(X64OpCode.CALL_REG)
     mod_rm :ModRM
+
+format ShlRegImm32:
+    opcode :X64OpCode(X64OpCode.SHL_REG_IMM)
+    mod_rm :ModRM
+    imm :u8
+
+format ShlRegImm64:
+    rex_prefix :RexPrefix
+    opcode :X64OpCode(X64OpCode.SHL_REG_IMM)
+    mod_rm :ModRM
+    imm :u8
+
+
+format ShlRegCl32:
+    opcode :X64OpCode(X64OpCode.SHL_REG_CL)
+    mod_rm :ModRM
+
+format ShlRegCl64:
+    rex_prefix :RexPrefix
+    opcode :X64OpCode(X64OpCode.SHL_REG_CL)
+    mod_rm :ModRM
+
 
 format Instruction:
     match:
