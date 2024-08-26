@@ -8,6 +8,7 @@ import (
 	"go/format"
 	"io"
 	"math/rand"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -55,10 +56,12 @@ type BitFields struct {
 }
 
 type PrefixedBitField struct {
-	FieldName  string
-	Candidates *ast2go.UnionType
-	PrefixSize uint64
-	MaxSize    uint64
+	FieldName   string
+	Candidates  *ast2go.UnionType
+	PrefixSize  uint64
+	MaxSize     uint64
+	PrefixField *ast2go.Field
+	UnionField  *ast2go.Field
 }
 
 type UnionStruct struct {
@@ -280,14 +283,16 @@ func (g *Generator) writePrefixedBitField(w printer, belong string, prefix strin
 	w.Printf("}\n")
 	g.exprStringer.SetIdentMap(unionField.Ident, fmt.Sprintf("%%s%s()", unionField.Ident.Ident))
 	g.prefixedBitField[t] = &PrefixedBitField{
-		FieldName:  "flags" + strconv.Itoa(seq),
-		Candidates: unionType,
-		PrefixSize: prefix_size,
-		MaxSize:    maxFieldSize,
+		FieldName:   "flags" + strconv.Itoa(seq),
+		Candidates:  unionType,
+		PrefixSize:  prefix_size,
+		MaxSize:     maxFieldSize,
+		PrefixField: fields[0],
+		UnionField:  unionField,
 	}
 }
 
-func (g *Generator) writePrefixedBitFieldEncodeDecode(b *PrefixedBitField) {
+func (g *Generator) writePrefixedBitFieldEncode(b *PrefixedBitField) {
 	tmpVar := fmt.Sprintf("tmp%d", g.getSeq())
 	cond := g.exprStringer.ExprString(b.Candidates.Cond)
 	shouldElse := false
@@ -297,10 +302,64 @@ func (g *Generator) writePrefixedBitFieldEncodeDecode(b *PrefixedBitField) {
 			g.PrintfFunc("else ")
 		}
 		g.PrintfFunc("if %s == %s {\n", cond, condNum)
-		typ := fmt.Sprintf("uint%d", *c.Field.FieldType.GetBitSize()+b.PrefixSize)
+		bitSize := *c.Field.FieldType.GetBitSize() + b.PrefixSize
+		typ := fmt.Sprintf("uint%d", bitSize)
 		g.PrintfFunc("var %s %s", tmpVar, typ)
 		ident := g.exprStringer.ExprString(c.Field.Ident)
 		g.PrintfFunc("%s = %s(%s)\n", tmpVar, typ, ident)
+		g.PrintfFunc("%s |= %s(%s) << %d", tmpVar, typ, condNum, bitSize-b.PrefixSize)
+		g.writeAppendUint(bitSize, tmpVar, ast2go.EndianUnspec)
+	}
+}
+
+func (g *Generator) writePrefixedBitFieldDecode(b *PrefixedBitField) {
+	tmpVar := fmt.Sprintf("tmp%d", g.getSeq())
+	tmpBytes := fmt.Sprintf("tmpBytes%d", g.getSeq())
+	tmpReader := fmt.Sprintf("tmpReader%d", g.getSeq())
+	cond := g.exprStringer.ExprString(b.Candidates.Cond)
+	shouldElse := false
+	g.PrintfFunc("var %s [1]byte\n", tmpBytes)
+	g.imports["bufio"] = struct{}{}
+	g.PrintfFunc("%s := bufio.NewReader(r)\n", tmpReader)
+	g.PrintfFunc("if _,err := io.ReadFull(%s,%s[:]);err != nil {\n", tmpReader, tmpBytes)
+	g.imports["fmt"] = struct{}{}
+	g.PrintfFunc("return fmt.Errorf(\"failed to read prefix: %%w\",err)\n")
+	g.PrintfFunc("}\n")
+	g.PrintfFunc("if err := %s.UnreadByte(); err != nil {\n", tmpReader)
+	g.PrintfFunc("return fmt.Errorf(\"failed to unread prefix: %%w\",err)\n")
+	g.PrintfFunc("}\n")
+	oldReader := fmt.Sprintf("oldReader%d", g.getSeq())
+	g.PrintfFunc("%s := r\n", oldReader)
+	g.PrintfFunc("r = %s\n", tmpReader)
+	prefixField := g.exprStringer.ExprString(b.PrefixField.Ident)
+	toReplace := regexp.MustCompile(fmt.Sprintf(`%s\(\)`, b.PrefixField.Ident.Ident))
+	setField := toReplace.ReplaceAllString(prefixField, fmt.Sprintf("Set%s(%s[0] >> %d)", b.PrefixField.Ident.Ident, tmpBytes, 8-b.PrefixSize))
+	g.PrintfFunc("%s\n", setField)
+	for _, c := range b.Candidates.Candidates {
+		condNum := g.exprStringer.ExprString(c.Cond)
+		if shouldElse {
+			g.PrintfFunc("else ")
+		}
+		g.PrintfFunc("if %s == %s {\n", cond, condNum)
+		bitSize := *c.Field.FieldType.GetBitSize() + b.PrefixSize
+		typ := fmt.Sprintf("uint%d", bitSize)
+		g.PrintfFunc("var %s %s\n", tmpVar, typ)
+		g.writeReadUint(bitSize, tmpVar, tmpVar, false, nil, ast2go.EndianUnspec)
+		g.PrintfFunc("%s ~%s(1 << %d)\n", tmpVar, typ, bitSize-b.PrefixSize)
+		setField := g.exprStringer.ExprString(b.UnionField.Ident)
+		toReplace := regexp.MustCompile(fmt.Sprintf(`%s\(\)`, b.UnionField.Ident.Ident))
+		setField = toReplace.ReplaceAllString(setField, fmt.Sprintf("Set%s(%s)", b.UnionField.Ident.Ident, tmpVar))
+		g.PrintfFunc("%s\n", setField)
+		g.PrintfFunc("}\n")
+	}
+	g.PrintfFunc("r = %s", oldReader)
+}
+
+func (g *Generator) writePrefixedBitFieldCode(b *PrefixedBitField, enc bool) {
+	if enc {
+		g.writePrefixedBitFieldEncode(b)
+	} else {
+		g.writePrefixedBitFieldDecode(b)
 	}
 }
 
@@ -1236,6 +1295,10 @@ func (g *Generator) writeFieldDecode(p *ast2go.Field) {
 }
 
 func (g *Generator) writeIf(if_ *ast2go.If, enc bool) {
+	if p := g.prefixedBitField[if_.StructUnionType]; p != nil {
+		g.writePrefixedBitFieldCode(p, enc)
+		return
+	}
 	g.PrintfFunc("if %s {\n", g.exprStringer.ExprString(if_.Cond))
 	g.writeSingleNode(if_.Then, enc)
 	for if_.Els != nil {
@@ -1253,6 +1316,10 @@ func (g *Generator) writeIf(if_ *ast2go.If, enc bool) {
 }
 
 func (g *Generator) writeMatch(m *ast2go.Match, enc bool) {
+	if p := g.prefixedBitField[m.StructUnionType]; p != nil {
+		g.writePrefixedBitFieldCode(p, enc)
+		return
+	}
 	g.PrintfFunc("switch {\n")
 	cmp := &ast2go.Binary{
 		Op:   ast2go.BinaryOpEqual,

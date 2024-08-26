@@ -70,6 +70,8 @@ enum X64OpCode:
     CALL = 0xE8
     JMP_REL6 = 0xE9
     INVALID_1 = 0xEA
+    MUL = 0xF7
+    INC = 0xFF
     CALL_REG = 0xFF
     
  
@@ -255,6 +257,10 @@ format ShlRegCl64:
     opcode :X64OpCode(X64OpCode.SHL_REG_CL)
     mod_rm :ModRM
 
+format Mul64:
+    rex_prefix :RexPrefix
+    opcode :X64OpCode(X64OpCode.MUL)
+    mod_rm :ModRM
 
 format Instruction:
     match:

@@ -133,6 +133,22 @@ namespace brgen::vm2 {
                     futils::jit::x64::emit_mov_reg_reg(w, left, result);
                     break;
                 }
+                case Op2::INC: {
+                    auto inc = *inst->unary_operator();
+                    auto operand = map_register(inc.operand);
+                    futils::jit::x64::emit_inc_reg(w, operand);
+                    break;
+                }
+                case Op2::MUL: {
+                    auto mul = *inst->binary_operator();
+                    auto left = map_register(mul.left);
+                    auto right = map_register(mul.right);
+                    auto result = map_register(mul.result);
+                    futils::jit::x64::emit_mov_reg_reg(w, left, futils::jit::x64::Register::RAX);
+                    futils::jit::x64::emit_mul(w, right);
+                    futils::jit::x64::emit_mov_reg_reg(w, futils::jit::x64::Register::RDX, result);
+                    break;
+                }
                 default: {
                     break;
                 }
