@@ -9,15 +9,17 @@ use colored::Colorize;
 
 #[derive(Parser)]
 struct Args {
-    #[arg(long, short('f'))]
+    #[arg(long, short('f'), help("test info file (json)"))]
     test_info_file: String,
-    #[arg(long, short('c'))]
+    #[arg(long, short('c'), help("test config file (json)"))]
     test_config_file: String,
-    #[arg(long, short('d'))]
+    #[arg(long, short('d'), help("debug mode"))]
     debug: bool,
-    #[arg(long)]
+    #[arg(long, help("save tmp dir"))]
     save_tmp_dir: bool,
-    #[arg(long)]
+    #[arg(long, help("print fail command"))]
+    print_fail_command: bool,
+    #[arg(long, help("expected test count that will be loaded"))]
     expected_test_total: Option<usize>,
 }
 
@@ -199,8 +201,11 @@ async fn main() -> Result<(), Error> {
             Ok(x) => {
                 println!("{}: {}", "PASS".green(), x.test_name())
             }
-            Err((sched, err)) => {
+            Err((sched, err, cmdline)) => {
                 eprintln!("{}: {}: {:?}", "FAIL".red(), sched.test_name(), err);
+                if parsed.print_fail_command {
+                    eprintln!("command line: {:?}", cmdline);
+                }
                 failed += 1;
             }
         }

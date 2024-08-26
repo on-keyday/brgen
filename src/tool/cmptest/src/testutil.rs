@@ -168,7 +168,7 @@ fn path_str(path: &PathBuf) -> String {
     }
 }
 
-type SendChan = mpsc::Sender<Result<TestSchedule, (TestSchedule, Error)>>;
+type SendChan = mpsc::Sender<Result<TestSchedule, (TestSchedule, Error, Vec<String>)>>;
 
 impl TestScheduler {
     pub fn new(debug: bool) -> Self {
@@ -388,7 +388,10 @@ impl TestScheduler {
         exec: Option<&PathBuf>,
         expect_ok: bool,
         debug: bool,
-    ) -> Result<Option<String>, Error> {
+    ) -> (
+        Result<Option<String>, Error>,
+        Vec<String>, /*command line*/
+    ) {
         let mut cmd = base.clone();
         Self::replace_cmd(&mut cmd, sched, tmp_dir, input, output, exec, debug);
         let mut r = tokio::process::Command::new(&cmd[0]);
@@ -396,27 +399,36 @@ impl TestScheduler {
         let done = match r.output().await {
             Ok(x) => x,
             Err(x) => {
-                return Err(Error::Exec(format!("exec error: {:?}: {}", cmd, x)));
+                return (
+                    Err(Error::Exec(format!("exec error: {:?}: {}", cmd, x))),
+                    cmd,
+                );
             }
         };
         let code = done.status.code();
         println!("{}", String::from_utf8_lossy(&done.stdout));
         match code {
-            Some(0) => return Ok(None),
+            Some(0) => return (Ok(None), cmd),
             status => {
                 if let Some(x) = status {
                     if x == 1 && !expect_ok {
-                        return Ok(Some(format!(
-                            "process exit with 1:\n{}",
-                            String::from_utf8_lossy(&done.stderr)
-                        )));
+                        return (
+                            Ok(Some(format!(
+                                "process exit with 1:\n{}",
+                                String::from_utf8_lossy(&done.stderr)
+                            ))),
+                            cmd,
+                        );
                     }
                 }
-                return Err(Error::Exec(format!(
-                    "process exit with {:?}:\n{}",
-                    status,
-                    String::from_utf8_lossy(&done.stderr)
-                )));
+                return (
+                    Err(Error::Exec(format!(
+                        "process exit with {:?}:\n{}",
+                        status,
+                        String::from_utf8_lossy(&done.stderr)
+                    ))),
+                    cmd,
+                );
             }
         }
     }
@@ -445,8 +457,8 @@ impl TestScheduler {
             )
             .await
             {
-                Ok(_) => {}
-                Err(x) => return Err((sched, x)),
+                (Ok(_), _) => {}
+                (Err(x), cmd) => return Err((sched, x, cmd)),
             };
 
             let exec = output;
@@ -454,20 +466,22 @@ impl TestScheduler {
             let output = tmp_dir.join("output.bin");
 
             // run test
-            let status = match Self::exec_cmd(
-                &sched,
-                &sched.runner.run_command,
-                &tmp_dir,
-                &input_path,
-                &output,
-                Some(&exec),
-                false,
-                debug,
-            )
-            .await
-            {
-                Ok(x) => x,
-                Err(x) => return Err((sched, x)),
+            let (status, cmdline) = {
+                let (status, cmdline) = Self::exec_cmd(
+                    &sched,
+                    &sched.runner.run_command,
+                    &tmp_dir,
+                    &input_path,
+                    &output,
+                    Some(&exec),
+                    false,
+                    debug,
+                )
+                .await;
+                match status {
+                    Ok(x) => (x, cmdline),
+                    Err(x) => return Err((sched, x, cmdline)),
+                }
             };
 
             let expect = !sched.input.failure_case;
@@ -483,6 +497,7 @@ impl TestScheduler {
                             "test failed: expect {} but got {}",
                             expect, actual
                         )),
+                        cmdline,
                     ));
                 } else {
                     return Err((
@@ -493,6 +508,7 @@ impl TestScheduler {
                             actual,
                             status.unwrap()
                         )),
+                        cmdline,
                     ));
                 }
             }
@@ -507,6 +523,7 @@ impl TestScheduler {
                     return Err((
                         sched,
                         Error::TestFail(format!("test output file cannot load: {}", x)),
+                        Vec::new(),
                     ))
                 }
             };
@@ -542,7 +559,7 @@ impl TestScheduler {
                 for (i, a, b) in diff {
                     debug += &format!("{}: {:02x?} != {:02x?}\n", i, a, b);
                 }
-                return Err((sched, Error::TestFail(debug)));
+                return Err((sched, Error::TestFail(debug), cmdline));
             }
 
             Ok(sched)

@@ -865,10 +865,11 @@ namespace j2cp2 {
                         auto indent = w.indent_scope();
                         auto f = cand->field.lock();
                         auto bit_size = *t.prefix->field_type->bit_size + *f->field_type->bit_size;
-                        w.writeln("std::uint", brgen::nums(bit_size), "_t ", tmp, " = 0;");
+                        auto typ = brgen::concat("std::uint", brgen::nums(bit_size), "_t");
+                        w.writeln(typ, " ", tmp, " = 0;");
                         auto ident = str.to_string(t.union_field->ident);
                         w.writeln(tmp, " = ", ident, ";");
-                        w.writeln(tmp, " |= ", cond_num, "<<", brgen::nums(bit_size - *t.prefix->field_type->bit_size), ";");
+                        w.writeln(tmp, " |= ", typ, "(", cond_num, ")", "<<", brgen::nums(bit_size - *t.prefix->field_type->bit_size), ";");
                         w.writeln("if (!::futils::binary::write_num(w,", tmp, ",", ctx.endian_text(ast::Endian::big), ")) {");
                         {
                             auto indent = w.indent_scope();
@@ -908,17 +909,18 @@ namespace j2cp2 {
                         auto f = cand->field.lock();
                         auto bit_size = *t.prefix->field_type->bit_size + *f->field_type->bit_size;
                         auto tmp2 = brgen::concat("tmp", brgen::nums(get_seq()));
-                        w.writeln("std::uint", brgen::nums(bit_size), "_t ", tmp, " = 0;");
-                        w.writeln("if(!::futils::binary::read_num(r,", tmp, ",", ctx.endian_text(ast::Endian::big), ")) {");
+                        auto typ = brgen::concat("std::uint", brgen::nums(bit_size), "_t");
+                        w.writeln(typ, " ", tmp2, " = 0;");
+                        w.writeln("if(!::futils::binary::read_num(r,", tmp2, ",", ctx.endian_text(ast::Endian::big), ")) {");
                         {
                             auto indent = w.indent_scope();
                             write_return_error(t.union_field.get(), "read bit field failed");
                         }
                         w.writeln("}");
-                        w.writeln(tmp, " &= ~(", mask, "<<", brgen::nums(bit_size - *t.prefix->field_type->bit_size), ");");
+                        w.writeln(tmp2, " &= ~(", typ, "(", mask, ")", "<<", brgen::nums(bit_size - *t.prefix->field_type->bit_size), ");");
                         auto setter = str.to_string(t.union_field->ident);
                         setter.pop_back();  // remove ')'
-                        w.writeln(setter, tmp, ");");
+                        w.writeln(setter, tmp2, ");");
                     }
                     w.writeln("}");
                 }

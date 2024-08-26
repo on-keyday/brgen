@@ -2,8 +2,8 @@
 # prefix = 0 (8-bit data)
 3A
 12
-3f
 24
+3f
 
 # prefix = 1 (16-bit data)
 40 85
@@ -18,8 +18,8 @@
 BF FF FF FF
 
 # prefix = 3 (64-bit data)
-C0 12 34 56 78 9A BC DE F3
-C0 00 12 34 56 78 9A BC DD
-C0 98 76 54 32 1F ED CB AB
+C0 12 34 56 78 9A BC DE 
+C0 00 12 34 56 78 9A BC 
+C0 98 76 54 32 1F ED CB 
 
-FF FF FF FF FF FF FF FF FF
+FF FF FF FF FF FF FF FF 

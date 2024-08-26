@@ -57,12 +57,9 @@
             "name": "Debug json2cpp",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/tool/json2vm2",
-            "args": [
-                "-f", "./ignore/sample.json"
-                ,"-r",
-                "-b","./example/wire_data/websocket.dat","--hex","--jit"
-                //*/
+            "program": "C:\\Users\\ukfco\\AppData\\Local\\Temp\\cmptest-GAL1QPkdeMhNHNMYhS5wTLWiyqAbzhz0\\varint_test.hpp\\TestVarint\\bEYbu8RbmGq7o9WN6Im6OhYvyAyIajTj\\test.exe",
+            "args":[
+"C:\\Users\\ukfco\\AppData\\Local\\Temp\\cmptest-GAL1QPkdeMhNHNMYhS5wTLWiyqAbzhz0\\varint.dat", "C:\\Users\\ukfco\\AppData\\Local\\Temp\\cmptest-GAL1QPkdeMhNHNMYhS5wTLWiyqAbzhz0\\varint_test.hpp\\TestVarint\\bEYbu8RbmGq7o9WN6Im6OhYvyAyIajTj\\output.bin"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",
