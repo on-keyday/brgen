@@ -14,6 +14,12 @@ enum RecordType:
     UNKNOWN_TYPE = 11
     # MAXTYPE = 11
 
+enum Role:
+    :u16
+    RESPONDER = 1
+    AUTHORIZER = 2
+    FILTER = 3
+
 format RecordHeader:
     version :u8
     typ     :RecordType
@@ -40,7 +46,7 @@ format NameValuePair:
     value :[value_length.len]u8
 
 format BeginRequest:
-    role :u16
+    role :Role
     flags :u8
     reserved :[5]u8
 
