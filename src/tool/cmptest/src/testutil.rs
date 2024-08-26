@@ -388,7 +388,7 @@ impl TestScheduler {
         exec: Option<&PathBuf>,
         expect_ok: bool,
         debug: bool,
-    ) -> Result<bool, Error> {
+    ) -> Result<Option<String>, Error> {
         let mut cmd = base.clone();
         Self::replace_cmd(&mut cmd, sched, tmp_dir, input, output, exec, debug);
         let mut r = tokio::process::Command::new(&cmd[0]);
@@ -402,11 +402,14 @@ impl TestScheduler {
         let code = done.status.code();
         println!("{}", String::from_utf8_lossy(&done.stdout));
         match code {
-            Some(0) => return Ok(true),
+            Some(0) => return Ok(None),
             status => {
                 if let Some(x) = status {
                     if x == 1 && !expect_ok {
-                        return Ok(false);
+                        return Ok(Some(format!(
+                            "process exit with 1:\n{}",
+                            String::from_utf8_lossy(&done.stderr)
+                        )));
                     }
                 }
                 return Err(Error::Exec(format!(
@@ -468,14 +471,30 @@ impl TestScheduler {
             };
 
             let expect = !sched.input.failure_case;
+            let actual = status.is_none();
 
-            if status != expect {
-                let status = if status { "success" } else { "failure" };
+            if actual != expect {
+                let actual = if actual { "success" } else { "failure" };
                 let expect = if expect { "success" } else { "failure" };
-                return Err((
-                    sched,
-                    Error::TestFail(format!("test failed: expect {} but got {}", expect, status)),
-                ));
+                if actual == "success" {
+                    return Err((
+                        sched,
+                        Error::TestFail(format!(
+                            "test failed: expect {} but got {}",
+                            expect, actual
+                        )),
+                    ));
+                } else {
+                    return Err((
+                        sched,
+                        Error::TestFail(format!(
+                            "test failed: expect {} but got {}: {}",
+                            expect,
+                            actual,
+                            status.unwrap()
+                        )),
+                    ));
+                }
             }
 
             if sched.input.failure_case {

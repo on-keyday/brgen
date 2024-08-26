@@ -4,6 +4,7 @@
 #include <file/file_view.h>
 #include <binary/reader.h>
 #include <binary/writer.h>
+#include <number/hex/bin2hex.h>
 #include <fstream>
 #define _DEBUG 1
 #include <testutil/alloc_hook.h>
@@ -67,6 +68,9 @@ int main(int argc, char** argv) {
     }
     if (!r.empty()) {
         cout << "Failed to decode file " << argv[1] << "; " << r.remain().size() << " bytes left\n";
+        if (r.remain().size()) {
+            cout << "Remaining data: " << futils::number::hex::to_hex<std::string>(r.remain()) << '\n';
+        }
         return 1;
     }
     std::string s;
