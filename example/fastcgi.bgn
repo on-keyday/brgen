@@ -1,4 +1,5 @@
 config.url = "https://fastcgi-archives.github.io/FastCGI_Specification.html"
+config.go.package = "fastcgi"
 enum RecordType:
     :u8
     BEGIN_REQUEST = 1
