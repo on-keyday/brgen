@@ -48,7 +48,7 @@ int do_decode(char** argv, auto& t, auto& r) {
 
 int main(int argc, char** argv) {
     if (argc < 3) {
-        cout << "Usage: " << argv[0] << " <file>\n";
+        cout << "Usage: " << argv[0] << " <input file> <output file>\n";
         return 2;
     }
     TEST_CLASS t;
