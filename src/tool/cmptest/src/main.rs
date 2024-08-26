@@ -25,6 +25,7 @@ struct Args {
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
+    let timer = std::time::Instant::now();
     let parsed = Args::parse();
     let test_config = fs::read_to_string(Path::new(&parsed.test_config_file))?;
     let mut d1 = serde_json::Deserializer::from_str(&test_config);
@@ -218,6 +219,7 @@ async fn main() -> Result<(), Error> {
         "FAIL".red(),
         failed
     );
+    println!("Time: {:?}", timer.elapsed());
     if parsed.save_tmp_dir {
         scheduler.print_tmp_dir();
     } else {

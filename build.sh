@@ -20,18 +20,21 @@ if [ ! $BUILD_TYPE ]; then
    BUILD_TYPE=Debug
 fi
 
-if [ ! -d utils ]; then
-. ./script/clone_utils.sh $BUILD_MODE $BUILD_TYPE
+if [ "$FUTILS_DIR" = "" ]; then 
+   if [ ! -d utils ]; then
+   . ./script/clone_utils.sh $BUILD_MODE $BUILD_TYPE
+   fi
+   FUTILS_DIR=$(pwd)/utils
 fi
 go mod download
 if [ $BUILD_MODE = "wasm-em" ]; then
-   cd web/dev
+   cd web/dev || exit
    npm install
    cd ../..
 fi
 
 
-export FUTILS_DIR=$(pwd)/utils
+export FUTILS_DIR=$FUTILS_DIR
 export BUILD_MODE=$BUILD_MODE
 INSTALL_PREFIX=.
 

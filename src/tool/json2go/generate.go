@@ -258,29 +258,31 @@ func (g *Generator) writePrefixedBitField(w printer, belong string, prefix strin
 	w.Printf("flags%d uint%d\n", seq, maxFieldSize)
 
 	// get/set prefix bit function
-	w.Printf("func (t *%s) %s() uint%d {\n", belong, fields[0].Ident.Ident, gen.AlignInt(prefix_size))
-	w.Printf("return (t.%sflags%d & 0x%x) >> %d\n", prefix, seq, (1<<prefix_size)-1, maxFieldSize-prefix_size)
-	w.Printf("}\n")
-	w.Printf("func (t *%s) Set%s(v uint%d) bool {\n", belong, fields[0].Ident.Ident, gen.AlignInt(prefix_size))
-	w.Printf("if v > %d {\n", (1<<prefix_size)-1)
-	w.Printf("return false\n")
-	w.Printf("}\n")
-	w.Printf("t.%sflags%d = (t.%sflags%d & ^uint%d(0x%x)) | (v << %d)\n", prefix, seq, prefix, seq, maxFieldSize, (1<<prefix_size)-1, maxFieldSize-prefix_size)
-	w.Printf("return true\n")
-	w.Printf("}\n")
+	prefixType := fmt.Sprintf("uint%d", gen.AlignInt(prefix_size))
+	valueType := fmt.Sprintf("uint%d", maxFieldSize)
+	g.PrintfFunc("func (t *%s) %s() %s {\n", belong, fields[0].Ident.Ident, prefixType)
+	g.PrintfFunc("return %s((t.%sflags%d & 0x%x) >> %d)\n", prefixType, prefix, seq, (1<<prefix_size)-1, maxFieldSize-prefix_size)
+	g.PrintfFunc("}\n")
+	g.PrintfFunc("func (t *%s) Set%s(v %s) bool {\n", belong, fields[0].Ident.Ident, prefixType)
+	g.PrintfFunc("if v > %d {\n", (1<<prefix_size)-1)
+	g.PrintfFunc("return false\n")
+	g.PrintfFunc("}\n")
+	g.PrintfFunc("t.%sflags%d = %s(t.%sflags%d & ^uint%d(0x%x)) | %s(v) << %d\n", prefix, seq, valueType, prefix, seq, maxFieldSize, (1<<prefix_size)-1, valueType, maxFieldSize-prefix_size)
+	g.PrintfFunc("return true\n")
+	g.PrintfFunc("}\n")
 	g.exprStringer.SetIdentMap(fields[0].Ident, fmt.Sprintf("%%s%s()", fields[0].Ident.Ident))
 	g.bitFieldPart[fields[0]] = struct{}{}
 	// get/set variable bit function
-	w.Printf("func (t *%s) %s() uint%d {\n", belong, unionField.Ident.Ident, maxFieldSize)
-	w.Printf("return (t.%sflags%d & 0x%x) >> %d\n", prefix, seq, (1<<maxFieldSize-prefix_size)-1, 0)
-	w.Printf("}\n")
-	w.Printf("func (t *%s) Set%s(v uint%d) bool {\n", belong, unionField.Ident.Ident, maxFieldSize)
-	w.Printf("if v > %d {\n", (1<<maxFieldSize-prefix_size)-1)
-	w.Printf("return false\n")
-	w.Printf("}\n")
-	w.Printf("t.%sflags%d = (t.%sflags%d & ^uint%d(0x%x)) | v\n", prefix, seq, prefix, seq, maxFieldSize, (1<<maxFieldSize-prefix_size)-1)
-	w.Printf("return true\n")
-	w.Printf("}\n")
+	g.PrintfFunc("func (t *%s) %s() %s {\n", belong, unionField.Ident.Ident, valueType)
+	g.PrintfFunc("return %s(t.%sflags%d & 0x%x)\n", valueType, prefix, seq, (1<<maxFieldSize-prefix_size)-1)
+	g.PrintfFunc("}\n")
+	g.PrintfFunc("func (t *%s) Set%s(v %s) bool {\n", belong, unionField.Ident.Ident, valueType)
+	g.PrintfFunc("if v > %d {\n", (1<<maxFieldSize-prefix_size)-1)
+	g.PrintfFunc("return false\n")
+	g.PrintfFunc("}\n")
+	g.PrintfFunc("t.%sflags%d = (t.%sflags%d & ^%s(0x%x)) | v\n", prefix, seq, prefix, seq, valueType, (1<<maxFieldSize-prefix_size)-1)
+	g.PrintfFunc("return true\n")
+	g.PrintfFunc("}\n")
 	g.exprStringer.SetIdentMap(unionField.Ident, fmt.Sprintf("%%s%s()", unionField.Ident.Ident))
 	g.prefixedBitField[t] = &PrefixedBitField{
 		FieldName:   "flags" + strconv.Itoa(seq),
@@ -304,33 +306,28 @@ func (g *Generator) writePrefixedBitFieldEncode(b *PrefixedBitField) {
 		g.PrintfFunc("if %s == %s {\n", cond, condNum)
 		bitSize := *c.Field.FieldType.GetBitSize() + b.PrefixSize
 		typ := fmt.Sprintf("uint%d", bitSize)
-		g.PrintfFunc("var %s %s", tmpVar, typ)
-		ident := g.exprStringer.ExprString(c.Field.Ident)
+		g.PrintfFunc("var %s %s\n", tmpVar, typ)
+		ident := g.exprStringer.ExprString(b.UnionField.Ident)
 		g.PrintfFunc("%s = %s(%s)\n", tmpVar, typ, ident)
-		g.PrintfFunc("%s |= %s(%s) << %d", tmpVar, typ, condNum, bitSize-b.PrefixSize)
+		g.PrintfFunc("%s |= %s(%s) << %d\n", tmpVar, typ, condNum, bitSize-b.PrefixSize)
 		g.writeAppendUint(bitSize, tmpVar, ast2go.EndianUnspec)
+		g.PrintfFunc("}\n")
 	}
 }
 
 func (g *Generator) writePrefixedBitFieldDecode(b *PrefixedBitField) {
 	tmpVar := fmt.Sprintf("tmp%d", g.getSeq())
 	tmpBytes := fmt.Sprintf("tmpBytes%d", g.getSeq())
-	tmpReader := fmt.Sprintf("tmpReader%d", g.getSeq())
 	cond := g.exprStringer.ExprString(b.Candidates.Cond)
 	shouldElse := false
 	g.PrintfFunc("var %s [1]byte\n", tmpBytes)
-	g.imports["bufio"] = struct{}{}
-	g.PrintfFunc("%s := bufio.NewReader(r)\n", tmpReader)
-	g.PrintfFunc("if _,err := io.ReadFull(%s,%s[:]);err != nil {\n", tmpReader, tmpBytes)
+	g.PrintfFunc("if _,err := io.ReadFull(r,%s[:]);err != nil {\n", tmpBytes)
 	g.imports["fmt"] = struct{}{}
 	g.PrintfFunc("return fmt.Errorf(\"failed to read prefix: %%w\",err)\n")
 	g.PrintfFunc("}\n")
-	g.PrintfFunc("if err := %s.UnreadByte(); err != nil {\n", tmpReader)
-	g.PrintfFunc("return fmt.Errorf(\"failed to unread prefix: %%w\",err)\n")
-	g.PrintfFunc("}\n")
 	oldReader := fmt.Sprintf("oldReader%d", g.getSeq())
 	g.PrintfFunc("%s := r\n", oldReader)
-	g.PrintfFunc("r = %s\n", tmpReader)
+	g.PrintfFunc("r = io.MultiReader(bytes.NewReader(%s[:]),r)\n", tmpBytes)
 	prefixField := g.exprStringer.ExprString(b.PrefixField.Ident)
 	toReplace := regexp.MustCompile(fmt.Sprintf(`%s\(\)`, b.PrefixField.Ident.Ident))
 	setField := toReplace.ReplaceAllString(prefixField, fmt.Sprintf("Set%s(%s[0] >> %d)", b.PrefixField.Ident.Ident, tmpBytes, 8-b.PrefixSize))
@@ -345,14 +342,15 @@ func (g *Generator) writePrefixedBitFieldDecode(b *PrefixedBitField) {
 		typ := fmt.Sprintf("uint%d", bitSize)
 		g.PrintfFunc("var %s %s\n", tmpVar, typ)
 		g.writeReadUint(bitSize, tmpVar, tmpVar, false, nil, ast2go.EndianUnspec)
-		g.PrintfFunc("%s ~%s(1 << %d)\n", tmpVar, typ, bitSize-b.PrefixSize)
+		g.PrintfFunc("%s &= ^%s(1 << %d)\n", tmpVar, typ, bitSize-b.PrefixSize)
 		setField := g.exprStringer.ExprString(b.UnionField.Ident)
 		toReplace := regexp.MustCompile(fmt.Sprintf(`%s\(\)`, b.UnionField.Ident.Ident))
-		setField = toReplace.ReplaceAllString(setField, fmt.Sprintf("Set%s(%s)", b.UnionField.Ident.Ident, tmpVar))
+		maxType := fmt.Sprintf("uint%d", b.MaxSize)
+		setField = toReplace.ReplaceAllString(setField, fmt.Sprintf("Set%s(%s(%s))", b.UnionField.Ident.Ident, maxType, tmpVar))
 		g.PrintfFunc("%s\n", setField)
 		g.PrintfFunc("}\n")
 	}
-	g.PrintfFunc("r = %s", oldReader)
+	g.PrintfFunc("r = %s\n", oldReader)
 }
 
 func (g *Generator) writePrefixedBitFieldCode(b *PrefixedBitField, enc bool) {
@@ -1106,9 +1104,9 @@ func (g *Generator) writeTypeDecode(ident string, typ ast2go.Type, p *ast2go.Fie
 			} else if _, ok := g.terminalPattern[p]; ok { // use terminal pattern
 				next, _ := p.Next.FieldType.(*ast2go.StrLiteralType)
 				g.imports["bufio"] = struct{}{}
-				g.PrintfFunc("peek_reader_%s := bufio.NewReader(r)\n", p.Ident.Ident)
-				g.PrintfFunc("r = peek_reader_%s\n", p.Ident.Ident)
 				g.PrintfFunc("len_next_%s := len(%s)\n", p.Ident.Ident, next.Base.Value)
+				g.PrintfFunc("peek_reader_%s := bufio.NewReaderSize(r,len_next_%s)\n", p.Ident.Ident, p.Ident.Ident)
+				g.PrintfFunc("r = peek_reader_%s\n", p.Ident.Ident)
 				g.PrintfFunc("buffer_%s := make([]byte,0)\n", p.Ident.Ident)
 				g.PrintfFunc("for {\n")
 				g.PrintfFunc("b, err := peek_reader_%s.Peek(len_next_%s)\n", p.Ident.Ident, p.Ident.Ident)
@@ -1155,7 +1153,7 @@ func (g *Generator) writeTypeDecode(ident string, typ ast2go.Type, p *ast2go.Fie
 					tmp := fmt.Sprintf("tmp_byte_scanner%d_", g.getSeq())
 					old := fmt.Sprintf("old_r_%s", p.Ident.Ident)
 					g.imports["bufio"] = struct{}{}
-					g.PrintfFunc("%s := bufio.NewReader(r)\n", tmp)
+					g.PrintfFunc("%s := bufio.NewReaderSize(r,1)\n", tmp)
 					g.PrintfFunc("%s := r\n", old)
 					g.PrintfFunc("r = %s\n", tmp)
 					g.PrintfFunc("for {\n")
@@ -1200,9 +1198,9 @@ func (g *Generator) writeTypeDecode(ident string, typ ast2go.Type, p *ast2go.Fie
 			} else if _, ok := g.terminalPattern[p]; ok { // use terminal pattern
 				next, _ := p.Next.FieldType.(*ast2go.StrLiteralType)
 				g.imports["bufio"] = struct{}{}
-				g.PrintfFunc("peek_reader_%s := bufio.NewReader(r)\n", p.Ident.Ident)
-				g.PrintfFunc("r = peek_reader_%s\n", p.Ident.Ident)
 				g.PrintfFunc("len_next_%s := len(%s)\n", p.Ident.Ident, next.Base.Value)
+				g.PrintfFunc("peek_reader_%s := bufio.NewReaderSize(r,len_next_%s)\n", p.Ident.Ident, p.Ident.Ident)
+				g.PrintfFunc("r = peek_reader_%s\n", p.Ident.Ident)
 				g.PrintfFunc("for {\n")
 				g.PrintfFunc("b, err := peek_reader_%s.Peek(len_next_%s)\n", p.Ident.Ident, p.Ident.Ident)
 				g.PrintfFunc("if err != nil {\n")
