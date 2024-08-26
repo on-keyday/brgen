@@ -29,6 +29,10 @@ format RecordHeader:
     padding_length :u8
     reserved :u8
 
+format Flags: # from msb
+    reserved :u7
+    keep_conn :u1
+
 format Record:
     header :RecordHeader
     body   :[header.length]u8
@@ -48,7 +52,7 @@ format NameValuePair:
 
 format BeginRequest:
     role :Role
-    flags :u8
+    flags :Flags
     reserved :[5]u8
 
 format EndRequest:
