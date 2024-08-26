@@ -261,7 +261,7 @@ func (g *Generator) writePrefixedBitField(w printer, belong string, prefix strin
 	prefixType := fmt.Sprintf("uint%d", gen.AlignInt(prefix_size))
 	valueType := fmt.Sprintf("uint%d", maxFieldSize)
 	g.PrintfFunc("func (t *%s) %s() %s {\n", belong, fields[0].Ident.Ident, prefixType)
-	g.PrintfFunc("return %s((t.%sflags%d & 0x%x) >> %d)\n", prefixType, prefix, seq, (1<<prefix_size)-1, maxFieldSize-prefix_size)
+	g.PrintfFunc("return %s((t.%sflags%d & 0x%x) >> %d)\n", prefixType, prefix, seq, ((uint64(1)<<prefix_size)-1)<<(maxFieldSize-prefix_size), maxFieldSize-prefix_size)
 	g.PrintfFunc("}\n")
 	g.PrintfFunc("func (t *%s) Set%s(v %s) bool {\n", belong, fields[0].Ident.Ident, prefixType)
 	g.PrintfFunc("if v > %d {\n", (1<<prefix_size)-1)
@@ -302,6 +302,8 @@ func (g *Generator) writePrefixedBitFieldEncode(b *PrefixedBitField) {
 		condNum := g.exprStringer.ExprString(c.Cond)
 		if shouldElse {
 			g.PrintfFunc("else ")
+		} else {
+			shouldElse = true
 		}
 		g.PrintfFunc("if %s == %s {\n", cond, condNum)
 		bitSize := *c.Field.FieldType.GetBitSize() + b.PrefixSize
@@ -311,8 +313,9 @@ func (g *Generator) writePrefixedBitFieldEncode(b *PrefixedBitField) {
 		g.PrintfFunc("%s = %s(%s)\n", tmpVar, typ, ident)
 		g.PrintfFunc("%s |= %s(%s) << %d\n", tmpVar, typ, condNum, bitSize-b.PrefixSize)
 		g.writeAppendUint(bitSize, tmpVar, ast2go.EndianUnspec)
-		g.PrintfFunc("}\n")
+		g.PrintfFunc("}")
 	}
+	g.PrintfFunc("\n")
 }
 
 func (g *Generator) writePrefixedBitFieldDecode(b *PrefixedBitField) {
@@ -336,6 +339,8 @@ func (g *Generator) writePrefixedBitFieldDecode(b *PrefixedBitField) {
 		condNum := g.exprStringer.ExprString(c.Cond)
 		if shouldElse {
 			g.PrintfFunc("else ")
+		} else {
+			shouldElse = true
 		}
 		g.PrintfFunc("if %s == %s {\n", cond, condNum)
 		bitSize := *c.Field.FieldType.GetBitSize() + b.PrefixSize
@@ -348,9 +353,9 @@ func (g *Generator) writePrefixedBitFieldDecode(b *PrefixedBitField) {
 		maxType := fmt.Sprintf("uint%d", b.MaxSize)
 		setField = toReplace.ReplaceAllString(setField, fmt.Sprintf("Set%s(%s(%s))", b.UnionField.Ident.Ident, maxType, tmpVar))
 		g.PrintfFunc("%s\n", setField)
-		g.PrintfFunc("}\n")
+		g.PrintfFunc("}")
 	}
-	g.PrintfFunc("r = %s\n", oldReader)
+	g.PrintfFunc("\nr = %s\n", oldReader)
 }
 
 func (g *Generator) writePrefixedBitFieldCode(b *PrefixedBitField, enc bool) {

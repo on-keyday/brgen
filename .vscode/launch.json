@@ -34,9 +34,9 @@
             "name": "Debug json2go",
             "type": "go",
             "request": "launch",
-            "mode": "debug",
-            "program": "${workspaceRoot}/src/tool/json2go",
-            "args": ["-f","ignore/sample.json"],
+            "mode": "exec",
+            "program": "C:\\Users\\ukfco\\AppData\\Local\\Temp\\cmptest-h5LeJ1CPO513XyhMFF3tIvDEzg6YyQQw\\varint_test.go\\TestVarint\\dgbEQ2Y97z8xtqDF7SdO3A4UTUtAGC7M\\test.exe",
+            "args": [ "C:\\Users\\ukfco\\AppData\\Local\\Temp\\cmptest-h5LeJ1CPO513XyhMFF3tIvDEzg6YyQQw\\varint.dat", "C:\\Users\\ukfco\\AppData\\Local\\Temp\\cmptest-h5LeJ1CPO513XyhMFF3tIvDEzg6YyQQw\\varint_test.go\\TestVarint\\dgbEQ2Y97z8xtqDF7SdO3A4UTUtAGC7M\\output.bin"],
             "cwd": "${workspaceRoot}",
             "output": "${workspaceRoot}/tool/j2g_debuggee"
         },
