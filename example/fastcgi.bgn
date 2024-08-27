@@ -21,6 +21,13 @@ enum Role:
     AUTHORIZER = 2
     FILTER = 3
 
+enum ProtocolStatus:
+    :u8
+    REQUEST_COMPLETE = 0
+    CANT_MPX_CONN = 1
+    OVERLOADED = 2
+    UNKNOWN_ROLE = 3
+
 format RecordHeader:
     version :u8
     typ     :RecordType
@@ -60,7 +67,7 @@ format BeginRequest:
 
 format EndRequest:
     app_status :u32
-    protocol_status :u8
+    protocol_status :ProtocolStatus
     reserved :[3]u8
 
 format UnknownType:
