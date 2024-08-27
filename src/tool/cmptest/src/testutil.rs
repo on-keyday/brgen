@@ -544,13 +544,13 @@ impl TestScheduler {
 
             if input_binary.len() != output.len() {
                 if input_binary.len() > output.len() {
-                    diff.push((output.len(), None, Some(output[output.len()])));
+                    for i in output.len()..input_binary.len() {
+                        diff.push((i, Some(input_binary[i]), None));
+                    }
                 } else {
-                    diff.push((
-                        input_binary.len(),
-                        Some(input_binary[input_binary.len()]),
-                        None,
-                    ));
+                    for i in input_binary.len()..output.len() {
+                        diff.push((i, None, Some(output[i])))
+                    }
                 }
             }
 
@@ -601,9 +601,12 @@ impl TestScheduler {
         }
     }
 
-    pub fn print_tmp_dir(self) {
+    pub fn print_tmp_dir(self) -> Option<PathBuf> {
         if let Some(dir) = self.tmpdir {
             println!("tmp directory is {}", path_str(&dir));
+            Some(dir)
+        } else {
+            None
         }
     }
 }

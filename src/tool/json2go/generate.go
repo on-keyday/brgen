@@ -260,27 +260,50 @@ func (g *Generator) writePrefixedBitField(w printer, belong string, prefix strin
 	// get/set prefix bit function
 	prefixType := fmt.Sprintf("uint%d", gen.AlignInt(prefix_size))
 	valueType := fmt.Sprintf("uint%d", maxFieldSize)
+	compare := ""
+	if prefix_size == 1 {
+		prefixType = "bool"
+		compare = " != 0"
+	}
 	g.PrintfFunc("func (t *%s) %s() %s {\n", belong, fields[0].Ident.Ident, prefixType)
-	g.PrintfFunc("return %s((t.%sflags%d & 0x%x) >> %d)\n", prefixType, prefix, seq, ((uint64(1)<<prefix_size)-1)<<(maxFieldSize-prefix_size), maxFieldSize-prefix_size)
+	g.PrintfFunc("return %s((t.%sflags%d & 0x%x) >> %d)%s\n", prefixType, prefix, seq, ((uint64(1)<<prefix_size)-1)<<(maxFieldSize-prefix_size), maxFieldSize-prefix_size, compare)
 	g.PrintfFunc("}\n")
 	g.PrintfFunc("func (t *%s) Set%s(v %s) bool {\n", belong, fields[0].Ident.Ident, prefixType)
-	g.PrintfFunc("if v > %d {\n", (1<<prefix_size)-1)
-	g.PrintfFunc("return false\n")
-	g.PrintfFunc("}\n")
-	g.PrintfFunc("t.%sflags%d = %s(t.%sflags%d & ^uint%d(0x%x)) | %s(v) << %d\n", prefix, seq, valueType, prefix, seq, maxFieldSize, (1<<prefix_size)-1, valueType, maxFieldSize-prefix_size)
+	value := "v"
+	if prefixType != "bool" {
+		g.PrintfFunc("if v > %d {\n", (1<<prefix_size)-1)
+		g.PrintfFunc("return false\n")
+		g.PrintfFunc("}\n")
+	} else {
+		g.PrintfFunc("var tmp uint%d\n", maxFieldSize)
+		value = "tmp"
+		g.Printf("if v {\n")
+		g.Printf("tmp = 1\n")
+		g.Printf("} else {\n")
+		g.Printf("tmp = 0\n")
+		g.Printf("}\n")
+	}
+	shift := maxFieldSize - prefix_size
+	mask := ((uint64(1) << prefix_size) - 1) << shift
+	g.PrintfFunc("t.%sflags%d = %s(t.%sflags%d & ^uint%d(0x%x)) | %s(%s) << %d\n", prefix, seq, valueType, prefix, seq, maxFieldSize, mask, valueType, value, shift)
 	g.PrintfFunc("return true\n")
 	g.PrintfFunc("}\n")
-	g.exprStringer.SetIdentMap(fields[0].Ident, fmt.Sprintf("%%s%s()", fields[0].Ident.Ident))
+	if prefix_size == 1 {
+		g.exprStringer.SetIdentMap(fields[0].Ident, fmt.Sprintf("(func() uint8 { if %%s%s() {return 1}else {return 0}}())", fields[0].Ident.Ident))
+	} else {
+		g.exprStringer.SetIdentMap(fields[0].Ident, fmt.Sprintf("%%s%s()", fields[0].Ident.Ident))
+	}
 	g.bitFieldPart[fields[0]] = struct{}{}
 	// get/set variable bit function
+	valueMask := (uint64(1) << (maxFieldSize - prefix_size)) - 1
 	g.PrintfFunc("func (t *%s) %s() %s {\n", belong, unionField.Ident.Ident, valueType)
-	g.PrintfFunc("return %s(t.%sflags%d & 0x%x)\n", valueType, prefix, seq, (1<<maxFieldSize-prefix_size)-1)
+	g.PrintfFunc("return %s(t.%sflags%d & 0x%x)\n", valueType, prefix, seq, valueMask)
 	g.PrintfFunc("}\n")
 	g.PrintfFunc("func (t *%s) Set%s(v %s) bool {\n", belong, unionField.Ident.Ident, valueType)
 	g.PrintfFunc("if v > %d {\n", (1<<maxFieldSize-prefix_size)-1)
 	g.PrintfFunc("return false\n")
 	g.PrintfFunc("}\n")
-	g.PrintfFunc("t.%sflags%d = (t.%sflags%d & ^%s(0x%x)) | v\n", prefix, seq, prefix, seq, valueType, (1<<maxFieldSize-prefix_size)-1)
+	g.PrintfFunc("t.%sflags%d = (t.%sflags%d & ^%s(0x%x)) | v\n", prefix, seq, prefix, seq, valueType, valueMask)
 	g.PrintfFunc("return true\n")
 	g.PrintfFunc("}\n")
 	g.exprStringer.SetIdentMap(unionField.Ident, fmt.Sprintf("%%s%s()", unionField.Ident.Ident))
