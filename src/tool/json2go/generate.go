@@ -266,7 +266,7 @@ func (g *Generator) writePrefixedBitField(w printer, belong string, prefix strin
 		compare = " != 0"
 	}
 	g.PrintfFunc("func (t *%s) %s() %s {\n", belong, fields[0].Ident.Ident, prefixType)
-	g.PrintfFunc("return %s((t.%sflags%d & 0x%x) >> %d)%s\n", prefixType, prefix, seq, ((uint64(1)<<prefix_size)-1)<<(maxFieldSize-prefix_size), maxFieldSize-prefix_size, compare)
+	g.PrintfFunc("return %s((t.%sflags%d & 0x%x) >> %d %s)\n", prefixType, prefix, seq, ((uint64(1)<<prefix_size)-1)<<(maxFieldSize-prefix_size), maxFieldSize-prefix_size, compare)
 	g.PrintfFunc("}\n")
 	g.PrintfFunc("func (t *%s) Set%s(v %s) bool {\n", belong, fields[0].Ident.Ident, prefixType)
 	value := "v"
@@ -356,7 +356,11 @@ func (g *Generator) writePrefixedBitFieldDecode(b *PrefixedBitField) {
 	g.PrintfFunc("r = io.MultiReader(bytes.NewReader(%s[:]),r)\n", tmpBytes)
 	prefixField := g.exprStringer.ExprString(b.PrefixField.Ident)
 	toReplace := regexp.MustCompile(fmt.Sprintf(`%s\(\)`, b.PrefixField.Ident.Ident))
-	setField := toReplace.ReplaceAllString(prefixField, fmt.Sprintf("Set%s(%s[0] >> %d)", b.PrefixField.Ident.Ident, tmpBytes, 8-b.PrefixSize))
+	compare := ""
+	if b.PrefixSize == 1 {
+		compare = " != 0"
+	}
+	setField := toReplace.ReplaceAllString(prefixField, fmt.Sprintf("Set%s(%s[0] >> %d%s)", b.PrefixField.Ident.Ident, tmpBytes, 8-b.PrefixSize, compare))
 	g.PrintfFunc("%s\n", setField)
 	for _, c := range b.Candidates.Candidates {
 		condNum := g.exprStringer.ExprString(c.Cond)

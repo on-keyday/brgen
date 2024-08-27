@@ -1,5 +1,10 @@
 
 q ::= config.import("../quic_varint.bgn")
+format Length:
+    indicator :u1
+    match indicator:
+        0 => len :u7
+        1 => len :u31
 
 format TestVarint: # total 16 field
     field_1 :q.VarInt # 8-bit data
@@ -18,3 +23,6 @@ format TestVarint: # total 16 field
     field_14 :q.VarInt # 64-bit data
     field_15 :q.VarInt # 64-bit data
     field_16 :q.VarInt # 64-bit data
+
+    field_17 :Length # 8-bit data
+    field_18 :Length # 32-bit data

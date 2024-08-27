@@ -1,4 +1,4 @@
-# varint
+# quic varint
 # prefix = 0 (8-bit data)
 3A
 12
@@ -23,3 +23,9 @@ C0 00 12 34 56 78 9A BC
 C0 98 76 54 32 1F ED CB 
 
 FF FF FF FF FF FF FF FF 
+
+# fastcgi varint
+# prefix = 0 (8-bit data)
+7f
+# prefix = 1 (32-bit data)
+FF FF FF FF
