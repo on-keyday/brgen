@@ -277,11 +277,11 @@ func (g *Generator) writePrefixedBitField(w printer, belong string, prefix strin
 	} else {
 		g.PrintfFunc("var tmp uint%d\n", maxFieldSize)
 		value = "tmp"
-		g.Printf("if v {\n")
-		g.Printf("tmp = 1\n")
-		g.Printf("} else {\n")
-		g.Printf("tmp = 0\n")
-		g.Printf("}\n")
+		g.PrintfFunc("if v {\n")
+		g.PrintfFunc("tmp = 1\n")
+		g.PrintfFunc("} else {\n")
+		g.PrintfFunc("tmp = 0\n")
+		g.PrintfFunc("}\n")
 	}
 	shift := maxFieldSize - prefix_size
 	mask := ((uint64(1) << prefix_size) - 1) << shift
