@@ -50,6 +50,9 @@ format NameValuePair:
     name :[name_length.len]u8
     value :[value_length.len]u8
 
+format Params:
+    params :[..]NameValuePair
+
 format BeginRequest:
     role :Role
     flags :Flags
