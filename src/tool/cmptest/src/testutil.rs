@@ -245,10 +245,10 @@ impl TestScheduler {
             i += 1;
             col += 1;
         }
-        if let Some(_) = pair {
+        if let Some(x) = pair {
             Err(std::io::Error::new(
                 std::io::ErrorKind::Other,
-                "invalid hex string; missing pair",
+                format!("invalid hex string; missing pair for {x}"),
             )
             .into())
         } else {
