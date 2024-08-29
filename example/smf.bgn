@@ -85,7 +85,7 @@ format Event:
     fn channel():
         return event_type & 0x0f
 
-    if event_type == (0x00..0x7f):
+    if event_type == (0x00..=0x7f):
         if running_status.type == 0:
             error("running status not set")
         event_type = running_status.type

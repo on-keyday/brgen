@@ -698,6 +698,7 @@ namespace brgen::ast {
             if (!s.expect_token(")")) {
                 call->raw_arguments = parse_expr();
                 collect_args(call->raw_arguments, call->arguments);
+                s.skip_white();
             }
             token = s.must_consume_token(")");
             call->end_loc = token.loc;
@@ -717,6 +718,7 @@ namespace brgen::ast {
             auto call = std::make_shared<Index>(token.loc, std::move(p));
             s.skip_white();
             call->index = parse_expr();
+            s.skip_white();
             token = s.must_consume_token("]");
             call->end_loc = token.loc;
             return call;
