@@ -1553,7 +1553,7 @@ namespace j2cp2 {
             }
             if (auto a = ast::as<ast::Assert>(elem)) {
                 auto cond = str.to_string(a->cond);
-                w.writeln("if (!", cond, ") {");
+                w.writeln("if (!(", cond, ")) {");
                 {
                     auto indent = w.indent_scope();
                     write_return_error(current_format, "assertion failed; ", cond);
