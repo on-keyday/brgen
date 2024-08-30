@@ -430,6 +430,10 @@ jobs:
           GOROOT=`go env GOROOT`
           echo "GOROOT=$GOROOT"
           export WASMEXEC_FILE="$GOROOT/misc/wasm/wasm_exec.js"
+          if [ ! -e "$WASMEXEC_FILE" ]; then
+            echo "$WASMEXEC_FILE not found"
+            exit 1
+          fi
           export WEB_PRODUCTION="production"
           . build.sh wasm-em Release
       - name: Setup Hugo
