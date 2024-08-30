@@ -102,7 +102,7 @@ pub struct TestConfig {
     pub inputs: Vec<TestInput>,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct TestSchedule {
     pub input: Arc<TestInput>,
     pub runner: Arc<TestRunner>,
@@ -168,7 +168,7 @@ fn path_str(path: &PathBuf) -> String {
     }
 }
 
-type SendChan = mpsc::Sender<Result<TestSchedule, (TestSchedule, Error)>>;
+type SendChan = mpsc::Sender<Result<TestSchedule, (TestSchedule, Error, Vec<String>)>>;
 
 impl TestScheduler {
     pub fn new(debug: bool) -> Self {
@@ -245,10 +245,10 @@ impl TestScheduler {
             i += 1;
             col += 1;
         }
-        if let Some(_) = pair {
+        if let Some(x) = pair {
             Err(std::io::Error::new(
                 std::io::ErrorKind::Other,
-                "invalid hex string; missing pair",
+                format!("invalid hex string; missing pair for {x}"),
             )
             .into())
         } else {
@@ -388,7 +388,10 @@ impl TestScheduler {
         exec: Option<&PathBuf>,
         expect_ok: bool,
         debug: bool,
-    ) -> Result<bool, Error> {
+    ) -> (
+        Result<Option<String>, Error>,
+        Vec<String>, /*command line*/
+    ) {
         let mut cmd = base.clone();
         Self::replace_cmd(&mut cmd, sched, tmp_dir, input, output, exec, debug);
         let mut r = tokio::process::Command::new(&cmd[0]);
@@ -396,24 +399,36 @@ impl TestScheduler {
         let done = match r.output().await {
             Ok(x) => x,
             Err(x) => {
-                return Err(Error::Exec(format!("exec error: {:?}: {}", cmd, x)));
+                return (
+                    Err(Error::Exec(format!("exec error: {:?}: {}", cmd, x))),
+                    cmd,
+                );
             }
         };
         let code = done.status.code();
         println!("{}", String::from_utf8_lossy(&done.stdout));
         match code {
-            Some(0) => return Ok(true),
+            Some(0) => return (Ok(None), cmd),
             status => {
                 if let Some(x) = status {
                     if x == 1 && !expect_ok {
-                        return Ok(false);
+                        return (
+                            Ok(Some(format!(
+                                "process exit with 1:\n{}",
+                                String::from_utf8_lossy(&done.stderr)
+                            ))),
+                            cmd,
+                        );
                     }
                 }
-                return Err(Error::Exec(format!(
-                    "process exit with {:?}:\n{}",
-                    status,
-                    String::from_utf8_lossy(&done.stderr)
-                )));
+                return (
+                    Err(Error::Exec(format!(
+                        "process exit with {:?}:\n{}",
+                        status,
+                        String::from_utf8_lossy(&done.stderr)
+                    ))),
+                    cmd,
+                );
             }
         }
     }
@@ -442,8 +457,8 @@ impl TestScheduler {
             )
             .await
             {
-                Ok(_) => {}
-                Err(x) => return Err((sched, x)),
+                (Ok(_), _) => {}
+                (Err(x), cmd) => return Err((sched, x, cmd)),
             };
 
             let exec = output;
@@ -451,31 +466,51 @@ impl TestScheduler {
             let output = tmp_dir.join("output.bin");
 
             // run test
-            let status = match Self::exec_cmd(
-                &sched,
-                &sched.runner.run_command,
-                &tmp_dir,
-                &input_path,
-                &output,
-                Some(&exec),
-                false,
-                debug,
-            )
-            .await
-            {
-                Ok(x) => x,
-                Err(x) => return Err((sched, x)),
+            let (status, cmdline) = {
+                let (status, cmdline) = Self::exec_cmd(
+                    &sched,
+                    &sched.runner.run_command,
+                    &tmp_dir,
+                    &input_path,
+                    &output,
+                    Some(&exec),
+                    false,
+                    debug,
+                )
+                .await;
+                match status {
+                    Ok(x) => (x, cmdline),
+                    Err(x) => return Err((sched, x, cmdline)),
+                }
             };
 
             let expect = !sched.input.failure_case;
+            let actual = status.is_none();
 
-            if status != expect {
-                let status = if status { "success" } else { "failure" };
+            if actual != expect {
+                let actual = if actual { "success" } else { "failure" };
                 let expect = if expect { "success" } else { "failure" };
-                return Err((
-                    sched,
-                    Error::TestFail(format!("test failed: expect {} but got {}", expect, status)),
-                ));
+                if actual == "success" {
+                    return Err((
+                        sched,
+                        Error::TestFail(format!(
+                            "test failed: expect {} but got {}",
+                            expect, actual
+                        )),
+                        cmdline,
+                    ));
+                } else {
+                    return Err((
+                        sched,
+                        Error::TestFail(format!(
+                            "test failed: expect {} but got {}: {}",
+                            expect,
+                            actual,
+                            status.unwrap()
+                        )),
+                        cmdline,
+                    ));
+                }
             }
 
             if sched.input.failure_case {
@@ -488,6 +523,7 @@ impl TestScheduler {
                     return Err((
                         sched,
                         Error::TestFail(format!("test output file cannot load: {}", x)),
+                        Vec::new(),
                     ))
                 }
             };
@@ -508,13 +544,13 @@ impl TestScheduler {
 
             if input_binary.len() != output.len() {
                 if input_binary.len() > output.len() {
-                    diff.push((output.len(), None, Some(output[output.len()])));
+                    for i in output.len()..input_binary.len() {
+                        diff.push((i, Some(input_binary[i]), None));
+                    }
                 } else {
-                    diff.push((
-                        input_binary.len(),
-                        Some(input_binary[input_binary.len()]),
-                        None,
-                    ));
+                    for i in input_binary.len()..output.len() {
+                        diff.push((i, None, Some(output[i])))
+                    }
                 }
             }
 
@@ -523,7 +559,7 @@ impl TestScheduler {
                 for (i, a, b) in diff {
                     debug += &format!("{}: {:02x?} != {:02x?}\n", i, a, b);
                 }
-                return Err((sched, Error::TestFail(debug)));
+                return Err((sched, Error::TestFail(debug), cmdline));
             }
 
             Ok(sched)
@@ -565,9 +601,12 @@ impl TestScheduler {
         }
     }
 
-    pub fn print_tmp_dir(self) {
+    pub fn print_tmp_dir(self) -> Option<PathBuf> {
         if let Some(dir) = self.tmpdir {
             println!("tmp directory is {}", path_str(&dir));
+            Some(dir)
+        } else {
+            None
         }
     }
 }

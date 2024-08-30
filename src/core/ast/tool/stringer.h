@@ -130,6 +130,14 @@ namespace brgen::ast::tool {
             return result;
         }
 
+        std::string ephemeral_binary_op(ast::BinaryOp op, const std::shared_ptr<Expr>& left, const std::shared_ptr<Expr>& right, bool root = true) {
+            auto copy = left;
+            auto l = std::make_shared<ast::Binary>(left->loc, std::move(copy), op);
+            l->right = right;
+            l->constant_level = ast::ConstantLevel::variable;
+            return to_string_impl(l, root);
+        }
+
         std::string to_string(const std::shared_ptr<Expr>& expr) {
             return to_string_impl(expr, true);
         }

@@ -2,38 +2,9 @@
 #include "vm2.h"
 #include <core/ast/ast.h>
 #include <unordered_map>
+#include "layout.h"
 
 namespace brgen::vm2 {
-
-    enum class LayoutType {
-        PTR,
-        ARRAY_PTR,
-        INT,
-    };
-
-    struct Primitive {
-        LayoutType type;
-        std::shared_ptr<ast::Field> field;
-        std::shared_ptr<ast::Type> type_ast;
-        std::string name;
-        size_t offset;
-        size_t size;
-    };
-    struct Union;
-    struct Struct;
-
-    using Element = std::variant<Primitive, Union>;
-    struct Union {
-        std::vector<Struct> elements;
-        std::shared_ptr<ast::Field> field;
-        size_t offset = 0;
-        size_t size = 0;
-    };
-
-    struct Struct {
-        std::vector<std::shared_ptr<Element>> elements;
-        size_t size = 0;
-    };
 
     struct InstCodeMap {
         Inst inst;
@@ -59,8 +30,7 @@ namespace brgen::vm2 {
         std::vector<FunctionRelocation> function_relocations;
         std::unordered_map<std::string, std::uint64_t> function_addresses;
 
-        std::unordered_map<std::shared_ptr<ast::StructType>, Struct> struct_layouts;
-        std::unordered_map<std::shared_ptr<ast::Field>, std::vector<std::shared_ptr<Element>>> field_elements;
+        TypeContext type_context;
 
         size_t op(Inst in) {
             insts.push_back({in, 0});
@@ -149,94 +119,6 @@ namespace brgen::vm2 {
             }
         }
 
-        auto element_ptr(Element&& e) {
-            auto field = std::visit([](auto&& e) { return e.field; }, e);
-            auto mk = std::make_shared<Element>(std::move(e));
-            field_elements[field].push_back(mk);
-            return mk;
-        }
-
-        size_t get_type_size(const std::shared_ptr<ast::Type>& typ) {
-            if (auto ty = ast::as<ast::IntType>(typ)) {
-                return *ty->bit_size / 8;
-            }
-            else if (auto arr = ast::as<ast::ArrayType>(typ)) {
-                if (arr->length_value) {
-                    return *arr->length_value * get_type_size(arr->element_type);
-                }
-                else {
-                    return 16;
-                }
-            }
-            else if (auto s = ast::as<ast::StructType>(typ)) {
-                return struct_layouts[ast::cast_to<ast::StructType>(typ)].size;
-            }
-            else if (auto struct_union = ast::as<ast::StructUnionType>(typ)) {
-                size_t size = 0;
-                for (auto& elm : struct_union->structs) {
-                    size = std::max(size, get_type_size(elm));
-                }
-                return size;
-            }
-            return 0;
-        }
-
-        void compile_type(Struct& layout, const std::shared_ptr<ast::Type>& typ, const std::shared_ptr<ast::Field>& field, const std::string& name) {
-            if (auto ty = ast::as<ast::IntType>(typ)) {
-                auto size = *ty->bit_size / 8 + (*ty->bit_size % 8 != 0);
-                layout.elements.push_back(element_ptr(Element{Primitive{LayoutType::INT, field, typ, name, layout.size, size}}));
-                layout.size += size;
-            }
-            else if (auto arr = ast::as<ast::ArrayType>(typ)) {
-                if (arr->length_value) {
-                    for (size_t i = 0; i < arr->length_value; i++) {
-                        compile_type(layout, arr->element_type, field, name + "[" + brgen::nums(i) + "]");
-                    }
-                }
-                else {
-                    layout.elements.push_back(element_ptr(Element{Primitive{LayoutType::ARRAY_PTR, field, typ, name, layout.size, 16}}));
-                    layout.size += 16;
-                }
-            }
-            else if (auto s = ast::as<ast::StructType>(typ)) {
-                layout.elements.push_back(element_ptr(Element{Primitive{LayoutType::PTR, field, typ, name, layout.size, 8}}));
-                layout.size += 8;
-            }
-            else if (auto struct_union = ast::as<ast::StructUnionType>(typ)) {
-                size_t i = 0;
-                Union u;
-                u.field = field;
-                u.offset = layout.size;
-                for (auto& elm : struct_union->structs) {
-                    Struct sub_layout = compile_struct(ast::cast_to<ast::StructType>(elm));
-                    u.elements.push_back(std::move(sub_layout));
-                    if (i == 0) {
-                        u.size = sub_layout.size;
-                    }
-                    else {
-                        u.size = std::max(u.size, sub_layout.size);
-                    }
-                    i++;
-                }
-                layout.size += u.size;
-                layout.elements.push_back(element_ptr(Element{std::move(u)}));
-            }
-        }
-
-        void compile_field(Struct& layout, const std::shared_ptr<ast::Field>& field) {
-            compile_type(layout, field->field_type, field, field->ident->ident);
-        }
-
-        Struct compile_struct(const std::shared_ptr<ast::StructType>& s) {
-            Struct layout;
-            for (auto& elm : s->fields) {
-                if (auto field = ast::as<ast::Field>(elm)) {
-                    compile_field(layout, ast::cast_to<ast::Field>(elm));
-                }
-            }
-            return layout;
-        }
-
         void for_loop(Register counter, Register limit, auto&& f) {
             op(inst::load_immediate(counter, 0));               // counter = 0
             op(inst::push(counter));                            // push(counter)
@@ -245,7 +127,7 @@ namespace brgen::vm2 {
             op(inst::load_memory(Register::SP, limit, 8));      // limit = [SP]
             op(inst::load_immediate(counter, 8));               // counter = 8
             op(inst::add(Register::SP, counter, counter));      // counter = SP + counter = SP + 8
-            op(inst::load_memory(counter, counter, 8));         // counter = [counter] = [SP + 8]
+            op(inst::load_memory(counter, counter, 8));         // counter = [counter] (= [SP + 8])
             f();                                                // f()
             op(inst::pop(limit));                               // limit = pop()
             op(inst::pop(counter));                             // counter = pop()
@@ -268,7 +150,7 @@ namespace brgen::vm2 {
                 object_store(Register::R0, Register::R1, size, offset);  // [OBJECT_POINTER + offset] = R0
             }
             else if (auto arr_typ = ast::as<ast::ArrayType>(typ)) {
-                auto element_size = get_type_size(arr_typ->element_type);
+                auto array = std::static_pointer_cast<Array>(type_context.compute_layout(typ));
                 compile_expr(arr_typ->length);
                 auto ptr_reg = Register::R0;
                 auto length_reg = Register::R1;
@@ -276,7 +158,7 @@ namespace brgen::vm2 {
                 auto byte_size_reg = Register::R3;
                 auto tmp_reg = Register::R4;
                 op(inst::transfer(Register::R0, length_reg));                                    // length_reg = R0
-                op(inst::load_immediate(element_size_reg, element_size));                        // element_size_reg = element_size
+                op(inst::load_immediate(element_size_reg, array->element->size));                // element_size_reg = element_size
                 op(inst::mul(length_reg, element_size_reg, byte_size_reg));                      // byte_size_reg = length_reg * element_size_reg
                 allocate_dynamic_object(byte_size_reg);                                          // ptr_reg = allocate_dynamic_object(byte_size_reg)
                 object_store(ptr_reg, tmp_reg, size / 2, offset);                                // [ptr_reg + offset] = ptr_reg
@@ -288,7 +170,7 @@ namespace brgen::vm2 {
                     op(inst::mul(tmp_reg, element_size_reg, tmp_reg));                           // tmp_reg = tmp_reg * element_size_reg
                     op(inst::add(Register::OBJECT_POINTER, tmp_reg, Register::OBJECT_POINTER));  // OBJECT_POINTER = OBJECT_POINTER + tmp_reg
                     op(inst::push(element_size_reg));                                            // push(element_size_reg)
-                    compile_decode_type(0, element_size, arr_typ->element_type);                 // compile_decode_type(0, element_size, arr_typ->element_type)
+                    compile_decode_type(0, array->element->size, arr_typ->element_type);         // compile_decode_type(0, element_size, arr_typ->element_type)
                     op(inst::pop(element_size_reg));                                             // element_size_reg = pop()
                     op(inst::pop(Register::OBJECT_POINTER));                                     // OBJECT_POINTER = pop()
                 });                                                                              // end for
@@ -320,19 +202,15 @@ namespace brgen::vm2 {
                 }
             }
             else if (auto s = ast::as<ast::Field>(node)) {
-                auto& e = field_elements[ast::cast_to<ast::Field>(node)];
-                for (auto& el : e) {
-                    if (auto prim = std::get_if<Primitive>(&*el)) {
-                        compile_decode_type(prim->offset, prim->size, prim->type_ast);
-                    }
-                }
+                auto field = type_context.get_field(ast::cast_to<ast::Field>(node));
+                compile_decode_type(field->offset, field->element->size, field->element->type_ast);
             }
         }
 
-        void compile_decode(Struct& s, const std::shared_ptr<ast::Format>& fmt) {
+        void compile_decode(const std::shared_ptr<Struct>& s, const std::shared_ptr<ast::Format>& fmt) {
             auto decode_fn_entry = op(inst::func_entry());
             function_addresses[fmt->ident->ident + ".decode"] = decode_fn_entry;
-            new_object(s.size);
+            new_object(s->size);
             auto d = futils::helper::defer([&] { return_object(); });
             compile_node(fmt->body);
         }
@@ -340,14 +218,8 @@ namespace brgen::vm2 {
         void compile(const std::shared_ptr<ast::Program>& prog) {
             for (auto& stmt : prog->elements) {
                 if (auto fmt = ast::as<ast::Format>(stmt)) {
-                    auto layout = compile_struct(fmt->body->struct_type);
-                    struct_layouts[fmt->body->struct_type] = std::move(layout);
-                }
-            }
-            for (auto& stmt : prog->elements) {
-                if (auto fmt = ast::as<ast::Format>(stmt)) {
-                    auto& layout = struct_layouts[fmt->body->struct_type];
-                    compile_decode(layout, ast::cast_to<ast::Format>(stmt));
+                    auto layout = type_context.compute_layout(fmt->body->struct_type);
+                    compile_decode(std::static_pointer_cast<Struct>(layout), ast::cast_to<ast::Format>(stmt));
                 }
             }
         }

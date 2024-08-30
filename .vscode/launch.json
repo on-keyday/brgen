@@ -34,9 +34,8 @@
             "name": "Debug json2go",
             "type": "go",
             "request": "launch",
-            "mode": "debug",
-            "program": "${workspaceRoot}/src/tool/json2go",
-            "args": ["-f","ignore/sample.json"],
+            "mode": "exec",
+            "program":"C:\\Users\\ukfco\\AppData\\Local\\Temp\\cmptest-hA8hBNemvvh4XwCaJ2cKyJern6zIiVqq\\varint_test.go\\TestVarint\\Rfwv26cTD99HRMsse8oLw74IlUtyBPTd\\test.exe","args":["C:\\Users\\ukfco\\AppData\\Local\\Temp\\cmptest-hA8hBNemvvh4XwCaJ2cKyJern6zIiVqq\\varint.dat","C:\\Users\\ukfco\\AppData\\Local\\Temp\\cmptest-hA8hBNemvvh4XwCaJ2cKyJern6zIiVqq\\varint_test.go\\TestVarint\\Rfwv26cTD99HRMsse8oLw74IlUtyBPTd\\output.bin"],
             "cwd": "${workspaceRoot}",
             "output": "${workspaceRoot}/tool/j2g_debuggee"
         },
@@ -57,12 +56,12 @@
             "name": "Debug json2cpp",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/tool/json2rust",
+            "program": "${workspaceRoot}/tool/json2vm2",
             "args": [
                 "-f", "./ignore/sample.json"
-                /*,"-r",
+                ,"-r",
                 "-b","./example/wire_data/websocket.dat","--hex","--jit"
-                */
+                //*/
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",

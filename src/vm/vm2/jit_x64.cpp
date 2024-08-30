@@ -98,6 +98,12 @@ namespace brgen::vm2 {
                     relocations.push_back({futils::jit::SAVE_RIP_RBP_RSP, rewrite_offset, end_offset, address_offset});
                     break;
                 }
+                case Op2::PUSH_IMMEDIATE: {
+                    auto pi = *inst->push_immediate();
+                    futils::jit::x64::emit_mov_reg_imm(w, futils::jit::x64::Register::RAX, pi);
+                    futils::jit::x64::emit_push_reg(w, futils::jit::x64::Register::RAX);
+                    break;
+                }
                 case Op2::PUSH: {
                     auto push = *inst->push();
                     auto reg = map_register(push.operand);
@@ -108,6 +114,39 @@ namespace brgen::vm2 {
                     auto pop = *inst->pop();
                     auto reg = map_register(pop.operand);
                     futils::jit::x64::emit_pop_reg(w, reg);
+                    break;
+                }
+                case Op2::SHL: {
+                    auto shl = *inst->binary_operator();
+                    auto left = map_register(shl.left);
+                    auto right = map_register(shl.right);
+                    futils::jit::x64::emit_mov_reg_reg(w, right, futils::jit::x64::Register::RCX);
+                    futils::jit::x64::emit_shl_reg_cl(w, left);
+                    break;
+                }
+                case Op2::ADD: {
+                    auto add = *inst->binary_operator();
+                    auto left = map_register(add.left);
+                    auto right = map_register(add.right);
+                    auto result = map_register(add.result);
+                    futils::jit::x64::emit_add_reg_reg(w, right, left);
+                    futils::jit::x64::emit_mov_reg_reg(w, left, result);
+                    break;
+                }
+                case Op2::INC: {
+                    auto inc = *inst->unary_operator();
+                    auto operand = map_register(inc.operand);
+                    futils::jit::x64::emit_inc_reg(w, operand);
+                    break;
+                }
+                case Op2::MUL: {
+                    auto mul = *inst->binary_operator();
+                    auto left = map_register(mul.left);
+                    auto right = map_register(mul.right);
+                    auto result = map_register(mul.result);
+                    futils::jit::x64::emit_mov_reg_reg(w, left, futils::jit::x64::Register::RAX);
+                    futils::jit::x64::emit_mul(w, right);
+                    futils::jit::x64::emit_mov_reg_reg(w, futils::jit::x64::Register::RDX, result);
                     break;
                 }
                 default: {

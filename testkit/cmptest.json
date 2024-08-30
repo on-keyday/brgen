@@ -13,6 +13,13 @@
       "file_base": "websocket",
       "failure_case": true,
       "hex": false
+    },
+    {
+      "binary": "./example/wire_data/varint.dat",
+      "format_name": "TestVarint",
+      "file_base": "varint_test",
+      "failure_case": false,
+      "hex": true
     }
   ],
   "runners": [

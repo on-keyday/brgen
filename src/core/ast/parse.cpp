@@ -255,7 +255,7 @@ namespace brgen::ast {
             return block;
         }
 
-        void export_union_field(const std::shared_ptr<Expr>& cond0, std::vector<std::shared_ptr<Expr>>& cond, const std::shared_ptr<StructUnionType>& type) {
+        void export_union_field(const std::shared_ptr<Identity>& cond0, std::vector<std::shared_ptr<Identity>>& cond, const std::shared_ptr<StructUnionType>& type) {
             assert(cond.size() == type->structs.size());
             type->cond = cond0;
             for (auto& c : cond) {
@@ -338,7 +338,7 @@ namespace brgen::ast {
             match->struct_union_type = union_;
             union_->base = match;
 
-            std::vector<std::shared_ptr<Expr>> cond;
+            std::vector<std::shared_ptr<Identity>> cond;
 
             auto cs = state.cond_scope(match->cond_scope, match);
 
@@ -442,7 +442,7 @@ namespace brgen::ast {
             if_->struct_union_type = union_;
             union_->base = if_;
 
-            std::vector<std::shared_ptr<Expr>> cond;
+            std::vector<std::shared_ptr<Identity>> cond;
             cond.push_back(if_->cond);
 
             auto push_union_to_current_struct = [&] {
@@ -513,7 +513,10 @@ namespace brgen::ast {
                 auto range = std::make_shared<Range>();
                 range->loc = l->loc;
                 range->op = ast::BinaryOp::range_exclusive;
-                cond.push_back(std::move(range));
+                auto identity = std::make_shared<Identity>();
+                identity->loc = l->loc;
+                identity->expr = range;
+                cond.push_back(std::move(identity));
                 if_->struct_union_type->exhaustive = true;
                 body_with_struct(if_->loc, current_if->els, current_if);
             }
@@ -695,6 +698,7 @@ namespace brgen::ast {
             if (!s.expect_token(")")) {
                 call->raw_arguments = parse_expr();
                 collect_args(call->raw_arguments, call->arguments);
+                s.skip_white();
             }
             token = s.must_consume_token(")");
             call->end_loc = token.loc;
@@ -714,6 +718,7 @@ namespace brgen::ast {
             auto call = std::make_shared<Index>(token.loc, std::move(p));
             s.skip_white();
             call->index = parse_expr();
+            s.skip_white();
             token = s.must_consume_token("]");
             call->end_loc = token.loc;
             return call;

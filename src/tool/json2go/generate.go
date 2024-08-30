@@ -8,6 +8,7 @@ import (
 	"go/format"
 	"io"
 	"math/rand"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -54,6 +55,15 @@ type BitFields struct {
 	Fields []*ast2go.Field
 }
 
+type PrefixedBitField struct {
+	FieldName   string
+	Candidates  *ast2go.UnionType
+	PrefixSize  uint64
+	MaxSize     uint64
+	PrefixField *ast2go.Field
+	UnionField  *ast2go.Field
+}
+
 type UnionStruct struct {
 	Struct    *ast2go.StructType
 	TypeName  string
@@ -61,20 +71,22 @@ type UnionStruct struct {
 }
 
 type Generator struct {
-	output          bytes.Buffer
-	type_area       *bytes.Buffer
-	func_area       *bytes.Buffer
-	seq             int
-	bitFields       map[*ast2go.Field]*BitFields
-	unionStructs    map[*ast2go.StructType]*UnionStruct
-	laterSize       map[*ast2go.Field]uint64
-	terminalPattern map[*ast2go.Field]struct{}
-	imports         map[string]struct{}
-	globalAssigned  map[*ast2go.Binary]struct{}
-	exprStringer    *gen.ExprStringer
-	visitorName     string
-	defaultEndian   ast2go.Endian
-	StructNames     []string
+	output           bytes.Buffer
+	type_area        *bytes.Buffer
+	func_area        *bytes.Buffer
+	seq              int
+	bitFields        map[*ast2go.Field]*BitFields
+	bitFieldPart     map[*ast2go.Field]struct{}
+	unionStructs     map[*ast2go.StructType]*UnionStruct
+	prefixedBitField map[*ast2go.StructUnionType]*PrefixedBitField
+	laterSize        map[*ast2go.Field]uint64
+	terminalPattern  map[*ast2go.Field]struct{}
+	imports          map[string]struct{}
+	globalAssigned   map[*ast2go.Binary]struct{}
+	exprStringer     *gen.ExprStringer
+	visitorName      string
+	defaultEndian    ast2go.Endian
+	StructNames      []string
 }
 
 func (g *Generator) decideEndian(p ast2go.Endian) ast2go.Endian {
@@ -86,16 +98,18 @@ func (g *Generator) decideEndian(p ast2go.Endian) ast2go.Endian {
 
 func NewGenerator() *Generator {
 	return &Generator{
-		type_area:       &bytes.Buffer{},
-		func_area:       &bytes.Buffer{},
-		bitFields:       make(map[*ast2go.Field]*BitFields),
-		unionStructs:    make(map[*ast2go.StructType]*UnionStruct),
-		imports:         make(map[string]struct{}),
-		exprStringer:    gen.NewExprStringer(),
-		laterSize:       make(map[*ast2go.Field]uint64),
-		terminalPattern: make(map[*ast2go.Field]struct{}),
-		globalAssigned:  make(map[*ast2go.Binary]struct{}),
-		defaultEndian:   ast2go.EndianBig,
+		type_area:        &bytes.Buffer{},
+		func_area:        &bytes.Buffer{},
+		bitFields:        make(map[*ast2go.Field]*BitFields),
+		bitFieldPart:     make(map[*ast2go.Field]struct{}),
+		unionStructs:     make(map[*ast2go.StructType]*UnionStruct),
+		prefixedBitField: make(map[*ast2go.StructUnionType]*PrefixedBitField),
+		imports:          make(map[string]struct{}),
+		exprStringer:     gen.NewExprStringer(),
+		laterSize:        make(map[*ast2go.Field]uint64),
+		terminalPattern:  make(map[*ast2go.Field]struct{}),
+		globalAssigned:   make(map[*ast2go.Binary]struct{}),
+		defaultEndian:    ast2go.EndianBig,
 	}
 }
 
@@ -126,76 +140,265 @@ func MaxHexDigit(bitSize uint64) uint64 {
 	return digit
 }
 
-func (g *Generator) writeBitField(w printer, belong string, prefix string, fields []*ast2go.Field, size uint64, intSet, simple bool) {
-	if intSet && simple {
-		seq := g.getSeq()
-		w.Printf("flags%d uint%d\n", seq, size)
+func (g *Generator) sumFields(fields []*ast2go.Field) (sum *uint64, prefix uint64) {
+	sum = new(uint64)
+	for _, v := range fields {
+		if n := v.FieldType.GetBitSize(); n != nil {
+			*sum += *n
+		} else {
+			return nil, *sum
+		}
+	}
+	return sum, *sum
+}
 
-		offset := uint64(0)
-		format := fmt.Sprintf("((t.%sflags%d & 0x%%0%dx) >> %%d)", prefix, seq, MaxHexDigit(size))
-		for _, v := range fields {
-			field_size := *v.FieldType.GetBitSize()
-			typ := v.FieldType
-			if ident, ok := typ.(*ast2go.IdentType); ok {
-				typ = ident.Base
-			}
-			isEnumTy := typ.GetNodeType() == ast2go.NodeTypeEnumType
-			shift := (size - field_size - offset)
-			bitMask := uint64((1 << field_size) - 1)
-			if field_size == 1 {
-				g.PrintfFunc("func (t *%s) %s() bool {\n", belong, v.Ident.Ident)
-				g.PrintfFunc("return "+format+"==1\n", bitMask<<shift, shift)
+func (g *Generator) writeFullBitField(w printer, belong string, prefix string, size uint64, fields []*ast2go.Field) {
+	seq := g.getSeq()
+	w.Printf("flags%d uint%d\n", seq, size)
+
+	offset := uint64(0)
+	format := fmt.Sprintf("((t.%sflags%d & 0x%%0%dx) >> %%d)", prefix, seq, MaxHexDigit(size))
+	for i, v := range fields {
+		field_size := *v.FieldType.GetBitSize()
+		typ := v.FieldType
+		if ident, ok := typ.(*ast2go.IdentType); ok {
+			typ = ident.Base
+		}
+		isEnumTy := typ.GetNodeType() == ast2go.NodeTypeEnumType
+		shift := (size - field_size - offset)
+		bitMask := uint64((1 << field_size) - 1)
+		if field_size == 1 {
+			g.PrintfFunc("func (t *%s) %s() bool {\n", belong, v.Ident.Ident)
+			g.PrintfFunc("return "+format+"==1\n", bitMask<<shift, shift)
+			g.PrintfFunc("}\n")
+			g.PrintfFunc("func (t *%s) Set%s(v bool) {\n", belong, v.Ident.Ident)
+			g.PrintfFunc("if v {\n")
+			g.PrintfFunc("t.%sflags%d |= uint%d(0x%x)\n", prefix, seq, size, bitMask<<shift)
+			g.PrintfFunc("} else {\n")
+			g.PrintfFunc("t.%sflags%d &= ^uint%d(0x%x)\n", prefix, seq, size, (bitMask << shift))
+			g.PrintfFunc("}\n")
+			g.PrintfFunc("}\n")
+		} else {
+			if isEnumTy {
+				g.PrintfFunc("func (t *%s) %s() %s {\n", belong, v.Ident.Ident, g.getType(typ))
+				g.PrintfFunc("return %s("+format+")\n", g.getType(typ), bitMask<<shift, shift)
 				g.PrintfFunc("}\n")
-				g.PrintfFunc("func (t *%s) Set%s(v bool) {\n", belong, v.Ident.Ident)
-				g.PrintfFunc("if v {\n")
-				g.PrintfFunc("t.%sflags%d |= uint%d(0x%x)\n", prefix, seq, size, bitMask<<shift)
-				g.PrintfFunc("} else {\n")
-				g.PrintfFunc("t.%sflags%d &= ^uint%d(0x%x)\n", prefix, seq, size, (bitMask << shift))
+				g.PrintfFunc("func (t *%s) Set%s(v %s) bool {\n", belong, v.Ident.Ident, g.getType(typ))
+				g.PrintfFunc("if v > %d {\n", bitMask)
+				g.PrintfFunc("return false\n")
 				g.PrintfFunc("}\n")
+				g.PrintfFunc("t.%sflags%d = (t.%sflags%d & ^uint%d(0x%x)) | ((uint%d(v) & 0x%x) << %d)\n", prefix, seq, prefix, seq, size, bitMask<<shift, size, bitMask, shift)
+				g.PrintfFunc("return true\n")
 				g.PrintfFunc("}\n")
 			} else {
-				if isEnumTy {
-					g.PrintfFunc("func (t *%s) %s() %s {\n", belong, v.Ident.Ident, g.getType(typ))
-					g.PrintfFunc("return %s("+format+")\n", g.getType(typ), bitMask<<shift, shift)
-					g.PrintfFunc("}\n")
-					g.PrintfFunc("func (t *%s) Set%s(v %s) bool {\n", belong, v.Ident.Ident, g.getType(typ))
-					g.PrintfFunc("if v > %d {\n", bitMask)
-					g.PrintfFunc("return false\n")
-					g.PrintfFunc("}\n")
-					g.PrintfFunc("t.%sflags%d = (t.%sflags%d & ^uint%d(0x%x)) | ((uint%d(v) & 0x%x) << %d)\n", prefix, seq, prefix, seq, size, bitMask<<shift, size, bitMask, shift)
-					g.PrintfFunc("return true\n")
-					g.PrintfFunc("}\n")
-				} else {
-					g.PrintfFunc("func (t *%s) %s() uint%d {\n", belong, v.Ident.Ident, size)
-					g.PrintfFunc("return "+format+"\n", bitMask<<shift, shift)
-					g.PrintfFunc("}\n")
-					g.PrintfFunc("func (t *%s) Set%s(v uint%d) bool {\n", belong, v.Ident.Ident, size)
-					g.PrintfFunc("if v > %d {\n", bitMask)
-					g.PrintfFunc("return false\n")
-					g.PrintfFunc("}\n")
-					g.PrintfFunc("t.%sflags%d = (t.%sflags%d & ^uint%d(0x%x)) | ((v & 0x%x) << %d)\n", prefix, seq, prefix, seq, size, bitMask<<shift, bitMask, shift)
-					g.PrintfFunc("return true\n")
-					g.PrintfFunc("}\n")
-				}
-			}
-			offset += field_size
-			if field_size == 1 {
-				g.exprStringer.SetIdentMap(v.Ident, fmt.Sprintf("(func() uint%d { if %%s%s() {return 1}else {return 0}}())", size, v.Ident.Ident))
-			} else {
-				g.exprStringer.SetIdentMap(v.Ident, fmt.Sprintf("%%s%s()", v.Ident.Ident))
+				g.PrintfFunc("func (t *%s) %s() uint%d {\n", belong, v.Ident.Ident, size)
+				g.PrintfFunc("return "+format+"\n", bitMask<<shift, shift)
+				g.PrintfFunc("}\n")
+				g.PrintfFunc("func (t *%s) Set%s(v uint%d) bool {\n", belong, v.Ident.Ident, size)
+				g.PrintfFunc("if v > %d {\n", bitMask)
+				g.PrintfFunc("return false\n")
+				g.PrintfFunc("}\n")
+				g.PrintfFunc("t.%sflags%d = (t.%sflags%d & ^uint%d(0x%x)) | ((v & 0x%x) << %d)\n", prefix, seq, prefix, seq, size, bitMask<<shift, bitMask, shift)
+				g.PrintfFunc("return true\n")
+				g.PrintfFunc("}\n")
 			}
 		}
-		bf := &BitFields{
-			Ident: &ast2go.Ident{
-				Ident: fmt.Sprintf("flags%d", seq),
-				Base:  &ast2go.Field{},
-			},
-			Size:   size,
-			Fields: fields,
+		offset += field_size
+		if field_size == 1 {
+			g.exprStringer.SetIdentMap(v.Ident, fmt.Sprintf("(func() uint%d { if %%s%s() {return 1}else {return 0}}())", size, v.Ident.Ident))
+		} else {
+			g.exprStringer.SetIdentMap(v.Ident, fmt.Sprintf("%%s%s()", v.Ident.Ident))
 		}
-		g.bitFields[fields[len(fields)-1]] = bf
-		g.exprStringer.SetIdentMap(bf.Ident, fmt.Sprintf("%%s%s", bf.Ident.Ident))
+		if i != len(fields)-1 {
+			g.bitFieldPart[v] = struct{}{}
+		}
+	}
+	bf := &BitFields{
+		Ident: &ast2go.Ident{
+			Ident: fmt.Sprintf("flags%d", seq),
+			Base:  &ast2go.Field{},
+		},
+		Size:   size,
+		Fields: fields,
+	}
+	g.bitFields[fields[len(fields)-1]] = bf
+	g.exprStringer.SetIdentMap(bf.Ident, fmt.Sprintf("%%s%s", bf.Ident.Ident))
+}
+
+func (g *Generator) writePrefixedBitField(w printer, belong string, prefix string, prefix_size uint64, fields []*ast2go.Field) {
+	t, ok := fields[1].FieldType.(*ast2go.StructUnionType)
+	if !ok || t.Cond == nil || t.Cond.Expr.GetNodeType() != ast2go.NodeTypeIdent || !t.Exhaustive || len(t.UnionFields) != 1 {
 		return
+	}
+	prefixIdent := t.Cond.Expr.(*ast2go.Ident)
+	prefixIdent, _ = gen.LookupBase(prefixIdent)
+	if prefixIdent != fields[0].Ident {
+		return
+	}
+	unionField := t.UnionFields[0]
+	unionType := unionField.FieldType.(*ast2go.UnionType)
+	maxFieldSize := uint64(0)
+	for _, cand := range unionType.Candidates {
+		if cand.Field == nil {
+			return
+		}
+		int_ty, ok := cand.Field.FieldType.(*ast2go.IntType)
+		if !ok {
+			return
+		}
+		if (prefix_size+*int_ty.BitSize)%8 != 0 {
+			return
+		}
+		maxFieldSize = max(maxFieldSize, *int_ty.BitSize+prefix_size)
+	}
+	if maxFieldSize > 64 {
+		return
+	}
+	seq := g.getSeq()
+	w.Printf("flags%d uint%d\n", seq, maxFieldSize)
+
+	// get/set prefix bit function
+	prefixType := fmt.Sprintf("uint%d", gen.AlignInt(prefix_size))
+	valueType := fmt.Sprintf("uint%d", maxFieldSize)
+	compare := ""
+	if prefix_size == 1 {
+		prefixType = "bool"
+		compare = " != 0"
+	}
+	g.PrintfFunc("func (t *%s) %s() %s {\n", belong, fields[0].Ident.Ident, prefixType)
+	g.PrintfFunc("return %s((t.%sflags%d & 0x%x) >> %d %s)\n", prefixType, prefix, seq, ((uint64(1)<<prefix_size)-1)<<(maxFieldSize-prefix_size), maxFieldSize-prefix_size, compare)
+	g.PrintfFunc("}\n")
+	g.PrintfFunc("func (t *%s) Set%s(v %s) bool {\n", belong, fields[0].Ident.Ident, prefixType)
+	value := "v"
+	if prefixType != "bool" {
+		g.PrintfFunc("if v > %d {\n", (1<<prefix_size)-1)
+		g.PrintfFunc("return false\n")
+		g.PrintfFunc("}\n")
+	} else {
+		g.PrintfFunc("var tmp uint%d\n", maxFieldSize)
+		value = "tmp"
+		g.PrintfFunc("if v {\n")
+		g.PrintfFunc("tmp = 1\n")
+		g.PrintfFunc("} else {\n")
+		g.PrintfFunc("tmp = 0\n")
+		g.PrintfFunc("}\n")
+	}
+	shift := maxFieldSize - prefix_size
+	mask := ((uint64(1) << prefix_size) - 1) << shift
+	g.PrintfFunc("t.%sflags%d = %s(t.%sflags%d & ^uint%d(0x%x)) | %s(%s) << %d\n", prefix, seq, valueType, prefix, seq, maxFieldSize, mask, valueType, value, shift)
+	g.PrintfFunc("return true\n")
+	g.PrintfFunc("}\n")
+	if prefix_size == 1 {
+		g.exprStringer.SetIdentMap(fields[0].Ident, fmt.Sprintf("(func() uint8 { if %%s%s() {return 1}else {return 0}}())", fields[0].Ident.Ident))
+	} else {
+		g.exprStringer.SetIdentMap(fields[0].Ident, fmt.Sprintf("%%s%s()", fields[0].Ident.Ident))
+	}
+	g.bitFieldPart[fields[0]] = struct{}{}
+	// get/set variable bit function
+	valueMask := (uint64(1) << (maxFieldSize - prefix_size)) - 1
+	g.PrintfFunc("func (t *%s) %s() %s {\n", belong, unionField.Ident.Ident, valueType)
+	g.PrintfFunc("return %s(t.%sflags%d & 0x%x)\n", valueType, prefix, seq, valueMask)
+	g.PrintfFunc("}\n")
+	g.PrintfFunc("func (t *%s) Set%s(v %s) bool {\n", belong, unionField.Ident.Ident, valueType)
+	g.PrintfFunc("if v > %d {\n", (1<<maxFieldSize-prefix_size)-1)
+	g.PrintfFunc("return false\n")
+	g.PrintfFunc("}\n")
+	g.PrintfFunc("t.%sflags%d = (t.%sflags%d & ^%s(0x%x)) | v\n", prefix, seq, prefix, seq, valueType, valueMask)
+	g.PrintfFunc("return true\n")
+	g.PrintfFunc("}\n")
+	g.exprStringer.SetIdentMap(unionField.Ident, fmt.Sprintf("%%s%s()", unionField.Ident.Ident))
+	g.prefixedBitField[t] = &PrefixedBitField{
+		FieldName:   "flags" + strconv.Itoa(seq),
+		Candidates:  unionType,
+		PrefixSize:  prefix_size,
+		MaxSize:     maxFieldSize,
+		PrefixField: fields[0],
+		UnionField:  unionField,
+	}
+}
+
+func (g *Generator) writePrefixedBitFieldEncode(b *PrefixedBitField) {
+	tmpVar := fmt.Sprintf("tmp%d", g.getSeq())
+	cond := g.exprStringer.ExprString(b.Candidates.Cond)
+	shouldElse := false
+	for _, c := range b.Candidates.Candidates {
+		condNum := g.exprStringer.ExprString(c.Cond)
+		if shouldElse {
+			g.PrintfFunc("else ")
+		} else {
+			shouldElse = true
+		}
+		g.PrintfFunc("if %s == %s {\n", cond, condNum)
+		bitSize := *c.Field.FieldType.GetBitSize() + b.PrefixSize
+		typ := fmt.Sprintf("uint%d", bitSize)
+		g.PrintfFunc("var %s %s\n", tmpVar, typ)
+		ident := g.exprStringer.ExprString(b.UnionField.Ident)
+		g.PrintfFunc("%s = %s(%s)\n", tmpVar, typ, ident)
+		g.PrintfFunc("%s |= %s(%s) << %d\n", tmpVar, typ, condNum, bitSize-b.PrefixSize)
+		g.writeAppendUint(bitSize, tmpVar, ast2go.EndianUnspec)
+		g.PrintfFunc("}")
+	}
+	g.PrintfFunc("\n")
+}
+
+func (g *Generator) writePrefixedBitFieldDecode(b *PrefixedBitField) {
+	tmpVar := fmt.Sprintf("tmp%d", g.getSeq())
+	tmpBytes := fmt.Sprintf("tmpBytes%d", g.getSeq())
+	cond := g.exprStringer.ExprString(b.Candidates.Cond)
+	shouldElse := false
+	g.PrintfFunc("var %s [1]byte\n", tmpBytes)
+	g.PrintfFunc("if _,err := io.ReadFull(r,%s[:]);err != nil {\n", tmpBytes)
+	g.imports["fmt"] = struct{}{}
+	g.PrintfFunc("return fmt.Errorf(\"failed to read prefix: %%w\",err)\n")
+	g.PrintfFunc("}\n")
+	oldReader := fmt.Sprintf("oldReader%d", g.getSeq())
+	g.PrintfFunc("%s := r\n", oldReader)
+	g.PrintfFunc("r = io.MultiReader(bytes.NewReader(%s[:]),r)\n", tmpBytes)
+	prefixField := g.exprStringer.ExprString(b.PrefixField.Ident)
+	toReplace := regexp.MustCompile(fmt.Sprintf(`%s\(\)`, b.PrefixField.Ident.Ident))
+	compare := ""
+	if b.PrefixSize == 1 {
+		compare = " != 0"
+	}
+	setField := toReplace.ReplaceAllString(prefixField, fmt.Sprintf("Set%s(%s[0] >> %d%s)", b.PrefixField.Ident.Ident, tmpBytes, 8-b.PrefixSize, compare))
+	g.PrintfFunc("%s\n", setField)
+	for _, c := range b.Candidates.Candidates {
+		condNum := g.exprStringer.ExprString(c.Cond)
+		if shouldElse {
+			g.PrintfFunc("else ")
+		} else {
+			shouldElse = true
+		}
+		g.PrintfFunc("if %s == %s {\n", cond, condNum)
+		bitSize := *c.Field.FieldType.GetBitSize() + b.PrefixSize
+		typ := fmt.Sprintf("uint%d", bitSize)
+		g.PrintfFunc("var %s %s\n", tmpVar, typ)
+		g.writeReadUint(bitSize, tmpVar, tmpVar, false, nil, ast2go.EndianUnspec)
+		g.PrintfFunc("%s &= ^%s(1 << %d)\n", tmpVar, typ, bitSize-b.PrefixSize)
+		setField := g.exprStringer.ExprString(b.UnionField.Ident)
+		toReplace := regexp.MustCompile(fmt.Sprintf(`%s\(\)`, b.UnionField.Ident.Ident))
+		maxType := fmt.Sprintf("uint%d", b.MaxSize)
+		setField = toReplace.ReplaceAllString(setField, fmt.Sprintf("Set%s(%s(%s))", b.UnionField.Ident.Ident, maxType, tmpVar))
+		g.PrintfFunc("%s\n", setField)
+		g.PrintfFunc("}")
+	}
+	g.PrintfFunc("\nr = %s\n", oldReader)
+}
+
+func (g *Generator) writePrefixedBitFieldCode(b *PrefixedBitField, enc bool) {
+	if enc {
+		g.writePrefixedBitFieldEncode(b)
+	} else {
+		g.writePrefixedBitFieldDecode(b)
+	}
+}
+
+func (g *Generator) writeBitField(w printer, belong string, prefix string, fields []*ast2go.Field /*size uint64, intSet, simple bool*/) {
+	size, prefix_size := g.sumFields(fields)
+	if size != nil {
+		g.writeFullBitField(w, belong, prefix, *size, fields)
+	} else if len(fields) == 2 && prefix_size == *fields[0].FieldType.GetBitSize() && prefix_size < 8 {
+		g.writePrefixedBitField(w, belong, prefix, prefix_size, fields)
 	}
 }
 
@@ -432,99 +635,15 @@ func (g *Generator) writeStructUnion(w printer, belong string, prefix string, u 
 
 }
 
-/*
-func (g *Generator) writeField(field *ast2go.Field) {
-	if field.BitAlignment == ast2go.BitAlignmentNotTarget {
-		return
-	}
-	typ := field.FieldType
-	if i_typ, ok := typ.(*ast2go.IdentType); ok {
-		typ = i_typ.Base
-	}
-	if field.BitAlignment != ast2go.BitAlignmentByteAligned {
-		non_aligned = append(non_aligned, field)
-		is_int_set = is_int_set && typ.GetNonDynamicAllocation()
-		is_simple = is_simple &&
-			(typ.GetNodeType() == ast2go.NodeTypeIntType ||
-				typ.GetNodeType() == ast2go.NodeTypeEnumType)
-		size += *typ.GetBitSize()
-		continue
-	}
-	if len(non_aligned) > 0 {
-		non_aligned = append(non_aligned, field)
-		is_int_set = is_int_set && typ.GetNonDynamicAllocation()
-		is_simple = is_simple &&
-			(typ.GetNodeType() == ast2go.NodeTypeIntType ||
-				typ.GetNodeType() == ast2go.NodeTypeEnumType)
-		s := typ.GetBitSize()
-		if s != nil {
-			size += *s
-		}
-		g.writeBitField(belong, prefix, non_aligned, size, is_int_set, is_simple)
-		non_aligned = nil
-		is_int_set = true
-		is_simple = true
-		size = 0
-		continue
-	}
-	if u, ok := typ.(*ast2go.StructUnionType); ok {
-		g.writeStructUnion(belong, prefix, u)
-		continue
-	}
-	if field.Ident == nil {
-		field.Ident = &ast2go.Ident{
-			Ident: fmt.Sprintf("hiddenField%d", g.getSeq()),
-			Base:  field,
-		}
-	}
-	if arr_type, ok := typ.(*ast2go.ArrayType); ok {
-		typ := g.getType(arr_type)
-		g.Printf("%s %s\n", field.Ident.Ident, typ)
-		g.exprStringer.SetIdentMap(field.Ident, "%s"+field.Ident.Ident)
-		if gen.IsAnyRange(arr_type.Length) {
-			if field.EventualFollow == ast2go.FollowEnd {
-				g.laterSize[field] = field.BelongStruct.FixedTailSize
-			}
-		}
-		if gen.IsOnNamedStruct(field) && arr_type.LengthValue == nil && !gen.IsAnyRange(arr_type.Length) {
-			s := g.exprStringer.ExprString(field.Ident)
-			g.PrintfFunc("func (t *%s) Set%s(v %s) bool {\n", belong, field.Ident.Ident, typ)
-			g.maybeWriteLengthSet("len(v)", arr_type.Length)
-			g.PrintfFunc("%s = v\n", s)
-			g.PrintfFunc("return true\n")
-			g.PrintfFunc("}\n")
-		}
-	}
-	if i_type, ok := typ.(*ast2go.IntType); ok {
-		typ := g.getType(i_type)
-		g.Printf("%s %s\n", field.Ident.Ident, typ)
-	}
-	if e_type, ok := typ.(*ast2go.EnumType); ok {
-		typ := g.getType(e_type)
-		g.Printf("%s %s\n", field.Ident.Ident, typ)
-	}
-	if s_type, ok := typ.(*ast2go.StrLiteralType); ok {
-		magic := s_type.Base.Value
-		g.Printf("// %s (%d byte)\n", magic, *typ.GetBitSize()/8)
-		g.exprStringer.SetIdentMap(field.Ident, magic)
-		continue
-	}
-	if u, ok := typ.(*ast2go.StructType); ok {
-		typ := g.getType(u)
-		g.Printf("%s %s\n", field.Ident.Ident, typ)
-	}
-	g.exprStringer.SetIdentMap(field.Ident, "%s"+prefix+field.Ident.Ident)
-
-}
-*/
-
 func (g *Generator) writeStructType(w printer, belong string, prefix string, s *ast2go.StructType) {
 	var non_aligned []*ast2go.Field
-	var (
-		is_int_set        = true
-		is_simple         = true
-		size       uint64 = 0
-	)
+	/*
+		var (
+			is_int_set        = true
+			is_simple         = true
+			size       uint64 = 0
+		)
+	*/
 	for _, v := range s.Fields {
 		if field, ok := v.(*ast2go.Field); ok {
 			if field.BitAlignment == ast2go.BitAlignmentNotTarget {
@@ -536,28 +655,34 @@ func (g *Generator) writeStructType(w printer, belong string, prefix string, s *
 			}
 			if field.BitAlignment != ast2go.BitAlignmentByteAligned {
 				non_aligned = append(non_aligned, field)
-				is_int_set = is_int_set && typ.GetNonDynamicAllocation()
-				is_simple = is_simple &&
-					(typ.GetNodeType() == ast2go.NodeTypeIntType ||
-						typ.GetNodeType() == ast2go.NodeTypeEnumType)
-				size += *typ.GetBitSize()
+				/*
+					is_int_set = is_int_set && typ.GetNonDynamicAllocation()
+					is_simple = is_simple &&
+						(typ.GetNodeType() == ast2go.NodeTypeIntType ||
+							typ.GetNodeType() == ast2go.NodeTypeEnumType)
+					size += *typ.GetBitSize()
+				*/
 				continue
 			}
 			if len(non_aligned) > 0 {
 				non_aligned = append(non_aligned, field)
-				is_int_set = is_int_set && typ.GetNonDynamicAllocation()
-				is_simple = is_simple &&
-					(typ.GetNodeType() == ast2go.NodeTypeIntType ||
-						typ.GetNodeType() == ast2go.NodeTypeEnumType)
-				s := typ.GetBitSize()
-				if s != nil {
-					size += *s
-				}
-				g.writeBitField(w, belong, prefix, non_aligned, size, is_int_set, is_simple)
+				/*
+					is_int_set = is_int_set && typ.GetNonDynamicAllocation()
+					is_simple = is_simple &&
+						(typ.GetNodeType() == ast2go.NodeTypeIntType ||
+							typ.GetNodeType() == ast2go.NodeTypeEnumType)
+					s := typ.GetBitSize()
+					if s != nil {
+						size += *s
+					}
+				*/
+				g.writeBitField(w, belong, prefix, non_aligned /*size, is_int_set, is_simple*/)
 				non_aligned = nil
-				is_int_set = true
-				is_simple = true
-				size = 0
+				/*
+					is_int_set = true
+					is_simple = true
+					size = 0
+				*/
 				continue
 			}
 			if u, ok := typ.(*ast2go.StructUnionType); ok {
@@ -1011,9 +1136,9 @@ func (g *Generator) writeTypeDecode(ident string, typ ast2go.Type, p *ast2go.Fie
 			} else if _, ok := g.terminalPattern[p]; ok { // use terminal pattern
 				next, _ := p.Next.FieldType.(*ast2go.StrLiteralType)
 				g.imports["bufio"] = struct{}{}
-				g.PrintfFunc("peek_reader_%s := bufio.NewReader(r)\n", p.Ident.Ident)
-				g.PrintfFunc("r = peek_reader_%s\n", p.Ident.Ident)
 				g.PrintfFunc("len_next_%s := len(%s)\n", p.Ident.Ident, next.Base.Value)
+				g.PrintfFunc("peek_reader_%s := bufio.NewReaderSize(r,len_next_%s)\n", p.Ident.Ident, p.Ident.Ident)
+				g.PrintfFunc("r = peek_reader_%s\n", p.Ident.Ident)
 				g.PrintfFunc("buffer_%s := make([]byte,0)\n", p.Ident.Ident)
 				g.PrintfFunc("for {\n")
 				g.PrintfFunc("b, err := peek_reader_%s.Peek(len_next_%s)\n", p.Ident.Ident, p.Ident.Ident)
@@ -1060,7 +1185,7 @@ func (g *Generator) writeTypeDecode(ident string, typ ast2go.Type, p *ast2go.Fie
 					tmp := fmt.Sprintf("tmp_byte_scanner%d_", g.getSeq())
 					old := fmt.Sprintf("old_r_%s", p.Ident.Ident)
 					g.imports["bufio"] = struct{}{}
-					g.PrintfFunc("%s := bufio.NewReader(r)\n", tmp)
+					g.PrintfFunc("%s := bufio.NewReaderSize(r,1)\n", tmp)
 					g.PrintfFunc("%s := r\n", old)
 					g.PrintfFunc("r = %s\n", tmp)
 					g.PrintfFunc("for {\n")
@@ -1105,9 +1230,9 @@ func (g *Generator) writeTypeDecode(ident string, typ ast2go.Type, p *ast2go.Fie
 			} else if _, ok := g.terminalPattern[p]; ok { // use terminal pattern
 				next, _ := p.Next.FieldType.(*ast2go.StrLiteralType)
 				g.imports["bufio"] = struct{}{}
-				g.PrintfFunc("peek_reader_%s := bufio.NewReader(r)\n", p.Ident.Ident)
-				g.PrintfFunc("r = peek_reader_%s\n", p.Ident.Ident)
 				g.PrintfFunc("len_next_%s := len(%s)\n", p.Ident.Ident, next.Base.Value)
+				g.PrintfFunc("peek_reader_%s := bufio.NewReaderSize(r,len_next_%s)\n", p.Ident.Ident, p.Ident.Ident)
+				g.PrintfFunc("r = peek_reader_%s\n", p.Ident.Ident)
 				g.PrintfFunc("for {\n")
 				g.PrintfFunc("b, err := peek_reader_%s.Peek(len_next_%s)\n", p.Ident.Ident, p.Ident.Ident)
 				g.PrintfFunc("if err != nil {\n")
@@ -1200,6 +1325,10 @@ func (g *Generator) writeFieldDecode(p *ast2go.Field) {
 }
 
 func (g *Generator) writeIf(if_ *ast2go.If, enc bool) {
+	if p := g.prefixedBitField[if_.StructUnionType]; p != nil {
+		g.writePrefixedBitFieldCode(p, enc)
+		return
+	}
 	g.PrintfFunc("if %s {\n", g.exprStringer.ExprString(if_.Cond))
 	g.writeSingleNode(if_.Then, enc)
 	for if_.Els != nil {
@@ -1217,6 +1346,10 @@ func (g *Generator) writeIf(if_ *ast2go.If, enc bool) {
 }
 
 func (g *Generator) writeMatch(m *ast2go.Match, enc bool) {
+	if p := g.prefixedBitField[m.StructUnionType]; p != nil {
+		g.writePrefixedBitFieldCode(p, enc)
+		return
+	}
 	g.PrintfFunc("switch {\n")
 	cmp := &ast2go.Binary{
 		Op:   ast2go.BinaryOpEqual,

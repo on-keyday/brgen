@@ -567,7 +567,7 @@ class StructType(Type):
 
 
 class StructUnionType(Type):
-    cond: Optional[Expr]
+    cond: Optional[Identity]
     conds: List[Expr]
     structs: List[StructType]
     base: Optional[Expr]
@@ -1827,7 +1827,7 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].bit_size = None
                 if ast.node[i].body["cond"] is not None:
                     x = node[ast.node[i].body["cond"]]
-                    node[i].cond = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at StructUnionType::cond'))
+                    node[i].cond = x if isinstance(x,Identity) else raiseError(TypeError('type mismatch at StructUnionType::cond'))
                 else:
                     node[i].cond = None
                 node[i].conds = [(node[x] if isinstance(node[x],Expr) else raiseError(TypeError('type mismatch at StructUnionType::conds'))) for x in ast.node[i].body["conds"]]

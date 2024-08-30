@@ -634,7 +634,7 @@ public class StructUnionType : Type{
 	public bool NonDynamicAllocation{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
-	public Expr? Cond{get;set;}
+	public Identity? Cond{get;set;}
 	public List<Expr>? Conds{get;set;}
 	public List<StructType>? Structs{get;set;}
 	public Expr? Base{get;set;}

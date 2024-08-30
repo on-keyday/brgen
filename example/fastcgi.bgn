@@ -1,0 +1,75 @@
+config.url = "https://fastcgi-archives.github.io/FastCGI_Specification.html"
+config.go.package = "fastcgi"
+enum RecordType:
+    :u8
+    BEGIN_REQUEST = 1
+    ABORT_REQUEST = 2
+    END_REQUEST = 3
+    PARAMS = 4
+    STDIN = 5
+    STDOUT = 6
+    STDERR = 7
+    DATA = 8
+    GET_VALUES = 9
+    GET_VALUES_RESULT = 10
+    UNKNOWN_TYPE = 11
+    # MAXTYPE = 11
+
+enum Role:
+    :u16
+    RESPONDER = 1
+    AUTHORIZER = 2
+    FILTER = 3
+
+enum ProtocolStatus:
+    :u8
+    REQUEST_COMPLETE = 0
+    CANT_MPX_CONN = 1
+    OVERLOADED = 2
+    UNKNOWN_ROLE = 3
+
+format RecordHeader:
+    version :u8
+    typ     :RecordType
+    request_id :u16
+    length  :u16
+    padding_length :u8
+    reserved :u8
+
+format Flags: # from msb
+    reserved :u7
+    keep_conn :u1
+
+format Record:
+    header :RecordHeader
+    body   :[header.length]u8
+    padding :[header.padding_length]u8
+
+format Length:
+    indicator :u1
+    match indicator:
+        0 => len :u7
+        1 => len :u31
+    
+format NameValuePair:
+    name_length :Length
+    value_length :Length
+    name :[name_length.len]u8
+    value :[value_length.len]u8
+
+format Params:
+    params :[..]NameValuePair
+
+format BeginRequest:
+    role :Role
+    flags :Flags
+    reserved :[5]u8
+
+format EndRequest:
+    app_status :u32
+    protocol_status :ProtocolStatus
+    reserved :[3]u8
+
+format UnknownType:
+    typ :u8
+    reserved :[7]u8

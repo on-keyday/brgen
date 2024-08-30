@@ -928,7 +928,7 @@ export function isStructType(obj: any): obj is StructType {
 }
 
 export interface StructUnionType extends Type {
-	cond: Expr|null;
+	cond: Identity|null;
 	conds: Expr[];
 	structs: StructType[];
 	base: Expr|null;
@@ -3892,7 +3892,7 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at StructUnionType::cond');
 			}
 			const tmpcond = on.body.cond === null ? null : c.node[on.body.cond];
-			if (!(tmpcond === null || isExpr(tmpcond))) {
+			if (!(tmpcond === null || isIdentity(tmpcond))) {
 				throw new Error('invalid node list at StructUnionType::cond');
 			}
 			n.cond = tmpcond;

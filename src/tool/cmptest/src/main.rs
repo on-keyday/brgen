@@ -9,20 +9,33 @@ use colored::Colorize;
 
 #[derive(Parser)]
 struct Args {
-    #[arg(long, short('f'))]
+    #[arg(long, short('f'), help("test info file (json)"))]
     test_info_file: String,
-    #[arg(long, short('c'))]
+    #[arg(long, short('c'), help("test config file (json)"))]
     test_config_file: String,
-    #[arg(long, short('d'))]
+    #[arg(long, short('d'), help("debug mode"))]
     debug: bool,
-    #[arg(long)]
+    #[arg(long, help("save tmp dir"))]
     save_tmp_dir: bool,
-    #[arg(long)]
+    #[arg(long, help("print fail command"))]
+    print_fail_command: bool,
+    #[arg(
+        long("as-vscode"),
+        help("print fail command as vscode launch.json compatible")
+    )]
+    vscode: bool,
+    #[arg(long, help("expected test count that will be loaded"))]
     expected_test_total: Option<usize>,
+    #[arg(
+        long,
+        help("clean temporary directory (except current temporary directory if --save-tmp-dir specified) (remove cmptest-* in $TMP)")
+    )]
+    clean_tmp: bool,
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
+    let timer = std::time::Instant::now();
     let parsed = Args::parse();
     let test_config = fs::read_to_string(Path::new(&parsed.test_config_file))?;
     let mut d1 = serde_json::Deserializer::from_str(&test_config);
@@ -174,8 +187,10 @@ async fn main() -> Result<(), Error> {
     if let Some(x) = parsed.expected_test_total {
         if total != x {
             return Err(testutil::Error::TestFail(format!(
-                "expect {} test load but loaded test are {}",
-                x, total
+                "expect {} test load but loaded test are {}: {:?}",
+                x,
+                total,
+                sched.iter().map(|x| x.test_name()).collect::<Vec<_>>()
             ))
             .into());
         }
@@ -197,8 +212,20 @@ async fn main() -> Result<(), Error> {
             Ok(x) => {
                 println!("{}: {}", "PASS".green(), x.test_name())
             }
-            Err((sched, err)) => {
+            Err((sched, err, cmdline)) => {
                 eprintln!("{}: {}: {:?}", "FAIL".red(), sched.test_name(), err);
+                if parsed.print_fail_command {
+                    if parsed.vscode {
+                        eprintln!(
+                            r#"command line: {{"name":{},"program":{},"args":{}}}"#,
+                            serde_json::to_string(&sched.test_name()).unwrap(),
+                            serde_json::to_string(&cmdline[0]).unwrap(),
+                            serde_json::to_string(&cmdline[1..]).unwrap()
+                        );
+                    } else {
+                        eprintln!("command line: {:?}", cmdline);
+                    }
+                }
                 failed += 1;
             }
         }
@@ -211,10 +238,40 @@ async fn main() -> Result<(), Error> {
         "FAIL".red(),
         failed
     );
+    println!("Time: {:?}", timer.elapsed());
+    let mut current_save_dir = None;
     if parsed.save_tmp_dir {
-        scheduler.print_tmp_dir();
+        current_save_dir = scheduler.print_tmp_dir();
     } else {
         scheduler.remove_tmp_dir();
+    }
+    if parsed.clean_tmp {
+        fs::read_dir(std::env::temp_dir())?
+            .filter_map(|x| x.ok())
+            .filter(|x| {
+                x.file_name()
+                    .to_str()
+                    .map(|x| {
+                        if x.starts_with("cmptest-") {
+                            if let Some(y) = current_save_dir.borrow_mut() {
+                                let y = y.file_name().unwrap().to_string_lossy();
+                                if x == y {
+                                    return false; // skip current tmp dir
+                                }
+                            }
+                            return true;
+                        }
+                        false
+                    })
+                    .unwrap_or(false)
+            })
+            .for_each(|x| {
+                if let Err(e) = fs::remove_dir_all(x.path()) {
+                    eprintln!("failed to remove {}: {}", x.path().to_string_lossy(), e);
+                } else {
+                    println!("removed: {:?}", x.path());
+                }
+            });
     }
     if failed > 0 {
         return Err(testutil::Error::TestFail("some tests failed".to_string()).into());
