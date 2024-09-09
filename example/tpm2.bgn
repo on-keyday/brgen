@@ -1,3 +1,4 @@
+# default endian is big
 config.url = "https://trustedcomputinggroup.org/wp-content/uploads/TPM-2.0-1.83-Part-2-Structures.pdf"
 config.url = "https://github.com/wolfSSL/wolfTPM/blob/master/src/tpm2_packet.c"
 
@@ -80,9 +81,9 @@ format TPMSymetric:
     alg :TPMAlgorithmID
     match alg:
         TPMAlgorithmID.TPM_ALG_XOR:
-            xor :TPMSymetricXor
+            symmetric_xor :TPMSymetricXor
         ..:
-            crypto :TPMSymetricCrypto
+            symmetric_crypto :TPMSymetricCrypto
 
 format TPMScheme:
     scheme :TPMAlgorithmID
@@ -266,7 +267,43 @@ format TPMAttest:
         TPMAttestType.NV:
             nv :TPMAttestNV
 
+enum TPMTag:
+    :u16
+    TPM_ST_RSP_COMMAND = 0x00C4
+    TPM_ST_NULL = 0X8000
+    TPM_ST_NO_SESSIONS = 0x8001
+    TPM_ST_SESSIONS = 0x8002
+    TPM_ST_ATTEST_NV = 0x8014
+    TPM_ST_ATTEST_COMMAND_AUDIT = 0x8015
+    TPM_ST_ATTEST_SESSION_AUDIT = 0x8016
+    TPM_ST_ATTEST_CERTIFY = 0x8017
+    TPM_ST_ATTEST_QUOTE = 0x8018
+    TPM_ST_ATTEST_TIME = 0x8019
+    TPM_ST_ATTEST_CREATION = 0x801A
+    TPM_ST_CREATION = 0x8021
+    TPM_ST_VERIFIED = 0x8022
+    TPM_ST_AUTH_SECRET = 0x8023
+    TPM_ST_HASHCHECK = 0x8024
+    TPM_ST_AUTH_SIGNED = 0x8025
+    TPM_ST_FU_MANIFEST = 0x8029
+
 format TPMPacketHeader:
-    tag :u16
+    tag :TPMTag
     responseSize :u32
     responseCode :u32
+
+format TPMPublicNVMarshaled:
+    index :u32
+    nameAlg :TPMAlgorithmID
+    attributes :u32
+    authPolicy :Bytes16
+    dataSize :u16
+
+format ResponseProcess:
+    header :TPMPacketHeader
+    # TODO(on-keyday): currently 1 in wolfSSL, but are there ability to increase?
+    handle :u32 
+    param_size :u32
+    dec_param_size :u16 # currentlty u16 in wolfSSL
+    param :[param_size - 2]u8
+    auth :[..]AuthResponse # remaining bytes

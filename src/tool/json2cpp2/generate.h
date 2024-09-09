@@ -420,6 +420,24 @@ namespace j2cp2 {
             }
         }
 
+        bool maybe_set_dynamic_to_static_array(const std::shared_ptr<ast::Type>& to, const std::shared_ptr<ast::Type>& from, std::string_view dynamic_size) {
+            if (auto to_arr = ast::as<ast::ArrayType>(to)) {
+                if (auto from_arr = ast::as<ast::ArrayType>(from)) {
+                    if (to_arr->length_value && !from_arr->length_value) {
+                        auto len = brgen::nums(*to_arr->length_value);
+                        w.writeln("if(", dynamic_size, "!= ", len, ") {");
+                        {
+                            auto indent = w.indent_scope();
+                            w.writeln("return false;");
+                        }
+                        w.writeln("}");
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         void write_common_type_accessor(std::string_view prefix, const std::string& cond_u, const std::shared_ptr<ast::Field>& uf, ast::UnionType* ut) {
             // write getter func
             map_line(uf->loc);
@@ -483,7 +501,12 @@ namespace j2cp2 {
                     set_variant_alternative(f->belong_struct.lock());
                     auto a = str.to_string(f->ident);
                     maybe_write_auto_length_set("v.size()", f->field_type);
-                    w.writeln(a, " = v;");
+                    if (maybe_set_dynamic_to_static_array(f->field_type, ut->common_type, "v.size()")) {
+                        w.writeln("std::copy(v.begin(), v.end(), ", a, ".begin());");
+                    }
+                    else {
+                        w.writeln(a, " = v;");
+                    }
                     w.writeln("return true;");
                 };
                 bool has_els = false;
