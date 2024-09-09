@@ -187,3 +187,86 @@ format SignatureHMAC:
             hmac :[48]u8
         TPMAlgorithmID.TPM_ALG_SHA512:
             hmac :[64]u8
+
+
+
+TPM_GENERATED_VALUE ::= 0xff544347
+
+enum TPMAttestType:
+    :u16
+    CERTIFY
+    CREATION
+    QUOTE
+    COMMAND_AUDIT
+    SESSION_AUDIT
+    TIME
+    NV
+
+format ClockInfo:
+    clock :u64
+    resetCount :u32
+    restartCount :u32
+    safe :u8
+
+format TPMAttestHeader:
+    magic :u32(TPM_GENERATED_VALUE)
+    type :TPMAttestType
+    qualified_signer :Bytes16
+    extra_data :Bytes16
+    clock_info :ClockInfo
+    firmware_version :u64
+
+format TPMAttestCerify:
+    name :Bytes16
+    qualifiedName :Bytes16
+
+format TPMAttestCreation:
+    name: Bytes16
+    creationHash :Bytes16
+
+format TPMAttestQuote:
+    pcr :PCR
+    pcrDigest :Bytes16
+
+format TPMAttestCommandAudit:
+    auditCounter :u64
+    digestAlg :TPMAlgorithmID
+    auditDigest :Bytes16
+    commendDigest :Bytes16
+
+format TPMAttestSessionAudit:
+    exclusiveSession :u8
+    sessionDigest :Bytes16
+
+format TPMAttestTime:
+    clock_info :ClockInfo
+    firmware_version :u64
+
+format TPMAttestNV:
+    indexName :Bytes16
+    offset :u16
+    nvContents :Bytes16
+
+
+format TPMAttest:
+    header :TPMAttestHeader
+    match header.type:
+        TPMAttestType.CERTIFY:
+            certify :TPMAttestCerify
+        TPMAttestType.CREATION:
+            creation :TPMAttestCreation
+        TPMAttestType.QUOTE:
+            quote: TPMAttestQuote
+        TPMAttestType.COMMAND_AUDIT:
+            command_audit :TPMAttestCommandAudit
+        TPMAttestType.SESSION_AUDIT:
+            session_audit :TPMAttestSessionAudit
+        TPMAttestType.TIME:
+            time :TPMAttestTime
+        TPMAttestType.NV:
+            nv :TPMAttestNV
+
+format TPMPacketHeader:
+    tag :u16
+    responseSize :u32
+    responseCode :u32
