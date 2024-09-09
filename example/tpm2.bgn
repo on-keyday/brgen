@@ -1,0 +1,189 @@
+config.url = "https://trustedcomputinggroup.org/wp-content/uploads/TPM-2.0-1.83-Part-2-Structures.pdf"
+config.url = "https://github.com/wolfSSL/wolfTPM/blob/master/src/tpm2_packet.c"
+
+format Bytes8:
+    size :u8
+    data :[size]u8
+
+format Bytes16:
+    size :u16
+    data :[size]u8
+
+format AuthCommand:
+    sessionHandle :u32
+    nonce :Bytes16
+    sessionAttributes :u8
+    hmac :Bytes16
+
+format AuthResponse:
+    nonce :Bytes16
+    sessionAttributes :u8
+    hmac :Bytes16
+
+config.url = "https://github.com/wolfSSL/wolfTPM/blob/e2ef78068234f5f8230dd6e20374e70c53789e40/wolftpm/tpm2.h#L116"
+enum TPMAlgorithmID:
+    :u16
+    TPM_ALG_ERROR = 0x0000
+    TPM_ALG_RSA = 0x0001
+    TPM_ALG_SHA = 0x0004
+    TPM_ALG_SHA1 = TPM_ALG_SHA
+    TPM_ALG_HMAC = 0x0005
+    TPM_ALG_AES = 0x0006
+    TPM_ALG_MGF1 = 0x0007
+    TPM_ALG_KEYEDHASH = 0x0008
+    TPM_ALG_XOR = 0x000A
+    TPM_ALG_SHA256 = 0x000B
+    TPM_ALG_SHA384 = 0x000C
+    TPM_ALG_SHA512 = 0x000D
+    TPM_ALG_NULL = 0x0010
+    TPM_ALG_SM3_256 = 0x0012
+    TPM_ALG_SM4 = 0x0013
+    TPM_ALG_RSASSA = 0x0014
+    TPM_ALG_RSAES = 0x0015
+    TPM_ALG_RSAPSS = 0x0016
+    TPM_ALG_OAEP = 0x0017
+    TPM_ALG_ECDSA = 0x0018
+    TPM_ALG_ECDH = 0x0019
+    TPM_ALG_ECDAA = 0x001A
+    TPM_ALG_SM2 = 0x001B
+    TPM_ALG_ECSCHNORR = 0x001C
+    TPM_ALG_ECMQV = 0x001D
+    TPM_ALG_KDF1_SP800_56A = 0x0020
+    TPM_ALG_KDF2 = 0x0021
+    TPM_ALG_KDF1_SP800_108 = 0x0022
+    TPM_ALG_ECC = 0x0023
+    TPM_ALG_SYMCIPHER = 0x0025
+    TPM_ALG_CAMELLIA = 0x0026
+    TPM_ALG_CTR = 0x0040
+    TPM_ALG_OFB = 0x0041
+    TPM_ALG_CBC = 0x0042
+    TPM_ALG_CFB = 0x0043
+    TPM_ALG_ECB = 0x0044
+
+
+format PCREntry:
+    hash :u16
+    select :Bytes8
+
+format PCR:
+    count :u32
+    pcrs :[count]PCREntry
+
+format TPMSymetricCrypto:
+    keyBits :u16
+    mode :u16
+
+format TPMSymetricXor:
+    xorr :u16
+
+format TPMSymetric:
+    alg :TPMAlgorithmID
+    match alg:
+        TPMAlgorithmID.TPM_ALG_XOR:
+            xor :TPMSymetricXor
+        ..:
+            crypto :TPMSymetricCrypto
+
+format TPMScheme:
+    scheme :TPMAlgorithmID
+    if scheme != TPMAlgorithmID.TPM_ALG_NULL:
+        hashAlg :TPMAlgorithmID        
+
+format ECCPoint:
+    x: Bytes16 
+    y: Bytes16
+
+format TPMECCPoint:
+    size :u16
+    point :ECCPoint(input = input.subrange(size))
+
+
+
+format SensitiveData:
+    sensitiveType :u16
+    authValue :Bytes16
+    seedValue :Bytes16
+    sensitiveData :Bytes16
+
+format TPMSensitive:
+    size :u16
+    sensitive :SensitiveData(input = input.subrange(size))
+
+format SensitiveCreate:
+    userAuth :Bytes16
+    sensitiveData :Bytes16
+
+format TPMSensitiveCreate:
+    size :u16
+    sensitive :SensitiveCreate(input = input.subrange(size))
+
+format PublicParamsKeyedHash:
+    scheme: TPMScheme
+
+format PublicParamSymCipher:
+    algorithm :TPMAlgorithmID
+    keyBits :u16
+    mode :u16
+
+format PublicParamsRSA:
+    symmetric :TPMSymetric
+    scheme :TPMScheme
+    keyBits :u16
+    exponent :u32
+
+format PublicParamsECC:
+    symmetric :TPMSymetric
+    scheme :TPMScheme
+    curveID :u16
+    kdf :TPMScheme
+
+format PublicParamsOther:
+    symmetric :TPMSymetric
+    scheme :TPMScheme
+
+
+format PublicKeyArea:
+    type :TPMAlgorithmID
+    nameAlg :TPMAlgorithmID
+    objectAttributes :u32
+    authPolicy :Bytes16
+    match type:
+        TPMAlgorithmID.TPM_ALG_RSA:
+            rsa_params :PublicParamsRSA
+            rsa :Bytes16
+        TPMAlgorithmID.TPM_ALG_ECC:
+            ecc_params :PublicParamsECC
+            ecc_point :ECCPoint
+        TPMAlgorithmID.TPM_ALG_KEYEDHASH:
+            keyedhash_params :PublicParamsKeyedHash
+            keyedhash :Bytes16
+        TPMAlgorithmID.TPM_ALG_SYMCIPHER:
+            symcipher_params :PublicParamSymCipher
+            sym :Bytes16
+        ..:
+            other_params :PublicParamsOther
+    
+format TPMPublicKey:
+    size :u16
+    public_key_area :PublicKeyArea(input = input.subrange(size))
+
+format SignatureECDSA:
+    hash :TPMAlgorithmID
+    r :Bytes16
+    s :Bytes16
+
+format SignatureRSA:
+    hash :TPMAlgorithmID
+    sig :Bytes16
+
+format SignatureHMAC:
+    hash :TPMAlgorithmID
+    match hash:
+        TPMAlgorithmID.TPM_ALG_SHA1:
+            hmac :[20]u8
+        TPMAlgorithmID.TPM_ALG_SHA256:
+            hmac :[32]u8
+        TPMAlgorithmID.TPM_ALG_SHA384:
+            hmac :[48]u8
+        TPMAlgorithmID.TPM_ALG_SHA512:
+            hmac :[64]u8

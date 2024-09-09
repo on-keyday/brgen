@@ -11,7 +11,7 @@ export const bitSize = (bit :number|null|undefined) => {
         return "dynamic";
     }
     if(bit%8===0){
-        return `${bit/8} byte`;
+        return `${bit/8} byte = ${bit} bit`;
     }
     return `${bit} bit`;
 }
