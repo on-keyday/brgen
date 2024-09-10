@@ -906,6 +906,22 @@ format TPM2VerifySignature:
     signature :Signature
 
 format TPM2VerifySignatureResponseNoSession:
-    paramSize :u32
     validation :Validation
 
+format TPM2VerifySignatureResponseSession:
+    paramSize :u32
+    response :TPM2VerifySignatureResponseNoSession
+
+
+format TPM2Sign:
+    keyHandle :u32
+    auth :AuthCommand
+    digest :Bytes16
+    scheme :TPMScheme
+    validation :Validation
+
+format TPM2SignResponse:
+    paramSize :u32
+    signature :Signature
+
+# TODO: write more commands...
