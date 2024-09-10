@@ -840,7 +840,7 @@ namespace j2cp2 {
                     }
                     auto params = state_variable_to_argument(s, true);
                     w.writeln(ret_type, " encode(::futils::binary::writer& w", params, ") const ;");
-                    w.writeln(ret_type, "::futils::error::Error<> decode(::futils::binary::reader& r", params, ");");
+                    w.writeln(ret_type, " decode(::futils::binary::reader& r", params, ");");
                     if (s->fixed_header_size) {
                         w.writeln("static constexpr size_t fixed_header_size = ", brgen::nums(s->fixed_header_size / 8), ";");
                     }
