@@ -152,6 +152,9 @@ namespace j2cp2 {
             if (s == "class") {
                 s = "class_";
             }
+            if (s == "public") {
+                s = "public_";
+            }
         }
 
         std::pair<std::optional<size_t>, size_t> sum_fields(std::vector<std::shared_ptr<ast::Field>>& non_align) {
@@ -311,18 +314,20 @@ namespace j2cp2 {
         void check_variant_alternative(const std::shared_ptr<ast::StructType>& s, bool as_err = false) {
             if (use_variant) {
                 if (auto found = anonymous_struct.find(s); found != anonymous_struct.end()) {
-                    auto& typ = found->second;
-                    w.writeln("if(!std::holds_alternative<", typ.type_name, ">(", typ.variant_name, ")) {");
-                    if (as_err) {
-                        {
-                            auto indent = w.indent_scope();
-                            write_return_error(current_format, typ.variant_name, " variant alternative ", typ.type_name, " is not set");
+                    if (s->fields.size()) {
+                        auto& typ = found->second;
+                        w.writeln("if(!std::holds_alternative<", typ.type_name, ">(", typ.variant_name, ")) {");
+                        if (as_err) {
+                            {
+                                auto indent = w.indent_scope();
+                                write_return_error(current_format, typ.variant_name, " variant alternative ", typ.type_name, " is not set");
+                            }
                         }
+                        else {
+                            w.indent_writeln("return std::nullopt;");
+                        }
+                        w.writeln("}");
                     }
-                    else {
-                        w.indent_writeln("return std::nullopt;");
-                    }
-                    w.writeln("}");
                 }
             }
         }
@@ -650,10 +655,8 @@ namespace j2cp2 {
 
         void write_field(
             std::vector<std::shared_ptr<ast::Field>>& non_aligned,
-            // size_t& bit_size,
-            // size_t i,
-            // const std::shared_ptr<ast::StructType>& s,
-            const std::shared_ptr<ast::Field>& f, std::string_view prefix) {
+            const std::shared_ptr<ast::Field>& f, std::string_view prefix,
+            bool on_state = false) {
             futils::helper::DynDefer d;
             auto is_simple_type = [&](const std::shared_ptr<ast::Type>& type) {
                 return ast::as<ast::IntType>(type) != nullptr || ast::as<ast::EnumType>(type) != nullptr;
@@ -661,6 +664,12 @@ namespace j2cp2 {
             bool hidden = set_hidden_ident(f);
             escape_keyword(f->ident->ident);
             auto type = unwrap_ident_type(f->field_type);
+            // only for state
+            if (on_state && ast::as<ast::BoolType>(type)) {
+                map_line(f->loc);
+                w.writeln("bool ", f->ident->ident, " = false;");
+                str.map_ident(f->ident, prefix, ".", f->ident->ident);
+            }
             if (f->bit_alignment == ast::BitAlignment::not_target) {
                 return;
             }
@@ -740,13 +749,6 @@ namespace j2cp2 {
                 map_line(f->loc);
                 w.writeln("//", str_type->strong_ref->value, " (", brgen::nums(len), " bytes)");
                 str.map_ident(f->ident, str_type->strong_ref->value);
-            }
-
-            // only for state
-            if (auto bool_ty = ast::as<ast::BoolType>(type); bool_ty) {
-                map_line(f->loc);
-                w.writeln("bool ", f->ident->ident, " = false;");
-                str.map_ident(f->ident, prefix, ".", f->ident->ident);
             }
         }
 
@@ -864,10 +866,10 @@ namespace j2cp2 {
             w.writeln("struct ", state->ident->ident, " {");
             {
                 auto indent = w.indent_scope();
+                std::vector<std::shared_ptr<ast::Field>> non_align;
                 for (auto& f : state->body->struct_type->fields) {
-                    std::vector<std::shared_ptr<ast::Field>> non_align;
                     if (auto field = ast::as<ast::Field>(f); field) {
-                        write_field(non_align, ast::cast_to<ast::Field>(f), "${THIS}");
+                        write_field(non_align, ast::cast_to<ast::Field>(f), "${THIS}", true);
                     }
                 }
             }
@@ -1691,7 +1693,13 @@ namespace j2cp2 {
             if (use_error) {
                 return_type = "::futils::error::Error<>";
             }
-            w.writeln("inline ", return_type, " ", fmt->ident->ident, "::", encode ? "encode(::futils::binary::writer& w) const" : "decode(::futils::binary::reader& r)", " {");
+            auto args = state_variable_to_argument(fmt->body->struct_type, true);
+            if (encode) {
+                w.writeln("inline ", return_type, " ", fmt->ident->ident, "::encode(::futils::binary::writer& w", args, ") const {");
+            }
+            else {
+                w.writeln("inline ", return_type, " ", fmt->ident->ident, "::decode(::futils::binary::reader& r", args, ") {");
+            }
             {
                 auto indent = w.indent_scope();
                 if (ctx.dynamic_endian) {
