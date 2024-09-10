@@ -1,0 +1,10 @@
+state Condition:
+   is_16bit :bool
+
+condition :Condition
+
+format Data:
+   if condition.is_16bit:
+      data :u16
+   else:
+      data :u32
