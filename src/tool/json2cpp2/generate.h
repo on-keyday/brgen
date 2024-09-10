@@ -771,10 +771,26 @@ namespace j2cp2 {
             w.writeln("}");
         }
 
-        void state_variable_to_argument(const std::shared_ptr<ast::StructType>& s) {
+        std::string state_variable_to_argument(const std::shared_ptr<ast::StructType>& s, bool as_param) {
             if (auto fmt = ast::as<ast::Format>(s->base.lock())) {
-                fmt->state_variables;
+                std::string args;
+                for (auto& weak_arg : fmt->state_variables) {
+                    auto arg = weak_arg.lock();
+                    auto& typ = ast::as<ast::IdentType>(arg->field_type)->ident->ident;
+                    auto& ident = arg->ident;
+                    escape_keyword(ident->ident);
+                    str.map_ident(ident, ident->ident);
+                    auto& param_name = arg->ident->ident;
+                    if (as_param) {
+                        args += "," + typ + "& " + param_name;
+                    }
+                    else {
+                        args += "," + param_name;
+                    }
+                }
+                return args;
             }
+            return "";
         }
 
         void write_struct_type(std::string_view struct_name, const std::shared_ptr<ast::StructType>& s, const std::string& prefix = "") {
@@ -815,14 +831,16 @@ namespace j2cp2 {
                     if (!use_variant) {  // for raw union
                         w.writeln(member->ident->ident, "() {}");
                     }
+                    std::string ret_type;
                     if (use_error) {
-                        w.writeln("::futils::error::Error<> encode(::futils::binary::writer& w) const ;");
-                        w.writeln("::futils::error::Error<> decode(::futils::binary::reader& r);");
+                        ret_type = "::futils::error::Error<>";
                     }
                     else {
-                        w.writeln("bool encode(::futils::binary::writer& w) const ;");
-                        w.writeln("bool decode(::futils::binary::reader& r);");
+                        ret_type = "bool";
                     }
+                    auto params = state_variable_to_argument(s, true);
+                    w.writeln(ret_type, " encode(::futils::binary::writer& w", params, ") const ;");
+                    w.writeln(ret_type, "::futils::error::Error<> decode(::futils::binary::reader& r", params, ");");
                     if (s->fixed_header_size) {
                         w.writeln("static constexpr size_t fixed_header_size = ", brgen::nums(s->fixed_header_size / 8), ";");
                     }
@@ -1187,11 +1205,13 @@ namespace j2cp2 {
             }
             if (auto struct_ty = ast::as<ast::StructType>(typ); struct_ty) {
                 map_line(loc);
+                auto args = state_variable_to_argument(ast::cast_to<ast::StructType>(typ), false);
+                auto call = brgen::concat(ident, ".encode(w", args, ")");
                 if (use_error) {
-                    w.writeln("if (auto err = ", ident, ".encode(w)) {");
+                    w.writeln("if (auto err = ", call, ") {");
                 }
                 else {
-                    w.writeln("if (!", ident, ".encode(w)) {");
+                    w.writeln("if (!", call, ") {");
                 }
                 {
                     auto indent = w.indent_scope();
@@ -1505,11 +1525,13 @@ namespace j2cp2 {
             }
             if (auto struct_ty = ast::as<ast::StructType>(typ); struct_ty) {
                 map_line(loc);
+                auto args = state_variable_to_argument(ast::cast_to<ast::StructType>(typ), false);
+                auto call = brgen::concat(ident, ".decode(r", args, ")");
                 if (use_error) {
-                    w.writeln("if (auto err = ", ident, ".decode(r)) {");
+                    w.writeln("if (auto err = ", call, ") {");
                 }
                 else {
-                    w.writeln("if (!", ident, ".decode(r)) {");
+                    w.writeln("if (!", call, ") {");
                 }
                 {
                     auto indent = w.indent_scope();

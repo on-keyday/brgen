@@ -1,0 +1,23 @@
+
+state S:
+    is_ok :bool
+
+s :S
+y :S
+
+format N:
+    s.is_ok = true
+
+format X:
+    if s.is_ok:
+        a :u8
+    else:
+        if !s.is_ok:
+            c :u8
+        b :u8
+        y.is_ok = true
+        if y.is_ok:
+            d :N
+            v :N
+        else:
+            e :u8
