@@ -10,7 +10,14 @@ format Bytes16:
     size :u16
     data :[size]u8
 
+state SessionState:
+    hasSession :bool
+
+session_state :SessionState
+
 format AuthCommand:
+    if !session_state.hasSession:
+        return
     sessionHandle :u32
     nonce :Bytes16
     sessionAttributes :u8
@@ -190,6 +197,19 @@ format SignatureHMAC:
             hmac :[64]u8
 
 
+format Signature:
+    alg :TPMAlgorithmID
+    match alg:
+        TPMAlgorithmID.TPM_ALG_ECDAA:
+            ecdaa :SignatureECDSA
+        TPMAlgorithmID.TPM_ALG_ECDSA:
+            ecdsa :SignatureECDSA
+        TPMAlgorithmID.TPM_ALG_RSASSA:
+            rsassa :SignatureRSA
+        TPMAlgorithmID.TPM_ALG_RSAPSS:
+            rsapss :SignatureRSA
+        TPMAlgorithmID.TPM_ALG_HMAC:
+            hmac :SignatureHMAC
 
 TPM_GENERATED_VALUE ::= 0xff544347
 
@@ -289,8 +309,8 @@ enum TPMTag:
 
 format TPMPacketHeader:
     tag :TPMTag
-    responseSize :u32
-    responseCode :u32
+    commandSize :u32
+    commandCode :u32
 
 format TPMPublicNVMarshaled:
     index :u32
@@ -307,3 +327,585 @@ format ResponseProcess:
     dec_param_size :u16 # currentlty u16 in wolfSSL
     param :[param_size - 2]u8
     auth :[..]AuthResponse # remaining bytes
+
+# standard tpm api?
+
+format TPMStartup:
+    startupType :u16
+
+format TPMShutdown:
+    shutdownType :u16
+
+format TPMSelfTest:
+    fullTest :u8 # bool
+
+format TPMIncrementalSelfTest:
+    toTest :u32
+    algs :[toTest]TPMAlgorithmID
+
+format TPMIncrementalSelfTestResponse:
+    toDo :u32
+    algs :[toDo]TPMAlgorithmID
+
+format TPMGetTestResult:
+    ..
+
+format TPMGetTestResultResponse:
+    outData :Bytes16
+    testResult :u16
+
+enum TPMCapability:
+    :u32
+    TPM_CAP_FIRST = 0x00000000
+    TPM_CAP_HANDLES = 0x00000001
+    TPM_CAP_COMMANDS = 0x00000002
+    TPM_CAP_PP_COMMANDS = 0x00000003
+    TPM_CAP_AUDIT_COMMANDS = 0x00000004
+    TPM_CAP_PCRS = 0x00000005
+    TPM_CAP_TPM_PROPERTIES = 0x00000006
+    TPM_CAP_PCR_PROPERTIES = 0x00000007
+    TPM_CAP_ECC_CURVES = 0x00000008
+    TPM_CAP_VENDOR_PROPERTY = 0x00000100
+
+format TPMGetCapability:
+    capability :TPMCapability
+    property :u32
+    propertyCount :u32
+
+
+
+format TPMGetCapabilityResponse:
+    moreData :u8
+    capability :TPMCapability
+    match capability:
+        TPMCapability.TPM_CAP_HANDLES:
+            handleCount :u32
+            handle :[handleCount]u32
+        TPMCapability.TPM_CAP_TPM_PROPERTIES:
+            propertyCount :u32
+            property :[propertyCount]u32
+        TPMCapability.TPM_CAP_VENDOR_PROPERTY:
+            vender :[..]u8
+
+format TPMGetRandom:
+    bytesRequested :u16
+
+format TPMGetRandomResponse:
+    randomBytes :Bytes16
+
+format TPM2StirRandom:
+    entropy :Bytes16
+
+format TPM2PCRRead:
+    pcr :PCR
+
+format TPM2PCRReadResponse:
+    updateCounter :u32
+    pcr :PCR
+    pcrValueCount :u32
+    pcrValues :[pcrValueCount]Bytes16
+
+format TPM2PCRExtend:
+    pcrHandle :u32
+    auth :AuthCommand
+    digestCount :u32
+    digests :[digestCount]SignatureHMAC
+
+
+format TPM2Create:
+    parentHandle :u32
+    auth :AuthCommand
+    sensitive :TPMSensitiveCreate
+    public :TPMPublicKey
+    outsideInfo :Bytes16
+    creationPCR :PCR
+
+format CreationTicket:
+    tag :u16
+    hierarchy :u32
+    digest :Bytes16
+
+format TPM2CreateResponse:
+    paramSize :u32
+    outPrivate :Bytes16
+    outPublic :TPMPublicKey
+    creationDataSize :u16
+    pcrSelect :PCR
+    pcrDigest :Bytes16
+    locality :u8
+    parentNameAlg :TPMAlgorithmID
+    parentName :Bytes16
+    parentQualifiedName :Bytes16
+    outsideInfo :Bytes16
+    creationHash :Bytes16
+    creationTicket :CreationTicket
+
+
+format TPM2CreateLoaded:
+    parentHandle :u32
+    auth :AuthCommand
+    sensitive :TPMSensitiveCreate
+    public :TPMPublicKey
+
+format TPM2CreateLoadedResponse:
+    objectHandle :u32
+    paramSize :u32
+    outPrivate :Bytes16
+    outPublic :TPMPublicKey
+    name :Bytes16
+
+format TPM2CreatePrimary: 
+    primaryHandle :u32
+    auth :AuthCommand
+    sensitive :TPMSensitiveCreate
+    public :TPMPublicKey
+    outsideInfo :Bytes16
+    pcr :PCR
+
+# response is same as TPM2CreateResponse
+format TPM2CreatePrimaryResponse:
+    created :TPM2CreateResponse
+
+format TPM2Load:
+    parentHandle :u32
+    auth :AuthCommand
+    inPrivate :Bytes16
+    inPublic :TPMPublicKey
+
+format TPM2LoadResponse:
+    objectHandle :u32
+    paramSize :u32
+    name :Bytes16
+
+format TPM2FlushContext:
+    handle :u32
+
+format TPM2Unseal:
+    itemHandle :u32
+    auth :AuthCommand
+
+format TPM2UnsealResponse:
+    paramSize :u32
+    outData :Bytes16
+
+format TPM2StartAuthSession:
+    tpmKey :u32
+    bind :u32
+    nonceCaller :Bytes16
+    encryptedSalt :Bytes16
+    sessionType :u8
+    symmetric :TPMSymetric
+    authHash :TPMAlgorithmID
+
+format TPM2StartAuthSessionResponse:
+    handle :u32
+    nonceTPM :Bytes16
+
+format TPM2PolicyRestart:
+    sessionHandle :u32
+
+format InprivateForLoadExternal:
+    sensitiveType :u16
+    authValue :Bytes16
+    seedValue :Bytes16
+    sensitiveData :Bytes16
+
+format TPM2LoadExternal:
+    parentHandle :u32
+    auth :AuthCommand
+    inPrivateSize :u16
+    if inPrivateSize > 0:
+        inPrivate :InprivateForLoadExternal(input = input.subrange(inPrivateSize))
+    inPublic :TPMPublicKey
+
+format TPM2LoadExternalResponseNoSession:
+    objectHandle :u32
+    name :Bytes16
+
+format TPM2LoadExternalResponseSession:
+    objectHandle :u32
+    paramSize :u32
+    name :Bytes16
+
+format TPM2ReadPublic:
+    objectHandle :u32
+
+format TPM2ReadPublicResponse:
+    outPublic :TPMPublicKey
+    name :Bytes16
+    qualifiedName :Bytes16
+
+format TPM2ActivateCredential:
+    activateHandle :u32
+    keyHandle :u32
+    auth :AuthCommand
+    credBlob :Bytes16
+    secret :Bytes16
+
+format TPM2ActivateCredentialResponse:
+    paramSize :u32
+    credentialInfo :Bytes16
+
+format TPM2MakeCredential:
+    handle :u32
+    credential :Bytes16
+    objectName :Bytes16
+
+format TPM2MakeCredentialResponse:
+    credentialBlob :Bytes16
+    secret :Bytes16
+
+format TPM2ObjectChangeAuth:
+    objectHandle :u32
+    parentHandle :u32
+    auth :AuthCommand
+    newAuth :Bytes16
+
+format TPM2ObjectChangeAuthResponse:
+    paramSize :u32
+    outPrivate :Bytes16
+
+format TPM2Duplicate:
+    objectHandle :u32
+    newParentHandle :u32
+    auth :AuthCommand
+    encryptionKey :Bytes16
+    symmetricAlg :TPMAlgorithmID
+    symmetricKeyBits :u16
+    symmetricMode :u16
+
+format TPM2DuplicateResponse:
+    paramSize :u32
+    encryptionKeyOut :Bytes16
+    duplicate :Bytes16
+    outSymSeed :Bytes16
+
+format TPM2Rewrap:
+    oldParent :u32
+    newParent :u32
+    auth :AuthCommand
+    inDuplicate :Bytes16
+    name :Bytes16
+    inSymSeed :Bytes16
+
+format TPM2RewrapResponse:
+    paramSize :u32
+    outDuplicate :Bytes16
+    outSymSeed :Bytes16
+
+format TPM2Import:
+    parentHandle :u32
+    auth :AuthCommand
+    encryptionKey :Bytes16
+    objectPublic :TPMPublicKey
+    duplicate :Bytes16
+    inSymSeed :Bytes16
+    symmetricAlg :TPMSymetric
+
+format TPM2ImportResponse:
+    paramSize :u32
+    outPrivate :Bytes16
+
+format TPM2RSAEncrypt:
+    keyHandle :u32
+    auth :AuthCommand
+    message :Bytes16
+    inScheme :TPMAlgorithmID
+    if inScheme != TPMAlgorithmID.TPM_ALG_NULL &&
+      inScheme != TPMAlgorithmID.TPM_ALG_RSAES:
+        hashAlg :TPMAlgorithmID
+    label :Bytes16
+
+format TPM2RSAEncryptResponseNoSession:
+    outData :Bytes16
+
+format TPM2RSAEncryptResponseSession:
+    paramSize :u32
+    response :TPM2RSAEncryptResponseNoSession
+
+format TPM2RSADecrypt:
+    keyHandle :u32
+    auth :AuthCommand
+    cipher :Bytes16
+    inScheme :TPMAlgorithmID
+    if inScheme != TPMAlgorithmID.TPM_ALG_NULL &&
+      inScheme != TPMAlgorithmID.TPM_ALG_RSAES:
+        hashAlg :TPMAlgorithmID
+    label :Bytes16
+
+
+format TPM2RSADecryptResponse:
+    paramSize :u32
+    outData :Bytes16
+
+format TPM2ECDHKeyGen:
+    keyHandle :u32
+    auth :AuthCommand
+
+format TPM2ECDHKeyGenResponseNoSession:
+    outZ :ECCPoint
+    outPub :ECCPoint
+
+format TPM2ECDHKeyGenResponseSession:
+    paramSize :u32
+    response :TPM2ECDHKeyGenResponseNoSession
+
+format TPM2ZGen:
+    keyHandle :u32
+    auth :AuthCommand
+    inPoint :ECCPoint
+
+format TPM2ZGenResponse:
+    paramSize :u32
+    outPoint :ECCPoint
+
+format TPM2ECCParameters:
+    curveID :u16
+
+format TPM2ECCParametersResponse:
+    curveID :u16
+    keySize :u16
+    kdf :TPMScheme
+    sign :TPMScheme
+    p :Bytes16
+    a :Bytes16
+    b :Bytes16
+    g :ECCPoint
+    n :Bytes16
+    h :Bytes16
+
+format TPM2ZGen2Phase:
+    keyA :u32
+    auth :AuthCommand
+    inQsB :ECCPoint
+    inQeB :ECCPoint
+    inScheme :TPMAlgorithmID
+    counter :u16
+
+format TPM2ZGen2PhaseResponse:
+    paramSize :u32
+    outZ1 :ECCPoint
+    outZ2 :ECCPoint
+
+
+# deprecated
+format TPM2EncryptDecrypt:
+    keyHandle :u32
+    auth :AuthCommand
+    decrypt :u8
+    mode :u16
+    ivIn :Bytes16
+    inData :Bytes16
+
+format TPM2EncryptDecryptResponse:
+    paramSize :u32
+    outData :Bytes16
+    ivOut :Bytes16
+
+
+format TPM2EncryptDecrypt2:
+    keyHandle :u32
+    auth :AuthCommand
+    inData :Bytes16
+    decrypt :u8
+    mode :u16
+    ivIn :Bytes16
+
+format TPM2EncryptDecrypt2Response:
+    paramSize :u32
+    outData :Bytes16
+    ivOut :Bytes16        
+
+format TPM2Hash:
+    data :Bytes16
+    hashAlg :TPMAlgorithmID
+    hierarchy :u32
+
+format Validation:
+    tag :u16
+    hierarchy :u32
+    digest :Bytes16
+
+format TPM2HashResponseNoSession:
+    outHash :Bytes16
+    validation :Validation
+
+format TPM2HashResponseSession:
+    paramSize :u32
+    response :TPM2HashResponseNoSession
+
+format TPM2HMAC:
+    keyHandle :u32
+    auth :AuthCommand
+    data :Bytes16
+    hashAlg :TPMAlgorithmID
+
+format TPM2HMACResponse:
+    paramSize :u32
+    outHMAC :Bytes16
+
+format TPM2HMACStart:
+    keyHandle :u32
+    authCommand :AuthCommand
+    auth :Bytes16
+    hashAlg :TPMAlgorithmID
+
+format TPM2HMACStartResponse:
+    handle :u32
+    paramSize :u32
+
+format TPM2HashSequenceStart:
+    authCommand :AuthCommand
+    auth :Bytes16
+    hashAlg :TPMAlgorithmID
+
+format TPM2HashSequenceStartResponse:
+    handle :u32
+
+format TPM2SequenceUpdate:
+    sequenceHandle :u32
+    auth :AuthCommand
+    buffer :Bytes16
+
+format TPM2SequenceComplete:
+    sequenceHandle :u32
+    auth :AuthCommand
+    buffer :Bytes16
+    hierarchy :u32
+
+format TPM2SequenceCompleteResponse:
+    paramSize :u32
+    outHash :Bytes16
+    validation :Validation
+
+format TPM2EventSequenceComplete:
+    pcrHandle :u32
+    sequenceHandle :u32
+    auth :AuthCommand   
+    buffer :Bytes16
+
+
+
+format TPM2EventSequenceCompleteResponse:
+    paramSize :u32
+    resultCount :u32
+    results :[resultCount]SignatureHMAC
+
+format TPM2Certify:
+    objectHandle :u32
+    signHandle :u32
+    auth :AuthCommand
+    qualifyingData :Bytes16
+    schemeAlg :TPMAlgorithmID
+    hashAlg :TPMAlgorithmID
+
+format TPM2CertifyResponse:
+    paramSize :u32
+    certifyInfo :Bytes16
+    signature :Signature
+
+format TPM2CertifyCreate:
+    signHandle :u32
+    objectHandle :u32
+    auth :AuthCommand
+    qualifyingData :Bytes16
+    creationHash :Bytes16
+    schemeAlg :TPMAlgorithmID
+    hashAlg :TPMAlgorithmID
+    creationTicket :CreationTicket
+
+
+format TPM2CertifyCreateResponse:
+    paramSize :u32
+    certifyInfo :Bytes16
+    signature :Signature
+
+format TPM2Quote:
+    signHandle :u32
+    auth :AuthCommand
+    qualifyingData :Bytes16
+    schemeAlg :TPMAlgorithmID
+    hashAlg :TPMAlgorithmID
+    pcrSelect :PCR
+
+format TPM2QuoteResponse:
+    paramSize :u32
+    quoted :Bytes16
+    signature :Signature
+
+format TPM2GetSessionAuditDigest:
+    privacyAdminHandle :u32
+    signHandle :u32
+    auth :AuthCommand
+    sessionHandle :u32
+    qualifyingData :Bytes16
+    schemeAlg :TPMAlgorithmID
+    hashAlg :TPMAlgorithmID
+
+format TPM2GetSessionAuditDigestResponse:
+    paramSize :u32
+    auditInfo :Bytes16
+    signature :Signature
+
+format TPM2GetCommandAuditDigest:
+    privacyAdminHandle :u32
+    signHandle :u32
+    auth :AuthCommand
+    qualifyingData :Bytes16
+    schemeAlg :TPMAlgorithmID
+    hashAlg :TPMAlgorithmID
+
+format TPM2GetCommandAuditDigestResponse:
+    paramSize :u32
+    attestationData :Bytes16
+    signature :Signature
+
+format TPM2GetTime:
+    privacyAdminHandle :u32
+    signHandle :u32
+    auth :AuthCommand
+    qualifyingData :Bytes16
+    schemeAlg :TPMAlgorithmID
+    hashAlg :TPMAlgorithmID
+
+format TPM2GetTimeResponse:
+    paramSize :u32
+    timeInfo :Bytes16
+    signature :Signature
+
+format TPM2Commit:
+    signHandle :u32
+    auth :AuthCommand
+    p1 :ECCPoint
+    s2_ :Bytes16
+    y2 :ECCPoint
+
+format TPM2CommitResponse:
+    paramSize :u32
+    k :ECCPoint
+    L :ECCPoint 
+    E :ECCPoint
+    counter :u16
+
+format TPM2ECEphemeral:
+    auth :AuthCommand
+    curveID :u32
+
+format TPM2EphemeralResponseNoSession:
+    q :ECCPoint
+    counter :u16
+
+format TPM2EphemeralResponseSession:
+    paramSize :u32
+    response :TPM2EphemeralResponseNoSession
+
+format TPM2VerifySignature:
+    keyHandle :u32
+    auth :AuthCommand
+    digest :Bytes16
+    signature :Signature
+
+format TPM2VerifySignatureResponseNoSession:
+    paramSize :u32
+    validation :Validation
+
