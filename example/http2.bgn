@@ -44,14 +44,18 @@ format FrameHeader:
     reserved :u1
     stream_id:u31
 
-format DataFrame:
+state FrameHeaderState:
     header :FrameHeader
-    if header.padding == 1:
+
+header_state :FrameHeaderState
+
+format DataFrame:
+    if header_state.header.padding == 1:
         padding_len :u8
-        u32(header.len) > u32(padding_len + 1)
-    len ::= header.padding == 1 ? header.len - 1 - u32(padding_len) : header.len
+        u32(header_state.header.len) > u32(padding_len + 1)
+    len ::= header_state.header.padding == 1 ? header_state.header.len - 1 - u32(padding_len) : header_state.header.len
     data :[len]u8
-    if header.padding == 1:
+    if header_state.header.padding == 1:
         padding :[padding_len]u8
 
 format StreamWeight:
@@ -61,21 +65,21 @@ format StreamWeight:
 
 
 format HeadersFrame:
-    header :FrameHeader
     priority :StreamWeight
-    if header.padding == 1:
+    if header_state.header.padding == 1:
         padding_len :u8
-        u32(header.len) > u32(padding_len + 1)
-    header_block :[u32(header.len) - u32(available(padding_len)?padding_len:0)]u8
-    if header.padding == 1:
+        u32(header_state.header.len) > u32(padding_len + 1)
+    len ::= u32(header_state.header.len) - u32(available(padding_len)?padding_len:0)
+    header_block :[len]u8
+    if header_state.header.padding == 1:
         padding :[padding_len]u8
 
 format PriorityFrame:
-    header :FrameHeader
+    header_state.header.len == 5
     priority :StreamWeight
 
 format RstStreamFrame:
-    header :FrameHeader
+    header_state.header.len == 4
     error_code :u32
 
 format Setting:
@@ -83,37 +87,33 @@ format Setting:
     value :u32
 
 format SettingsFrame:
-    header :FrameHeader
-    header.len % 6 == 0
-    if header.end_stream_or_ack == 1:
-        header.len == 0
+    header_state.header.len % 6 == 0
+    if header_state.header.end_stream_or_ack == 1:
+        header_state.header.len == 0
         return
-    settings :[header.len / 6]Setting
+    settings :[header_state.header.len / 6]Setting
 
 format PushPromiseFrame:
-    header :FrameHeader
+    reserved :u1(0)
     promised_stream_id :u31
-    header_block :[header.len - 4]u8
+    header_block :[header_state.header.len - 4]u8
 
 format PingFrame:
-    header :FrameHeader
-    header.len == 8
+    header_state.header.len == 8
     opaque_data :u64
 
 format GoAwayFrame:
-    header :FrameHeader
     reserved :u1(0)
     last_stream_id :u31
     error_code :u32
-    debug_data :[header.len - 8]u8
+    debug_data :[header_state.header.len - 8]u8
 
 format WindowUpdateFrame:
-    header :FrameHeader
+    header_state.header.len == 4
     reserved :u1(0)
     window_size_increment :u31
 
 format ContinuationFrame:
-    header :FrameHeader
-    header_block :[header.len]u8
+    header_block :[header_state.header.len]u8
 
     

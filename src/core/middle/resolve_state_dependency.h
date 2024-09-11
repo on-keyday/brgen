@@ -30,6 +30,9 @@ namespace brgen::middle {
                             }
                         }
                     }
+                    std::sort(fmt->state_variables.begin(), fmt->state_variables.end(), [](auto&& a, auto&& b) {
+                        return a.lock() < b.lock();
+                    });
                     auto kept = std::unique(fmt->state_variables.begin(), fmt->state_variables.end(), [](auto&& a, auto&& b) {
                         return a.lock() == b.lock();
                     });

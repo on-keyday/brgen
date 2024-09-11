@@ -434,10 +434,16 @@ namespace j2cp2 {
                     auto ident = str.to_string(f->ident);
                     map_line(f->loc);
                     if (ast::as<ast::UnionType>(f->field_type)) {
-                        ident.pop_back();  // remove last ))
-                        ident.pop_back();
-                        ident.erase(0, 2);  // remove first (*
-                        w.writeln(ident, to_set, ");");
+                        while (ident.back() != '(') {
+                            ident.pop_back();
+                        }
+                        ident.erase(0, 2);  // remove (*
+                        auto fmt = ast::as<ast::Format>(f->belong.lock());
+                        std::string args;
+                        if (fmt) {
+                            args = state_variable_to_argument(fmt->body->struct_type, false);
+                        }
+                        w.writeln(ident, to_set, args, ");");
                     }
                     else {
                         w.writeln(ident, " = ", to_set, ";");
@@ -470,7 +476,16 @@ namespace j2cp2 {
             if (use_constexpr) {
                 w.write("constexpr ");
             }
-            w.writeln("std::optional<", get_type_name(ut->common_type), "> ", uf->ident->ident, "() const {");
+            auto fmt = ast::as<ast::Format>(uf->belong.lock());
+            std::string set_args, get_args;
+            if (fmt) {
+                set_args = state_variable_to_argument(fmt->body->struct_type, true);
+                if (set_args.size()) {
+                    get_args = set_args;
+                    get_args.erase(0, 1);
+                }
+            }
+            w.writeln("std::optional<", get_type_name(ut->common_type), "> ", uf->ident->ident, "(", get_args, ") const {");
             {
                 auto indent = w.indent_scope();
                 auto make_access = [&](const std::shared_ptr<ast::Field>& f) {
@@ -488,7 +503,7 @@ namespace j2cp2 {
                         for (auto& d : defs) {
                             code_one_node(d);
                         }
-                        auto cond_s = str.to_string(cond);
+                        auto cond_s = str.to_string_impl(cond, false);
                         map_line(c->loc);
                         w.writeln("if (", cond_s, "==", cond_u, ") {");
                         {
@@ -516,7 +531,9 @@ namespace j2cp2 {
                 if (!end_else) {
                     w.writeln("return std::nullopt;");
                 }
-                str.map_ident(uf->ident, "(*", prefix, ".", uf->ident->ident + "())");
+                auto args = state_variable_to_argument(fmt->body->struct_type, false);
+                args.erase(0, 1);
+                str.map_ident(uf->ident, "(*", prefix, ".", uf->ident->ident + "(", args, "))");
             }
             w.writeln("}");
 
@@ -525,7 +542,7 @@ namespace j2cp2 {
             if (use_constexpr) {
                 w.write("constexpr ");
             }
-            w.writeln("bool ", uf->ident->ident, "(const ", get_type_name(ut->common_type), "& v) {");
+            w.writeln("bool ", uf->ident->ident, "(const ", get_type_name(ut->common_type), "& v", set_args, ") {");
             {
                 auto indent = w.indent_scope();
                 auto make_access = [&](const std::shared_ptr<ast::Field>& f) {
@@ -550,7 +567,7 @@ namespace j2cp2 {
                         for (auto& d : defs) {
                             code_one_node(d);
                         }
-                        auto cond_s = str.to_string(cond);
+                        auto cond_s = str.to_string_impl(cond, false);
                         map_line(c->loc);
                         w.writeln("if (", cond_s, "==", cond_u, ") {");
                         {
