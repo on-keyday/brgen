@@ -20,7 +20,7 @@
             "request": "launch",
             "program": "${workspaceRoot}/tool/src2json",
             "args": [
-                "c:/workspace/shbrgen/brgen/example/socks.bgn",
+                "c:/workspace/shbrgen/brgen/example/http2.bgn",
                 "--print-json","--print-on-error"
             ],
             "stopAtEntry": false,
