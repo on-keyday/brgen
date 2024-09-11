@@ -101,6 +101,7 @@ namespace j2cp2 {
         bool use_overflow_check = false;
         bool enum_stringer = false;
         bool add_visit = false;
+        bool use_constexpr = false;
         ast::Format* current_format = nullptr;
         Context ctx;
         std::vector<std::string> struct_names;
@@ -361,6 +362,9 @@ namespace j2cp2 {
                 map_line(f->loc);
                 w.writeln("return ", a, ";");
             };
+            if (use_constexpr) {
+                w.write("constexpr ");
+            }
             w.writeln("std::optional<", get_type_name(union_ty->common_type), "> ", union_field->ident->ident, "() const {");
             {
                 auto indent = w.indent_scope();
@@ -429,7 +433,15 @@ namespace j2cp2 {
                     w.writeln("}");
                     auto ident = str.to_string(f->ident);
                     map_line(f->loc);
-                    w.writeln(ident, " = ", to_set, ";");
+                    if (ast::as<ast::UnionType>(f->field_type)) {
+                        ident.pop_back();  // remove last ))
+                        ident.pop_back();
+                        ident.erase(0, 2);  // remove first (*
+                        w.writeln(ident, to_set, ");");
+                    }
+                    else {
+                        w.writeln(ident, " = ", to_set, ";");
+                    }
                 }
             }
         }
@@ -455,6 +467,9 @@ namespace j2cp2 {
         void write_common_type_accessor(std::string_view prefix, const std::string& cond_u, const std::shared_ptr<ast::Field>& uf, ast::UnionType* ut) {
             // write getter func
             map_line(uf->loc);
+            if (use_constexpr) {
+                w.write("constexpr ");
+            }
             w.writeln("std::optional<", get_type_name(ut->common_type), "> ", uf->ident->ident, "() const {");
             {
                 auto indent = w.indent_scope();
@@ -507,6 +522,9 @@ namespace j2cp2 {
 
             // write setter func
             map_line(uf->loc);
+            if (use_constexpr) {
+                w.write("constexpr ");
+            }
             w.writeln("bool ", uf->ident->ident, "(const ", get_type_name(ut->common_type), "& v) {");
             {
                 auto indent = w.indent_scope();
@@ -839,6 +857,9 @@ namespace j2cp2 {
                     }
                     else {
                         ret_type = "bool";
+                    }
+                    if (use_constexpr) {
+                        ret_type = "constexpr " + ret_type;
                     }
                     auto params = state_variable_to_argument(s, true);
                     w.writeln(ret_type, " encode(::futils::binary::writer& w", params, ") const ;");
@@ -1694,6 +1715,9 @@ namespace j2cp2 {
                 return_type = "::futils::error::Error<>";
             }
             auto args = state_variable_to_argument(fmt->body->struct_type, true);
+            if (use_constexpr) {
+                w.write("constexpr ");
+            }
             if (encode) {
                 w.writeln("inline ", return_type, " ", fmt->ident->ident, "::encode(::futils::binary::writer& w", args, ") const {");
             }

@@ -86,6 +86,7 @@ const handleCpp = async (ui :UIModel,  s :JobResult) => {
     const checkOverflow = ui.getLanguageConfig(Language.CPP,ConfigKey.CPP_CHECK_OVERFLOW);
     const enumStringer = ui.getLanguageConfig(Language.CPP,ConfigKey.CPP_ENUM_STRINGER);
     const addVisit = ui.getLanguageConfig(Language.CPP,ConfigKey.CPP_ADD_VISIT);
+    const useConstexpr = ui.getLanguageConfig(Language.CPP,ConfigKey.CPP_USE_CONSTEXPR);
     const compileViaAPI = ui.getLanguageConfig(Language.CPP,ConfigKey.CPP_COMPILE_VIA_API);
     const cppOption : CppOption = {      
         use_line_map: useMap === true,
@@ -94,6 +95,7 @@ const handleCpp = async (ui :UIModel,  s :JobResult) => {
         use_overflow_check: checkOverflow === true,
         enum_stringer: enumStringer === true,
         add_visit: addVisit === true,
+        use_constexpr: useConstexpr === true,
     };
     let result : JobResult | undefined = undefined;
     let mappingInfo :any;

@@ -54,32 +54,33 @@ export interface AstOption extends CallOption {
 }
 
 export interface CppOption extends CallOption {
-    use_line_map? :boolean
-    use_error? :boolean
-    use_raw_union? :boolean
-    use_overflow_check? :boolean
-    enum_stringer? :boolean
-    add_visit? :boolean
+    use_line_map :boolean
+    use_error :boolean
+    use_raw_union :boolean
+    use_overflow_check :boolean
+    enum_stringer :boolean
+    add_visit :boolean
+    use_constexpr: boolean
 }
 
 export interface GoOption extends CallOption {
-    omit_must_encode? :boolean,
-    omit_decode_exact? :boolean,
-    omit_visitors? :boolean,
-    omit_marshal_json? :boolean,
+    omit_must_encode :boolean,
+    omit_decode_exact :boolean,
+    omit_visitors :boolean,
+    omit_marshal_json :boolean,
 }
 
 export interface COption extends CallOption {
-    multi_file? :boolean
-    omit_error_callback? :boolean
-    use_memcpy? :boolean
-    zero_copy? :boolean
+    multi_file :boolean
+    omit_error_callback :boolean
+    use_memcpy :boolean
+    zero_copy :boolean
 }
 
 export interface RustOption extends CallOption {}
 
 export interface TSOption extends CallOption {
-    javascript? :boolean
+    javascript :boolean
 }
 
 

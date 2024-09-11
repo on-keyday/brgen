@@ -29,6 +29,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
     bool legacy_file_pass = false;
     bool enum_stringer = false;
     bool add_visit = false;
+    bool use_constexpr = false;
     void bind(futils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&spec, "s", "spec mode");
@@ -40,6 +41,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
         ctx.VarBool(&enum_stringer, "enum-stringer", "use to_string for enum");
         ctx.VarBool(&add_visit, "add-visit", "add visit method for struct");
         ctx.VarBool(&legacy_file_pass, "f,file", "use legacy file pass mode");
+        ctx.VarBool(&use_constexpr, "use-constexpr", "use constexpr for functions");
     }
 };
 

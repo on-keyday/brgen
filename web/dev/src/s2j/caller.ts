@@ -13,15 +13,6 @@ const workerMap = Object.freeze({
 
 
 const WorkerFactory = class {
-    /*
-    #s2j_mgr_ :JobManager |null = null;
-    #j2cp_mgr_ :JobManager |null = null;
-    #j2cp2_mgr_ :JobManager |null = null;
-    #j2go_mgr_ :JobManager |null = null;
-    #j2c_mgr_ :JobManager |null = null;
-    #j2rs_mgr_ :JobManager |null = null;
-    #j2ts_mgr_ :JobManager |null = null;
-    */
 
     #jobs = new Map<WorkerType,JobManager>();
 
@@ -34,49 +25,7 @@ const WorkerFactory = class {
         return mgr;
     }
 
-    /*
-    getSrc2JSONWorker = () => {
-        if(this.#s2j_mgr_) return this.#s2j_mgr_;
-        this.#s2j_mgr_ = new JobManager(new Worker(new URL("./src2json_worker.js",import.meta.url),{type:"module"}));
-        return this.#s2j_mgr_;
-    }
-
-    getJSON2CppWorker = () => {
-        if(this.#j2cp_mgr_) return this.#j2cp_mgr_;
-        this.#j2cp_mgr_ = new JobManager(new Worker(new URL("./json2cpp_worker.js",import.meta.url),{type:"module"}));
-        return this.#j2cp_mgr_;
-    }
-
-    getJSON2Cpp2Worker = () => {
-        if(this.#j2cp2_mgr_) return this.#j2cp2_mgr_;
-        this.#j2cp2_mgr_ = new JobManager(new Worker(new URL("./json2cpp2_worker.js",import.meta.url),{type:"module"}));
-        return this.#j2cp2_mgr_;
-    }
-
-    getJSON2GoWorker = () => {
-        if(this.#j2go_mgr_) return this.#j2go_mgr_;
-        this.#j2go_mgr_ = new JobManager(new Worker(new URL("./json2go_worker.js",import.meta.url),{type:"module"}));
-        return this.#j2go_mgr_;
-    }
-
-    getJSON2CWorker = () => {
-        if(this.#j2c_mgr_) return this.#j2c_mgr_;
-        this.#j2c_mgr_ = new JobManager(new Worker(new URL("./json2c_worker.js",import.meta.url),{type:"module"}));
-        return this.#j2c_mgr_;
-    }
-
-    getJSON2RSWorker = () => {
-        if(this.#j2rs_mgr_) return this.#j2rs_mgr_;
-        this.#j2rs_mgr_ = new JobManager(new Worker(new URL("./json2rust_worker.js",import.meta.url),{type:"module"}));
-        return this.#j2rs_mgr_;
-    }
-
-    getJSON2TSWorker = () => {
-        if(this.#j2ts_mgr_) return this.#j2ts_mgr_;
-        this.#j2ts_mgr_ = new JobManager(new Worker(new URL("./json2ts_worker.js",import.meta.url),{type:"module"}));
-        return this.#j2ts_mgr_;
-    }
-    */
+  
 }
 
 const factory = new WorkerFactory();
@@ -128,6 +77,9 @@ const argConverter = Object.freeze({
         }
         if(opt.add_visit){
             args.push("--add-visit");
+        }
+        if(opt.use_constexpr){
+            args.push("--use-constexpr");
         }
         return args;
     },
@@ -184,7 +136,8 @@ const argConverter = Object.freeze({
 export function getLanguage<L extends LanguageKey>(traceID :TraceID,sourceCode :string, lang:L,option :LanguageToOptionType[L]) {
     const mgr = factory.getWorker(LanguageToWorkerType[lang as RequestLanguage]);
     const req = mgr.getRequest(traceID,lang,sourceCode);
-    req.arguments = argConverter[lang as RequestLanguage](option);
+    const convert = argConverter[lang] as (opt :LanguageToOptionType[L]) => string[];
+    req.arguments = convert(option);
     return mgr.doRequest(req);
 }
 

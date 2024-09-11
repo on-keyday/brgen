@@ -19,6 +19,7 @@ export const enum ConfigKey {
     CPP_USE_RAW_UNION = "use_raw_union",
     CPP_CHECK_OVERFLOW = "check_overflow",
     CPP_COMPILE_VIA_API = "compile_via_api",
+    CPP_USE_CONSTEXPR = "use_constexpr",
     CPP_ENUM_STRINGER = "enum_stringer",
     CPP_ADD_VISIT = "add_visit",
     GO_OMIT_MUST_ENCODE = "omit_must_encode",
