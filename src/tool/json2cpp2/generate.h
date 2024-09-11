@@ -106,6 +106,7 @@ namespace j2cp2 {
         Context ctx;
         std::vector<std::string> struct_names;
         std::string bytes_type = "::futils::view::rvec";
+        std::string vector_type = "std::vector";
 
         auto write_return_error(brgen::writer::Writer& w, ast::Field* field, auto&&... msg) {
             if (use_error) {
@@ -297,7 +298,7 @@ namespace j2cp2 {
                 if (auto int_ty = ast::as<ast::IntType>(arr_ty->element_type); int_ty && int_ty->bit_size == 8) {
                     return bytes_type;
                 }
-                return "std::vector<" + get_type_name(arr_ty->element_type) + ">";
+                return vector_type + "<" + get_type_name(arr_ty->element_type) + ">";
             }
             if (auto struct_ty = ast::as<ast::StructType>(type); struct_ty) {
                 if (auto l = struct_ty->base.lock()) {
@@ -1803,6 +1804,9 @@ namespace j2cp2 {
                 }
                 else if (m->name == "config.cpp.bytes_type") {
                     this->bytes_type = std::move(*name);
+                }
+                else if (m->name == "config.cpp.vector_type") {
+                    this->vector_type = std::move(*name);
                 }
                 else if (m->name == "config.cpp.sys_include") {
                     w.writeln("#include <", *name, ">");

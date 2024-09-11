@@ -1,5 +1,7 @@
 
 config.cpp.namespace = "futils::fnet::http2"
+config.cpp.vector_type = "NoHeapVector"
+config.cpp.include = "no_heap_vector.h"
 config.url = "https://www.rfc-editor.org/rfc/rfc9113.html"
 
 enum H2Error:
@@ -48,6 +50,20 @@ state FrameHeaderState:
     header :FrameHeader
 
 header_state :FrameHeaderState
+
+format FrameBody:
+    match header_state.header.type:
+        H2Type.DATA => data :DataFrame
+        H2Type.HEADERS => headers :HeadersFrame
+        H2Type.PRIORITY => priority :PriorityFrame
+        H2Type.RST_STREAM => rst_stream :RstStreamFrame
+        H2Type.SETTINGS => settings :SettingsFrame
+        H2Type.PUSH_PROMISE => push_promise :PushPromiseFrame
+        H2Type.PING => ping :PingFrame
+        H2Type.GOAWAY => goaway :GoAwayFrame
+        H2Type.WINDOW_UPDATE => window_update :WindowUpdateFrame
+        H2Type.CONTINUATION => continuation :ContinuationFrame
+        .. => unknown :[header_state.header.len]u8
 
 format DataFrame:
     if header_state.header.padding == 1:
