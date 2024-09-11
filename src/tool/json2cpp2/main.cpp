@@ -53,6 +53,7 @@ int cpp_generate(const Flags& flags, brgen::request::GenerateSource& req, std::s
     g.use_overflow_check = flags.use_overflow_check;
     g.enum_stringer = flags.enum_stringer;
     g.add_visit = flags.add_visit;
+    g.use_constexpr = flags.use_constexpr;
     auto prog = brgen::ast::cast_to<brgen::ast::Program>(res);
     g.write_program(prog);
     send_source(req.id, std::move(g.w.out()), req.name + ".hpp");
