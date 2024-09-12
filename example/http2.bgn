@@ -68,7 +68,7 @@ format FrameBody:
 format DataFrame:
     if header_state.header.padding == 1:
         padding_len :u8
-        u32(header_state.header.len) > u32(padding_len + 1)
+        u32(header_state.header.len) > u32(padding_len + 1) # violate this is protocol error
     len ::= header_state.header.padding == 1 ? header_state.header.len - 1 - u32(padding_len) : header_state.header.len
     data :[len]u8
     if header_state.header.padding == 1:
@@ -84,7 +84,7 @@ format HeadersFrame:
     priority :StreamWeight
     if header_state.header.padding == 1:
         padding_len :u8
-        u32(header_state.header.len) > u32(padding_len + 1)
+        u32(header_state.header.len) > u32(padding_len + 1) # violate this is protocol error
     len ::= u32(header_state.header.len) - u32(available(padding_len)?padding_len:0)
     header_block :[len]u8
     if header_state.header.padding == 1:
