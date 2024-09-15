@@ -1160,6 +1160,9 @@ namespace json2c {
                 if (auto e = ast::as<ast::Enum>(fmt); e) {
                     write_enum(ast::cast_to<ast::Enum>(fmt));
                 }
+                if (auto s = ast::as<ast::State>(fmt); s) {
+                    write_state(ast::cast_to<ast::State>(fmt));
+                }
             }
             ast::tool::FormatSorter s;
             auto sorted = s.topological_sort(prog);
