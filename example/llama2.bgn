@@ -1,0 +1,11 @@
+
+config.url = "https://github.com/karpathy/llama2.c/blob/master/run.c#L385"
+
+format Llama2Tokenizer:
+    max_token_length :u32
+    vocabularies :[..]Vocabulary
+
+format Vocabulary:
+    score: f32
+    len :u32
+    token :[len]u8

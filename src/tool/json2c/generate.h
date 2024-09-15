@@ -382,7 +382,18 @@ namespace json2c {
 
         void encode_decode_int_field(
             const std::shared_ptr<ast::Field>& f,
-            ast::IntType* int_ty,
+            ast::IntType* ity,
+            std::string_view ident,
+            bool encode, bool need_length_check,
+            std::string_view base_offset = {}) {
+            encode_decode_int_field(f, *ity->bit_size, ity->is_common_supported, ity->endian, ident, encode, need_length_check, base_offset);
+        }
+
+        void encode_decode_int_field(
+            const std::shared_ptr<ast::Field>& f,
+            size_t bit_size,
+            bool is_common_supported,
+            ast::Endian endian,
             std::string_view ident,
             bool encode, bool need_length_check,
             std::string_view base_offset = {}) {
@@ -391,12 +402,12 @@ namespace json2c {
             if (no_offset) {
                 base_offset = buf_offset;
             }
-            if (int_ty->is_common_supported) {
-                auto bit = *int_ty->bit_size;
+            if (is_common_supported) {
+                auto bit = bit_size;
                 if (need_length_check) {
                     check_buffer_length(f, "sizeof(", ident, ")");
                 }
-                if (int_ty->bit_size == 8) {
+                if (bit_size == 8) {
                     if (encode) {
                         c_w.writeln(io_(buffer), "[", base_offset, "] = ", ident, ";");
                     }
@@ -414,7 +425,7 @@ namespace json2c {
                 auto i = "tmp_i_" + brgen::nums(get_seq());
                 c_w.writeln("for (size_t ", i, " = 0; ", i, " < sizeof(", ident, "); ", i, "++) {");
                 std::string shift_offset;
-                if (int_ty->endian == ast::Endian::little) {
+                if (endian == ast::Endian::little) {
                     shift_offset = i;
                 }
                 else {
@@ -529,6 +540,12 @@ namespace json2c {
         void write_type_encode(const std::shared_ptr<ast::Field>& f, std::string_view ident, const std::shared_ptr<ast::Type>& typ, bool need_length_check = true) {
             if (auto int_ty = ast::as<ast::IntType>(typ)) {
                 encode_decode_int_field(f, int_ty, ident, true, need_length_check);
+            }
+            else if (auto float_ty = ast::as<ast::FloatType>(typ)) {
+                auto reinterpret_int = "tmp_" + brgen::nums(get_seq());
+                auto map_type = map_float_type_to_int_type(*float_ty->bit_size);
+                c_w.writeln(map_type, " ", reinterpret_int, " = ", "*((", map_type, "*)(&", ident, "));");
+                encode_decode_int_field(f, *float_ty->bit_size, true, float_ty->endian, reinterpret_int, true, need_length_check);
             }
             else if (auto arr_ty = ast::as<ast::ArrayType>(typ)) {
                 auto for_loop = [&](auto&& ident, auto&& length, bool need_buffer_length_check, bool dynamic_array) {
@@ -654,6 +671,12 @@ namespace json2c {
         void write_type_decode(const std::shared_ptr<ast::Field>& f, std::string_view ident, const std::shared_ptr<ast::Type>& typ, bool need_length_check = true) {
             if (auto int_ty = ast::as<ast::IntType>(typ)) {
                 encode_decode_int_field(f, int_ty, ident, false, need_length_check);
+            }
+            else if (auto float_ty = ast::as<ast::FloatType>(typ)) {
+                auto reinterpret_int = "tmp_" + brgen::nums(get_seq());
+                auto map_type = map_float_type_to_int_type(*float_ty->bit_size);
+                encode_decode_int_field(f, *float_ty->bit_size, true, float_ty->endian, reinterpret_int, false, need_length_check);
+                c_w.writeln(ident, " = *((", typeof_(typ), "*)(&", reinterpret_int, ");");
             }
             else if (auto arr_ty = ast::as<ast::ArrayType>(typ)) {
                 auto do_alloc = [&](auto&& len) {
