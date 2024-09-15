@@ -675,6 +675,7 @@ namespace json2c {
             else if (auto float_ty = ast::as<ast::FloatType>(typ)) {
                 auto reinterpret_int = "tmp_" + brgen::nums(get_seq());
                 auto map_type = map_float_type_to_int_type(*float_ty->bit_size);
+                c_w.writeln(map_type, " ", reinterpret_int, ";");
                 encode_decode_int_field(f, *float_ty->bit_size, true, float_ty->endian, reinterpret_int, false, need_length_check);
                 c_w.writeln(ident, " = *((", typeof_(typ), "*)(&", reinterpret_int, ");");
             }
