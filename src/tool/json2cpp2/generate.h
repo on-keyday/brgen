@@ -426,7 +426,9 @@ namespace j2cp2 {
                 auto [base, _] = *ast::tool::lookup_base(ident_len);
                 if (auto f = ast::as<ast::Field>(base->base.lock())) {
                     auto typ = get_type_name(f->field_type);
-                    w.writeln("if(", to_set, "> ~", typ, "(0)) {");
+                    auto size = *f->field_type->bit_size;
+                    std::uint64_t max_size = (std::uint64_t(1) << size) - 1;
+                    w.writeln("if(", to_set, "> 0x", brgen::nums(max_size, 16), ") {");
                     {
                         auto indent = w.indent_scope();
                         w.writeln("return false;");
