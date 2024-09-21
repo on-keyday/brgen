@@ -1,0 +1,6 @@
+config.cpp.namespace = "futils::fnet"
+format CMsg:
+    len :ul64
+    level :ul32
+    type :ul32
+    msg :[len]u8
