@@ -791,7 +791,8 @@ impl<W: std::io::Write> Generator<W> {
                         {
                             let _scope = w.enter_indent_scope();
                             let temp = format!("tmp{}", self.get_seq());
-                            w.writeln(&format!("let mut {} = Default::default();", temp))?;
+                            let elem_type_str = self.get_type(&ptr!(t.element_type))?;
+                            w.writeln(&format!("let mut {} :{} = Default::default();", temp,elem_type_str))?;
                             self.write_decode_type(w, field, ptr!(t.element_type), &temp,&format!("{err_ident}[i]"))?;
                             w.writeln(&format!("{}.push({});", ident, temp))?;
                         }
