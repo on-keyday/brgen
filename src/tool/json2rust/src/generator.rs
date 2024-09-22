@@ -636,8 +636,10 @@ impl<W: std::io::Write> Generator<W> {
                     w.writeln(&format!("if ({}) as usize != {}.len() {{", len, ident))?;
                     {
                         let _scope = w.enter_indent_scope();
+                        let escaped_len = len.escape_default().to_string();
+                        let escaped_ident = ident.escape_default().to_string();
                         w.writeln(&format!(
-                            "return Err(Error::LengthError(\"length {len} and {ident}.len() not equal\"))"
+                            "return Err(Error::LengthError(\"length {escaped_len} and {escaped_ident}.len() not equal\"))"
                         ))?;
                     }
                     w.writeln("}")?;
