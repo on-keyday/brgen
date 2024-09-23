@@ -1009,6 +1009,14 @@ impl<W: std::io::Write> Generator<W> {
             w.writeln("Ok(())")?;
         }
         w.writeln("}")?;
+        w.writeln("pub fn encode_to_vec(&self) -> Result<Vec<u8>,Error> {")?;
+        {
+            let _scope = w.enter_indent_scope();
+            w.writeln("let mut v = Vec::new();")?;
+            w.writeln("self.encode(&mut v)?;")?;
+            w.writeln("Ok(v)")?;
+        }
+        w.writeln("}")?;
         Ok(())
     }
 
