@@ -17,6 +17,10 @@ namespace brgen::ast::tool {
         std::unordered_map<UnaryOp, std::function<std::string(Stringer& s, const std::shared_ptr<Expr>&)>> unary_op_map;
         std::unordered_map<size_t, std::string> tmp_var_map;
 
+        // hooking member access
+        // this is used to replace operator like . to ?. in typescript
+        std::function<void(std::string& member, bool top_level)> member_access_hook;
+
        private:
         std::unordered_map<std::shared_ptr<ast::Ident>, std::string> def_base_map;
 
@@ -57,7 +61,10 @@ namespace brgen::ast::tool {
                 return ident->ident;
             }
             auto text = def_base_map[d->first];
-            auto get_text_with_replace = [&](auto&& replace) {
+            auto get_text_with_replace = [&](auto&& replace, bool top_level) {
+                if (member_access_hook) {
+                    member_access_hook(text, top_level);
+                }
                 if (text.find("${THIS}") != std::string::npos || text.find("$THIS") != std::string::npos) {
                     text = futils::env::expand<std::string>(text, [&](auto&& out, auto&& read) {
                         std::string s;
@@ -72,13 +79,13 @@ namespace brgen::ast::tool {
             };
             if (!d->second) {  // not via member access
                 if (ast::as<ast::Member>(d->first->base.lock())) {
-                    return get_text_with_replace(this_access);
+                    return get_text_with_replace(this_access, true);
                 }
             }
             if (ast::as<ast::EnumMember>(d->first->base.lock())) {
                 return text;
             }
-            return get_text_with_replace(member_base);
+            return get_text_with_replace(member_base, false);
         }
 
         std::string default_bin_op(const std::shared_ptr<Binary>& bin, bool root) {

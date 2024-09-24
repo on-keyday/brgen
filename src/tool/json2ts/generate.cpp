@@ -118,9 +118,9 @@ namespace json2ts {
         void write_union_field(ast::StructUnionType* u, const std::shared_ptr<ast::Field>& field, brgen::writer::Writer& wt) {
             bool first = true;
             auto anonymous_field = field->ident->ident;
-            str.map_ident(field->ident, prefix, ".", anonymous_field);
-            wt.writeln(anonymous_field, ": ");
             auto dot = ".";
+            str.map_ident(field->ident, prefix, dot, anonymous_field);
+            wt.writeln(anonymous_field, ": ");
             auto p = std::move(prefix);
             if (typescript) {
                 prefix = brgen::concat("(", p, dot, anonymous_field, " as any)");
@@ -233,6 +233,17 @@ namespace json2ts {
                     }
                     w.writeln("}");
 
+                    str.member_access_hook = [&](std::string& text, bool top_level) {
+                        if (top_level) {
+                            // replace `.` with `?.` in text
+                            auto replace = text.find(".");
+                            while (replace != std::string::npos) {
+                                text.replace(replace, 1, "?.");
+                                replace = text.find(".", replace + 2);
+                            }
+                        }
+                    };
+
                     // setter
                     w.write("export function ", fmt->ident->ident, "_set_", union_field->ident->ident, "(");
                     if (typescript) {
@@ -242,7 +253,7 @@ namespace json2ts {
                     else {
                         w.write("obj,value");
                     }
-                    w.writeln(") {");
+                    w.writeln(") ");
                     {
                         auto indent = w.indent_scope();
                         bool first = true;
@@ -302,6 +313,7 @@ namespace json2ts {
                     }
                     w.writeln("}");
                 }
+                str.member_access_hook = nullptr;
             }
             return;
         }
