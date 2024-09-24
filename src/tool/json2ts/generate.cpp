@@ -253,7 +253,7 @@ namespace json2ts {
                     else {
                         w.write("obj,value");
                     }
-                    w.writeln(") {");
+                    w.writeln(") ");
                     {
                         auto indent = w.indent_scope();
                         bool first = true;
