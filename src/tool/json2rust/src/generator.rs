@@ -240,54 +240,60 @@ impl<W: std::io::Write> Generator<W> {
                     self.s.error_string = "{_ = x; return None}".to_string();
                     self.s.mutator = "&".to_string();
                     let as_ref = if is_struct_ty  { "&" } else { "" };
-                    tmp_w.writeln(&format!("pub fn {}(&self) -> Option<{}{}> {{", escaped,as_ref, c_type))?;
-                    {
-                        let _scope = tmp_w.enter_indent_scope();
 
-                        for cand in ptr_null!(typ.candidates) {
-                            let cond = ptr!(cand.cond).upgrade().ok_or_else(|| anyhow!("cond unwrap error"))?;
-                            let cond = if let Some(cond0) = &cond0 {
-                                self.s
-                                    .eval_ephemeral_binary_op(ast::BinaryOp::Equal, &cond, cond0)
-                                    .map_err(|x| anyhow!("{:?}", x))?
-                            } else {
-                                self.expr_to_string(&cond)?
-                            };
+                    let mut write_getter = |mut_mode :bool| -> Result<_,anyhow::Error> {
+                        let func_name = if mut_mode { escaped.clone() + "_mut" } else { escaped.clone() };
+                        let return_type = if mut_mode { "&mut ".to_string() + &c_type } else {
+                            as_ref.to_string() + &c_type
+                        };
+                        let m = if mut_mode { "mut " } else { "" };
+                        tmp_w.writeln(&format!("pub fn {func_name}(&{m}self) -> Option<{return_type}> {{"))?;
+                        {
+                            let _scope = tmp_w.enter_indent_scope();
 
-                            tmp_w.writeln(&format!("if {cond} {{ "))?;
-                            {
-                                let _scope = tmp_w.enter_indent_scope();
-                                if let Some(field) = ptr_null!(cand.field) {
-                                    if let Some(field) = field.upgrade() {
-                                        
-                                        let ident =
-                                            self.expr_to_string(&ptr!(field.ident).into())?;
-                                        tmp_w.writeln(&format!("return Some({}{}{});",as_ref, ident,if !is_struct_ty{
-                                            " as _"
-                                        } else {""}))?;
+                            for cand in ptr_null!(typ.candidates) {
+                                let cond = ptr!(cand.cond).upgrade().ok_or_else(|| anyhow!("cond unwrap error"))?;
+                                let cond = if let Some(cond0) = &cond0 {
+                                    self.s
+                                        .eval_ephemeral_binary_op(ast::BinaryOp::Equal, &cond, cond0)
+                                        .map_err(|x| anyhow!("{:?}", x))?
+                                } else {
+                                    self.expr_to_string(&cond)?
+                                };
+
+                                tmp_w.writeln(&format!("if {cond} {{ "))?;
+                                {
+                                    let _scope = tmp_w.enter_indent_scope();
+                                    if let Some(field) = ptr_null!(cand.field) {
+                                        if let Some(field) = field.upgrade() {
+                                            let cur_mut = self.s.mutator.clone();
+                                            self.s.mutator = if mut_mode { "&mut " } else { "&" }.to_string();
+                                            let ident =
+                                                self.expr_to_string(&ptr!(field.ident).into())?;
+                                                self.s.mutator = cur_mut;
+                                            tmp_w.writeln(&format!("return Some({as_ref}{m}{ident}{});",if !is_struct_ty{
+                                                " as _"
+                                            } else {""}))?;
+                                        } else {
+                                            tmp_w.writeln("return None")?;
+                                        }
                                     } else {
                                         tmp_w.writeln("return None")?;
                                     }
-                                } else {
-                                    tmp_w.writeln("return None")?;
                                 }
+                                tmp_w.writeln("}")?;
                             }
-                            tmp_w.writeln("}")?;
-                        }
 
-                        tmp_w.writeln("None")?;
-                    }
-                    tmp_w.writeln("}")?;
+                            tmp_w.writeln("None")?;
+                        }
+                        tmp_w.writeln("}")?;
+                        Ok(())
+                    };
+
+                    write_getter(false)?;
 
                     if is_struct_ty {
-                        tmp_w.writeln(&format!("pub fn {}_mut<'a>(&'a mut self) -> Option<&'a mut {}> {{", escaped, c_type))?;
-                        tmp_w.writeln(&format!("let x = self.{escaped}();"))?;
-                        tmp_w.writeln(&format!("match x {{"))?;
-                        tmp_w.writeln("// SAFETY: this reference is derived from `self`")?;
-                        tmp_w.writeln(&format!("Some(x) => Some(unsafe {{ &mut *(x as *const {c_type} as *const std::cell::UnsafeCell<{c_type}> as *mut {c_type}) }}),"))?;
-                        tmp_w.writeln(&format!("None => None,"))?;
-                        tmp_w.writeln(&format!("}}"))?;
-                        tmp_w.writeln("}")?;
+                        write_getter(true)?;
                     }
 
                     self.s.error_string = format!(
