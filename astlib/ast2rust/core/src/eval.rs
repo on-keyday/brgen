@@ -226,6 +226,13 @@ pub fn is_primitive_array(t: &Rc<RefCell<ast::ArrayType>>) -> bool {
     }
 }
 
+pub fn is_non_primitive_array(t: &ast::Type) -> bool {
+    match t {
+        ast::Type::ArrayType(t) => !is_primitive_array(t),
+        _ => false,
+    }
+}
+
 pub fn get_int_type(
     bit_size: u64,
     is_signed: bool,

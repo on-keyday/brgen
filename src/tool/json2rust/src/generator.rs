@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 use ast2rust::ast::{GenerateMapFile, StructType, StructUnionType, UnionType};
-use ast2rust::eval::{get_int_type, get_type_prim, is_any_range, is_primitive_array, is_struct_type, lookup_base, topological_sort_format, Stringer};
+use ast2rust::eval::{get_int_type, get_type_prim, is_any_range, is_non_primitive_array, is_primitive_array, is_struct_type, lookup_base, topological_sort_format, Stringer};
 use ast2rust::{ast, PtrKey, PtrUnwrapError};
 use ast2rust_macro::{ptr, ptr_null};
 use std::cell::RefCell;
@@ -228,7 +228,7 @@ impl<W: std::io::Write> Generator<W> {
             };
             let c = ptr_null!(typ.common_type);
             if let Some(c) = c {
-                let is_struct_ty = is_struct_type(&c);
+                let is_struct_ty = is_struct_type(&c) || is_non_primitive_array(&c);
                 let c = self.get_type(&c)?;
                 let impl_target = memb.get_ident().ok_or_else(|| anyhow!("ident unwrap error"))?;
                 let impl_target = ptr_null!(impl_target.ident);
