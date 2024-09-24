@@ -284,7 +284,7 @@ impl<W: std::io::Write> Generator<W> {
                         tmp_w.writeln(&format!("let x = self.{escaped}();"))?;
                         tmp_w.writeln(&format!("match x {{"))?;
                         tmp_w.writeln("// SAFETY: this reference is derived from `self`")?;
-                        tmp_w.writeln(&format!("Some(x) => Some(unsafe {{ &mut *(x as *const _ as *mut _) }}),"))?;
+                        tmp_w.writeln(&format!("Some(x) => Some(unsafe {{ &mut *(x as *const {c_type} as *const std::cell::UnsafeCell<{c_type}> as *mut {c_type}) }}),"))?;
                         tmp_w.writeln(&format!("None => None,"))?;
                         tmp_w.writeln(&format!("}}"))?;
                         tmp_w.writeln("}")?;
