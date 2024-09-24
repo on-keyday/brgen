@@ -779,7 +779,13 @@ impl<W: std::io::Write> Generator<W> {
                     }
                 } else {
                     let len = match ptr_null!(t.length_value) {
-                        None => self.expr_to_string(&ptr!(t.length))?,
+                        None => {
+                            let cur_mutator = self.s.mutator.clone();
+                            self.s.mutator = "&".to_string();
+                            let len = self.expr_to_string(&ptr!(t.length))?;
+                            self.s.mutator = cur_mutator;
+                            len
+                        },
                         Some(x) => x.to_string(),
                     };                 
                     if ptr_null!(t.is_bytes) {
