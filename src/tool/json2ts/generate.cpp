@@ -233,8 +233,8 @@ namespace json2ts {
                     }
                     w.writeln("}");
 
-                    str.member_access_hook = [&](std::string& text, bool top_level) {
-                        if (top_level) {
+                    auto hook = [&](std::string& text, bool top_level) {
+                        if (!top_level) {
                             // replace `.` with `?.` in text
                             auto replace = text.find(".");
                             while (replace != std::string::npos) {
@@ -242,6 +242,13 @@ namespace json2ts {
                                 replace = text.find(".", replace + 2);
                             }
                         }
+                    };
+
+                    auto to_string_with_hook = [&](const std::shared_ptr<ast::Expr>& ident) {
+                        str.member_access_hook = hook;
+                        auto res = str.to_string(ident);
+                        str.member_access_hook = nullptr;
+                        return res;
                     };
 
                     // setter
@@ -300,7 +307,7 @@ namespace json2ts {
                                 if (!first) {
                                     w.write("else ");
                                 }
-                                auto conds = str.to_string(cond1);
+                                auto conds = to_string_with_hook(cond1);
                                 w.writeln("if (", cond, "=== (", conds, ")) {");
                                 write_set(cand);
                                 w.writeln("}");
@@ -313,7 +320,6 @@ namespace json2ts {
                     }
                     w.writeln("}");
                 }
-                str.member_access_hook = nullptr;
             }
             return;
         }
