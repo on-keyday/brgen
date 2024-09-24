@@ -281,7 +281,7 @@ impl<W: std::io::Write> Generator<W> {
 
                     if is_struct_ty {
                         tmp_w.writeln(&format!("pub fn {}_mut<'a>(&'a mut self) -> Option<&'a mut {}> {{", escaped, c_type))?;
-                        tmp_w.writeln(&format!("let x = self.{escaped}()"))?;
+                        tmp_w.writeln(&format!("let x = self.{escaped}();"))?;
                         tmp_w.writeln(&format!("match x {{"))?;
                         tmp_w.writeln("// SAFETY: this reference is derived from `self`")?;
                         tmp_w.writeln(&format!("Some(x) => Some(unsafe {{ &mut *(x as *const _ as *mut _) }}),"))?;
