@@ -229,7 +229,7 @@ impl<W: std::io::Write> Generator<W> {
             let c = ptr_null!(typ.common_type);
             if let Some(c) = c {
                 let is_struct_ty = is_struct_type(&c) || is_non_primitive_array(&c);
-                let c = self.get_type(&c)?;
+                let c_type = self.get_type(&c)?;
                 let impl_target = memb.get_ident().ok_or_else(|| anyhow!("ident unwrap error"))?;
                 let impl_target = ptr_null!(impl_target.ident);
                 tmp_w.writeln(&format!("impl {impl_target} {{"))?;
@@ -240,7 +240,7 @@ impl<W: std::io::Write> Generator<W> {
                     self.s.error_string = "{_ = x; return None}".to_string();
                     self.s.mutator = "&".to_string();
                     let as_ref = if is_struct_ty  { "&" } else { "" };
-                    tmp_w.writeln(&format!("pub fn {}(&self) -> Option<{}{}> {{", escaped,as_ref, c))?;
+                    tmp_w.writeln(&format!("pub fn {}(&self) -> Option<{}{}> {{", escaped,as_ref, c_type))?;
                     {
                         let _scope = tmp_w.enter_indent_scope();
 
@@ -279,6 +279,17 @@ impl<W: std::io::Write> Generator<W> {
                     }
                     tmp_w.writeln("}")?;
 
+                    if is_struct_ty {
+                        tmp_w.writeln(&format!("pub fn {}_mut<'a>(&'a mut self) -> Option<&'a mut {}> {{", escaped, c_type))?;
+                        tmp_w.writeln(&format!("let x = self.{escaped}()"))?;
+                        tmp_w.writeln(&format!("match x {{"))?;
+                        tmp_w.writeln("// SAFETY: this reference is derived from `self`")?;
+                        tmp_w.writeln(&format!("Some(x) => Some(unsafe {{ &mut *(x as *const _ as *mut _) }}),"))?;
+                        tmp_w.writeln(&format!("None => None,"))?;
+                        tmp_w.writeln(&format!("}}"))?;
+                        tmp_w.writeln("}")?;
+                    }
+
                     self.s.error_string = format!(
                         "return Err(Error::UnwrapError(format!(\"unwrapping {{:?}} failed\",x))),"
                     );
@@ -286,7 +297,7 @@ impl<W: std::io::Write> Generator<W> {
                     tmp_w.writeln(&format!(
                         "pub fn set_{}(&mut self, x: {}) -> Result<(),Error> {{",
                         ptr_null!(field->ident.ident),
-                        c
+                        c_type
                     ))?;
                     {
                         let _scope = tmp_w.enter_indent_scope();
