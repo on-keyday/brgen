@@ -362,7 +362,7 @@ jobs:
         uses: ruby/setup-ruby@c04af2bb7258bb6a03df1d3c1865998ac9390972 # v1.194.0
         with:
           ruby-version: ruby
-      - uses: github/setup-licensed@38fcaca2db088c8a3ebd4a2a3b2d8bcf4018373c # v1.2.0
+      - uses: github/setup-licensed@c1e1a0b702c3e74efe86efd45e9f4307341594d9 # v1.3.0
         with:
           version: "4.4" # required: supports matching based on string equivalence or node-semver range
       - name: Collect licenses
