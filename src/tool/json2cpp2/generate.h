@@ -941,7 +941,7 @@ namespace j2cp2 {
             }
             w.writeln("};");
             if (enum_stringer) {
-                w.writeln("inline const char* to_string(", enum_->ident->ident, " e) {");
+                w.writeln("constexpr const char* to_string(", enum_->ident->ident, " e) {");
                 {
                     auto indent = w.indent_scope();
                     w.writeln("switch(e) {");
@@ -958,6 +958,32 @@ namespace j2cp2 {
                     }
                     w.writeln("}");
                     w.writeln("return \"\";");
+                }
+                w.writeln("}");
+                w.writeln();
+                w.writeln("constexpr std::optional<", enum_->ident->ident, "> ", enum_->ident->ident, "_from_string(std::string_view str) {");
+                {
+                    auto indent = w.indent_scope();
+                    w.writeln("if (str.empty()) {");
+                    {
+                        auto indent = w.indent_scope();
+                        w.writeln("return std::nullopt;");
+                    }
+                    w.writeln("}");
+                    for (auto& c : enum_->members) {
+                        map_line(c->loc);
+                        auto str = "\"" + c->ident->ident + "\"";
+                        if (c->str_literal) {
+                            str = c->str_literal->value;
+                        }
+                        w.writeln("if (str == ", str, ") {");
+                        {
+                            auto indent = w.indent_scope();
+                            w.writeln("return ", enum_->ident->ident, "::", c->ident->ident, ";");
+                        }
+                        w.writeln("}");
+                    }
+                    w.writeln("return std::nullopt;");
                 }
                 w.writeln("}");
             }
@@ -1780,6 +1806,9 @@ namespace j2cp2 {
             w.writeln("#include <optional>");
             if (use_variant) {
                 w.writeln("#include <variant>");
+            }
+            if (enum_stringer) {
+                w.writeln("#include <string_view>");
             }
             w.writeln();
             w.writeln("#include <binary/flags.h>");
