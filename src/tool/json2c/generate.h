@@ -102,7 +102,7 @@ namespace json2c {
                 t_w.writeln("struct {");
                 {
                     auto scope = t_w.indent_scope();
-                    write_struct_type(new_prefix, t_w, struct_);
+                    write_struct_type(new_prefix, t_w, struct_, false);
                 }
                 t_w.writeln("} ", union_ident, ";");
             }
@@ -176,7 +176,7 @@ namespace json2c {
             }
         }
 
-        void write_field(std::string_view prefix, brgen::writer::Writer& t_w, const std::shared_ptr<ast::Field>& field) {
+        void write_field(std::string_view prefix, brgen::writer::Writer& t_w, const std::shared_ptr<ast::Field>& field, bool on_state) {
             if (!field->ident) {
                 ast::tool::set_tmp_field_ident(get_seq(), field, "anonymous_");
             }
@@ -261,7 +261,7 @@ namespace json2c {
             };
         }
 
-        void write_struct_type(std::string_view prefix, brgen::writer::Writer& t_w, const std::shared_ptr<ast::StructType>& typ) {
+        void write_struct_type(std::string_view prefix, brgen::writer::Writer& t_w, const std::shared_ptr<ast::StructType>& typ, bool on_state) {
             std::vector<std::shared_ptr<ast::Field>> fields;
             for (auto& field : typ->fields) {
                 if (auto f = ast::as<ast::Field>(field)) {
@@ -275,7 +275,7 @@ namespace json2c {
                         fields.clear();
                         continue;
                     }
-                    write_field(prefix, t_w, ast::cast_to<ast::Field>(field));
+                    write_field(prefix, t_w, ast::cast_to<ast::Field>(field), on_state);
                 }
             }
         }
@@ -382,7 +382,18 @@ namespace json2c {
 
         void encode_decode_int_field(
             const std::shared_ptr<ast::Field>& f,
-            ast::IntType* int_ty,
+            ast::IntType* ity,
+            std::string_view ident,
+            bool encode, bool need_length_check,
+            std::string_view base_offset = {}) {
+            encode_decode_int_field(f, *ity->bit_size, ity->is_common_supported, ity->endian, ident, encode, need_length_check, base_offset);
+        }
+
+        void encode_decode_int_field(
+            const std::shared_ptr<ast::Field>& f,
+            size_t bit_size,
+            bool is_common_supported,
+            ast::Endian endian,
             std::string_view ident,
             bool encode, bool need_length_check,
             std::string_view base_offset = {}) {
@@ -391,12 +402,12 @@ namespace json2c {
             if (no_offset) {
                 base_offset = buf_offset;
             }
-            if (int_ty->is_common_supported) {
-                auto bit = *int_ty->bit_size;
+            if (is_common_supported) {
+                auto bit = bit_size;
                 if (need_length_check) {
                     check_buffer_length(f, "sizeof(", ident, ")");
                 }
-                if (int_ty->bit_size == 8) {
+                if (bit_size == 8) {
                     if (encode) {
                         c_w.writeln(io_(buffer), "[", base_offset, "] = ", ident, ";");
                     }
@@ -414,7 +425,7 @@ namespace json2c {
                 auto i = "tmp_i_" + brgen::nums(get_seq());
                 c_w.writeln("for (size_t ", i, " = 0; ", i, " < sizeof(", ident, "); ", i, "++) {");
                 std::string shift_offset;
-                if (int_ty->endian == ast::Endian::little) {
+                if (endian == ast::Endian::little) {
                     shift_offset = i;
                 }
                 else {
@@ -529,6 +540,12 @@ namespace json2c {
         void write_type_encode(const std::shared_ptr<ast::Field>& f, std::string_view ident, const std::shared_ptr<ast::Type>& typ, bool need_length_check = true) {
             if (auto int_ty = ast::as<ast::IntType>(typ)) {
                 encode_decode_int_field(f, int_ty, ident, true, need_length_check);
+            }
+            else if (auto float_ty = ast::as<ast::FloatType>(typ)) {
+                auto reinterpret_int = "tmp_" + brgen::nums(get_seq());
+                auto map_type = map_float_type_to_int_type(*float_ty->bit_size);
+                c_w.writeln(map_type, " ", reinterpret_int, " = ", "*((", map_type, "*)(&", ident, "));");
+                encode_decode_int_field(f, *float_ty->bit_size, true, float_ty->endian, reinterpret_int, true, need_length_check);
             }
             else if (auto arr_ty = ast::as<ast::ArrayType>(typ)) {
                 auto for_loop = [&](auto&& ident, auto&& length, bool need_buffer_length_check, bool dynamic_array) {
@@ -654,6 +671,13 @@ namespace json2c {
         void write_type_decode(const std::shared_ptr<ast::Field>& f, std::string_view ident, const std::shared_ptr<ast::Type>& typ, bool need_length_check = true) {
             if (auto int_ty = ast::as<ast::IntType>(typ)) {
                 encode_decode_int_field(f, int_ty, ident, false, need_length_check);
+            }
+            else if (auto float_ty = ast::as<ast::FloatType>(typ)) {
+                auto reinterpret_int = "tmp_" + brgen::nums(get_seq());
+                auto map_type = map_float_type_to_int_type(*float_ty->bit_size);
+                c_w.writeln(map_type, " ", reinterpret_int, ";");
+                encode_decode_int_field(f, *float_ty->bit_size, true, float_ty->endian, reinterpret_int, false, need_length_check);
+                c_w.writeln(ident, " = *((", typeof_(typ), "*)(&", reinterpret_int, ");");
             }
             else if (auto arr_ty = ast::as<ast::ArrayType>(typ)) {
                 auto do_alloc = [&](auto&& len) {
@@ -808,6 +832,14 @@ namespace json2c {
             }
         }
 
+        void write_format_input_type_state_variables(const std::shared_ptr<ast::Format>& typ) {
+            for (auto& s : typ->state_variables) {
+                auto state_var = s.lock();
+                auto ty = typeof_(state_var->field_type);
+                h_w.writeln(ty, "* ", state_var->ident->ident, ";");
+            }
+        }
+
         void write_format_input_type(const std::shared_ptr<ast::Format>& typ) {
             auto write_error_callback = [&] {
                 if (omit_error_callback) {
@@ -836,6 +868,7 @@ namespace json2c {
                             "size_t input_buffer_size,",
                             "size_t input_buffer_offset",
                             ");");
+                write_format_input_type_state_variables(typ);
             }
             h_w.writeln("} ", typ->ident->ident, "DecodeInput;");
             h_w.writeln();
@@ -847,11 +880,20 @@ namespace json2c {
                 h_w.writeln("size_t ", buffer_size, ";");
                 h_w.writeln("size_t ", buffer_offset, ";");
                 h_w.writeln("size_t ", buffer_bit_offset, ";");
+                write_format_input_type_state_variables(typ);
             }
             h_w.writeln("} ", typ->ident->ident, "EncodeInput;");
         }
 
         bool is_io_compatible(const std::shared_ptr<ast::Format>& from, const std::shared_ptr<ast::Format>& to) {
+            if (from->state_variables.size() != to->state_variables.size()) {
+                return false;
+            }
+            for (size_t i = 0; i < from->state_variables.size(); i++) {
+                if (from->state_variables[i].lock() != to->state_variables[i].lock()) {
+                    return false;
+                }
+            }
             return true;  // TODO(on-keyday): currently, no state is saved but in the future, it may be necessary to check the state.
         }
 
@@ -868,7 +910,7 @@ namespace json2c {
                 auto ptr = brgen::concat("(&", tmp, ")");
                 copy_io(io_input(), ptr, to);
                 cb(ptr, [&] {
-                    copy_io(ptr, io_input(), to);
+                    copy_io(ptr, io_input(), nullptr);
                 });
             }
         }
@@ -876,6 +918,12 @@ namespace json2c {
         void copy_io(auto&& from, auto&& to, const std::shared_ptr<ast::Format>& fmt) {
             // TODO(on-keyday): copy io state
             copy_io_base(from, to);
+            if (fmt) {
+                for (auto& s : fmt->state_variables) {
+                    auto state_var = s.lock();
+                    c_w.writeln(to, "->", state_var->ident->ident, " = ", from, "->", state_var->ident->ident, ";");
+                }
+            }
         }
 
         void copy_io_base(auto&& from, auto&& to) {
@@ -979,13 +1027,24 @@ namespace json2c {
             }
         }
 
+        void check_state_variables(const std::shared_ptr<ast::Format>& fmt) {
+            for (auto& s : fmt->state_variables) {
+                auto state_var = s.lock();
+                auto ty = typeof_(state_var->field_type);
+                c_w.writeln("if (", io_input(), "->", state_var->ident->ident, " == NULL) {");
+                write_return_error(fmt, "state variable ", state_var->ident->ident, " is null");
+                c_w.writeln("}");
+                str.map_ident(state_var->ident, io_input(), "->", state_var->ident->ident);
+            }
+        }
+
         void write_format_encode(const std::shared_ptr<ast::Format>& fmt) {
             encode = true;
             h_w.writeln("int ", fmt->ident->ident, "_encode_ex(const ", fmt->ident->ident, "* this_, ", io_input_type(fmt->ident->ident), "* output_);");
             c_w.writeln("int ", fmt->ident->ident, "_encode_ex(const ", fmt->ident->ident, "* this_, ", io_input_type(fmt->ident->ident), "* output_) {");
             {
                 auto scope = c_w.indent_scope();
-                futils::helper::DynDefer d;
+                check_state_variables(fmt);
                 if (fmt->body->struct_type->bit_size) {
                     auto len = (fmt->body->struct_type->bit_size.value() + futils::bit_per_byte - 1) / futils::bit_per_byte;
                     check_buffer_length(fmt, brgen::nums(len));
@@ -1003,6 +1062,7 @@ namespace json2c {
             c_w.writeln("int ", fmt->ident->ident, "_decode_ex(", fmt->ident->ident, "* this_, ", io_input_type(fmt->ident->ident), "* input_) {");
             {
                 auto scope = c_w.indent_scope();
+                check_state_variables(fmt);
                 if (fmt->body->struct_type->bit_size) {
                     auto len = (fmt->body->struct_type->bit_size.value() + futils::bit_per_byte - 1) / futils::bit_per_byte;
                     check_buffer_length(fmt, brgen::nums(len));
@@ -1033,11 +1093,23 @@ namespace json2c {
             h_w.writeln("} ", enum_ident, ";");
         }
 
+        void write_state(const std::shared_ptr<ast::State>& s) {
+            auto& ident = s->ident->ident;
+            brgen::writer::Writer tmp;
+            write_struct_type("${THIS}", tmp, s->body->struct_type, true);
+            h_w.writeln("typedef struct ", ident, " {");
+            {
+                auto scope = h_w.indent_scope();
+                h_w.write_unformatted(tmp.out());
+            }
+            h_w.writeln("} ", ident, ";");
+        }
+
         void write_format(const std::shared_ptr<ast::Format>& fmt) {
             auto typ = fmt->body->struct_type;
             auto ident = fmt->ident->ident;
             brgen::writer::Writer tmp;
-            write_struct_type("${THIS}", tmp, typ);
+            write_struct_type("${THIS}", tmp, typ, false);
             h_w.writeln("typedef struct ", ident, " {");
             {
                 auto scope = h_w.indent_scope();
@@ -1087,6 +1159,9 @@ namespace json2c {
                 }
                 if (auto e = ast::as<ast::Enum>(fmt); e) {
                     write_enum(ast::cast_to<ast::Enum>(fmt));
+                }
+                if (auto s = ast::as<ast::State>(fmt); s) {
+                    write_state(ast::cast_to<ast::State>(fmt));
                 }
             }
             ast::tool::FormatSorter s;

@@ -50,6 +50,22 @@ config.cpp.namespace = "namespace name"
 
 名前空間名の整合性については保証しない
 
+#### バイト列の型を指定
+
+```
+config.cpp.bytes_type = "byte type name"
+```
+
+バイト列(`[]u8`)の型を指定。デフォルトは`::futils::view::rvec`
+
+#### 動的配列の型を指定
+
+```
+config.cpp.vector_type = "vector type"
+```
+
+動的配列(`[]T`(T は u8 以外の任意の型))の型を指定。デフォルトは`std::vector`
+
 ### Go
 
 #### パッケージ名を指定

@@ -30,10 +30,6 @@ namespace brgen::middle {
                             }
                         }
                     }
-                    auto kept = std::unique(fmt->state_variables.begin(), fmt->state_variables.end(), [](auto&& a, auto&& b) {
-                        return a.lock() == b.lock();
-                    });
-                    fmt->state_variables.erase(kept, fmt->state_variables.end());
                 }
             }
             ast::traverse(n, [&](auto&& n) {
@@ -41,6 +37,21 @@ namespace brgen::middle {
             });
         };
         traverse_fn(traverse_fn, node);
+        auto clean_fn = [](auto&& f, const std::shared_ptr<ast::Node>& n) -> void {
+            if (auto fmt = ast::as<ast::Format>(n)) {
+                std::sort(fmt->state_variables.begin(), fmt->state_variables.end(), [](auto&& a, auto&& b) {
+                    return a.lock().get() < b.lock().get();
+                });
+                auto kept = std::unique(fmt->state_variables.begin(), fmt->state_variables.end(), [](auto&& a, auto&& b) {
+                    return a.lock().get() == b.lock().get();
+                });
+                fmt->state_variables.erase(kept, fmt->state_variables.end());
+            }
+            ast::traverse(n, [&](auto&& n) {
+                f(f, n);
+            });
+        };
+        clean_fn(clean_fn, node);
     }
 
 }  // namespace brgen::middle

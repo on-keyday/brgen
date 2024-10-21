@@ -111,6 +111,14 @@ namespace json2c {
                 return std::make_shared<CPrimitive>(typ, brgen::concat("uint", brgen::nums(bit), "_t"));
             }
         }
+        if (auto float_ty = ast::as<ast::FloatType>(typ)) {
+            if (float_ty->bit_size == 32) {
+                return std::make_shared<CPrimitive>(typ, "float");
+            }
+            if (float_ty->bit_size == 64) {
+                return std::make_shared<CPrimitive>(typ, "double");
+            }
+        }
         if (auto enum_ty = ast::as<ast::EnumType>(typ)) {
             auto name = enum_ty->base.lock()->ident->ident;
             return std::make_shared<CPrimitive>(typ, brgen::concat("enum ", name));
@@ -134,6 +142,16 @@ namespace json2c {
             return get_type(ident_ty->base.lock());
         }
         return std::make_shared<CInvalid>(typ);
+    }
+
+    std::string_view map_float_type_to_int_type(size_t bit_size) {
+        if (bit_size == 32) {
+            return "uint32_t";
+        }
+        if (bit_size == 64) {
+            return "uint64_t";
+        }
+        return "";
     }
 
 }  // namespace json2c

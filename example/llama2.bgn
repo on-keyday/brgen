@@ -1,0 +1,51 @@
+
+config.url = "https://github.com/karpathy/llama2.c/blob/master/run.c"
+input.endian = config.endian.little
+
+format Llama2Tokenizer:
+    max_token_length :u32
+    vocabularies :[..]Vocabulary
+
+format Vocabulary:
+    score: f32
+    len :u32
+    token :[len]u8
+
+format Llama2Config:
+    dim :u32
+    hidden_dim :u32
+    num_layers :u32
+    num_heads :u32
+    num_kv_heads :u32
+    shared_weights :u1
+    vocab_size :u31
+    seq_len :u32
+
+state Llama2State:
+    conf :Llama2Config
+
+llama2_state :Llama2State
+
+format Llama2Weights:
+    conf ::= llama2_state.conf
+    head_size ::= conf.dim / conf.num_heads
+    token_embedding_table :[conf.dim][conf.vocab_size]f32
+    rms_att_weight :[conf.num_layers][conf.dim]f32
+    wq :[conf.num_layers][conf.dim][conf.num_heads * head_size]f32
+    wk :[conf.num_layers][conf.dim][conf.num_kv_heads * head_size]f32
+    wv :[conf.num_layers][conf.dim][conf.num_kv_heads * head_size]f32
+    wo :[conf.num_layers][conf.num_heads * head_size][conf.dim]f32
+    rms_ffn_weight :[conf.num_layers][conf.dim]f32
+    w1 :[conf.num_layers][conf.dim][conf.hidden_dim]f32
+    w2 :[conf.num_layers][conf.hidden_dim][conf.dim]f32
+    w3 :[conf.num_layers][conf.dim][conf.hidden_dim]f32
+    rms_final_weight :[conf.dim]f32
+    freq_cis_real :[conf.seq_len][head_size/2]f32
+    freq_cis_imag :[conf.seq_len][head_size/2]f32
+
+
+format Llama2Model:
+    conf :Llama2Config
+    llama2_state.conf = conf
+    weights :Llama2Weights
+

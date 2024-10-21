@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 git clone https://github.com/on-keyday/utils --depth 1
-cd utils
+cd utils || exit 1
 BUILD_TYPE=$2
 if [ ! $BUILD_TYPE ]; then
     BUILD_TYPE=Debug

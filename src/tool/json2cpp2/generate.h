@@ -101,10 +101,12 @@ namespace j2cp2 {
         bool use_overflow_check = false;
         bool enum_stringer = false;
         bool add_visit = false;
+        bool use_constexpr = false;
         ast::Format* current_format = nullptr;
         Context ctx;
         std::vector<std::string> struct_names;
         std::string bytes_type = "::futils::view::rvec";
+        std::string vector_type = "std::vector";
 
         auto write_return_error(brgen::writer::Writer& w, ast::Field* field, auto&&... msg) {
             if (use_error) {
@@ -132,6 +134,15 @@ namespace j2cp2 {
             }
         }
 
+        void write_return_ok() {
+            if (use_error) {
+                w.writeln("return ::futils::error::Error<>();");
+            }
+            else {
+                w.writeln("return true;");
+            }
+        }
+
         void map_line(brgen::lexer::Loc l) {
             if (!enable_line_map) {
                 return;
@@ -142,6 +153,9 @@ namespace j2cp2 {
         void escape_keyword(std::string& s) {
             if (s == "class") {
                 s = "class_";
+            }
+            if (s == "public") {
+                s = "public_";
             }
         }
 
@@ -284,7 +298,7 @@ namespace j2cp2 {
                 if (auto int_ty = ast::as<ast::IntType>(arr_ty->element_type); int_ty && int_ty->bit_size == 8) {
                     return bytes_type;
                 }
-                return "std::vector<" + get_type_name(arr_ty->element_type) + ">";
+                return vector_type + "<" + get_type_name(arr_ty->element_type) + ">";
             }
             if (auto struct_ty = ast::as<ast::StructType>(type); struct_ty) {
                 if (auto l = struct_ty->base.lock()) {
@@ -302,18 +316,20 @@ namespace j2cp2 {
         void check_variant_alternative(const std::shared_ptr<ast::StructType>& s, bool as_err = false) {
             if (use_variant) {
                 if (auto found = anonymous_struct.find(s); found != anonymous_struct.end()) {
-                    auto& typ = found->second;
-                    w.writeln("if(!std::holds_alternative<", typ.type_name, ">(", typ.variant_name, ")) {");
-                    if (as_err) {
-                        {
-                            auto indent = w.indent_scope();
-                            write_return_error(current_format, typ.variant_name, " variant alternative ", typ.type_name, " is not set");
+                    if (s->fields.size()) {
+                        auto& typ = found->second;
+                        w.writeln("if(!std::holds_alternative<", typ.type_name, ">(", typ.variant_name, ")) {");
+                        if (as_err) {
+                            {
+                                auto indent = w.indent_scope();
+                                write_return_error(current_format, typ.variant_name, " variant alternative ", typ.type_name, " is not set");
+                            }
                         }
+                        else {
+                            w.indent_writeln("return std::nullopt;");
+                        }
+                        w.writeln("}");
                     }
-                    else {
-                        w.indent_writeln("return std::nullopt;");
-                    }
-                    w.writeln("}");
                 }
             }
         }
@@ -347,6 +363,9 @@ namespace j2cp2 {
                 map_line(f->loc);
                 w.writeln("return ", a, ";");
             };
+            if (use_constexpr) {
+                w.write("constexpr ");
+            }
             w.writeln("std::optional<", get_type_name(union_ty->common_type), "> ", union_field->ident->ident, "() const {");
             {
                 auto indent = w.indent_scope();
@@ -407,7 +426,9 @@ namespace j2cp2 {
                 auto [base, _] = *ast::tool::lookup_base(ident_len);
                 if (auto f = ast::as<ast::Field>(base->base.lock())) {
                     auto typ = get_type_name(f->field_type);
-                    w.writeln("if(", to_set, "> ~", typ, "(0)) {");
+                    auto size = *f->field_type->bit_size;
+                    std::uint64_t max_size = (std::uint64_t(1) << size) - 1;
+                    w.writeln("if(", to_set, "> 0x", brgen::nums(max_size, 16), ") {");
                     {
                         auto indent = w.indent_scope();
                         w.writeln("return false;");
@@ -415,7 +436,21 @@ namespace j2cp2 {
                     w.writeln("}");
                     auto ident = str.to_string(f->ident);
                     map_line(f->loc);
-                    w.writeln(ident, " = ", to_set, ";");
+                    if (ast::as<ast::UnionType>(f->field_type)) {
+                        while (ident.back() != '(') {
+                            ident.pop_back();
+                        }
+                        ident.erase(0, 2);  // remove (*
+                        auto fmt = ast::as<ast::Format>(f->belong.lock());
+                        std::string args;
+                        if (fmt) {
+                            args = state_variable_to_argument(fmt->body->struct_type, false);
+                        }
+                        w.writeln(ident, to_set, args, ");");
+                    }
+                    else {
+                        w.writeln(ident, " = ", to_set, ";");
+                    }
                 }
             }
         }
@@ -441,7 +476,19 @@ namespace j2cp2 {
         void write_common_type_accessor(std::string_view prefix, const std::string& cond_u, const std::shared_ptr<ast::Field>& uf, ast::UnionType* ut) {
             // write getter func
             map_line(uf->loc);
-            w.writeln("std::optional<", get_type_name(ut->common_type), "> ", uf->ident->ident, "() const {");
+            if (use_constexpr) {
+                w.write("constexpr ");
+            }
+            auto fmt = ast::as<ast::Format>(uf->belong.lock());
+            std::string set_args, get_args;
+            if (fmt) {
+                set_args = state_variable_to_argument(fmt->body->struct_type, true);
+                if (set_args.size()) {
+                    get_args = set_args;
+                    get_args.erase(0, 1);
+                }
+            }
+            w.writeln("std::optional<", get_type_name(ut->common_type), "> ", uf->ident->ident, "(", get_args, ") const {");
             {
                 auto indent = w.indent_scope();
                 auto make_access = [&](const std::shared_ptr<ast::Field>& f) {
@@ -459,7 +506,7 @@ namespace j2cp2 {
                         for (auto& d : defs) {
                             code_one_node(d);
                         }
-                        auto cond_s = str.to_string(cond);
+                        auto cond_s = str.to_string_impl(cond, false);
                         map_line(c->loc);
                         w.writeln("if (", cond_s, "==", cond_u, ") {");
                         {
@@ -487,13 +534,18 @@ namespace j2cp2 {
                 if (!end_else) {
                     w.writeln("return std::nullopt;");
                 }
-                str.map_ident(uf->ident, "(*", prefix, ".", uf->ident->ident + "())");
+                auto args = state_variable_to_argument(fmt->body->struct_type, false);
+                args.erase(0, 1);
+                str.map_ident(uf->ident, "(*", prefix, ".", uf->ident->ident + "(", args, "))");
             }
             w.writeln("}");
 
             // write setter func
             map_line(uf->loc);
-            w.writeln("bool ", uf->ident->ident, "(const ", get_type_name(ut->common_type), "& v) {");
+            if (use_constexpr) {
+                w.write("constexpr ");
+            }
+            w.writeln("bool ", uf->ident->ident, "(const ", get_type_name(ut->common_type), "& v", set_args, ") {");
             {
                 auto indent = w.indent_scope();
                 auto make_access = [&](const std::shared_ptr<ast::Field>& f) {
@@ -518,7 +570,7 @@ namespace j2cp2 {
                         for (auto& d : defs) {
                             code_one_node(d);
                         }
-                        auto cond_s = str.to_string(cond);
+                        auto cond_s = str.to_string_impl(cond, false);
                         map_line(c->loc);
                         w.writeln("if (", cond_s, "==", cond_u, ") {");
                         {
@@ -641,10 +693,8 @@ namespace j2cp2 {
 
         void write_field(
             std::vector<std::shared_ptr<ast::Field>>& non_aligned,
-            // size_t& bit_size,
-            size_t i,
-            // const std::shared_ptr<ast::StructType>& s,
-            const std::shared_ptr<ast::Field>& f, std::string_view prefix) {
+            const std::shared_ptr<ast::Field>& f, std::string_view prefix,
+            bool on_state = false) {
             futils::helper::DynDefer d;
             auto is_simple_type = [&](const std::shared_ptr<ast::Type>& type) {
                 return ast::as<ast::IntType>(type) != nullptr || ast::as<ast::EnumType>(type) != nullptr;
@@ -652,25 +702,23 @@ namespace j2cp2 {
             bool hidden = set_hidden_ident(f);
             escape_keyword(f->ident->ident);
             auto type = unwrap_ident_type(f->field_type);
+            // only for state
+            if (on_state && ast::as<ast::BoolType>(type)) {
+                map_line(f->loc);
+                w.writeln("bool ", f->ident->ident, " = false;");
+                str.map_ident(f->ident, prefix, ".", f->ident->ident);
+            }
             if (f->bit_alignment == ast::BitAlignment::not_target) {
                 return;
             }
             if (f->bit_alignment != f->eventual_bit_alignment) {
-                // bit_size += *type->bit_size;
                 non_aligned.push_back(ast::cast_to<ast::Field>(f));
                 return;
             }
             if (non_aligned.size() > 0) {
-                /**
-                if (!type->bit_size) {
-                    return;
-                }
-                */
-                // bit_size += *type->bit_size;
                 non_aligned.push_back(ast::cast_to<ast::Field>(f));
-                write_bit_fields(prefix, non_aligned, /*bit_size,*/ ast::Endian::unspec);
+                write_bit_fields(prefix, non_aligned, ast::Endian::unspec);
                 non_aligned.clear();
-                // bit_size = 0;
                 return;
             }
             if (auto union_ty = ast::as<ast::StructUnionType>(type)) {
@@ -763,6 +811,28 @@ namespace j2cp2 {
             w.writeln("}");
         }
 
+        std::string state_variable_to_argument(const std::shared_ptr<ast::StructType>& s, bool as_param) {
+            if (auto fmt = ast::as<ast::Format>(s->base.lock())) {
+                std::string args;
+                for (auto& weak_arg : fmt->state_variables) {
+                    auto arg = weak_arg.lock();
+                    auto& typ = ast::as<ast::IdentType>(arg->field_type)->ident->ident;
+                    auto& ident = arg->ident;
+                    escape_keyword(ident->ident);
+                    str.map_ident(ident, ident->ident);
+                    auto& param_name = arg->ident->ident;
+                    if (as_param) {
+                        args += "," + typ + "& " + param_name;
+                    }
+                    else {
+                        args += "," + param_name;
+                    }
+                }
+                return args;
+            }
+            return "";
+        }
+
         void write_struct_type(std::string_view struct_name, const std::shared_ptr<ast::StructType>& s, const std::string& prefix = "") {
             auto member = ast::as<ast::Member>(s->base.lock());
             bool has_ident = member && member->ident;
@@ -779,7 +849,6 @@ namespace j2cp2 {
                 auto indent = w.indent_scope();
                 bool is_int_set = true;
                 bool include_non_simple = false;
-                // size_t bit_size = 0;
                 std::vector<std::shared_ptr<ast::Field>> non_aligned;
                 for (auto i = 0; i < s->fields.size(); i++) {
                     auto& field = s->fields[i];
@@ -788,7 +857,7 @@ namespace j2cp2 {
                             non_aligned.push_back(ast::cast_to<ast::Field>(field));
                             continue;
                         }
-                        write_field(non_aligned, /*bit_size,*/ i, ast::cast_to<ast::Field>(field), prefix);
+                        write_field(non_aligned, ast::cast_to<ast::Field>(field), prefix);
                     }
                 }
                 if (is_type_mapped) {
@@ -796,20 +865,25 @@ namespace j2cp2 {
                     if (auto ity = ast::as<ast::IntType>(s->type_map->type_literal); ity) {
                         endian = ity->endian;
                     }
-                    write_bit_fields(prefix, non_aligned, /**s->bit_size,*/ endian);
+                    write_bit_fields(prefix, non_aligned, endian);
                 }
                 if (has_ident) {
                     if (!use_variant) {  // for raw union
                         w.writeln(member->ident->ident, "() {}");
                     }
+                    std::string ret_type;
                     if (use_error) {
-                        w.writeln("::futils::error::Error<> encode(::futils::binary::writer& w) const ;");
-                        w.writeln("::futils::error::Error<> decode(::futils::binary::reader& r);");
+                        ret_type = "::futils::error::Error<>";
                     }
                     else {
-                        w.writeln("bool encode(::futils::binary::writer& w) const ;");
-                        w.writeln("bool decode(::futils::binary::reader& r);");
+                        ret_type = "bool";
                     }
+                    if (use_constexpr) {
+                        ret_type = "constexpr " + ret_type;
+                    }
+                    auto params = state_variable_to_argument(s, true);
+                    w.writeln(ret_type, " encode(::futils::binary::writer& w", params, ") const ;");
+                    w.writeln(ret_type, " decode(::futils::binary::reader& r", params, ");");
                     if (s->fixed_header_size) {
                         w.writeln("static constexpr size_t fixed_header_size = ", brgen::nums(s->fixed_header_size / 8), ";");
                     }
@@ -826,6 +900,27 @@ namespace j2cp2 {
             struct_names.push_back(fmt->ident->ident);
             write_struct_type(fmt->ident->ident, fmt->body->struct_type, "${THIS}");
             w.writeln(";");
+        }
+
+        void write_state(const std::shared_ptr<ast::State>& state) {
+            map_line(state->loc);
+            w.writeln("struct ", state->ident->ident, " {");
+            {
+                auto indent = w.indent_scope();
+                std::vector<std::shared_ptr<ast::Field>> non_align;
+                for (auto& f : state->body->struct_type->fields) {
+                    if (auto field = ast::as<ast::Field>(f); field) {
+                        write_field(non_align, ast::cast_to<ast::Field>(f), "${THIS}", true);
+                    }
+                }
+            }
+            w.writeln("};");
+        }
+
+        void write_format(const std::shared_ptr<ast::Format>& fmt) {
+            write_simple_struct(fmt);
+            write_code_fn(fmt, true);
+            write_code_fn(fmt, false);
         }
 
         void write_enum(const std::shared_ptr<ast::Enum>& enum_) {
@@ -846,7 +941,7 @@ namespace j2cp2 {
             }
             w.writeln("};");
             if (enum_stringer) {
-                w.writeln("inline const char* to_string(", enum_->ident->ident, " e) {");
+                w.writeln("constexpr const char* to_string(", enum_->ident->ident, " e) {");
                 {
                     auto indent = w.indent_scope();
                     w.writeln("switch(e) {");
@@ -863,6 +958,32 @@ namespace j2cp2 {
                     }
                     w.writeln("}");
                     w.writeln("return \"\";");
+                }
+                w.writeln("}");
+                w.writeln();
+                w.writeln("constexpr std::optional<", enum_->ident->ident, "> ", enum_->ident->ident, "_from_string(std::string_view str) {");
+                {
+                    auto indent = w.indent_scope();
+                    w.writeln("if (str.empty()) {");
+                    {
+                        auto indent = w.indent_scope();
+                        w.writeln("return std::nullopt;");
+                    }
+                    w.writeln("}");
+                    for (auto& c : enum_->members) {
+                        map_line(c->loc);
+                        auto str = "\"" + c->ident->ident + "\"";
+                        if (c->str_literal) {
+                            str = c->str_literal->value;
+                        }
+                        w.writeln("if (str == ", str, ") {");
+                        {
+                            auto indent = w.indent_scope();
+                            w.writeln("return ", enum_->ident->ident, "::", c->ident->ident, ";");
+                        }
+                        w.writeln("}");
+                    }
+                    w.writeln("return std::nullopt;");
                 }
                 w.writeln("}");
             }
@@ -1153,11 +1274,13 @@ namespace j2cp2 {
             }
             if (auto struct_ty = ast::as<ast::StructType>(typ); struct_ty) {
                 map_line(loc);
+                auto args = state_variable_to_argument(ast::cast_to<ast::StructType>(typ), false);
+                auto call = brgen::concat(ident, ".encode(w", args, ")");
                 if (use_error) {
-                    w.writeln("if (auto err = ", ident, ".encode(w)) {");
+                    w.writeln("if (auto err = ", call, ") {");
                 }
                 else {
-                    w.writeln("if (!", ident, ".encode(w)) {");
+                    w.writeln("if (!", call, ") {");
                 }
                 {
                     auto indent = w.indent_scope();
@@ -1471,11 +1594,13 @@ namespace j2cp2 {
             }
             if (auto struct_ty = ast::as<ast::StructType>(typ); struct_ty) {
                 map_line(loc);
+                auto args = state_variable_to_argument(ast::cast_to<ast::StructType>(typ), false);
+                auto call = brgen::concat(ident, ".decode(r", args, ")");
                 if (use_error) {
-                    w.writeln("if (auto err = ", ident, ".decode(r)) {");
+                    w.writeln("if (auto err = ", call, ") {");
                 }
                 else {
-                    w.writeln("if (!", ident, ".decode(r)) {");
+                    w.writeln("if (!", call, ") {");
                 }
                 {
                     auto indent = w.indent_scope();
@@ -1536,6 +1661,9 @@ namespace j2cp2 {
             }
             if (auto if_ = ast::as<ast::If>(elem)) {
                 code_if(if_);
+            }
+            if (auto return_ = ast::as<ast::Return>(elem)) {
+                write_return_ok();
             }
             if (auto block = ast::as<ast::IndentBlock>(elem)) {
                 code_indent_block(ast::cast_to<ast::IndentBlock>(elem));
@@ -1632,7 +1760,16 @@ namespace j2cp2 {
             if (use_error) {
                 return_type = "::futils::error::Error<>";
             }
-            w.writeln("inline ", return_type, " ", fmt->ident->ident, "::", encode ? "encode(::futils::binary::writer& w) const" : "decode(::futils::binary::reader& r)", " {");
+            auto args = state_variable_to_argument(fmt->body->struct_type, true);
+            if (use_constexpr) {
+                w.write("constexpr ");
+            }
+            if (encode) {
+                w.writeln("inline ", return_type, " ", fmt->ident->ident, "::encode(::futils::binary::writer& w", args, ") const {");
+            }
+            else {
+                w.writeln("inline ", return_type, " ", fmt->ident->ident, "::decode(::futils::binary::reader& r", args, ") {");
+            }
             {
                 auto indent = w.indent_scope();
                 if (ctx.dynamic_endian) {
@@ -1641,12 +1778,7 @@ namespace j2cp2 {
                 }
                 // write code
                 code_indent_block(fmt->body);
-                if (use_error) {
-                    w.writeln("return ::futils::error::Error<>{};");
-                }
-                else {
-                    w.writeln("return true;");
-                }
+                write_return_ok();
             }
             w.writeln("}");
         }
@@ -1675,6 +1807,9 @@ namespace j2cp2 {
             if (use_variant) {
                 w.writeln("#include <variant>");
             }
+            if (enum_stringer) {
+                w.writeln("#include <string_view>");
+            }
             w.writeln();
             w.writeln("#include <binary/flags.h>");
             w.writeln("#include <binary/float.h>");
@@ -1700,6 +1835,9 @@ namespace j2cp2 {
                 }
                 else if (m->name == "config.cpp.bytes_type") {
                     this->bytes_type = std::move(*name);
+                }
+                else if (m->name == "config.cpp.vector_type") {
+                    this->vector_type = std::move(*name);
                 }
                 else if (m->name == "config.cpp.sys_include") {
                     w.writeln("#include <", *name, ">");
@@ -1732,13 +1870,14 @@ namespace j2cp2 {
                 if (auto e = ast::as<ast::Enum>(fmt); e) {
                     write_enum(ast::cast_to<ast::Enum>(fmt));
                 }
+                if (auto s = ast::as<ast::State>(fmt); s) {
+                    write_state(ast::cast_to<ast::State>(fmt));
+                }
             }
             ast::tool::FormatSorter s;
             auto sorted = s.topological_sort(prog);
             for (auto& fmt : sorted) {
-                write_simple_struct(fmt);
-                write_code_fn(fmt, true);
-                write_code_fn(fmt, false);
+                write_format(ast::cast_to<ast::Format>(fmt));
             }
         }
     };

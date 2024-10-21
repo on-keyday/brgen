@@ -118,9 +118,9 @@ namespace json2ts {
         void write_union_field(ast::StructUnionType* u, const std::shared_ptr<ast::Field>& field, brgen::writer::Writer& wt) {
             bool first = true;
             auto anonymous_field = field->ident->ident;
-            str.map_ident(field->ident, prefix, ".", anonymous_field);
-            wt.writeln(anonymous_field, ": ");
             auto dot = ".";
+            str.map_ident(field->ident, prefix, dot, anonymous_field);
+            wt.writeln(anonymous_field, ": ");
             auto p = std::move(prefix);
             if (typescript) {
                 prefix = brgen::concat("(", p, dot, anonymous_field, " as any)");
@@ -233,6 +233,24 @@ namespace json2ts {
                     }
                     w.writeln("}");
 
+                    auto hook = [&](std::string& text, bool top_level) {
+                        if (!top_level) {
+                            // replace `.` with `?.` in text
+                            auto replace = text.find(".");
+                            while (replace != std::string::npos) {
+                                text.replace(replace, 1, "?.");
+                                replace = text.find(".", replace + 2);
+                            }
+                        }
+                    };
+
+                    auto to_string_with_hook = [&](const std::shared_ptr<ast::Expr>& ident) {
+                        str.member_access_hook = hook;
+                        auto res = str.to_string(ident);
+                        str.member_access_hook = nullptr;
+                        return res;
+                    };
+
                     // setter
                     w.write("export function ", fmt->ident->ident, "_set_", union_field->ident->ident, "(");
                     if (typescript) {
@@ -289,7 +307,7 @@ namespace json2ts {
                                 if (!first) {
                                     w.write("else ");
                                 }
-                                auto conds = str.to_string(cond1);
+                                auto conds = to_string_with_hook(cond1);
                                 w.writeln("if (", cond, "=== (", conds, ")) {");
                                 write_set(cand);
                                 w.writeln("}");

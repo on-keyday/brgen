@@ -29,6 +29,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
     bool legacy_file_pass = false;
     bool enum_stringer = false;
     bool add_visit = false;
+    bool use_constexpr = false;
     void bind(futils::cmdline::option::Context& ctx) {
         bind_help(ctx);
         ctx.VarBool(&spec, "s", "spec mode");
@@ -40,6 +41,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
         ctx.VarBool(&enum_stringer, "enum-stringer", "use to_string for enum");
         ctx.VarBool(&add_visit, "add-visit", "add visit method for struct");
         ctx.VarBool(&legacy_file_pass, "f,file", "use legacy file pass mode");
+        ctx.VarBool(&use_constexpr, "use-constexpr", "use constexpr for functions");
     }
 };
 
@@ -51,6 +53,7 @@ int cpp_generate(const Flags& flags, brgen::request::GenerateSource& req, std::s
     g.use_overflow_check = flags.use_overflow_check;
     g.enum_stringer = flags.enum_stringer;
     g.add_visit = flags.add_visit;
+    g.use_constexpr = flags.use_constexpr;
     auto prog = brgen::ast::cast_to<brgen::ast::Program>(res);
     g.write_program(prog);
     send_source(req.id, std::move(g.w.out()), req.name + ".hpp");

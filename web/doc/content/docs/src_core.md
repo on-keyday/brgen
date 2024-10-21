@@ -253,6 +253,26 @@ union {
 
 もちろん実装者は好きなように実装していいが、なにかしらここの部分のユーザーインターフェースについて説明が要される。
 
+### state 変数について
+
+以下のような形にすすると x は state 変数という特別扱いになる。
+
+```
+state X:
+  is_a :bool
+
+x :X
+
+format Y:
+  y :u8
+  if x.is_a:
+    a :u16
+```
+
+このとき brgen(lang)上では x はグローバル変数のように扱われる。
+一方、ast 解析時に Y に対して ast::Format.state_variables に x への参照が入れられれるため、
+それを使うことで encode/decode 関数の引数として x を渡す形式に変換できる。
+
 ### その他メモ
 
 - 型名の識別子(Ident)の expr_type は nullptr

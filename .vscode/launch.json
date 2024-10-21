@@ -20,7 +20,7 @@
             "request": "launch",
             "program": "${workspaceRoot}/tool/src2json",
             "args": [
-                "c:/workspace/shbrgen/brgen/example/socks.bgn",
+                "c:/workspace/shbrgen/brgen/example/http2.bgn",
                 "--print-json","--print-on-error"
             ],
             "stopAtEntry": false,
@@ -56,11 +56,11 @@
             "name": "Debug json2cpp",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceRoot}/tool/json2vm2",
+            "program": "${workspaceRoot}/tool/json2cpp2",
             "args": [
                 "-f", "./ignore/sample.json"
-                ,"-r",
-                "-b","./example/wire_data/websocket.dat","--hex","--jit"
+                //,"-r",
+                //"-b","./example/wire_data/websocket.dat","--hex","--jit"
                 //*/
             ],
             "stopAtEntry": false,

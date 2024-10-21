@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 use ast2rust::ast::{GenerateMapFile, StructType, StructUnionType, UnionType};
-use ast2rust::eval::{get_int_type, get_type_prim, is_any_range, is_primitive_array, is_struct_type, lookup_base, topological_sort_format, Stringer};
+use ast2rust::eval::{get_int_type, get_type_prim, is_any_range, is_non_primitive_array, is_primitive_array, is_struct_type, lookup_base, topological_sort_format, Stringer};
 use ast2rust::{ast, PtrKey, PtrUnwrapError};
 use ast2rust_macro::{ptr, ptr_null};
 use std::cell::RefCell;
@@ -228,8 +228,8 @@ impl<W: std::io::Write> Generator<W> {
             };
             let c = ptr_null!(typ.common_type);
             if let Some(c) = c {
-                let is_struct_ty = is_struct_type(&c);
-                let c = self.get_type(&c)?;
+                let is_struct_ty = is_struct_type(&c) || is_non_primitive_array(&c);
+                let c_type = self.get_type(&c)?;
                 let impl_target = memb.get_ident().ok_or_else(|| anyhow!("ident unwrap error"))?;
                 let impl_target = ptr_null!(impl_target.ident);
                 tmp_w.writeln(&format!("impl {impl_target} {{"))?;
@@ -240,44 +240,61 @@ impl<W: std::io::Write> Generator<W> {
                     self.s.error_string = "{_ = x; return None}".to_string();
                     self.s.mutator = "&".to_string();
                     let as_ref = if is_struct_ty  { "&" } else { "" };
-                    tmp_w.writeln(&format!("pub fn {}(&self) -> Option<{}{}> {{", escaped,as_ref, c))?;
-                    {
-                        let _scope = tmp_w.enter_indent_scope();
 
-                        for cand in ptr_null!(typ.candidates) {
-                            let cond = ptr!(cand.cond).upgrade().ok_or_else(|| anyhow!("cond unwrap error"))?;
-                            let cond = if let Some(cond0) = &cond0 {
-                                self.s
-                                    .eval_ephemeral_binary_op(ast::BinaryOp::Equal, &cond, cond0)
-                                    .map_err(|x| anyhow!("{:?}", x))?
-                            } else {
-                                self.expr_to_string(&cond)?
-                            };
+                    let mut write_getter = |mut_mode :bool| -> Result<_,anyhow::Error> {
+                        let func_name = if mut_mode { escaped.clone() + "_mut" } else { escaped.clone() };
+                        let return_type = if mut_mode { "&mut ".to_string() + &c_type } else {
+                            as_ref.to_string() + &c_type
+                        };
+                        let m = if mut_mode { "mut " } else { "" };
+                        tmp_w.writeln(&format!("pub fn {func_name}(&{m}self) -> Option<{return_type}> {{"))?;
+                        {
+                            let _scope = tmp_w.enter_indent_scope();
 
-                            tmp_w.writeln(&format!("if {cond} {{ "))?;
-                            {
-                                let _scope = tmp_w.enter_indent_scope();
-                                if let Some(field) = ptr_null!(cand.field) {
-                                    if let Some(field) = field.upgrade() {
-                                        
-                                        let ident =
-                                            self.expr_to_string(&ptr!(field.ident).into())?;
-                                        tmp_w.writeln(&format!("return Some({}{}{});",as_ref, ident,if !is_struct_ty{
-                                            " as _"
-                                        } else {""}))?;
+                            for cand in ptr_null!(typ.candidates) {
+                                let cond = ptr!(cand.cond).upgrade().ok_or_else(|| anyhow!("cond unwrap error"))?;
+                                let cond = if let Some(cond0) = &cond0 {
+                                    self.s
+                                        .eval_ephemeral_binary_op(ast::BinaryOp::Equal, &cond, cond0)
+                                        .map_err(|x| anyhow!("{:?}", x))?
+                                } else {
+                                    self.expr_to_string(&cond)?
+                                };
+
+                                tmp_w.writeln(&format!("if {cond} {{ "))?;
+                                {
+                                    let _scope = tmp_w.enter_indent_scope();
+                                    if let Some(field) = ptr_null!(cand.field) {
+                                        if let Some(field) = field.upgrade() {
+                                            let cur_mut = self.s.mutator.clone();
+                                            self.s.mutator = if mut_mode { "&mut " } else { "&" }.to_string();
+                                            let ident =
+                                                self.expr_to_string(&ptr!(field.ident).into())?;
+                                                self.s.mutator = cur_mut;
+                                            tmp_w.writeln(&format!("return Some({as_ref}{m}{ident}{});",if !is_struct_ty{
+                                                " as _"
+                                            } else {""}))?;
+                                        } else {
+                                            tmp_w.writeln("return None")?;
+                                        }
                                     } else {
                                         tmp_w.writeln("return None")?;
                                     }
-                                } else {
-                                    tmp_w.writeln("return None")?;
                                 }
+                                tmp_w.writeln("}")?;
                             }
-                            tmp_w.writeln("}")?;
-                        }
 
-                        tmp_w.writeln("None")?;
+                            tmp_w.writeln("None")?;
+                        }
+                        tmp_w.writeln("}")?;
+                        Ok(())
+                    };
+
+                    write_getter(false)?;
+
+                    if is_struct_ty {
+                        write_getter(true)?;
                     }
-                    tmp_w.writeln("}")?;
 
                     self.s.error_string = format!(
                         "return Err(Error::UnwrapError(format!(\"unwrapping {{:?}} failed\",x))),"
@@ -286,7 +303,7 @@ impl<W: std::io::Write> Generator<W> {
                     tmp_w.writeln(&format!(
                         "pub fn set_{}(&mut self, x: {}) -> Result<(),Error> {{",
                         ptr_null!(field->ident.ident),
-                        c
+                        c_type
                     ))?;
                     {
                         let _scope = tmp_w.enter_indent_scope();
@@ -636,8 +653,10 @@ impl<W: std::io::Write> Generator<W> {
                     w.writeln(&format!("if ({}) as usize != {}.len() {{", len, ident))?;
                     {
                         let _scope = w.enter_indent_scope();
+                        let escaped_len = len.escape_default().to_string();
+                        let escaped_ident = ident.escape_default().to_string();
                         w.writeln(&format!(
-                            "return Err(Error::LengthError(\"length {len} and {ident}.len() not equal\"))"
+                            "return Err(Error::LengthError(\"length {escaped_len} and {escaped_ident}.len() not equal\"))"
                         ))?;
                     }
                     w.writeln("}")?;
@@ -777,7 +796,13 @@ impl<W: std::io::Write> Generator<W> {
                     }
                 } else {
                     let len = match ptr_null!(t.length_value) {
-                        None => self.expr_to_string(&ptr!(t.length))?,
+                        None => {
+                            let cur_mutator = self.s.mutator.clone();
+                            self.s.mutator = "&".to_string();
+                            let len = self.expr_to_string(&ptr!(t.length))?;
+                            self.s.mutator = cur_mutator;
+                            len
+                        },
                         Some(x) => x.to_string(),
                     };                 
                     if ptr_null!(t.is_bytes) {
@@ -789,7 +814,8 @@ impl<W: std::io::Write> Generator<W> {
                         {
                             let _scope = w.enter_indent_scope();
                             let temp = format!("tmp{}", self.get_seq());
-                            w.writeln(&format!("let mut {} = Default::default();", temp))?;
+                            let elem_type_str = self.get_type(&ptr!(t.element_type))?;
+                            w.writeln(&format!("let mut {} :{} = Default::default();", temp,elem_type_str))?;
                             self.write_decode_type(w, field, ptr!(t.element_type), &temp,&format!("{err_ident}[i]"))?;
                             w.writeln(&format!("{}.push({});", ident, temp))?;
                         }
@@ -1004,6 +1030,14 @@ impl<W: std::io::Write> Generator<W> {
             let _scope = w.enter_indent_scope();
             self.write_node(w, ast::Node::IndentBlock(ptr!(ty.body)))?;
             w.writeln("Ok(())")?;
+        }
+        w.writeln("}")?;
+        w.writeln("pub fn encode_to_vec(&self) -> Result<Vec<u8>,Error> {")?;
+        {
+            let _scope = w.enter_indent_scope();
+            w.writeln("let mut v = Vec::new();")?;
+            w.writeln("self.encode(&mut v)?;")?;
+            w.writeln("Ok(v)")?;
         }
         w.writeln("}")?;
         Ok(())

@@ -1,6 +1,7 @@
 # default endian is big
 config.url = "https://trustedcomputinggroup.org/wp-content/uploads/TPM-2.0-1.83-Part-2-Structures.pdf"
 config.url = "https://github.com/wolfSSL/wolfTPM/blob/master/src/tpm2_packet.c"
+config.cpp.namespace = "futils::tpm2"
 
 format Bytes8:
     size :u8
