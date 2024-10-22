@@ -233,6 +233,10 @@ namespace brgen::ast::tool {
             }
             if (auto access = ast::as<ast::MemberAccess>(expr)) {
                 auto base = to_string_impl(access->target, false);
+                if (access->member->usage == ast::IdentUsage::reference_builtin_fn &&
+                    access->member->ident == "length") {
+                    return concat(base, ".size()");
+                }
                 return ident_to_string(access->member, base);
             }
             if (auto io_op = ast::as<ast::IOOperation>(expr)) {
