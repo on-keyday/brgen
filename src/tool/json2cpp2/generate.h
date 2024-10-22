@@ -1449,6 +1449,7 @@ namespace j2cp2 {
             }
             if (auto arr_ty = ast::as<ast::ArrayType>(typ); arr_ty) {
                 std::optional<std::string> len;
+                std::optional<std::string> require_remain_bytes;
                 std::optional<std::tuple<std::string, brgen::lexer::Loc, size_t>> next;
                 if (auto found = later_size.find(fi); found != later_size.end()) {
                     if (found->second.next_field) {
@@ -1474,6 +1475,7 @@ namespace j2cp2 {
                         }
                         w.writeln("}");
                         len = brgen::concat("(r.remain().size() - ", require_remain, ")");
+                        require_remain_bytes = require_remain;
                     }
                     else {
                         len = "$EOF";
@@ -1550,7 +1552,10 @@ namespace j2cp2 {
                         w.writeln(ident, ".clear();");
                     }
                     std::string tmp_i;
-                    if (len && *len != "$EOF") {
+                    if (len && require_remain_bytes) {
+                        w.writeln("while (r.remain().size() > ", *require_remain_bytes, ") {");
+                    }
+                    else if (len && *len != "$EOF") {
                         tmp_i = brgen::concat("tmp_", brgen::nums(get_seq()), "_");
                         w.writeln("for (size_t  ", tmp_i, "= 0; ", tmp_i, "<", *len, "; ++", tmp_i, " ) {");
                     }
