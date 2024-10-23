@@ -926,6 +926,10 @@ namespace j2cp2 {
         void write_enum(const std::shared_ptr<ast::Enum>& enum_) {
             map_line(enum_->loc);
             w.write("enum class ", enum_->ident->ident);
+            if (enum_->base_type) {
+                auto underlying = get_type_name(enum_->base_type, true);
+                w.write(" : ", underlying);
+            }
             w.writeln(" {");
             {
                 auto indent = w.indent_scope();
