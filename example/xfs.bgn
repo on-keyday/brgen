@@ -1,0 +1,210 @@
+
+
+config.url= "https://github.com/masahiro331/go-xfs-filesystem/blob/main/xfs/sb.go"
+format SuperBlock:
+    Magicnum   : u32
+    BlockSize  : u32
+    Dblocks    : u64
+    Rblocks    : u64
+    Rextens    : u64
+    UUID       : [16]u8
+    Logstart   : u64
+    Rootino    : u64
+    Rbmino     : u64
+    Rsmino     : u64
+    Rextsize   : u32
+    Agblocks   : u32
+    Agcount    : u32
+    Rbblocks   : u32
+    Logblocks  : u32
+    Versionnum : u16
+    Sectsize   : u16
+    Inodesize  : u16
+    Inopblock  : u16
+    Fname      : [12]u8
+    Blocklog   : u8
+    Sectlog    : u8
+    Inodelog   : u8
+    Inopblog   : u8
+    Agblklog   : u8
+    Rextslog   : u8
+    Inprogress : u8
+    ImaxPct    : u8
+
+    Icount     : u64
+    Ifree      : u64
+    Fdblocks   : u64
+    Frextents  : u64
+
+    Uqunotino  : u64
+    Gquotino   : u64
+    Qflags     : u16
+    Flags      : u8
+    SharedVn   : u8
+    Inoalignmt : u32
+    Unit       : u32
+    Width      : u32
+    Dirblklog  : u8
+    Logsectlog  : u8
+    Logsectsize: u16
+    Logsunit   : u32
+    Features2  : u32
+
+    BadFeatures2        : u32
+    FeaturesCompat      : u32
+    FeaturesRoCompat    : u32
+    FeaturesIncompat    : u32
+    FeaturesLogIncompat : u32
+    CRC                 : u32
+    SpinoAlign          : u32
+    Pquotino            : u64
+    Lsn                 : s64
+    MetaUUID            : [16]u8
+
+config.url= "https://github.com/masahiro331/go-xfs-filesystem/blob/main/xfs/ag.go"
+
+format BtreeShortBlock:
+    Magicnum : u32
+    Level    : u16
+    Numrecs  : u16
+    Leftsib  : u32
+    Rightsib : u32
+    Blkno    : u64
+    Lsn      : u64
+    UUID     : [16]u8
+    Owner    : u32
+    CRC      : u32
+
+format AGFL:
+    Magicnum : u32
+    Seqno    : u32
+    UUID     : [16]u8
+    Lsn      : u64
+    CRC      : u32
+    Bno      : [118]u32
+
+format AGF:
+    Magicnum   : u32
+    Versionnum : u32
+    Seqno      : u32
+    Length     : u32
+
+    Roots      : [3]u32
+    Levels     : [3]u32
+
+    Flfirst    : u32
+    Fllast     : u32
+    Flcount    : u32
+    Freeblks   : u32
+    Longest    : u32
+    Btreeblks  : u32
+    UUID       : [16]u8
+
+    RmapBlocks     : u32
+    RefcountBlocks : u32
+    RefcountRoot   : u32
+    RefcountLevel  : u32
+    Spare64        : [112]u8
+    Lsn            : u64
+    CRC            : u32
+    Spare2         : u32
+
+format AGI:
+    Magicnum   : u32
+    Versionnum : u32
+    Seqno      : u32
+    Length     : u32
+    Count      : u32
+    Root       : u32
+    Level      : u32
+    Freecount  : u32
+    Newino     : u32
+    Dirino     : u32
+    Unlinked   : [256]u8
+    UUID       : [16]u8
+    CRC        : u32
+    Pad32      : u32
+    Lsn        : u64
+    FreeRoot   : u32
+    FreeLevel  : u32
+    Iblocks    : u32
+    Fblocks    : u32
+
+
+format IAB3:
+    Header : BtreeShortBlock
+    Inodes : [..]InobtRec
+
+
+
+format Fib3:
+    Header :BtreeShortBlock
+
+format AB3B:
+    Header : BtreeShortBlock
+
+format AB3C:
+    Header : BtreeShortBlock
+
+config.url = "https://github.com/masahiro331/go-xfs-filesystem/blob/main/xfs/inode.go"
+
+format InodeCore:
+    Magic        : u16
+    Mode         : u16
+    Version      : u8
+    Format       : u8
+    OnLink       : u16
+    UID          : u32
+    GID          : u32
+    NLink        : u32
+    ProjId       : u16
+    Padding      : [8]u8
+    Flushiter    : u16
+    Atime        : u64
+    Mtime        : u64
+    Ctime        : u64
+    Size         : u64
+    Nblocks      : u64
+    Extsize      : u32
+    Nextents     : u32
+    Anextents    : u16
+    Forkoff      : u8
+    Aformat      : u8
+    Dmevmask     : u32
+    Dmstate      : u16
+    Flags        : u16
+    Gen          : u32
+    NextUnlinked : u32
+
+    CRC          : u32
+    Changecount  : u64
+    Lsn          : u64
+    Flags2       : u64
+    Cowextsize   : u32
+    Padding2     : [12]u8
+    Crtime       : u64
+    Ino          : u64
+    MetaUUID     : [16]u8
+
+format InobtRec:
+    Startino : u64
+    Count    : u32
+    Free     : u64
+
+
+config.url = "https://github.com/torvalds/linux/blob/5bfc75d92efd494db37f5c4c173d3639d4772966/fs/xfs/libxfs/xfs_da_format.h#L209-L220"
+format Dir2SfEntry:
+    Namelen   : u8
+    Offset    : [2]u8
+    EntryName : [Namelen]u8
+    Filetype  : u8
+    Inumber   : u64
+    Inumber32 : u32
+
+config.url = "https://github.com/torvalds/linux/blob/5bfc75d92efd494db37f5c4c173d3639d4772966/fs/xfs/libxfs/xfs_da_format.h#L339-L345"
+format Dir2DataEntry:
+    Inumber   : u64
+    Namelen   : u8
+    EntryName : [Namelen]u8
+    Filetype  : u8
+    Tag       : u16
