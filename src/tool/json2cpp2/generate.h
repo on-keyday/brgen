@@ -424,7 +424,7 @@ namespace j2cp2 {
         void maybe_write_auto_length_set(std::string_view to_set, const std::shared_ptr<ast::Type>& typ) {
             if (auto ident_len = has_ident_len(typ)) {
                 auto [base, _] = *ast::tool::lookup_base(ident_len);
-                if (auto f = ast::as<ast::Field>(base->base.lock())) {
+                if (auto f = ast::as<ast::Field>(base->base.lock()); f && f->field_type->bit_size) {
                     auto typ = get_type_name(f->field_type);
                     auto size = *f->field_type->bit_size;
                     std::uint64_t max_size = (std::uint64_t(1) << size) - 1;
@@ -1885,6 +1885,13 @@ namespace j2cp2 {
             }
             ast::tool::FormatSorter s;
             auto sorted = s.topological_sort(prog);
+            // forward declaration
+            for (auto& fmt : sorted) {
+                if (fmt->body->struct_type->bit_alignment != ast::BitAlignment::byte_aligned) {
+                    continue;
+                }
+                w.writeln("struct ", fmt->ident->ident, ";");
+            }
             for (auto& fmt : sorted) {
                 write_format(ast::cast_to<ast::Format>(fmt));
             }
