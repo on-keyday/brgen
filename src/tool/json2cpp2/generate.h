@@ -541,40 +541,62 @@ namespace j2cp2 {
             w.writeln("}");
 
             // write setter func
-            map_line(uf->loc);
-            if (use_constexpr) {
-                w.write("constexpr ");
-            }
-            w.writeln("bool ", uf->ident->ident, "(const ", get_type_name(ut->common_type), "& v", set_args, ") {");
-            {
-                auto indent = w.indent_scope();
-                auto make_access = [&](const std::shared_ptr<ast::Field>& f) {
-                    map_line(f->loc);
-                    set_variant_alternative(f->belong_struct.lock());
-                    auto a = str.to_string(f->ident);
-                    maybe_write_auto_length_set("v.size()", f->field_type);
-                    if (maybe_set_dynamic_to_static_array(f->field_type, ut->common_type, "v.size()")) {
-                        w.writeln("std::copy(v.begin(), v.end(), ", a, ".begin());");
-                    }
-                    else {
-                        w.writeln(a, " = v;");
-                    }
-                    w.writeln("return true;");
-                };
-                bool has_els = false;
-                bool end_else = false;
-                for (auto& c : ut->candidates) {
-                    auto cond = c->cond.lock();
-                    if (!ast::is_any_range(cond)) {
-                        auto defs = ast::tool::collect_defined_ident(cond);
-                        for (auto& d : defs) {
-                            code_one_node(d);
+            auto write_setter = [&](bool mov) {
+                map_line(uf->loc);
+                if (use_constexpr) {
+                    w.write("constexpr ");
+                }
+                if (mov) {
+                    w.writeln("bool ", uf->ident->ident, "(", get_type_name(ut->common_type), "&& v", set_args, ") {");
+                }
+                else {
+                    w.writeln("bool ", uf->ident->ident, "(const ", get_type_name(ut->common_type), "& v", set_args, ") {");
+                }
+                {
+                    auto indent = w.indent_scope();
+                    auto make_access = [&](const std::shared_ptr<ast::Field>& f) {
+                        map_line(f->loc);
+                        set_variant_alternative(f->belong_struct.lock());
+                        auto a = str.to_string(f->ident);
+                        maybe_write_auto_length_set("v.size()", f->field_type);
+                        if (maybe_set_dynamic_to_static_array(f->field_type, ut->common_type, "v.size()")) {
+                            w.writeln("std::copy(v.begin(), v.end(), ", a, ".begin());");
                         }
-                        auto cond_s = str.to_string_impl(cond, false);
-                        map_line(c->loc);
-                        w.writeln("if (", cond_s, "==", cond_u, ") {");
-                        {
-                            auto indent = w.indent_scope();
+                        else {
+                            if (mov) {
+                                w.writeln(a, " = std::move(v);");
+                            }
+                            else {
+                                w.writeln(a, " = v;");
+                            }
+                        }
+                        w.writeln("return true;");
+                    };
+                    bool has_els = false;
+                    bool end_else = false;
+                    for (auto& c : ut->candidates) {
+                        auto cond = c->cond.lock();
+                        if (!ast::is_any_range(cond)) {
+                            auto defs = ast::tool::collect_defined_ident(cond);
+                            for (auto& d : defs) {
+                                code_one_node(d);
+                            }
+                            auto cond_s = str.to_string_impl(cond, false);
+                            map_line(c->loc);
+                            w.writeln("if (", cond_s, "==", cond_u, ") {");
+                            {
+                                auto indent = w.indent_scope();
+                                auto f = c->field.lock();
+                                if (!f) {
+                                    w.writeln("return false;");
+                                }
+                                else {
+                                    make_access(f);
+                                }
+                            }
+                            w.writeln("}");
+                        }
+                        else {
                             auto f = c->field.lock();
                             if (!f) {
                                 w.writeln("return false;");
@@ -582,25 +604,17 @@ namespace j2cp2 {
                             else {
                                 make_access(f);
                             }
+                            end_else = true;
                         }
-                        w.writeln("}");
                     }
-                    else {
-                        auto f = c->field.lock();
-                        if (!f) {
-                            w.writeln("return false;");
-                        }
-                        else {
-                            make_access(f);
-                        }
-                        end_else = true;
+                    if (!end_else) {
+                        w.writeln("return false;");
                     }
                 }
-                if (!end_else) {
-                    w.writeln("return false;");
-                }
-            }
-            w.writeln("}");
+                w.writeln("}");
+            };
+            write_setter(false);
+            write_setter(true);
         }
 
         void write_each_type_accessor(const std::string& cond_u, const std::shared_ptr<ast::Field>& uf, ast::UnionType* ut) {
@@ -918,7 +932,6 @@ namespace j2cp2 {
         }
 
         void write_format_fns(const std::shared_ptr<ast::Format>& fmt) {
-      
             write_code_fn(fmt, true);
             write_code_fn(fmt, false);
         }
@@ -1892,7 +1905,7 @@ namespace j2cp2 {
                 }
                 w.writeln("struct ", fmt->ident->ident, ";");
             }
-            for(auto& fmt:sorted){
+            for (auto& fmt : sorted) {
                 write_simple_struct(fmt);
             }
             for (auto& fmt : sorted) {
