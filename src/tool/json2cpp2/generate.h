@@ -917,8 +917,8 @@ namespace j2cp2 {
             w.writeln("};");
         }
 
-        void write_format(const std::shared_ptr<ast::Format>& fmt) {
-            write_simple_struct(fmt);
+        void write_format_fns(const std::shared_ptr<ast::Format>& fmt) {
+      
             write_code_fn(fmt, true);
             write_code_fn(fmt, false);
         }
@@ -1892,8 +1892,11 @@ namespace j2cp2 {
                 }
                 w.writeln("struct ", fmt->ident->ident, ";");
             }
+            for(auto& fmt:sorted){
+                write_simple_struct(fmt);
+            }
             for (auto& fmt : sorted) {
-                write_format(ast::cast_to<ast::Format>(fmt));
+                write_format_fns(ast::cast_to<ast::Format>(fmt));
             }
         }
     };

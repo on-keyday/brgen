@@ -38,6 +38,22 @@ config.rfc = "https://example.com/url/to/rfc"
 config.word.map("Id","ID")
 ```
 
+### フォーマットの順序を変更する
+
+C++などコード生成時に言語が識別子の宣言順序を厳密に気にするような言語(~~C か C++くらいしかもはやそんな言語は存在しないが~~)のために
+ジェネレーター側でトポロジカルソートもどきで順序をソートしているが、再帰的な型などはどうしても正しい順序で生成できないことがあるためそれを補正するためのもの。
+
+```
+format After:
+   config.order.after = "Object"
+   y :Object
+
+format Object:
+    x :u8
+```
+
+この場合定義が`format Object`で生成されたものの直後に挿入される
+
 ## 言語固有
 
 ### C++

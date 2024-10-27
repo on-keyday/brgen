@@ -4,6 +4,7 @@
 #include <core/ast/traverse.h>
 #include <set>
 #include <algorithm>
+#include "metadata.h"
 
 namespace brgen::ast::tool {
     struct FormatSorter {
@@ -45,6 +46,34 @@ namespace brgen::ast::tool {
             }
         }
 
+        void adjust_by_metadata(std::vector<std::shared_ptr<ast::Format>>& sorted) {
+            std::set<std::shared_ptr<ast::Format>> handled;
+            for (size_t i = 0; i < sorted.size();) {
+                if (handled.find(sorted[i]) != handled.end()) {
+                    i++;
+                    continue;
+                }
+                auto m = lookup_str_metadata("config.order.after", sorted[i]->body->metadata);
+                if (m && *m != sorted[i]->ident->ident) {
+                    auto it = std::find_if(sorted.begin(), sorted.end(), [&](auto& f) {
+                        return f->ident->ident == *m;
+                    });
+                    if (it != sorted.end()) {
+                        // insert sorted[i] into after it
+                        auto copy = sorted[i];
+                        sorted.erase(sorted.begin() + i);
+                        // iterator made invalid so we need to find again
+                        it = std::find_if(sorted.begin(), sorted.end(), [&](auto& f) {
+                            return f->ident->ident == *m;
+                        });
+                        sorted.insert(it + 1, copy);
+                    }
+                }
+                handled.insert(sorted[i]);
+                i++;
+            }
+        }
+
        public:
         std::vector<std::shared_ptr<ast::Format>> topological_sort(const std::shared_ptr<ast::Node>& node) {
             format.clear();
@@ -68,6 +97,7 @@ namespace brgen::ast::tool {
             for (auto& f : ordered_format) {
                 visit(visit, f);
             }
+            adjust_by_metadata(sorted);
             return sorted;
         }
     };
