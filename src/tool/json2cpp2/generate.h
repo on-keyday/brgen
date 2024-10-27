@@ -95,6 +95,7 @@ namespace j2cp2 {
         std::map<ast::EnumMember*, std::string> enum_member_map;
         std::map<ast::StructUnionType*, PrefixedBitField> prefixed_bit_field;
         std::vector<ast::LineMap> line_map;
+        std::vector<std::function<void()>> accessor_funcs;
         bool enable_line_map = false;
         bool use_error = false;
         bool use_variant = false;
@@ -473,7 +474,7 @@ namespace j2cp2 {
             return false;
         }
 
-        void write_common_type_accessor(std::string_view prefix, const std::string& cond_u, const std::shared_ptr<ast::Field>& uf, ast::UnionType* ut) {
+        void write_common_type_accessor(std::string prefix, const std::string& cond_u, const std::shared_ptr<ast::Field>& uf, ast::UnionType* ut) {
             // write getter func
             map_line(uf->loc);
             if (use_constexpr) {
@@ -481,96 +482,32 @@ namespace j2cp2 {
             }
             auto fmt = ast::as<ast::Format>(uf->belong.lock());
             std::string set_args, get_args;
+            std::string def_member;
             if (fmt) {
+                def_member = fmt->ident->ident + "::";
                 set_args = state_variable_to_argument(fmt->body->struct_type, true);
                 if (set_args.size()) {
                     get_args = set_args;
                     get_args.erase(0, 1);
                 }
             }
-            w.writeln("std::optional<", get_type_name(ut->common_type), "> ", uf->ident->ident, "(", get_args, ") const {");
-            {
-                auto indent = w.indent_scope();
-                auto make_access = [&](const std::shared_ptr<ast::Field>& f) {
-                    auto a = str.to_string(f->ident);
-                    check_variant_alternative(f->belong_struct.lock());
-                    map_line(f->loc);
-                    w.writeln("return ", a, ";");
-                };
-                bool has_els = false;
-                bool end_else = false;
-                for (auto& c : ut->candidates) {
-                    auto cond = c->cond.lock();
-                    if (!ast::is_any_range(cond)) {
-                        auto defs = ast::tool::collect_defined_ident(cond);
-                        for (auto& d : defs) {
-                            code_one_node(d);
-                        }
-                        auto cond_s = str.to_string_impl(cond, false);
-                        map_line(c->loc);
-                        w.writeln("if (", cond_s, "==", cond_u, ") {");
-                        {
-                            auto f = c->field.lock();
-                            if (!f) {
-                                w.writeln("return std::nullopt;");
-                            }
-                            else {
-                                make_access(f);
-                            }
-                        }
-                        w.writeln("}");
-                    }
-                    else {
-                        auto f = c->field.lock();
-                        if (!f) {
-                            w.writeln("return std::nullopt;");
-                        }
-                        else {
-                            make_access(f);
-                        }
-                        end_else = true;
-                    }
-                }
-                if (!end_else) {
-                    w.writeln("return std::nullopt;");
-                }
-                auto args = state_variable_to_argument(fmt->body->struct_type, false);
-                args.erase(0, 1);
-                str.map_ident(uf->ident, "(*", prefix, ".", uf->ident->ident + "(", args, "))");
-            }
-            w.writeln("}");
-
-            // write setter func
-            auto write_setter = [&](bool mov) {
+            w.writeln("std::optional<", get_type_name(ut->common_type), "> ", uf->ident->ident, "(", get_args, ") const;");
+            w.writeln("bool ", uf->ident->ident, "(", get_type_name(ut->common_type), "&& v", set_args, ");");
+            w.writeln("bool ", uf->ident->ident, "(const ", get_type_name(ut->common_type), "& v", set_args, ");");
+            auto fn = [=, this] {
+                // write getter func
                 map_line(uf->loc);
                 if (use_constexpr) {
                     w.write("constexpr ");
                 }
-                if (mov) {
-                    w.writeln("bool ", uf->ident->ident, "(", get_type_name(ut->common_type), "&& v", set_args, ") {");
-                }
-                else {
-                    w.writeln("bool ", uf->ident->ident, "(const ", get_type_name(ut->common_type), "& v", set_args, ") {");
-                }
+                w.writeln("inline std::optional<", get_type_name(ut->common_type), "> ", def_member, uf->ident->ident, "(", get_args, ") const {");
                 {
                     auto indent = w.indent_scope();
                     auto make_access = [&](const std::shared_ptr<ast::Field>& f) {
-                        map_line(f->loc);
-                        set_variant_alternative(f->belong_struct.lock());
                         auto a = str.to_string(f->ident);
-                        maybe_write_auto_length_set("v.size()", f->field_type);
-                        if (maybe_set_dynamic_to_static_array(f->field_type, ut->common_type, "v.size()")) {
-                            w.writeln("std::copy(v.begin(), v.end(), ", a, ".begin());");
-                        }
-                        else {
-                            if (mov) {
-                                w.writeln(a, " = std::move(v);");
-                            }
-                            else {
-                                w.writeln(a, " = v;");
-                            }
-                        }
-                        w.writeln("return true;");
+                        check_variant_alternative(f->belong_struct.lock());
+                        map_line(f->loc);
+                        w.writeln("return ", a, ";");
                     };
                     bool has_els = false;
                     bool end_else = false;
@@ -585,10 +522,9 @@ namespace j2cp2 {
                             map_line(c->loc);
                             w.writeln("if (", cond_s, "==", cond_u, ") {");
                             {
-                                auto indent = w.indent_scope();
                                 auto f = c->field.lock();
                                 if (!f) {
-                                    w.writeln("return false;");
+                                    w.writeln("return std::nullopt;");
                                 }
                                 else {
                                     make_access(f);
@@ -599,7 +535,7 @@ namespace j2cp2 {
                         else {
                             auto f = c->field.lock();
                             if (!f) {
-                                w.writeln("return false;");
+                                w.writeln("return std::nullopt;");
                             }
                             else {
                                 make_access(f);
@@ -608,13 +544,91 @@ namespace j2cp2 {
                         }
                     }
                     if (!end_else) {
-                        w.writeln("return false;");
+                        w.writeln("return std::nullopt;");
                     }
+                    auto args = state_variable_to_argument(fmt->body->struct_type, false);
+                    args.erase(0, 1);
+                    str.map_ident(uf->ident, "(*", prefix, ".", uf->ident->ident + "(", args, "))");
                 }
                 w.writeln("}");
+
+                // write setter func
+                auto write_setter = [&](bool mov) {
+                    map_line(uf->loc);
+                    if (use_constexpr) {
+                        w.write("constexpr ");
+                    }
+                    if (mov) {
+                        w.writeln("inline bool ", def_member, uf->ident->ident, "(", get_type_name(ut->common_type), "&& v", set_args, ") {");
+                    }
+                    else {
+                        w.writeln("inline bool ", def_member, uf->ident->ident, "(const ", get_type_name(ut->common_type), "& v", set_args, ") {");
+                    }
+                    {
+                        auto indent = w.indent_scope();
+                        auto make_access = [&](const std::shared_ptr<ast::Field>& f) {
+                            map_line(f->loc);
+                            set_variant_alternative(f->belong_struct.lock());
+                            auto a = str.to_string(f->ident);
+                            maybe_write_auto_length_set("v.size()", f->field_type);
+                            if (maybe_set_dynamic_to_static_array(f->field_type, ut->common_type, "v.size()")) {
+                                w.writeln("std::copy(v.begin(), v.end(), ", a, ".begin());");
+                            }
+                            else {
+                                if (mov) {
+                                    w.writeln(a, " = std::move(v);");
+                                }
+                                else {
+                                    w.writeln(a, " = v;");
+                                }
+                            }
+                            w.writeln("return true;");
+                        };
+                        bool has_els = false;
+                        bool end_else = false;
+                        for (auto& c : ut->candidates) {
+                            auto cond = c->cond.lock();
+                            if (!ast::is_any_range(cond)) {
+                                auto defs = ast::tool::collect_defined_ident(cond);
+                                for (auto& d : defs) {
+                                    code_one_node(d);
+                                }
+                                auto cond_s = str.to_string_impl(cond, false);
+                                map_line(c->loc);
+                                w.writeln("if (", cond_s, "==", cond_u, ") {");
+                                {
+                                    auto indent = w.indent_scope();
+                                    auto f = c->field.lock();
+                                    if (!f) {
+                                        w.writeln("return false;");
+                                    }
+                                    else {
+                                        make_access(f);
+                                    }
+                                }
+                                w.writeln("}");
+                            }
+                            else {
+                                auto f = c->field.lock();
+                                if (!f) {
+                                    w.writeln("return false;");
+                                }
+                                else {
+                                    make_access(f);
+                                }
+                                end_else = true;
+                            }
+                        }
+                        if (!end_else) {
+                            w.writeln("return false;");
+                        }
+                    }
+                    w.writeln("}");
+                };
+                write_setter(false);
+                write_setter(true);
             };
-            write_setter(false);
-            write_setter(true);
+            accessor_funcs.push_back(std::move(fn));
         }
 
         void write_each_type_accessor(const std::string& cond_u, const std::shared_ptr<ast::Field>& uf, ast::UnionType* ut) {
@@ -671,7 +685,7 @@ namespace j2cp2 {
                     cond_u = "true";
                 }
                 if (ut->common_type) {
-                    write_common_type_accessor(prefix, cond_u, uf, ut);
+                    write_common_type_accessor(std::string(prefix), cond_u, uf, ut);
                 }
                 else {
                     write_each_type_accessor(cond_u, uf, ut);
@@ -1907,6 +1921,9 @@ namespace j2cp2 {
             }
             for (auto& fmt : sorted) {
                 write_simple_struct(fmt);
+            }
+            for (auto& acc : accessor_funcs) {
+                acc();
             }
             for (auto& fmt : sorted) {
                 write_format_fns(ast::cast_to<ast::Format>(fmt));
