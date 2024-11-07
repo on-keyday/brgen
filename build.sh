@@ -66,6 +66,7 @@ unset GOARCH
 #wasm-pack build --target web
 #cp ../../../LICENSE ./pkg
 #cd ../../..
+cat ./src/tool/json2rust/pkg/json2rust.d.ts
 cd ./web/dev
 tsc
 webpack
