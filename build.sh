@@ -67,6 +67,7 @@ unset GOARCH
 #cp ../../../LICENSE ./pkg
 #cd ../../..
 cat ./src/tool/json2rust/pkg/json2rust.d.ts
+cat ./src/tool/json2rust/pkg/json2rust.js
 cd ./web/dev
 tsc
 webpack
