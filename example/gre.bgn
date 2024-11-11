@@ -1,0 +1,80 @@
+
+config.url = "https://datatracker.ietf.org/doc/html/rfc2890"
+
+format ExtendedGREPacketHeader:
+    has_checksum :u1
+    reserved :u1
+    has_key :u1
+    has_sequence_number :u1
+    reserved0 :u9
+    version :u3
+    protocol_type :u16
+    if has_checksum == 1:
+        checksum :u16
+        reserved1 :u16
+    if has_key == 1:
+        key :u32
+    if has_sequence_number == 1:
+        sequence_number :u32
+
+
+format StandardGREPacketHeader:
+    has_checksum :u1
+    reserved0 :u12
+    version :u3
+    protocol_type :u16
+    if has_checksum == 1:
+        checksum :u16
+        reserved1 :u16
+
+config.url = "https://datatracker.ietf.org/doc/html/rfc1701"
+
+format RoutingField:
+    address_family :u16
+    sre_offset :u8
+    sre_length :u8
+    informaton :[sre_length]u8
+
+format RoutingFields:
+    routing_fields :[..]RoutingField
+    end :"\x00\x00\x00\x00"
+
+format OriginalGREPacketHeader:
+    has_checksum :u1
+    has_routing :u1
+    has_key :u1
+    has_sequence_number :u1
+    strict_route :u1
+    recursion_control :u3
+    flags :u5(0)
+    version :u3
+    protocol_type :u16
+    if has_checksum == 1 || has_routing == 1:
+        checksum :u16
+        offset :u16
+    if has_key == 1:
+        key :u32
+    if has_sequence_number == 1:
+        sequence_number :u32
+    if has_routing == 1:
+        routing_fields :RoutingFields
+
+config.url = "https://datatracker.ietf.org/doc/html/rfc2637"
+
+format PPTPGrePacketHeader:
+    has_checksum :u1(0)
+    has_route :u1(0)
+    has_key :u1(1)
+    has_sequence_number :u1
+    strict_route :u1(0)
+    recursion_control :u3(0)
+    has_ack :u1
+    flags :u4(0)
+    version :u3(1)
+    protocol_type :u16
+    key_payload_length :u16
+    key_call_id :u16
+    if has_sequence_number == 1:
+        sequence_number :u32
+    if has_ack == 1:
+        ack_number :u32
