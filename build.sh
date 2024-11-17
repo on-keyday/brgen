@@ -66,15 +66,15 @@ unset GOARCH
 #wasm-pack build --target web
 #cp ../../../LICENSE ./pkg
 #cd ../../..
-cat ./src/tool/json2rust/pkg/json2rust.d.ts
-cat ./src/tool/json2rust/pkg/json2rust.js
+#cat ./src/tool/json2rust/pkg/json2rust.d.ts
+#cat ./src/tool/json2rust/pkg/json2rust.js
+python script/dirty_patch.py
 (
    cd ./web/dev || exit
    tsc
    webpack
 )
 python script/copy_example.py
-python script/dirty_patch.py
 fi
 
 unset FUTILS_DIR
