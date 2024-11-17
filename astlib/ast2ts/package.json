@@ -10,7 +10,7 @@
   "author": "on-keyday (https://github.com/on-keyday)",
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^20.7.1",
+    "@types/node": "^22.0.0",
     "ts-node": "^10.9.1",
     "typescript": "^5.2.2"
   },
