@@ -68,11 +68,13 @@ unset GOARCH
 #cd ../../..
 cat ./src/tool/json2rust/pkg/json2rust.d.ts
 cat ./src/tool/json2rust/pkg/json2rust.js
-cd ./web/dev
-tsc
-webpack
-cd ../..
+(
+   cd ./web/dev || exit
+   tsc
+   webpack
+)
 python script/copy_example.py
+python script/dirty_patch.py
 fi
 
 unset FUTILS_DIR
