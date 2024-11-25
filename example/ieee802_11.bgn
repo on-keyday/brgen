@@ -1,6 +1,27 @@
+config.url = "https://www.n-study.com/wlan-detail/802-11-frame-type-subtype/"
+enum FrameType:
+    :u2
+    Management = 0
+    Control = 1
+    Data = 2
+    Extension = 3
+
+
+format FrameControl: # msb to lsb
+    protocol_version :u2
+    frame_type: FrameType
+    sub_type: u4
+    to_ds: u1
+    from_ds: u1
+    more_frag: u1
+    retry: u1
+    power_mgmt: u1
+    more_data: u1
+    protected_frame: u1
+    order: u1
 
 format IEEE802_11:
-    frame_control: u16
+    frame_control: FrameControl
     duration_id: u16
     addr1 : [6]u8
     addr2 : [6]u8
