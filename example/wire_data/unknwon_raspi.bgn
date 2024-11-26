@@ -1,0 +1,26 @@
+format UnknownHeader:
+  thirty_three :[2]u8
+  three_zero :[3]u8
+  seven_random :[7]u8
+  eight_six_dd :[2]u8
+  sixty :u8
+  seven_random2 :[7]u8
+  fe_byte_and_zero :[8]u8
+  nine_random :[9]u8
+  two :u8
+  twenty_six_zero :[26]u8
+
+format UnknownHeader2:
+ nine_header :[9]u8
+ two_zero :[2]u8
+ eight_four :[2]u8
+ four_zero :[4]u8
+ one :u8
+ four_maybe_type_of_packet :[4]u8
+ twenty_one_random :[21]u8
+ maybe_flag :u8
+ one2 :u8
+ two_zero2 :[2]u8
+ unknown_but_different_two :[2]u8
+ two_three :u8
+ two_same_thirty_five_random :[2][35]u8

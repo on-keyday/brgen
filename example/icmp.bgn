@@ -1,4 +1,5 @@
 config.go.package = "ether"
+config.url = "https://www.rfc-editor.org/rfc/rfc4861"
 
 format ICMPHeader:
     type: u8
