@@ -2,22 +2,22 @@
 
 
 format BMPHeader:
-    bfType :u16
-    bfSize :u32
-    bfReserved1 :u16
-    bfReserved2 :u16
-    bfOffBits :u32
-    biSize :u32
-    biWidth :s32
-    biHeight :s32
-    biPlanes :u16
-    biBitCount :u16
-    biCompression :u32
-    biSizeImage :u32
-    biXPelsPerMeter :s32
-    biYPelsPerMeter :s32
-    biClrUsed :u32
-    biClrImportant :u32
+    bfType :ul16
+    bfSize :ul32
+    bfReserved1 :ul16
+    bfReserved2 :ul16
+    bfOffBits :ul32
+    biSize :ul32
+    biWidth :sl32
+    biHeight :sl32
+    biPlanes :ul16
+    biBitCount :ul16
+    biCompression :ul32
+    biSizeImage :ul32
+    biXPelsPerMeter :sl32
+    biYPelsPerMeter :sl32
+    biClrUsed :ul32
+    biClrImportant :ul32
 
 format RGB:
     b :u8
