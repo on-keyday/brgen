@@ -1,0 +1,41 @@
+
+
+
+format BMPHeader:
+    bfType :u16
+    bfSize :u32
+    bfReserved1 :u16
+    bfReserved2 :u16
+    bfOffBits :u32
+    biSize :u32
+    biWidth :s32
+    biHeight :s32
+    biPlanes :u16
+    biBitCount :u16
+    biCompression :u32
+    biSizeImage :u32
+    biXPelsPerMeter :s32
+    biYPelsPerMeter :s32
+    biClrUsed :u32
+    biClrImportant :u32
+
+format RGB:
+    b :u8
+    g :u8
+    r :u8
+
+format BMP:
+    header :BMPHeader
+    data :[header.biSizeImage]u8
+
+state LineState:
+    width :u32
+    bitSize :u32
+
+line_state :LineState
+
+format SingleLine:
+    inByte ::= line_state.width * line_state.bitSize / 8
+    #delta ::= 4 - inByte % 4
+    len ::= inByte + (4 - inByte % 4) % 4
+    data :[len]u8

@@ -254,6 +254,9 @@ namespace brgen::ast::tool {
             if (auto identity = ast::as<ast::Identity>(expr)) {
                 return to_string_impl(identity->expr, root);
             }
+            if (auto paren = ast::as<ast::Paren>(expr)) {
+                return concat("(", to_string_impl(paren->expr, false), ")");
+            }
             return "";
         }
     };
