@@ -1,0 +1,18 @@
+config.url = "https://github.com/core-rocket/CCP"
+
+
+format Str:
+    seconds :u16
+    text :[6]u8
+
+format Int:
+    milliseconds :u32
+    value :u32
+
+format Float:
+    milliseconds :u32
+    value :f32
+
+format FastFloat:
+    seconds :u16
+    fp16 :[3]f16

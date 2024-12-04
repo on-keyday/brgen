@@ -1,17 +1,55 @@
 
-format CANFrame:
-    sof :u1
-    id :u11
-    rtr :u1
+
+
+config.url = "https://www.keyence.co.jp/ss/products/recorder/lab/candata/mechanism.jsp"
+config.url =  "https://sunnygiken.jp/product/can-fd-tool/about_canfd/"
+fn extendedDataLength(r :u4) -> u8:
+    x ::= match r:
+        0 => 0
+        1 => 1
+        2 => 2
+        3 => 3
+        4 => 4
+        5 => 5
+        6 => 6
+        7 => 7
+        8 => 8
+        9 => 12
+        10 => 16
+        11 => 20
+        12 => 24
+        13 => 32
+        14 => 48
+        15 => 64
+    return x
+
+format ControlField:
     ide :u1
     if ide == 1:
         id_ext :u18
+        rtr_or_rss :u1
+        reserved1 :u1
     fdf :u1
+    if fdf == 1:
+        reserved2 :u1
+        brs :u1
+        esi :u1
     dlc :u4
-    data :[dlc]u8
+
+format CANFrame:
+    sof :u1
+    id :u11
+    rtr_or_srr_or_rss :u1
+    control :ControlField
+    len ::= control.fdf == 1 ? extendedDataLength(control.dlc) : (control.dlc >= 9 ? 8 : control.dlc)
+    data :[len]u8
+    if control.fdf == 1:
+        stuff_count :u4
     crc :u15
     crc_delimiter :u1
     ack :u1
     ack_delimiter :u1
     eof :u7
     intermission :u3
+
+
