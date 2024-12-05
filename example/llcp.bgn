@@ -1,0 +1,134 @@
+
+config.url = "https://github.com/bluez/bluez/blob/756d69fd3db8c84b88073c1467ba6b282ab5dbdd/monitor/ll.c#L808"
+
+enum LLCPOpCode:
+    :u8
+    UPDATE_REQ = 0x00
+    CHANNEL_MAP_REQ = 0x01
+    TERMINATE_IND = 0x02
+    ENC_REQ = 0x03
+    ENC_RSP = 0x04
+    START_ENC_REQ = 0x05
+    START_ENC_RSP = 0x06
+    UNKNOWN_RSP = 0x07
+    
+
+format LLCPPacket:
+    opcode: LLCPOpCode
+    data: [..]u8
+
+config.url = "https://github.com/bluez/bluez/blob/756d69fd3db8c84b88073c1467ba6b282ab5dbdd/monitor/bt.h#L23"
+config.url = "https://github.com/bluez/bluez/blob/756d69fd3db8c84b88073c1467ba6b282ab5dbdd/monitor/ll.c#L367"
+format ConnUpdateReq:
+    win_size :u8
+    win_offset :ul16
+    interval :ul16
+    latency :ul16
+    timeout :ul16
+    instant :ul16
+
+
+format ChannelMapReq:
+    chm :[5]u8
+    instant :ul16
+
+format TerminateInd:
+    error_code :u8
+
+format EncReq:
+    rand :[8]u8
+    ediv :ul16
+    skd :[8]u8
+    ivm :[4]u8
+
+format EncRSP:
+    skd :[8]u8
+    ivs :[4]u8
+
+format UnknownRSP:
+    typ :u8
+
+# msb to lsb
+config.url = "https://github.com/bluez/bluez/blob/756d69fd3db8c84b88073c1467ba6b282ab5dbdd/monitor/ll.c#L237"
+format DataPacketHeader:
+    reserved1 :u3
+    md :u1
+    sn :u1
+    nesn :u1
+    llid :u2
+    reserved2 :u3
+    length :u5    
+    
+config.url = "https://github.com/bluez/bluez/blob/756d69fd3db8c84b88073c1467ba6b282ab5dbdd/monitor/ll.c#L291"
+format LLPacketHeader:
+    preamble :u8
+    access_address :ul32
+    crc :ul24
+
+ADVERTISING_CHANNEL_ADDRESS ::= 0x8e89bed6
+
+config.url = "https://github.com/bluez/bluez/blob/756d69fd3db8c84b88073c1467ba6b282ab5dbdd/monitor/ll.c#L66"
+# msb to lsb
+format AdvertisingPacketHeader:
+    rx_add :u1
+    tx_add :u1
+    reserved1 :u2
+    pdu_type :PDUType
+    reserved2 :u2
+    length :u6
+
+enum PDUType:
+    :u4
+    ADV_IND = 0b0000
+    ADV_DIRECT_IND = 0b0001
+    ADV_NONCONN_IND = 0b0010
+    SCAN_REQ = 0b0011
+    SCAN_RSP = 0b0100
+    CONNECT_REQ = 0b0101
+    ADV_SCAN_IND = 0b0110
+
+enum SCA:
+    :u3
+    SCA_251_TO_500 = 0b000
+    SCA_151_TO_250 = 0b001
+    SCA_101_TO_150 = 0b010
+    SCA_76_TO_100 = 0b011
+    SCA_51_TO_75 = 0b100
+    SCA_31_TO_50 = 0b101
+    SCA_21_TO_30 = 0b110
+    SCA_0_TO_20 = 0b111
+
+
+
+format ConnRequest:
+    init_addr :[6]u8
+    adv_addr :[6]u8
+    access_address :ul32
+    crc_init :ul24
+    win_size :u8
+    win_offset :ul16
+    interval :ul16
+    latency :ul16
+    timeout :ul16
+    channel_map :[5]u8
+    sca :SCA
+    hop :u5
+
+format AdvertisingPacket:
+    header :AdvertisingPacketHeader
+    if header.pdu_type == PDUType.ADV_IND ||
+       header.pdu_type == PDUType.ADV_NONCONN_IND ||
+       header.pdu_type == PDUType.ADV_SCAN_IND ||
+        header.pdu_type == PDUType.SCAN_RSP:
+        adv_addr :[6]u8
+    elif header.pdu_type == PDUType.ADV_DIRECT_IND:
+        adv_addr :[6]u8
+        init_addr :[6]u8
+    elif header.pdu_type == PDUType.SCAN_REQ:
+        scanner_addr :[6]u8
+        adv_addr :[6]u8
+    elif header.pdu_type == PDUType.CONNECT_REQ:
+        conn_req :ConnRequest
+    else:
+        data :[header.length]u8
+    

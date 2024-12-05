@@ -35,11 +35,15 @@ namespace parse {
     constexpr auto space = *(cps::space | cps::tab | cps::eol | comment);
     constexpr auto type = str(tag_type, ident);
     constexpr auto number = cps::hex_integer | cps::dec_integer;
+    constexpr auto define = lit("#define") & space & ident & space & number & space & +lit("\n");
+    constexpr auto attribute_keyword = lit("__attribute__");
+    constexpr auto attribute_value = cps::comment(lit("("), any, lit(")"), true);
+    constexpr auto attribute = attribute_keyword & space & +attribute_value;
     constexpr auto type_suffix = str(tag_type_suffix, lit("[") & space & ~(not_(lit(']')) & any) & space & +lit("]"));
     constexpr auto field = group(tag_field, type& space & -str(tag_name, ident) & space & -type_suffix & space & +lit(";"));
     constexpr auto name = str(tag_name, ident);
     constexpr auto struct_ = group(tag_struct, lit("struct") & space & -name & space & +lit("{") &
-                                                   group(tag_fields, *(space& field)) & space & +lit("}") & space & -name & space & +lit(";") & space);
+                                                   group(tag_fields, *(space& field)) & space & +lit("}") & space & -attribute & -name & space & +lit(";") & space);
 
     constexpr auto enum_field = group(tag_field, str(tag_name, ident) & space & -(lit("=") & space & +str(tag_value, number | ident)) & space & -lit(","));
     constexpr auto enum_ = group(tag_enum, lit("enum") & space & -name & space & +lit("{") &
@@ -49,7 +53,7 @@ namespace parse {
 
     constexpr auto test_parse() {
         auto ctx = futils::comb2::test::TestContext{};
-        auto seq = futils::make_ref_seq("struct A { int a; int b; }; struct B { int c; }; enum C { a, b, c };");
+        auto seq = futils::make_ref_seq("struct A { int a; int b; }; struct B { int c; }; enum C { a, b, c }; struct D { int d; } __attribute__((packed));");
         if (file(seq, ctx, 0) != Status::match) {
             return false;
         }
