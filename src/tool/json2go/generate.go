@@ -822,7 +822,7 @@ func (g *Generator) writeStructVisitor(name string, p *ast2go.StructType) {
 			}
 			expr := g.exprStringer.ExprString(field.Ident)
 			expr = strings.Replace(expr, "(*", "(", 1)
-			if !strings.HasSuffix(expr, ")") {
+			if !strings.HasSuffix(expr, ")") && !strings.Contains(expr, `"`) {
 				expr = "&" + expr
 			}
 			g.PrintfFunc("v.Visit(v,%q,%s)\n", field.Ident.Ident, expr)
