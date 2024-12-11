@@ -11,6 +11,16 @@ DPCM_ADDRESS ::= 0x4010
 KEY_ON_OFF_ADDRESS ::= 0x4015
 CONTROL_ADDRESS ::= 0x4016
 
+DPCM_DATA_ADDRESS ::= 0xC000
+
+# memory layout is 
+# |frequency low bits|
+# |key_off_count|frequency high bits|
+# because of little endian mode
+format KeyOffFrequency:
+    key_off_count :u5
+    frequency :u11
+
 # from msb to lsb
 format SquareWave:
     duty :u2
@@ -21,20 +31,13 @@ format SquareWave:
     timer_count :u3
     frequency_direction :u1
     frequency_delta :u3
-    # memory layout is 
-    # |sweep_enabled|timer_count|frequency_direction|frequency_delta
-    # |frequency low bits|
-    # |key_off_count|frequency high bits|
-    # because of little endian mode
-    key_off_count :u5 
-    frequency :u11
+    key_off_frequency :KeyOffFrequency
 
 format TriangleWave:
     key_off_count_enabled :u1
     length :u15
     unused :u8
-    key_off_count :u5
-    frequency :u11
+    key_off_frequency :KeyOffFrequency
 
 format Noise:
     unused1 :u2
@@ -55,7 +58,14 @@ format DPCM:
     frequency :u4
     unused2 :u1
     delta_initial_volume :u7
+    data_pos :u8
     data_length :u8
+
+fn data_pos_address(p :u8) -> u16:
+    return u16(p) << 6 + DPCM_DATA_ADDRESS
+
+fn data_length(p :u8) -> u16:
+    return u16(p) << 4 + 1
 
 format KeyOnFlag:
     unused :u3
