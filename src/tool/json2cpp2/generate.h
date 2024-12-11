@@ -182,10 +182,19 @@ namespace j2cp2 {
                 }
                 if (auto int_ty = ast::as<ast::IntType>(type); int_ty) {
                     w.write(", ", brgen::nums(*int_ty->bit_size));
+                    if (endian == ast::Endian::unspec) {
+                        endian = int_ty->endian;  // first field decides endian
+                    }
                 }
                 else if (auto enum_ty = ast::as<ast::EnumType>(type); enum_ty) {
                     auto bit_size = enum_ty->bit_size;
                     w.write(", ", brgen::nums(*bit_size));
+                    if (endian == ast::Endian::unspec) {
+                        auto base_int = ast::as<ast::IntType>(enum_ty->base.lock());
+                        if (base_int) {
+                            endian = base_int->endian;
+                        }
+                    }
                 }
             }
             auto seq = get_seq();

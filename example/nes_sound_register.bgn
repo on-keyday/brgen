@@ -1,0 +1,73 @@
+
+config.url = "https://dic.nicovideo.jp/a/fc%E9%9F%B3%E6%BA%90"
+
+input.endian = config.endian.little
+
+SQUARE1_ADDRESS ::= 0x4000
+SQUARE2_ADDRESS ::= 0x4004
+TRIANGLE_ADDRESS ::= 0x4008
+NOISE_ADDRESS ::= 0x400C
+DPCM_ADDRESS ::= 0x4010
+KEY_ON_OFF_ADDRESS ::= 0x4015
+CONTROL_ADDRESS ::= 0x4016
+
+# from msb to lsb
+format SquareWave:
+    duty :u2
+    key_off_counter_disabled_envelope_loop_enabled :u1
+    envelope_enabled :u1
+    rate_or_volume :u4
+    sweep_enabled :u1
+    timer_count :u3
+    frequency_direction :u1
+    frequency_delta :u3
+    # memory layout is 
+    # |sweep_enabled|timer_count|frequency_direction|frequency_delta
+    # |frequency low bits|
+    # |key_off_count|frequency high bits|
+    # because of little endian mode
+    key_off_count :u5 
+    frequency :u11
+
+format TriangleWave:
+    key_off_count_enabled :u1
+    length :u15
+    unused :u8
+    key_off_count :u5
+    frequency :u11
+
+format Noise:
+    unused1 :u2
+    key_off_counter_disabled_envelope_loop_enabled :u1
+    envelope_enabled :u1
+    rate_or_volume :u4
+    unused2 :u8
+    is_short :u1
+    unused3 :u3
+    frequency :u4
+    key_off_count :u5
+    unused :u3
+
+format DPCM:
+    interrupt_enabled :u1
+    loop :u1
+    unused1 :u2
+    frequency :u4
+    unused2 :u1
+    delta_initial_volume :u7
+    data_length :u8
+
+format KeyOnFlag:
+    unused :u3
+    dpcm :u1
+    noise :u1
+    triangle :u1
+    square2 :u1
+    square1 :u1
+
+format Control:
+    unused :u3
+    controller_state1:u5
+    envelope_update_speed :u1
+    unused2 :u2
+    controller_state2 :u5
