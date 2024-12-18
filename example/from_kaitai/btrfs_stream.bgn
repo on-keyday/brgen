@@ -1,0 +1,15 @@
+
+format SendStreamHeader:
+    magic :"btrfs-stream\x00"
+    version :ul32
+
+format TLV:
+    type :ul16
+    length :ul16
+    value :[length]u8
+
+format SendCommand:
+    len :ul32
+    type :ul16
+    checksum :ul32
+    data :[len]TLV
