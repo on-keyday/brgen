@@ -1,0 +1,17 @@
+
+state ProtocolState:
+    is_16bit_addressing: bool
+
+s :ProtocolState
+
+format AX25Frame:
+    begin_magic: "\x7e"
+    if s.is_16bit_addressing:
+        address :u16
+    else:
+        address :u8
+    control :u8
+    pid :u8
+    data :[..]u8
+    fcs :u16
+    end_magic: "\x7e"
