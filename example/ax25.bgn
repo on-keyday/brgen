@@ -1,4 +1,6 @@
 
+config.url = "https://www.tapr.org/pdf/AX25.2.2.pdf"
+
 state ProtocolState:
     is_16bit_addressing: bool
 
