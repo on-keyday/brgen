@@ -1329,6 +1329,9 @@ namespace brgen::middle {
             }
             if (auto a = ast::as<ast::Available>(expr)) {
                 typing_expr(a->target, false);
+                for (size_t i = 1; i < a->base->arguments.size(); i++) {
+                    typing_expr(a->base->arguments[i], false);
+                }
                 a->constant_level = ast::ConstantLevel::variable;
             }
             if (auto b = ast::as<ast::SpecifyOrder>(expr)) {
