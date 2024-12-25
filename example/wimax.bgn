@@ -1,4 +1,4 @@
-config.url = "https://www.protomatics.com/trial.html"
+config.url = "https://www.protomatics.com/wimax.html"
 
 WIMAX_MAC_MAX_NUM_IES ::= 32
 
