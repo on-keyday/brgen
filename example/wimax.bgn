@@ -1,0 +1,94 @@
+config.url = "https://www.protomatics.com/trial.html"
+
+WIMAX_MAC_MAX_NUM_IES ::= 32
+
+enum wimax_mac_MessageType:
+    WIMAX_MAC_UCD
+    WIMAX_MAC_DCD
+    WIMAX_MAC_DLMAP
+    WIMAX_MAC_ULMAP
+
+
+format Channel_Measurement_IE:
+    ChannelNr          :u8
+    OFDMASymbolOffset :u8
+    CID        :u16
+
+format TD_ZONE_IE:
+    Permutation :u2
+    UseAllSCIndicator :u1
+    TransmitDiversity  :u2
+    MatrixIndicator    :u2
+    IDcell             :u6
+    reserve            :u2
+
+format AAS_DL_IE:
+    Permutation :u2
+    PreambleIndication  :u2
+    FirstBinIndex       :u6
+    LastBinIndex        :u6
+
+format Data_location_in_another_BS_IE:
+    reserve   :u6
+    Segment    :u2
+    UsedSubChannels   :u8
+    IDcell    :u5
+    FrameAdvance     :u3
+    OFDMASymbolOffset  :u8
+
+format HARQ_MAP_Pointer_IE:
+    AMC_DIUC :u4
+    NumSlots :u8
+    reserve  :u4
+
+format PHYMOD_DL_IE:
+    PreambleModifierType :u1
+    if PreambleModifierType == 0:
+        PreambleFrequencyShiftIndex :u4
+    else:
+        TimeIndexShiftType :u1
+        if TimeIndexShiftType == 0:
+            TimeIndexShift :u4
+        else:
+            FrequencyIndexShift :u4
+    reserve :u2
+
+state IncCID:
+    inc_cid :bool
+
+inc_cid :IncCID
+
+format wimax_mac_DLMAP_IE:
+    diuc :u4
+    if diuc == 0xf:
+        ExtendedDIUC  :u4
+        Length :u4
+        match ExtendedDIUC:
+            0 => channel_ie :Channel_Measurement_IE
+            1 => td_zone_ie :TD_ZONE_IE
+            2 => aas_dl_ie :AAS_DL_IE
+            3 => data_location_in_another_bs_ie :Data_location_in_another_BS_IE
+            4: 
+                if inc_cid.inc_cid:
+                    inc_cid.inc_cid = false
+                else:
+                    inc_cid.inc_cid = true
+            7 => harq_map_pointer_ie :HARQ_MAP_Pointer_IE  
+            8 => phymod_dl_ie :PHYMOD_DL_IE
+    else:
+        if inc_cid.inc_cid:
+            N_CID :u8
+            CID :[N_CID]u16
+        OFDMASymbolOffset :u8
+        SubChannelOffset :u6
+        Boosting :u3
+        NumOFDMASymbols :u7
+        NumSubChannels :u6
+        RepetitionCodingIndication :u2
+
+format wimax_max_DLMAP:
+    message_type :wimax_mac_MessageType(wimax_mac_MessageType.WIMAX_MAC_DLMAP,config.type=u8)
+    FrameDurationCode :u8
+    FrameNumber :u24
+    IES :[..]wimax_mac_DLMAP_IE(input=input.subrange(..WIMAX_MAC_MAX_NUM_IES))
+    alignment :[..]u1(input.align = 8)    
