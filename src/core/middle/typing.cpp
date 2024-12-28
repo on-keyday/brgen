@@ -576,7 +576,7 @@ namespace brgen::middle {
                 for (auto& c : m->branch) {
                     auto& then_ref = c->then;
                     if (auto sc = ast::as<ast::ScopedStatement>(then_ref)) {
-                        then_ref = std::make_shared<ast::ImplicitYield>(ast::cast_to<ast::Expr>(sc->statement));
+                        sc->statement = std::make_shared<ast::ImplicitYield>(ast::cast_to<ast::Expr>(sc->statement));
                     }
                 }
             }
