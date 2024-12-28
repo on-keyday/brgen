@@ -163,7 +163,13 @@ namespace brgen::middle {
                     auto field_type = field->field_type;
 
                     if (field->arguments && field->arguments->type_map) {
-                        field_type = field->arguments->type_map->type_literal;  // replace type
+                        auto typ = ast::as<ast::IdentType>(field->field_type);
+                        if (typ) {
+                            // TODO(on-keyday): support array of enum
+                            if (ast::as<ast::EnumType>(typ->base.lock())) {
+                                field_type = field->arguments->type_map->type_literal;  // replace type
+                            }
+                        }
                     }
 
                     if (ignore_on_follow_analysis(field)) {

@@ -568,6 +568,15 @@ namespace brgen::middle {
             m->expr_type = candidate ? candidate : void_type(m->loc);
             // TODO(on-keyday): analyze match branch to decide actual constant level
             m->constant_level = ast::ConstantLevel::variable;
+
+            if (!ast::as<ast::VoidType>(candidate)) {  // replace with ImplicitYield
+                for (auto& c : m->branch) {
+                    auto& then_ref = c->then;
+                    if (auto sc = ast::as<ast::ScopedStatement>(then_ref)) {
+                        then_ref = std::make_shared<ast::ImplicitYield>(ast::cast_to<ast::Expr>(sc->statement));
+                    }
+                }
+            }
         }
 
         auto decide_constant_level(ast::ConstantLevel a, ast::ConstantLevel b) {
