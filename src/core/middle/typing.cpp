@@ -1489,6 +1489,16 @@ namespace brgen::middle {
                     typing_expr(conf->arguments[0]);
                     args->alignment = std::move(conf->arguments[0]);
                     ast::tool::marking_builtin(ast::as<ast::Binary>(arg)->left);
+                    ast::tool::Evaluator eval;
+                    eval.ident_mode = ast::tool::EvalIdentMode::resolve_ident;
+                    if (auto val = eval.eval(args->alignment)) {
+                        if (val->type() == ast::tool::EResultType::integer) {
+                            args->alignment_value = val->get<ast::tool::EResultType::integer>();
+                        }
+                        else {
+                            error(conf->arguments[0]->loc, "expect integer but got ", ast::tool::eval_result_type_str[int(val->type())]).report();
+                        }
+                    }
                     continue;
                 }
                 if (conf->name == "input.peek") {

@@ -160,12 +160,18 @@ namespace brgen::middle {
                         continue;
                     }
 
+                    auto field_type = field->field_type;
+
+                    if (field->arguments && field->arguments->type_map) {
+                        field_type = field->arguments->type_map->type_literal;  // replace type
+                    }
+
                     if (ignore_on_follow_analysis(field)) {
-                        if (field->field_type->bit_alignment == ast::BitAlignment::not_decidable) {
+                        if (field_type->bit_alignment == ast::BitAlignment::not_decidable) {
                             field->bit_alignment = ast::BitAlignment::not_decidable;
                         }
                         else {
-                            field->bit_alignment = calc_new_align(field->field_type->bit_alignment);
+                            field->bit_alignment = calc_new_align(field_type->bit_alignment);
                         }
                         field->offset_bit = bit_size;
                         field->offset_recent = offset;
@@ -175,10 +181,10 @@ namespace brgen::middle {
 
                     // calculate follow
                     if (prev_field) {
-                        if (ast::as<ast::StrLiteralType>(field->field_type)) {
+                        if (ast::as<ast::StrLiteralType>(field_type)) {
                             prev_field->follow = ast::Follow::constant;
                         }
-                        else if (field->field_type->bit_size) {
+                        else if (field_type->bit_size) {
                             prev_field->follow = ast::Follow::fixed;
                         }
                         else {
@@ -190,8 +196,8 @@ namespace brgen::middle {
                     // calculate offset
                     field->offset_bit = bit_size;
                     field->offset_recent = offset;
-                    if (field->field_type->bit_size) {
-                        offset += *field->field_type->bit_size;
+                    if (field_type->bit_size) {
+                        offset += *field_type->bit_size;
                     }
                     else {
                         offset = 0;
@@ -199,28 +205,32 @@ namespace brgen::middle {
 
                     // calculate bit size
                     if (bit_size == 0) {
-                        bit_size = field->field_type->bit_size;
+                        bit_size = field_type->bit_size;
                     }
                     else if (bit_size) {
-                        if (!field->field_type->bit_size) {
+                        if (!field_type->bit_size) {
                             t->fixed_header_size = *bit_size;
                             bit_size = std::nullopt;
                         }
                         else {
-                            *bit_size += *field->field_type->bit_size;
+                            *bit_size += *field_type->bit_size;
                         }
                     }
 
                     // calculate bit alignment
                     // TODO(on-keyday): bit alignment and size of field is affected by field argument
-                    if (field->field_type->bit_alignment == ast::BitAlignment::not_decidable) {
+                    if (field_type->bit_alignment == ast::BitAlignment::not_decidable) {
                         alignment = ast::BitAlignment::not_decidable;
                     }
                     if (alignment == ast::BitAlignment::not_decidable) {
-                        field->bit_alignment = ast::BitAlignment::not_decidable;
+                        // explicit alignment is specified
+                        if (field->arguments && field->arguments->alignment_value) {
+                            alignment = ast::BitAlignment(*field->arguments->alignment_value % futils::bit_per_byte);
+                        }
+                        field->bit_alignment = alignment;
                         continue;
                     }
-                    alignment = calc_new_align(field->field_type->bit_alignment);
+                    alignment = calc_new_align(field_type->bit_alignment);
                     field->bit_alignment = alignment;
                 }
             }

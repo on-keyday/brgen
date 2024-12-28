@@ -223,18 +223,19 @@ export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
                     return makeHover(ident.ident,`constant (type: ${typeToString(ident.expr_type)}, size: ${bitSize(ident.expr_type?.bit_size)} constant level: ${ident.constant_level})`);
                 case ast2ts.IdentUsage.define_field:
                     if(ast2ts.isField(ident.base)){
+                        const sizeAlignTarget = ident.base.arguments?.type_map?.type_literal || ident.base.field_type;
                         return makeHover(ident.ident, 
                             `
 + field 
     + type: ${typeToString(ident.base.field_type)}
-    + size: ${bitSize(ident.base.field_type?.bit_size)}
+    + size: ${bitSize(sizeAlignTarget?.bit_size)}
     + offset(from begin): ${bitSize(ident.base.offset_bit)}
     + offset(from recent fixed): ${bitSize(ident.base.offset_recent)}
     + offset(from end): ${bitSize(ident.base.tail_offset_bit)}
     + offset(from recent fixed): ${bitSize(ident.base.tail_offset_recent)}
     + align: ${ident.base.bit_alignment}, 
     + eventual_align: ${ident.base.eventual_bit_alignment}
-    + type align: ${ident.base.field_type?.bit_alignment||"unknown"}
+    + type align: ${sizeAlignTarget?.bit_alignment||"unknown"}
     + follow: ${ident.base.follow}
     + eventual_follow: ${ident.base.eventual_follow}
     ${ident.base.is_state_variable?"+ state variable\n":""}`);
