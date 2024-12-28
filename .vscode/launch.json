@@ -20,7 +20,7 @@
             "request": "launch",
             "program": "${workspaceRoot}/tool/src2json",
             "args": [
-                "c:/workspace/shbrgen/brgen/example/http2.bgn",
+                "C:/workspace/shbrgen/rebrgen/src/bm/binary_module.bgn",
                 "--print-json","--print-on-error"
             ],
             "stopAtEntry": false,

@@ -551,6 +551,9 @@ namespace brgen::middle {
                             }
                         }
                     }
+                    else {
+                        candidate = void_type(m->loc);
+                    }
                 }
                 if (ast::is_any_range(c->cond)) {
                     any_match = c->cond;
@@ -569,7 +572,7 @@ namespace brgen::middle {
             // TODO(on-keyday): analyze match branch to decide actual constant level
             m->constant_level = ast::ConstantLevel::variable;
 
-            if (!ast::as<ast::VoidType>(candidate)) {  // replace with ImplicitYield
+            if (candidate && !ast::as<ast::VoidType>(candidate)) {  // replace with ImplicitYield
                 for (auto& c : m->branch) {
                     auto& then_ref = c->then;
                     if (auto sc = ast::as<ast::ScopedStatement>(then_ref)) {
