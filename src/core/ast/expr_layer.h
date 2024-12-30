@@ -82,7 +82,8 @@ namespace brgen::ast {
     constexpr bool is_assign_op(BinaryOp op) {
         constexpr auto begin = int(BinaryOp::assign);
         constexpr auto end = int(BinaryOp::bit_xor_assign);
-        return begin <= int(op) && int(op) <= end;
+        return begin <= int(op) && int(op) <= end ||
+               op == BinaryOp::in_assign || op == BinaryOp::append_assign;  // special case
     }
 
     constexpr bool is_define_op(BinaryOp op) {
