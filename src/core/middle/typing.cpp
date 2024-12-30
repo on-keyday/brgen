@@ -552,7 +552,29 @@ namespace brgen::middle {
                         }
                     }
                     else {
-                        candidate = void_type(m->loc);
+                        if (!candidate || candidate->node_type != ast::NodeType::void_type) {
+                            candidate = void_type(m->loc);
+                        }
+                    }
+                }
+                else if (auto block = ast::as<ast::IndentBlock>(c->then)) {
+                    if (auto exp = ast::as<ast::Expr>(block->elements.back())) {
+                        if (!candidate) {
+                            candidate = exp->expr_type;
+                        }
+                        else {
+                            if (candidate->node_type != ast::NodeType::void_type) {
+                                int_type_fitting(candidate, exp->expr_type);
+                                if (!equal_type(candidate, exp->expr_type)) {
+                                    candidate = void_type(m->loc);
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        if (!candidate || candidate->node_type != ast::NodeType::void_type) {
+                            candidate = void_type(m->loc);
+                        }
                     }
                 }
                 if (ast::is_any_range(c->cond)) {
