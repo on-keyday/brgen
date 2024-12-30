@@ -201,8 +201,7 @@ namespace brgen::middle {
 
             auto handle_member_or_index_access = [&](const auto& access_node) {
                 assert(b->op != ast::BinaryOp::define_assign &&
-                       b->op != ast::BinaryOp::const_assign &&
-                       b->op != ast::BinaryOp::append_assign);
+                       b->op != ast::BinaryOp::const_assign);
                 if (!access_node->expr_type) {
                     warn_not_typed(access_node);
                     return false;
