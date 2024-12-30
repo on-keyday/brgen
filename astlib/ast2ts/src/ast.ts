@@ -80,10 +80,11 @@ export const enum BinaryOp {
 	bit_xor_assign = "^=",
 	comma = ",",
 	in_assign = "in",
+	append_assign = "append",
 };
 
 export function isBinaryOp(obj: any): obj is BinaryOp {
-	return obj && typeof obj === 'string' && (obj === "*" || obj === "/" || obj === "%" || obj === "<<<" || obj === ">>>" || obj === "<<" || obj === ">>" || obj === "&" || obj === "+" || obj === "-" || obj === "|" || obj === "^" || obj === "==" || obj === "!=" || obj === "<" || obj === "<=" || obj === ">" || obj === ">=" || obj === "&&" || obj === "||" || obj === "?" || obj === ":" || obj === ".." || obj === "..=" || obj === "=" || obj === ":=" || obj === "::=" || obj === "+=" || obj === "-=" || obj === "*=" || obj === "/=" || obj === "%=" || obj === "<<=" || obj === ">>=" || obj === "<<<=" || obj === ">>>=" || obj === "&=" || obj === "|=" || obj === "^=" || obj === "," || obj === "in")
+	return obj && typeof obj === 'string' && (obj === "*" || obj === "/" || obj === "%" || obj === "<<<" || obj === ">>>" || obj === "<<" || obj === ">>" || obj === "&" || obj === "+" || obj === "-" || obj === "|" || obj === "^" || obj === "==" || obj === "!=" || obj === "<" || obj === "<=" || obj === ">" || obj === ">=" || obj === "&&" || obj === "||" || obj === "?" || obj === ":" || obj === ".." || obj === "..=" || obj === "=" || obj === ":=" || obj === "::=" || obj === "+=" || obj === "-=" || obj === "*=" || obj === "/=" || obj === "%=" || obj === "<<=" || obj === ">>=" || obj === "<<<=" || obj === ">>>=" || obj === "&=" || obj === "|=" || obj === "^=" || obj === "," || obj === "in" || obj === "append")
 }
 
 export const enum IdentUsage {

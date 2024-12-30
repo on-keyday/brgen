@@ -139,6 +139,7 @@ BitOrAssign,
 BitXorAssign,
 Comma,
 InAssign,
+AppendAssign,
 }
 public enum IdentUsage {
 Unknown,

@@ -831,6 +831,7 @@ const (
 	BinaryOpBitXorAssign               BinaryOp = 38
 	BinaryOpComma                      BinaryOp = 39
 	BinaryOpInAssign                   BinaryOp = 40
+	BinaryOpAppendAssign               BinaryOp = 41
 )
 
 func (n BinaryOp) String() string {
@@ -917,6 +918,8 @@ func (n BinaryOp) String() string {
 		return ","
 	case BinaryOpInAssign:
 		return "in"
+	case BinaryOpAppendAssign:
+		return "append"
 	default:
 		return fmt.Sprintf("BinaryOp(%d)", n)
 	}
@@ -1010,6 +1013,8 @@ func (n *BinaryOp) UnmarshalJSON(data []byte) error {
 		*n = BinaryOpComma
 	case "in":
 		*n = BinaryOpInAssign
+	case "append":
+		*n = BinaryOpAppendAssign
 	default:
 		return fmt.Errorf("unknown BinaryOp: %q", tmp)
 	}

@@ -145,6 +145,50 @@ namespace brgen::middle {
             }
         }
 
+        void check_and_set_vector_append(const std::shared_ptr<ast::Binary>& b) {
+            if (b->op != ast::BinaryOp::assign) {
+                return;
+            }
+            auto left = ast::as<ast::Index>(b->left);
+            if (!left) {
+                return;
+            }
+            auto member_access = ast::as<ast::MemberAccess>(left->index);
+            if (!member_access) {
+                return;
+            }
+            if (member_access->member->usage != ast::IdentUsage::reference_builtin_fn ||
+                member_access->member->ident != "length") {
+                return;
+            }
+            auto recursive_detect = [&](auto&& f, ast::Node* l, ast::Node* r) -> void {
+                if (auto l_ident = ast::as<ast::Ident>(l)) {
+                    if (auto r_ident = ast::as<ast::Ident>(r)) {
+                        if (l_ident->base.lock() == r_ident->base.lock()) {
+                            b->op = ast::BinaryOp::append_assign;  // vector.append
+                            return;
+                        }
+                    }
+                }
+                else if (auto l_index = ast::as<ast::Index>(l)) {
+                    if (auto r_index = ast::as<ast::Index>(r)) {
+                        f(f, l_index->index.get(), r_index->index.get());
+                        return;
+                    }
+                }
+                else if (auto member_access_l = ast::as<ast::MemberAccess>(l)) {
+                    if (auto member_access_r = ast::as<ast::MemberAccess>(r)) {
+                        if (member_access_l->base.lock() == member_access_r->base.lock()) {
+                            f(f, member_access_l->target.get(), member_access_r->target.get());
+                            return;
+                        }
+                        return;
+                    }
+                }
+            };
+            recursive_detect(recursive_detect, member_access->target.get(), left->expr.get());
+        }
+
         void typing_assign(const std::shared_ptr<ast::Binary>& b) {
             auto right = b->right;
             auto check_right_typed = [&] {
@@ -156,6 +200,8 @@ namespace brgen::middle {
             };
 
             auto handle_member_or_index_access = [&](const auto& access_node) {
+                assert(b->op != ast::BinaryOp::define_assign &&
+                       b->op != ast::BinaryOp::const_assign);
                 if (!access_node->expr_type) {
                     warn_not_typed(access_node);
                     return false;
@@ -167,6 +213,7 @@ namespace brgen::middle {
                 if (!equal_type(access_node->expr_type, right->expr_type)) {
                     report_not_equal_type(access_node->loc, access_node->expr_type, right->expr_type);
                 }
+                check_and_set_vector_append(b);
                 return true;
             };
 

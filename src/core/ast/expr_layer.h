@@ -20,7 +20,7 @@ namespace brgen::ast {
                                           "&=", "|=", "^=",
                                          };
     constexpr const char* bin_layer8[] = {","};
-    constexpr const char* ignored_layer[] = {"in"};
+    constexpr const char* ignored_layer[] = {"in","append"};
 
 
 
@@ -34,7 +34,7 @@ namespace brgen::ast {
         "..", "..=",
         "=", ":=", "::=", "+=", "-=", "*=", "/=", "%=", "<<=", ">>=","<<<=",">>>=", "&=", "|=", "^=",
         ",",
-        "in",
+        "in","append",
         nullptr,
     };
 
@@ -48,7 +48,7 @@ namespace brgen::ast {
         "range_exclusive", "range_inclusive",
         "assign", "define_assign", "const_assign", "add_assign", "sub_assign", "mul_assign", "div_assign", "mod_assign", "left_logical_shift_assign", "right_logical_shift_assign","left_arithmetic_shift_assign","right_arithmetic_shift_assign", "bit_and_assign", "bit_or_assign", "bit_xor_assign",
         "comma",
-        "in",
+        "in","append",
         nullptr,
     };
     // clang-format on

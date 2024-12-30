@@ -265,6 +265,8 @@ BitXorAssign,
 Comma,
 @JsonValue('in')
 InAssign,
+@JsonValue('append')
+AppendAssign,
 }
 enum IdentUsage {
 @JsonValue('unknown')

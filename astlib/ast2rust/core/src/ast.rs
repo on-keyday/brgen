@@ -605,6 +605,7 @@ pub enum BinaryOp {
 	BitXorAssign,
 	Comma,
 	InAssign,
+	AppendAssign,
 }
 impl TryFrom<&str> for BinaryOp {
 	type Error = ();
@@ -651,6 +652,7 @@ impl TryFrom<&str> for BinaryOp {
 			"^=" =>Ok(Self::BitXorAssign),
 			"," =>Ok(Self::Comma),
 			"in" =>Ok(Self::InAssign),
+			"append" =>Ok(Self::AppendAssign),
 			_=> Err(()),
 		}
 	}
@@ -700,6 +702,7 @@ impl BinaryOp {
 			Self::BitXorAssign => "^=",
 			Self::Comma => ",",
 			Self::InAssign => "in",
+			Self::AppendAssign => "append",
 		}
 	}
 }

@@ -278,6 +278,7 @@ enum ast2c_BinaryOp {
 	AST2C_BINARYOP_BIT_XOR_ASSIGN = 38,
 	AST2C_BINARYOP_COMMA = 39,
 	AST2C_BINARYOP_IN_ASSIGN = 40,
+	AST2C_BINARYOP_APPEND_ASSIGN = 41,
 };
 const char* ast2c_BinaryOp_to_string(ast2c_BinaryOp);
 int ast2c_BinaryOp_from_string(const char*,ast2c_BinaryOp*);

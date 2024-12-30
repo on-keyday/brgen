@@ -56,6 +56,7 @@ enum BinaryOp:
 
     comma = ","
     in_assign = "in"
+    append_assign = "append" # special case for array append
 
 enum UnaryOp:
     not_ = "!"

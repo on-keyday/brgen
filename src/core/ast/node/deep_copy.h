@@ -484,6 +484,7 @@ namespace brgen::ast {
         for (auto& i : node->metadata) {
             new_node->metadata.push_back(deep_copy(i.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
         }
+        new_node->endian = deep_copy(node->endian.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -534,6 +535,9 @@ namespace brgen::ast {
         }
         for (auto& i : node->arguments) {
             new_node->arguments.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
+        }
+        for (auto& i : node->assigns) {
+            new_node->assigns.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
         }
         new_node->alignment = deep_copy(node->alignment, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->alignment_value = node->alignment_value;
@@ -733,6 +737,7 @@ namespace brgen::ast {
         for (auto& i : node->branch) {
             new_node->branch.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
         }
+        new_node->trial_match = node->trial_match;
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -817,6 +822,9 @@ namespace brgen::ast {
         new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->constant_level = node->constant_level;
         new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        for (auto& i : node->arguments) {
+            new_node->arguments.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
+        }
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -1320,6 +1328,7 @@ namespace brgen::ast {
         new_node->recursive = node->recursive;
         new_node->fixed_header_size = node->fixed_header_size;
         new_node->fixed_tail_size = node->fixed_tail_size;
+        new_node->type_map = deep_copy(node->type_map, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -2841,6 +2850,10 @@ namespace brgen::ast {
                 return false;
             }
         }
+        if (!deep_equal(a->endian.lock(), b->endian.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->endian.lock(), b->endian.lock(), "Program::endian", -1);
+            return false;
+        }
         return true;
     }
     template <class NodeM, class ScopeM, class BackTracer = NullBackTracer>
@@ -2934,6 +2947,13 @@ namespace brgen::ast {
         for (size_t i = 0; i < a->arguments.size(); i++) {
             if (!deep_equal(a->arguments[i], b->arguments[i], std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
                 trace(a->arguments[i], b->arguments[i], "FieldArgument::arguments", i);
+                return false;
+            }
+        }
+        if (a->assigns.size() != b->assigns.size()) return false;
+        for (size_t i = 0; i < a->assigns.size(); i++) {
+            if (!deep_equal(a->assigns[i], b->assigns[i], std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+                trace(a->assigns[i], b->assigns[i], "FieldArgument::assigns", i);
                 return false;
             }
         }
@@ -3404,6 +3424,10 @@ namespace brgen::ast {
                 return false;
             }
         }
+        if (a->trial_match != b->trial_match) {
+            trace(a->trial_match, b->trial_match, "Match::trial_match", -1);
+            return false;
+        }
         return true;
     }
     template <class NodeM, class ScopeM, class BackTracer = NullBackTracer>
@@ -3584,6 +3608,13 @@ namespace brgen::ast {
         if (!deep_equal(a->base, b->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
             trace(a->base, b->base, "Cast::base", -1);
             return false;
+        }
+        if (a->arguments.size() != b->arguments.size()) return false;
+        for (size_t i = 0; i < a->arguments.size(); i++) {
+            if (!deep_equal(a->arguments[i], b->arguments[i], std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+                trace(a->arguments[i], b->arguments[i], "Cast::arguments", i);
+                return false;
+            }
         }
         return true;
     }
@@ -4692,6 +4723,10 @@ namespace brgen::ast {
         }
         if (a->fixed_tail_size != b->fixed_tail_size) {
             trace(a->fixed_tail_size, b->fixed_tail_size, "StructType::fixed_tail_size", -1);
+            return false;
+        }
+        if (!deep_equal(a->type_map, b->type_map, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->type_map, b->type_map, "StructType::type_map", -1);
             return false;
         }
         return true;
