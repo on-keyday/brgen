@@ -1723,7 +1723,12 @@ namespace brgen::middle {
                     continue;
                 }
                 if (!u->common_type) {
-                    u->common_type = f->field_type;
+                    if (auto is_union = ast::as<ast::UnionType>(f->field_type)) {
+                        u->common_type = is_union->common_type;
+                    }
+                    else {
+                        u->common_type = f->field_type;
+                    }
                 }
                 else {
                     u->common_type = common_type(u->common_type, f->field_type);
