@@ -2,6 +2,7 @@
 #include "stream.h"
 #include "node/scope.h"
 #include "parse.h"
+#include <fnet/util/base64.h>
 
 namespace brgen::ast {
 
@@ -557,11 +558,14 @@ namespace brgen::ast {
 
         std::shared_ptr<StrLiteral> parse_str_literal(lexer::Token&& lit) {
             auto literal = std::make_shared<StrLiteral>(lit.loc, std::move(lit.token));
-            auto c = unescape_count(literal->value);
+            auto c = unescape(literal->value);
             if (!c) {
                 s.report_error(lit.loc, "invalid string literal");
             }
-            literal->length = *c;
+            literal->length = c->size();
+            if (!futils::base64::encode(*c, literal->base64_value)) {
+                s.report_error(lit.loc, "failed to encode string to base64 (internal error)");
+            }
             return literal;
         }
 
