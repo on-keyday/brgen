@@ -615,6 +615,7 @@ class BoolLiteral(Literal):
 
 class StrLiteral(Literal):
     value: str
+    base_64_value: str
     length: int
 
 
@@ -1976,6 +1977,8 @@ def ast2node(ast :JsonAst) -> Program:
                 node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
                 x = ast.node[i].body["value"]
                 node[i].value = x if isinstance(x,str)  else raiseError(TypeError('type mismatch at StrLiteral::value'))
+                x = ast.node[i].body["base_64_value"]
+                node[i].base_64_value = x if isinstance(x,str)  else raiseError(TypeError('type mismatch at StrLiteral::base_64_value'))
                 x = ast.node[i].body["length"]
                 node[i].length = x if isinstance(x,int)  else raiseError(TypeError('type mismatch at StrLiteral::length'))
             case NodeType.REGEX_LITERAL:

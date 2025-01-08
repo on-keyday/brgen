@@ -711,6 +711,7 @@ public class StrLiteral : Literal{
 	public Type? ExprType{get;set;}
 	public ConstantLevel ConstantLevel{get;set;}
 	public string Value{get;set;} = "";
+	public string Base64Value{get;set;} = "";
 	public ulong Length{get;set;}
 }
 public class RegexLiteral : Literal{
@@ -1543,6 +1544,7 @@ public static class Ast {
                node.ExprType = ast.Node[i].Body[expr_type];
                node.ConstantLevel = ast.Node[i].Body[constant_level];
                node.Value = ast.Node[i].Body[value];
+               node.Base64Value = ast.Node[i].Body[base64_value];
                node.Length = ast.Node[i].Body[length];
            case NodeType.RegexLiteral:
                var node = nodes[i] as RegexLiteral;

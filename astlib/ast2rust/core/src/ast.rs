@@ -7984,6 +7984,7 @@ pub struct StrLiteral {
 	pub expr_type: Option<Type>,
 	pub constant_level: ConstantLevel,
 	pub value: String,
+	pub base_64_value: String,
 	pub length: u64,
 }
 
@@ -9853,6 +9854,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				expr_type: None,
 				constant_level: ConstantLevel::Unknown,
 				value: String::new(),
+				base_64_value: String::new(),
 				length: 0,
 				})))
 			},
@@ -14061,6 +14063,14 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				node.borrow_mut().value = match value_body.as_str() {
 					Some(v)=>v.to_string(),
 					None=>return Err(Error::MismatchJSONType(value_body.into(),JSONType::String)),
+				};
+				let base_64_value_body = match raw_node.body.get("base64_value") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"base64_value")),
+				};
+				node.borrow_mut().base_64_value = match base_64_value_body.as_str() {
+					Some(v)=>v.to_string(),
+					None=>return Err(Error::MismatchJSONType(base_64_value_body.into(),JSONType::String)),
 				};
 				let length_body = match raw_node.body.get("length") {
 					Some(v)=>v,

@@ -1011,6 +1011,7 @@ export function isBoolLiteral(obj: any): obj is BoolLiteral {
 
 export interface StrLiteral extends Literal {
 	value: string;
+	base_64_value: string;
 	length: number;
 }
 
@@ -2014,6 +2015,7 @@ export function parseAST(obj: JsonAst): Program {
 				expr_type: null,
 				constant_level: ConstantLevel.unknown,
 				value: '',
+				base_64_value: '',
 				length: 0,
 			}
 			c.node.push(n);
@@ -4234,6 +4236,11 @@ export function parseAST(obj: JsonAst): Program {
 				throw new Error('invalid node list at StrLiteral::value');
 			}
 			n.value = on.body.value;
+			const tmpbase_64_value = on.body?.base_64_value;
+			if (typeof tmpbase_64_value !== "string") {
+				throw new Error('invalid node list at StrLiteral::base_64_value');
+			}
+			n.base_64_value = on.body.base_64_value;
 			const tmplength = on.body?.length;
 			if (typeof tmplength !== "number") {
 				throw new Error('invalid node list at StrLiteral::length');

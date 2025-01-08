@@ -3165,6 +3165,7 @@ type StrLiteral struct {
 	ExprType      Type
 	ConstantLevel ConstantLevel
 	Value         string
+	Base64Value   string
 	Length        uint64
 }
 
@@ -4975,6 +4976,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				ExprType      *uintptr      `json:"expr_type"`
 				ConstantLevel ConstantLevel `json:"constant_level"`
 				Value         string        `json:"value"`
+				Base64Value   string        `json:"base64_value"`
 				Length        uint64        `json:"length"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
@@ -4985,6 +4987,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			}
 			v.ConstantLevel = tmp.ConstantLevel
 			v.Value = tmp.Value
+			v.Base64Value = tmp.Base64Value
 			v.Length = tmp.Length
 		case NodeTypeRegexLiteral:
 			v := n.node[i].(*RegexLiteral)
