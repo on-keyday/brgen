@@ -1238,7 +1238,7 @@ namespace brgen::middle {
                 case ast::IOMethod::config_endian_native:
                 case ast::IOMethod::config_bit_order_lsb:
                 case ast::IOMethod::config_bit_order_msb: {
-                    io->expr_type = std::make_shared<ast::BoolType>(io->loc);
+                    io->expr_type = std::make_shared<ast::IntType>(io->loc, 8, ast::Endian::unspec, false);
                     io->constant_level = ast::ConstantLevel::constant;
                     break;
                 }
