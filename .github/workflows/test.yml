@@ -20,6 +20,8 @@ jobs:
         with:
           version: latest
           platform: x64
+      - name: Install libc++-dev and libc++abi-dev
+        run: sudo apt-get install libc++-dev libc++abi-dev -y
       - name: Build
         run: |
           . build.sh
