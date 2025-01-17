@@ -3,6 +3,7 @@
 #include <comb2/pos.h>
 #include <string>
 #include "lexer_enum.h"
+#include <cstdint>
 
 namespace brgen::lexer {
     using Pos = futils::comb2::Pos;
