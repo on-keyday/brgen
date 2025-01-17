@@ -268,6 +268,28 @@ export function BlockTraitToString(v: BlockTrait): string {
   return result.join(' | ');
 }
 
+export const enum FieldArgumentMapping {
+	none = 0,
+	direct = 1,
+	repeat = 2,
+	some_candidate = 4,
+};
+
+export function isFieldArgumentMapping(obj: any): obj is FieldArgumentMapping {
+	return typeof obj === 'number' && Number.isInteger(obj) // easy check
+}
+
+export function FieldArgumentMappingToString(v: FieldArgumentMapping): string {
+  const result = [];
+  if ((v & 1) === 1) result.push("direct");
+  if ((v & 2) === 2) result.push("repeat");
+  if ((v & 4) === 4) result.push("some_candidate");
+  if (result.length === 0) {
+    return "none";
+  }
+  return result.join(' | ');
+}
+
 export interface Node {
 	readonly node_type: NodeType;
 	loc: Loc;
@@ -506,6 +528,7 @@ export interface FieldArgument extends Node {
 	peek_value: number|null;
 	type_map: TypeLiteral|null;
 	metadata: Metadata[];
+	argument_mapping: FieldArgumentMapping;
 }
 
 export function isFieldArgument(obj: any): obj is FieldArgument {
@@ -1337,6 +1360,7 @@ export function parseAST(obj: JsonAst): Program {
 				peek_value: null,
 				type_map: null,
 				metadata: [],
+				argument_mapping: FieldArgumentMapping.none,
 			}
 			c.node.push(n);
 			break;
@@ -2358,6 +2382,11 @@ export function parseAST(obj: JsonAst): Program {
 				}
 				n.metadata.push(tmpmetadata);
 			}
+			const tmpargument_mapping = on.body?.argument_mapping;
+			if (!isFieldArgumentMapping(tmpargument_mapping)) {
+				throw new Error('invalid node list at FieldArgument::argument_mapping');
+			}
+			n.argument_mapping = tmpargument_mapping;
 			break;
 		}
 		case "binary": {

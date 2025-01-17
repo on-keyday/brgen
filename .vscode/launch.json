@@ -20,7 +20,7 @@
             "request": "launch",
             "program": "${workspaceRoot}/tool/src2json",
             "args": [
-                "C:/workspace/shbrgen/rebrgen/src/test/test_cases.bgn",
+                "C:/workspace/shbrgen/rebrgen/src/test/full_networks.bgn",
                 "--print-json","--print-on-error"
             ],
             "stopAtEntry": false,

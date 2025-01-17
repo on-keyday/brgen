@@ -1245,6 +1245,38 @@ int ast2c_BlockTrait_from_string(const char* str, ast2c_BlockTrait* out) {
 	return 0;
 }
 
+const char* ast2c_FieldArgumentMapping_to_string(ast2c_FieldArgumentMapping val) {
+	switch(val) {
+	case AST2C_FIELDARGUMENTMAPPING_NONE: return "none";
+	case AST2C_FIELDARGUMENTMAPPING_DIRECT: return "direct";
+	case AST2C_FIELDARGUMENTMAPPING_REPEAT: return "repeat";
+	case AST2C_FIELDARGUMENTMAPPING_SOME_CANDIDATE: return "some_candidate";
+	default: return NULL;
+	}
+}
+
+// returns 1 if succeed 0 if failed
+int ast2c_FieldArgumentMapping_from_string(const char* str, ast2c_FieldArgumentMapping* out) {
+	if (!str||!out) return 0;
+	if (strcmp(str, "none") == 0) {
+		*out = AST2C_FIELDARGUMENTMAPPING_NONE;
+		return 1;
+	}
+	if (strcmp(str, "direct") == 0) {
+		*out = AST2C_FIELDARGUMENTMAPPING_DIRECT;
+		return 1;
+	}
+	if (strcmp(str, "repeat") == 0) {
+		*out = AST2C_FIELDARGUMENTMAPPING_REPEAT;
+		return 1;
+	}
+	if (strcmp(str, "some_candidate") == 0) {
+		*out = AST2C_FIELDARGUMENTMAPPING_SOME_CANDIDATE;
+		return 1;
+	}
+	return 0;
+}
+
 // returns 1 if succeed 0 if failed
 int ast2c_Program_parse(ast2c_Ast* ast,ast2c_Program* s,ast2c_json_handlers* h, void* obj) {
 	if (!ast||!s||!h||!obj) {
@@ -1374,6 +1406,7 @@ int ast2c_FieldArgument_parse(ast2c_Ast* ast,ast2c_FieldArgument* s,ast2c_json_h
 	void* peek_value = h->object_get(h, obj_body, "peek_value");
 	void* type_map = h->object_get(h, obj_body, "type_map");
 	void* metadata = h->object_get(h, obj_body, "metadata");
+	void* argument_mapping = h->object_get(h, obj_body, "argument_mapping");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_FieldArgument::loc is null"); } return 0; }
 	if (!raw_arguments) { if(h->error) { h->error(h,raw_arguments, "ast2c_FieldArgument::raw_arguments is null"); } return 0; }
 	if (!end_loc) { if(h->error) { h->error(h,end_loc, "ast2c_FieldArgument::end_loc is null"); } return 0; }
@@ -1404,6 +1437,7 @@ int ast2c_FieldArgument_parse(ast2c_Ast* ast,ast2c_FieldArgument* s,ast2c_json_h
 		if(h->error) { h->error(h,metadata, "failed to get array size of ast2c_FieldArgument::metadata"); }
 		return NULL;
 	}
+	if (!argument_mapping) { if(h->error) { h->error(h,argument_mapping, "ast2c_FieldArgument::argument_mapping is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_FieldArgument::loc"); }
 		goto error;

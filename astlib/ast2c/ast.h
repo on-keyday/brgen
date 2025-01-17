@@ -47,6 +47,7 @@ typedef enum ast2c_IoMethod ast2c_IoMethod;
 typedef enum ast2c_SpecialLiteralKind ast2c_SpecialLiteralKind;
 typedef enum ast2c_OrderType ast2c_OrderType;
 typedef enum ast2c_BlockTrait ast2c_BlockTrait;
+typedef enum ast2c_FieldArgumentMapping ast2c_FieldArgumentMapping;
 typedef struct ast2c_Node ast2c_Node;
 typedef struct ast2c_Expr ast2c_Expr;
 typedef struct ast2c_Stmt ast2c_Stmt;
@@ -414,6 +415,15 @@ enum ast2c_BlockTrait {
 const char* ast2c_BlockTrait_to_string(ast2c_BlockTrait);
 int ast2c_BlockTrait_from_string(const char*,ast2c_BlockTrait*);
 
+enum ast2c_FieldArgumentMapping {
+	AST2C_FIELDARGUMENTMAPPING_NONE = 0,
+	AST2C_FIELDARGUMENTMAPPING_DIRECT = 1,
+	AST2C_FIELDARGUMENTMAPPING_REPEAT = 2,
+	AST2C_FIELDARGUMENTMAPPING_SOME_CANDIDATE = 4,
+};
+const char* ast2c_FieldArgumentMapping_to_string(ast2c_FieldArgumentMapping);
+int ast2c_FieldArgumentMapping_from_string(const char*,ast2c_FieldArgumentMapping*);
+
 struct ast2c_Pos {
 	uint64_t begin;
 	uint64_t end;
@@ -598,6 +608,7 @@ struct ast2c_FieldArgument {
 	ast2c_TypeLiteral* type_map;
 	ast2c_Metadata** metadata;
 	size_t metadata_size;
+	ast2c_FieldArgumentMapping argument_mapping;
 };
 
 // returns 1 if succeed 0 if failed

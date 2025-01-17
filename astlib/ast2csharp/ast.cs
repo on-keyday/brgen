@@ -245,6 +245,12 @@ DescriptionOnly,
 UncommonSize,
 ControlFlowChange,
 }
+public enum FieldArgumentMapping {
+None,
+Direct,
+Repeat,
+SomeCandidate,
+}
 public interface Node {
 	public Loc Loc {get; set;}
 }
@@ -298,6 +304,7 @@ public class FieldArgument : Node{
 	public ulong? PeekValue{get;set;}
 	public TypeLiteral? TypeMap{get;set;}
 	public List<Metadata>? Metadata{get;set;}
+	public FieldArgumentMapping ArgumentMapping{get;set;}
 }
 public class Binary : Expr{
 	public Loc Loc{get;set;}
@@ -1131,6 +1138,7 @@ public static class Ast {
                node.PeekValue = ast.Node[i].Body[peek_value];
                node.TypeMap = ast.Node[i].Body[type_map];
                node.Metadata = ast.Node[i].Body[metadata];
+               node.ArgumentMapping = ast.Node[i].Body[argument_mapping];
            case NodeType.Binary:
                var node = nodes[i] as Binary;
                node.Loc = ast.Node[i].Body[loc];

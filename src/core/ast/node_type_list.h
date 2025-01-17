@@ -185,6 +185,9 @@ namespace brgen::ast {
                     else if constexpr (std::is_same_v<P, BlockTrait>) {
                         field(key, "block_trait");
                     }
+                    else if constexpr (std::is_same_v<P, FieldArgumentMapping>) {
+                        field(key, "field_argument_mapping");
+                    }
                     else if constexpr (futils::helper::is_template<P>) {
                         using P1 = typename futils::helper::template_of_t<P>::template param_at<0>;
                         if constexpr (futils::helper::is_template_instance_of<P, std::shared_ptr>) {
@@ -340,6 +343,7 @@ namespace brgen::ast {
         enum_type<SpecialLiteralKind>("special_literal_kind", field);
         enum_type<OrderType>("order_type", field);
         enum_type<BlockTrait>("block_trait", field);
+        enum_type<FieldArgumentMapping>("field_argument_mapping", field);
     }
 
     void struct_types(auto&& field) {

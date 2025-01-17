@@ -259,6 +259,13 @@ class BlockTrait(PyEnum):
     CONTROL_FLOW_CHANGE = 8388608
 
 
+class FieldArgumentMapping(PyEnum):
+    NONE = 0
+    DIRECT = 1
+    REPEAT = 2
+    SOME_CANDIDATE = 4
+
+
 class Node:
     loc: Loc
 
@@ -319,6 +326,7 @@ class FieldArgument(Node):
     peek_value: Optional[int]
     type_map: Optional[TypeLiteral]
     metadata: List[Metadata]
+    argument_mapping: FieldArgumentMapping
 
 
 class Binary(Expr):
@@ -1110,6 +1118,7 @@ def ast2node(ast :JsonAst) -> Program:
                 else:
                     node[i].type_map = None
                 node[i].metadata = [(node[x] if isinstance(node[x],Metadata) else raiseError(TypeError('type mismatch at FieldArgument::metadata'))) for x in ast.node[i].body["metadata"]]
+                node[i].argument_mapping = FieldArgumentMapping(ast.node[i].body["argument_mapping"])
             case NodeType.BINARY:
                 if ast.node[i].body["expr_type"] is not None:
                     x = node[ast.node[i].body["expr_type"]]

@@ -1709,6 +1709,50 @@ func (n *BlockTrait) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+type FieldArgumentMapping int
+
+const (
+	FieldArgumentMappingNone          FieldArgumentMapping = 0
+	FieldArgumentMappingDirect        FieldArgumentMapping = 1
+	FieldArgumentMappingRepeat        FieldArgumentMapping = 2
+	FieldArgumentMappingSomeCandidate FieldArgumentMapping = 4
+)
+
+func (n FieldArgumentMapping) String() string {
+	var s string
+	if n&FieldArgumentMappingDirect != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "direct"
+	}
+	if n&FieldArgumentMappingRepeat != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "repeat"
+	}
+	if n&FieldArgumentMappingSomeCandidate != 0 {
+		if s != "" {
+			s += " | "
+		}
+		s += "some_candidate"
+	}
+	if s == "" {
+		return "none"
+	}
+	return s
+}
+
+func (n *FieldArgumentMapping) UnmarshalJSON(data []byte) error {
+	var tmp int
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+	*n = FieldArgumentMapping(tmp)
+	return nil
+}
+
 type Node interface {
 	isNode()
 	GetLoc() Loc
@@ -1801,6 +1845,7 @@ type FieldArgument struct {
 	PeekValue          *uint64
 	TypeMap            *TypeLiteral
 	Metadata           []*Metadata
+	ArgumentMapping    FieldArgumentMapping
 }
 
 func (n *FieldArgument) isNode() {}
@@ -3791,19 +3836,20 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeFieldArgument:
 			v := n.node[i].(*FieldArgument)
 			var tmp struct {
-				RawArguments       *uintptr  `json:"raw_arguments"`
-				EndLoc             Loc       `json:"end_loc"`
-				CollectedArguments []uintptr `json:"collected_arguments"`
-				Arguments          []uintptr `json:"arguments"`
-				Assigns            []uintptr `json:"assigns"`
-				Alignment          *uintptr  `json:"alignment"`
-				AlignmentValue     *uint64   `json:"alignment_value"`
-				SubByteLength      *uintptr  `json:"sub_byte_length"`
-				SubByteBegin       *uintptr  `json:"sub_byte_begin"`
-				Peek               *uintptr  `json:"peek"`
-				PeekValue          *uint64   `json:"peek_value"`
-				TypeMap            *uintptr  `json:"type_map"`
-				Metadata           []uintptr `json:"metadata"`
+				RawArguments       *uintptr             `json:"raw_arguments"`
+				EndLoc             Loc                  `json:"end_loc"`
+				CollectedArguments []uintptr            `json:"collected_arguments"`
+				Arguments          []uintptr            `json:"arguments"`
+				Assigns            []uintptr            `json:"assigns"`
+				Alignment          *uintptr             `json:"alignment"`
+				AlignmentValue     *uint64              `json:"alignment_value"`
+				SubByteLength      *uintptr             `json:"sub_byte_length"`
+				SubByteBegin       *uintptr             `json:"sub_byte_begin"`
+				Peek               *uintptr             `json:"peek"`
+				PeekValue          *uint64              `json:"peek_value"`
+				TypeMap            *uintptr             `json:"type_map"`
+				Metadata           []uintptr            `json:"metadata"`
+				ArgumentMapping    FieldArgumentMapping `json:"argument_mapping"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -3845,6 +3891,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			for j, k := range tmp.Metadata {
 				v.Metadata[j] = n.node[k].(*Metadata)
 			}
+			v.ArgumentMapping = tmp.ArgumentMapping
 		case NodeTypeBinary:
 			v := n.node[i].(*Binary)
 			var tmp struct {

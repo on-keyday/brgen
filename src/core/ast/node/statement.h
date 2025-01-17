@@ -165,6 +165,7 @@ namespace brgen::ast {
             sdebugf(peek_value);
             sdebugf(type_map);
             sdebugf(metadata);
+            sdebugf(argument_mapping);
         }
     };
 

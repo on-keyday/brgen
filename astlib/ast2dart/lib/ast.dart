@@ -458,6 +458,16 @@ UncommonSize,
 @JsonValue('control_flow_change')
 ControlFlowChange,
 }
+enum FieldArgumentMapping {
+@JsonValue('none')
+None,
+@JsonValue('direct')
+Direct,
+@JsonValue('repeat')
+Repeat,
+@JsonValue('some_candidate')
+SomeCandidate,
+}
 abstract class Node {
     Loc loc = Loc();
 }
@@ -514,6 +524,7 @@ class FieldArgument extends Node {
     int? peekValue;
     TypeLiteral? typeMap;
     List<Metadata>? metadata = [];
+    FieldArgumentMapping argumentMapping = FieldArgumentMapping.None;
 factory FieldArgument.fromJson(Map<String, dynamic> json) => _$FieldArgumentFromJson(json);
 }
 @JsonSerializable()

@@ -1185,6 +1185,21 @@ impl TryFrom<u64> for BlockTrait {
 		Self::from_bits(v).ok_or(())
 	}
 }
+bitflags!{
+	#[derive(Debug,Clone,Copy,PartialEq,Eq)]
+	pub struct FieldArgumentMapping: u64{
+		const None = 0;
+		const Direct = 1;
+		const Repeat = 2;
+		const SomeCandidate = 4;
+	}
+}
+impl TryFrom<u64> for FieldArgumentMapping {
+	type Error = ();
+	fn try_from(v:u64)->Result<Self,()>{
+		Self::from_bits(v).ok_or(())
+	}
+}
 #[derive(Debug,Clone)]
 pub enum Node {
 	Program(Rc<RefCell<Program>>),
@@ -3726,6 +3741,7 @@ pub struct FieldArgument {
 	pub peek_value: Option<u64>,
 	pub type_map: Option<Rc<RefCell<TypeLiteral>>>,
 	pub metadata: Vec<Rc<RefCell<Metadata>>>,
+	pub argument_mapping: FieldArgumentMapping,
 }
 
 impl From<&Rc<RefCell<FieldArgument>>> for NodeType {
@@ -9335,6 +9351,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				peek_value: None,
 				type_map: None,
 				metadata: Vec::new(),
+				argument_mapping: FieldArgumentMapping::None,
 				})))
 			},
 			NodeType::Binary => {
@@ -10355,6 +10372,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().metadata.push(metadata_body.clone());
 				}
+				let argument_mapping_body = match raw_node.body.get("argument_mapping") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"argument_mapping")),
+				};
+				node.borrow_mut().argument_mapping = match argument_mapping_body.as_u64() {
+					Some(v)=>match FieldArgumentMapping::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(argument_mapping_body.into(),JSONType::Number)),
+				};
 			},
 			NodeType::Binary => {
 				let node = nodes[i].clone();
