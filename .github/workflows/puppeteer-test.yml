@@ -28,8 +28,11 @@ jobs:
           | # see https://github.com/puppeteer/puppeteer/blob/38582e22822674138efa0d3dbe10a22bc0a33cad/docker/Dockerfile#L12
           sudo apt-get update
           sudo apt-get install -yq fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-khmeros fonts-kacst fonts-freefont-ttf dbus dbus-x11
+
       - name: Test
-        run: |
+        run:
+          | # see https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md
+          echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
           cd ./web/public
           npx http-server -p 8080 &
           cd ../dev
