@@ -118,6 +118,8 @@ class storageManager {
     setSourceCode(code:string) {
         this.#storage.setItem(StorageKey.SOURCE_CODE,code);
     }
+
+    
 }
 
 export const storage = new storageManager();
