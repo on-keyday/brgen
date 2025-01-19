@@ -434,6 +434,7 @@ jobs:
         run: |
           chmod +x ./script/fetch_rebrgen.sh
           ./script/fetch_rebrgen.sh
+          ls -al ./web/dev/src/lib
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Build Wasm
