@@ -127,7 +127,7 @@ monaco.languages.onLanguage(BRGEN_ID,()=>{
                 return null;
             }
             const offset= model.getOffsetAt(position);
-            const b=analyze.analyzeHover(context.prevNode,offset)
+            const b=await analyze.analyzeHover(context.prevNode,offset)
             if(b === null){
                 return null;
             }

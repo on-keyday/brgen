@@ -110,76 +110,76 @@ export const typeToString = (type :ast2ts.Type|null|undefined) :string => {
     return typ;
 }
 
-export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
+export const analyzeHover = async (prevNode :ast2ts.Node, pos :number) =>{
     let found :any;
     console.time("walk hover");
-    ast2ts.walk(prevNode,(f,node)=>{
+    await ast2ts.walkAsync(prevNode,async(f,node)=>{
         if(found!==undefined){
             return false;
         }
         if(node.loc.file!=1) {
             console.log("prevent file boundary: "+node.loc.file)
-            return; // skip other files
+            return false; // skip other files
         }
         if(node.loc.pos.begin<=pos&&pos<=node.loc.pos.end){
             if(ast2ts.isIdent(node)){
                 console.log(`found: ${node.ident} ${JSON.stringify(node.loc)}`)
                 found = node;
-                return;
+                return false;
             }
             else if(ast2ts.isIntLiteral(node)) {
                 console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
                 found = node;
-                return;
+                return false;
             }
             else if(ast2ts.isStrLiteral(node)) {
                 console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
                 found = node;
-                return;
+                return false;
             }
             else if(ast2ts.isRegexLiteral(node)) {
                 console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
                 found = node;
-                return;
+                return false;
             }
             else if(ast2ts.isCharLiteral(node)) {
                 console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
                 found = node;
-                return;
+                return false;
             }
             else if(ast2ts.isAssert(node)) {
                 console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
                 found = node;
-                return;
+                return false;
             }
             else if(ast2ts.isMetadata(node)) {
                 console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
                 found = node;
-                return;
+                return false;
             }
             else if(ast2ts.isType(node)&&node.is_explicit&&node.node_type!== "ident_type"){
                 console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
                 found = node;
-                return;
+                return false;
             }
             else if(ast2ts.isMatch(node)) {
                 console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
                 found = node;
-                return;
+                return false;
             }
             else if(ast2ts.isIf(node)) {
                 console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
                 found = node;
-                return;
+                return false;
             }
             else if(ast2ts.isSpecifyOrder(node)) {
                 console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
                 found = node;
-                return;
+                return false;
             }
             console.log(`hit: ${node.node_type} ${JSON.stringify(node.loc)}`)
         }
-        ast2ts.walk(node,f);
+        await ast2ts.walkAsync(node,f);
         if(ast2ts.isMember(node)){
             console.log("walked: "+node.node_type);
             if(node.ident!=null){
@@ -351,7 +351,7 @@ export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
 
 export const analyzeDefinition = async (prevFile :ast2ts.AstFile, prevNode :ast2ts.Node,pos :number) => {
     let found :any;
-    ast2ts.walk(prevNode,(f,node)=>{
+    await ast2ts.walkAsync(prevNode,async(f,node)=>{
         if(node.loc.file!=1) {
             console.log("prevent file boundary: "+node.loc.file)
             return; // skip other files
@@ -364,7 +364,7 @@ export const analyzeDefinition = async (prevFile :ast2ts.AstFile, prevNode :ast2
             }
             console.log(`hit: ${node.node_type} ${JSON.stringify(node.loc)}`)
         }
-        ast2ts.walk(node,f);
+        return ast2ts.walkAsync(node,f);
     });
     const fileToLink = (loc :ast2ts.Loc, file :ast2ts.AstFile) => {
         const path = file.files[loc.file-1];
@@ -633,12 +633,12 @@ export const analyzeSourceCode  = async (prevSemanticTokens :SemTokensStub|null,
     }
     const prog = prog_;
     console.time("walk ast");
-    ast2ts.walk(prog,(f,node)=>{
+    await ast2ts.walkAsync(prog,async(f,node)=>{
         if(node.loc.file!=1) {
             console.log("prevent file boundary: "+node.loc.file)
             return; // skip other files
         }
-        ast2ts.walk(node,f);
+        await ast2ts.walkAsync(node,f);
         if(ast2ts.isIdent(node)){
             const line = node.loc.line-1;
             const col = node.loc.col-1;
