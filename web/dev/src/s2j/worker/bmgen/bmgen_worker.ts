@@ -9,8 +9,8 @@ const requestCallback = (e:JobRequest, m:MyEmscriptenModule) => {
     switch (e.lang) {
         case RequestLanguage.BINARY_MODULE:
             m.FS.writeFile("/editor.json", e.sourceCode);
-            if(e.arguments?.includes("print-instructions")) {
-                return ["bmgen","-i", "/editor.json","--print-instructions"];
+            if(e.arguments?.includes("--print-instructions")) {
+                return ["bmgen","-i", "/editor.json"];
             }
             else {
                 return ["bmgen","-i", "/editor.json","--base64","-o","-"];

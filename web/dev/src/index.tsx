@@ -679,6 +679,10 @@ const setCommon = (m: Map<string, InputListElement>) => {
         "value": false,
     });
     setCommon(rust2);
+
+    commonUI.config.set(Language.RUST_2, languageSpecificConfig(rust2, ConfigKey.COMMON_FILE_NAME, (change) => {
+        updateUI();
+    }));
 }
 
 commonUI.changeLanguageConfig(storage.getLangMode());

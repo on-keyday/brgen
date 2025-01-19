@@ -14,7 +14,7 @@ const requestCallback = (e:JobRequest, m:MyEmscriptenModule) => {
                 return bm;
             }
             m.FS.writeFile("/editor.bm",  bm);
-            return ["bm2rust","-i", "/editor.bm"].concat(e.arguments || []);
+            return ["bm2rust","-i", "/editor.bm"];
         default:
             return new Error("unknown message type");
     }
