@@ -871,7 +871,7 @@ factory BoolLiteral.fromJson(Map<String, dynamic> json) => _$BoolLiteralFromJson
 @JsonSerializable()
 class StrLiteral extends Literal {
     String value = '';
-    String base64Value = '';
+    String binaryValue = '';
     int length = 0;
 factory StrLiteral.fromJson(Map<String, dynamic> json) => _$StrLiteralFromJson(json);
 }

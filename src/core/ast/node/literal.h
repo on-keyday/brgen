@@ -35,7 +35,7 @@ namespace brgen::ast {
     struct StrLiteral : Literal {
         define_node_type(NodeType::str_literal);
         std::string value;
-        std::string base64_value;
+        std::string binary_value;
         size_t length = 0;
 
         StrLiteral(lexer::Loc l, std::string&& t)
@@ -48,7 +48,7 @@ namespace brgen::ast {
         void dump(auto&& field_) {
             Literal::dump(field_);
             sdebugf(value);
-            sdebugf(base64_value);
+            sdebugf(binary_value);
             sdebugf(length);
         }
     };
