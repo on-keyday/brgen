@@ -1,6 +1,6 @@
 export const base64ToUint8Array = (base64: string) => {
     const base64Characters =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
     //const base64URLCharacters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
   
     let cleanedBase64 = base64.replace(/-/g, "+").replace(/_/g, "/").trim();
