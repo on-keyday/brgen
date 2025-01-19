@@ -674,7 +674,7 @@ const setCommon = (m: Map<string, InputListElement>) => {
     }));
 
     const rust2 = new Map<string, InputListElement>();
-    bm.set(ConfigKey.RUST2_USE_ASYNC, {
+    rust2.set(ConfigKey.RUST2_USE_ASYNC, {
         "type": "checkbox",
         "value": false,
     });
