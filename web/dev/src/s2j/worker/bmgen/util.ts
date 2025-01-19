@@ -3,7 +3,7 @@ export const base64ToUint8Array = (base64: string) => {
       "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     //const base64URLCharacters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
   
-    let cleanedBase64 = base64.replace(/-/g, "+").replace(/_/g, "/");
+    let cleanedBase64 = base64.replace(/-/g, "+").replace(/_/g, "/").trim();
     const padding = (4 - (cleanedBase64.length % 4)) % 4;
     cleanedBase64 += "=".repeat(padding);
   
@@ -34,3 +34,4 @@ export const base64ToUint8Array = (base64: string) => {
   
     return uint8Array;
   };
+  
