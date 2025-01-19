@@ -1,4 +1,4 @@
-const { copyFile } = require("fs");
+const { copyFile, existsSync, cpSync } = require("fs");
 const process = require("process");
 const path = require("path");
 

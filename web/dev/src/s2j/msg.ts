@@ -10,6 +10,10 @@ export const enum RequestLanguage {
     RUST = "rust",
     TYPESCRIPT="typescript",
     KAITAI_STRUCT = "kaitai struct",
+
+    BINARY_MODULE = "binary module",
+    CPP_2 = "cpp2",
+    RUST_2 = "rust2",
 }
 
 export const LanguageList = [
@@ -21,7 +25,11 @@ export const LanguageList = [
     RequestLanguage.C,
     RequestLanguage.RUST, 
     RequestLanguage.TYPESCRIPT,
-    RequestLanguage.KAITAI_STRUCT
+    RequestLanguage.KAITAI_STRUCT,
+
+    RequestLanguage.BINARY_MODULE,
+    RequestLanguage.CPP_2,
+    RequestLanguage.RUST_2,
 ];
 
 export const enum WorkerType {
@@ -32,6 +40,10 @@ export const enum WorkerType {
     JSON2RUST,
     JSON2TS,
     JSON2KAITAI,
+
+    BMGEN,
+    BM2CPP,
+    BM2RUST,
 }
 
 export const WorkerList = Object.freeze([
@@ -42,6 +54,9 @@ export const WorkerList = Object.freeze([
     WorkerType.JSON2RUST,
     WorkerType.JSON2TS,
     WorkerType.JSON2KAITAI,
+    WorkerType.BMGEN,
+    WorkerType.BM2CPP,
+    WorkerType.BM2RUST,
 ]);
 
 
@@ -83,6 +98,16 @@ export interface TSOption extends CallOption {
     javascript :boolean
 }
 
+export interface BMGenOption extends CallOption {
+    print_instruction :boolean
+}
+
+export interface Cpp2Option extends CallOption {
+}
+
+export interface Rust2Option extends CallOption {
+    use_async :boolean
+}
 
 export type LanguageToOptionType = {
     [RequestLanguage.TOKENIZE]:CallOption
@@ -94,6 +119,10 @@ export type LanguageToOptionType = {
     [RequestLanguage.RUST]:RustOption
     [RequestLanguage.TYPESCRIPT]:TSOption
     [RequestLanguage.KAITAI_STRUCT]:CallOption
+
+    [RequestLanguage.BINARY_MODULE]:BMGenOption
+    [RequestLanguage.CPP_2]:Cpp2Option
+    [RequestLanguage.RUST_2]:Rust2Option
 }
 
 export const LanguageToWorkerType = Object.freeze({
@@ -106,6 +135,10 @@ export const LanguageToWorkerType = Object.freeze({
     [RequestLanguage.RUST]: WorkerType.JSON2RUST,
     [RequestLanguage.TYPESCRIPT]: WorkerType.JSON2TS,
     [RequestLanguage.KAITAI_STRUCT]: WorkerType.JSON2KAITAI,
+
+    [RequestLanguage.BINARY_MODULE]: WorkerType.BMGEN,
+    [RequestLanguage.CPP_2]: WorkerType.BM2CPP,
+    [RequestLanguage.RUST_2]: WorkerType.BM2RUST,
 })
 
 

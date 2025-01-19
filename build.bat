@@ -46,6 +46,7 @@ rem    cd ./src/tool/json2rust
 rem    wasm-pack build --target web
 rem    copy ..\..\..\LICENSE .\pkg\LICENSE
 rem    cd ../../../
+    python script/copy_bmgen_stub.py
     cd ./web/dev
     call tsc
     call webpack

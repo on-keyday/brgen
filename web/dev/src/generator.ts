@@ -3,7 +3,7 @@ import * as caller from "./s2j/caller";
 import { TraceID } from "./s2j/job_mgr";
 import { UpdateTracer } from "./s2j/update";
 import * as inc from "./cpp_include";
-import  { COption, CallOption, CppOption, GoOption, JobResult,Language, RustOption, TSOption } from "./s2j/msg.js";
+import  { BMGenOption, COption, CallOption, Cpp2Option, CppOption, GoOption, JobResult,Language, Rust2Option, RustOption, TSOption } from "./s2j/msg.js";
 import {ast2ts} from "ast2ts";
 import {storage} from "./storage";
 import {ConfigKey} from "./types";
@@ -217,7 +217,37 @@ const handleDebugAST = async (ui :UIModel, id :TraceID,value :string) => {
     return handleJSONOutput(ui,id,value,caller.getDebugAST);
 }
 
+const handleBinaryModule = async (ui :UIModel, s :JobResult) => {
+    const printInstruction = ui.getLanguageConfig(Language.BINARY_MODULE,ConfigKey.BM_PRINT_INSTRUCTION);
+    const option :BMGenOption = {
+      print_instruction: printInstruction === true,
+    };
+    return handleLanguage(ui,s,(id,src,opt) => {
+        return caller.getBinaryModule(id,src,opt as BMGenOption);
+    },Language.BINARY_MODULE,"text/plain",option);
+}
 
+const handleBinaryModuleBased = async (ui :UIModel, s :JobResult,lang :Language,view_lang :string, generator:(id :TraceID,srcCode :string,option:any)=>Promise<JobResult>,opt :any) => {
+    if(s.stdout===undefined) throw new Error("stdout is undefined");
+    const result = await caller.getBinaryModule(s.traceID,s.stdout,{print_instruction: false});
+    if(updateTracer.editorAlreadyUpdated(s)) {
+        return;
+    }
+    return handleLanguage(ui,result,generator,lang,view_lang,opt);
+}
+
+export const handleCpp2 = async (ui :UIModel, s :JobResult) => {
+    const option :Cpp2Option = {};
+    return handleBinaryModuleBased(ui,s,Language.CPP_2,"cpp",caller.getCpp2Code,option);
+}
+
+export const handleRust2 = async (ui :UIModel, s :JobResult) => {
+    const useAsync = ui.getLanguageConfig(Language.RUST_2,ConfigKey.RUST2_USE_ASYNC);
+    const option :Rust2Option = {
+        use_async: useAsync === true,
+    };
+    return handleBinaryModuleBased(ui,s,Language.RUST_2,"rust",caller.getRust2Code,option);
+}
 
 export const updateTracer = new UpdateTracer();
 
@@ -267,5 +297,11 @@ export const updateGenerated = async (ui :UIModel) => {
             return handleTypeScript(ui,s);
         case Language.KAITAI_STRUCT:
             return handleKaitaiStruct(ui,s);
+        case Language.BINARY_MODULE:
+            return handleBinaryModule(ui,s);
+        case Language.CPP_2:
+            return handleCpp2(ui,s);
+        case Language.RUST_2:
+            return handleRust2(ui,s);
     }
 }
