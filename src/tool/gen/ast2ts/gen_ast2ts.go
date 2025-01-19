@@ -349,49 +349,63 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("	return root;\n")
 	w.Printf("}\n\n")
 
-	w.Printf("export type VisitFn<T> = (f: VisitFn<T>, arg: T) => void|undefined|boolean;\n\n")
-
-	w.Printf("export function walk(node: Node, fn: VisitFn<Node>) {\n")
-	w.Printf("	switch (node.node_type) {\n")
-	for _, def := range defs.Defs {
-		switch d := def.(type) {
-		case *gen.Struct:
-			if len(d.Implements) == 0 {
-				continue
-			}
-			w.Printf("		case %q: {\n", d.NodeType)
-			w.Printf("			if (!is%s(node)) {\n", d.Name)
-			w.Printf("				break;\n")
-			w.Printf("			}\n")
-			w.Printf("			const n :%s = node as %s;\n", d.Name, d.Name)
-			for _, field := range d.Fields {
-				if field.Type.Name == "Scope" {
+	genWalk := func(handleSignle func(elm string) string) {
+		w.Printf("	switch (node.node_type) {\n")
+		for _, def := range defs.Defs {
+			switch d := def.(type) {
+			case *gen.Struct:
+				if len(d.Implements) == 0 {
 					continue
 				}
-				if field.Type.IsWeak {
-					continue // avoid infinite loop
+				w.Printf("		case %q: {\n", d.NodeType)
+				w.Printf("			if (!is%s(node)) {\n", d.Name)
+				w.Printf("				break;\n")
+				w.Printf("			}\n")
+				w.Printf("			const n :%s = node as %s;\n", d.Name, d.Name)
+				for _, field := range d.Fields {
+					if field.Type.Name == "Scope" {
+						continue
+					}
+					if field.Type.IsWeak {
+						continue // avoid infinite loop
+					}
+					if field.Type.IsArray {
+						w.Printf("			for (const e of n.%s) {\n", field.Name)
+						w.Printf("				const result = %s;\n", handleSignle("e"))
+						w.Printf("				if (result === false) {\n")
+						w.Printf("					return;\n")
+						w.Printf("				}\n")
+						w.Printf("			}\n")
+					} else if field.Type.IsPtr || field.Type.IsInterface {
+						w.Printf("			if (n.%s !== null) {\n", field.Name)
+						w.Printf("				const result = %s;\n", handleSignle("n."+field.Name))
+						w.Printf("				if (result === false) {\n")
+						w.Printf("					return;\n")
+						w.Printf("				}\n")
+						w.Printf("			}\n")
+					}
 				}
-				if field.Type.IsArray {
-					w.Printf("			for (const e of n.%s) {\n", field.Name)
-					w.Printf("				const result = fn(fn,e);\n")
-					w.Printf("				if (result === false) {\n")
-					w.Printf("					return;\n")
-					w.Printf("				}\n")
-					w.Printf("			}\n")
-				} else if field.Type.IsPtr || field.Type.IsInterface {
-					w.Printf("			if (n.%s !== null) {\n", field.Name)
-					w.Printf("				const result = fn(fn,n.%s);\n", field.Name)
-					w.Printf("				if (result === false) {\n")
-					w.Printf("					return;\n")
-					w.Printf("				}\n")
-					w.Printf("			}\n")
-				}
+				w.Printf("			break;\n")
+				w.Printf("		}\n")
 			}
-			w.Printf("			break;\n")
-			w.Printf("		}\n")
 		}
+		w.Printf("	}\n")
 	}
-	w.Printf("	}\n")
+
+	w.Printf("export type VisitFn<T> = (f: VisitFn<T>, arg: T) => void|undefined|boolean;\n\n")
+	w.Printf("// sync version\n")
+	w.Printf("export function walk(node: Node, fn: VisitFn<Node>) {\n")
+	genWalk(func(elm string) string {
+		return "fn(fn, " + elm + ")"
+	})
+	w.Printf("}\n\n")
+
+	w.Printf("export type VisitFnAsync<T> = (f: VisitFnAsync<T>, arg: T) => Promise<void|undefined|boolean>;\n\n")
+	w.Printf("// async version\n")
+	w.Printf("export async function walkAsync(node: Node, fn: VisitFnAsync<Node>) {\n")
+	genWalk(func(elm string) string {
+		return "await fn(fn, " + elm + ")"
+	})
 	w.Printf("}\n\n")
 }
 

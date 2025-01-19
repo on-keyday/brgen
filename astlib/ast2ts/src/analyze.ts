@@ -112,6 +112,7 @@ export const typeToString = (type :ast2ts.Type|null|undefined) :string => {
 
 export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
     let found :any;
+    console.time("walk hover");
     ast2ts.walk(prevNode,(f,node)=>{
         if(found!==undefined){
             return false;
@@ -193,6 +194,7 @@ export const analyzeHover =  (prevNode :ast2ts.Node, pos :number) =>{
             console.log("walked: "+node.node_type)
         }
     });
+    console.timeEnd("walk hover");
     if(found === null) {
         return null;
     }

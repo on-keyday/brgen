@@ -4834,6 +4834,7 @@ export function parseAST(obj: JsonAst): Program {
 
 export type VisitFn<T> = (f: VisitFn<T>, arg: T) => void|undefined|boolean;
 
+// sync version
 export function walk(node: Node, fn: VisitFn<Node>) {
 	switch (node.node_type) {
 		case "program": {
@@ -4842,13 +4843,13 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Program = node as Program;
 			if (n.struct_type !== null) {
-				const result = fn(fn,n.struct_type);
+				const result = fn(fn, n.struct_type);
 				if (result === false) {
 					return;
 				}
 			}
 			for (const e of n.elements) {
-				const result = fn(fn,e);
+				const result = fn(fn, e);
 				if (result === false) {
 					return;
 				}
@@ -4868,7 +4869,7 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :CommentGroup = node as CommentGroup;
 			for (const e of n.comments) {
-				const result = fn(fn,e);
+				const result = fn(fn, e);
 				if (result === false) {
 					return;
 				}
@@ -4881,55 +4882,55 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :FieldArgument = node as FieldArgument;
 			if (n.raw_arguments !== null) {
-				const result = fn(fn,n.raw_arguments);
+				const result = fn(fn, n.raw_arguments);
 				if (result === false) {
 					return;
 				}
 			}
 			for (const e of n.arguments) {
-				const result = fn(fn,e);
+				const result = fn(fn, e);
 				if (result === false) {
 					return;
 				}
 			}
 			for (const e of n.assigns) {
-				const result = fn(fn,e);
+				const result = fn(fn, e);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.alignment !== null) {
-				const result = fn(fn,n.alignment);
+				const result = fn(fn, n.alignment);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.sub_byte_length !== null) {
-				const result = fn(fn,n.sub_byte_length);
+				const result = fn(fn, n.sub_byte_length);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.sub_byte_begin !== null) {
-				const result = fn(fn,n.sub_byte_begin);
+				const result = fn(fn, n.sub_byte_begin);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.peek !== null) {
-				const result = fn(fn,n.peek);
+				const result = fn(fn, n.peek);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.type_map !== null) {
-				const result = fn(fn,n.type_map);
+				const result = fn(fn, n.type_map);
 				if (result === false) {
 					return;
 				}
 			}
 			for (const e of n.metadata) {
-				const result = fn(fn,e);
+				const result = fn(fn, e);
 				if (result === false) {
 					return;
 				}
@@ -4942,19 +4943,19 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Binary = node as Binary;
 			if (n.expr_type !== null) {
-				const result = fn(fn,n.expr_type);
+				const result = fn(fn, n.expr_type);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.left !== null) {
-				const result = fn(fn,n.left);
+				const result = fn(fn, n.left);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.right !== null) {
-				const result = fn(fn,n.right);
+				const result = fn(fn, n.right);
 				if (result === false) {
 					return;
 				}
@@ -4967,13 +4968,13 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Unary = node as Unary;
 			if (n.expr_type !== null) {
-				const result = fn(fn,n.expr_type);
+				const result = fn(fn, n.expr_type);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.expr !== null) {
-				const result = fn(fn,n.expr);
+				const result = fn(fn, n.expr);
 				if (result === false) {
 					return;
 				}
@@ -4986,25 +4987,25 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Cond = node as Cond;
 			if (n.expr_type !== null) {
-				const result = fn(fn,n.expr_type);
+				const result = fn(fn, n.expr_type);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.cond !== null) {
-				const result = fn(fn,n.cond);
+				const result = fn(fn, n.cond);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.then !== null) {
-				const result = fn(fn,n.then);
+				const result = fn(fn, n.then);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.els !== null) {
-				const result = fn(fn,n.els);
+				const result = fn(fn, n.els);
 				if (result === false) {
 					return;
 				}
@@ -5017,7 +5018,7 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Ident = node as Ident;
 			if (n.expr_type !== null) {
-				const result = fn(fn,n.expr_type);
+				const result = fn(fn, n.expr_type);
 				if (result === false) {
 					return;
 				}
@@ -5030,25 +5031,25 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Call = node as Call;
 			if (n.expr_type !== null) {
-				const result = fn(fn,n.expr_type);
+				const result = fn(fn, n.expr_type);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.callee !== null) {
-				const result = fn(fn,n.callee);
+				const result = fn(fn, n.callee);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.raw_arguments !== null) {
-				const result = fn(fn,n.raw_arguments);
+				const result = fn(fn, n.raw_arguments);
 				if (result === false) {
 					return;
 				}
 			}
 			for (const e of n.arguments) {
-				const result = fn(fn,e);
+				const result = fn(fn, e);
 				if (result === false) {
 					return;
 				}
@@ -5061,31 +5062,31 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :If = node as If;
 			if (n.expr_type !== null) {
-				const result = fn(fn,n.expr_type);
+				const result = fn(fn, n.expr_type);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.struct_union_type !== null) {
-				const result = fn(fn,n.struct_union_type);
+				const result = fn(fn, n.struct_union_type);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.cond !== null) {
-				const result = fn(fn,n.cond);
+				const result = fn(fn, n.cond);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.then !== null) {
-				const result = fn(fn,n.then);
+				const result = fn(fn, n.then);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.els !== null) {
-				const result = fn(fn,n.els);
+				const result = fn(fn, n.els);
 				if (result === false) {
 					return;
 				}
@@ -5098,19 +5099,19 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :MemberAccess = node as MemberAccess;
 			if (n.expr_type !== null) {
-				const result = fn(fn,n.expr_type);
+				const result = fn(fn, n.expr_type);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.target !== null) {
-				const result = fn(fn,n.target);
+				const result = fn(fn, n.target);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.member !== null) {
-				const result = fn(fn,n.member);
+				const result = fn(fn, n.member);
 				if (result === false) {
 					return;
 				}
@@ -5123,13 +5124,13 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Paren = node as Paren;
 			if (n.expr_type !== null) {
-				const result = fn(fn,n.expr_type);
+				const result = fn(fn, n.expr_type);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.expr !== null) {
-				const result = fn(fn,n.expr);
+				const result = fn(fn, n.expr);
 				if (result === false) {
 					return;
 				}
@@ -5142,19 +5143,19 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Index = node as Index;
 			if (n.expr_type !== null) {
-				const result = fn(fn,n.expr_type);
+				const result = fn(fn, n.expr_type);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.expr !== null) {
-				const result = fn(fn,n.expr);
+				const result = fn(fn, n.expr);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.index !== null) {
-				const result = fn(fn,n.index);
+				const result = fn(fn, n.index);
 				if (result === false) {
 					return;
 				}
@@ -5167,25 +5168,25 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Match = node as Match;
 			if (n.expr_type !== null) {
-				const result = fn(fn,n.expr_type);
+				const result = fn(fn, n.expr_type);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.struct_union_type !== null) {
-				const result = fn(fn,n.struct_union_type);
+				const result = fn(fn, n.struct_union_type);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.cond !== null) {
-				const result = fn(fn,n.cond);
+				const result = fn(fn, n.cond);
 				if (result === false) {
 					return;
 				}
 			}
 			for (const e of n.branch) {
-				const result = fn(fn,e);
+				const result = fn(fn, e);
 				if (result === false) {
 					return;
 				}
@@ -5198,19 +5199,19 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Range = node as Range;
 			if (n.expr_type !== null) {
-				const result = fn(fn,n.expr_type);
+				const result = fn(fn, n.expr_type);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.start !== null) {
-				const result = fn(fn,n.start);
+				const result = fn(fn, n.start);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.end !== null) {
-				const result = fn(fn,n.end);
+				const result = fn(fn, n.end);
 				if (result === false) {
 					return;
 				}
@@ -5223,13 +5224,13 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Identity = node as Identity;
 			if (n.expr_type !== null) {
-				const result = fn(fn,n.expr_type);
+				const result = fn(fn, n.expr_type);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.expr !== null) {
-				const result = fn(fn,n.expr);
+				const result = fn(fn, n.expr);
 				if (result === false) {
 					return;
 				}
@@ -5242,7 +5243,7 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :TmpVar = node as TmpVar;
 			if (n.expr_type !== null) {
-				const result = fn(fn,n.expr_type);
+				const result = fn(fn, n.expr_type);
 				if (result === false) {
 					return;
 				}
@@ -5255,19 +5256,19 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Import = node as Import;
 			if (n.expr_type !== null) {
-				const result = fn(fn,n.expr_type);
+				const result = fn(fn, n.expr_type);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.base !== null) {
-				const result = fn(fn,n.base);
+				const result = fn(fn, n.base);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.import_desc !== null) {
-				const result = fn(fn,n.import_desc);
+				const result = fn(fn, n.import_desc);
 				if (result === false) {
 					return;
 				}
@@ -5280,19 +5281,19 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Cast = node as Cast;
 			if (n.expr_type !== null) {
-				const result = fn(fn,n.expr_type);
+				const result = fn(fn, n.expr_type);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.base !== null) {
-				const result = fn(fn,n.base);
+				const result = fn(fn, n.base);
 				if (result === false) {
 					return;
 				}
 			}
 			for (const e of n.arguments) {
-				const result = fn(fn,e);
+				const result = fn(fn, e);
 				if (result === false) {
 					return;
 				}
@@ -5305,19 +5306,19 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Available = node as Available;
 			if (n.expr_type !== null) {
-				const result = fn(fn,n.expr_type);
+				const result = fn(fn, n.expr_type);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.base !== null) {
-				const result = fn(fn,n.base);
+				const result = fn(fn, n.base);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.target !== null) {
-				const result = fn(fn,n.target);
+				const result = fn(fn, n.target);
 				if (result === false) {
 					return;
 				}
@@ -5330,19 +5331,19 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :SpecifyOrder = node as SpecifyOrder;
 			if (n.expr_type !== null) {
-				const result = fn(fn,n.expr_type);
+				const result = fn(fn, n.expr_type);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.base !== null) {
-				const result = fn(fn,n.base);
+				const result = fn(fn, n.base);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.order !== null) {
-				const result = fn(fn,n.order);
+				const result = fn(fn, n.order);
 				if (result === false) {
 					return;
 				}
@@ -5355,19 +5356,19 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :ExplicitError = node as ExplicitError;
 			if (n.expr_type !== null) {
-				const result = fn(fn,n.expr_type);
+				const result = fn(fn, n.expr_type);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.base !== null) {
-				const result = fn(fn,n.base);
+				const result = fn(fn, n.base);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.message !== null) {
-				const result = fn(fn,n.message);
+				const result = fn(fn, n.message);
 				if (result === false) {
 					return;
 				}
@@ -5380,19 +5381,19 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :IoOperation = node as IoOperation;
 			if (n.expr_type !== null) {
-				const result = fn(fn,n.expr_type);
+				const result = fn(fn, n.expr_type);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.base !== null) {
-				const result = fn(fn,n.base);
+				const result = fn(fn, n.base);
 				if (result === false) {
 					return;
 				}
 			}
 			for (const e of n.arguments) {
-				const result = fn(fn,e);
+				const result = fn(fn, e);
 				if (result === false) {
 					return;
 				}
@@ -5405,19 +5406,19 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :OrCond = node as OrCond;
 			if (n.expr_type !== null) {
-				const result = fn(fn,n.expr_type);
+				const result = fn(fn, n.expr_type);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.base !== null) {
-				const result = fn(fn,n.base);
+				const result = fn(fn, n.base);
 				if (result === false) {
 					return;
 				}
 			}
 			for (const e of n.conds) {
-				const result = fn(fn,e);
+				const result = fn(fn, e);
 				if (result === false) {
 					return;
 				}
@@ -5430,13 +5431,13 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :BadExpr = node as BadExpr;
 			if (n.expr_type !== null) {
-				const result = fn(fn,n.expr_type);
+				const result = fn(fn, n.expr_type);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.bad_expr !== null) {
-				const result = fn(fn,n.bad_expr);
+				const result = fn(fn, n.bad_expr);
 				if (result === false) {
 					return;
 				}
@@ -5449,25 +5450,25 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Loop = node as Loop;
 			if (n.init !== null) {
-				const result = fn(fn,n.init);
+				const result = fn(fn, n.init);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.cond !== null) {
-				const result = fn(fn,n.cond);
+				const result = fn(fn, n.cond);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.step !== null) {
-				const result = fn(fn,n.step);
+				const result = fn(fn, n.step);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.body !== null) {
-				const result = fn(fn,n.body);
+				const result = fn(fn, n.body);
 				if (result === false) {
 					return;
 				}
@@ -5480,13 +5481,13 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :IndentBlock = node as IndentBlock;
 			if (n.struct_type !== null) {
-				const result = fn(fn,n.struct_type);
+				const result = fn(fn, n.struct_type);
 				if (result === false) {
 					return;
 				}
 			}
 			for (const e of n.elements) {
-				const result = fn(fn,e);
+				const result = fn(fn, e);
 				if (result === false) {
 					return;
 				}
@@ -5499,13 +5500,13 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :ScopedStatement = node as ScopedStatement;
 			if (n.struct_type !== null) {
-				const result = fn(fn,n.struct_type);
+				const result = fn(fn, n.struct_type);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.statement !== null) {
-				const result = fn(fn,n.statement);
+				const result = fn(fn, n.statement);
 				if (result === false) {
 					return;
 				}
@@ -5518,13 +5519,13 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :MatchBranch = node as MatchBranch;
 			if (n.cond !== null) {
-				const result = fn(fn,n.cond);
+				const result = fn(fn, n.cond);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.then !== null) {
-				const result = fn(fn,n.then);
+				const result = fn(fn, n.then);
 				if (result === false) {
 					return;
 				}
@@ -5544,7 +5545,7 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Return = node as Return;
 			if (n.expr !== null) {
-				const result = fn(fn,n.expr);
+				const result = fn(fn, n.expr);
 				if (result === false) {
 					return;
 				}
@@ -5571,7 +5572,7 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Assert = node as Assert;
 			if (n.cond !== null) {
-				const result = fn(fn,n.cond);
+				const result = fn(fn, n.cond);
 				if (result === false) {
 					return;
 				}
@@ -5584,7 +5585,7 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :ImplicitYield = node as ImplicitYield;
 			if (n.expr !== null) {
-				const result = fn(fn,n.expr);
+				const result = fn(fn, n.expr);
 				if (result === false) {
 					return;
 				}
@@ -5597,13 +5598,13 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Metadata = node as Metadata;
 			if (n.base !== null) {
-				const result = fn(fn,n.base);
+				const result = fn(fn, n.base);
 				if (result === false) {
 					return;
 				}
 			}
 			for (const e of n.values) {
-				const result = fn(fn,e);
+				const result = fn(fn, e);
 				if (result === false) {
 					return;
 				}
@@ -5630,13 +5631,13 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :IdentType = node as IdentType;
 			if (n.import_ref !== null) {
-				const result = fn(fn,n.import_ref);
+				const result = fn(fn, n.import_ref);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.ident !== null) {
-				const result = fn(fn,n.ident);
+				const result = fn(fn, n.ident);
 				if (result === false) {
 					return;
 				}
@@ -5656,7 +5657,7 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :StrLiteralType = node as StrLiteralType;
 			if (n.strong_ref !== null) {
-				const result = fn(fn,n.strong_ref);
+				const result = fn(fn, n.strong_ref);
 				if (result === false) {
 					return;
 				}
@@ -5669,7 +5670,7 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :RegexLiteralType = node as RegexLiteralType;
 			if (n.strong_ref !== null) {
-				const result = fn(fn,n.strong_ref);
+				const result = fn(fn, n.strong_ref);
 				if (result === false) {
 					return;
 				}
@@ -5696,13 +5697,13 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :ArrayType = node as ArrayType;
 			if (n.element_type !== null) {
-				const result = fn(fn,n.element_type);
+				const result = fn(fn, n.element_type);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.length !== null) {
-				const result = fn(fn,n.length);
+				const result = fn(fn, n.length);
 				if (result === false) {
 					return;
 				}
@@ -5715,13 +5716,13 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :FunctionType = node as FunctionType;
 			if (n.return_type !== null) {
-				const result = fn(fn,n.return_type);
+				const result = fn(fn, n.return_type);
 				if (result === false) {
 					return;
 				}
 			}
 			for (const e of n.parameters) {
-				const result = fn(fn,e);
+				const result = fn(fn, e);
 				if (result === false) {
 					return;
 				}
@@ -5734,13 +5735,13 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :StructType = node as StructType;
 			for (const e of n.fields) {
-				const result = fn(fn,e);
+				const result = fn(fn, e);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.type_map !== null) {
-				const result = fn(fn,n.type_map);
+				const result = fn(fn, n.type_map);
 				if (result === false) {
 					return;
 				}
@@ -5753,19 +5754,19 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :StructUnionType = node as StructUnionType;
 			if (n.cond !== null) {
-				const result = fn(fn,n.cond);
+				const result = fn(fn, n.cond);
 				if (result === false) {
 					return;
 				}
 			}
 			for (const e of n.conds) {
-				const result = fn(fn,e);
+				const result = fn(fn, e);
 				if (result === false) {
 					return;
 				}
 			}
 			for (const e of n.structs) {
-				const result = fn(fn,e);
+				const result = fn(fn, e);
 				if (result === false) {
 					return;
 				}
@@ -5778,19 +5779,19 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :UnionType = node as UnionType;
 			for (const e of n.candidates) {
-				const result = fn(fn,e);
+				const result = fn(fn, e);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.common_type !== null) {
-				const result = fn(fn,n.common_type);
+				const result = fn(fn, n.common_type);
 				if (result === false) {
 					return;
 				}
 			}
 			for (const e of n.member_candidates) {
-				const result = fn(fn,e);
+				const result = fn(fn, e);
 				if (result === false) {
 					return;
 				}
@@ -5803,7 +5804,7 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :RangeType = node as RangeType;
 			if (n.base_type !== null) {
-				const result = fn(fn,n.base_type);
+				const result = fn(fn, n.base_type);
 				if (result === false) {
 					return;
 				}
@@ -5830,7 +5831,7 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :OptionalType = node as OptionalType;
 			if (n.base_type !== null) {
-				const result = fn(fn,n.base_type);
+				const result = fn(fn, n.base_type);
 				if (result === false) {
 					return;
 				}
@@ -5850,7 +5851,7 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :IntLiteral = node as IntLiteral;
 			if (n.expr_type !== null) {
-				const result = fn(fn,n.expr_type);
+				const result = fn(fn, n.expr_type);
 				if (result === false) {
 					return;
 				}
@@ -5863,7 +5864,7 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :BoolLiteral = node as BoolLiteral;
 			if (n.expr_type !== null) {
-				const result = fn(fn,n.expr_type);
+				const result = fn(fn, n.expr_type);
 				if (result === false) {
 					return;
 				}
@@ -5876,7 +5877,7 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :StrLiteral = node as StrLiteral;
 			if (n.expr_type !== null) {
-				const result = fn(fn,n.expr_type);
+				const result = fn(fn, n.expr_type);
 				if (result === false) {
 					return;
 				}
@@ -5889,7 +5890,7 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :RegexLiteral = node as RegexLiteral;
 			if (n.expr_type !== null) {
-				const result = fn(fn,n.expr_type);
+				const result = fn(fn, n.expr_type);
 				if (result === false) {
 					return;
 				}
@@ -5902,7 +5903,7 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :CharLiteral = node as CharLiteral;
 			if (n.expr_type !== null) {
-				const result = fn(fn,n.expr_type);
+				const result = fn(fn, n.expr_type);
 				if (result === false) {
 					return;
 				}
@@ -5915,13 +5916,13 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :TypeLiteral = node as TypeLiteral;
 			if (n.expr_type !== null) {
-				const result = fn(fn,n.expr_type);
+				const result = fn(fn, n.expr_type);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.type_literal !== null) {
-				const result = fn(fn,n.type_literal);
+				const result = fn(fn, n.type_literal);
 				if (result === false) {
 					return;
 				}
@@ -5934,7 +5935,7 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :SpecialLiteral = node as SpecialLiteral;
 			if (n.expr_type !== null) {
-				const result = fn(fn,n.expr_type);
+				const result = fn(fn, n.expr_type);
 				if (result === false) {
 					return;
 				}
@@ -5947,19 +5948,19 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Field = node as Field;
 			if (n.ident !== null) {
-				const result = fn(fn,n.ident);
+				const result = fn(fn, n.ident);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.field_type !== null) {
-				const result = fn(fn,n.field_type);
+				const result = fn(fn, n.field_type);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.arguments !== null) {
-				const result = fn(fn,n.arguments);
+				const result = fn(fn, n.arguments);
 				if (result === false) {
 					return;
 				}
@@ -5972,13 +5973,13 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Format = node as Format;
 			if (n.ident !== null) {
-				const result = fn(fn,n.ident);
+				const result = fn(fn, n.ident);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.body !== null) {
-				const result = fn(fn,n.body);
+				const result = fn(fn, n.body);
 				if (result === false) {
 					return;
 				}
@@ -5991,13 +5992,13 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :State = node as State;
 			if (n.ident !== null) {
-				const result = fn(fn,n.ident);
+				const result = fn(fn, n.ident);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.body !== null) {
-				const result = fn(fn,n.body);
+				const result = fn(fn, n.body);
 				if (result === false) {
 					return;
 				}
@@ -6010,25 +6011,25 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Enum = node as Enum;
 			if (n.ident !== null) {
-				const result = fn(fn,n.ident);
+				const result = fn(fn, n.ident);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.base_type !== null) {
-				const result = fn(fn,n.base_type);
+				const result = fn(fn, n.base_type);
 				if (result === false) {
 					return;
 				}
 			}
 			for (const e of n.members) {
-				const result = fn(fn,e);
+				const result = fn(fn, e);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.enum_type !== null) {
-				const result = fn(fn,n.enum_type);
+				const result = fn(fn, n.enum_type);
 				if (result === false) {
 					return;
 				}
@@ -6041,25 +6042,25 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :EnumMember = node as EnumMember;
 			if (n.ident !== null) {
-				const result = fn(fn,n.ident);
+				const result = fn(fn, n.ident);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.raw_expr !== null) {
-				const result = fn(fn,n.raw_expr);
+				const result = fn(fn, n.raw_expr);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.value !== null) {
-				const result = fn(fn,n.value);
+				const result = fn(fn, n.value);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.str_literal !== null) {
-				const result = fn(fn,n.str_literal);
+				const result = fn(fn, n.str_literal);
 				if (result === false) {
 					return;
 				}
@@ -6072,31 +6073,1306 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			const n :Function = node as Function;
 			if (n.ident !== null) {
-				const result = fn(fn,n.ident);
+				const result = fn(fn, n.ident);
 				if (result === false) {
 					return;
 				}
 			}
 			for (const e of n.parameters) {
-				const result = fn(fn,e);
+				const result = fn(fn, e);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.return_type !== null) {
-				const result = fn(fn,n.return_type);
+				const result = fn(fn, n.return_type);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.body !== null) {
-				const result = fn(fn,n.body);
+				const result = fn(fn, n.body);
 				if (result === false) {
 					return;
 				}
 			}
 			if (n.func_type !== null) {
-				const result = fn(fn,n.func_type);
+				const result = fn(fn, n.func_type);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+	}
+}
+
+export type VisitFnAsync<T> = (f: VisitFnAsync<T>, arg: T) => Promise<void|undefined|boolean>;
+
+// async version
+export async function walkAsync(node: Node, fn: VisitFnAsync<Node>) {
+	switch (node.node_type) {
+		case "program": {
+			if (!isProgram(node)) {
+				break;
+			}
+			const n :Program = node as Program;
+			if (n.struct_type !== null) {
+				const result = await fn(fn, n.struct_type);
+				if (result === false) {
+					return;
+				}
+			}
+			for (const e of n.elements) {
+				const result = await fn(fn, e);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "comment": {
+			if (!isComment(node)) {
+				break;
+			}
+			const n :Comment = node as Comment;
+			break;
+		}
+		case "comment_group": {
+			if (!isCommentGroup(node)) {
+				break;
+			}
+			const n :CommentGroup = node as CommentGroup;
+			for (const e of n.comments) {
+				const result = await fn(fn, e);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "field_argument": {
+			if (!isFieldArgument(node)) {
+				break;
+			}
+			const n :FieldArgument = node as FieldArgument;
+			if (n.raw_arguments !== null) {
+				const result = await fn(fn, n.raw_arguments);
+				if (result === false) {
+					return;
+				}
+			}
+			for (const e of n.arguments) {
+				const result = await fn(fn, e);
+				if (result === false) {
+					return;
+				}
+			}
+			for (const e of n.assigns) {
+				const result = await fn(fn, e);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.alignment !== null) {
+				const result = await fn(fn, n.alignment);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.sub_byte_length !== null) {
+				const result = await fn(fn, n.sub_byte_length);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.sub_byte_begin !== null) {
+				const result = await fn(fn, n.sub_byte_begin);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.peek !== null) {
+				const result = await fn(fn, n.peek);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.type_map !== null) {
+				const result = await fn(fn, n.type_map);
+				if (result === false) {
+					return;
+				}
+			}
+			for (const e of n.metadata) {
+				const result = await fn(fn, e);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "binary": {
+			if (!isBinary(node)) {
+				break;
+			}
+			const n :Binary = node as Binary;
+			if (n.expr_type !== null) {
+				const result = await fn(fn, n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.left !== null) {
+				const result = await fn(fn, n.left);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.right !== null) {
+				const result = await fn(fn, n.right);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "unary": {
+			if (!isUnary(node)) {
+				break;
+			}
+			const n :Unary = node as Unary;
+			if (n.expr_type !== null) {
+				const result = await fn(fn, n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.expr !== null) {
+				const result = await fn(fn, n.expr);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "cond": {
+			if (!isCond(node)) {
+				break;
+			}
+			const n :Cond = node as Cond;
+			if (n.expr_type !== null) {
+				const result = await fn(fn, n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.cond !== null) {
+				const result = await fn(fn, n.cond);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.then !== null) {
+				const result = await fn(fn, n.then);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.els !== null) {
+				const result = await fn(fn, n.els);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "ident": {
+			if (!isIdent(node)) {
+				break;
+			}
+			const n :Ident = node as Ident;
+			if (n.expr_type !== null) {
+				const result = await fn(fn, n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "call": {
+			if (!isCall(node)) {
+				break;
+			}
+			const n :Call = node as Call;
+			if (n.expr_type !== null) {
+				const result = await fn(fn, n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.callee !== null) {
+				const result = await fn(fn, n.callee);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.raw_arguments !== null) {
+				const result = await fn(fn, n.raw_arguments);
+				if (result === false) {
+					return;
+				}
+			}
+			for (const e of n.arguments) {
+				const result = await fn(fn, e);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "if": {
+			if (!isIf(node)) {
+				break;
+			}
+			const n :If = node as If;
+			if (n.expr_type !== null) {
+				const result = await fn(fn, n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.struct_union_type !== null) {
+				const result = await fn(fn, n.struct_union_type);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.cond !== null) {
+				const result = await fn(fn, n.cond);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.then !== null) {
+				const result = await fn(fn, n.then);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.els !== null) {
+				const result = await fn(fn, n.els);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "member_access": {
+			if (!isMemberAccess(node)) {
+				break;
+			}
+			const n :MemberAccess = node as MemberAccess;
+			if (n.expr_type !== null) {
+				const result = await fn(fn, n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.target !== null) {
+				const result = await fn(fn, n.target);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.member !== null) {
+				const result = await fn(fn, n.member);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "paren": {
+			if (!isParen(node)) {
+				break;
+			}
+			const n :Paren = node as Paren;
+			if (n.expr_type !== null) {
+				const result = await fn(fn, n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.expr !== null) {
+				const result = await fn(fn, n.expr);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "index": {
+			if (!isIndex(node)) {
+				break;
+			}
+			const n :Index = node as Index;
+			if (n.expr_type !== null) {
+				const result = await fn(fn, n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.expr !== null) {
+				const result = await fn(fn, n.expr);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.index !== null) {
+				const result = await fn(fn, n.index);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "match": {
+			if (!isMatch(node)) {
+				break;
+			}
+			const n :Match = node as Match;
+			if (n.expr_type !== null) {
+				const result = await fn(fn, n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.struct_union_type !== null) {
+				const result = await fn(fn, n.struct_union_type);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.cond !== null) {
+				const result = await fn(fn, n.cond);
+				if (result === false) {
+					return;
+				}
+			}
+			for (const e of n.branch) {
+				const result = await fn(fn, e);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "range": {
+			if (!isRange(node)) {
+				break;
+			}
+			const n :Range = node as Range;
+			if (n.expr_type !== null) {
+				const result = await fn(fn, n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.start !== null) {
+				const result = await fn(fn, n.start);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.end !== null) {
+				const result = await fn(fn, n.end);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "identity": {
+			if (!isIdentity(node)) {
+				break;
+			}
+			const n :Identity = node as Identity;
+			if (n.expr_type !== null) {
+				const result = await fn(fn, n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.expr !== null) {
+				const result = await fn(fn, n.expr);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "tmp_var": {
+			if (!isTmpVar(node)) {
+				break;
+			}
+			const n :TmpVar = node as TmpVar;
+			if (n.expr_type !== null) {
+				const result = await fn(fn, n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "import": {
+			if (!isImport(node)) {
+				break;
+			}
+			const n :Import = node as Import;
+			if (n.expr_type !== null) {
+				const result = await fn(fn, n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.base !== null) {
+				const result = await fn(fn, n.base);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.import_desc !== null) {
+				const result = await fn(fn, n.import_desc);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "cast": {
+			if (!isCast(node)) {
+				break;
+			}
+			const n :Cast = node as Cast;
+			if (n.expr_type !== null) {
+				const result = await fn(fn, n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.base !== null) {
+				const result = await fn(fn, n.base);
+				if (result === false) {
+					return;
+				}
+			}
+			for (const e of n.arguments) {
+				const result = await fn(fn, e);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "available": {
+			if (!isAvailable(node)) {
+				break;
+			}
+			const n :Available = node as Available;
+			if (n.expr_type !== null) {
+				const result = await fn(fn, n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.base !== null) {
+				const result = await fn(fn, n.base);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.target !== null) {
+				const result = await fn(fn, n.target);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "specify_order": {
+			if (!isSpecifyOrder(node)) {
+				break;
+			}
+			const n :SpecifyOrder = node as SpecifyOrder;
+			if (n.expr_type !== null) {
+				const result = await fn(fn, n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.base !== null) {
+				const result = await fn(fn, n.base);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.order !== null) {
+				const result = await fn(fn, n.order);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "explicit_error": {
+			if (!isExplicitError(node)) {
+				break;
+			}
+			const n :ExplicitError = node as ExplicitError;
+			if (n.expr_type !== null) {
+				const result = await fn(fn, n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.base !== null) {
+				const result = await fn(fn, n.base);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.message !== null) {
+				const result = await fn(fn, n.message);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "io_operation": {
+			if (!isIoOperation(node)) {
+				break;
+			}
+			const n :IoOperation = node as IoOperation;
+			if (n.expr_type !== null) {
+				const result = await fn(fn, n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.base !== null) {
+				const result = await fn(fn, n.base);
+				if (result === false) {
+					return;
+				}
+			}
+			for (const e of n.arguments) {
+				const result = await fn(fn, e);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "or_cond": {
+			if (!isOrCond(node)) {
+				break;
+			}
+			const n :OrCond = node as OrCond;
+			if (n.expr_type !== null) {
+				const result = await fn(fn, n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.base !== null) {
+				const result = await fn(fn, n.base);
+				if (result === false) {
+					return;
+				}
+			}
+			for (const e of n.conds) {
+				const result = await fn(fn, e);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "bad_expr": {
+			if (!isBadExpr(node)) {
+				break;
+			}
+			const n :BadExpr = node as BadExpr;
+			if (n.expr_type !== null) {
+				const result = await fn(fn, n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.bad_expr !== null) {
+				const result = await fn(fn, n.bad_expr);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "loop": {
+			if (!isLoop(node)) {
+				break;
+			}
+			const n :Loop = node as Loop;
+			if (n.init !== null) {
+				const result = await fn(fn, n.init);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.cond !== null) {
+				const result = await fn(fn, n.cond);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.step !== null) {
+				const result = await fn(fn, n.step);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.body !== null) {
+				const result = await fn(fn, n.body);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "indent_block": {
+			if (!isIndentBlock(node)) {
+				break;
+			}
+			const n :IndentBlock = node as IndentBlock;
+			if (n.struct_type !== null) {
+				const result = await fn(fn, n.struct_type);
+				if (result === false) {
+					return;
+				}
+			}
+			for (const e of n.elements) {
+				const result = await fn(fn, e);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "scoped_statement": {
+			if (!isScopedStatement(node)) {
+				break;
+			}
+			const n :ScopedStatement = node as ScopedStatement;
+			if (n.struct_type !== null) {
+				const result = await fn(fn, n.struct_type);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.statement !== null) {
+				const result = await fn(fn, n.statement);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "match_branch": {
+			if (!isMatchBranch(node)) {
+				break;
+			}
+			const n :MatchBranch = node as MatchBranch;
+			if (n.cond !== null) {
+				const result = await fn(fn, n.cond);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.then !== null) {
+				const result = await fn(fn, n.then);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "union_candidate": {
+			if (!isUnionCandidate(node)) {
+				break;
+			}
+			const n :UnionCandidate = node as UnionCandidate;
+			break;
+		}
+		case "return": {
+			if (!isReturn(node)) {
+				break;
+			}
+			const n :Return = node as Return;
+			if (n.expr !== null) {
+				const result = await fn(fn, n.expr);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "break": {
+			if (!isBreak(node)) {
+				break;
+			}
+			const n :Break = node as Break;
+			break;
+		}
+		case "continue": {
+			if (!isContinue(node)) {
+				break;
+			}
+			const n :Continue = node as Continue;
+			break;
+		}
+		case "assert": {
+			if (!isAssert(node)) {
+				break;
+			}
+			const n :Assert = node as Assert;
+			if (n.cond !== null) {
+				const result = await fn(fn, n.cond);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "implicit_yield": {
+			if (!isImplicitYield(node)) {
+				break;
+			}
+			const n :ImplicitYield = node as ImplicitYield;
+			if (n.expr !== null) {
+				const result = await fn(fn, n.expr);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "metadata": {
+			if (!isMetadata(node)) {
+				break;
+			}
+			const n :Metadata = node as Metadata;
+			if (n.base !== null) {
+				const result = await fn(fn, n.base);
+				if (result === false) {
+					return;
+				}
+			}
+			for (const e of n.values) {
+				const result = await fn(fn, e);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "int_type": {
+			if (!isIntType(node)) {
+				break;
+			}
+			const n :IntType = node as IntType;
+			break;
+		}
+		case "float_type": {
+			if (!isFloatType(node)) {
+				break;
+			}
+			const n :FloatType = node as FloatType;
+			break;
+		}
+		case "ident_type": {
+			if (!isIdentType(node)) {
+				break;
+			}
+			const n :IdentType = node as IdentType;
+			if (n.import_ref !== null) {
+				const result = await fn(fn, n.import_ref);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.ident !== null) {
+				const result = await fn(fn, n.ident);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "int_literal_type": {
+			if (!isIntLiteralType(node)) {
+				break;
+			}
+			const n :IntLiteralType = node as IntLiteralType;
+			break;
+		}
+		case "str_literal_type": {
+			if (!isStrLiteralType(node)) {
+				break;
+			}
+			const n :StrLiteralType = node as StrLiteralType;
+			if (n.strong_ref !== null) {
+				const result = await fn(fn, n.strong_ref);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "regex_literal_type": {
+			if (!isRegexLiteralType(node)) {
+				break;
+			}
+			const n :RegexLiteralType = node as RegexLiteralType;
+			if (n.strong_ref !== null) {
+				const result = await fn(fn, n.strong_ref);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "void_type": {
+			if (!isVoidType(node)) {
+				break;
+			}
+			const n :VoidType = node as VoidType;
+			break;
+		}
+		case "bool_type": {
+			if (!isBoolType(node)) {
+				break;
+			}
+			const n :BoolType = node as BoolType;
+			break;
+		}
+		case "array_type": {
+			if (!isArrayType(node)) {
+				break;
+			}
+			const n :ArrayType = node as ArrayType;
+			if (n.element_type !== null) {
+				const result = await fn(fn, n.element_type);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.length !== null) {
+				const result = await fn(fn, n.length);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "function_type": {
+			if (!isFunctionType(node)) {
+				break;
+			}
+			const n :FunctionType = node as FunctionType;
+			if (n.return_type !== null) {
+				const result = await fn(fn, n.return_type);
+				if (result === false) {
+					return;
+				}
+			}
+			for (const e of n.parameters) {
+				const result = await fn(fn, e);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "struct_type": {
+			if (!isStructType(node)) {
+				break;
+			}
+			const n :StructType = node as StructType;
+			for (const e of n.fields) {
+				const result = await fn(fn, e);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.type_map !== null) {
+				const result = await fn(fn, n.type_map);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "struct_union_type": {
+			if (!isStructUnionType(node)) {
+				break;
+			}
+			const n :StructUnionType = node as StructUnionType;
+			if (n.cond !== null) {
+				const result = await fn(fn, n.cond);
+				if (result === false) {
+					return;
+				}
+			}
+			for (const e of n.conds) {
+				const result = await fn(fn, e);
+				if (result === false) {
+					return;
+				}
+			}
+			for (const e of n.structs) {
+				const result = await fn(fn, e);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "union_type": {
+			if (!isUnionType(node)) {
+				break;
+			}
+			const n :UnionType = node as UnionType;
+			for (const e of n.candidates) {
+				const result = await fn(fn, e);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.common_type !== null) {
+				const result = await fn(fn, n.common_type);
+				if (result === false) {
+					return;
+				}
+			}
+			for (const e of n.member_candidates) {
+				const result = await fn(fn, e);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "range_type": {
+			if (!isRangeType(node)) {
+				break;
+			}
+			const n :RangeType = node as RangeType;
+			if (n.base_type !== null) {
+				const result = await fn(fn, n.base_type);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "enum_type": {
+			if (!isEnumType(node)) {
+				break;
+			}
+			const n :EnumType = node as EnumType;
+			break;
+		}
+		case "meta_type": {
+			if (!isMetaType(node)) {
+				break;
+			}
+			const n :MetaType = node as MetaType;
+			break;
+		}
+		case "optional_type": {
+			if (!isOptionalType(node)) {
+				break;
+			}
+			const n :OptionalType = node as OptionalType;
+			if (n.base_type !== null) {
+				const result = await fn(fn, n.base_type);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "generic_type": {
+			if (!isGenericType(node)) {
+				break;
+			}
+			const n :GenericType = node as GenericType;
+			break;
+		}
+		case "int_literal": {
+			if (!isIntLiteral(node)) {
+				break;
+			}
+			const n :IntLiteral = node as IntLiteral;
+			if (n.expr_type !== null) {
+				const result = await fn(fn, n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "bool_literal": {
+			if (!isBoolLiteral(node)) {
+				break;
+			}
+			const n :BoolLiteral = node as BoolLiteral;
+			if (n.expr_type !== null) {
+				const result = await fn(fn, n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "str_literal": {
+			if (!isStrLiteral(node)) {
+				break;
+			}
+			const n :StrLiteral = node as StrLiteral;
+			if (n.expr_type !== null) {
+				const result = await fn(fn, n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "regex_literal": {
+			if (!isRegexLiteral(node)) {
+				break;
+			}
+			const n :RegexLiteral = node as RegexLiteral;
+			if (n.expr_type !== null) {
+				const result = await fn(fn, n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "char_literal": {
+			if (!isCharLiteral(node)) {
+				break;
+			}
+			const n :CharLiteral = node as CharLiteral;
+			if (n.expr_type !== null) {
+				const result = await fn(fn, n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "type_literal": {
+			if (!isTypeLiteral(node)) {
+				break;
+			}
+			const n :TypeLiteral = node as TypeLiteral;
+			if (n.expr_type !== null) {
+				const result = await fn(fn, n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.type_literal !== null) {
+				const result = await fn(fn, n.type_literal);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "special_literal": {
+			if (!isSpecialLiteral(node)) {
+				break;
+			}
+			const n :SpecialLiteral = node as SpecialLiteral;
+			if (n.expr_type !== null) {
+				const result = await fn(fn, n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "field": {
+			if (!isField(node)) {
+				break;
+			}
+			const n :Field = node as Field;
+			if (n.ident !== null) {
+				const result = await fn(fn, n.ident);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.field_type !== null) {
+				const result = await fn(fn, n.field_type);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.arguments !== null) {
+				const result = await fn(fn, n.arguments);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "format": {
+			if (!isFormat(node)) {
+				break;
+			}
+			const n :Format = node as Format;
+			if (n.ident !== null) {
+				const result = await fn(fn, n.ident);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.body !== null) {
+				const result = await fn(fn, n.body);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "state": {
+			if (!isState(node)) {
+				break;
+			}
+			const n :State = node as State;
+			if (n.ident !== null) {
+				const result = await fn(fn, n.ident);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.body !== null) {
+				const result = await fn(fn, n.body);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "enum": {
+			if (!isEnum(node)) {
+				break;
+			}
+			const n :Enum = node as Enum;
+			if (n.ident !== null) {
+				const result = await fn(fn, n.ident);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.base_type !== null) {
+				const result = await fn(fn, n.base_type);
+				if (result === false) {
+					return;
+				}
+			}
+			for (const e of n.members) {
+				const result = await fn(fn, e);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.enum_type !== null) {
+				const result = await fn(fn, n.enum_type);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "enum_member": {
+			if (!isEnumMember(node)) {
+				break;
+			}
+			const n :EnumMember = node as EnumMember;
+			if (n.ident !== null) {
+				const result = await fn(fn, n.ident);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.raw_expr !== null) {
+				const result = await fn(fn, n.raw_expr);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.value !== null) {
+				const result = await fn(fn, n.value);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.str_literal !== null) {
+				const result = await fn(fn, n.str_literal);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "function": {
+			if (!isFunction(node)) {
+				break;
+			}
+			const n :Function = node as Function;
+			if (n.ident !== null) {
+				const result = await fn(fn, n.ident);
+				if (result === false) {
+					return;
+				}
+			}
+			for (const e of n.parameters) {
+				const result = await fn(fn, e);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.return_type !== null) {
+				const result = await fn(fn, n.return_type);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.body !== null) {
+				const result = await fn(fn, n.body);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.func_type !== null) {
+				const result = await fn(fn, n.func_type);
 				if (result === false) {
 					return;
 				}
