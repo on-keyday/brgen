@@ -19,7 +19,9 @@ fi
 echo "Latest workflow run ID: $RUN_ID"
 
 # ダウンロード用のディレクトリを作成
+rm -rf "${OUTPUT_DIR:?}"
 mkdir -p "$OUTPUT_DIR"
+
 
 # bmgen-webアーティファクトをダウンロード
 echo "Downloading bmgen-web artifact..."
