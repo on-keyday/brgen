@@ -1,4 +1,4 @@
-import * as bmgen  from "../../../lib/bmgen/bmgen.js";
+import * as bmgen  from "../../../lib/bmgen/bm2cpp.js";
 import { JobRequest, RequestLanguage } from "../../msg.js";
 import { EmWorkContext} from "../../em_work_ctx.js";
 import { MyEmscriptenModule } from "../../emscripten_mod.js";
