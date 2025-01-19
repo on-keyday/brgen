@@ -9,7 +9,7 @@
     "highlight.js": "^11.9.0",
     "json2rust": "file:../../src/tool/json2rust/pkg",
     "monaco-editor": "^0.52.0",
-    "puppeteer": "^23.0.0",
+    "puppeteer": "^24.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "vscode-languageserver": "^9.0.1",
