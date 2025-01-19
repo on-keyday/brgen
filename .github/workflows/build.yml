@@ -62,7 +62,7 @@ jobs:
           cp -a ./script/make_cpp_tests.sh ./artifacts
           cp -a ./testkit ./artifacts/testkit
       - name: Upload artifacts
-        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
         with:
           name: brgen-linux
           path: ./artifacts
@@ -139,7 +139,7 @@ jobs:
           cp -a ./script/make_cpp_tests.sh ./artifacts
           cp -a ./testkit ./artifacts/testkit
       - name: Upload artifacts
-        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
         with:
           name: brgen-macos
           path: ./artifacts
@@ -199,7 +199,7 @@ jobs:
           copy /Y script\make_cpp_tests.bat artifacts
           xcopy /E /I /Y testkit artifacts\testkit
       - name: Upload artifacts
-        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
         with:
           name: brgen-windows
           path: ./artifacts
@@ -235,7 +235,7 @@ jobs:
           cp -a ./lsp/LICENSE ./artifacts
           cp -a ./lsp/brgen-lsp-*.vsix ./artifacts
       - name: Upload artifacts
-        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
         with:
           name: brgen-vscode-extension
           path: ./artifacts
@@ -276,7 +276,7 @@ jobs:
           cp -a ./script/make_cpp_tests.sh ./artifacts
           cp -a ./testkit ./artifacts/testkit
       - name: Upload artifacts
-        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
         with:
           name: brgen-linux-arm
           path: ./artifacts
@@ -321,7 +321,7 @@ jobs:
           cp -a ./script/make_cpp_tests.sh ./artifacts
           cp -a ./testkit ./artifacts/testkit
       - name: Upload artifacts
-        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
         with:
           name: brgen-android
           path: ./artifacts
@@ -361,7 +361,7 @@ jobs:
         run: |
           go install github.com/Songmu/gocredits/cmd/gocredits@latest
       - name: Set up ruby
-        uses: ruby/setup-ruby@401c19e14f474b54450cd3905bb8b86e2c8509cf # v1.204.0
+        uses: ruby/setup-ruby@28c4deda893d5a96a6b2d958c5b47fc18d65c9d3 # v1.213.0
         with:
           ruby-version: ruby
       - uses: github/setup-licensed@be11bcbb82e3140b6cf260e647c3efeeca8fcefd # v1.3.1
@@ -375,7 +375,7 @@ jobs:
         run: |
           ls -alR ./license_cache
       - name: Upload artifacts
-        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
         with:
           name: brgen-licenses
           path: ./license_cache
@@ -452,7 +452,7 @@ jobs:
           hugo --minify
           cd ../..
       - name: Upload artifact
-        uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
         with:
           name: brgen-web
           path: "./web/public"
