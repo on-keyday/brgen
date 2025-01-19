@@ -226,6 +226,7 @@ const updateUI = async () => {
         setDefault: () => editorUI.setDefault(),
         mappingCode: mappingCode,
     };
+    storage.setLangSpecificOption(serializeLanguageConfig(commonUI.config));
     await updateGenerated(ui)
 }
 
@@ -412,6 +413,38 @@ const changeLanguage = async (mode: string) => {
     storage.setLangMode(mode as Language);
     commonUI.changeLanguageConfig(mode as Language);
     await updateUI();
+}
+
+const serializeLanguageConfig = (m: Map<Language, LanguageConfig>) => {
+    const obj: Record<string, Record<string, InputListElement>> = {};
+    m.forEach((value, key) => {
+        const config: Record<string, InputListElement> = {};
+        value.config.forEach((value, key) => {
+            config[key] = {
+                type: value.type,
+                value: value.value,
+                data: value.data,
+                name: value.name,
+            }
+        });
+        obj[key] = config;
+    });
+    return JSON.stringify(obj);
+}
+
+const deserializeAndApplyLanguageConfig = (m: Map<Language, LanguageConfig>, src: string) => {
+    const obj = JSON.parse(src) as Record<string, Record<string, InputListElement>>;
+    Object.entries(obj).forEach(([key, value]) => {
+        const lang = key as Language;
+        const config = m.get(lang);
+        if (!config) return;
+        Object.entries(value).forEach(([key, value]) => {
+            const element = config.config.get(key);
+            if (!element) return;
+            element.value = value.value;
+            element.data = value.data;
+        });
+    });
 }
 
 const commonUI = {
@@ -683,6 +716,11 @@ const setCommon = (m: Map<string, InputListElement>) => {
     commonUI.config.set(Language.RUST_2, languageSpecificConfig(rust2, ConfigKey.COMMON_FILE_NAME, (change) => {
         updateUI();
     }));
+
+    const specificOption = storage.getLangSpecificOption();
+    if (specificOption) {
+        deserializeAndApplyLanguageConfig(commonUI.config, specificOption);
+    }
 }
 
 commonUI.changeLanguageConfig(storage.getLangMode());
