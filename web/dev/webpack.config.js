@@ -22,6 +22,11 @@ copyWasm("json2c.wasm");
 copyWasm("json2ts.wasm");
 copyWasm("json2kaitai.wasm");
 
+// for rebrgen
+copyWasm("bmgen.wasm");
+copyWasm("bm2cpp.wasm");
+copyWasm("bm2rust.wasm");
+
 let mode = "development";
 if (process.env.WEB_PRODUCTION === "production") {
   mode = "production";
