@@ -30,5 +30,5 @@ gh run download "$RUN_ID" --repo "$REPO" --name "bmgen-web" --dir "$OUTPUT_DIR"
 echo "bmgen-web artifact downloaded to $OUTPUT_DIR."
 
 echo "Move contents of ./rebrgen/tool to ./web/dev/src/lib/bmgen directory"
-mkdir -p ./web/dev/src/lib
+mkdir -p ./web/dev/src/lib/bmgen
 mv ./rebrgen/tool/* ./web/dev/src/lib/bmgen
