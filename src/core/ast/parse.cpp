@@ -563,7 +563,7 @@ namespace brgen::ast {
                 s.report_error(lit.loc, "invalid string literal");
             }
             literal->length = c->size();
-            if (!futils::base64::encode(*c, literal->base64_value)) {
+            if (!futils::base64::encode(*c, literal->binary_value)) {
                 s.report_error(lit.loc, "failed to encode string to base64 (internal error)");
             }
             return literal;

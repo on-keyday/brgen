@@ -1,4 +1,4 @@
-const { copyFile } = require("fs");
+const { copyFile, existsSync, cpSync } = require("fs");
 const process = require("process");
 const path = require("path");
 
@@ -21,6 +21,11 @@ copyWasm("json2go.wasm");
 copyWasm("json2c.wasm");
 copyWasm("json2ts.wasm");
 copyWasm("json2kaitai.wasm");
+
+// for rebrgen
+copyWasm("bmgen/bmgen.wasm");
+copyWasm("bmgen/bm2cpp.wasm");
+copyWasm("bmgen/bm2rust.wasm");
 
 let mode = "development";
 if (process.env.WEB_PRODUCTION === "production") {

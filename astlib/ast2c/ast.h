@@ -1302,7 +1302,7 @@ struct ast2c_StrLiteral {
 	ast2c_Type* expr_type;
 	ast2c_ConstantLevel constant_level;
 	char* value;
-	char* base_64_value;
+	char* binary_value;
 	uint64_t length;
 };
 

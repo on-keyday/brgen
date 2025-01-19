@@ -1,4 +1,4 @@
-import {AstOption, COption, CallOption, CppOption, GoOption, JobRequest, LanguageKey, LanguageList, LanguageToOptionType, LanguageToWorkerType, RequestLanguage, RustOption, TSOption, WorkerList, WorkerType }  from "./msg.js";
+import {AstOption, BMGenOption, COption, CallOption, Cpp2Option, CppOption, GoOption, JobRequest, LanguageKey, LanguageList, LanguageToOptionType, LanguageToWorkerType, RequestLanguage, Rust2Option, RustOption, TSOption, WorkerList, WorkerType }  from "./msg.js";
 import {JobManager,TraceID} from "./job_mgr.js";
 
 const workerMap = Object.freeze({
@@ -9,6 +9,10 @@ const workerMap = Object.freeze({
     [WorkerType.JSON2RUST]:()=> new Worker(new URL("./worker/json2rust_worker.js",import.meta.url),{type:"module"}),
     [WorkerType.JSON2TS]:()=> new Worker(new URL("./worker/json2ts_worker.js",import.meta.url),{type:"module"}),
     [WorkerType.JSON2KAITAI]:()=> new Worker(new URL("./worker/json2kaitai_worker.js",import.meta.url),{type:"module"}),
+
+    [WorkerType.BMGEN]:()=> new Worker(new URL("./worker/bmgen/bmgen_worker.js",import.meta.url),{type:"module"}),
+    [WorkerType.BM2CPP]:()=> new Worker(new URL("./worker/bmgen/bm2cpp_worker.js",import.meta.url),{type:"module"}),
+    [WorkerType.BM2RUST]:()=> new Worker(new URL("./worker/bmgen/bm2rust_worker.js",import.meta.url),{type:"module"}),
 });
 
 
@@ -129,7 +133,25 @@ const argConverter = Object.freeze({
     [RequestLanguage.KAITAI_STRUCT] : (opt :CallOption) => {
         const args :string[] = [];
         return args;
-    }
+    },
+    [RequestLanguage.BINARY_MODULE] : (opt :BMGenOption) => {
+        const args :string[] = [];
+        if(opt.print_instruction){
+            args.push("--print-instructions");
+        }
+        return args;
+    },
+    [RequestLanguage.CPP_2] : (opt :Cpp2Option) => {
+        const args :string[] = [];
+        return args;
+    },
+    [RequestLanguage.RUST_2] : (opt :Rust2Option) => {
+        const args :string[] = [];
+        if(opt.use_async){
+            args.push("--async");
+        }
+        return args;
+    },
 })
 
 
@@ -183,4 +205,16 @@ export const getTSCode = (id :TraceID,sourceCode :string,options :TSOption) => {
 
 export const getKaitaiStructCode = (id :TraceID,sourceCode :string,options :CallOption) => {
     return getLanguage(id,sourceCode,RequestLanguage.KAITAI_STRUCT,options)
+}
+
+export const getBinaryModule = (id :TraceID,sourceCode :string,options :BMGenOption) => {
+    return getLanguage(id,sourceCode,RequestLanguage.BINARY_MODULE,options)
+}
+
+export const getCpp2Code = (id :TraceID,sourceCode :string,options :Cpp2Option) => {
+    return getLanguage(id,sourceCode,RequestLanguage.CPP_2,options)
+}
+
+export const getRust2Code = (id :TraceID,sourceCode :string,options :Rust2Option) => {
+    return getLanguage(id,sourceCode,RequestLanguage.RUST_2,options)
 }

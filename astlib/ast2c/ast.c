@@ -3308,17 +3308,17 @@ int ast2c_StrLiteral_parse(ast2c_Ast* ast,ast2c_StrLiteral* s,ast2c_json_handler
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
 	s->expr_type = NULL;
 	s->value = NULL;
-	s->base_64_value = NULL;
+	s->binary_value = NULL;
 	void* expr_type = h->object_get(h, obj_body, "expr_type");
 	void* constant_level = h->object_get(h, obj_body, "constant_level");
 	void* value = h->object_get(h, obj_body, "value");
-	void* base_64_value = h->object_get(h, obj_body, "base_64_value");
+	void* binary_value = h->object_get(h, obj_body, "binary_value");
 	void* length = h->object_get(h, obj_body, "length");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_StrLiteral::loc is null"); } return 0; }
 	if (!expr_type) { if(h->error) { h->error(h,expr_type, "ast2c_StrLiteral::expr_type is null"); } return 0; }
 	if (!constant_level) { if(h->error) { h->error(h,constant_level, "ast2c_StrLiteral::constant_level is null"); } return 0; }
 	if (!value) { if(h->error) { h->error(h,value, "ast2c_StrLiteral::value is null"); } return 0; }
-	if (!base_64_value) { if(h->error) { h->error(h,base_64_value, "ast2c_StrLiteral::base_64_value is null"); } return 0; }
+	if (!binary_value) { if(h->error) { h->error(h,binary_value, "ast2c_StrLiteral::binary_value is null"); } return 0; }
 	if (!length) { if(h->error) { h->error(h,length, "ast2c_StrLiteral::length is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_StrLiteral::loc"); }
@@ -3329,9 +3329,9 @@ int ast2c_StrLiteral_parse(ast2c_Ast* ast,ast2c_StrLiteral* s,ast2c_json_handler
 		if(h->error) { h->error(h,value, "failed to parse ast2c_StrLiteral::value"); }
 		goto error;
 	}
-	s->base_64_value = h->string_get_alloc(h,base_64_value);
-	if (!s->base_64_value) {
-		if(h->error) { h->error(h,base_64_value, "failed to parse ast2c_StrLiteral::base_64_value"); }
+	s->binary_value = h->string_get_alloc(h,binary_value);
+	if (!s->binary_value) {
+		if(h->error) { h->error(h,binary_value, "failed to parse ast2c_StrLiteral::binary_value"); }
 		goto error;
 	}
 	if(!h->number_get(h,length,&s->length)) {

@@ -33,3 +33,4 @@ pkg/
 stats.json
 zig-cache/
 zig-out/
+rebrgen/

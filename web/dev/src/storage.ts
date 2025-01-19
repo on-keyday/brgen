@@ -119,6 +119,15 @@ class storageManager {
         this.#storage.setItem(StorageKey.SOURCE_CODE,code);
     }
 
+    setLangSpecificOption(serialized :string) {
+        this.#storage.setItem(StorageKey.LANG_SPECIFIC_OPTION,serialized);
+    }
+
+    getLangSpecificOption() {
+        const option = this.#storage.getItem(StorageKey.LANG_SPECIFIC_OPTION);
+        if(option === null) return null;
+        return option;
+    }
     
 }
 

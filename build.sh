@@ -69,6 +69,7 @@ unset GOARCH
 #cat ./src/tool/json2rust/pkg/json2rust.d.ts
 #cat ./src/tool/json2rust/pkg/json2rust.js
 python script/dirty_patch.py
+python script/copy_bmgen_stub.py
 (
    cd ./web/dev || exit
    tsc

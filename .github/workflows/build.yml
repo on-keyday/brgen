@@ -430,6 +430,13 @@ jobs:
       - name: Set up wasm-pack
         run: |
           curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+      - name: Fetch rebrgen artifacts
+        run: |
+          chmod +x ./script/fetch_rebrgen.sh
+          ./script/fetch_rebrgen.sh
+          ls -alR ./web/dev/src/lib
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Build Wasm
         run: |
           GOROOT=`go env GOROOT`

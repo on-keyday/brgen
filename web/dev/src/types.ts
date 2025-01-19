@@ -31,4 +31,7 @@ export const enum ConfigKey {
     C_OMIT_ERROR_CALLBACK = "omit_error",
     C_USE_MEMCPY = "use_memcpy",
     C_ZERO_COPY = "zero_copy",
+
+    BM_PRINT_INSTRUCTION = "print_instruction",
+    RUST2_USE_ASYNC = "use_async",
 }
