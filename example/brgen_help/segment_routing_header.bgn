@@ -1,0 +1,28 @@
+config.url = "https://www.rfc-editor.org/rfc/rfc8754"
+
+
+format RoutingHeader:
+    next_header :u8
+    hdr_ext_len :u8
+    routing_type :u8
+    segments_left :u8
+    last_entry :u8
+    flags :u8
+    tag :u16
+
+format TLV:
+    type :u8
+    if type != 0:
+        length :u8
+        value :[length]u8
+
+format Routing:
+    header :RoutingHeader
+    match header.routing_type:
+        4:
+            segments :[header.segments_left][16]u8
+            ext_len ::= header.hdr_ext_len * 8
+            segment_len ::= header.segments_left * 16
+            ext_len > segment_len
+            bytes_len ::= ext_len - segment_len
+            tlv :[..]TLV(input =input.subrange(bytes_len))
