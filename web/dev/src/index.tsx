@@ -33,6 +33,9 @@ if (window.MonacoEnvironment === undefined) {
             if (label === 'json') {
                 return new Worker(new URL('../node_modules/monaco-editor/esm/vs/language/json/json.worker', import.meta.url), { type: 'module' });
             }
+            if (label === 'editorWorkerService') {
+                return new Worker(new URL('../node_modules/monaco-editor/esm/vs/editor/editor.worker', import.meta.url), { type: 'module' });
+            }
             throw new Error(`Cannot create worker for label ${label}`);
         },
     }
