@@ -110,77 +110,73 @@ export const typeToString = (type :ast2ts.Type|null|undefined) :string => {
     return typ;
 }
 
-export const analyzeHover = async (prevNode :ast2ts.Node, pos :number) =>{
+export const analyzeHover = async (prevNode :ast2ts.ParseResult, pos :number) =>{
     let found :any;
     console.time("walk hover");
-    await ast2ts.walkAsync(prevNode,async(f,node)=>{
-        if(found!==undefined){
-            return false;
-        }
+    const len = prevNode.node.length;
+    for(let i = 0;i<len;i++){
+        const node = prevNode.node[i];
         if(node.loc.file!=1) {
             console.log("prevent file boundary: "+node.loc.file)
-            return false; // skip other files
+            continue; // skip other files
         }
         if(node.loc.pos.begin<=pos&&pos<=node.loc.pos.end){
             if(ast2ts.isIdent(node)){
                 console.log(`found: ${node.ident} ${JSON.stringify(node.loc)}`)
                 found = node;
-                return false;
+                break;
             }
             else if(ast2ts.isIntLiteral(node)) {
                 console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
                 found = node;
-                return false;
+                break;
             }
             else if(ast2ts.isStrLiteral(node)) {
                 console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
                 found = node;
-                return false;
+                break;
             }
             else if(ast2ts.isRegexLiteral(node)) {
                 console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
                 found = node;
-                return false;
+                break;
             }
             else if(ast2ts.isCharLiteral(node)) {
                 console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
                 found = node;
-                return false;
+                break;
             }
             else if(ast2ts.isAssert(node)) {
                 console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
                 found = node;
-                return false;
+                break;
             }
             else if(ast2ts.isMetadata(node)) {
                 console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
                 found = node;
-                return false;
+                break;
             }
             else if(ast2ts.isType(node)&&node.is_explicit&&node.node_type!== "ident_type"){
                 console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
                 found = node;
-                return false;
+                break;
             }
             else if(ast2ts.isMatch(node)) {
                 console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
                 found = node;
-                return false;
+                break;
             }
             else if(ast2ts.isIf(node)) {
                 console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
                 found = node;
-                return false;
+                break;
             }
             else if(ast2ts.isSpecifyOrder(node)) {
                 console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
                 found = node;
-                return false;
+                break;
             }
             console.log(`hit: ${node.node_type} ${JSON.stringify(node.loc)}`)
-        }
-        if(ast2ts.getChildCount(node)!==0){
-            await ast2ts.walkAsync(node,f);
         }
         if(ast2ts.isMember(node)){
             console.log("walked: "+node.node_type);
@@ -195,7 +191,7 @@ export const analyzeHover = async (prevNode :ast2ts.Node, pos :number) =>{
         else{
             console.log("walked: "+node.node_type)
         }
-    });
+    }
     console.timeEnd("walk hover");
     if(found === null) {
         return null;
@@ -351,25 +347,24 @@ export const analyzeHover = async (prevNode :ast2ts.Node, pos :number) =>{
     return null;
 }
 
-export const analyzeDefinition = async (prevFile :ast2ts.AstFile, prevNode :ast2ts.Node,pos :number) => {
+export const analyzeDefinition = async (prevFile :ast2ts.AstFile, prevNode :ast2ts.ParseResult,pos :number) => {
     let found :any;
-    await ast2ts.walkAsync(prevNode,async(f,node)=>{
+    const len = prevNode.node.length;
+    for(let i = 0;i<len;i++){
+        const node = prevNode.node[i];
         if(node.loc.file!=1) {
             console.log("prevent file boundary: "+node.loc.file)
-            return; // skip other files
+            continue; // skip other files
         }
         if(node.loc.pos.begin<=pos&&pos<=node.loc.pos.end){
             if(ast2ts.isIdent(node)){
                 console.log(`found: ${node.ident} ${JSON.stringify(node.loc)}`)
                 found = node;
-                return false; // skip children
+                break;
             }
             console.log(`hit: ${node.node_type} ${JSON.stringify(node.loc)}`)
         }
-        if(ast2ts.getChildCount(node)!==0){
-            await ast2ts.walkAsync(node,f);
-        }
-    });
+    }
     const fileToLink = (loc :ast2ts.Loc, file :ast2ts.AstFile) => {
         const path = file.files[loc.file-1];
         const range = {
@@ -567,7 +562,7 @@ export interface SemTokensStub {
     data :number[];
 }
 
-export const analyzeSourceCode  = async (prevSemanticTokens :SemTokensStub|null,  tokens :ast2ts.TokenFile,getAst: ()=>Promise<{file: ast2ts.AstFile,ast: ast2ts.Node|null}>,positionAt :(pos :number)=>PosStub,diagnostics :(s:DiagnosticStub[])=>void) =>{
+export const analyzeSourceCode  = async (prevSemanticTokens :SemTokensStub|null,  tokens :ast2ts.TokenFile,getAst: ()=>Promise<{file: ast2ts.AstFile,ast: ast2ts.ParseResult|null}>,positionAt :(pos :number)=>PosStub,diagnostics :(s:DiagnosticStub[])=>void) =>{
     const mapForTokenTypes = new Map<ast2ts.TokenTag,string>([
         [ast2ts.TokenTag.comment,"comment"],
         [ast2ts.TokenTag.keyword,"keyword"],
@@ -609,7 +604,7 @@ export const analyzeSourceCode  = async (prevSemanticTokens :SemTokensStub|null,
     });
     
     let ast_ :ast2ts.AstFile;
-    let prog_ :ast2ts.Node|null;
+    let prog_ :ast2ts.ParseResult|null;
     try {
         console.time("parse")
         const l = await getAst();
@@ -637,13 +632,12 @@ export const analyzeSourceCode  = async (prevSemanticTokens :SemTokensStub|null,
     }
     const prog = prog_;
     console.time("walk ast");
-    await ast2ts.walkAsync(prog,async(f,node)=>{
+    const len=prog.node.length;
+    for(let i=0;i<len;i++){
+        const node = prog.node[i];
         if(node.loc.file!=1) {
             console.log("prevent file boundary: "+node.loc.file)
-            return; // skip other files
-        }
-        if(ast2ts.getChildCount(node)!=0){
-            await ast2ts.walkAsync(node,f);
+            continue; // skip other files
         }
         if(ast2ts.isIdent(node)){
             const line = node.loc.line-1;
@@ -731,8 +725,7 @@ export const analyzeSourceCode  = async (prevSemanticTokens :SemTokensStub|null,
             });
             locList.push({loc: node.loc,length: node.value.length,index:4});
         }
-        return true
-    });
+    }
     console.timeEnd("walk ast");
     return generateSemanticTokens(locList);
 };

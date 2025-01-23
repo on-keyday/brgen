@@ -1291,7 +1291,13 @@ interface astConstructor {
 	scope : Scope[];
 }
 
-export function parseAST(obj: JsonAst): Program {
+export interface ParseResult {
+	root: Program;
+	node: Node[];
+	scope: Scope[];
+}
+
+export function parseAST(obj: JsonAst): ParseResult {
 	const o :JsonAst = {
 		node: obj.node.map((n: any) => {
 			if (!isRawNode(n)) {
@@ -4829,7 +4835,7 @@ export function parseAST(obj: JsonAst): Program {
 	if (!isProgram(root)) {
 		throw new Error('invalid node list at node[0]');
 	}
-	return root;
+	return {root, node: c.node, scope: c.scope};
 }
 
 // get direct children count

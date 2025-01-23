@@ -147,7 +147,7 @@ class DocumentInfo {
     readonly uri :string;
     prevSemanticTokens :SemanticTokens | null = null;
     prevFile :ast2ts.AstFile| null = null;
-    prevNode :ast2ts.Program | null = null;
+    prevNode :ast2ts.ParseResult | null = null;
     prevText :string | null = null;
 
     constructor(uri :string){
@@ -283,7 +283,7 @@ connection.onDocumentSymbol(async (params) =>{
     if(docInfo.prevNode===null) {
         return null;
     }
-    return analyze.analyzeSymbols(docInfo.prevNode?.global_scope!);
+    return analyze.analyzeSymbols(docInfo.prevNode?.root.global_scope!);
 })
 
 

@@ -152,8 +152,14 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("	scope : Scope[];\n")
 	w.Printf("}\n\n")
 
+	w.Printf("export interface ParseResult {\n")
+	w.Printf("	root: Program;\n")
+	w.Printf("	node: Node[];\n")
+	w.Printf("	scope: Scope[];\n")
+	w.Printf("}\n\n")
+
 	// parse AST function
-	w.Printf("export function parseAST(obj: JsonAst): Program {\n")
+	w.Printf("export function parseAST(obj: JsonAst): ParseResult {\n")
 	w.Printf("	const o :JsonAst = {\n")
 	w.Printf("		node: obj.node.map((n: any) => {\n")
 	w.Printf("			if (!isRawNode(n)) {\n")
@@ -346,7 +352,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("	if (!isProgram(root)) {\n")
 	w.Printf("		throw new Error('invalid node list at node[0]');\n")
 	w.Printf("	}\n")
-	w.Printf("	return root;\n")
+	w.Printf("	return {root, node: c.node, scope: c.scope};\n")
 	w.Printf("}\n\n")
 
 	w.Printf("// get direct children count\n")

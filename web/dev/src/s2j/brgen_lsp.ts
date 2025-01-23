@@ -34,7 +34,7 @@ monaco.editor.defineTheme("brgen-theme", {
 const updateTracer = new UpdateTracer();
 const context = {
     prevSemTokens : null as analyze.SemTokensStub|null,
-    prevNode : null as ast2ts.Node|null,
+    prevNode : null as ast2ts.ParseResult|null,
     traceID : -1,
 };
 
