@@ -359,7 +359,8 @@ export const analyzeHover = async (prevNode :ast2ts.Node, pos :number) =>{
 
 export const analyzeDefinition = async (prevFile :ast2ts.AstFile, prevNode :ast2ts.Node,pos :number) => {
     let found :any;
-    await ast2ts.walkAsync(prevNode,async(f,node)=>{
+    const promises = [] as Promise<void>[];
+    const prom = ast2ts.walkAsync(prevNode,async(f,node)=>{
         if(node.loc.file!=1) {
             console.log("prevent file boundary: "+node.loc.file)
             return; // skip other files
@@ -372,8 +373,15 @@ export const analyzeDefinition = async (prevFile :ast2ts.AstFile, prevNode :ast2
             }
             console.log(`hit: ${node.node_type} ${JSON.stringify(node.loc)}`)
         }
-        return ast2ts.walkAsync(node,f);
+        if(ast2ts.getChildCount(node)!==0){
+            promises.push(ast2ts.walkAsync(node,f));
+        }
     });
+    promises.push(prom);
+    while(promises.length > 0&&found===undefined){
+        await Promise.all(promises);
+        promises.length = 0;
+    }
     const fileToLink = (loc :ast2ts.Loc, file :ast2ts.AstFile) => {
         const path = file.files[loc.file-1];
         const range = {
