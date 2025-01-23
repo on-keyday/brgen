@@ -4832,6 +4832,482 @@ export function parseAST(obj: JsonAst): Program {
 	return root;
 }
 
+// get direct children count
+export function getChildCount(node: Node): number {
+	switch (node.node_type) {
+	case "program": {
+     if (!isProgram(node)) {
+	    return 0;
+     }
+     const n :Program = node as Program;
+		return  + (n.struct_type === null ? 0 : 1) + n.elements.length;
+	}
+	case "comment": {
+     if (!isComment(node)) {
+	    return 0;
+     }
+     const n :Comment = node as Comment;
+		return 0;
+	}
+	case "comment_group": {
+     if (!isCommentGroup(node)) {
+	    return 0;
+     }
+     const n :CommentGroup = node as CommentGroup;
+		return  + n.comments.length;
+	}
+	case "field_argument": {
+     if (!isFieldArgument(node)) {
+	    return 0;
+     }
+     const n :FieldArgument = node as FieldArgument;
+		return  + (n.raw_arguments === null ? 0 : 1) + n.arguments.length + n.assigns.length + (n.alignment === null ? 0 : 1) + (n.sub_byte_length === null ? 0 : 1) + (n.sub_byte_begin === null ? 0 : 1) + (n.peek === null ? 0 : 1) + (n.type_map === null ? 0 : 1) + n.metadata.length;
+	}
+	case "binary": {
+     if (!isBinary(node)) {
+	    return 0;
+     }
+     const n :Binary = node as Binary;
+		return  + (n.expr_type === null ? 0 : 1) + (n.left === null ? 0 : 1) + (n.right === null ? 0 : 1);
+	}
+	case "unary": {
+     if (!isUnary(node)) {
+	    return 0;
+     }
+     const n :Unary = node as Unary;
+		return  + (n.expr_type === null ? 0 : 1) + (n.expr === null ? 0 : 1);
+	}
+	case "cond": {
+     if (!isCond(node)) {
+	    return 0;
+     }
+     const n :Cond = node as Cond;
+		return  + (n.expr_type === null ? 0 : 1) + (n.cond === null ? 0 : 1) + (n.then === null ? 0 : 1) + (n.els === null ? 0 : 1);
+	}
+	case "ident": {
+     if (!isIdent(node)) {
+	    return 0;
+     }
+     const n :Ident = node as Ident;
+		return  + (n.expr_type === null ? 0 : 1);
+	}
+	case "call": {
+     if (!isCall(node)) {
+	    return 0;
+     }
+     const n :Call = node as Call;
+		return  + (n.expr_type === null ? 0 : 1) + (n.callee === null ? 0 : 1) + (n.raw_arguments === null ? 0 : 1) + n.arguments.length;
+	}
+	case "if": {
+     if (!isIf(node)) {
+	    return 0;
+     }
+     const n :If = node as If;
+		return  + (n.expr_type === null ? 0 : 1) + (n.struct_union_type === null ? 0 : 1) + (n.cond === null ? 0 : 1) + (n.then === null ? 0 : 1) + (n.els === null ? 0 : 1);
+	}
+	case "member_access": {
+     if (!isMemberAccess(node)) {
+	    return 0;
+     }
+     const n :MemberAccess = node as MemberAccess;
+		return  + (n.expr_type === null ? 0 : 1) + (n.target === null ? 0 : 1) + (n.member === null ? 0 : 1);
+	}
+	case "paren": {
+     if (!isParen(node)) {
+	    return 0;
+     }
+     const n :Paren = node as Paren;
+		return  + (n.expr_type === null ? 0 : 1) + (n.expr === null ? 0 : 1);
+	}
+	case "index": {
+     if (!isIndex(node)) {
+	    return 0;
+     }
+     const n :Index = node as Index;
+		return  + (n.expr_type === null ? 0 : 1) + (n.expr === null ? 0 : 1) + (n.index === null ? 0 : 1);
+	}
+	case "match": {
+     if (!isMatch(node)) {
+	    return 0;
+     }
+     const n :Match = node as Match;
+		return  + (n.expr_type === null ? 0 : 1) + (n.struct_union_type === null ? 0 : 1) + (n.cond === null ? 0 : 1) + n.branch.length;
+	}
+	case "range": {
+     if (!isRange(node)) {
+	    return 0;
+     }
+     const n :Range = node as Range;
+		return  + (n.expr_type === null ? 0 : 1) + (n.start === null ? 0 : 1) + (n.end === null ? 0 : 1);
+	}
+	case "identity": {
+     if (!isIdentity(node)) {
+	    return 0;
+     }
+     const n :Identity = node as Identity;
+		return  + (n.expr_type === null ? 0 : 1) + (n.expr === null ? 0 : 1);
+	}
+	case "tmp_var": {
+     if (!isTmpVar(node)) {
+	    return 0;
+     }
+     const n :TmpVar = node as TmpVar;
+		return  + (n.expr_type === null ? 0 : 1);
+	}
+	case "import": {
+     if (!isImport(node)) {
+	    return 0;
+     }
+     const n :Import = node as Import;
+		return  + (n.expr_type === null ? 0 : 1) + (n.base === null ? 0 : 1) + (n.import_desc === null ? 0 : 1);
+	}
+	case "cast": {
+     if (!isCast(node)) {
+	    return 0;
+     }
+     const n :Cast = node as Cast;
+		return  + (n.expr_type === null ? 0 : 1) + (n.base === null ? 0 : 1) + n.arguments.length;
+	}
+	case "available": {
+     if (!isAvailable(node)) {
+	    return 0;
+     }
+     const n :Available = node as Available;
+		return  + (n.expr_type === null ? 0 : 1) + (n.base === null ? 0 : 1) + (n.target === null ? 0 : 1);
+	}
+	case "specify_order": {
+     if (!isSpecifyOrder(node)) {
+	    return 0;
+     }
+     const n :SpecifyOrder = node as SpecifyOrder;
+		return  + (n.expr_type === null ? 0 : 1) + (n.base === null ? 0 : 1) + (n.order === null ? 0 : 1);
+	}
+	case "explicit_error": {
+     if (!isExplicitError(node)) {
+	    return 0;
+     }
+     const n :ExplicitError = node as ExplicitError;
+		return  + (n.expr_type === null ? 0 : 1) + (n.base === null ? 0 : 1) + (n.message === null ? 0 : 1);
+	}
+	case "io_operation": {
+     if (!isIoOperation(node)) {
+	    return 0;
+     }
+     const n :IoOperation = node as IoOperation;
+		return  + (n.expr_type === null ? 0 : 1) + (n.base === null ? 0 : 1) + n.arguments.length;
+	}
+	case "or_cond": {
+     if (!isOrCond(node)) {
+	    return 0;
+     }
+     const n :OrCond = node as OrCond;
+		return  + (n.expr_type === null ? 0 : 1) + (n.base === null ? 0 : 1) + n.conds.length;
+	}
+	case "bad_expr": {
+     if (!isBadExpr(node)) {
+	    return 0;
+     }
+     const n :BadExpr = node as BadExpr;
+		return  + (n.expr_type === null ? 0 : 1) + (n.bad_expr === null ? 0 : 1);
+	}
+	case "loop": {
+     if (!isLoop(node)) {
+	    return 0;
+     }
+     const n :Loop = node as Loop;
+		return  + (n.init === null ? 0 : 1) + (n.cond === null ? 0 : 1) + (n.step === null ? 0 : 1) + (n.body === null ? 0 : 1);
+	}
+	case "indent_block": {
+     if (!isIndentBlock(node)) {
+	    return 0;
+     }
+     const n :IndentBlock = node as IndentBlock;
+		return  + (n.struct_type === null ? 0 : 1) + n.elements.length;
+	}
+	case "scoped_statement": {
+     if (!isScopedStatement(node)) {
+	    return 0;
+     }
+     const n :ScopedStatement = node as ScopedStatement;
+		return  + (n.struct_type === null ? 0 : 1) + (n.statement === null ? 0 : 1);
+	}
+	case "match_branch": {
+     if (!isMatchBranch(node)) {
+	    return 0;
+     }
+     const n :MatchBranch = node as MatchBranch;
+		return  + (n.cond === null ? 0 : 1) + (n.then === null ? 0 : 1);
+	}
+	case "union_candidate": {
+     if (!isUnionCandidate(node)) {
+	    return 0;
+     }
+     const n :UnionCandidate = node as UnionCandidate;
+		return 0;
+	}
+	case "return": {
+     if (!isReturn(node)) {
+	    return 0;
+     }
+     const n :Return = node as Return;
+		return  + (n.expr === null ? 0 : 1);
+	}
+	case "break": {
+     if (!isBreak(node)) {
+	    return 0;
+     }
+     const n :Break = node as Break;
+		return 0;
+	}
+	case "continue": {
+     if (!isContinue(node)) {
+	    return 0;
+     }
+     const n :Continue = node as Continue;
+		return 0;
+	}
+	case "assert": {
+     if (!isAssert(node)) {
+	    return 0;
+     }
+     const n :Assert = node as Assert;
+		return  + (n.cond === null ? 0 : 1);
+	}
+	case "implicit_yield": {
+     if (!isImplicitYield(node)) {
+	    return 0;
+     }
+     const n :ImplicitYield = node as ImplicitYield;
+		return  + (n.expr === null ? 0 : 1);
+	}
+	case "metadata": {
+     if (!isMetadata(node)) {
+	    return 0;
+     }
+     const n :Metadata = node as Metadata;
+		return  + (n.base === null ? 0 : 1) + n.values.length;
+	}
+	case "int_type": {
+     if (!isIntType(node)) {
+	    return 0;
+     }
+     const n :IntType = node as IntType;
+		return 0;
+	}
+	case "float_type": {
+     if (!isFloatType(node)) {
+	    return 0;
+     }
+     const n :FloatType = node as FloatType;
+		return 0;
+	}
+	case "ident_type": {
+     if (!isIdentType(node)) {
+	    return 0;
+     }
+     const n :IdentType = node as IdentType;
+		return  + (n.import_ref === null ? 0 : 1) + (n.ident === null ? 0 : 1);
+	}
+	case "int_literal_type": {
+     if (!isIntLiteralType(node)) {
+	    return 0;
+     }
+     const n :IntLiteralType = node as IntLiteralType;
+		return 0;
+	}
+	case "str_literal_type": {
+     if (!isStrLiteralType(node)) {
+	    return 0;
+     }
+     const n :StrLiteralType = node as StrLiteralType;
+		return  + (n.strong_ref === null ? 0 : 1);
+	}
+	case "regex_literal_type": {
+     if (!isRegexLiteralType(node)) {
+	    return 0;
+     }
+     const n :RegexLiteralType = node as RegexLiteralType;
+		return  + (n.strong_ref === null ? 0 : 1);
+	}
+	case "void_type": {
+     if (!isVoidType(node)) {
+	    return 0;
+     }
+     const n :VoidType = node as VoidType;
+		return 0;
+	}
+	case "bool_type": {
+     if (!isBoolType(node)) {
+	    return 0;
+     }
+     const n :BoolType = node as BoolType;
+		return 0;
+	}
+	case "array_type": {
+     if (!isArrayType(node)) {
+	    return 0;
+     }
+     const n :ArrayType = node as ArrayType;
+		return  + (n.element_type === null ? 0 : 1) + (n.length === null ? 0 : 1);
+	}
+	case "function_type": {
+     if (!isFunctionType(node)) {
+	    return 0;
+     }
+     const n :FunctionType = node as FunctionType;
+		return  + (n.return_type === null ? 0 : 1) + n.parameters.length;
+	}
+	case "struct_type": {
+     if (!isStructType(node)) {
+	    return 0;
+     }
+     const n :StructType = node as StructType;
+		return  + n.fields.length + (n.type_map === null ? 0 : 1);
+	}
+	case "struct_union_type": {
+     if (!isStructUnionType(node)) {
+	    return 0;
+     }
+     const n :StructUnionType = node as StructUnionType;
+		return  + (n.cond === null ? 0 : 1) + n.conds.length + n.structs.length;
+	}
+	case "union_type": {
+     if (!isUnionType(node)) {
+	    return 0;
+     }
+     const n :UnionType = node as UnionType;
+		return  + n.candidates.length + (n.common_type === null ? 0 : 1) + n.member_candidates.length;
+	}
+	case "range_type": {
+     if (!isRangeType(node)) {
+	    return 0;
+     }
+     const n :RangeType = node as RangeType;
+		return  + (n.base_type === null ? 0 : 1);
+	}
+	case "enum_type": {
+     if (!isEnumType(node)) {
+	    return 0;
+     }
+     const n :EnumType = node as EnumType;
+		return 0;
+	}
+	case "meta_type": {
+     if (!isMetaType(node)) {
+	    return 0;
+     }
+     const n :MetaType = node as MetaType;
+		return 0;
+	}
+	case "optional_type": {
+     if (!isOptionalType(node)) {
+	    return 0;
+     }
+     const n :OptionalType = node as OptionalType;
+		return  + (n.base_type === null ? 0 : 1);
+	}
+	case "generic_type": {
+     if (!isGenericType(node)) {
+	    return 0;
+     }
+     const n :GenericType = node as GenericType;
+		return 0;
+	}
+	case "int_literal": {
+     if (!isIntLiteral(node)) {
+	    return 0;
+     }
+     const n :IntLiteral = node as IntLiteral;
+		return  + (n.expr_type === null ? 0 : 1);
+	}
+	case "bool_literal": {
+     if (!isBoolLiteral(node)) {
+	    return 0;
+     }
+     const n :BoolLiteral = node as BoolLiteral;
+		return  + (n.expr_type === null ? 0 : 1);
+	}
+	case "str_literal": {
+     if (!isStrLiteral(node)) {
+	    return 0;
+     }
+     const n :StrLiteral = node as StrLiteral;
+		return  + (n.expr_type === null ? 0 : 1);
+	}
+	case "regex_literal": {
+     if (!isRegexLiteral(node)) {
+	    return 0;
+     }
+     const n :RegexLiteral = node as RegexLiteral;
+		return  + (n.expr_type === null ? 0 : 1);
+	}
+	case "char_literal": {
+     if (!isCharLiteral(node)) {
+	    return 0;
+     }
+     const n :CharLiteral = node as CharLiteral;
+		return  + (n.expr_type === null ? 0 : 1);
+	}
+	case "type_literal": {
+     if (!isTypeLiteral(node)) {
+	    return 0;
+     }
+     const n :TypeLiteral = node as TypeLiteral;
+		return  + (n.expr_type === null ? 0 : 1) + (n.type_literal === null ? 0 : 1);
+	}
+	case "special_literal": {
+     if (!isSpecialLiteral(node)) {
+	    return 0;
+     }
+     const n :SpecialLiteral = node as SpecialLiteral;
+		return  + (n.expr_type === null ? 0 : 1);
+	}
+	case "field": {
+     if (!isField(node)) {
+	    return 0;
+     }
+     const n :Field = node as Field;
+		return  + (n.ident === null ? 0 : 1) + (n.field_type === null ? 0 : 1) + (n.arguments === null ? 0 : 1);
+	}
+	case "format": {
+     if (!isFormat(node)) {
+	    return 0;
+     }
+     const n :Format = node as Format;
+		return  + (n.ident === null ? 0 : 1) + (n.body === null ? 0 : 1);
+	}
+	case "state": {
+     if (!isState(node)) {
+	    return 0;
+     }
+     const n :State = node as State;
+		return  + (n.ident === null ? 0 : 1) + (n.body === null ? 0 : 1);
+	}
+	case "enum": {
+     if (!isEnum(node)) {
+	    return 0;
+     }
+     const n :Enum = node as Enum;
+		return  + (n.ident === null ? 0 : 1) + (n.base_type === null ? 0 : 1) + n.members.length + (n.enum_type === null ? 0 : 1);
+	}
+	case "enum_member": {
+     if (!isEnumMember(node)) {
+	    return 0;
+     }
+     const n :EnumMember = node as EnumMember;
+		return  + (n.ident === null ? 0 : 1) + (n.raw_expr === null ? 0 : 1) + (n.value === null ? 0 : 1) + (n.str_literal === null ? 0 : 1);
+	}
+	case "function": {
+     if (!isFunction(node)) {
+	    return 0;
+     }
+     const n :Function = node as Function;
+		return  + (n.ident === null ? 0 : 1) + n.parameters.length + (n.return_type === null ? 0 : 1) + (n.body === null ? 0 : 1) + (n.func_type === null ? 0 : 1);
+	}
+	}
+	return 0;
+}
+
 export type VisitFn<T> = (f: VisitFn<T>, arg: T) => void|undefined|boolean;
 
 // sync version

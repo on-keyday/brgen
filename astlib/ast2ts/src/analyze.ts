@@ -113,7 +113,8 @@ export const typeToString = (type :ast2ts.Type|null|undefined) :string => {
 export const analyzeHover = async (prevNode :ast2ts.Node, pos :number) =>{
     let found :any;
     console.time("walk hover");
-    await ast2ts.walkAsync(prevNode,async(f,node)=>{
+    const promises = [] as Promise<void>[];
+    const prom = ast2ts.walkAsync(prevNode,async(f,node)=>{
         if(found!==undefined){
             return false;
         }
@@ -179,7 +180,9 @@ export const analyzeHover = async (prevNode :ast2ts.Node, pos :number) =>{
             }
             console.log(`hit: ${node.node_type} ${JSON.stringify(node.loc)}`)
         }
-        await ast2ts.walkAsync(node,f);
+        if(ast2ts.getChildCount(node)!==0){
+            promises.push(ast2ts.walkAsync(node,f));
+        }
         if(ast2ts.isMember(node)){
             console.log("walked: "+node.node_type);
             if(node.ident!=null){
@@ -194,6 +197,11 @@ export const analyzeHover = async (prevNode :ast2ts.Node, pos :number) =>{
             console.log("walked: "+node.node_type)
         }
     });
+    promises.push(prom);
+    while(promises.length > 0&&found===undefined){
+        await Promise.all(promises);
+        promises.length = 0;
+    }
     console.timeEnd("walk hover");
     if(found === null) {
         return null;
@@ -633,12 +641,15 @@ export const analyzeSourceCode  = async (prevSemanticTokens :SemTokensStub|null,
     }
     const prog = prog_;
     console.time("walk ast");
-    await ast2ts.walkAsync(prog,async(f,node)=>{
+    const promises = [] as Promise<void>[];
+    const prom = ast2ts.walkAsync(prog,async(f,node)=>{
         if(node.loc.file!=1) {
             console.log("prevent file boundary: "+node.loc.file)
             return; // skip other files
         }
-        await ast2ts.walkAsync(node,f);
+        if(ast2ts.getChildCount(node)!=0){
+            promises.push(ast2ts.walkAsync(node,f));
+        }
         if(ast2ts.isIdent(node)){
             const line = node.loc.line-1;
             const col = node.loc.col-1;
@@ -727,6 +738,11 @@ export const analyzeSourceCode  = async (prevSemanticTokens :SemTokensStub|null,
         }
         return true
     });
+    promises.push(prom);
+    while(promises.length > 0){
+        await Promise.all(promises);
+        promises.length = 0;
+    }
     console.timeEnd("walk ast");
     return generateSemanticTokens(locList);
 };

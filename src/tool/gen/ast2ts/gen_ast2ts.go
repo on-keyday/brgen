@@ -349,6 +349,45 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("	return root;\n")
 	w.Printf("}\n\n")
 
+	w.Printf("// get direct children count\n")
+	w.Printf("export function getChildCount(node: Node): number {\n")
+	w.Printf("	switch (node.node_type) {\n")
+	for _, def := range defs.Defs {
+		switch d := def.(type) {
+		case *gen.Struct:
+			if len(d.Implements) == 0 {
+				continue
+			}
+			w.Printf("	case %q: {\n", d.NodeType)
+			strLen := ""
+			w.Printf("     if (!is%s(node)) {\n", d.Name)
+			w.Printf("	    return 0;\n")
+			w.Printf("     }\n")
+			w.Printf("     const n :%s = node as %s;\n", d.Name, d.Name)
+			for _, field := range d.Fields {
+				if field.Type.Name == "Scope" {
+					continue
+				}
+				if field.Type.IsWeak {
+					continue
+				}
+				if field.Type.IsArray {
+					strLen += " + n." + field.Name + ".length"
+				} else if field.Type.IsPtr || field.Type.IsInterface {
+					strLen += " + (n." + field.Name + " === null ? 0 : 1)"
+				}
+			}
+			if strLen == "" {
+				strLen = "0"
+			}
+			w.Printf("		return %v;\n", strLen)
+			w.Printf("	}\n")
+		}
+	}
+	w.Printf("	}\n")
+	w.Printf("	return 0;\n")
+	w.Printf("}\n\n")
+
 	genWalk := func(handleSignle func(elm string) string) {
 		w.Printf("	switch (node.node_type) {\n")
 		for _, def := range defs.Defs {
