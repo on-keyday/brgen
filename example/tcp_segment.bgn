@@ -38,6 +38,7 @@ enum TCPOptionKind:
     SACK_PERMITTED = 4
     SACK = 5
     TIMESTAMP = 8
+    MPTCP = 30
 
 
 format TCPOption:

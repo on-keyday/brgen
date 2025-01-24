@@ -1,0 +1,172 @@
+config.url = "https://www.rfc-editor.org/rfc/rfc8684.html"
+
+config.url = "https://www.rfc-editor.org/rfc/rfc8684.html#name-mptcp-option-subtypes"
+enum SubType:
+    :u4
+    MP_CAPABLE = 0
+    MP_JOIN = 1
+    DSS = 2
+    ADD_ADDR = 3
+    REMOVE_ADDR = 4
+    MP_PRIO = 5
+    MP_FAIL = 6
+    MP_FASTCLOSE = 7
+    MP_TCP_RST = 8
+    MP_EXPERIMENTAL = 15
+
+
+format MpJoinSyn:
+    reserved :u3
+    b :u1
+    address_id :u8
+    receiver_token :u32
+    sender_random :u32
+
+format MpJoinSynAck:
+    reserved :u3
+    b :u1
+    address_id :u8
+    sender_truncated_hmac :[8]u8
+    sender_random :u32
+
+format MpJoinAck:
+    reserved :u12
+    sender_truncated_hmac :[20]u8
+
+config.url = "https://www.rfc-editor.org/rfc/rfc8684.html#name-mptcp-operation-and-data-tr"
+
+state MPTCPState:
+    checksum_enabled :bool
+
+mptcp_state :MPTCPState
+
+format MpDSS:
+    reserved :u7
+    fin :u1
+    seq_num_is_8octets :u1
+    dsn_ssn_dl_chksum_present :u1
+    data_ack_is_8octets :u1
+    data_ack_present :u1
+    if data_ack_present == 1:
+        if data_ack_is_8octets == 1:
+            data_ack :u64
+        else:
+            data_ack :u32
+    if seq_num_is_8octets == 1:
+        subflow_seq_num :u64
+    else:
+        subflow_seq_num :u32
+    if dsn_ssn_dl_chksum_present == 1:
+        subflow_seq_num :u32
+        data_level_length :u16
+        if mptcp_state.checksum_enabled:
+            checksum :u16
+
+format DSSPseudoHeader:
+    data_seq_num :u64
+    subflow_seq_num :u32
+    data_level_length :u16
+    zeros :u16(0)
+
+format MpPrio:
+    reserved :u3
+    b :u1
+
+format MpAddressAdd:
+    reserved :u3
+    e :u1
+    addr_id :u8
+    optionLength ::= input.offset + input.remain # exclude kind and length field
+    hmacLen ::= e == 0 ? 8 : 0
+    optionLength >= u64(hmacLen)
+    addrPortLen ::= optionLength - u64(hmacLen)
+    match addrPortLen:
+        4:
+            address :[4]u8
+        6:
+            address :[4]u8
+            port :u16
+        16:
+            address :[16]u8
+        18:
+            address :[16]u8
+            port :u16
+        .. => error("Invalid address length", addrPortLen)
+    if e == 0:
+        hmac :[8]u8
+
+format MpAddressRemove:
+    reserved :u4
+    addr_id :[..]u8
+
+format MpFastClose:
+    reserved :u12
+    option_receiver_key :u64
+
+enum MpResetReason:
+    :u8
+    unspecified_error
+    mptcp_specific_error
+    lack_of_resources
+    administratively_prohibited
+    too_much_outstanding_data
+    unacceptable_performance
+    middlebox_interference
+
+format MpTcpRst:
+    u :u1
+    v :u1
+    w :u1
+    is_transient :u1
+    reason :u8
+
+format MpFail:
+    reserved :u12
+    data_sequence_number :u64
+
+
+format MpCapable:
+    version :u4
+    checksum_required :u1
+    extensibility :u1(0)
+    no_more_subflow :u1
+    d :u1
+    e :u1
+    f :u1
+    g :u1
+    h :u1
+    optionLength ::= input.offset + input.remain # exclude kind and length field
+    if optionLength > 2:
+        option_sender_key :[8]u8
+        if optionLength > 10:
+            option_receiver_key :[8]u8
+    data_level_length :u16
+    if checksum_required == 1:
+        checksum :u16
+
+
+format MpOption:
+    subtype :SubType
+    match subtype:
+        SubType.MP_CAPABLE:
+            mp_capable :MpCapable
+        SubType.MP_JOIN:
+            mp_join :MpJoinSyn
+        SubType.DSS:
+            dss :MpDSS
+        SubType.ADD_ADDR:
+            add_addr :MpAddressAdd
+        SubType.REMOVE_ADDR:
+            remove_addr :MpAddressRemove
+        SubType.MP_PRIO:
+            mp_prio :MpPrio
+        SubType.MP_FAIL:
+            mp_fail :MpFail
+        SubType.MP_FASTCLOSE:
+            mp_fastclose :MpFastClose
+        SubType.MP_TCP_RST:
+            mp_tcp_rst :MpTcpRst
+        ..:
+            reserved1: u4
+            reserved2 :[..]u8
+
