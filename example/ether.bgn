@@ -34,7 +34,7 @@ format EthernetFrame:
         vlan_tag :u16
         ether_type2 :u16
     len ::= available(ether_type2) ? ether_type2 : ether_type
-    len < 0x5dc || len >= 0x600
+    len <= 0x5dc || len >= 0x600
     if len >= 0x600:
         data :[..]u8
     else:

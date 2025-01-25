@@ -1,0 +1,184 @@
+
+config.url = "https://datatracker.ietf.org/doc/html/rfc5340#section-2.8"
+
+
+format OSPFHeader:
+    version :u8(3)
+    type :u8
+    packet_length :u16
+    router_id :u32
+    area_id :u32
+    check_sum :u16
+    instance_id :u8
+    zero :u8(0)
+
+
+format HelloPacket:
+    interface_id :u32
+    rtr_priority :u8
+    options :u8
+    hello_interval :u16
+    router_dead_interval :u16
+    designated_router :u32
+    backup_designated_router :u32
+    neighbors :[..]u32
+
+format DatabaseDescriptionPacket:
+    reserved :u8(0)
+    options :Option
+    interface_mtu :u16
+    reserved2 :u8(0)
+    reserved3 :u5(0)
+    init :u1
+    more :u1
+    master :u1
+    dd_sequence_number :u32
+    lsa_headers :[..]LSAHeader
+
+format OSPFLinkStateRequestPacket:
+    reserved :u8(0)
+    link_state_type :u16
+    link_state_id :u32
+    advertising_router :[..]u32
+
+format OSPFLinkStateUpdatePacket:
+    num_lsa :u32
+    lsa_headers :[num_lsa]LSAHeader
+
+format OSPFLinkStateAcknowledgementPacket:
+    lsa_headers :[..]LSAHeader
+
+format PrefixOptions:
+    reserved :u3(0)
+    dn :u1
+    propagate: u1
+    multicast :u1
+    local_address :u1
+    no_unicast :u1
+
+enum Scoping:
+    :u2
+    link_local = 0
+    area_local = 1
+    as_local = 2
+    reserved = 3
+
+enum LSAFunctionCode:
+    :u16
+    router_lsa = 0x2001
+    network_lsa = 0x2002
+    inter_area_prefix_lsa = 0x2003
+    inter_area_router_lsa = 0x2004
+    as_external_lsa = 0x4005
+    nssa_lsa = 0x2007
+    link_lsa = 0x0008
+    intra_area_prefix_lsa = 0x2009
+    intra_area_router_lsa = 0x200a
+
+format LSAType:
+    understand :u1
+    scoping :Scoping
+    code :u13
+
+format LSAHeader:
+    ls_age :u16
+    ls_type :LSAFunctionCode
+    link_state_id :u32
+    advertising_router :u32
+    ls_sequence_number :u32
+    ls_checksum :u16
+    length :u16
+    length >= 20
+
+format Option:
+    reserved :u16(0)
+    ospfv2_compat :u2
+    DC :u1
+    R :u1
+    N :u1
+    x :u1(0)
+    external :u1
+    v6 :u1
+
+format RouterInfo:
+    type :u8
+    reserved :u8(0)
+    metric :u16
+    interface_id :u32
+    neighbor_interface_id :u32
+    neighbor_router_id :u32
+
+format RouterLSA:
+    reserved :u3
+    nt :u1
+    x :u1
+    v: u1
+    e :u1
+    b :u1
+    options :Option
+    link_info :[..]RouterInfo
+
+format NetworkLSA:
+    reserved :u8(0)
+    options :Option
+    attached_routers :[..]u32
+
+format AddressPrefix:
+    prefix_len :u8
+    options :PrefixOptions
+    reserved2 :u16(0)
+    prefix :[prefix_len]u8
+
+
+format InterAreaPrefixLSA:
+    reserved :u8(0)
+    metric :u24
+    prefix :AddressPrefix
+    
+format InterAreaRouterLSA:
+    reserved :u8(0)
+    option :Option
+    reserved2 :u8(0)
+    metric :u24
+    dest_router_id :u32
+
+format ASExternalLSA:
+    reserved :u5(0)
+    external :u1
+    has_forwarding_address :u1
+    has_external_route_tag :u1
+    metric :u24
+    prefix_len :u8
+    prefix_options :PrefixOptions
+    referenced_ls_type :u16
+    if has_forwarding_address == 1:
+        forwarding_address :[16]u8
+    if has_external_route_tag == 1:
+        external_route_tag :u32
+    if referenced_ls_type != 0:
+        referenced_link_state_id :u32
+
+format LinkLSA:
+    rtr_priority :u8
+    options :Option
+    link_local_interface_address :[16]u8
+    num_prefixes :u16
+    prefixes :[num_prefixes]AddressPrefix
+
+format IntraAreaPrefixLSA:
+    num_prefixes :u16
+    referenced_ls_type :u16
+    referenced_link_state_id :u32
+    prefixes :[num_prefixes]AddressPrefix
+
+format LSA:
+    lsa_header :LSAHeader
+    match lsa_header.ls_type:
+        LSAFunctionCode.router_lsa => router_lsa :RouterLSA(input = input.subrange(lsa_header.length - 20))
+        LSAFunctionCode.network_lsa => network_lsa :NetworkLSA(input = input.subrange(lsa_header.length - 20))
+        LSAFunctionCode.inter_area_prefix_lsa => inter_area_prefix_lsa :InterAreaPrefixLSA(input = input.subrange(lsa_header.length - 20))
+        LSAFunctionCode.inter_area_router_lsa => inter_area_router_lsa :InterAreaRouterLSA(input = input.subrange(lsa_header.length - 20))
+        LSAFunctionCode.as_external_lsa => as_external_lsa :ASExternalLSA(input = input.subrange(lsa_header.length - 20))
+        LSAFunctionCode.link_lsa => link_lsa :LinkLSA(input = input.subrange(lsa_header.length - 20))
+        LSAFunctionCode.intra_area_prefix_lsa => intra_area_prefix_lsa :IntraAreaPrefixLSA(input = input.subrange(lsa_header.length - 20))
+        .. => data :[lsa_header.length - 20]u8

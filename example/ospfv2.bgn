@@ -1,4 +1,4 @@
-
+config.url = "https://datatracker.ietf.org/doc/html/rfc2328#appendix-A.4.1"
 format AuthData:
     reserved :u16(0)
     key_id :u8
@@ -6,7 +6,7 @@ format AuthData:
     crypto_seq_number :u32
 
 format OSPFHeader:
-    version :u8
+    version :u8(2)
     type :u8
     packet_length :u16
     router_id :u32
@@ -59,12 +59,13 @@ format LinkStateAcknowledgement:
 format LSAHeader:
     ls_age :u16
     options :Options
-    ls_type :u8
+    ls_type :LSAType
     link_state_id :u32
     advertising_router :u32
     ls_sequence_number :u32
     ls_checksum :u16
     length :u16
+    length >= 20
 
 format RouterLSA:
     reserved1 :u5(0)
@@ -111,3 +112,21 @@ format ASRouter:
     metric :u24
     forwarding_address :u32
     external_router_tag :u32
+
+enum LSAType:
+    :u8
+    RouterLSA = 1
+    NetworkLSA = 2
+    SummaryLSA_IP = 3
+    SummaryLSA_ASBR = 4
+    ASExternalLSA = 5
+
+format LSA:
+    header :LSAHeader
+    match header.ls_type:
+        LSAType.RouterLSA => router_lsa :RouterLSA(input = input.subrange(header.length - 20))
+        LSAType.NetworkLSA => network_lsa :NetworkLSA(input = input.subrange(header.length - 20))
+        LSAType.SummaryLSA_IP => summary_lsa_ip :SummaryLSA(input = input.subrange(header.length - 20))
+        LSAType.SummaryLSA_ASBR => summary_lsa_asbr :SummaryLSA(input = input.subrange(header.length - 20))
+        LSAType.ASExternalLSA => as_external_lsa :ASExternalLSA(input = input.subrange(header.length - 20))
+        .. => data :[header.length - 20]u8
