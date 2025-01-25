@@ -107,6 +107,7 @@ export interface Cpp2Option extends CallOption {
 
 export interface Rust2Option extends CallOption {
     use_async :boolean
+    use_copy_on_write_vec :boolean
 }
 
 export type LanguageToOptionType = {

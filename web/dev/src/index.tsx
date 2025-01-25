@@ -714,6 +714,10 @@ const setCommon = (m: Map<string, InputListElement>) => {
         "type": "checkbox",
         "value": false,
     });
+    rust2.set(ConfigKey.RUST2_USE_COPY_ON_WRITE_VEC, {
+        "type": "checkbox",
+        "value": false,
+    });
     setCommon(rust2);
 
     commonUI.config.set(Language.RUST_2, languageSpecificConfig(rust2, ConfigKey.COMMON_FILE_NAME, (change) => {

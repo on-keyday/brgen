@@ -233,6 +233,15 @@ const handleBinaryModuleBased = async (ui :UIModel, s :JobResult,lang :Language,
     if(updateTracer.editorAlreadyUpdated(s)) {
         return;
     }
+    if(result.stdout === undefined || result.stdout === "") {
+        if(result.stderr!==undefined&&result.stderr!==""){
+            ui.setGenerated(result.stderr,"text/plain");
+        }
+        else{
+            ui.setGenerated("(no output. maybe generator is crashed)","text/plain");
+        }
+        return;
+    }
     return handleLanguage(ui,result,generator,lang,view_lang,opt);
 }
 
@@ -243,8 +252,10 @@ export const handleCpp2 = async (ui :UIModel, s :JobResult) => {
 
 export const handleRust2 = async (ui :UIModel, s :JobResult) => {
     const useAsync = ui.getLanguageConfig(Language.RUST_2,ConfigKey.RUST2_USE_ASYNC);
+    const useCopyOnWrite = ui.getLanguageConfig(Language.RUST_2,ConfigKey.RUST2_USE_COPY_ON_WRITE_VEC);
     const option :Rust2Option = {
         use_async: useAsync === true,
+        use_copy_on_write_vec: useCopyOnWrite === true,
     };
     return handleBinaryModuleBased(ui,s,Language.RUST_2,"rust",caller.getRust2Code,option);
 }

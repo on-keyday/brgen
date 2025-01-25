@@ -34,4 +34,5 @@ export const enum ConfigKey {
 
     BM_PRINT_INSTRUCTION = "print_instruction",
     RUST2_USE_ASYNC = "use_async",
+    RUST2_USE_COPY_ON_WRITE_VEC = "copy_on_write_vec",
 }

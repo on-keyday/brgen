@@ -150,6 +150,9 @@ const argConverter = Object.freeze({
         if(opt.use_async){
             args.push("--async");
         }
+        if(opt.use_copy_on_write_vec){
+            args.push("--copy-on-write");
+        }
         return args;
     },
 })
