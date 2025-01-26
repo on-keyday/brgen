@@ -401,11 +401,14 @@ namespace brgen::ast::tool {
             if (auto io_op = ast::as<ast::IOOperation>(expr)) {
                 if (io_op->method == ast::IOMethod::config_endian_big ||
                     io_op->method == ast::IOMethod::config_bit_order_msb) {
-                    return make_result<EResultType::boolean>(false);
+                    return make_result<EResultType::integer>(0);
                 }
                 if (io_op->method == ast::IOMethod::config_endian_little ||
                     io_op->method == ast::IOMethod::config_bit_order_lsb) {
-                    return make_result<EResultType::boolean>(true);
+                    return make_result<EResultType::integer>(1);
+                }
+                if (io_op->method == ast::IOMethod::config_endian_native) {
+                    return make_result<EResultType::integer>(2);
                 }
             }
             return unexpect(LocError{expr->loc, "not supported"});
