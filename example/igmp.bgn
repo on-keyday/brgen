@@ -1,23 +1,84 @@
 
+config.url = "https://datatracker.ietf.org/doc/html/rfc3376#section-4"
+config.url = "https://datatracker.ietf.org/doc/html/rfc2236"
+config.url = "https://datatracker.ietf.org/doc/html/rfc1112"
+
 enum IGMPType:
     :u8
     query = 0x11
-    report = 0x12
-    leave = 0x13
+    v1_membership_report = 0x12
+    v2_membership_report = 0x16
+    v3_membership_report = 0x22
+    v2_leave_group = 0x17
 
-
+# Note that IGMP messages may be longer than 8 octets, especially
+# future backwards-compatible versions of IGMP
+# As long as the Type is
+# one that is recognized, an IGMPv2 implementation MUST ignore anything
+# past the first 8 octets while processing the packet.  However, the
+# IGMP checksum is always computed over the whole IP payload, not just
+# over the first 8 octets.
 format IGMPPacket:
     type :IGMPType
-    if type == IGMPType.query:
-        max_response_time :u8
-        checksum :u16
-        group :u32
-        reserved :u4
-        suppress_router_processing :u1
-        query_interval_code :u3
-    else:
-        reserved :u8
-        checksum :u16
-        group :u32
+    match type:
+        IGMPType.query:
+            query :MembershipQuery
+        IGMPType.v1_membership_report:
+            v1_membership_report :V1MembershipReport
+        IGMPType.v2_membership_report:
+            v2_membership_report :V2MembershipReport
+        IGMPType.v2_leave_group:
+            v2_leave_group :V2LeaveGroup
+        IGMPType.v3_membership_report:
+            v3_membership_report :Version3MembershipReportMessage
+        # ignore unknown types for compatibility
 
+format V1MembershipReport: 
+    unused :u8
+    checksum :u16
+    group_address :[4]u8
+
+format V2MembershipReport:
+    max_resp_time :u8
+    check_sum :u16
+    group_address :[4]u8
+
+format V2LeaveGroup:
+    max_resp_time :u8
+    check_sum :u16
+    group_address :[4]u8
+
+format MembershipQuery:
+    max_resp_time :u8
+    checksum :u16
+    group_address :[4]u8
+    reserved :u4
+    s :u1
+    qrv :u3
+    qqic :u8
+    num_sources :u16
+    sources :[num_sources][4]u8
     
+
+format OneByteFloat:
+    flag :u1(1)
+    exponent :u3
+    mantissa :u4
+
+fn calcMaxResCodeFloat(f :OneByteFloat) -> u32:
+    return (u32(f.mantissa) | 0x10) << f.exponent + 3
+
+format GroupRecord:
+    record_type :u8
+    aux_data_len :u8
+    num_sources :u16
+    multicast_address :[4]u8
+    sources :[num_sources][4]u8
+    aux_data :[aux_data_len]u8
+
+format Version3MembershipReportMessage:
+    reserved :u8
+    checksum :u16
+    reserved2 :u16
+    num_group_records :u16
+    group_records :[num_group_records]GroupRecord
