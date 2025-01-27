@@ -46,6 +46,25 @@ IFLA_IFNAME ::= 3
 IFLA_LINKINFO ::= 18
 IFLA_MASTER ::= 16
 
+IFF_UP ::= u16(1)
+IFF_BROADCAST ::= u16(2)
+IFF_DEBUG ::= u16(4)
+IFF_LOOPBACK ::= u16(8)
+IFF_POINTOPOINT ::= u16(0x10)
+IFF_NOTRAILERS ::= u16(0x20)
+IFF_RUNNING ::= u16(0x40)
+IFF_NOARP ::= u16(0x80)
+IFF_PROMISC ::= u16(0x100)
+
+# not supported flags in linux
+IFF_ALLMULTI ::= u16(0x200)
+IFF_MASTER ::= u16(0x400)
+IFF_SLAVE ::= u16(0x800)
+IFF_MULTICAST ::= u16(0x1000)
+IFF_PORTSEL ::= u16(0x2000)
+IFF_AUTOMEDIA ::= u16(0x4000)
+IFF_DYNAMIC ::= u16(0x8000)
+
 format NetLinkHeader:
     len :u32
     type :NetLinkType
