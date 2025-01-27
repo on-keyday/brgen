@@ -2,8 +2,11 @@
 input.endian = config.endian.native
 config.url = "https://www.man7.org/linux/man-pages/man7/netlink.7.html"
 config.url = "https://www.man7.org/linux/man-pages/man7/rtnetlink.7.html"
+config.url = "https://github.com/torvalds/linux/blob/9c5968db9e625019a0ee5226c7eebef5519d366a/net/core/rtnetlink.c#L3936"
 
 AF_NETLINK ::= u16(16)
+
+ARPHRD_ETHER ::= u16(1)
 
 AF_INET ::= u16(2)
 AF_INET6 ::= u16(10)
