@@ -9,7 +9,7 @@ AF_INET ::= u16(2)
 AF_INET6 ::= u16(10)
 
 NLM_F_REQUEST ::= u16(1)
-NLM_F_CREATE ::= u16(2)
+NLM_F_CREATE ::= u16(0x400)
 NLM_F_EXCL ::= u16(0x200)
 NLM_F_ACK ::= u16(4)
 
