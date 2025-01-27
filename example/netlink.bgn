@@ -8,7 +8,6 @@ NLM_F_CREATE ::= 2
 NLM_F_EXCL ::= 0x200
 NLM_F_ACK ::= 4
 
-IFLA_IFNAME ::= 3
 
 enum NetLinkType:
     :u16
@@ -33,11 +32,15 @@ enum NetLinkType:
     RTM_DELROUTE = 33
     RTM_GETROUTE = 34
 
-    
+
+IFLA_INFO_KIND ::= 1
+IFLA_IFNAME ::= 3
+IFLA_LINKINFO ::= 18
+IFLA_MASTER ::= 16
 
 format NetLinkHeader:
     len :u32
-    type :u16
+    type :NetLinkType
     flags :u16
     seq :u32
     pid :u32
