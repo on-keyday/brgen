@@ -86,34 +86,43 @@ format NetLinkError:
     hdr :NetLinkHeader
     error_content :[..]u8
 
-format NetLinkRtAttr:
+format NetLinkRtAttrHeader:
     len :u16
     type :u16
-    len >= 4 # sizeof header
-    data :[len - 4]u8
+
+format NetLinkRtAttr:
+    hdr :NetLinkRtAttrHeader
+    hdr.len >= 4 # sizeof header
+    data :[hdr.len - 4]u8
     align :[..]u8(input.align = 32) # Align to 32-bit boundary
 
 # struct ifinfomsg
-format NetLinkIfInfoMessage:
+format NetLinkIfInfoMessageHeader:
     ifi_family :u8
     padding1 :u8
     ifi_type :u16
     ifi_ifindex :u32
     ifi_flags :u32
     ifi_change :u32
+
+format NetLinkIfInfoMessage:
+    hdr :NetLinkIfInfoMessageHeader
     attrs :[..]NetLinkRtAttr
 
 # struct ifaddrmsg
-format NewLinkIfAddrMessage:
+format NewLinkIfAddrMessageHeader:
     ifa_family :u8
     ifa_prefix_len :u8
     ifa_flags :u8
     ifa_scope :u8
     ifa_index :u32
+
+format NewLinkIfAddrMessage:
+    hdr :NewLinkIfAddrMessageHeader
     attrs :[..]NetLinkRtAttr
 
 # struct rtmsg 
-format NetLinkRouteMessage:
+format NetLinkRouteMessageHeader:
     rtm_family :u8
     rtm_dst_len :u8
     rtm_src_len :u8
@@ -123,6 +132,9 @@ format NetLinkRouteMessage:
     rtm_scope :u8
     rtm_type :u8
     rtm_flags :u32
+
+format NetLinkRouteMessage:
+    hdr :NetLinkRouteMessageHeader
     attrs :[..]NetLinkRtAttr
 
 # struct rtnexthop
