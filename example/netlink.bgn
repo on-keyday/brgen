@@ -63,6 +63,8 @@ format NetLinkMessage:
             ifi :NetLinkIfInfoMessage(input = input.subrange(hdr.len - 16))
         NetLinkType.RTM_GETLINK:
             ifi :NetLinkIfInfoMessage(input = input.subrange(hdr.len - 16))
+        NetLinkType.RTM_DELLINK:
+            ifi :NetLinkIfInfoMessage(input = input.subrange(hdr.len - 16))
         NetLinkType.RTM_NEWADDR:
             ifa :NewLinkIfAddrMessage(input = input.subrange(hdr.len - 16)) 
         NetLinkType.RTM_DELADDR:
