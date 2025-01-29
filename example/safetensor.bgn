@@ -1,0 +1,63 @@
+
+input.endian = config.endian.little
+
+config.url = "https://github.com/huggingface/safetensors/blob/main/safetensors/src/tensor.rs#L510"
+
+format SafeTensorHeader:
+    header_len :ul64 
+    json_header :[header_len]u8
+
+format SafeTensor:
+    header :SafeTensorHeader
+    data :[..]u8 
+
+# json serialized but this not supports json parsing
+state TensorInfo:
+    dtype :DType
+    shape :[]u64
+    data_offset_begin :u64
+    data_offset_end :u64
+
+
+fn getTensorSize(tensor: TensorInfo) -> u64:
+    perElem := getByteSize(tensor.dtype)
+    total := u64(1)
+    for dim in tensor.shape:
+        total *= dim
+    return total * u64(perElem)
+
+enum DType:
+    BOOL
+    U8
+    I8
+    F8_E5M2
+    F8_E4M3
+    I16
+    U16
+    F16
+    BF16
+    I32
+    U32
+    F32
+    F64
+    I64 
+    U64 
+
+fn getByteSize(dtype: DType) -> u8:
+    return match dtype:
+        DType.BOOL => 1
+        DType.U8 => 1
+        DType.I8 => 1
+        DType.F8_E5M2 => 1
+        DType.F8_E4M3 => 1
+        DType.I16 => 2
+        DType.U16 => 2
+        DType.F16 => 2
+        DType.BF16 => 2
+        DType.I32 => 4
+        DType.U32 => 4
+        DType.F32 => 4
+        DType.F64 => 8
+        DType.I64 => 8
+        DType.U64 => 8
+    

@@ -948,6 +948,7 @@ namespace brgen::middle {
                     continue;  // not typed yet
                 }
                 int_type_fitting(call->arguments[i]->expr_type, type->parameters[i]);
+                typing_object(type->parameters[i]);
                 if (!equal_type(call->arguments[i]->expr_type, type->parameters[i])) {
                     report_not_equal_type(call->arguments[i]->loc, call->arguments[i]->expr_type, type->parameters[i]);
                 }
