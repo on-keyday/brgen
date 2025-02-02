@@ -6,10 +6,7 @@ use std::{
     sync::Arc,
 };
 
-use rand::{
-    self,
-    distributions::{Alphanumeric, DistString},
-};
+use rand::{self, distr::SampleString};
 
 use ast2rust::ast;
 use serde::{Deserialize, Serialize};
@@ -290,8 +287,7 @@ impl TestScheduler {
     }
 
     fn gen_random() -> String {
-        let mut rng = rand::thread_rng();
-        Alphanumeric.sample_string(&mut rng, 32)
+        rand::distr::Alphanumeric.sample_string(&mut rand::rng(), 32)
     }
 
     fn get_tmp_dir<'a>(&'a mut self) -> PathBuf {

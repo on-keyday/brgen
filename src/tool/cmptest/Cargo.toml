@@ -11,6 +11,6 @@ serde = { version="1.0.200" ,features = ["derive"]}
 serde_json = "1.0.116"
 ast2rust = {path ="../../../astlib/ast2rust/core" }
 regex = "1.10.4"
-rand = "0.8.5"
+rand = "0.9.0"
 tokio = { version = "1.37.0", features = ["full"] }
 colored = "3.0.0"
