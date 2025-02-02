@@ -20,7 +20,7 @@ import {
 
 import { Range, TextDocument } from 'vscode-languageserver-textdocument';
 
-import {execFile} from "child_process";
+import {execFile, spawn} from "child_process";
 import * as url from "url";
 import { ast2ts,analyze } from "ast2ts";
 
@@ -112,25 +112,44 @@ connection.onInitialized(() => {
 
 function execSrc2JSON<T>(exe_path :string,command :Array<string>,text :string,isT: (x :any) => x is T) {
     return new Promise<T>((resolve,reject)=>{
-        const ch = execFile(exe_path,command ,(err,stdout,stderr)=>{
-            if(err&&err?.code!==1){
-                reject(err);
+        const ch = spawn(exe_path,command);
+        ch.on("error",(err)=>{reject(err)});
+        ch.on("exit",(code,signal)=>{
+            clearTimeout(timeout);
+            if(code!==0&&code !==1 || signal !== null) {
+                reject(new Error(`exit code: ${code} signal: ${signal}`));
                 return;
             }
-            const tokens=JSON.parse(stdout);   
-            console.log(`json: ${JSON.stringify(tokens)}`);
-            if(stderr) {
-                console.log(`stderr: ${stderr}`);
-            }
-            if(!isT(tokens)){
-                reject(new TypeError("not valid file"))
+            try {
+                const tokens=JSON.parse(stdout_data.join(""));
+                console.log(`json: ${JSON.stringify(tokens)}`);
+                if(stderr_data.length>0) {
+                    console.log(`stderr: ${stderr_data.join("")}`);
+                }
+                if(!isT(tokens)){
+                    reject(new TypeError("not valid file"))
+                    return;
+                }
+                resolve(tokens);
+            } catch(e :any) {
+                reject(e);
                 return;
             }
-            resolve(tokens);
+
         });
+        const stdout_data :string[] = [];
+        const stderr_data :string[] = [];
+        ch.stdout.on("data",(data)=>{
+            stdout_data.push(data.toString());
+        });
+        ch.stderr.on("data",(data)=>{
+            stderr_data.push(data.toString());
+        });
+
         ch.stdin?.write(text);
         ch.stdin?.end();
-        setTimeout(()=>{
+     
+        const timeout = setTimeout(()=>{
             if(ch.exitCode===null){
                 ch.kill();
                 reject(new Error("timeout"));
