@@ -11,6 +11,8 @@ ARPHRD_ETHER ::= u16(1)
 AF_INET ::= u16(2)
 AF_INET6 ::= u16(10)
 
+PF_BRIDGE ::= u16(7)
+
 NLM_F_REQUEST ::= u16(1)
 NLM_F_CREATE ::= u16(0x400)
 NLM_F_EXCL ::= u16(0x200)
