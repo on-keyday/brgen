@@ -779,9 +779,11 @@ namespace json2ts {
                         auto native_endian = "((new Uint8Array( Uint16Array.of( 1 ).buffer ))[0] === 1)";
                         w.writeln("if(", native_endian, " === ", endian, ") {");
                         w.indent_writeln(ident, " = new ", class_, "(r.view.buffer, r.offset, ", len, ")");
+                        w.writeln("}");
                         w.writeln("else {");
                         auto new_buffer = "new ArrayBuffer(" + total + ")";
                         w.indent_writeln(ident, " = new ", class_, "(", new_buffer, ")");
+                        w.writeln("}");
                         w.writeln("for (let i = 0; i < ", len, "; i++) {");
                         {
                             auto s = w.indent_scope();
