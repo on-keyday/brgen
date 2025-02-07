@@ -714,7 +714,7 @@ namespace json2ts {
                     auto [base, _] = *ast::tool::lookup_base(err_ident);
                     if (auto f = ast::as<ast::Field>(base->base.lock())) {
                         if (auto fmt = ast::as<ast::Format>(f->belong.lock())) {
-                            auto compare = brgen::nums(fmt->body->struct_type->fixed_tail_size);
+                            auto compare = brgen::nums(fmt->body->struct_type->fixed_tail_size / 8);
                             if (compare != "0") {
                                 w.writeln("if (", diff, " < ", compare, ") {");
                                 {
