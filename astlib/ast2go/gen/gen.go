@@ -350,6 +350,8 @@ func (s *ExprStringer) ExprString(e ast2go.Expr) string {
 		b.WriteString("; return false")
 		b.WriteString(" }())")
 		return b.String()
+	case *ast2go.Paren:
+		return s.ExprString(e.Expr)
 	default:
 		return ""
 	}

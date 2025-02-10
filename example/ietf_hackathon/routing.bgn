@@ -8,10 +8,10 @@ format SegmentRouting:
     lastEntry :u8
     flags :u8
     tag :u16
-    segment_list :[segmentsLeft][16]u8
-    hdrExtLen*8 + 4 >= 16*segmentsLeft
-    remaining ::= hdrExtLen*8+4 - segmentsLeft*16
-    options :[..]SegmentRoutingTLV(input = input.subrange(remaining))
+    segment_list :[lastEntry + 1][16]u8
+    u16(hdrExtLen)*8 >= 16*(u16(lastEntry) + 1)
+    remaining_in_byte ::= u16(hdrExtLen)*8 - (u16(lastEntry) + 1)*16
+    options :[..]SegmentRoutingTLV(input = input.subrange(remaining_in_byte))
 
 format SegmentRoutingTLV:
     type :u8
@@ -175,6 +175,9 @@ format EthernetFrame:
         # peek :u16(input.peek = true)
         data :[len]u8
 
+format TCPFlags:
+    CWR :u1 ECE :u1 URG :u1 ACK :u1 PSH :u1 RST :u1 SYN :u1 FIN :u1
+
 format TCPHeader:
     srcPort :u16
     dstPort :u16
@@ -182,7 +185,7 @@ format TCPHeader:
     ackNum :u32
     dataOffset :u4
     reserved :u4
-    CWR :u1 ECE :u1 URG :u1 ACK :u1 PSH :u1 RST :u1 SYN :u1 FIN :u1
+    flags :TCPFlags
     windowSize :u16
     checksum :u16
     urgentPointer :u16

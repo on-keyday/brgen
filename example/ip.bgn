@@ -78,10 +78,10 @@ format SegmentRouting:
     lastEntry :u8
     flags :u8
     tag :u16
-    segment_list :[segmentsLeft][16]u8
-    hdrExtLen*8 + 4 >= 16*segmentsLeft
-    remaining ::= hdrExtLen*8+4 - segmentsLeft*16
-    options :[..]SegmentRoutingTLV(input = input.subrange(remaining))
+    segment_list :[lastEntry + 1][16]u8
+    u16(hdrExtLen)*8 >= 16*(u16(lastEntry) + 1)
+    remaining_in_byte ::= u16(hdrExtLen)*8 - (u16(lastEntry) + 1)*16
+    options :[..]SegmentRoutingTLV(input = input.subrange(remaining_in_byte))
 
 format SegmentRoutingTLV:
     type :u8
