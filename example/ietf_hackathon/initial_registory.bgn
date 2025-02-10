@@ -1,5 +1,15 @@
 config.url = "https://www.rfc-editor.org/rfc/rfc8986#name-initial-registrations"
 
+enum RegistrationProcedures:
+    :u16
+    reserved = 0x0
+    first_come_first_served_begin = 0x1
+    first_come_first_served_end = 0x7fff
+    private_use_begin = 0x8000
+    private_use_end = 0x87ff
+    reserved2_begin = 0x8800
+    reserved2_end = 0xfffe
+    opaque = 0xffff
 
 enum EndpointBehavior:
     :u16

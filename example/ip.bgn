@@ -52,6 +52,8 @@ enum ProtocolNumber:
     TRUNK_2 = 24
     ICMPV6 = 58
 
+    Ethernet = 143
+
 fn checkSum(data :[]u8) -> u16:
     sum := u32(0)
     for i in data.length / 2:
