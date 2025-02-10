@@ -1,13 +1,20 @@
 
+enum BGPType:
+    :u8
+    open = 1
+    update = 2
+    notification = 3
+    keepalive = 4
+
 format BGPPacket:
     marker :"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"
     length :u16
-    type   :u8
+    type   :BGPType
     match type:
-        1 => data :Open
-        2 => data :Update
-        3 => data :Notification
-        4 => ..
+        BGPType.open => open :Open
+        BGPType.update => update :Update
+        BGPType.notification => notification :Notification
+        BGPType.keepalive => ..
 
 format Open:
     version :u8
@@ -22,11 +29,17 @@ format Option:
     len  :u8
     data :[len]u8
 
+format WithdrawnRoutes:
+    len :u16
+    data :[..]u8(input=input.subrange(len))
+
+format PathAttrs:
+    len :u16
+    data :[..]PathAttribute(input=input.subrange(len))
+
 format Update:
-    withdrawn_len :u16
-    withdrawn :[..]Withdrawn(input=input.subrange(withdrawn_len))
-    pathattr_len :u16
-    pathattr  :[..]u8(input=input.subrange(pathattr_len))
+    withdrawn_routes :WithdrawnRoutes
+    path_attr :PathAttrs
     network_reachability_info      :[..]NetWorkReachabilityInfo
 
 
@@ -48,7 +61,8 @@ format PathAttribute:
         len :u16
     else:
         len :u8
-    data :[len]u8
+    len_tmp ::= len # FIX: len_tmp is temporary used
+    data :[len_tmp]u8
 
 format NetWorkReachabilityInfo:
     prefixlen :u8

@@ -1,0 +1,15 @@
+
+format ServiceChaining:
+    type :u16
+    length :u16
+    service_type :u16
+    flags :u8
+    traffic_type :u8
+    reserved :u16
+
+format OpaqueMetadata:
+    type :u16
+    length :u16
+    opaque_type :u16
+    flags :u8
+    data :[length * 8 + 1]u8

@@ -1,0 +1,6 @@
+
+format MPLS:
+    label :u20
+    tc :u3
+    s :u1
+    ttl :u8

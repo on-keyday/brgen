@@ -50,6 +50,7 @@ enum ProtocolNumber:
     XNS_IDP = 22
     TRUNK_1 = 23
     TRUNK_2 = 24
+    RoutingHeader = 43
     ICMPV6 = 58
 
     Ethernet = 143
@@ -68,6 +69,25 @@ format HopByHopOptionHeader:
     nextHeader :ProtocolNumber 
     hdrExtLen :u8
     options :[..]HopOption(input = input.subrange(hdrExtLen*8+6))
+
+format SegmentRouting:
+    nextHeader :ProtocolNumber
+    hdrExtLen :u8
+    routingType :u8
+    segmentsLeft :u8
+    lastEntry :u8
+    flags :u8
+    tag :u16
+    segment_list :[segmentsLeft][16]u8
+    hdrExtLen*8 + 4 >= 16*segmentsLeft
+    remaining ::= hdrExtLen*8+4 - segmentsLeft*16
+    options :[..]SegmentRoutingTLV(input = input.subrange(remaining))
+
+format SegmentRoutingTLV:
+    type :u8
+    if type !=0:
+        len :u8
+        data :[len]u8
 
 enum HopOptionType:
     :u8
