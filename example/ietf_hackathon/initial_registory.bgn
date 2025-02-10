@@ -1,0 +1,48 @@
+config.url = "https://www.rfc-editor.org/rfc/rfc8986#name-initial-registrations"
+
+
+enum EndpointBehavior:
+    :u16
+    reserved
+    end
+    end_with_psp 
+    end_with_usp
+    end_with_psp_and_usp
+    end_x
+    end_x_with_psp
+    end_x_with_usp
+    end_x_with_psp_and_usp
+    end_t
+    end_t_with_psp
+    end_t_with_usp
+    end_t_with_psp_and_usp
+    unassigned
+    end_b6_encaps
+    end_bm
+    end_dx6
+    end_dx4
+    end_dt6
+    end_dt4
+    end_dt46
+    end_dx2
+    end_dx2v
+    end_dx2u
+    end_dx2m
+    reserved2
+    unassigned2
+    end_b6_encaps_red
+    end_with_usd
+    end_with_psp_and_usd
+    end_with_usp_and_usd
+    end_x_with_usd
+    end_x_with_psp_and_usd
+    end_x_with_usp_and_usd
+    end_x_with_psp_usp_and_usd
+    end_t_with_psp_and_usd
+    end_t_with_usp_and_usd
+    end_t_with_psp_usp_and_usd
+
+    sid_defined_in_rfc8754 = 0x7fff
+    reserved_for_private_use_begin = 0x8000
+    reserved_for_private_use_end = 0xfffe
+    opaque = 0xffff

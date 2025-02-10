@@ -1,0 +1,14 @@
+config.url = "https://www.rfc-editor.org/rfc/rfc8986#name-sid-format"
+state Lengths:
+    F :u16
+    L :u16
+    A :u16
+
+lengths :Lengths
+
+format SID: # msb to lsb
+    lengths.L + lengths.F + lengths.A  <= 128
+    loc :[lengths.L]u1
+    func :[lengths.F]u1
+    args :[lengths.A]u1
+    padding :[128 - lengths.L - lengths.F - lengths.A]u1
