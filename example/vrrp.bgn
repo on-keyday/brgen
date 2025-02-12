@@ -1,0 +1,24 @@
+config.url = "https://tex2e.github.io/rfc-translater/html/rfc9568.html#5-1--VRRP-Packet-Format"
+format VRRPPacket:
+    version :u4
+    type :u4
+    vrid :u8
+    priority :u8
+    addr_count :u8
+    reserved :u4
+    max_advertise_interval :u20
+    checksum :u16
+
+
+format IPv4VrrpPacket:
+    header :VRRPPacket
+    addr :[header.addr_count][4]u8
+
+format IPv6VrrpPacket:
+    header :VRRPPacket
+    addr :[header.addr_count][16]u8
+
+enum VRRPState:
+    INIT 
+    ACTIVE 
+    BACKUP
