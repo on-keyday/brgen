@@ -1,0 +1,15 @@
+config.url = "https://datatracker.ietf.org/doc/html/rfc2453"
+
+format RIPPacket:
+    command :u8
+    version :u8
+    zero :u16
+    entries :[..]RIPEntry
+
+format RIPEntry:
+    addr_family :u16
+    route_tag :u16
+    addr :[4]u8
+    subnet :[4]u8
+    next_hop :[4]u8
+    metric :u32
