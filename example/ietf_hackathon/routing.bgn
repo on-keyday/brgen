@@ -3,16 +3,15 @@ config.go.package = "routing"
 BGP_PORT ::= 179
 
 format SegmentRouting:
-    nextHeader :ProtocolNumber
-    hdrExtLen :u8
+    header :IPv6ExtHeader
     routingType :u8
     segmentsLeft :u8
     lastEntry :u8
     flags :u8
     tag :u16
     segment_list :[lastEntry + 1][16]u8
-    u16(hdrExtLen)*8 >= 16*(u16(lastEntry) + 1)
-    remaining_in_byte ::= u16(hdrExtLen)*8 - (u16(lastEntry) + 1)*16
+    u16(header.hdrExtLen)*8 >= 16*(u16(lastEntry) + 1)
+    remaining_in_byte ::= u16(header.hdrExtLen)*8 - (u16(lastEntry) + 1)*16
     options :[..]SegmentRoutingTLV(input = input.subrange(remaining_in_byte))
 
 format SegmentRoutingTLV:
@@ -20,6 +19,14 @@ format SegmentRoutingTLV:
     if type !=0:
         len :u8
         data :[len]u8
+
+format IPv6ExtHeader:
+    nextHeader :ProtocolNumber 
+    hdrExtLen :u8 
+
+format IPv6ExtCommon:
+    header :IPv6ExtHeader
+    data :[6 + header.hdrExtLen*8]u8
 
 format IPv6Header:
     version :u4 
