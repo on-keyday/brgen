@@ -13,3 +13,57 @@ format RIPEntry:
     subnet :[4]u8
     next_hop :[4]u8
     metric :u32
+
+config.url = "https://www.iana.org/assignments/address-family-numbers/address-family-numbers.xhtml"
+
+enum AddressFamily:
+    :u16
+    Reserved = 0
+    IP = 1
+    IP6 = 2
+    NSAP = 3
+    HDLC = 4
+    BBN1822 = 5
+    IEEE802 = 6
+    E163 = 7
+    E164 = 8
+    F69 = 9
+    X121 = 10
+    IPX = 11
+    Appletalk = 12
+    DecnetIV = 13
+    BanyanVines = 14
+    E164NSAP = 15
+    DNS = 16
+    DistinguishedName = 17
+    ASNumber = 18
+    XTPoIPv4 = 19
+    XTPoIPv6 = 20
+    XTPNativeModeXTP = 21
+    FibreChannelWorldWidePortName = 22
+    FibreChannelWorldWideNodeName = 23
+    GWID = 24
+    AFI = 25
+    MPLS_TP_SESSION_ENDPOINT_IDENTIFIER = 26
+    MPLS_TP_LSP_ENDPOINT_IDENTIFIER = 27
+    MPLS_TP_PSEUDOWIRE_ENDPOINT_IDENTIFIER = 28
+    MT_IP_MULTITOPOLOGY_IPv4 = 29
+    MT_IP_MULTITOPOLOGY_IPv6 = 30
+    BGP_SFC = 31
+    EIGRP_COMMON_SERVICE_FAMILY = 16384
+    EIGRP_IPV4 = 16385
+    EIGRP_IPV6 = 16386
+    LISP_CANONICAL_ADDRESS_FORMAT = 16387
+    BGP_LS = 16388
+    MAC_48_BIT = 16389
+    MAC_64_BIT = 16390
+    OUI = 16391
+    MAC_24 = 16392
+    MAC_40 = 16393
+    IPv6_64 = 16394
+    RBRIDGE_PORT_ID = 16395
+    TRILL_NICKNAME = 16396
+    UUID = 16397
+    Routing_Policy_AFI = 16398
+    MPLS_NAMESPACE = 16399
+    RESERVED = 0xFFFF
