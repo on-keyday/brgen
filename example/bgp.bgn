@@ -37,23 +37,26 @@ format BGPOption:
     len  :u8
     data :[len]u8
 
+format WithdrawnRoute:
+    bits :u16
+    in_byte ::= (bits + 7) / 8
+    prefix :[..]u8(input=input.subrange(in_byte))
+
 format WithdrawnRoutes:
     len :u16
-    data :[..]u8(input=input.subrange(len))
+    data :[..]WithdrawnRoute(input=input.subrange(len))
 
-format PathAttrs:
+format PathAttributes:
     len :u16
     data :[..]PathAttribute(input=input.subrange(len))
 
 format Update:
     withdrawn_routes :WithdrawnRoutes
-    path_attr :PathAttrs
-    network_reachability_info      :[..]NetWorkReachabilityInfo
+    path_attr :PathAttributes
+    if path_attr.len > 0:
+        network_reachability_info      :[..]NetWorkReachabilityInfo
 
 
-format Withdrawn:
-    len :u16
-    data :[len]u8
 
 
 config.url = "https://www.iana.org/assignments/bgp-parameters/bgp-parameters.xhtml#bgp-parameters-1"
@@ -114,8 +117,42 @@ format PathAttribute:
         len :u16
     else:
         len :u8
-    len_tmp ::= len # FIX: len_tmp is temporary used
-    data :[len_tmp]u8
+    len_tmp ::= u16(len) # FIX: len_tmp is temporary used
+    match type.code:
+        AttributeCode.ORIGIN => origin :Origin(input=input.subrange(len_tmp))
+        AttributeCode.AS_PATH => as_path :AsPath(input=input.subrange(len_tmp))
+        AttributeCode.NEXT_HOP => next_hop :[4]u8(input=input.subrange(len_tmp))
+        AttributeCode.MULTI_EXIT_DISC => multi_exit_disc :u32(input=input.subrange(len_tmp))
+        AttributeCode.LOCAL_PREF => local_pref :u32(input=input.subrange(len_tmp))
+        AttributeCode.ATOMIC_AGGREGATE => len_tmp == 0
+        AttributeCode.AGGREGATOR => aggregator :Aggregator(input=input.subrange(len_tmp))
+        .. => data :[len_tmp]u8
+
+enum AsPathSegmentType:
+    :u8
+    AS_SET = 1
+    AS_SEQUENCE = 2
+    AS_CONFED_SEQUENCE = 3
+    AS_CONFED_SET = 4
+
+
+format Aggregator:
+    as :u16
+    addr :[..]u8
+
+enum Origin:
+    :u8
+    IGP = 0
+    EGP = 1
+    INCOMPLETE = 2
+
+format AsPath:
+    segments :[..]AsPathSegment
+
+format AsPathSegment:
+    type :AsPathSegmentType
+    len  :u8
+    data :[len]u16
 
 format NetWorkReachabilityInfo:
     prefixlen :u8

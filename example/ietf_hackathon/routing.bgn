@@ -69,6 +69,8 @@ enum ProtocolNumber:
 
     Ethernet = 143
 
+# BGP
+
 enum BGPType:
     :u8
     open = 1
@@ -107,23 +109,27 @@ format BGPOption:
     len  :u8
     data :[len]u8
 
+format WithdrawnRoute:
+    bits :u16
+    in_byte ::= (bits + 7) / 8
+    prefix :[..]u8(input=input.subrange(in_byte))
+
 format WithdrawnRoutes:
     len :u16
-    data :[..]u8(input=input.subrange(len))
+    data :[..]WithdrawnRoute(input=input.subrange(len))
 
-format PathAttrs:
+format PathAttributes:
     len :u16
     data :[..]PathAttribute(input=input.subrange(len))
 
 format Update:
     withdrawn_routes :WithdrawnRoutes
-    path_attr :PathAttrs
-    network_reachability_info      :[..]NetWorkReachabilityInfo # NLRI
+    path_attr :PathAttributes
+    if path_attr.len > 0:
+        network_reachability_info      :[..]NetWorkReachabilityInfo
 
 
-format Withdrawn:
-    len :u16
-    data :[len]u8
+
 
 config.url = "https://www.iana.org/assignments/bgp-parameters/bgp-parameters.xhtml#bgp-parameters-1"
 enum AttributeCode:
@@ -166,7 +172,7 @@ enum AttributeCode:
     BIER = 41
     ATTR_SET = 128
     ReservedForDevelopment = 255
-   
+
 
 
 format AttributeType:
@@ -184,7 +190,33 @@ format PathAttribute:
     else:
         len :u8
     len_tmp ::= len # FIX: len_tmp is temporary used
-    data :[len_tmp]u8
+    match type.code:
+        AttributeCode.ORIGIN => origin :Origin(input=input.subrange(len_tmp))
+        AttributeCode.AS_PATH => as_path :AsPath(input=input.subrange(len_tmp))
+        .. => data :[len_tmp]u8
+
+enum AsPathSegmentType:
+    :u8
+    AS_SET = 1
+    AS_SEQUENCE = 2
+    AS_CONFED_SEQUENCE = 3
+    AS_CONFED_SET = 4
+
+
+
+enum Origin:
+    :u8
+    IGP = 0
+    EGP = 1
+    INCOMPLETE = 2
+
+format AsPath:
+    segments :[..]AsPathSegment
+
+format AsPathSegment:
+    type :AsPathSegmentType
+    len  :u8
+    data :[len]u16
 
 format NetWorkReachabilityInfo:
     prefixlen :u8
@@ -194,6 +226,10 @@ format Notification:
     code :u8
     subcode :u8
     data :[..]u8
+
+
+
+
 
 
 enum EtherType:
