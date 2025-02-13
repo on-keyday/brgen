@@ -164,4 +164,136 @@ format Notification:
     data :[..]u8
 
 
+config.url = "https://datatracker.ietf.org/doc/html/rfc7752#section-3.2"
 
+format LSTLV:
+    type :u16
+    length :u16
+    value :[length]u8
+
+enum NLRIType:
+    :u8
+    NodeNLRI = 1
+    LinkNLRI = 2
+    IPv4TopologyPrefix = 3
+    IPv6TopologyPrefix = 4
+
+format LinkStateNLRI:
+    nlri_type :NLRIType
+    nlri_length :u8
+    match nlri_type:
+        NLRIType.NodeNLRI => node_nlri :NodeNLRI(input=input.subrange(nlri_length))
+        NLRIType.LinkNLRI => link_nlri :LinkNLRI(input=input.subrange(nlri_length))
+        NLRIType.IPv4TopologyPrefix => prefix_nlri :PrefixNLRI(input=input.subrange(nlri_length))
+        NLRIType.IPv6TopologyPrefix => prefix_nlri :PrefixNLRI(input=input.subrange(nlri_length))
+        .. => data :[nlri_length]u8
+
+format NodeNLRI:
+    protocol_id :u8
+    identifier :u64
+    local_node_descriptors :NodeDescriptors
+
+format LinkNLRI:
+    link_local_id :u32
+    local_node_descriptors :NodeDescriptors
+    remote_node_descriptors :NodeDescriptors
+    link_descriptors :[..]LinkDescriptors
+
+format PrefixNLRI:
+    protocol_id :u8
+    identifier :u64
+    local_node_descriptors :NodeDescriptors
+    prefix_descriptors :PrefixDescriptors
+
+format NodeDescriptors: # remote or local
+    descriptor :[..]NodeDescriptorSubTLV
+
+format NodeDescriptorSubTLV:
+    type :u16
+    length :u16
+    match  type:
+        512 => autonomous_system :[4]u8(input=input.subrange(length))
+        513 => bgp_ls_identifier :[4]u8(input=input.subrange(length))
+        514 => ospf_area_id :[4]u8(input=input.subrange(length))
+        515 => igp_router_id :[length]u8
+        .. => data :[length]u8
+
+format PrefixDescriptors:
+    descriptor :[..]PrefixDescriptorSubTLV
+
+format PrefixDescriptorSubTLV:
+    type :u16
+    length :u16
+    match  type:
+        263 => multi_topology_identifier :MultiTopologyIDList(input=input.subrange(length))
+        264 => ospf_route_type :OSPFRouteType(input=input.subrange(length))
+        265 => ip_reachability_information :IPReachabilityInformation(input=input.subrange(length))
+        .. => data :[length]u8
+
+format MultiTopologyID:
+    reserved :u4
+    mt_id :u12
+
+format MultiTopologyIDList:
+    mt_ids :[..]MultiTopologyID
+
+enum OSPFRouteType:
+    :u8
+    IntraAreaPrefix = 1
+    InterAreaPrefix = 3
+    External1 = 0x3
+    External2 = 0x5
+    NSSA1 = 0x5
+    NSSA2 = 0x6
+
+format IPReachabilityInformation:
+    prefix_length :u8
+    prefix :[..]u8
+
+format NodeFlagBits:
+    overload :u1
+    attached :u1
+    external :u1
+    abr :u1
+    router :u1
+    v6 :u1
+    reserved :u2
+
+format ISISAreaIdentifier:
+    area_id :[..]u8
+
+format NodeName:
+    name :[..]u8
+
+format OpaqueNode:
+    node_attributes :[..]LSTLV
+
+format MPLSProtocolMask:
+    label_distribution_protocol :u1 
+    extension_to_rsvp_for_lsp_tunnel :u1
+    reserved :u6
+
+format OpaqueLink:
+    link_attributes :[..]LSTLV
+
+format LinkName:
+    name :[..]u8
+
+format IGPFlags:
+    isis_up_down :u1
+    ospf_no_unicast :u1
+    ospf_no_local_address :u1
+    ospf_propagate_nssa :u1
+    reserved :u4
+
+format RouteTags: # IGP or Extended IGP Route Tags
+    tags :[..]u32
+
+format PrefixMetric:
+    metric :u32
+
+format OSPFForwardingAddress:
+    forwarding_address :[..]u8
+
+format OpaquePrefixAttribute:
+    prefix_attributes :[..]u8
