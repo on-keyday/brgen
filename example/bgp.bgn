@@ -6,15 +6,19 @@ enum BGPType:
     notification = 3
     keepalive = 4
 
-format BGPPacket:
+format BGPHeader:
     marker :"\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"
     length :u16
     type   :BGPType
-    match type:
-        BGPType.open => open :Open
-        BGPType.update => update :Update
-        BGPType.notification => notification :Notification
-        BGPType.keepalive => ..
+
+format BGPPacket:
+    header :BGPHeader
+    header.length >= 19
+    match header.type:
+        BGPType.open => open :Open(input=input.subrange(header.length-19))
+        BGPType.update => update :Update(input=input.subrange(header.length-19))
+        BGPType.notification => notification :Notification(input=input.subrange(header.length-19))
+        BGPType.keepalive => header.length == 19
 
 format Open:
     version :u8
