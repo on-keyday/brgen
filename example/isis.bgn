@@ -1,0 +1,42 @@
+
+config.url = "https://datatracker.ietf.org/doc/html/rfc5307"
+
+enum ProtectionCapability:
+    :u8
+    extra_traffic = 0x01
+    unidirectional = 0x02
+    shared = 0x04
+    dedicated_1_per_1 = 0x08
+    dedicated_1_plus_1 = 0x10
+    enhanced = 0x20
+
+format LinkProtectionType:
+    protection_cap :u8
+    reserved :u8
+
+enum SwitchingCapability:
+    :u8
+    psc_1 = 1
+    psc_2 = 2
+    psc_3 = 3
+    psc_4 = 4
+    l2_sc = 51
+    tdm = 100 # time division multiplexing
+    lsc = 150 # lambda switching
+    fsc = 200 # fiber switching
+
+
+format InterfaceSwitchingCapabilityDescriptor:
+    switch_cap :u8
+    encoding :u8
+    reserved :u16
+    max_lsp_bandwidth_per_priority :[8]u32
+    switching_capabilty_specific_info :[..]u8
+
+format SRLG:
+    system_id :[6]u8
+    pseudonode_num :u8 
+    flags :u8
+    ipv4_interface_address :[4]u8
+    ipv4_neighbor_address :[4]u8
+    shared_risk_link_group_value :[..]u32

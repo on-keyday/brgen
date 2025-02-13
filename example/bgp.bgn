@@ -126,6 +126,8 @@ format PathAttribute:
         AttributeCode.LOCAL_PREF => local_pref :u32(input=input.subrange(len_tmp))
         AttributeCode.ATOMIC_AGGREGATE => len_tmp == 0
         AttributeCode.AGGREGATOR => aggregator :Aggregator(input=input.subrange(len_tmp))
+        AttributeCode.COMMUNITIES => communities :[..]u32(input=input.subrange(len_tmp))
+        AttributeCode.EXTENDED_COMMUNITIES => extended_communities :[..]ExtendedCommunity(input=input.subrange(len_tmp))
         .. => data :[len_tmp]u8
 
 enum AsPathSegmentType:
@@ -164,7 +166,7 @@ format Notification:
     data :[..]u8
 
 
-config.url = "https://datatracker.ietf.org/doc/html/rfc7752#section-3.2"
+config.url = "https://www.rfc-editor.org/rfc/rfc9552.html#name-the-bgp-ls-attribute"
 
 format LSTLV:
     type :u16
@@ -197,13 +199,22 @@ format LinkNLRI:
     link_local_id :u32
     local_node_descriptors :NodeDescriptors
     remote_node_descriptors :NodeDescriptors
-    link_descriptors :[..]LinkDescriptors
+    link_descriptors :LinkDescriptors
 
 format PrefixNLRI:
     protocol_id :u8
     identifier :u64
     local_node_descriptors :NodeDescriptors
     prefix_descriptors :PrefixDescriptors
+
+format LinkDescriptors:
+    descriptor :[..]LinkDescriptorSubTLV
+
+format LinkDescriptorSubTLV:
+    type :u16
+    length :u16
+    data :[length]u8 # FIX: data is temporary used
+
 
 format NodeDescriptors: # remote or local
     descriptor :[..]NodeDescriptorSubTLV
@@ -297,3 +308,59 @@ format OSPFForwardingAddress:
 
 format OpaquePrefixAttribute:
     prefix_attributes :[..]u8
+
+config.url = "https://tex2e.github.io/rfc-translater/html/rfc4360.html"
+
+format ExtendedCommunity:
+    type :u8
+    subtype :u8
+    data :[6]u8
+
+config.url = "https://datatracker.ietf.org/doc/draft-ietf-idr-bgp-ls-sr-policy/02/"
+
+format SRPolicyCandidatePathNLRI:
+    protocol_id :u8
+    identifier :u64
+    local_node_descriptors :NodeDescriptors
+    candidate_path_descriptors :CandidatePathDescriptors
+
+format CandidatePathDescriptors:
+    descriptor :[..]CandidatePathDescriptorSubTLV
+
+format SRPolicyCandidatePathDescriptor:
+    protocol_origin :u8 
+    endpoint_as_ipv6 :u1
+    originator_as_ipv6 :u1
+    reserved1 :u6
+    reserved2 :u16
+    endpoint_len ::= endpoint_as_ipv6 == 1 ? 16 : 4
+    endpoint :[endpoint_len]u8
+    policy_color :u32
+    originator_as_number :u32
+    originator_len ::= originator_as_ipv6 == 1 ? 16 : 4
+    originator_address :[originator_len]u8
+    discriminator :u32
+
+
+
+
+format SRBindingSID:
+    dataplane_as_srv6 :u1
+    allocation :u1
+    unavailable :u1
+    local_block :u1
+    fallback :u1
+    reserved1 :u11
+    reserved2 :u16
+    sid_len ::= dataplane_as_srv6 == 1 ? 16 : 4
+    binding_sid :[sid_len]u8
+    specified_binding_sid :[sid_len]u8
+
+format SRv6BindingSID:
+    allocation :u1
+    unavailable :u1
+    fallback :u1
+    reserved1 :u13
+    reserved2 :u16
+    binding_sid :[16]u8
+    specified_binding_sid :[16]u8
