@@ -26,10 +26,14 @@ format Open:
     hold    :u16
     id      :u32
     optlen  :u8
-    options     :[..]Option(input=input.subrange(optlen))
+    options     :[..]BGPOption(input=input.subrange(optlen))
 
-format Option:
-    type :u8
+enum BGPOptionType:
+    :u8
+    capability = 2
+
+format BGPOption:
+    type :BGPOptionType
     len  :u8
     data :[len]u8
 
@@ -51,13 +55,58 @@ format Withdrawn:
     len :u16
     data :[len]u8
 
+
+config.url = "https://www.iana.org/assignments/bgp-parameters/bgp-parameters.xhtml#bgp-parameters-1"
+enum AttributeCode:
+    :u8
+    ORIGIN = 1
+    AS_PATH = 2
+    NEXT_HOP = 3
+    MULTI_EXIT_DISC = 4
+    LOCAL_PREF = 5
+    ATOMIC_AGGREGATE = 6
+    AGGREGATOR = 7
+    COMMUNITIES = 8
+    ORIGINATOR_ID = 9
+    CLUSTER_LIST = 10
+    DPA_deprecated = 11
+    ADVERTISER_deprecated = 12
+    RCID_PATH_deprecated = 13
+    MP_REACH_NLRI = 14
+    MP_UNREACH_NLRI = 15
+    EXTENDED_COMMUNITIES = 16
+    AS4_PATH = 17
+    AS4_AGGREGATOR = 18
+    SSA_deprecated = 19
+    ConnectorAttribute_deprecated = 20
+    AS_PATHLIMIT_deprecated = 21
+    PMSI_TUNNEL = 22
+    TunnelEncap = 23
+    TrafficEngineering = 24
+    IPv6AddressSpecificExtendedCommunity = 25
+    AIGP = 26
+    PE_DISTINGUISHER_LABEL = 27
+    BGP_LS = 29
+    LargeCommunity = 32
+    BGPsec_Path = 33
+    OnlyForORF = 35
+    BGP_Domain_Path = 36
+    SFP_Attribute = 37
+    BFD_Discriminator = 38
+    BGP_Prefix_SID = 40
+    BIER = 41
+    ATTR_SET = 128
+    ReservedForDevelopment = 255
+
+
+
 format AttributeType:
     option :u1
     transitive :u1
     partial :u1
     extended :u1
     reserved :u4(0)
-    code  :u8
+    code  :AttributeCode
 
 format PathAttribute:
     type :AttributeType
