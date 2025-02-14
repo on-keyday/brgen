@@ -876,7 +876,7 @@ namespace brgen::middle {
                 report_not_have_common_type(lty, rty);
             }
             cond->expr_type = ty;
-            cond->constant_level = decide_constant_level(cond->then->constant_level, cond->els->constant_level);
+            cond->constant_level = decide_constant_level(cond->cond->constant_level, decide_constant_level(cond->then->constant_level, cond->els->constant_level));
         }
 
         void call_to_cast(ast::Call* call, NodeReplacer base_node, ast::TypeLiteral* typ_lit) {

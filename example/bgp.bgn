@@ -1,4 +1,5 @@
 
+config.go.package = "bgp"
 enum BGPType:
     :u8
     open = 1
