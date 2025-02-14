@@ -128,6 +128,7 @@ format PathAttribute:
         AttributeCode.AGGREGATOR => aggregator :Aggregator(input=input.subrange(len_tmp))
         AttributeCode.COMMUNITIES => communities :[..]u32(input=input.subrange(len_tmp))
         AttributeCode.EXTENDED_COMMUNITIES => extended_communities :[..]ExtendedCommunity(input=input.subrange(len_tmp))
+        AttributeCode.BGP_LS => bgp_ls :LinkStateNLRI(input=input.subrange(len_tmp))
         .. => data :[len_tmp]u8
 
 enum AsPathSegmentType:
@@ -174,7 +175,7 @@ format LSTLV:
     value :[length]u8
 
 enum NLRIType:
-    :u8
+    :u16
     NodeNLRI = 1
     LinkNLRI = 2
     IPv4TopologyPrefix = 3
@@ -182,7 +183,7 @@ enum NLRIType:
 
 format LinkStateNLRI:
     nlri_type :NLRIType
-    nlri_length :u8
+    nlri_length :u16
     match nlri_type:
         NLRIType.NodeNLRI => node_nlri :NodeNLRI(input=input.subrange(nlri_length))
         NLRIType.LinkNLRI => link_nlri :LinkNLRI(input=input.subrange(nlri_length))
@@ -208,7 +209,9 @@ format PrefixNLRI:
     prefix_descriptors :PrefixDescriptors
 
 format LinkDescriptors:
-    descriptor :[..]LinkDescriptorSubTLV
+    type :u16
+    length :u16
+    descriptor :[..]LinkDescriptorSubTLV(input=input.subrange(length))
 
 format LinkDescriptorSubTLV:
     type :u16
@@ -217,28 +220,44 @@ format LinkDescriptorSubTLV:
 
 
 format NodeDescriptors: # remote or local
-    descriptor :[..]NodeDescriptorSubTLV
-
-format NodeDescriptorSubTLV:
     type :u16
     length :u16
+    descriptor :[..]NodeDescriptorSubTLV(input=input.subrange(length))
+
+enum SubTLVType:
+    :u16
+    MultiTopologyID = 263
+    OSPFRouteType = 264
+    IPReachabilityInformation = 265
+    AutonomousSystem = 512
+    BGPLSID = 513
+    OSPFAreaID = 514
+    IGPRouterID = 515
+
+format NodeDescriptorSubTLV:
+    type :SubTLVType
+    length :u16
     match  type:
-        512 => autonomous_system :[4]u8(input=input.subrange(length))
-        513 => bgp_ls_identifier :[4]u8(input=input.subrange(length))
-        514 => ospf_area_id :[4]u8(input=input.subrange(length))
-        515 => igp_router_id :[length]u8
+        SubTLVType.AutonomousSystem => autonomous_system :[4]u8(input=input.subrange(length))
+        SubTLVType.OSPFAreaID => bgp_ls_identifier :[4]u8(input=input.subrange(length))
+        SubTLVType.BGPLSID => ospf_area_id :[4]u8(input=input.subrange(length))
+        SubTLVType.IGPRouterID => igp_router_id :[length]u8
         .. => data :[length]u8
 
 format PrefixDescriptors:
-    descriptor :[..]PrefixDescriptorSubTLV
-
-format PrefixDescriptorSubTLV:
     type :u16
     length :u16
-    match  type:
-        263 => multi_topology_identifier :MultiTopologyIDList(input=input.subrange(length))
-        264 => ospf_route_type :OSPFRouteType(input=input.subrange(length))
-        265 => ip_reachability_information :IPReachabilityInformation(input=input.subrange(length))
+    descriptor :[..]PrefixDescriptorSubTLV(input=input.subrange(length))
+
+
+
+format PrefixDescriptorSubTLV:
+    type :SubTLVType
+    length :u16
+    match type:
+        SubTLVType.MultiTopologyID => multi_topology_identifier :MultiTopologyIDList(input=input.subrange(length))
+        SubTLVType.OSPFRouteType => ospf_route_type :OSPFRouteType(input=input.subrange(length))
+        SubTLVType.IPReachabilityInformation => ip_reachability_information :IPReachabilityInformation(input=input.subrange(length))
         .. => data :[length]u8
 
 format MultiTopologyID:
@@ -327,6 +346,11 @@ format SRPolicyCandidatePathNLRI:
 format CandidatePathDescriptors:
     descriptor :[..]CandidatePathDescriptorSubTLV
 
+format CandidatePathDescriptorSubTLV:
+    type :u16
+    length :u16
+    data :[length]u8  
+
 format SRPolicyCandidatePathDescriptor:
     protocol_origin :u8 
     endpoint_as_ipv6 :u1
@@ -364,3 +388,102 @@ format SRv6BindingSID:
     reserved2 :u16
     binding_sid :[16]u8
     specified_binding_sid :[16]u8
+    sub_tlvs :[..]SRv6BindingSIDSubTLV
+
+format SRv6BindingSIDSubTLV:
+    type :u16
+    length :u16
+    data :[length]u8
+
+format SRCandidatePathState:
+    priority :u8
+    reserved :u8
+    is_administrative :u1 # S
+    is_active :u1 # A
+    is_backup :u1 # B
+    evaluated_for_validity :u1 # E
+    least_one_sid_list :u1 # V
+    due_to_on_demand_next_hop_trigger :u1 # O
+    delegated :u1 # D
+    provisioned :u1 # C
+    drop_upon_invalid :u1 # I
+    eligible_for_transit_policy :u1 # T
+    sr_policy_drop_upon_invalid :u1 # U
+    reserved2 :u5
+    preference :u32
+
+format SRPolicyName:
+    name :[..]u8
+
+format SRCandidatePathName:
+    name :[..]u8
+
+format SRCandidateConstraints:
+    use_srv6_data_plane :u1 # D
+    only_protected_sids :u1 # P
+    only_unprotected_sids :u1 # U
+    only_use_specified_algorithm :u1 # A
+    only_use_specified_topology :u1 # T
+    strict_constraints :u1 # S
+    fixed :u1 # F
+    hop_by_hop :u1 # H
+    reserved1 :u8
+    reserved2 :u16
+    mtid :u16
+    algorithm :u8
+    reserved3 :u8
+    sub_tlvs :[..]SRCandidateConstraintsSubTLV
+
+format SRCandidateConstraintsSubTLV:
+    type :u16
+    length :u16
+    data :[length]u8
+
+format SRAffinityConstraint:
+    excl_any_size :u8
+    inc_any_size :u8
+    incl_all_size :u8
+    reserved :u8
+    excl_any :[excl_any_size]u32
+    inc_any :[inc_any_size]u32
+    incl_all :[incl_all_size]u32
+
+format SRSRLGConstraint:
+    srlg :[..]u32
+
+format SRBandwidthConstraint:
+    bandwidth :u32
+
+format SRDisjointGroup:
+    srlg_disjointness_requested :u1 # S
+    node_disjointness_requested:u1 # N
+    link_disjointness_requested :u1 # L
+    fallback_requested :u1 # F
+    fallback_to_default_requested :u1 # I
+    reserved1 :u3
+    srlg_disjointness_achieved :u1 # S
+    node_disjointness_achieved :u1 # N
+    link_disjointness_achieved :u1 # L
+    fallback_achieved :u1 # F
+    fallback_to_default_achieved :u1 # I
+    could_not_be_acheived :u1 # X
+    reserved2 :u2
+    reserved3 :u16
+    disjointness_group_id :[..]u8
+
+format SRBidirectionalGroupConstraint:
+    is_reserve_path :u1 # R
+    co_routed :u1 # C
+    reserved1 :u14
+    reserved2 :u16
+    bidi_group_id :[..]u8
+
+format SRMetricConstraint:
+    metric_type :u8
+    optimization :u1 # O
+    margin_allowed :u1 # M
+    absolute_margin :u1 # A
+    bound_allowed :u1 # B
+    reserved1 :u4
+    metric_margin :u32
+    metric_bound :u32
