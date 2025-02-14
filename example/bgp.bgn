@@ -130,6 +130,8 @@ format PathAttribute:
         AttributeCode.COMMUNITIES => communities :[..]u32(input=input.subrange(len_tmp))
         AttributeCode.EXTENDED_COMMUNITIES => extended_communities :[..]ExtendedCommunity(input=input.subrange(len_tmp))
         AttributeCode.BGP_LS => bgp_ls :LinkStateNLRI(input=input.subrange(len_tmp))
+        AttributeCode.MP_REACH_NLRI => mp_reach_nlri :MPReachNLRI(input=input.subrange(len_tmp))
+        AttributeCode.MP_UNREACH_NLRI => mp_unreach_nlri :MPReachNLRI(input=input.subrange(len_tmp))
         .. => data :[len_tmp]u8
 
 enum AsPathSegmentType:
@@ -192,6 +194,16 @@ format LinkStateNLRI:
         NLRIType.IPv6TopologyPrefix => prefix_nlri :PrefixNLRI(input=input.subrange(nlri_length))
         .. => data :[nlri_length]u8
 
+enum SubTLVType:
+    :u16
+    MultiTopologyID = 263
+    OSPFRouteType = 264
+    IPReachabilityInformation = 265
+    AutonomousSystem = 512
+    BGPLSID = 513
+    OSPFAreaID = 514
+    IGPRouterID = 515
+
 format NodeNLRI:
     protocol_id :u8
     identifier :u64
@@ -225,15 +237,7 @@ format NodeDescriptors: # remote or local
     length :u16
     descriptor :[..]NodeDescriptorSubTLV(input=input.subrange(length))
 
-enum SubTLVType:
-    :u16
-    MultiTopologyID = 263
-    OSPFRouteType = 264
-    IPReachabilityInformation = 265
-    AutonomousSystem = 512
-    BGPLSID = 513
-    OSPFAreaID = 514
-    IGPRouterID = 515
+
 
 format NodeDescriptorSubTLV:
     type :SubTLVType
@@ -488,3 +492,175 @@ format SRMetricConstraint:
     reserved1 :u4
     metric_margin :u32
     metric_bound :u32
+
+format MPReachNLRI:
+    address_family :u16
+    sub_seq_addr_family_id :u8
+    next_hop_len :u8
+    next_hop :[next_hop_len]u8
+    reserved :u8
+    nlri :[..]NetWorkReachabilityInfo
+
+format MPUnreachNLRI:
+    address_family :u16
+    sub_seq_addr_family_id :u8
+    nlri :[..]NetWorkReachabilityInfo
+
+enum AFI:
+    :u16
+    IPv4 = 1
+    IPv6 = 2
+    L2VPN = 25
+    Opaque = 16397
+    LS = 16388
+
+enum SAFI:
+    :u8 
+    Unicast = 1
+    Multicast = 2
+    MPLS_LABEL = 4
+    ENCAPSULATION = 7
+    VPLS = 65
+    EVPN = 70
+    LS = 71
+    SRPOLICY = 73
+    MUP = 73
+    MPLS_VPN = 128
+    MPLS_VPN_MULTICAST = 129
+    ROUTE_TARGET_CONSTRAINTS = 132
+    FLOW_SPEC_UNICAST = 133
+    FLOW_SPEC_VPN = 134
+    KEY_VALUE = 241
+
+format SRPolicyNLRI:
+    length :u8 # in bits
+    distinguisher :u32 
+    color :u32 
+    endpoint :[..]u8
+
+enum BGPFlowSpecType:
+    :u8 
+    UNKNOWN = 0
+    DST_PREFIX = 1
+    SRC_PREFIX = 2
+    IP_PROTO = 3
+    PORT = 4
+    DST_PORT = 5
+    SRC_PORT = 6
+    ICMP_TYPE = 7
+    ICMP_CODE = 8
+    TCP_FLAG = 9
+    PKT_LEN = 10
+    DSCP = 11
+    FRAGMENT = 12
+    LABEL = 13
+    ETHERNET_TYPE = 14
+    SRC_MAC = 15
+    DST_MAC = 16
+    LLC_DSAP = 17
+    LLC_SSAP = 18
+    LLC_CONTROL = 19
+    SNAP = 20
+    VID = 21
+    COS = 22
+    INNER_VID = 23
+    INNER_COS = 24
+
+format FlowSpecComponentItem:
+    end :u1
+    len :u3
+    op :u4
+    match len:
+        0 => data :u8
+        1 => data :u16
+        2 => data :u32
+        3 => data :u64 
+        .. => error("Invalid length")
+
+format FlowSpecComponentItems:
+    items :[]FlowSpecComponentItem
+
+    fn encode():
+        for i in items.length:
+            if i == items.length - 1:
+                items[i].end == 1
+            output.put(items[i])
+
+    fn decode():
+        for:
+            item ::= input.get(FlowSpecComponentItem)
+            end ::= item.end == 1
+            items[items.length] = item
+            if end:
+                break
+
+
+format FlowSpecNLRILength:
+    length :u16 
+
+    fn encode():
+        if length < 0xf0:
+            output.put(u8(length))
+        elif length < 0xf000:
+            output.put(0xf0 | u8(length >> 16))
+            output.put(u8(length & 0xff))
+        else:
+            error("Length too big")
+
+    fn decode():
+        data ::= input.get(u8)
+        if data < 0xf0:
+            length = u16(data)
+        else:
+            data2 ::= input.get(u8)
+            length = u16((data & 0xf) << 16 | data2)
+
+format FlowSpecAddrPrefix:
+    if route_familiy.afi == AFI.IPv4:
+        prefix :[4]u8
+    elif route_familiy.afi == AFI.IPv6:
+        prefix :[16]u8
+    else:
+        error("Invalid AFI")
+
+format FlowSpecMacAddr:
+    addr :[6]u8
+
+format FlowSpecComponent:
+    type :BGPFlowSpecType
+    match type:
+        BGPFlowSpecType.DST_PREFIX => dst_prefix :FlowSpecAddrPrefix
+        BGPFlowSpecType.SRC_PREFIX => src_prefix :FlowSpecAddrPrefix
+        BGPFlowSpecType.DST_MAC => dst_mac :FlowSpecMacAddr
+        BGPFlowSpecType.SRC_MAC => src_mac :FlowSpecMacAddr
+        BGPFlowSpecType.IP_PROTO => ip_proto :FlowSpecComponent
+        BGPFlowSpecType.PORT => port :FlowSpecComponent
+        BGPFlowSpecType.DST_PORT => dst_port :FlowSpecComponent
+        BGPFlowSpecType.SRC_PORT => src_port :FlowSpecComponent
+        BGPFlowSpecType.ICMP_TYPE => icmp_type :FlowSpecComponent
+        BGPFlowSpecType.ICMP_CODE => icmp_code :FlowSpecComponent
+        BGPFlowSpecType.TCP_FLAG => tcp_flag :FlowSpecComponent
+        BGPFlowSpecType.PKT_LEN => pkt_len :FlowSpecComponent
+        BGPFlowSpecType.DSCP => dscp :FlowSpecComponent
+        BGPFlowSpecType.FRAGMENT => fragment :FlowSpecComponent
+        BGPFlowSpecType.LABEL => label :FlowSpecComponent
+        BGPFlowSpecType.ETHERNET_TYPE => ethernet_type :FlowSpecComponent
+        BGPFlowSpecType.LLC_DSAP => llc_dsap :FlowSpecComponent
+        BGPFlowSpecType.LLC_SSAP => llc_ssap :FlowSpecComponent
+        BGPFlowSpecType.LLC_CONTROL => llc_control :FlowSpecComponent
+        BGPFlowSpecType.SNAP => snap :FlowSpecComponent
+        BGPFlowSpecType.VID => vid :FlowSpecComponent
+        BGPFlowSpecType.COS => cos :FlowSpecComponent
+        BGPFlowSpecType.INNER_VID => inner_vid :FlowSpecComponent
+        BGPFlowSpecType.INNER_COS => inner_cos :FlowSpecComponent
+        .. => data :[..]u8
+
+state RouteFamily:
+    afi :AFI
+    safi :SAFI
+
+route_familiy :RouteFamily
+
+format FlowSpecNLRI:
+    length :FlowSpecNLRILength
+    components :[..]FlowSpecComponent

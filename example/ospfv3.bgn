@@ -1,10 +1,17 @@
 
 config.url = "https://datatracker.ietf.org/doc/html/rfc5340#section-2.8"
 
+enum OSPFPacketType:
+    :u8
+    hello = 1
+    database_description = 2
+    link_state_request = 3
+    link_state_update = 4
+    link_state_acknowledgement = 5
 
 format OSPFHeader:
     version :u8(3)
-    type :u8
+    type :OSPFPacketType
     packet_length :u16
     router_id :u32
     area_id :u32
