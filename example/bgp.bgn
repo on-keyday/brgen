@@ -568,7 +568,8 @@ enum BGPFlowSpecType:
 
 format FlowSpecComponentItem:
     end :u1
-    len :u3
+    reserved :u1
+    len :u2
     op :u4
     match len:
         0 => data :u8
@@ -585,6 +586,7 @@ format FlowSpecComponentItems:
             if i == items.length - 1:
                 items[i].end == 1
             output.put(items[i])
+ 
 
     fn decode():
         for:
@@ -663,4 +665,4 @@ route_family :RouteFamily
 
 format FlowSpecNLRI:
     length :FlowSpecNLRILength
-    components :[..]FlowSpecComponent
+    components :[..]FlowSpecComponent(input = input.subrange(length.length))
