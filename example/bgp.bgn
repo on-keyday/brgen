@@ -616,9 +616,9 @@ format FlowSpecNLRILength:
             length = u16((data & 0xf) << 16 | data2)
 
 format FlowSpecAddrPrefix:
-    if route_familiy.afi == AFI.IPv4:
+    if route_family.afi == AFI.IPv4:
         prefix :[4]u8
-    elif route_familiy.afi == AFI.IPv6:
+    elif route_family.afi == AFI.IPv6:
         prefix :[16]u8
     else:
         error("Invalid AFI")
@@ -659,7 +659,7 @@ state RouteFamily:
     afi :AFI
     safi :SAFI
 
-route_familiy :RouteFamily
+route_family :RouteFamily
 
 format FlowSpecNLRI:
     length :FlowSpecNLRILength
