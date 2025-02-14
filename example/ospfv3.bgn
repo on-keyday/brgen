@@ -1,6 +1,6 @@
 
 config.url = "https://datatracker.ietf.org/doc/html/rfc5340#section-2.8"
-
+config.go.package = "ospf"
 enum OSPFPacketType:
     :u8
     hello = 1
@@ -18,6 +18,17 @@ format OSPFHeader:
     check_sum :u16
     instance_id :u8
     zero :u8(0)
+
+
+format OSPFPacket:
+    header :OSPFHeader
+    match header.type:
+        OSPFPacketType.hello => hello_packet :HelloPacket(input = input.subrange(24))
+        OSPFPacketType.database_description => database_description_packet :DatabaseDescriptionPacket(input = input.subrange(24))
+        OSPFPacketType.link_state_request => ospf_link_state_request_packet :OSPFLinkStateRequestPacket(input = input.subrange(24))
+        OSPFPacketType.link_state_update => ospf_link_state_update_packet :OSPFLinkStateUpdatePacket(input = input.subrange(24))
+        OSPFPacketType.link_state_acknowledgement => ospf_link_state_acknowledgement_packet :OSPFLinkStateAcknowledgementPacket(input = input.subrange(24))
+        .. => data :[header.packet_length - 24]u8
 
 
 format HelloPacket:
@@ -50,7 +61,7 @@ format OSPFLinkStateRequestPacket:
 
 format OSPFLinkStateUpdatePacket:
     num_lsa :u32
-    lsa_headers :[num_lsa]LSAHeader
+    lsa_headers :[num_lsa]LSA
 
 format OSPFLinkStateAcknowledgementPacket:
     lsa_headers :[..]LSAHeader

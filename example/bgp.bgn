@@ -566,11 +566,25 @@ enum BGPFlowSpecType:
     INNER_VID = 23
     INNER_COS = 24
 
+config.url = "https://www.rfc-editor.org/rfc/inline-errata/rfc8955.html"
+
+enum FlowSpecOp:
+    :u3
+    false_value = 0
+    equal = 1
+    greater = 2
+    greater_equal = 3
+    less = 4
+    less_equal = 5
+    not_equal = 6
+    true_value = 7
+
 format FlowSpecComponentItem:
     end :u1
-    reserved :u1
+    and_bit :u1
     len :u2
-    op :u4
+    reserved :u1
+    op :FlowSpecOp
     match len:
         0 => data :u8
         1 => data :u16
@@ -666,3 +680,5 @@ route_family :RouteFamily
 format FlowSpecNLRI:
     length :FlowSpecNLRILength
     components :[..]FlowSpecComponent(input = input.subrange(length.length))
+
+
