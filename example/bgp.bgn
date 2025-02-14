@@ -271,11 +271,11 @@ format MultiTopologyIDList:
 enum OSPFRouteType:
     :u8
     IntraAreaPrefix = 1
-    InterAreaPrefix = 3
-    External1 = 0x3
-    External2 = 0x5
-    NSSA1 = 0x5
-    NSSA2 = 0x6
+    InterAreaPrefix = 2
+    External1 = 3
+    External2 = 4
+    NSSA1 = 5
+    NSSA2 = 6
 
 format IPReachabilityInformation:
     prefix_length :u8
