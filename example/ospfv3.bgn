@@ -23,18 +23,18 @@ format OSPFHeader:
 format OSPFPacket:
     header :OSPFHeader
     match header.type:
-        OSPFPacketType.hello => hello_packet :HelloPacket(input = input.subrange(24))
-        OSPFPacketType.database_description => database_description_packet :DatabaseDescriptionPacket(input = input.subrange(24))
-        OSPFPacketType.link_state_request => ospf_link_state_request_packet :OSPFLinkStateRequestPacket(input = input.subrange(24))
-        OSPFPacketType.link_state_update => ospf_link_state_update_packet :OSPFLinkStateUpdatePacket(input = input.subrange(24))
-        OSPFPacketType.link_state_acknowledgement => ospf_link_state_acknowledgement_packet :OSPFLinkStateAcknowledgementPacket(input = input.subrange(24))
-        .. => data :[header.packet_length - 24]u8
+        OSPFPacketType.hello => hello_packet :HelloPacket(input = input.subrange(header.packet_length - 24))
+        OSPFPacketType.database_description => database_description_packet :DatabaseDescriptionPacket(input = input.subrange(header.packet_length - 16))
+        OSPFPacketType.link_state_request => ospf_link_state_request_packet :OSPFLinkStateRequestPacket(input = input.subrange(header.packet_length - 16))
+        OSPFPacketType.link_state_update => ospf_link_state_update_packet :OSPFLinkStateUpdatePacket(input = input.subrange(header.packet_length - 16))
+        OSPFPacketType.link_state_acknowledgement => ospf_link_state_acknowledgement_packet :OSPFLinkStateAcknowledgementPacket(input = input.subrange(header.packet_length - 16))
+        .. => data :[header.packet_length - 16]u8
 
 
 format HelloPacket:
     interface_id :u32
     rtr_priority :u8
-    options :u8
+    options :u24
     hello_interval :u16
     router_dead_interval :u16
     designated_router :u32

@@ -52,7 +52,7 @@ enum ProtocolNumber:
     TRUNK_2 = 24
     RoutingHeader = 43
     ICMPV6 = 58
-
+    OSPF = 89
     Ethernet = 143
 
 fn checkSum(data :[]u8) -> u16:
