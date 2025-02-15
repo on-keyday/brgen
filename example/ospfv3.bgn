@@ -9,6 +9,7 @@ enum OSPFPacketType:
     link_state_update = 4
     link_state_acknowledgement = 5
 
+
 format OSPFHeader:
     version :u8(3)
     type :OSPFPacketType
@@ -222,10 +223,11 @@ config.url = "https://datatracker.ietf.org/doc/rfc9513/"
 config.url = "https://www.rfc-editor.org/rfc/rfc9259.pdf"
 
 format Srv6Capabilities:
-    reserved :u8(0)
-    reserved1 :u1
+    reserved1 :u8(0)
+    reserved2 :u1
     oam :u1
-    reserved2 :u16(0)
+    reserved3 :u6
+    reserved4 :u16(0)
     tlvs :[..]Srv6CapabilitiesSubTLV
 
 
