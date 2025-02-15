@@ -23,7 +23,7 @@ format OSPFHeader:
 format OSPFPacket:
     header :OSPFHeader
     match header.type:
-        OSPFPacketType.hello => hello_packet :HelloPacket(input = input.subrange(header.packet_length - 24))
+        OSPFPacketType.hello => hello_packet :HelloPacket(input = input.subrange(header.packet_length - 16))
         OSPFPacketType.database_description => database_description_packet :DatabaseDescriptionPacket(input = input.subrange(header.packet_length - 16))
         OSPFPacketType.link_state_request => ospf_link_state_request_packet :OSPFLinkStateRequestPacket(input = input.subrange(header.packet_length - 16))
         OSPFPacketType.link_state_update => ospf_link_state_update_packet :OSPFLinkStateUpdatePacket(input = input.subrange(header.packet_length - 16))
