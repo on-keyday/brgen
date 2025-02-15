@@ -33,10 +33,28 @@ enum BGPOptionType:
     :u8
     capability = 2
 
+enum CapabilityCode:
+    :u8
+    multiprotocol = 1
+
+format MultiProtocolCapability:
+    afi :AFI
+    reserved :u8
+    safi :SAFI
+
+format Capability:
+    code :CapabilityCode
+    len  :u8
+    match code:
+        CapabilityCode.multiprotocol => multi_protocol :MultiProtocolCapability(input=input.subrange(len))
+        .. => data :[len]u8
+
 format BGPOption:
     type :BGPOptionType
     len  :u8
-    data :[len]u8
+    match type:
+        BGPOptionType.capability => capability :[..]Capability(input=input.subrange(len))
+        .. => data :[len]u8
 
 format WithdrawnRoute:
     bits :u16
@@ -161,8 +179,9 @@ format AsPathSegment:
     data :[len]u16
 
 format NetWorkReachabilityInfo:
-    prefixlen :u8
-    prefix    :[prefixlen]u8
+    prefix_len :u8 # in bits
+    prefix_len_in_bytes ::= (prefix_len + 7) / 8
+    prefix    :[prefix_len_in_bytes]u8
 
 format Notification:
     code :u8
