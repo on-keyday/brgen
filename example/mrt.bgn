@@ -2,7 +2,7 @@ config.url = "https://tex2e.github.io/rfc-translater/html/rfc6396.html"
 
 format MRTHeader:
     timestamp :u32
-    type :u16
+    type :TypeCode
     subtype :u16
     length :u32
 
@@ -146,3 +146,16 @@ format OSPFv3Type:
         remote_ip :[16]u8
         local_ip :[16]u8
     message_content :[..]u8
+
+enum TypeCode:
+    :u16
+    OSPFv2 = 11
+    TableDump = 12
+    TableDumpV2 = 13
+    BGP4MP = 16
+    BGP4MP_ET = 17
+    ISIS = 32
+    ISIS_ET = 33
+    OSPFv3 = 48
+    OSPFv3_ET = 49
+ 
