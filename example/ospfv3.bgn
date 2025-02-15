@@ -111,9 +111,9 @@ format LSAHeader:
 format Option:
     reserved :u16(0)
     ospfv2_compat :u2
-    DC :u1
-    R :u1
-    N :u1
+    demand_circuit:u1 # DC
+    originator_is_router :u1 # R
+    nssa :u1 # N
     x :u1(0)
     external :u1
     v6 :u1
@@ -128,11 +128,11 @@ format RouterInfo:
 
 format RouterLSA:
     reserved :u3
-    nt :u1
-    x :u1
-    v: u1
-    e :u1
-    b :u1
+    nssa :u1 # Nt
+    x :u1 
+    adjust_virtual: u1 # adjust virtual
+    as_boundary :u1 # E
+    area_boundary :u1 # B
     options :Option
     link_info :[..]RouterInfo
 
