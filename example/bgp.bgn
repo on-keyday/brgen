@@ -579,13 +579,16 @@ enum FlowSpecOp:
     not_equal = 6
     true_value = 7
 
-format FlowSpecComponentItem:
+format FlowSpecOpByte:
     end :u1
     and_bit :u1
     len :u2
     reserved :u1
     op :FlowSpecOp
-    match len:
+
+format FlowSpecComponentItem:
+    op :FlowSpecOpByte
+    match op.len:
         0 => data :u8
         1 => data :u16
         2 => data :u32
@@ -598,14 +601,14 @@ format FlowSpecComponentItems:
     fn encode():
         for i in items.length:
             if i == items.length - 1:
-                items[i].end == 1
+                items[i].op.end == 1
             output.put(items[i])
  
 
     fn decode():
         for:
             item ::= input.get(FlowSpecComponentItem)
-            end ::= item.end == 1
+            end ::= item.op.end == 1
             items[items.length] = item
             if end:
                 break

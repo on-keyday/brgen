@@ -413,3 +413,60 @@ format IPv6ChecksumPseudoHeader:
     upper_layer_length :u32
     zero :u24
     nextHeader :ProtocolNumber
+
+format FlowSpecOpByte:
+    end :u1
+    and_bit :u1
+    len :u2
+    reserved :u1
+    op :FlowSpecOp
+
+enum FlowSpecOp:
+    :u3
+    false_value = 0
+    equal = 1
+    greater = 2
+    greater_equal = 3
+    less = 4
+    less_equal = 5
+    not_equal = 6
+    true_value = 7
+
+enum BGPFlowSpecType:
+    :u8 
+    UNKNOWN = 0
+    DST_PREFIX = 1
+    SRC_PREFIX = 2
+    IP_PROTO = 3
+    PORT = 4
+    DST_PORT = 5
+    SRC_PORT = 6
+    ICMP_TYPE = 7
+    ICMP_CODE = 8
+    TCP_FLAG = 9
+    PKT_LEN = 10
+    DSCP = 11
+    FRAGMENT = 12
+    LABEL = 13
+    ETHERNET_TYPE = 14
+    SRC_MAC = 15
+    DST_MAC = 16
+    LLC_DSAP = 17
+    LLC_SSAP = 18
+    LLC_CONTROL = 19
+    SNAP = 20
+    VID = 21
+    COS = 22
+    INNER_VID = 23
+    INNER_COS = 24
+
+format UDPHeader:
+    config.rfc = "https://datatracker.ietf.org/doc/html/rfc768"
+    src_port :u16
+    dst_port :u16
+    length  :u16
+    checksum :u16
+
+format UDPDatagram:
+    header :UDPHeader
+    data :[header.length-8]u8

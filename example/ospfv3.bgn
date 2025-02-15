@@ -82,31 +82,36 @@ enum Scoping:
     reserved = 3
 
 enum LSAFunctionCode:
-    :u16
-    router_lsa = 0x2001
-    network_lsa = 0x2002
-    inter_area_prefix_lsa = 0x2003
-    inter_area_router_lsa = 0x2004
-    as_external_lsa = 0x4005
-    nssa_lsa = 0x2007
-    link_lsa = 0x0008
-    intra_area_prefix_lsa = 0x2009
-    intra_area_router_lsa = 0x200a
+    :u13
+    router_lsa = 0x01 # area local
+    network_lsa = 0x02 # area local
+    inter_area_prefix_lsa = 0x03 # area local
+    inter_area_router_lsa = 0x04 # area local
+    as_external_lsa = 0x05 # as local
+    nssa_lsa = 0x07 # area local
+    link_lsa = 0x08 # link local
+    intra_area_prefix_lsa = 0x09 # area local
+    intra_area_router_lsa = 0x0a # area local
+    router_info_opaque_lsa = 0x0b # dependent 
+    srv6_locator_lsa = 42
 
 format LSAType:
     understand :u1
     scoping :Scoping
-    code :u13
+    code :LSAFunctionCode
 
-format LSAHeader:
-    ls_age :u16
-    ls_type :LSAFunctionCode
+format LSAHeaderChecksum:
+    ls_type :LSAType
     link_state_id :u32
     advertising_router :u32
     ls_sequence_number :u32
-    ls_checksum :u16
+    ls_checksum :u16 # fletcher16
     length :u16
     length >= 20
+
+format LSAHeader:
+    ls_age :u16 # excluded from checksum
+    header_checksum :LSAHeaderChecksum
 
 format Option:
     reserved :u16(0)
@@ -189,14 +194,240 @@ format IntraAreaPrefixLSA:
     referenced_link_state_id :u32
     prefixes :[num_prefixes]AddressPrefix
 
+config.url = "https://tex2e.github.io/rfc-translater/html/rfc7770.html"
+
+format RouterInfoOpaqueLSA:
+    tlvs :[..]RouterInfoOpaqueLSATLV
+
+format RouterInformationCapabilities:
+    graceful_restart :u1
+    restart_helper :u1
+    stub_router :u1
+    traffic_engineering :u1
+    p2p_over_lan :u1
+    experimental_te :u1
+    reserved :u26
+
+format FunctionalCapabilities:
+    capabilities :[..]u32
+
+enum RouterInfoTLVType:
+    :u16
+    capabilities = 1
+    functional_capabilities = 2
+    srv6_capabilities = 20
+
+
+config.url = "https://datatracker.ietf.org/doc/rfc9513/"
+config.url = "https://www.rfc-editor.org/rfc/rfc9259.pdf"
+
+format Srv6Capabilities:
+    reserved :u8(0)
+    reserved1 :u1
+    oam :u1
+    reserved2 :u16(0)
+    tlvs :[..]Srv6CapabilitiesSubTLV
+
+
+format Srv6CapabilitiesSubTLV:
+    type :u16
+    length :u16
+    value :[length]u8
+
+format RouterInfoOpaqueLSATLV:
+    type :RouterInfoTLVType
+    length :u16
+    match type:
+        RouterInfoTLVType.capabilities => capabilities :RouterInformationCapabilities(input = input.subrange(length))
+        RouterInfoTLVType.functional_capabilities => functional_capabilities :FunctionalCapabilities(input = input.subrange(length))
+        RouterInfoTLVType.srv6_capabilities => srv6_capabilities :Srv6Capabilities(input = input.subrange(length))
+        .. =>  value :[length]u8
+
+format SRv6LocatorLSA:
+    tlvs :[..]SRv6LocatorLSATLV
+
+enum Srv6LocatorLSATLVType:
+    :u16
+    locator = 1
+
+format SRv6LocatorLSATLV:
+    type :Srv6LocatorLSATLVType 
+    length :u16
+    match type:
+        Srv6LocatorLSATLVType.locator => locator :LocatorTLV(input = input.subrange(length))
+        .. => value :[length]u8
+
+enum OSPFRouteType:
+    :u8
+    IntraAreaPrefix = 1
+    InterAreaPrefix = 2
+    External1 = 3
+    External2 = 4
+    NSSA1 = 5
+    NSSA2 = 6
+
+format LocatorTLV:
+    route_type :OSPFRouteType
+    algorithm :u8
+    locator_length :u8 # in bit
+    prefix_options :PrefixOptions
+    metric :u32
+    locator_in_byte ::= (locator_length + 7) / 8
+    locator :[locator_in_byte]u8
+    sub_tlvs :[..]LocatorTLVSubTLV
+
+
+enum EndpointBehavior:
+    :u16
+    reserved
+    end
+    end_with_psp 
+    end_with_usp
+    end_with_psp_and_usp
+    end_x
+    end_x_with_psp
+    end_x_with_usp
+    end_x_with_psp_and_usp
+    end_t
+    end_t_with_psp
+    end_t_with_usp
+    end_t_with_psp_and_usp
+    unassigned
+    end_b6_encaps
+    end_bm
+    end_dx6
+    end_dx4
+    end_dt6
+    end_dt4
+    end_dt46
+    end_dx2
+    end_dx2v
+    end_dx2u
+    end_dx2m
+    reserved2
+    unassigned2
+    end_b6_encaps_red
+    end_with_usd
+    end_with_psp_and_usd
+    end_with_usp_and_usd
+    end_x_with_usd
+    end_x_with_psp_and_usd
+    end_x_with_usp_and_usd
+    end_x_with_psp_usp_and_usd
+    end_t_with_psp_and_usd
+    end_t_with_usp_and_usd
+    end_t_with_psp_usp_and_usd
+
+    sid_defined_in_rfc8754 = 0x7fff
+    reserved_for_private_use_begin = 0x8000
+    reserved_for_private_use_end = 0xfffe
+    opaque = 0xffff
+
+config.url = "https://www.rfc-editor.org/rfc/rfc8986#name-initial-registrations"
+
+
+format Srv6EndSID:
+    flags :u8
+    reserved :u8(0)
+    behavior :EndpointBehavior
+    sid :[16]u8
+    sub_tlvs :[..]Srv6EndSIDSubTLV
+
+format Srv6EndSIDSubTLV:
+    type :u16
+    length :u16
+    value :[length]u8
+
+format Srv6EndXSIDSubTLV:
+    behavior :EndpointBehavior
+    flags :u8
+    reserved :u8(0)
+    algorithm :u8
+    weight :u8
+    reserved2 :u16(0)
+    sid :[16]u8
+    sub_tlvs :[..]Srv6EndXSIDSubTLVSubTLV
+
+format Srv6EndXSIDSubTLVSubTLV:
+    type :u16
+    length :u16
+    value :[length]u8
+
+format Srv6LanEndXSIDSubTLV:
+    behavior :EndpointBehavior
+    flags :u8
+    reserved :u8(0)
+    algorithm :u8
+    weight :u8
+    reserved2 :u16(0)
+    neighbor_router_id :u32
+    sid :[16]u8
+    sub_tlvs :[..]Srv6LanEndXSIDSubTLVSubTLV
+
+format Srv6LanEndXSIDSubTLVSubTLV:
+    type :u16
+    length :u16
+    value :[length]u8
+
+format SRv6SIDStructureSubTLV:
+    locator_block_length :u8
+    locator_node_length :u8
+    function_length :u8
+    arguments_length :u8
+
+config.url = "https://tex2e.github.io/rfc-translater/html/rfc8362.html#3-10--IPv6-Forwarding-Address-Sub-TLV"
+
+format IPv6ForwardingAddress:
+    forwarding_address :[16]u8
+
+format RouteTag:
+    route_tag :u32
+
+
+config.url = "https://tex2e.github.io/rfc-translater/html/rfc9084.html"
+
+
+format PrefixSourceRouterID:
+    router_id :u32
+
+format PrefixSourceRouterAddress:
+    router_address: [..]u8
+
+enum LocatorTLVSubTLVType:
+    :u16
+    srv6_end_sid = 1
+    ipv6_forwarding_address = 2
+    route_tag = 3
+    prefix_source_ospf_router_id = 4
+    prefix_source_ospf_router_address = 5
+    srv6_sid_structure = 10
+
+format LocatorTLVSubTLV:
+    type :LocatorTLVSubTLVType
+    length :u16
+    match type:
+        LocatorTLVSubTLVType.srv6_end_sid => srv6_end_sid :Srv6EndSID(input = input.subrange(length))
+        LocatorTLVSubTLVType.ipv6_forwarding_address => ipv6_forwarding_address :IPv6ForwardingAddress(input = input.subrange(length))
+        LocatorTLVSubTLVType.route_tag => route_tag :RouteTag(input = input.subrange(length))
+        LocatorTLVSubTLVType.prefix_source_ospf_router_id => prefix_source_ospf_router_id :PrefixSourceRouterID(input = input.subrange(length))
+        LocatorTLVSubTLVType.prefix_source_ospf_router_address => prefix_source_ospf_router_address :PrefixSourceRouterAddress(input = input.subrange(length))
+        LocatorTLVSubTLVType.srv6_sid_structure => srv6_sid_structure :SRv6SIDStructureSubTLV(input = input.subrange(length))
+        .. => value :[length]u8
+
+
 format LSA:
     lsa_header :LSAHeader
-    match lsa_header.ls_type:
-        LSAFunctionCode.router_lsa => router_lsa :RouterLSA(input = input.subrange(lsa_header.length - 20))
-        LSAFunctionCode.network_lsa => network_lsa :NetworkLSA(input = input.subrange(lsa_header.length - 20))
-        LSAFunctionCode.inter_area_prefix_lsa => inter_area_prefix_lsa :InterAreaPrefixLSA(input = input.subrange(lsa_header.length - 20))
-        LSAFunctionCode.inter_area_router_lsa => inter_area_router_lsa :InterAreaRouterLSA(input = input.subrange(lsa_header.length - 20))
-        LSAFunctionCode.as_external_lsa => as_external_lsa :ASExternalLSA(input = input.subrange(lsa_header.length - 20))
-        LSAFunctionCode.link_lsa => link_lsa :LinkLSA(input = input.subrange(lsa_header.length - 20))
-        LSAFunctionCode.intra_area_prefix_lsa => intra_area_prefix_lsa :IntraAreaPrefixLSA(input = input.subrange(lsa_header.length - 20))
-        .. => data :[lsa_header.length - 20]u8
+    match lsa_header.header_checksum.ls_type.code:
+        LSAFunctionCode.router_lsa => router_lsa :RouterLSA(input = input.subrange(lsa_header.header_checksum.length - 20))
+        LSAFunctionCode.network_lsa => network_lsa :NetworkLSA(input = input.subrange(lsa_header.header_checksum.length - 20))
+        LSAFunctionCode.inter_area_prefix_lsa => inter_area_prefix_lsa :InterAreaPrefixLSA(input = input.subrange(lsa_header.header_checksum.length - 20))
+        LSAFunctionCode.inter_area_router_lsa => inter_area_router_lsa :InterAreaRouterLSA(input = input.subrange(lsa_header.header_checksum.length - 20))
+        LSAFunctionCode.as_external_lsa => as_external_lsa :ASExternalLSA(input = input.subrange(lsa_header.header_checksum.length - 20))
+        LSAFunctionCode.link_lsa => link_lsa :LinkLSA(input = input.subrange(lsa_header.header_checksum.length - 20))
+        LSAFunctionCode.intra_area_prefix_lsa => intra_area_prefix_lsa :IntraAreaPrefixLSA(input = input.subrange(lsa_header.header_checksum.length - 20))
+        LSAFunctionCode.router_info_opaque_lsa => router_info_opaque_lsa :RouterInfoOpaqueLSA(input = input.subrange(lsa_header.header_checksum.length - 20))
+        LSAFunctionCode.srv6_locator_lsa => srv6_locator_lsa :SRv6LocatorLSA(input = input.subrange(lsa_header.header_checksum.length - 20))
+        .. => data :[lsa_header.header_checksum.length - 20]u8
+
+
+
