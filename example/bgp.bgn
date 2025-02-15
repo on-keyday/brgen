@@ -150,6 +150,7 @@ format PathAttribute:
         AttributeCode.BGP_LS => bgp_ls :LinkStateNLRI(input=input.subrange(len_tmp))
         AttributeCode.MP_REACH_NLRI => mp_reach_nlri :MPReachNLRI(input=input.subrange(len_tmp))
         AttributeCode.MP_UNREACH_NLRI => mp_unreach_nlri :MPReachNLRI(input=input.subrange(len_tmp))
+        AttributeCode.IPv6AddressSpecificExtendedCommunity => ipv6_address_specific_extended_community :IPv6SpecificExtendedCommunity(input=input.subrange(len_tmp))
         .. => data :[len_tmp]u8
 
 enum AsPathSegmentType:
@@ -353,9 +354,52 @@ format OpaquePrefixAttribute:
     prefix_attributes :[..]u8
 
 config.url = "https://tex2e.github.io/rfc-translater/html/rfc4360.html"
+config.url = "https://datatracker.ietf.org/doc/html/rfc8955"
+config.url = "https://www.rfc-editor.org/rfc/rfc5701"
+
+format IPv6SpecificExtendedCommunity:
+    type :u8
+    subtype :u8
+    global_administrator :[16]u8
+    local_administrator :u16
+
+format TwoOctetASSpecificExtendedCommunity:
+    as_number :u16
+    local_administrator :u32
+
+format IPv4SpecificExtendedCommunity:
+    global_administrator :[4]u8
+    local_administrator :u16
+
+format TrafficRateInBytes:
+    as_number :u16
+    rate :fl32
+
+format TrafficRateInPackets:
+    as_number :u16
+    rate :fl32
+
+format TrafficAction:
+    reserved1 :u32
+    reserved2 :u14
+    sample :u1
+    terminal :u1 
+
+format TrafficMarking:
+    reserved1 :[5]u8
+    reserved2 :u1
+    dscp :u7
+
+enum ExtendedCommunityType:
+    :u6
+    TwoOctetAS = 0x00
+    IPv4 = 0x01
+    Opaque = 0x03
 
 format ExtendedCommunity:
-    type :u8
+    iana_authority :u1
+    transitive :u1
+    type :u6
     subtype :u8
     data :[6]u8
 
@@ -572,7 +616,7 @@ enum BGPFlowSpecType:
     PKT_LEN = 10
     DSCP = 11
     FRAGMENT = 12
-    LABEL = 13
+    FLOW_LABEL = 13
     ETHERNET_TYPE = 14
     SRC_MAC = 15
     DST_MAC = 16
@@ -685,7 +729,7 @@ format FlowSpecComponent:
         BGPFlowSpecType.PKT_LEN => pkt_len :FlowSpecComponentItems
         BGPFlowSpecType.DSCP => dscp :FlowSpecComponentItems
         BGPFlowSpecType.FRAGMENT => fragment :FlowSpecComponentItems
-        BGPFlowSpecType.LABEL => label :FlowSpecComponentItems
+        BGPFlowSpecType.FLOW_LABEL => flow_label :FlowSpecComponentItems
         BGPFlowSpecType.ETHERNET_TYPE => ethernet_type :FlowSpecComponentItems
         BGPFlowSpecType.LLC_DSAP => llc_dsap :FlowSpecComponentItems
         BGPFlowSpecType.LLC_SSAP => llc_ssap :FlowSpecComponentItems
