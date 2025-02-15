@@ -7,7 +7,9 @@ format SegmentRouting:
     routingType :u8
     segmentsLeft :u8
     lastEntry :u8
-    flags :u8
+    reserved1 :u2
+    oam :u1
+    reserved2 :u5
     tag :u16
     segment_list :[lastEntry + 1][16]u8
     u16(header.hdrExtLen)*8 >= 16*(u16(lastEntry) + 1)
