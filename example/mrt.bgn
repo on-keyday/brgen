@@ -1,0 +1,148 @@
+config.url = "https://tex2e.github.io/rfc-translater/html/rfc6396.html"
+
+format MRTHeader:
+    timestamp :u32
+    type :u16
+    subtype :u16
+    length :u32
+
+format OSPFv2Type:
+    remote_ip :[4]u8
+    local_ip :[4]u8
+    message_content :[..]u8
+
+format TableDumpV4:
+    view_number :u16
+    sequence_number :u16
+    prefix :[4]u8
+    prefix_length :u8
+    status :u8
+    originated_time :u32
+    peer_ip :[4]u8
+    peer_as :u16
+    attribute_length :u16
+    attribute :[attribute_length]u8
+
+format TableDumpV6:
+    view_number :u16
+    sequence_number :u16
+    prefix :[16]u8
+    prefix_length :u8
+    status :u8
+    originated_time :u32
+    peer_ip :[16]u8
+    peer_as :u16
+    attribute_length :u16
+    attribute :[attribute_length]u8
+
+format PeerIndexTable:
+    collector_bgp_id :u32
+    view_name_length :u16
+    view_name :[view_name_length]u8
+    peer_count :u16
+    peer_table :[peer_count]PeerEntry
+
+format PeerEntry:
+    reserved :u6
+    peer_as_is_32bit :u1
+    peer_ip_is_v6 :u1
+    peer_bgp_id :u32
+    if peer_ip_is_v6 == 1:
+        peer_ip :[16]u8
+    else:
+        peer_ip :[4]u8
+    if peer_as_is_32bit == 1:
+        peer_as :u32
+    else:
+        peer_as :u16
+
+format AfiSpecificRIB:
+    sequence_number :u32
+    prefix_length :u8 # in bits
+    prefix_length_in_bytes ::= (prefix_length + 7) / 8
+    prefix :[prefix_length_in_bytes]u8
+    entry_count :u16
+    entries :[entry_count]RIBEntry
+
+format ReachabilityInfo:
+    prefix_length :u8
+    prefix_length_in_bytes ::= (prefix_length + 7) / 8
+    prefix :[prefix_length_in_bytes]u8
+
+format GenericRIB:
+    sequence_number :u32
+    afi :u16
+    safi :u8
+    network_layer_reachability_info :ReachabilityInfo   
+    entry_count :u16
+    entries :[entry_count]RIBEntry
+
+format RIBEntry:
+    peer_index :u16
+    originated_time :u32
+    attribute_length :u16
+    attribute :[attribute_length]u8
+
+format BGP4MPStateChange:
+    peer_as :u16
+    local_as :u16
+    interface_index :u16
+    address_family :u16
+    if address_family == 1:
+        peer_ip :[4]u8
+        local_ip :[4]u8
+    else:
+        peer_ip :[16]u8
+        local_ip :[16]u8
+    old_state :u16
+    new_state :u16
+
+format BGP4MPMessage:
+    peer_as :u16
+    local_as :u16
+    interface_index :u16
+    address_family :u16
+    if address_family == 1:
+        peer_ip :[4]u8
+        local_ip :[4]u8
+    else:
+        peer_ip :[16]u8
+        local_ip :[16]u8
+    message :[..]u8
+
+format BGP4MPMessageAs4:
+    peer_as :u32
+    local_as :u32
+    interface_index :u16
+    address_family :u16
+    if address_family == 1:
+        peer_ip :[4]u8
+        local_ip :[4]u8
+    else:
+        peer_ip :[16]u8
+        local_ip :[16]u8
+    message :[..]u8
+
+format BGP4MPStateChangeAs4:
+    peer_as :u32
+    local_as :u32
+    interface_index :u16
+    address_family :u16
+    if address_family == 1:
+        peer_ip :[4]u8
+        local_ip :[4]u8
+    else:
+        peer_ip :[16]u8
+        local_ip :[16]u8
+    old_state :u16
+    new_state :u16
+
+format OSPFv3Type:
+    address_family :u16
+    if address_family == 1:
+        remote_ip :[4]u8
+        local_ip :[4]u8
+    else:
+        remote_ip :[16]u8
+        local_ip :[16]u8
+    message_content :[..]u8
