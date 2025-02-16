@@ -105,7 +105,7 @@ enum AttributeCode:
     PMSI_TUNNEL = 22
     TunnelEncap = 23
     TrafficEngineering = 24
-    IPv6AddressSpecificExtendedCommunity = 25
+    IPv6AddressSpecificExtendedCommunities = 25
     AIGP = 26
     PE_DISTINGUISHER_LABEL = 27
     BGP_LS = 29
@@ -150,7 +150,7 @@ format PathAttribute:
         AttributeCode.BGP_LS => bgp_ls :LinkStateNLRI(input=input.subrange(len_tmp))
         AttributeCode.MP_REACH_NLRI => mp_reach_nlri :MPReachNLRI(input=input.subrange(len_tmp))
         AttributeCode.MP_UNREACH_NLRI => mp_unreach_nlri :MPReachNLRI(input=input.subrange(len_tmp))
-        AttributeCode.IPv6AddressSpecificExtendedCommunity => ipv6_address_specific_extended_community :IPv6SpecificExtendedCommunity(input=input.subrange(len_tmp))
+        AttributeCode.IPv6AddressSpecificExtendedCommunities => ipv6_address_specific_extended_community :[..]IPv6SpecificExtendedCommunity(input=input.subrange(len_tmp))
         AttributeCode.BGP_Prefix_SID => prefix_sid_attribute :PrefixSIDAttribute(input=input.subrange(len_tmp))
         .. => data :[len_tmp]u8
 
@@ -390,6 +390,7 @@ config.url = "https://tex2e.github.io/rfc-translater/html/rfc4360.html"
 config.url = "https://datatracker.ietf.org/doc/html/rfc8955"
 config.url = "https://www.rfc-editor.org/rfc/rfc5701"
 
+# this is also used for Redirect IPv6 Address Specific Extended Community
 format IPv6SpecificExtendedCommunity:
     type :u8
     subtype :u8
