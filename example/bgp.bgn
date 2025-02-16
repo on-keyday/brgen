@@ -390,6 +390,103 @@ format TrafficMarking:
     reserved2 :u1
     dscp :u7
 
+format ColorExtendedCommunity:
+    flags :u16
+    color :u32
+
+config.url = "https://www.rfc-editor.org/rfc/rfc9252.html"
+
+format SRv6ServiceTLV:
+    type :u8
+    length :u16
+    reserved :u8
+    tlvs :[..]SRv6ServiceTLVSubTLV
+
+enum SRv6ServiceTLVSubTLVType:
+    :u8
+    sid_info = 1
+
+srv6 ::= config.import("srv6.bgn")
+
+format SRv6SIDInformation:
+    reserved1 :u8
+    sid :[16]u8
+    service_sid_flags :u8
+    behavior :srv6.EndpointBehavior
+    reserved2 :u8
+
+enum SRv6ServiceDataSubTLVType:
+    :u16
+    SRv6SIDStructureSubSubTLV = 1
+
+format SRv6SIDStructureSubSubTLV:
+    locator_block_length :u8
+    locator_node_length :u8
+    function_length :u8
+    argument_length :u8
+    transposition_length :u8
+    transposition_offset :u8
+
+format SRv6ServiceDataSubTLV:
+    type :SRv6ServiceDataSubTLVType
+    length :u16
+    match type:
+        SRv6ServiceDataSubTLVType.SRv6SIDStructureSubSubTLV => sr_v6_sid_structure :SRv6SIDStructureSubSubTLV(input=input.subrange(length))
+        .. => data :[..]u8
+
+format SRv6ServiceTLVSubTLV:
+    type :SRv6ServiceTLVSubTLVType
+    length :u16
+    match type:
+        SRv6ServiceTLVSubTLVType.sid_info => sid_info :SRv6SIDInformation(input=input.subrange(length))
+        .. => data :[length]u8
+
+format EVPNRouteType1:
+    rd :[8]u8
+    ethernet_segment_id :[10]u8
+    ethernet_tag_id :u32
+    mpls_label :[3]u8
+
+format EVPNRouteType2:
+    rd :[8]u8
+    ethernet_segment_id :[10]u8
+    ethernet_tag_id :u32
+    mac_length :u8
+    mac :[mac_length]u8
+    ip_length :u8
+    ip :[ip_length]u8
+    mpls_label_1 :[3]u8
+    mpls_label_2 :[..]u8
+
+format EVPNRouteType3:
+    rd :[8]u8
+    ethernet_segment_id :[10]u8
+    ethernet_tag_id :u32
+    ip_length :u8
+    original_router_ip :[ip_length]u8
+
+format PMSITunnelAttribute:
+    flag :u8
+    tunnel_type :u8
+    mpls_label :[3]u8
+    tunnel_id :[..]u8
+
+format EVPNRouteType4:
+    rd :[8]u8
+    ethernet_segment_id :[10]u8
+    ethernet_tag_id :u32
+    ip_length :u8
+    original_router_ip :[ip_length]u8
+
+format IPPrefixRouteroverSRv6:
+    rd :[8]u8
+    ethernet_segment_id :[10]u8
+    ethernet_tag_id :u32
+    ip_prefix_length :u8
+    ip_prefix :[ip_prefix_length]u8
+    gw_ip_address :[..]u8
+    mpls_label :[3]u8
+
 enum ExtendedCommunityType:
     :u6
     TwoOctetAS = 0x00
