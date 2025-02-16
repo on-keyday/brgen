@@ -151,6 +151,7 @@ format PathAttribute:
         AttributeCode.MP_REACH_NLRI => mp_reach_nlri :MPReachNLRI(input=input.subrange(len_tmp))
         AttributeCode.MP_UNREACH_NLRI => mp_unreach_nlri :MPReachNLRI(input=input.subrange(len_tmp))
         AttributeCode.IPv6AddressSpecificExtendedCommunity => ipv6_address_specific_extended_community :IPv6SpecificExtendedCommunity(input=input.subrange(len_tmp))
+        AttributeCode.BGP_Prefix_SID => prefix_sid_attribute :PrefixSIDAttribute(input=input.subrange(len_tmp))
         .. => data :[len_tmp]u8
 
 enum AsPathSegmentType:
@@ -203,6 +204,7 @@ enum NLRIType:
     LinkNLRI = 2
     IPv4TopologyPrefix = 3
     IPv6TopologyPrefix = 4
+    SRPolicyCandidatePath = 5
 
 format LinkStateNLRI:
     nlri_type :NLRIType
@@ -212,6 +214,7 @@ format LinkStateNLRI:
         NLRIType.LinkNLRI => link_nlri :LinkNLRI(input=input.subrange(nlri_length))
         NLRIType.IPv4TopologyPrefix => prefix_nlri :PrefixNLRI(input=input.subrange(nlri_length))
         NLRIType.IPv6TopologyPrefix => prefix_nlri :PrefixNLRI(input=input.subrange(nlri_length))
+        NLRIType.SRPolicyCandidatePath => sr_policy_candidate_path_nlri :SRPolicyCandidatePathNLRI(input=input.subrange(nlri_length))
         .. => data :[nlri_length]u8
 
 enum SubTLVType:
@@ -224,8 +227,30 @@ enum SubTLVType:
     OSPFAreaID = 514
     IGPRouterID = 515
 
+    SR_Binding_SID = 1201
+    SR_CP_State = 1202
+    SR_CP_Name = 1203
+    SR_CP_Constraints = 1204
+    SR_Segment_List = 1205
+    SR_Segment = 1206
+    SR_Segment_List_metric = 1207
+    SR_Affinity_Constraint = 1208
+    SR_SRLG_Constraint = 1209
+    SR_Bandwidth_Constraint = 1210
+    SR_Disjoint_Group = 1211
+    SRv6_Binding_SID = 1212
+    SR_Policy_Name = 1213
+    SR_Bidirectional_Group_Constraint = 1214
+    SR_Metric_Constraint = 1215
+    SR_Segment_List_Bandwidth = 1216
+    SR_Segment_List_Identifier = 1217
+
+enum BGPLSProtocolID:
+    :u8
+    SegmentRouting = 9
+
 format NodeNLRI:
-    protocol_id :u8
+    protocol_id :BGPLSProtocolID
     identifier :u64
     local_node_descriptors :NodeDescriptors
 
@@ -236,7 +261,7 @@ format LinkNLRI:
     link_descriptors :LinkDescriptors
 
 format PrefixNLRI:
-    protocol_id :u8
+    protocol_id :BGPLSProtocolID
     identifier :u64
     local_node_descriptors :NodeDescriptors
     prefix_descriptors :PrefixDescriptors
@@ -396,9 +421,41 @@ format ColorExtendedCommunity:
 
 config.url = "https://www.rfc-editor.org/rfc/rfc9252.html"
 
-format SRv6ServiceTLV:
-    type :u8
+format PrefixSIDAttribute:
+    tlvs :[..]PrefixSIDTLV
+
+enum PrefixSIDType:
+    :u8
+    label_index = 1
+    originator_srgb = 3
+    srv6_l3_service_tlv = 5
+    srv6_l2_service_tlv = 6
+
+format PrefixSIDTLV:
+    type :PrefixSIDType
     length :u16
+    match type:
+        PrefixSIDType.label_index => label_index :LabelIndex(input=input.subrange(length))
+        PrefixSIDType.originator_srgb => originator_srgb :OriginatorSRGB(input=input.subrange(length))
+        PrefixSIDType.srv6_l3_service_tlv => srv6_l3_service_tlv :SRv6ServiceTLV(input=input.subrange(length))
+        PrefixSIDType.srv6_l2_service_tlv => srv6_l3_service_tlv :SRv6ServiceTLV(input=input.subrange(length))
+        .. => data :[length]u8
+
+format LabelIndex:
+    reserved :u8
+    flags :u16
+    label_index :u24
+
+
+format SRGB:
+    first_label :u24
+    range_size :u24
+
+format OriginatorSRGB:
+    flags :u16
+    srgb :[..]SRGB
+
+format SRv6ServiceTLV:
     reserved :u8
     tlvs :[..]SRv6ServiceTLVSubTLV
 
@@ -408,12 +465,22 @@ enum SRv6ServiceTLVSubTLVType:
 
 srv6 ::= config.import("srv6.bgn")
 
-format SRv6SIDInformation:
+
+
+format SRv6ServiceTLVSubTLV:
+    type :SRv6ServiceTLVSubTLVType
+    length :u16
+    match type:
+        SRv6ServiceTLVSubTLVType.sid_info => sid_info :SRv6SIDInformationSubTLV(input=input.subrange(length))
+        .. => data :[length]u8
+
+format SRv6SIDInformationSubTLV:
     reserved1 :u8
     sid :[16]u8
     service_sid_flags :u8
     behavior :srv6.EndpointBehavior
     reserved2 :u8
+    tlvs :[..]SRv6ServiceDataSubSubTLV
 
 enum SRv6ServiceDataSubTLVType:
     :u16
@@ -427,19 +494,13 @@ format SRv6SIDStructureSubSubTLV:
     transposition_length :u8
     transposition_offset :u8
 
-format SRv6ServiceDataSubTLV:
+format SRv6ServiceDataSubSubTLV:
     type :SRv6ServiceDataSubTLVType
     length :u16
     match type:
         SRv6ServiceDataSubTLVType.SRv6SIDStructureSubSubTLV => sr_v6_sid_structure :SRv6SIDStructureSubSubTLV(input=input.subrange(length))
         .. => data :[..]u8
 
-format SRv6ServiceTLVSubTLV:
-    type :SRv6ServiceTLVSubTLVType
-    length :u16
-    match type:
-        SRv6ServiceTLVSubTLVType.sid_info => sid_info :SRv6SIDInformation(input=input.subrange(length))
-        .. => data :[length]u8
 
 format EVPNRouteType1:
     rd :[8]u8
@@ -503,7 +564,7 @@ format ExtendedCommunity:
 config.url = "https://datatracker.ietf.org/doc/draft-ietf-idr-bgp-ls-sr-policy/02/"
 
 format SRPolicyCandidatePathNLRI:
-    protocol_id :u8
+    protocol_id :BGPLSProtocolID
     identifier :u64
     local_node_descriptors :NodeDescriptors
     candidate_path_descriptors :CandidatePathDescriptors
@@ -577,6 +638,19 @@ format SRCandidatePathState:
     reserved2 :u5
     preference :u32
 
+
+
+# An implementation MAY allow the assignment of a symbolic name 
+# comprising printable ASCII [RFC0020] characters (i.e., 0x20 to 0x7E) 
+# to an SR Policy to serve as a user-friendly attribute for debugging
+# and troubleshooting purposes. Such symbolic names may identify 
+# an SR Policy when the naming scheme ensures uniqueness.
+# The SR Policy name MAY also be signaled along with a candidate path 
+# of the SR Policy (refer to Section 2.2).
+# An SR Policy MAY have multiple names associated with it in the scenario 
+# where the headend receives different SR Policy names along with 
+# different candidate paths for the same SR Policy via the same or
+# different sources.
 format SRPolicyName:
     name :[..]u8
 
@@ -644,7 +718,7 @@ format SRBidirectionalGroupConstraint:
     bidi_group_id :[..]u8
 
 format SRMetricConstraint:
-    metric_type :u8
+    metric_type :MetricType
     optimization :u1 # O
     margin_allowed :u1 # M
     absolute_margin :u1 # A
@@ -653,9 +727,130 @@ format SRMetricConstraint:
     metric_margin :u32
     metric_bound :u32
 
+format SRSegmentList:
+    comprised_of_srv6_sid :u1 # D
+    associated_with_explicit_path :u1 # E
+    comuted_for_dynamic_path :u1 # C
+    verification :u1 # V
+    resolved :u1 # R
+    comutation_failed :u1 # F
+    all_belong_algorithm :u1 # A
+    all_belong_topology :u1 # T
+    removed :u1 # M
+    reserved1 :u7
+    reserved2 :u16
+    mtid :u16
+    algorithm :u8
+    reserved3 :u8
+    weight :u32
+    sub_tlvs :[..]SRSegmentListSubTLV
+
+format SRSegmentListSubTLV:
+    type :u16
+    length :u16
+    data :[length]u8
+
+enum SegmentType:
+    :u8
+    TypeA_SR_MPLS_Label = 1
+    TypeB_SRv6_SID_as_IPv6_Address = 2
+    TypeC_SR_MPLS_Prefix_SID_as_IPv4_Node_Address = 3
+    TypeD_SR_MPLS_Prefix_SID_as_IPv6_Node_Global_Address = 4
+    TypeE_SR_MPLS_Adjacency_SID_as_IPv4_Node_Address_and_Local_Interface_ID = 5
+    TypeF_SR_MPLS_Adjacency_SID_as_IPv4_Node_Address_and_Remote_Interface_Addresses = 6
+    TypeG_SR_MPLS_Adjacency_SID_as_pair_of_IPv6_Global_Address_and_Interface_ID_for_Local_and_Remote_Nodes = 7
+    TypeH_SR_MPLS_Adjacency_SID_as_pair_of_IPv6_Global_Address_for_Local_and_Remote_Nodes = 8
+    TypeI_SRv6_End_SID_as_IPv6_Node_Global_Address = 9
+    TypeJ_SRv6_End_X_SID_as_IPv6_Node_Global_Address_and_Interface_ID_for_Local_and_Remote_Nodes = 10
+    TypeK_SRv6_End_X_SID_as_pair_of_IPv6_Global_Addresses_for_Local_and_Remote_Interface = 11
+
+fn segmentTypeIsIPv6(type :SegmentType) -> bool:
+    return match type:
+        SegmentType.TypeB_SRv6_SID_as_IPv6_Address => true
+        SegmentType.TypeD_SR_MPLS_Prefix_SID_as_IPv6_Node_Global_Address => true
+        SegmentType.TypeG_SR_MPLS_Adjacency_SID_as_pair_of_IPv6_Global_Address_and_Interface_ID_for_Local_and_Remote_Nodes => true
+        SegmentType.TypeH_SR_MPLS_Adjacency_SID_as_pair_of_IPv6_Global_Address_for_Local_and_Remote_Nodes => true
+        SegmentType.TypeI_SRv6_End_SID_as_IPv6_Node_Global_Address => true
+        SegmentType.TypeJ_SRv6_End_X_SID_as_IPv6_Node_Global_Address_and_Interface_ID_for_Local_and_Remote_Nodes => true
+        SegmentType.TypeK_SRv6_End_X_SID_as_pair_of_IPv6_Global_Addresses_for_Local_and_Remote_Interface => true
+        .. => false
+
+format SRSegment:
+    segment_type :SegmentType
+    reserved :u8
+    sid_enable :u1 # S
+    sid_provisioned :u1 # E
+    verification :u1 # V
+    resolved :u1 # R
+    algorithm_inidicated :u1 # A
+    if segmentTypeIsIPv6(segment_type):
+        sid :[16]u8
+    else:
+        sid :[4]u8
+    match segment_type:
+        SegmentType.TypeA_SR_MPLS_Label => algorithm :u8
+        SegmentType.TypeB_SRv6_SID_as_IPv6_Address => algorithm :u8
+        SegmentType.TypeC_SR_MPLS_Prefix_SID_as_IPv4_Node_Address:
+            algrithm :u8
+            node_addr :[4]u8
+        SegmentType.TypeD_SR_MPLS_Prefix_SID_as_IPv6_Node_Global_Address:
+            algrithm :u8
+            node_addr :[16]u8
+        SegmentType.TypeE_SR_MPLS_Adjacency_SID_as_IPv4_Node_Address_and_Local_Interface_ID:
+            node_addr :[4]u8
+            local_interface_id :u32
+        SegmentType.TypeF_SR_MPLS_Adjacency_SID_as_IPv4_Node_Address_and_Remote_Interface_Addresses:
+            local_addr :[4]u8
+            remote_addr :[4]u8
+        SegmentType.TypeG_SR_MPLS_Adjacency_SID_as_pair_of_IPv6_Global_Address_and_Interface_ID_for_Local_and_Remote_Nodes:
+            local_addr :[16]u8
+            local_interface_id :u32
+            remote_addr :[16]u8
+            remote_interface_id :u32
+        SegmentType.TypeH_SR_MPLS_Adjacency_SID_as_pair_of_IPv6_Global_Address_for_Local_and_Remote_Nodes:
+            local_addr :[16]u8
+            remote_addr :[16]u8
+        SegmentType.TypeI_SRv6_End_SID_as_IPv6_Node_Global_Address:
+            algorithm :u8
+            node_addr :[16]u8
+        SegmentType.TypeJ_SRv6_End_X_SID_as_IPv6_Node_Global_Address_and_Interface_ID_for_Local_and_Remote_Nodes:
+            local_addr :[16]u8
+            local_interface_id :u32
+            remote_addr :[16]u8
+            remote_interface_id :u32
+        SegmentType.TypeK_SRv6_End_X_SID_as_pair_of_IPv6_Global_Addresses_for_Local_and_Remote_Interface:
+            local_addr :[16]u8
+            remote_addr :[16]u8
+
+enum MetricType:
+    :u8
+    IGP_Metric = 0
+    Min_unidirectional_delay = 1
+    TE_Metric = 2
+    Hop_count = 3
+    SID_List_length = 4
+
+format SegmentListMetric:
+    metric_type :MetricType
+    mergin_allowed :u1 # M
+    absolute_margin :u1 # A
+    bound_allowed :u1 # B
+    value_computed :u1 # V
+    reserved1 :u4
+    reserved2 :u16
+    metric_mergin :u32
+    metric_bound :u32
+    metric_value :u32
+
+format SegmentListBandwidth:
+    bandwidth :u32
+
+format SegmentListIdentifier:
+    identifier :[4]u8
+
 format MPReachNLRI:
-    address_family :u16
-    sub_seq_addr_family_id :u8
+    address_family :AFI
+    sub_seq_addr_family_id :SAFI
     next_hop_len :u8
     next_hop :[next_hop_len]u8
     reserved :u8
@@ -843,4 +1038,6 @@ format FlowSpecNLRI:
     length :FlowSpecNLRILength
     components :[..]FlowSpecComponent(input = input.subrange(length.length))
 
+
+config.url = "https://datatracker.ietf.org/doc/draft-ietf-idr-bgp-ls-sr-policy/02/"
 
