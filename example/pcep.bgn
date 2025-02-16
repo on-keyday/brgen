@@ -1,0 +1,45 @@
+config.url = "https://tex2e.github.io/rfc-translater/html/rfc5440.html#7-1--PCEP-TLV-Format"
+
+format CommonHeader:
+    version :u3
+    flags :u5
+    message_type :u8
+    message_length :u16
+
+format ObjectTLV:
+    type :u16
+    length :u16
+    value :[length]u8
+
+format CommonObjectHeader:
+    object_class :u8
+    object_type :u4
+    reserved :u2
+    p :u1
+    ignore :u1
+    object_length :u16
+
+format PCEPOpen:
+    version :u3
+    flags :u5
+    keep_alive :u8
+    dead_timer :u8
+    sid :u8
+    object :[..]ObjectTLV
+
+format PCEPRequestParameters:
+    flags :u26
+    loose :u1 # O
+    bidirectional :u1 # B
+    re_optimization :u1 # R
+    priority :u3
+    request_id :u32
+    tlvs :[..]ObjectTLV
+
+enum PCEPNatureOfIssue:
+    :u8
+    NoPath = 0
+    PCEChainBroken = 1
+
+format PCEPNoPath:
+    nature_of_issue :PCEPNatureOfIssue
