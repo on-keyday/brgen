@@ -205,6 +205,7 @@ enum NLRIType:
     IPv4TopologyPrefix = 3
     IPv6TopologyPrefix = 4
     SRPolicyCandidatePath = 5
+    SRv6_SID_NLRI = 6
 
 format LinkStateNLRI:
     nlri_type :NLRIType
@@ -215,6 +216,7 @@ format LinkStateNLRI:
         NLRIType.IPv4TopologyPrefix => prefix_nlri :PrefixNLRI(input=input.subrange(nlri_length))
         NLRIType.IPv6TopologyPrefix => prefix_nlri :PrefixNLRI(input=input.subrange(nlri_length))
         NLRIType.SRPolicyCandidatePath => sr_policy_candidate_path_nlri :SRPolicyCandidatePathNLRI(input=input.subrange(nlri_length))
+        NLRIType.SRv6_SID_NLRI => sr_v6_sid_nlri :[..]SRv6SIDNLRI(input=input.subrange(nlri_length))
         .. => data :[nlri_length]u8
 
 enum SubTLVType:
@@ -226,6 +228,8 @@ enum SubTLVType:
     BGPLSID = 513
     OSPFAreaID = 514
     IGPRouterID = 515
+
+    SRv6_SID_Information = 518
 
     SR_Binding_SID = 1201
     SR_CP_State = 1202
@@ -244,6 +248,10 @@ enum SubTLVType:
     SR_Metric_Constraint = 1215
     SR_Segment_List_Bandwidth = 1216
     SR_Segment_List_Identifier = 1217
+
+    SRv6_Endpoint_Behavior = 1250
+    SRv6_BGP_PeerNode_SID = 1251
+    SRv6_SID_Structure = 1252
 
 enum BGPLSProtocolID:
     :u8
@@ -1041,3 +1049,90 @@ format FlowSpecNLRI:
 
 config.url = "https://datatracker.ietf.org/doc/draft-ietf-idr-bgp-ls-sr-policy/02/"
 
+config.url = "https://datatracker.ietf.org/doc/html/rfc9514#name-bgp-ls-extensions-for-srv6"
+
+format SRv6Capabilities:
+    reserved1 :u1
+    oam :u1
+    reserved2 :u6
+    reserved3 :u8
+
+format SRv6EndXSIDTLV:
+    behavior :srv6.EndpointBehavior
+    flags :u8
+    algroithm :u8
+    wegiht :u8
+    reserved :u8
+    sid :[16]u8
+    sub_tlvs :[..]SRv6EndXSIDSubTLV
+
+format SRv6EndXSIDSubTLV:
+    type :u16
+    length :u16
+    data :[length]u8
+
+state SRv6LanEndXSIDState:
+    neighbor_id_len :u8
+
+srv6_lan_end_x_sid :SRv6LanEndXSIDState
+
+format SRv6LanEndXSIDTLV:
+    behavior :srv6.EndpointBehavior
+    flags :u8
+    algroithm :u8
+    wegiht :u8
+    reserved :u8
+    neighbor_id :[srv6_lan_end_x_sid.neighbor_id_len]u8 # 4 byte or 6 byte
+    sid :[16]u8
+    sub_tlvs :[..]SRv6LanEndXSIDSubTLV
+
+format SRv6LanEndXSIDSubTLV:
+    type :u16
+    length :u16
+    data :[length]u8
+
+format SRv6LocatorTLV:
+    flags :u8
+    algorithm :u8
+    reserved :u16
+    metric :u32
+    sub_tlvs :[..]SRv6LocatorSubTLV
+
+format SRv6LocatorSubTLV:
+    type :u16
+    length :u16
+    data :[length]u8
+
+format SRv6SIDNLRI:
+    protocol_id :BGPLSProtocolID
+    identifier :u64
+    local_node_descriptors :NodeDescriptors
+    srv6_sid_descriptors :SRv6SIDDescriptors
+
+format SRv6SIDDescriptors:
+    type :u16
+    length :u16
+    descriptor :[..]SRv6SIDDescriptorSubTLV(input=input.subrange(length))
+
+format SRv6SIDDescriptorSubTLV:
+    type :u16
+    length :u16
+    data :[length]u8
+
+format SRv6SIDInformationTLV:
+    sid :[16]u8
+
+format SRv6EndpointBehaviorTLV:
+    behavior :srv6.EndpointBehavior
+    flags :u8
+    algorithm :u8
+
+format SRv6BGPPeerNodeSIDTLV:
+    backup :u1
+    bgp_peering_session :u1
+    persistent :u1
+    reserved1 :u5
+    weight :u8
+    reserved2 :u16
+    peer_as_number :u32
+    peer_bgp_id :[4]u8
