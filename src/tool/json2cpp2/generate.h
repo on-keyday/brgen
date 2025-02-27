@@ -1936,6 +1936,7 @@ namespace j2cp2 {
                     w.writeln("#else");
                     w.writeln("#define ", export_macro_name);
                     w.writeln("#endif");
+                    w.writeln("#endif");
                 }
             }
             else if (mode == GenerateMode::source_file) {
@@ -1945,6 +1946,7 @@ namespace j2cp2 {
                     w.writeln("#define ", export_macro_name, " __declspec(dllexport)");
                     w.writeln("#else");
                     w.writeln("#define ", export_macro_name, " __attribute__((visibility(\"default\")))");
+                    w.writeln("#endif");
                     w.writeln("#endif");
                 }
                 w.writeln("#include \"", source_include, "\"");
