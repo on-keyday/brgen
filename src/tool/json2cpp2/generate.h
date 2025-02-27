@@ -115,6 +115,8 @@ namespace j2cp2 {
         std::string bytes_type = "::futils::view::rvec";
         std::string vector_type = "std::vector";
         GenerateMode mode = GenerateMode::header_only;
+        bool dll_export = false;
+        std::string export_macro_name = "EXPORT";
 
         auto write_return_error(brgen::writer::Writer& w, ast::Field* field, auto&&... msg) {
             if (use_error) {
@@ -516,7 +518,10 @@ namespace j2cp2 {
                 if (use_constexpr) {
                     w.write("constexpr ");
                 }
-                w.writeln("inline std::optional<", get_type_name(ut->common_type), "> ", def_member, uf->ident->ident, "(", get_args, ") const {");
+                if (mode != GenerateMode::source_file) {
+                    w.write("inline ");
+                }
+                w.writeln("std::optional<", get_type_name(ut->common_type), "> ", def_member, uf->ident->ident, "(", get_args, ") const {");
                 {
                     auto indent = w.indent_scope();
                     auto make_access = [&](const std::shared_ptr<ast::Field>& f) {
@@ -574,11 +579,14 @@ namespace j2cp2 {
                     if (use_constexpr) {
                         w.write("constexpr ");
                     }
+                    if (mode != GenerateMode::source_file) {
+                        w.write("inline ");
+                    }
                     if (mov) {
-                        w.writeln("inline bool ", def_member, uf->ident->ident, "(", get_type_name(ut->common_type), "&& v", set_args, ") {");
+                        w.writeln("bool ", def_member, uf->ident->ident, "(", get_type_name(ut->common_type), "&& v", set_args, ") {");
                     }
                     else {
-                        w.writeln("inline bool ", def_member, uf->ident->ident, "(const ", get_type_name(ut->common_type), "& v", set_args, ") {");
+                        w.writeln("bool ", def_member, uf->ident->ident, "(const ", get_type_name(ut->common_type), "& v", set_args, ") {");
                     }
                     {
                         auto indent = w.indent_scope();
@@ -884,7 +892,11 @@ namespace j2cp2 {
             if (has_ident) {
                 map_line(member->loc);
             }
-            w.writeln("struct ", struct_name, "{");
+            w.write("struct ");
+            if (mode == GenerateMode::header_file && dll_export) {
+                w.write(export_macro_name, " ");
+            }
+            w.writeln(struct_name, "{");
             {
                 bool is_type_mapped = false;
                 if (s->type_map && s->bit_size && s->type_map->type_literal->bit_size == s->bit_size) {
@@ -1816,11 +1828,14 @@ namespace j2cp2 {
             if (use_constexpr) {
                 w.write("constexpr ");
             }
+            if (mode != GenerateMode::source_file) {
+                w.write("inline ");
+            }
             if (encode) {
-                w.writeln("inline ", return_type, " ", fmt->ident->ident, "::encode(::futils::binary::writer& w", args, ") const {");
+                w.writeln(return_type, " ", fmt->ident->ident, "::encode(::futils::binary::writer& w", args, ") const {");
             }
             else {
-                w.writeln("inline ", return_type, " ", fmt->ident->ident, "::decode(::futils::binary::reader& r", args, ") {");
+                w.writeln(return_type, " ", fmt->ident->ident, "::decode(::futils::binary::reader& r", args, ") {");
             }
             {
                 auto indent = w.indent_scope();
@@ -1874,6 +1889,7 @@ namespace j2cp2 {
             }
             futils::helper::DynDefer defer;
             std::vector<std::string> namespaces;
+            std::string source_include = "";
             for (auto& wm : prog->metadata) {
                 auto m = wm.lock();
                 auto str_lit = ast::as<ast::StrLiteral>(m->values[0]);
@@ -1905,9 +1921,33 @@ namespace j2cp2 {
                 }
                 else if (m->name == "config.cpp.hpp_name") {
                     if (mode == GenerateMode::source_file) {
-                        w.writeln("#include \"", *name, "\"");
+                        source_include = *name;
                     }
                 }
+                else if (m->name == "config.cpp.export_macro") {
+                    export_macro_name = *name;
+                }
+            }
+            if (mode == GenerateMode::header_file) {
+                if (dll_export) {
+                    w.writeln("#ifndef ", export_macro_name);
+                    w.writeln("#ifdef _WIN32");
+                    w.writeln("#define ", export_macro_name, " __declspec(dllimport)");
+                    w.writeln("#else");
+                    w.writeln("#define ", export_macro_name);
+                    w.writeln("#endif");
+                }
+            }
+            else if (mode == GenerateMode::source_file) {
+                if (dll_export) {
+                    w.writeln("#ifndef ", export_macro_name);
+                    w.writeln("#ifdef _WIN32");
+                    w.writeln("#define ", export_macro_name, " __declspec(dllexport)");
+                    w.writeln("#else");
+                    w.writeln("#define ", export_macro_name, " __attribute__((visibility(\"default\")))");
+                    w.writeln("#endif");
+                }
+                w.writeln("#include \"", source_include, "\"");
             }
             if (auto specify_order = prog->endian.lock()) {
                 if (specify_order->order_value) {

@@ -30,6 +30,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
     bool enum_stringer = false;
     bool add_visit = false;
     bool use_constexpr = false;
+    bool dll_export = false;
     j2cp2::GenerateMode mode = j2cp2::GenerateMode::header_only;
     void bind(futils::cmdline::option::Context& ctx) {
         bind_help(ctx);
@@ -43,6 +44,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
         ctx.VarBool(&add_visit, "add-visit", "add visit method for struct");
         ctx.VarBool(&legacy_file_pass, "f,file", "use legacy file pass mode");
         ctx.VarBool(&use_constexpr, "use-constexpr", "use constexpr for functions");
+        ctx.VarBool(&dll_export, "dll-export", "use dll export");
         ctx.VarMap<std::string, j2cp2::GenerateMode, std::map>(
             &mode, "mode", "generate mode: header_only, header_file, source_file", "MODE",
             std::map<std::string, j2cp2::GenerateMode>{
@@ -62,6 +64,7 @@ int cpp_generate(const Flags& flags, brgen::request::GenerateSource& req, std::s
     g.add_visit = flags.add_visit;
     g.use_constexpr = flags.use_constexpr;
     g.mode = flags.mode;
+    g.dll_export = flags.dll_export;
     auto prog = brgen::ast::cast_to<brgen::ast::Program>(res);
     g.write_program(prog);
     send_source(req.id, std::move(g.w.out()), req.name + ".hpp");
