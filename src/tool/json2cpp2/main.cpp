@@ -67,7 +67,7 @@ int cpp_generate(const Flags& flags, brgen::request::GenerateSource& req, std::s
     g.dll_export = flags.dll_export;
     auto prog = brgen::ast::cast_to<brgen::ast::Program>(res);
     g.write_program(prog);
-    send_source(req.id, std::move(g.w.out()), req.name + ".hpp");
+    send_source(req.id, std::move(g.w.out()), req.name + (flags.mode == j2cp2::GenerateMode::source_file ? ".cpp" : ".hpp"));
     if (flags.add_line_map) {
         if (send_as_text) {
             cout << "############\n";
