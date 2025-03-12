@@ -5,7 +5,7 @@ call build.bat native %BUILD_MODE_BASE%
 if not %errorlevel% == 0 goto :error
 go env > script/go_dump_env.bat
 call script\go_dump_env.bat
-set WASMEXEC_FILE=%GOROOT%\misc\wasm\wasm_exec.js  
+set WASMEXEC_FILE=%GOROOT%\lib\wasm\wasm_exec.js  
 call build.bat wasm-em %BUILD_MODE_BASE%
 if not %errorlevel% == 0 goto :error
 python script/generate.py
