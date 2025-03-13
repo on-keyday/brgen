@@ -1,3 +1,5 @@
-export const BMLanguages = [];
+export const BM_LANGUAGES = [];
 
-export const callBMWorker = (trace_id) => {};
+export const generateBMCode = (ui, traceID, lang, sourceCode) => {};
+
+export const setBMUIConfig = (config) => {};

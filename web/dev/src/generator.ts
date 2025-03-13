@@ -261,6 +261,10 @@ export const handleRust2 = async (ui :UIModel, s :JobResult) => {
     return handleBinaryModuleBased(ui,s,Language.RUST_2,"rust",caller.getRust2Code,option);
 }
 
+export const handleBM = async (ui :UIModel, s :JobResult,lang :string) => {
+    
+}
+
 export const updateTracer = new UpdateTracer();
 
 
