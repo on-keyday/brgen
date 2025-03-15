@@ -7,6 +7,6 @@ require github.com/iancoleman/strcase v0.3.0
 require golang.org/x/net v0.35.0
 
 require (
-	golang.org/x/sys v0.30.0
+	golang.org/x/sys v0.31.0
 	sigs.k8s.io/yaml v1.4.0
 )
