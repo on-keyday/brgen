@@ -7,6 +7,7 @@ import  { BMGenOption, COption, CallOption, Cpp2Option, CppOption, GoOption, Job
 import {ast2ts} from "ast2ts";
 import {storage} from "./storage";
 import {ConfigKey} from "./types";
+import { BM_LANGUAGES, BM_LSP_LANGUAGES, generateBMCode } from "./lib/bmgen/bm_caller";
 
 //import { compileCpp } from "./compiler-explorer/api";
 
@@ -262,7 +263,12 @@ export const handleRust2 = async (ui :UIModel, s :JobResult) => {
 }
 
 export const handleBM = async (ui :UIModel, s :JobResult,lang :string) => {
-    
+    if(!BM_LANGUAGES.includes(lang)){
+        throw new Error(`invalid language ${lang}`);
+    }
+    return handleBinaryModuleBased(ui,s,lang as Language,(BM_LSP_LANGUAGES as any)[lang],(id,srcCode,_)=>{
+        return generateBMCode(ui,id,lang,srcCode);
+    },{})
 }
 
 export const updateTracer = new UpdateTracer();
@@ -319,5 +325,7 @@ export const updateGenerated = async (ui :UIModel) => {
             return handleCpp2(ui,s);
         case Language.RUST_2:
             return handleRust2(ui,s);
+        default: // for additional languages
+            return handleBM(ui,s,lang);
     }
 }

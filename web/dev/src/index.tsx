@@ -16,6 +16,7 @@ import { storage } from "./storage";
 import { FileCandidates, registerFileSelectionCallback } from "./s2j/file_select";
 import { ConfigKey, ElementID } from "./types";
 import { save } from "./save-data/save";
+import { setBMUIConfig } from "./lib/bmgen/bm_caller";
 
 1 / 2 / 3 / 4;
 
@@ -723,6 +724,18 @@ const setCommon = (m: Map<string, InputListElement>) => {
     commonUI.config.set(Language.RUST_2, languageSpecificConfig(rust2, ConfigKey.COMMON_FILE_NAME, (change) => {
         updateUI();
     }));
+
+    // add configs from rebrgen binary module based generators
+    setBMUIConfig((lang: string, setter: (nest_setter: (conf_name: string, elem: InputListElement) => void) => void) => {
+        const new_lang_map = new Map<string, InputListElement>();
+        setter((conf_name, elem) => {
+            new_lang_map.set(conf_name, elem);
+        })
+        setCommon(new_lang_map);
+        commonUI.config.set(lang as Language, languageSpecificConfig(new_lang_map, ConfigKey.COMMON_FILE_NAME, (change) => {
+            updateUI();
+        }));
+    })
 
     const specificOption = storage.getLangSpecificOption();
     if (specificOption) {

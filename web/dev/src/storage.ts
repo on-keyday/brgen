@@ -1,4 +1,5 @@
-import { JobResult,Language,LanguageList } from "./s2j/msg.js";
+import { BM_LANGUAGES } from "./lib/bmgen/bm_caller.js";
+import { Language,LanguageList } from "./s2j/msg.js";
 const enum StorageKey {
     LANG_MODE = "lang_mode",
     SOURCE_CODE = "source_code",
@@ -97,6 +98,10 @@ class storageManager {
         const mode = this.#storage.getItem(StorageKey.LANG_MODE);
         if(mode === null) return Language.CPP;
         if(LanguageList.includes(mode as Language)){
+            this.#langMode = mode as Language;
+            return mode as Language;
+        }
+        if(BM_LANGUAGES.includes(mode)) {
             this.#langMode = mode as Language;
             return mode as Language;
         }
