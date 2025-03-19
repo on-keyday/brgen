@@ -12,8 +12,8 @@ export const enum RequestLanguage {
     KAITAI_STRUCT = "kaitai struct",
 
     BINARY_MODULE = "binary module",
-    CPP_2 = "cpp2",
-    RUST_2 = "rust2",
+    //CPP_2 = "cpp2",
+    //RUST_2 = "rust2",
 }
 
 export const LanguageList = [
@@ -28,8 +28,8 @@ export const LanguageList = [
     RequestLanguage.KAITAI_STRUCT,
 
     RequestLanguage.BINARY_MODULE,
-    RequestLanguage.CPP_2,
-    RequestLanguage.RUST_2,
+    //RequestLanguage.CPP_2,
+    //RequestLanguage.RUST_2,
 ];
 
 export const enum WorkerType {
@@ -42,8 +42,8 @@ export const enum WorkerType {
     JSON2KAITAI,
 
     BMGEN,
-    BM2CPP,
-    BM2RUST,
+    //BM2CPP,
+    //BM2RUST,
 }
 
 export const WorkerList = Object.freeze([
@@ -55,8 +55,8 @@ export const WorkerList = Object.freeze([
     WorkerType.JSON2TS,
     WorkerType.JSON2KAITAI,
     WorkerType.BMGEN,
-    WorkerType.BM2CPP,
-    WorkerType.BM2RUST,
+    //WorkerType.BM2CPP,
+    //WorkerType.BM2RUST,
 ]);
 
 
@@ -122,8 +122,8 @@ export type LanguageToOptionType = {
     [RequestLanguage.KAITAI_STRUCT]:CallOption
 
     [RequestLanguage.BINARY_MODULE]:BMGenOption
-    [RequestLanguage.CPP_2]:Cpp2Option
-    [RequestLanguage.RUST_2]:Rust2Option
+    //[RequestLanguage.CPP_2]:Cpp2Option
+    //[RequestLanguage.RUST_2]:Rust2Option
 }
 
 export const LanguageToWorkerType = Object.freeze({
@@ -138,8 +138,8 @@ export const LanguageToWorkerType = Object.freeze({
     [RequestLanguage.KAITAI_STRUCT]: WorkerType.JSON2KAITAI,
 
     [RequestLanguage.BINARY_MODULE]: WorkerType.BMGEN,
-    [RequestLanguage.CPP_2]: WorkerType.BM2CPP,
-    [RequestLanguage.RUST_2]: WorkerType.BM2RUST,
+    //[RequestLanguage.CPP_2]: WorkerType.BM2CPP,
+    //[RequestLanguage.RUST_2]: WorkerType.BM2RUST,
 })
 
 

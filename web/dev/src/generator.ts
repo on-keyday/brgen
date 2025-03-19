@@ -247,6 +247,7 @@ const handleBinaryModuleBased = async (ui :UIModel, s :JobResult,lang :Language,
     return handleLanguage(ui,result,generator,lang,view_lang,opt);
 }
 
+/*
 export const handleCpp2 = async (ui :UIModel, s :JobResult) => {
     const option :Cpp2Option = {};
     return handleBinaryModuleBased(ui,s,Language.CPP_2,"cpp",caller.getCpp2Code,option);
@@ -261,6 +262,7 @@ export const handleRust2 = async (ui :UIModel, s :JobResult) => {
     };
     return handleBinaryModuleBased(ui,s,Language.RUST_2,"rust",caller.getRust2Code,option);
 }
+*/
 
 export const handleBM = async (ui :UIModel, s :JobResult,lang :string) => {
     if(!BM_LANGUAGES.includes(lang)){
@@ -321,10 +323,10 @@ export const updateGenerated = async (ui :UIModel) => {
             return handleKaitaiStruct(ui,s);
         case Language.BINARY_MODULE:
             return handleBinaryModule(ui,s);
-        case Language.CPP_2:
-            return handleCpp2(ui,s);
-        case Language.RUST_2:
-            return handleRust2(ui,s);
+        //case Language.CPP_2:
+        //    return handleCpp2(ui,s);
+        //case Language.RUST_2:
+        //    return handleRust2(ui,s);
         default: // for additional languages
             return handleBM(ui,s,lang);
     }

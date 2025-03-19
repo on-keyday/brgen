@@ -11,8 +11,8 @@ const workerMap = Object.freeze({
     [WorkerType.JSON2KAITAI]:()=> new Worker(new URL("./worker/json2kaitai_worker.js",import.meta.url),{type:"module"}),
 
     [WorkerType.BMGEN]:()=> new Worker(new URL("./worker/bmgen/bmgen_worker.js",import.meta.url),{type:"module"}),
-    [WorkerType.BM2CPP]:()=> new Worker(new URL("./worker/bmgen/bm2cpp_worker.js",import.meta.url),{type:"module"}),
-    [WorkerType.BM2RUST]:()=> new Worker(new URL("./worker/bmgen/bm2rust_worker.js",import.meta.url),{type:"module"}),
+    //[WorkerType.BM2CPP]:()=> new Worker(new URL("./worker/bmgen/bm2cpp_worker.js",import.meta.url),{type:"module"}),
+    //[WorkerType.BM2RUST]:()=> new Worker(new URL("./worker/bmgen/bm2rust_worker.js",import.meta.url),{type:"module"}),
 });
 
 
@@ -141,6 +141,7 @@ const argConverter = Object.freeze({
         }
         return args;
     },
+    /*
     [RequestLanguage.CPP_2] : (opt :Cpp2Option) => {
         const args :string[] = [];
         return args;
@@ -155,6 +156,7 @@ const argConverter = Object.freeze({
         }
         return args;
     },
+    */
 })
 
 
@@ -214,6 +216,7 @@ export const getBinaryModule = (id :TraceID,sourceCode :string,options :BMGenOpt
     return getLanguage(id,sourceCode,RequestLanguage.BINARY_MODULE,options)
 }
 
+/*
 export const getCpp2Code = (id :TraceID,sourceCode :string,options :Cpp2Option) => {
     return getLanguage(id,sourceCode,RequestLanguage.CPP_2,options)
 }
@@ -221,3 +224,4 @@ export const getCpp2Code = (id :TraceID,sourceCode :string,options :Cpp2Option) 
 export const getRust2Code = (id :TraceID,sourceCode :string,options :Rust2Option) => {
     return getLanguage(id,sourceCode,RequestLanguage.RUST_2,options)
 }
+*/

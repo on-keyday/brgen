@@ -16,7 +16,7 @@ import { storage } from "./storage";
 import { FileCandidates, registerFileSelectionCallback } from "./s2j/file_select";
 import { ConfigKey, ElementID } from "./types";
 import { save } from "./save-data/save";
-import { setBMUIConfig } from "./lib/bmgen/bm_caller";
+import { BM_LANGUAGES, setBMUIConfig } from "./lib/bmgen/bm_caller";
 
 1 / 2 / 3 / 4;
 
@@ -410,7 +410,8 @@ interface Internal {
 }
 
 const changeLanguage = async (mode: string) => {
-    if (!LanguageList.includes(mode as Language)) {
+    if (!LanguageList.includes(mode as Language) &&
+        !BM_LANGUAGES.includes(mode as Language)) {
         throw new Error(`invalid language mode: ${mode}`);
     }
     commonUI.language_select.value = mode;
@@ -451,9 +452,11 @@ const deserializeAndApplyLanguageConfig = (m: Map<Language, LanguageConfig>, src
     });
 }
 
+const languageSelector = LanguageList.concat(BM_LANGUAGES as Language[]);
+
 const commonUI = {
     title_bar: title_bar,
-    language_select: makeListBox(ElementID.LANGUAGE_SELECT, LanguageList,
+    language_select: makeListBox(ElementID.LANGUAGE_SELECT, languageSelector,
         storage.getLangMode(),
         async () => {
             const value = commonUI.language_select.value;
@@ -704,6 +707,7 @@ const setCommon = (m: Map<string, InputListElement>) => {
         updateUI();
     }));
 
+    /*
     const cpp2 = new Map<string, InputListElement>();
     setCommon(cpp2);
     commonUI.config.set(Language.CPP_2, languageSpecificConfig(cpp2, ConfigKey.COMMON_FILE_NAME, (change) => {
@@ -724,6 +728,7 @@ const setCommon = (m: Map<string, InputListElement>) => {
     commonUI.config.set(Language.RUST_2, languageSpecificConfig(rust2, ConfigKey.COMMON_FILE_NAME, (change) => {
         updateUI();
     }));
+    */
 
     // add configs from rebrgen binary module based generators
     setBMUIConfig((lang: string, setter: (nest_setter: (conf_name: string, elem: InputListElement) => void) => void) => {
