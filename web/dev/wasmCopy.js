@@ -1,4 +1,5 @@
 const { copyFile } = require("fs");
+const path = require("path");
 const copyWasm = (p) => {
   copyFile(
     path.resolve(__dirname, "src/lib/", p),
