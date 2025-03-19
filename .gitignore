@@ -34,3 +34,4 @@ stats.json
 zig-cache/
 zig-out/
 rebrgen/
+wasmCopy.js
