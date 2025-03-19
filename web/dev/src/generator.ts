@@ -266,7 +266,7 @@ export const handleBM = async (ui :UIModel, s :JobResult,lang :string) => {
     if(!BM_LANGUAGES.includes(lang)){
         throw new Error(`invalid language ${lang}`);
     }
-    return handleBinaryModuleBased(ui,s,lang as Language,(BM_LSP_LANGUAGES as any)[lang],(id,srcCode,_)=>{
+    return handleBinaryModuleBased(ui,s,lang as Language,(BM_LSP_LANGUAGES as any)[lang],(id,srcCode,_) :Promise<JobResult> =>{
         return generateBMCode(ui,id,lang,srcCode);
     },{})
 }

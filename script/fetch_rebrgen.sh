@@ -32,3 +32,6 @@ echo "bmgen-web artifact downloaded to $OUTPUT_DIR."
 echo "Move contents of ./rebrgen/tool to ./web/dev/src/lib/bmgen directory"
 mkdir -p ./web/dev/src/lib/bmgen
 mv ./rebrgen/tool/* ./web/dev/src/lib/bmgen
+
+echo "Appending wasm ./web/dev/src/lib/bmgen/wasmCopy.js.txt to ./web/dev/wasmCopy.js"
+cat ./web/dev/src/lib/bmgen/wasmCopy.js.txt >> ./web/dev/wasmCopy.js
