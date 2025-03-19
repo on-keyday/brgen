@@ -231,6 +231,8 @@ see SECURITY.md
 詳しくは src/gen ディレクトリのソースコードを参照してください。 TODO(on-keyday): 作り方を書く。
 もし、AST 操作用ライブラリを作成できて、提供して頂ける場合は src/tool/gen ディレクトリに追加して Pull Request してください。
 
+なお、より簡単にジェネレーターを追加したい場合は https://github.com/on-keyday/rebrgen を参照してください。
+
 If you don't have a language you like, you can write your own generator.
 We currently provide libraries for AST manipulation in C++, Go, TypeScript, Rust, and Python. TODO(on-keyday): Publish to various package management systems, write document for AST manipulation libraries
 
@@ -247,3 +249,5 @@ If you can create a generator and provide it, please add it to the src/tool dire
 It is also possible to provide the AST operation library itself.
 See the source code in the src/gen directory for details. TODO(on-keyday): Write how to make it.
 If you are able to create and provide a library for AST operation, please add it to the src/tool/gen directory and submit a Pull Request.
+
+If you want an easier way to add generators, see https://github.com/on-keyday/rebrgen.

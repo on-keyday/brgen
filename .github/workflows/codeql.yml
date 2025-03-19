@@ -94,6 +94,14 @@ jobs:
       - name: Setup Emscripten
         uses: mymindstorm/setup-emsdk@6ab9eb1bda2574c4ddb79809fc9247783eaf9021 # v14
         if: matrix.language == 'javascript-typescript'
+      - name: Fetch rebrgen artifacts
+        run: |
+          chmod +x ./script/fetch_rebrgen.sh
+          ./script/fetch_rebrgen.sh
+          ls -alR ./web/dev/src/lib
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        if: matrix.language == 'javascript-typescript'
       - name: Build Wasm
         if: matrix.language == 'javascript-typescript'
         run: |
