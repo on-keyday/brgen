@@ -195,13 +195,31 @@ async fn main() -> Result<(), Error> {
             .into());
         }
     }
+    let print_fail = |x: &testutil::Error| match x {
+        testutil::Error::TestFail(s) => {
+            eprintln!("reason: TestFail {}", s);
+        }
+        testutil::Error::Exec(x) => {
+            eprintln!("reason: Exec {}", x);
+        }
+        testutil::Error::IO(x) => {
+            eprintln!("reason: IO {:?}", x);
+        }
+        testutil::Error::JSON(x) => {
+            eprintln!("reason: JSON {:?}", x);
+        }
+        testutil::Error::Join(x) => {
+            eprintln!("reason: Join {:?}", x);
+        }
+    };
     for s in sched {
         match scheduler.run_test_schedule(&s, send.clone()) {
             Ok(_) => {
                 println!("test {} scheduled...", s.test_name());
             }
             Err(x) => {
-                println!("{}: {} {:?}", "FAIL".red(), s.test_name(), x);
+                eprintln!("{}: {}", "FAIL".red(), s.test_name());
+                print_fail(&x);
                 failed += 1;
             }
         }
@@ -213,7 +231,8 @@ async fn main() -> Result<(), Error> {
                 println!("{}: {}", "PASS".green(), x.test_name())
             }
             Err((sched, err, cmdline)) => {
-                eprintln!("{}: {}: {:?}", "FAIL".red(), sched.test_name(), err);
+                eprintln!("{}: {}", "FAIL".red(), sched.test_name());
+                print_fail(&err);
                 if parsed.print_fail_command {
                     if parsed.vscode {
                         eprintln!(
