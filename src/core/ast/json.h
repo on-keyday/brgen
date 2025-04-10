@@ -35,7 +35,7 @@ namespace brgen::ast {
         std::vector<std::shared_ptr<Scope>> scopes;
 
         void collect(const std::shared_ptr<Scope>& scope) {
-            auto collect_scope=[&](const std::shared_ptr<Scope>& scope){
+            auto collect_scope = [&](const std::shared_ptr<Scope>& scope) {
                 auto found = scope_index.find(scope);
                 if (found != scope_index.end()) {
                     return;  // skip; already visited
@@ -45,16 +45,16 @@ namespace brgen::ast {
             };
             std::vector<std::shared_ptr<Scope>> stack;
             stack.push_back(std::move(scope));
-            while(!stack.empty()){
+            while (!stack.empty()) {
                 auto v = stack.back();
                 stack.pop_back();
-                collect_scope(v);    
-                if(v->next){
-                    if(v->next->prev.lock()==v){                
+                collect_scope(v);
+                if (v->next) {
+                    if (v->next->prev.lock() == v) {
                         stack.push_back(v->next);
                     }
                 }
-                if(v->branch){
+                if (v->branch) {
                     stack.push_back(v->branch);
                 }
             }
@@ -83,9 +83,9 @@ namespace brgen::ast {
                             }
                         }
                     }
-                    else if constexpr (                                       futils::helper::is_template_instance_of<T, std::vector>) {
-                        using type = typename  futils::helper::template_of_t<T>::template param_at<0>;
-                        if constexpr(futils::helper::is_template_instance_of<type,std::shared_ptr>){
+                    else if constexpr (futils::helper::is_template_instance_of<T, std::vector>) {
+                        using type = typename futils::helper::template_of_t<T>::template param_at<0>;
+                        if constexpr (futils::helper::is_template_instance_of<type, std::shared_ptr>) {
                             for (auto& element : value) {
                                 collect(element);
                             }
@@ -161,7 +161,7 @@ namespace brgen::ast {
                                         field(key, [&] {
                                             auto field = obj.array();
                                             for (auto& element : value) {
-                                                if constexpr (futils::helper::is_template_instance_of<std::decay_t<decltype(element)>,std::weak_ptr>){
+                                                if constexpr (futils::helper::is_template_instance_of<std::decay_t<decltype(element)>, std::weak_ptr>) {
                                                     find_and_replace_node(element.lock(), field);
                                                 }
                                                 else {
@@ -203,7 +203,7 @@ namespace brgen::ast {
                 for (auto& scope : scopes) {
                     field([&] {
                         auto field = obj.object();
-                        find_and_replace_node(scope->owner.lock(), [&](auto val){
+                        find_and_replace_node(scope->owner.lock(), [&](auto val) {
                             field("owner", val);
                         });
                         field("ident", [&] {
@@ -225,7 +225,9 @@ namespace brgen::ast {
                     });
                 }
             };
+            field("node_count", nodes.size());  // for json parser helper
             field("node", encode_node);
+            field("scope_count", scopes.size());  // for json parser helper
             field("scope", encode_scope);
         }
 
@@ -318,14 +320,15 @@ namespace brgen::ast {
             else if constexpr (std::is_same_v<T, size_t>) {
                 return res.and_then(get_number(loc, key)).transform(either::assign_to(target));
             }
-            else if constexpr (std::is_same_v<T,std::optional<size_t>>){
-              return  res.and_then([&](auto js) -> expected<std::optional<size_t>, LocationError> {
-                static_assert(std::is_same_v<std::decay_t<decltype(js)>, const JSON*>);
-                    if (js->is_null()) {
-                        return std::optional<size_t>{};
-                    }
-                    return get_number(loc, key)(js).transform([](auto&& v) -> std::optional<size_t> { return v; });
-                }).transform(either::assign_to(target));
+            else if constexpr (std::is_same_v<T, std::optional<size_t>>) {
+                return res.and_then([&](auto js) -> expected<std::optional<size_t>, LocationError> {
+                              static_assert(std::is_same_v<std::decay_t<decltype(js)>, const JSON*>);
+                              if (js->is_null()) {
+                                  return std::optional<size_t>{};
+                              }
+                              return get_number(loc, key)(js).transform([](auto&& v) -> std::optional<size_t> { return v; });
+                          })
+                    .transform(either::assign_to(target));
             }
             else if constexpr (std::is_same_v<T, lexer::Loc>) {
                 if (std::string_view(key) == "loc") {
@@ -333,25 +336,25 @@ namespace brgen::ast {
                 }
                 return res & parse_loc(target);
             }
-            else if constexpr(std::is_enum_v<T>&&!std::is_same_v<T,const NodeType>){
-                if constexpr(is_bit_flag<T>()) {
-                    return (res & get_number(loc,key)).and_then([&](size_t v)->result<void>{
-                        if(auto res=from_json<T>(v);!res){
-                            return unexpect(error(loc,nums(v)," cannot convert to bit flag ",enum_type_name<T>()));
+            else if constexpr (std::is_enum_v<T> && !std::is_same_v<T, const NodeType>) {
+                if constexpr (is_bit_flag<T>()) {
+                    return (res & get_number(loc, key)).and_then([&](size_t v) -> result<void> {
+                        if (auto res = from_json<T>(v); !res) {
+                            return unexpect(error(loc, nums(v), " cannot convert to bit flag ", enum_type_name<T>()));
                         }
-                        else{
-                            target=*res;
+                        else {
+                            target = *res;
                         }
                         return {};
                     });
                 }
                 else {
-                    return (res&get_string(loc,key)).and_then([&](std::string&& s)->result<void>{
-                        if(auto res=from_string<T>(s.c_str());!res){
-                            return unexpect(error(loc,s,"cannot convert to enum ",enum_type_name<T>()));
+                    return (res & get_string(loc, key)).and_then([&](std::string&& s) -> result<void> {
+                        if (auto res = from_string<T>(s.c_str()); !res) {
+                            return unexpect(error(loc, s, "cannot convert to enum ", enum_type_name<T>()));
                         }
-                        else{
-                            target=*res;
+                        else {
+                            target = *res;
                         }
                         return {};
                     });
@@ -391,7 +394,7 @@ namespace brgen::ast {
                     auto rep = std::make_shared<NodeT>();
                     rep->loc = loc;
                     rep->dump([&](auto key, auto& target) {
-                        err = err & [&]()->result<void> { return parse_non_node_field(**body, node_type, loc, key, target); };
+                        err = err & [&]() -> result<void> { return parse_non_node_field(**body, node_type, loc, key, target); };
                     });
                     if (!err) {
                         return;
@@ -550,11 +553,11 @@ namespace brgen::ast {
                         return scopes[i];
                     };
                 };
-                auto branch_root=json_at(val,"branch_root");
-                if(!branch_root){
+                auto branch_root = json_at(val, "branch_root");
+                if (!branch_root) {
                     return branch_root & empty_value<void>() | json_to_loc_error({}, "branch_root");
                 }
-                if(!(*branch_root)->as_bool(scopes[i]->branch_root)){
+                if (!(*branch_root)->as_bool(scopes[i]->branch_root)) {
                     return unexpect(error({}, "branch_root must be true"));
                 }
                 auto b = get_scope("branch");
@@ -567,8 +570,8 @@ namespace brgen::ast {
                     return n & empty_value<void>();
                 }
                 scopes[i]->next = std::move(*n);
-                auto p=get_scope("prev");
-                if(!p){
+                auto p = get_scope("prev");
+                if (!p) {
                     return p & empty_value<void>();
                 }
                 scopes[i]->prev = std::move(*p);
@@ -591,7 +594,7 @@ namespace brgen::ast {
                     else {
                         return unexpect(error({}, "expect ident but found ", node_type_to_string(val->node_type)));
                     }
-                }       
+                }
                 auto owner = json_at(val, "owner");
                 if (!owner) {
                     return owner & empty_value<void>() | json_to_loc_error({}, "owner");
