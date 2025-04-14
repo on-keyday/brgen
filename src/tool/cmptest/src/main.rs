@@ -31,6 +31,8 @@ struct Args {
         help("clean temporary directory (except current temporary directory if --save-tmp-dir specified) (remove cmptest-* in $TMP)")
     )]
     clean_tmp: bool,
+    #[arg(long, help("print stdout of test (for debug)"))]
+    print_stdout: bool,
 }
 
 #[tokio::main]
@@ -227,10 +229,13 @@ async fn main() -> Result<(), Error> {
     drop(send);
     while let Some(x) = recv.recv().await {
         match x {
-            Ok(x) => {
-                println!("{}: {}", "PASS".green(), x.test_name())
+            Ok((x, stdout)) => {
+                println!("{}: {}", "PASS".green(), x.test_name());
+                if parsed.print_stdout {
+                    println!("stdout:\n{}", stdout);
+                }
             }
-            Err((sched, err, cmdline)) => {
+            Err((sched, stdout, err, cmdline)) => {
                 eprintln!("{}: {}", "FAIL".red(), sched.test_name());
                 print_fail(&err);
                 if parsed.print_fail_command {
@@ -244,6 +249,9 @@ async fn main() -> Result<(), Error> {
                     } else {
                         eprintln!("command line: {:?}", cmdline);
                     }
+                }
+                if parsed.print_stdout {
+                    eprintln!("stdout:\n{}", stdout);
                 }
                 failed += 1;
             }

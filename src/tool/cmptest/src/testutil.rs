@@ -1,14 +1,7 @@
-use std::{
-    collections::HashMap,
-    env, fs,
-    path::{Path, PathBuf},
-    process,
-    sync::Arc,
-};
+use std::{collections::HashMap, env, fs, path::PathBuf, sync::Arc};
 
 use rand::{self, distr::SampleString};
 
-use ast2rust::ast;
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc;
 
@@ -165,7 +158,8 @@ fn path_str(path: &PathBuf) -> String {
     }
 }
 
-type SendChan = mpsc::Sender<Result<TestSchedule, (TestSchedule, Error, Vec<String>)>>;
+type SendChan =
+    mpsc::Sender<Result<(TestSchedule, String), (TestSchedule, String, Error, Vec<String>)>>;
 
 impl TestScheduler {
     pub fn new(debug: bool) -> Self {
@@ -386,6 +380,7 @@ impl TestScheduler {
         debug: bool,
     ) -> (
         Result<Option<String>, Error>,
+        String,      // stdout
         Vec<String>, /*command line*/
     ) {
         let mut cmd = base.clone();
@@ -397,14 +392,15 @@ impl TestScheduler {
             Err(x) => {
                 return (
                     Err(Error::Exec(format!("exec error: {:?}: {}", cmd, x))),
+                    String::new(),
                     cmd,
                 );
             }
         };
         let code = done.status.code();
-        println!("{}", String::from_utf8_lossy(&done.stdout));
+        let stdout = String::from_utf8_lossy(&done.stdout);
         match code {
-            Some(0) => return (Ok(None), cmd),
+            Some(0) => return (Ok(None), stdout.to_string(), cmd),
             status => {
                 if let Some(x) = status {
                     if x == 1 && !expect_ok {
@@ -413,6 +409,7 @@ impl TestScheduler {
                                 "process exit with 1:\n{}",
                                 String::from_utf8_lossy(&done.stderr)
                             ))),
+                            stdout.to_string(),
                             cmd,
                         );
                     }
@@ -423,6 +420,7 @@ impl TestScheduler {
                         status,
                         String::from_utf8_lossy(&done.stderr)
                     ))),
+                    stdout.to_string(),
                     cmd,
                 );
             }
@@ -440,6 +438,7 @@ impl TestScheduler {
         debug: bool,
     ) -> Result<tokio::task::JoinHandle<()>, Error> {
         let proc = async move {
+            let mut stdout_buf = String::new();
             // build test
             match Self::exec_cmd(
                 &sched,
@@ -453,8 +452,10 @@ impl TestScheduler {
             )
             .await
             {
-                (Ok(_), _) => {}
-                (Err(x), cmd) => return Err((sched, x, cmd)),
+                (Ok(_), stdout, _) => {
+                    stdout_buf = stdout;
+                }
+                (Err(x), stdout, cmd) => return Err((sched, stdout, x, cmd)),
             };
 
             let exec = output;
@@ -463,7 +464,7 @@ impl TestScheduler {
 
             // run test
             let (status, cmdline) = {
-                let (status, cmdline) = Self::exec_cmd(
+                let (status, stdout, cmdline) = Self::exec_cmd(
                     &sched,
                     &sched.runner.run_command,
                     &tmp_dir,
@@ -474,9 +475,10 @@ impl TestScheduler {
                     debug,
                 )
                 .await;
+                stdout_buf += &stdout;
                 match status {
                     Ok(x) => (x, cmdline),
-                    Err(x) => return Err((sched, x, cmdline)),
+                    Err(x) => return Err((sched, stdout_buf, x, cmdline)),
                 }
             };
 
@@ -489,6 +491,7 @@ impl TestScheduler {
                 if actual == "success" {
                     return Err((
                         sched,
+                        stdout_buf,
                         Error::TestFail(format!(
                             "test failed: expect {} but got {}",
                             expect, actual
@@ -498,6 +501,7 @@ impl TestScheduler {
                 } else {
                     return Err((
                         sched,
+                        stdout_buf,
                         Error::TestFail(format!(
                             "test failed: expect {} but got {}: {}",
                             expect,
@@ -510,7 +514,7 @@ impl TestScheduler {
             }
 
             if sched.input.failure_case {
-                return Ok(sched); // skip output check
+                return Ok((sched, stdout_buf)); // skip output check
             }
 
             let output = match tokio::fs::read(&output).await {
@@ -518,6 +522,7 @@ impl TestScheduler {
                 Err(x) => {
                     return Err((
                         sched,
+                        stdout_buf,
                         Error::TestFail(format!("test output file cannot load: {}", x)),
                         Vec::new(),
                     ))
@@ -555,10 +560,10 @@ impl TestScheduler {
                 for (i, a, b) in diff {
                     debug += &format!("{}: {:02x?} != {:02x?}\n", i, a, b);
                 }
-                return Err((sched, Error::TestFail(debug), cmdline));
+                return Err((sched, stdout_buf, Error::TestFail(debug), cmdline));
             }
 
-            Ok(sched)
+            Ok((sched, stdout_buf))
         };
         let proc = async move {
             let r = proc.await;
