@@ -92,6 +92,9 @@ Ident,
 Comment,
 Error,
 Unknown,
+PartialStrLiteral,
+PartialCharLiteral,
+PartialRegexLiteral,
 }
 public enum UnaryOp {
 Not,

@@ -468,6 +468,9 @@ pub enum TokenTag {
 	Comment,
 	Error,
 	Unknown,
+	PartialStrLiteral,
+	PartialCharLiteral,
+	PartialRegexLiteral,
 }
 impl TryFrom<&str> for TokenTag {
 	type Error = ();
@@ -487,6 +490,9 @@ impl TryFrom<&str> for TokenTag {
 			"comment" =>Ok(Self::Comment),
 			"error" =>Ok(Self::Error),
 			"unknown" =>Ok(Self::Unknown),
+			"partial_str_literal" =>Ok(Self::PartialStrLiteral),
+			"partial_char_literal" =>Ok(Self::PartialCharLiteral),
+			"partial_regex_literal" =>Ok(Self::PartialRegexLiteral),
 			_=> Err(()),
 		}
 	}
@@ -509,6 +515,9 @@ impl TokenTag {
 			Self::Comment => "comment",
 			Self::Error => "error",
 			Self::Unknown => "unknown",
+			Self::PartialStrLiteral => "partial_str_literal",
+			Self::PartialCharLiteral => "partial_char_literal",
+			Self::PartialRegexLiteral => "partial_regex_literal",
 		}
 	}
 }

@@ -94,6 +94,9 @@ class TokenTag(PyEnum):
     COMMENT = "comment"
     ERROR = "error"
     UNKNOWN = "unknown"
+    PARTIAL_STR_LITERAL = "partial_str_literal"
+    PARTIAL_CHAR_LITERAL = "partial_char_literal"
+    PARTIAL_REGEX_LITERAL = "partial_regex_literal"
 
 
 class UnaryOp(PyEnum):

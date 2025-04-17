@@ -175,6 +175,12 @@ Comment,
 Error,
 @JsonValue('unknown')
 Unknown,
+@JsonValue('partial_str_literal')
+PartialStrLiteral,
+@JsonValue('partial_char_literal')
+PartialCharLiteral,
+@JsonValue('partial_regex_literal')
+PartialRegexLiteral,
 }
 enum UnaryOp {
 @JsonValue('!')

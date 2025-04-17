@@ -23,10 +23,13 @@ export const enum TokenTag {
 	comment = "comment",
 	error = "error",
 	unknown = "unknown",
+	partial_str_literal = "partial_str_literal",
+	partial_char_literal = "partial_char_literal",
+	partial_regex_literal = "partial_regex_literal",
 };
 
 export function isTokenTag(obj: any): obj is TokenTag {
-	return obj && typeof obj === 'string' && (obj === "indent" || obj === "space" || obj === "line" || obj === "punct" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "regex_literal" || obj === "char_literal" || obj === "keyword" || obj === "ident" || obj === "comment" || obj === "error" || obj === "unknown")
+	return obj && typeof obj === 'string' && (obj === "indent" || obj === "space" || obj === "line" || obj === "punct" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "regex_literal" || obj === "char_literal" || obj === "keyword" || obj === "ident" || obj === "comment" || obj === "error" || obj === "unknown" || obj === "partial_str_literal" || obj === "partial_char_literal" || obj === "partial_regex_literal")
 }
 
 export const enum UnaryOp {

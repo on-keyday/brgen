@@ -662,20 +662,23 @@ func (n *Function) GetNodeType() NodeType {
 type TokenTag int
 
 const (
-	TokenTagIndent       TokenTag = 0
-	TokenTagSpace        TokenTag = 1
-	TokenTagLine         TokenTag = 2
-	TokenTagPunct        TokenTag = 3
-	TokenTagIntLiteral   TokenTag = 4
-	TokenTagBoolLiteral  TokenTag = 5
-	TokenTagStrLiteral   TokenTag = 6
-	TokenTagRegexLiteral TokenTag = 7
-	TokenTagCharLiteral  TokenTag = 8
-	TokenTagKeyword      TokenTag = 9
-	TokenTagIdent        TokenTag = 10
-	TokenTagComment      TokenTag = 11
-	TokenTagError        TokenTag = 12
-	TokenTagUnknown      TokenTag = 13
+	TokenTagIndent              TokenTag = 0
+	TokenTagSpace               TokenTag = 1
+	TokenTagLine                TokenTag = 2
+	TokenTagPunct               TokenTag = 3
+	TokenTagIntLiteral          TokenTag = 4
+	TokenTagBoolLiteral         TokenTag = 5
+	TokenTagStrLiteral          TokenTag = 6
+	TokenTagRegexLiteral        TokenTag = 7
+	TokenTagCharLiteral         TokenTag = 8
+	TokenTagKeyword             TokenTag = 9
+	TokenTagIdent               TokenTag = 10
+	TokenTagComment             TokenTag = 11
+	TokenTagError               TokenTag = 12
+	TokenTagUnknown             TokenTag = 13
+	TokenTagPartialStrLiteral   TokenTag = 14
+	TokenTagPartialCharLiteral  TokenTag = 15
+	TokenTagPartialRegexLiteral TokenTag = 16
 )
 
 func (n TokenTag) String() string {
@@ -708,6 +711,12 @@ func (n TokenTag) String() string {
 		return "error"
 	case TokenTagUnknown:
 		return "unknown"
+	case TokenTagPartialStrLiteral:
+		return "partial_str_literal"
+	case TokenTagPartialCharLiteral:
+		return "partial_char_literal"
+	case TokenTagPartialRegexLiteral:
+		return "partial_regex_literal"
 	default:
 		return fmt.Sprintf("TokenTag(%d)", n)
 	}
@@ -747,6 +756,12 @@ func (n *TokenTag) UnmarshalJSON(data []byte) error {
 		*n = TokenTagError
 	case "unknown":
 		*n = TokenTagUnknown
+	case "partial_str_literal":
+		*n = TokenTagPartialStrLiteral
+	case "partial_char_literal":
+		*n = TokenTagPartialCharLiteral
+	case "partial_regex_literal":
+		*n = TokenTagPartialRegexLiteral
 	default:
 		return fmt.Errorf("unknown TokenTag: %q", tmp)
 	}
