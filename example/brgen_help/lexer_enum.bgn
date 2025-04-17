@@ -16,4 +16,7 @@ enum Tag:
     comment
     error
     unknown
+    partial_str_literal
+    partial_char_literal
+    partial_regex_literal
 

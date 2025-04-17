@@ -196,7 +196,7 @@ impl TestScheduler {
         let mut i = 0;
         let mut pair: Option<u8> = None;
         let mut line = 1;
-        let mut col = 1;
+        let mut col = 0;
         while i < input.len() {
             let c = input[i];
             if c == b' ' || c == b'\t' || c == b'\n' || c == b'\r' {

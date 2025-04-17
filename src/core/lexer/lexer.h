@@ -24,9 +24,12 @@ namespace brgen::lexer {
         constexpr auto space_or_punct = space | line | method_proxy(punct) | eos;
         constexpr auto filter_keyword = peek(space_or_punct);
         constexpr auto int_literal = str(Tag::int_literal, (cps::hex_integer | cps::oct_integer | cps::bin_integer | cps::dec_integer) & +filter_keyword);
-        constexpr auto str_literal = str(Tag::str_literal, cps::c_str);
-        constexpr auto char_literal = str(Tag::char_literal, cps::char_str);
-        constexpr auto regex_literal = str(Tag::regex_literal, cps::js_regex_str & -(~oneof("dgimsuy") & +filter_keyword));
+        constexpr auto str_literal = str(Tag::str_literal, cps::c_str_weak);
+        constexpr auto partial_str_literal = str(Tag::partial_str_literal, cps::c_str_partial);
+        constexpr auto char_literal = str(Tag::char_literal, cps::char_str_weak);
+        constexpr auto partial_char_literal = str(Tag::partial_char_literal, cps::char_str_partial);
+        constexpr auto regex_literal = str(Tag::regex_literal, cps::js_regex_str_weak & -(~oneof("dgimsuy") & +filter_keyword));
+        constexpr auto partial_regex_literal = str(Tag::partial_regex_literal, cps::js_regex_str_partial);
         constexpr auto bool_literal = str(Tag::bool_literal, (lit("true") | lit("false")) & filter_keyword);
 
         constexpr auto puncts(auto&&... args) {
@@ -65,7 +68,22 @@ namespace brgen::lexer {
         constexpr auto one_token_lexer() {
             auto p = method_proxy(punct);
             auto regex = conditional_method(regex_mode, futils::comb2::Status::not_match, regex_literal);
-            auto lex = indent | spaces | line | comment | int_literal | str_literal | regex | char_literal | p | bool_literal | keywords | ident;
+            auto partial_regex = conditional_method(regex_mode, futils::comb2::Status::not_match, partial_regex_literal);
+            auto lex = indent |
+                       spaces |
+                       line |
+                       comment |
+                       int_literal |
+                       str_literal |
+                       partial_str_literal |
+                       regex |
+                       partial_regex |
+                       char_literal |
+                       partial_char_literal |
+                       p |
+                       bool_literal |
+                       keywords |
+                       ident;
             return lex;
         }
 
