@@ -12,3 +12,9 @@ format A:
     else:
         b :u16
     
+
+
+format B:
+    x :u8
+
+X ::= "dom dom"
