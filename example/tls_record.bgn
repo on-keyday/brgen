@@ -91,6 +91,8 @@ enum ExtensionType:
     signature_algorithms_cert = 50
     key_share = 51
     quic_transport_parameters = 0x39
+    ech_outer_extensions = 0xfd00
+    encrypted_client_hello = 0x65037 # may be currently
 
 #TODO(on-keyday): make vector type generic!
 

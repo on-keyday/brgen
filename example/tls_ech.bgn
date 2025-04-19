@@ -1,0 +1,79 @@
+
+config.url = "https://datatracker.ietf.org/doc/html/draft-ietf-tls-esni-24"
+
+format HpkePublicKey:
+    len :u16
+    key :[len]u8
+
+enum HpkeKdfID:
+    :u16
+    none # stub
+
+enum HpkeAeadId:
+    :u16 
+    none # stub
+
+enum HpkeKemId:
+    :u16
+    none # stub
+
+format HpkeSymmetricCipherSuite:
+    kdf_id :HpkeKdfID
+    aead_id :HpkeAeadId
+
+format HpkeSymmetricCipherSuites:
+    len :u16 # in bytes
+    len >= 4 && len % 4 == 0 
+    cipher_suites :[len / 4]HpkeSymmetricCipherSuite
+
+format HpkeKeyConfig:
+    config_id :u8
+    kem_id :HpkeKemId
+    public_key :HpkePublicKey
+    cipher_suite :HpkeSymmetricCipherSuites
+
+enum ECHConfigExtensionType:
+    :u16
+    none
+
+format ECHConfigExtension:
+    type :ECHConfigExtensionType
+    len :u16
+    data :[len]u8
+
+format ECHConfigContents:
+    key_config :HpkeKeyConfig
+    max_name_len :u8
+    public_name_len :u8
+    public_name_len >= 1
+    public_name :[public_name_len]u8
+    extensions_len :u16 # in bytes
+    extensions :[..]ECHConfigExtension(input = input.subrange(extensions_len))
+
+
+format ECHConfig:
+    version :u16
+    length :u16
+    match version:
+        0xfe0d => contents :ECHConfigContents(input = input.subrange(length))
+        .. => opaque :[length]u8
+
+enum ECHClientHelloType:
+    :u8
+    outer
+    inner 
+
+format ECHClientHelloOuter:
+    cipher_suite :HpkeSymmetricCipherSuite
+    config_id :u8
+    encapsulated_key_len :u16
+    encapsulated_key :[encapsulated_key_len]u8
+    encrypted_client_hello_inner_len :u16
+    encrypted_client_hello_inner :[encrypted_client_hello_inner_len]u8
+
+format ECHClientHello:
+    type :ECHClientHelloType
+    match type:
+        ECHClientHelloType.outer => outer :ECHClientHelloOuter
+        ECHClientHelloType.inner => .. # empty
+
