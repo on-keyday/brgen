@@ -707,39 +707,19 @@ const setCommon = (m: Map<string, InputListElement>) => {
         updateUI();
     }));
 
-    /*
-    const cpp2 = new Map<string, InputListElement>();
-    setCommon(cpp2);
-    commonUI.config.set(Language.CPP_2, languageSpecificConfig(cpp2, ConfigKey.COMMON_FILE_NAME, (change) => {
-        updateUI();
-    }));
-
-    const rust2 = new Map<string, InputListElement>();
-    rust2.set(ConfigKey.RUST2_USE_ASYNC, {
-        "type": "checkbox",
-        "value": false,
-    });
-    rust2.set(ConfigKey.RUST2_USE_COPY_ON_WRITE_VEC, {
-        "type": "checkbox",
-        "value": false,
-    });
-    setCommon(rust2);
-
-    commonUI.config.set(Language.RUST_2, languageSpecificConfig(rust2, ConfigKey.COMMON_FILE_NAME, (change) => {
-        updateUI();
-    }));
-    */
 
     // add configs from rebrgen binary module based generators
-    setBMUIConfig((lang: string, setter: (nest_setter: (conf_name: string, elem: InputListElement) => void) => void) => {
-        const new_lang_map = new Map<string, InputListElement>();
-        setter((conf_name, elem) => {
-            new_lang_map.set(conf_name, elem);
-        })
-        setCommon(new_lang_map);
-        commonUI.config.set(lang as Language, languageSpecificConfig(new_lang_map, ConfigKey.COMMON_FILE_NAME, (change) => {
-            updateUI();
-        }));
+    setBMUIConfig({
+        set_flags: (lang: string, setter: (nest_setter: (conf_name: string, elem: InputListElement) => void) => void) => {
+            const new_lang_map = new Map<string, InputListElement>();
+            setter((conf_name, elem) => {
+                new_lang_map.set(conf_name, elem);
+            })
+            setCommon(new_lang_map);
+            commonUI.config.set(lang as Language, languageSpecificConfig(new_lang_map, ConfigKey.COMMON_FILE_NAME, (change) => {
+                updateUI();
+            }));
+        }
     })
 
     const specificOption = storage.getLangSpecificOption();
