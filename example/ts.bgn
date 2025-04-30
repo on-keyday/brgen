@@ -1,0 +1,74 @@
+config.url = "https://note.com/ottawa123/n/n29918972da50"
+config.url = "https://en.wikipedia.org/wiki/MPEG_transport_stream"
+config.url = "https://github.com/skullanbones/mpeg2ts/blob/72e5611d9391a82053b804b577274a4c3e08cf33/libs/mpeg2ts/src/TsParser.cc#L399"
+
+format TransportPacketHeader: # big endian
+    sync_byte :u8
+    transport_error_indicator :u1
+    payload_unit_start_indicator :u1
+    transport_priority :u1
+    pid :u13
+    transport_scrambling_control :u2
+    has_adaptation_field :u1
+    has_payload :u1
+    continuity_counter :u4
+    if has_adaptation_field == 1:
+        adaptation_field_length :u8
+        adaptation_field :[adaptation_field_length]u8
+
+
+format ProgramAssociationTable:
+    table_id :u8
+    section_syntax_indicator :u1
+    zero :u1(0)
+    reserved1 :u2
+    section_length :u12
+    transport_stream_id :u16
+    version_number :u5
+    current_next_indicator :u1
+    section_number :u8
+    last_section_number :u8
+    association_infos :[..]AssociationInfo(input = input.subrange(section_length))
+    crc_32 :u32
+
+format AssociationInfo:
+    program_number :u16
+    reserved :u3
+    pid :u13
+
+format PSITable:
+    table_id :u8
+    section_syntax_indicator :u1
+    zero :u1(0)
+    reserved1 :u2
+    section_length :u12
+    transport_stream_id :u16
+    reserved2 :u2
+    version_number :u5
+    current_next_indicator :u1
+    section_number :u8
+    last_section_number :u8
+
+format ProgramMapTable:
+    psi_table :PSITable 
+    reserved3 :u3
+    pcr_pid :u13
+    reserved4 :u4
+    program_info_length :u12
+    program_infos :Descriptor(input = input.subrange(program_info_length))
+    len_bytes ::= psi_table.section_length - program_info_length - 9
+    stream_infos :[..]StreamInfo(input = input.subrange(len_bytes))
+    crc_32 :u32
+
+format StreamInfo:
+    stream_type :u8
+    reserved :u3
+    elementary_pid :u13
+    reserved2 :u4
+    es_info_length :u12
+    descriptor :[..]Descriptor(input = input.subrange(es_info_length))
+
+format Descriptor:
+    tag :u8
+    length :u8
+    data :[length]u8
