@@ -1,0 +1,77 @@
+config.url = "https://github.com/torvalds/linux/blob/master/include/uapi/linux/if_packet.h"
+
+format TPacketHeader:
+    tp_status: u64
+    tp_len: u32
+    tp_snaplen: u32
+    tp_mac: u16
+    tp_net: u16
+    tp_sec: u32
+    tp_usec: u32
+
+format TPacket2Header:
+    tp_status :u32
+    tp_len :u32
+    tp_snaplen :u32
+    tp_mac :u16
+    tp_net :u16
+    tp_sec :u32
+    tp_nsec :u32
+    tp_vlan_tci :u16
+    tp_vlan_tpid :u16
+    tp_padding :[4]u8
+
+format TPacketHeaderVariant:
+    tp_rxhash: u32
+    tp_vlan_tci: u32
+    tp_vlan_tpid: u16
+    tp_vlan_tci_flags: u16
+
+format TPacket3Header:
+    tp_next_offset: u32
+    tp_sec : u32
+    tp_nsec : u32
+    tp_snaplen : u32
+    tp_mac : u16
+    tp_net : u16
+    hv1 :TPacketHeaderVariant
+    tp_padding :[8]u8
+
+format TPacketBDTimestamp:
+    tv_sec : u32
+    tv_usec_or_nsec : u32
+
+format TPacketHeaderV1:
+    block_status  : u32
+    num_pkts     : u32
+    offset_to_first_pkt : u32
+    block_len    : u32
+    seq_num :u64
+    ts_first_pkt :TPacketBDTimestamp
+    ts_last_pkt :TPacketBDTimestamp
+
+enum TPacketVersion:
+    TPACKET_V1
+    TPACKET_V2
+    TPACKET_V3
+
+format SockAddrLL:
+    sll_family :ul16
+    sll_protocol :u16
+    sll_ifindex :ul32
+    sll_hatype :ul16
+    sll_pkttype :ul8
+    sll_halen :ul8
+    sll_addr :[8]ul8
+
+enum RxTPStatus:
+    KERNEL = 0
+    USER = 1 << 0
+    COPY = 1 << 1
+    LOSING = 1 << 2
+    CSUMNOTREADY = 1 << 3
+    VLAN_VALID = 1 << 4
+    BLK_TMO = 1 << 5
+    VLAN_TPID_VALID = 1 << 6
+    CSUM_VALID = 1 << 7
+    GSO_TCP = 1 << 8

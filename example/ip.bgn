@@ -51,6 +51,8 @@ enum ProtocolNumber:
     TRUNK_1 = 23
     TRUNK_2 = 24
     RoutingHeader = 43
+    ESP = 50
+    AH = 51
     ICMPV6 = 58
     OSPF = 89
     Ethernet = 143
