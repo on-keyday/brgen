@@ -1,0 +1,106 @@
+
+config.url = "https://datatracker.ietf.org/doc/html/rfc2083"
+
+format PNGFile:
+    magic: "\x89PNG\r\n\x1a\n"
+    chunks: [..]Chunk
+
+format ChunkHeader:
+    length :u32
+    length <= 0x7fffffff
+    chunk_type :[4]u8
+
+    fn safe_to_copy() -> bool:
+        return chunk_type[3] & 0b00100000 == 1
+    fn reserved_bits() -> bool:
+        return chunk_type[2] & 0b00100000 == 1 
+    fn private() -> bool:
+        return chunk_type[1] & 0b00100000 == 1
+    fn ancillary() -> bool:
+        return chunk_type[0] & 0b00100000 == 1
+
+enum ColorType:
+    :u8
+    greyscale = 0
+    truecolor = 2
+    indexed_color = 3
+    greyscale_alpha = 4
+    truecolor_alpha = 6
+
+format IHDR:
+    width :u32
+    height :u32
+    bit_depth :u8
+    color_type :ColorType
+    compression_method :u8
+    filter_method :u8
+    interlace_method :u8
+
+format SinglePLTE:
+    palette :[3]u8
+
+format PLTE:
+    palettes :[..]SinglePLTE
+
+format IDAT:
+    data :[..]u8
+
+format IEND:
+    ..
+
+format cHRM:
+    white_point_x :u32
+    white_point_y :u32
+    red_x :u32
+    red_y :u32
+    green_x :u32
+    green_y :u32
+    blue_x :u32
+    blue_y :u32
+
+format gAMA:
+    gamma :u32
+
+format hIST:
+    histograms :[..]u16
+
+format pHYs:
+    pixels_per_unit_x :u32
+    pixels_per_unit_y :u32
+    unit_specifier :u8
+
+format sBIT:
+    original_bit_depths :[..]u8 # dependent on color type
+
+format tEXt:
+    keyword :[..]u8
+    null_byte :"\0"
+    text :[..]u8
+
+format tIME:
+    year :u16
+    month :u8
+    day :u8
+    hour :u8
+    minute :u8
+    second :u8
+
+format tRNS:
+    alpha_values :[..]u8
+
+format zTXt:
+    keyword :[..]u8
+    null_byte :"\0"
+    compression_method :u8
+    compressed_text :[..]u8
+
+format CompressedData:
+    compression_method :u8
+    additional_flags :u8
+    compressed_data :[..]u8
+    checksum :u32
+
+format Chunk:
+    header :ChunkHeader
+    data :[header.length]u8
+    crc :u32
