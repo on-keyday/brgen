@@ -1,0 +1,91 @@
+config.url = "https://github.com/SoftEtherVPN/SoftEtherVPN/blob/master/src/Mayaqua/Pack.c"
+
+config.url = "https://github.com/SoftEtherVPN/SoftEtherVPN/blob/12ed43f6eb723a295a8a4f014fd0140bcc8b1ead/src/Mayaqua/Memory.c#L3059"
+format BufStr:
+    len :u32
+    len != 0
+    data :[len-1]u8
+
+format Data:
+    len :u32
+    data :[len]u8
+
+format UniStr:
+    len :u32
+    data :[len]u8
+    isUtf8(data) == true
+
+fn isUtf8(data :[]u8) -> bool:
+    if data.length == 0:
+        return true
+    for i := u64(0); i < data.length; i+=1:
+        if data[i] & 0x80 == 0:
+            continue
+        if data[i] & 0xC0 == 0xC0:
+            return false
+        if data[i] & 0xE0 == 0xE0:
+            if i + 1 >= data.length || (data[i+1] & 0xC0) != 0x80:
+                return false
+            i += 1
+        else:
+            if i + 2 >= data.length || (data[i+1] & 0xC0) != 0x80 || (data[i+2] & 0xC0) != 0x80:
+                return false
+            i += 2
+    return true
+
+format Element:
+    name :BufStr
+    type :ValueType
+    value_len :u32
+    match type:
+        ValueType.INT:
+            value :[value_len]u32
+        ValueType.INT64:
+            value :[value_len]u64
+        ValueType.DATA:
+            value :[value_len]Data
+        ValueType.STR:
+            value :[value_len]BufStr
+        ValueType.UNISTR:
+            value :[value_len]UniStr
+
+enum ValueType:
+    :u32
+    INT
+    DATA 
+    STR
+    UNISTR
+    INT64
+
+format Pack:
+    num_elements :u32
+    elements :[num_elements]Element
+
+
+config.url = "https://github.com/SoftEtherVPN/SoftEtherVPN/blob/12ed43f6eb723a295a8a4f014fd0140bcc8b1ead/src/Cedar/Protocol.c#L6589"
+format Hello:
+    num_elements :u32(4)
+    hello :Element
+    hello.name.data == "hello"
+    hello.value_len == 1
+    hello.type == ValueType.STR
+    version :Element
+    version.name.data == "version"
+    version.value_len == 1
+    version.type == ValueType.INT
+    build :Element
+    build.name.data == "build"
+    build.value_len == 1
+    build.type == ValueType.INT
+    random :Element
+    random.name.data == "random"
+    random.value_len == 1
+    random.type == ValueType.DATA
+
+config.url = "https://github.com/SoftEtherVPN/SoftEtherVPN/blob/12ed43f6eb723a295a8a4f014fd0140bcc8b1ead/src/Mayaqua/Network.c"
+format Error:
+    num_elements :u32(1)
+    error :Element
+    error.name.data == "error"
+    error.value_len == 1
+    error.type == ValueType.INT
