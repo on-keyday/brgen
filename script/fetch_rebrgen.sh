@@ -8,7 +8,7 @@ OUTPUT_DIR="./rebrgen"
 
 # 最新のワークフロー実行を取得
 echo "Fetching the latest workflow run for $REPO..."
-RUN_ID=$(gh run list --repo "$REPO" --limit 1 --json databaseId -q '.[0].databaseId')
+RUN_ID=$(gh run list --repo "$REPO" --branch main --limit 1 --json databaseId -q '.[0].databaseId')
 
 # RUN_ID が取得できない場合のエラー処理
 if [ -z "$RUN_ID" ]; then
