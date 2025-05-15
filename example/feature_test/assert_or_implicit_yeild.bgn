@@ -1,0 +1,43 @@
+
+format ImplicitYieldMatchPattern:
+    type :u8
+    len :u8
+    data :[len]u8
+    ok ::= match type: # match type is bool
+        0 => (data.length >= 10) # as boolean expression
+        1 => (data.length >= 20)
+        .. => (data.length >= 30)
+    ok == true
+
+format AssertMatchPattern:
+    type :u8
+    len :u8
+    data :[len]u8
+    match type: # match type is void
+        0 => data.length >= 10 # as assertion
+        1 => data.length >= 20
+        .. => data.length >= 30
+
+format ImplicitYieldIfPattern:
+    type :u8
+    len :u8
+    data :[len]u8
+    ok ::= if type == 0: # if type is bool
+        (data.length >= 10) # as boolean expression
+    elif type == 1:
+        (data.length >= 20)
+    else:
+        (data.length >= 30)
+    ok == true
+
+format AssertIfPattern:
+    type :u8
+    len :u8
+    data :[len]u8
+    if type == 0: # if type is void
+        data.length >= 10 # as assertion
+    elif type == 1:
+        data.length >= 20
+    else:
+        data.length >= 30
+

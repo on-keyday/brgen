@@ -5,8 +5,9 @@
 
 namespace brgen::middle::test {
     result<void> apply_middle(LocationError& warn, std::shared_ptr<ast::Program>& node) {
+        middle::replace_assert(node);
         return middle::analyze_type(node, &warn).and_then([&] {
-            middle::replace_assert(node, warn);
+            brgen::middle::collect_unused_warnings(node, warn);
             return result<void>{};
         });
     }

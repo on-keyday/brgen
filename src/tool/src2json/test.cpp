@@ -48,11 +48,12 @@ namespace brgen::test {
             ok.throw_error();
         }
         brgen::middle::replace_metadata(p);
+        brgen::middle::replace_assert(p);
         ok = brgen::middle::analyze_type(p, &err_or_warn);
         if (!ok) {
             ok.throw_error();
         }
-        brgen::middle::replace_assert(p, err_or_warn);
+        brgen::middle::collect_unused_warnings(p, err_or_warn);
         brgen::middle::mark_recursive_reference(p);
         brgen::middle::detect_non_dynamic_type(p);
         brgen::middle::analyze_bit_size_and_alignment(p);

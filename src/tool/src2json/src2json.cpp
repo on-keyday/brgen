@@ -436,6 +436,10 @@ int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& f
         brgen::middle::replace_metadata(*p);
     }
 
+    if (!flags.not_resolve_assert) {
+        brgen::middle::replace_assert(*p);
+    }
+
     if (!flags.not_resolve_type) {
         brgen::LocationError warns;
         auto res3 = brgen::middle::analyze_type(*p, &warns);
@@ -460,10 +464,10 @@ int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& f
         }
     }
 
-    if (!flags.not_resolve_assert) {
+    if (!flags.disable_unused_warning) {
         brgen::LocationError warns;
-        brgen::middle::replace_assert(*p, warns);
-        if (!flags.disable_unused_warning && warns.locations.size() > 0) {
+        brgen::middle::collect_unused_warnings(*p, warns);
+        if (warns.locations.size() > 0) {
             if (!flags.omit_json_warning) {
                 json_out_err.locations.insert(json_out_err.locations.end(), warns.locations.begin(), warns.locations.end());
             }

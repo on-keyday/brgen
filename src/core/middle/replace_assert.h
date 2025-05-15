@@ -26,18 +26,13 @@ namespace brgen::middle {
         return ret;
     }
 
-    inline void replace_assert(const std::shared_ptr<ast::Node>& node, LocationError& err_or_warn) {
+    inline void collect_unused_warnings(const std::shared_ptr<ast::Node>& node, LocationError& err_or_warn) {
         if (!node) {
             return;
         }
         auto one_element = [&](auto it) {
-            replace_assert(*it, err_or_warn);
-            if (auto bin = ast::as<ast::Binary>(*it); bin && ast::is_boolean_op(bin->op)) {
-                auto a = std::make_shared<ast::Assert>(std::static_pointer_cast<ast::Binary>(*it));
-                a->is_io_related = is_io_related(a->cond.get());
-                *it = std::move(a);
-            }
-            else if (bin && ast::is_assign_op(bin->op)) {
+            collect_unused_warnings(*it, err_or_warn);
+            if (auto bin = ast::as<ast::Binary>(*it); bin && ast::is_assign_op(bin->op)) {
                 // nothing to do
             }
             else if (bin || ast::as<ast::Literal>(*it) || ast::as<ast::Unary>(*it) || ast::as<ast::Ident>(*it) ||
@@ -68,7 +63,42 @@ namespace brgen::middle {
             return;
         }
         ast::traverse(node, [&](auto&& f) {
-            replace_assert(f, err_or_warn);
+            collect_unused_warnings(f, err_or_warn);
+        });
+    }
+
+    inline void replace_assert(const std::shared_ptr<ast::Node>& node) {
+        if (!node) {
+            return;
+        }
+        auto one_element = [&](auto it) {
+            replace_assert(*it);
+            if (auto bin = ast::as<ast::Binary>(*it); bin && ast::is_boolean_op(bin->op)) {
+                auto a = std::make_shared<ast::Assert>(std::static_pointer_cast<ast::Binary>(*it));
+                a->is_io_related = is_io_related(a->cond.get());
+                *it = std::move(a);
+            }
+        };
+        auto each_element = [&](ast::node_list& list) {
+            for (auto it = list.begin(); it != list.end(); it++) {
+                one_element(it);
+            }
+        };
+        if (auto a = ast::as<ast::Program>(node)) {
+            each_element(a->elements);
+            return;
+        }
+        if (auto b = ast::as<ast::IndentBlock>(node)) {
+            each_element(b->elements);
+            return;
+        }
+        if (auto s = ast::as<ast::ScopedStatement>(node)) {
+            auto base_match = ast::as<ast::MatchBranch>(s->struct_type->base.lock())->belong.lock();
+            one_element(&s->statement);
+            return;
+        }
+        ast::traverse(node, [&](auto&& f) {
+            replace_assert(f);
         });
     }
 }  // namespace brgen::middle
