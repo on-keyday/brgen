@@ -43,7 +43,6 @@ jobs:
         run: |
           cd utils
           git pull
-          rm -rf built
           . build shared Release futils
           cd ..
       - name: Build
@@ -420,6 +419,7 @@ jobs:
         run: |
           cd utils
           git pull
+          rm -rf built
           . build wasm-em Release futils
           cd ..
       - name: Set up ast2ts
