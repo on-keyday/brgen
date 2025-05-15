@@ -43,7 +43,7 @@ jobs:
         run: |
           cd utils
           git pull
-          rm -rf built # temporary erase
+          rm -rf built
           . build shared Release futils
           cd ..
       - name: Build
