@@ -15,7 +15,7 @@ state SPIState:
     integrity_check_value_length :u8
 
 spi_state :SPIState
-
+config.url = "https://www.rfc-editor.org/rfc/rfc4303"
 format EncapsulingSecurityPayload:
     security_parameters_index :u32
     sequence_number :u32

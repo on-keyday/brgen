@@ -1,0 +1,39 @@
+config.url = "https://datatracker.ietf.org/doc/rfc8609/"
+enum TLVType:
+    T_ORG 
+
+format TLV:
+    type :u16
+    length :u16
+    data :[length]u8
+
+enum PacketType:
+    :u8
+    Interest = 0x00
+    Content = 0x01
+    Return = 0x02
+
+enum ReturnCode:
+    :u8
+    NoRoute = 0x01
+    LimitExceeded = 0x02
+    NoResources = 0x03
+    PathError = 0x04
+    ReturnProhibited = 0x05
+    Congested = 0x06
+    ReturnMtuTooLarge = 0x07
+    ReturnUnsupportedHashRestriction = 0x08
+    MalformedInterest = 0x09
+
+format CCNxPacketHeader:
+    version :u8
+    packet_type :PacketType
+    packet_length :u16
+    packet_specific :u24
+    header_length :u8
+
+format CCNxPacket:
+    header :CCNxPacketHeader
+    header.packet_length >= u16(header.header_length)
+    header_tlvs :[..]TLV(input = input.subrange(header.header_length))
+    payload_tlvs :[..]TLV(input = input.subrange(header.packet_length - header.header_length))

@@ -1,0 +1,183 @@
+config.url = "https://ericvh.github.io/9p-rfc/rfc9p2000.html#msgs"
+
+config.generator = "Gemini Flash 2.5(preview)"
+
+# P9PMessageHeader はすべての9Pメッセージに共通するヘッダです。
+# size: メッセージ全体のバイト長 (ヘッダを含む)
+# tag: クライアントがメッセージを識別するために使用するタグ
+format P9PMessageHeader:
+    size :u32
+    tag :u16
+
+# NOTAG は特別なタグで、Tversion メッセージでタグマッチングを無効にするために使用されます。
+NOTAG ::= u16(0xFFFF) # 0xFFFF は (ushort)~0 と同じ意味です。
+
+# StringValue は、2バイトの長さフィールドとその後に続くUTF-8エンコードされた文字列データを表します。
+# len フィールドは、string_data のバイト長を示します。
+format StringValue:
+    len :u16
+    string_data :[len]u8
+
+# Qid はファイルの一意な識別子です。
+format Qid:
+    type :u8
+    version :u32
+    path :u64
+
+# Stat はファイルのメタデータを表します。
+format Stat:
+    size :u16 # このStat構造体のバイト長
+    type :u16
+    dev :u32
+    qid :Qid
+    mode :u32
+    atime :u32
+    mtime :u32
+    length :u64
+    name :StringValue
+    uid :StringValue
+    gid :StringValue
+    muid :StringValue
+
+
+
+## 9P メッセージフォーマット
+
+### 接続管理
+
+format Tversion:
+    header :P9PMessageHeader
+    msize :u32 # クライアントが処理できる最大メッセージサイズ
+    version :StringValue # プロトコルバージョン文字列 (例: "9P2000")
+
+format Rversion:
+    header :P9PMessageHeader
+    msize :u32 # サーバーが処理できる最大メッセージサイズ
+    version :StringValue # プロトコルバージョン文字列 (サーバーがサポートするもの)
+
+### 認証
+
+format Tauth:
+    header :P9PMessageHeader
+    afid :u32 # 認証用のfid
+    uname :StringValue # ユーザー名
+    aname :StringValue # 認証メカニズム名または認証ドメイン名
+
+format Rauth:
+    header :P9PMessageHeader
+    aqid :Qid # 認証ファイルの一意な識別子
+
+### エラー
+
+format Rerror:
+    header :P9PMessageHeader
+    ename :StringValue # エラーメッセージ文字列
+
+### リクエストキャンセル
+
+format Tflush:
+    header :P9PMessageHeader
+    oldtag :u16 # キャンセルしたい元のメッセージのタグ
+
+format Rflush:
+    header :P9PMessageHeader
+
+### ファイルシステム操作
+
+format Tattach:
+    header :P9PMessageHeader
+    fid :u32 # 添付するファイルのfid (通常はルート)
+    afid :u32 # 認証が完了した認証ファイルのfid
+    uname :StringValue # ユーザー名
+    aname :StringValue # 添付するファイルツリー名 (例: "main", "draw")
+
+format Rattach:
+    header :P9PMessageHeader
+    qid :Qid # 添付されたファイルのQid
+
+format Twalk:
+    header :P9PMessageHeader
+    fid :u32 # 元のファイルのfid
+    newfid :u32 # 新しいファイルのfid
+    nwname :u16 # 歩行するパス要素の数
+    wname :[nwname]StringValue # パス要素のリスト
+
+format Rwalk:
+    header :P9PMessageHeader
+    nwqid :u16 # 解決されたQidの数
+    wqid :[nwqid]Qid # 解決されたQidのリスト
+
+format Topen:
+    header :P9PMessageHeader
+    fid :u32 # 開くファイルのfid
+    mode :u8 # オープンモード (例: OREAD, OWRITE)
+
+format Ropen:
+    header :P9PMessageHeader
+    qid :Qid # 開かれたファイルの一意な識別子
+    iounit :u32 # IOの推奨ブロックサイズ
+
+format Tcreate:
+    header :P9PMessageHeader
+    fid :u32 # 新しいファイルを作成するディレクトリのfid
+    name :StringValue # 作成するファイル名
+    perm :u32 # ファイルのパーミッションとモード
+    mode :u8 # 作成後のオープンモード
+
+format Rcreate:
+    header :P9PMessageHeader
+    qid :Qid # 作成されたファイルの一意な識別子
+    iounit :u32 # IOの推奨ブロックサイズ
+
+format Tread:
+    header :P9PMessageHeader
+    fid :u32 # 読み込むファイルのfid
+    offset :u64 # 読み込み開始オフセット
+    count :u32 # 読み込むバイト数
+
+format Rread:
+    header :P9PMessageHeader
+    count :u32 # 実際に読み込んだバイト数
+    data :[count]u8 # 読み込んだデータ
+
+format Twrite:
+    header :P9PMessageHeader
+    fid :u32 # 書き込むファイルのfid
+    offset :u64 # 書き込み開始オフセット
+    count :u32 # 書き込むバイト数
+    data :[count]u8 # 書き込むデータ
+
+format Rwrite:
+    header :P9PMessageHeader
+    count :u32 # 実際に書き込んだバイト数
+
+format Tclunk:
+    header :P9PMessageHeader
+    fid :u32 # クランクするfid
+
+format Rclunk:
+    header :P9PMessageHeader
+
+format Tremove:
+    header :P9PMessageHeader
+    fid :u32 # 削除するファイルのfid
+
+format Rremove:
+    header :P9PMessageHeader
+
+format Tstat:
+    header :P9PMessageHeader
+    fid :u32 # 情報を取得するファイルのfid
+
+format Rstat:
+    header :P9PMessageHeader
+    stat :Stat # ファイルの統計情報
+
+format Twstat:
+    header :P9PMessageHeader
+    fid :u32 # プロパティを変更するファイルのfid
+    stat :Stat # 新しい統計情報 (変更したいフィールドのみ設定)
+
+format Rwstat:
+    header :P9PMessageHeader
+    
