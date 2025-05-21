@@ -1,0 +1,54 @@
+config.url = "https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-rdpbcgr/5073f4ed-1e93-45e1-b039-6e30c385867c"
+input.endian = config.endian.little
+
+format ClientX224ConnectionRequest:
+    tpktHeader :TPKTHeader
+    x224Crq: X224Crq
+    routing_token :LineEnded
+    cookie :LineEnded
+    rdp_neg_req :RDPNegReq
+    if rdp_neg_req.flags.correlation_info_present == 1:
+        rdp_correlation_info :RDPCorrelationInfo
+    
+
+format LineEnded:
+    data :[..]u8
+    :"\r\n"
+
+
+format TPKTHeader:
+    unknown :u32
+
+format X224Crq:
+    data :[7]u8
+
+format RDPNegReq:
+    type :u8(0x01)
+    flags :RDPNegReqFlags
+    length :u16
+    requested_protocols :RDPNegReqRequestedProtocols
+
+enum RDPNegReqRequestedProtocols:
+    :u32
+    RDP = 0x00000000
+    SSL = 0x00000001
+    HYBRID = 0x00000002
+    RDSTLS = 0x00000004
+    HYBRIDEX = 0x00000008
+    RDSAAD = 0x00000010
+
+
+format RDPNegReqFlags: # from lsb
+    restricted_admin :u1
+    restricted_authentication :u1
+    correlation_info_present :u1
+    reserved :u5
+
+format RDPCorrelationInfo:
+    type :u8(0x06)
+    flags :u8(0)
+    length :u16(0x24)
+    correlation_id :[16]u8
+    reserved :[16]u8
+
+# TODO: add support for the other messages
