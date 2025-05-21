@@ -1,0 +1,93 @@
+format Varint:
+    value :u64
+
+    fn decode():
+        for:
+            v := input.get()
+            if v < 0x80:
+                value = v
+                return
+            value = (value << 7) | u64(v & 0x7f)    
+      
+
+    fn encode():
+        for:
+            v := u8(value & 0x7f)
+            value = value >> 7
+            if value == 0:
+                output.put(v)
+                return
+            output.put(v | 0x80)
+
+    fn u64() -> u64:
+        return value
+
+format Data:
+    length :Varint
+    value :[length.value]u8
+
+enum Type:
+    :u64
+    Handshake
+    Login
+    KeepAlive
+    Chat
+
+format Handshake:
+    version :Varint
+    target_name :Data
+    target_id :u16
+    state_ :Varint
+
+
+
+format ForwardedData:
+    data :[..]u8
+    :"\0"
+    ip :[..]u8
+    :"\0"
+    uuid :[..]u8
+
+format Login:
+    user_name :Data
+
+format Chat:
+    message :Data
+
+format KeepAliveOverProtocol338:
+    keep_alive :u64
+
+format KeepAliveUnderProtocol338:
+    keep_alive :Varint
+
+
+fn map_login_by_protocol(protocol :u64) -> u64:
+    return match:
+        protocol >= 391 => 0x00
+        protocol >= 385 => 0x01
+        .. => 0
+
+fn map_keep_alive_by_protocol(protocol :u64) -> u64:
+    return match:
+        protocol >= 755 => 0x0f
+        protocol >= 712 => 0x10
+        protocol >= 471 => 0x0f
+        protocol >= 389 => 0x0e
+        protocol >= 386 => 0x0c
+        protocol >= 345 => 0x0b
+        protocol >= 343 => 0x0a
+        protocol >= 336 => 0x0b
+        protocol >= 318 => 0x0c
+        protocol >= 107 => 0x0b
+        .. => 0
+
+fn map_chat_by_protocol(protocol :u64) -> u64:
+    return match:
+        protocol >= 755 => 0x03
+        protocol >= 464 => 0x03
+        protocol >= 389 => 0x02
+        protocol >= 343 => 0x01
+        protocol >= 336 => 0x02
+        protocol >= 318 => 0x03
+        protocol >= 107 => 0x02
+        .. => 0x01
