@@ -130,6 +130,8 @@ format ICMPv4Packet:
             parameter_problem: ICMPParameterProblem
         ICMPv4Type.timestamp:
             timestamp: ICMPTimestamp
+        ICMPv4Type.timestamp_reply:
+            timestamp_reply: ICMPTimestamp
         ..:
             data: [..]u8
 
