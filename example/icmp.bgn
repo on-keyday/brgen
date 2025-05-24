@@ -7,7 +7,9 @@ format ICMPHeader:
     checksum: u16
 
 format ICMPTimeExceeded:
-    unused :u32
+    unused1 :u8
+    original_length :u8
+    unused2 :u16
     data: [..]u8
 
 format ICMPEcho:
@@ -17,9 +19,13 @@ format ICMPEcho:
 
 
 format ICMPDestinationUnreachable:
-    unused: u16
+    unused: u8
+    original_length :u8
     next_hop_mtu: u16
     data: [..]u8
+
+
+
 
 format ICMPPacketTooBig:
     unused: u32
