@@ -1,0 +1,26 @@
+
+format InBandNetworkTelemetryShimHeader:
+    type :u4
+    npt :u2
+    reserved :u2
+    length :u8 # length excluding shim_header in 4-byte words
+    port_proto_dscp :u16
+
+format InBandNetworkTelemetryMetadataHeader:
+    version :u4
+    d :u1
+    e :u1
+    m :u1
+    reserved :u12
+    hop_ml :u5
+    remaining_hop_count :u8
+    instruction_bitmap :u16
+    domain_specific_id :u16
+    ds_instruction :u16
+    ds_flags :u16
+
+format InBandNetworkTelemetryHeader:
+    shim_header :InBandNetworkTelemetryShimHeader
+    shim_header.length >= 3 # least contains metadata_header
+    metadata_header :InBandNetworkTelemetryMetadataHeader
+    telemetry_data :[u16(shim_header.length - 3)*4]u8
