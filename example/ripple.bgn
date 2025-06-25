@@ -1,0 +1,86 @@
+
+config.url ="https://xrpl.org/ja/docs/references/protocol/binary-format#%E5%86%85%E9%83%A8%E3%83%95%E3%82%A9%E3%83%BC%E3%83%9E%E3%83%83%E3%83%88"
+
+format FieldID:
+    type_code :u4
+    field_code :u4
+    if type_code == 0:
+        uncommon_type_code :u8
+    if field_code == 0:
+        uncommon_field_code :u8
+
+format Length:
+    length :u32
+
+    fn encode():
+        if length > 918744:
+            error("Length exceeds maximum value of 918744")
+        if length <= 192:
+            output.put(u8(length))
+        elif length <= 12480:
+            byte1 := length / 256
+            byte2 := length % 256
+            output.put(u8(193 + byte1))
+            output.put(u8(byte2))
+        else:
+            byte1 := length / 65536
+            byte2 := (length / 256) % 256
+            byte3 := length % 256
+            output.put(u8(241 + byte1))
+            output.put(u8(byte2))
+            output.put(u8(byte3))
+    
+    fn decode():
+        byte := input.get(u8)
+        if byte < 193:
+            length = byte
+        elif byte < 241:
+            byte2 := input.get(u8)
+            length = 193 + u32(byte - 193) * 256 + u32(byte2)
+        else:
+            byte2 := input.get(u8)
+            byte3 := input.get(u8)
+            length = 12481 + u32(byte - 241) * 65536 + u32(byte2) * 256 + u32(byte3)
+
+    fn u32() -> u32:
+        return length
+
+format AccountID:
+    length :Length
+    length.length == 160
+    id :AccountIDFixed
+
+format AccountIDFixed:
+    id :[160]u8
+
+format StandardCurrencyCode:
+    kind :u2(0)
+    reserved1 :[11]u8
+    iso_code :[3]u8
+    reserved2 :[5]u8
+
+format Amount:
+    non_xrp :u1
+    sign_bit :u1
+    if non_xrp == 0:
+        drops :u62
+    else:
+        exponent :u8
+        fraction :u54
+    if non_xrp == 1:
+        currency_code :StandardCurrencyCode
+        account_id :AccountIDFixed
+
+format Blob:
+    length :Length
+    data :[length.length]u8
+
+format Hash128:
+    hash :[128/8]u8
+
+format Hash160:
+    hash :[160/8]u8   
+
+format Hash256:
+    hash :[256/8]u8   
+
