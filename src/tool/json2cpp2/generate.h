@@ -114,6 +114,8 @@ namespace j2cp2 {
         std::vector<std::string> struct_names;
         std::string bytes_type = "::futils::view::rvec";
         std::string vector_type = "std::vector";
+        std::string recursive_type = "std::shared_ptr";
+        std::string initialize_method = "std::make_shared";
         GenerateMode mode = GenerateMode::header_only;
         bool dll_export = false;
         std::string export_macro_name = "EXPORT";
@@ -309,10 +311,9 @@ namespace j2cp2 {
                 return enum_ty->base.lock()->ident->ident;
             }
             if (auto arr_ty = ast::as<ast::ArrayType>(type); arr_ty) {
-                if (arr_ty->non_dynamic_allocation) {
-                    auto len = str.to_string(arr_ty->length);
+                if (arr_ty->length_value) {
                     auto typ = get_type_name(arr_ty->element_type);
-                    return brgen::concat("std::array<", typ, ",", len, ">");
+                    return brgen::concat("std::array<", typ, ",", brgen::nums(*arr_ty->length_value), ">");
                 }
                 if (auto int_ty = ast::as<ast::IntType>(arr_ty->element_type); int_ty && int_ty->bit_size == 8) {
                     return bytes_type;
@@ -322,11 +323,18 @@ namespace j2cp2 {
             if (auto struct_ty = ast::as<ast::StructType>(type); struct_ty) {
                 if (auto l = struct_ty->base.lock()) {
                     if (auto fmt = ast::as<ast::Format>(l)) {
+                        if (struct_ty->recursive) {
+                            return brgen::concat(recursive_type, "<", fmt->ident->ident, ">");
+                        }
                         return fmt->ident->ident;
                     }
                 }
             }
             if (auto ident_ty = ast::as<ast::IdentType>(type); ident_ty) {
+                auto base = ident_ty->base.lock();
+                if (base) {
+                    return get_type_name(base, align);
+                }
                 return ident_ty->ident->ident;
             }
             return "";
@@ -509,9 +517,18 @@ namespace j2cp2 {
                     get_args.erase(0, 1);
                 }
             }
-            w.writeln("std::optional<", get_type_name(ut->common_type), "> ", uf->ident->ident, "(", get_args, ") const;");
-            w.writeln("bool ", uf->ident->ident, "(", get_type_name(ut->common_type), "&& v", set_args, ");");
-            w.writeln("bool ", uf->ident->ident, "(const ", get_type_name(ut->common_type), "& v", set_args, ");");
+            auto type_name = get_type_name(ut->common_type);
+            bool is_recursive = false;
+            auto candidate_type = ut->common_type;
+            if (auto ident_ty = ast::as<ast::IdentType>(candidate_type); ident_ty) {
+                candidate_type = ident_ty->base.lock();
+            }
+            if (auto struct_ty = ast::as<ast::StructType>(candidate_type); struct_ty) {
+                is_recursive = struct_ty->recursive;
+            }
+            w.writeln("std::optional<", type_name, "> ", uf->ident->ident, "(", get_args, ") const;");
+            w.writeln("bool ", uf->ident->ident, "(", type_name, "&& v", set_args, ");");
+            w.writeln("bool ", uf->ident->ident, "(const ", type_name, "& v", set_args, ");");
             auto fn = [=, this] {
                 // write getter func
                 map_line(uf->loc);
@@ -521,13 +538,16 @@ namespace j2cp2 {
                 if (mode != GenerateMode::source_file) {
                     w.write("inline ");
                 }
-                w.writeln("std::optional<", get_type_name(ut->common_type), "> ", def_member, uf->ident->ident, "(", get_args, ") const {");
+                w.writeln("std::optional<", type_name, "> ", def_member, uf->ident->ident, "(", get_args, ") const {");
                 {
                     auto indent = w.indent_scope();
                     auto make_access = [&](const std::shared_ptr<ast::Field>& f) {
                         auto a = str.to_string(f->ident);
                         check_variant_alternative(f->belong_struct.lock());
                         map_line(f->loc);
+                        if (is_recursive) {
+                            a = a.substr(2, a.size() - 3);  // remove '(*' and ')'
+                        }
                         w.writeln("return ", a, ";");
                     };
                     bool has_els = false;
@@ -583,10 +603,10 @@ namespace j2cp2 {
                         w.write("inline ");
                     }
                     if (mov) {
-                        w.writeln("bool ", def_member, uf->ident->ident, "(", get_type_name(ut->common_type), "&& v", set_args, ") {");
+                        w.writeln("bool ", def_member, uf->ident->ident, "(", type_name, "&& v", set_args, ") {");
                     }
                     else {
-                        w.writeln("bool ", def_member, uf->ident->ident, "(const ", get_type_name(ut->common_type), "& v", set_args, ") {");
+                        w.writeln("bool ", def_member, uf->ident->ident, "(const ", type_name, "& v", set_args, ") {");
                     }
                     {
                         auto indent = w.indent_scope();
@@ -594,6 +614,10 @@ namespace j2cp2 {
                             map_line(f->loc);
                             set_variant_alternative(f->belong_struct.lock());
                             auto a = str.to_string(f->ident);
+                            if (is_recursive) {
+                                // remove '(*' and ')'
+                                a = a.substr(2, a.size() - 3);
+                            }
                             maybe_write_auto_length_set("v.size()", f->field_type);
                             if (maybe_set_dynamic_to_static_array(f->field_type, ut->common_type, "v.size()")) {
                                 w.writeln("std::copy(v.begin(), v.end(), ", a, ".begin());");
@@ -831,8 +855,13 @@ namespace j2cp2 {
             if (auto struct_ty = ast::as<ast::StructType>(type)) {
                 auto type_name = get_type_name(type);
                 map_line(f->loc);
+                if (struct_ty->recursive) {
+                    str.map_ident(f->ident, "(*", prefix, ".", f->ident->ident, ")");
+                }
+                else {
+                    str.map_ident(f->ident, prefix, ".", f->ident->ident);
+                }
                 w.writeln(type_name, " ", f->ident->ident, ";");
-                str.map_ident(f->ident, prefix, ".", f->ident->ident);
             }
             if (auto str_type = ast::as<ast::StrLiteralType>(type)) {
                 auto len = str_type->strong_ref->length;
@@ -1333,8 +1362,29 @@ namespace j2cp2 {
             }
             if (auto struct_ty = ast::as<ast::StructType>(typ); struct_ty) {
                 map_line(loc);
+                std::string callee;
+                if (struct_ty->recursive) {
+                    auto copy = ident;
+                    if (copy.starts_with("(*")) {
+                        copy = ident.substr(0, ident.size() - 1);  // remove last ')'
+                        copy = copy.substr(2);                     // remove '(*'
+                        callee = ident;
+                    }
+                    else {
+                        callee = brgen::concat("(*", ident, ")");
+                    }
+                    w.writeln("if (!", copy, ") {");
+                    {
+                        auto indent = w.indent_scope();
+                        write_return_error(fi, "write recursive struct failed; ", copy, " is null");
+                    }
+                    w.writeln("}");
+                }
+                else {
+                    callee = ident;
+                }
                 auto args = state_variable_to_argument(ast::cast_to<ast::StructType>(typ), false);
-                auto call = brgen::concat(ident, ".encode(w", args, ")");
+                auto call = brgen::concat(callee, ".encode(w", args, ")");
                 if (use_error) {
                     w.writeln("if (auto err = ", call, ") {");
                 }
@@ -1607,7 +1657,7 @@ namespace j2cp2 {
                     auto tmp = brgen::concat("tmp_", brgen::nums(get_seq()), "_");
                     auto type = get_type_name(arr_ty->element_type);
                     map_line(loc);
-                    if (!arr_ty->non_dynamic_allocation) {
+                    if (!arr_ty->length_value) {
                         w.writeln(ident, ".clear();");
                     }
                     std::string tmp_i;
@@ -1644,7 +1694,7 @@ namespace j2cp2 {
                             w.indent_writeln("break;");
                             w.writeln("}");
                         }
-                        if (arr_ty->non_dynamic_allocation) {
+                        if (arr_ty->length_value) {
                             write_field_decode_impl(loc, brgen::concat(ident, "[", tmp_i, "]"), arr_ty->element_type, fi);
                         }
                         else {
@@ -1658,8 +1708,31 @@ namespace j2cp2 {
             }
             if (auto struct_ty = ast::as<ast::StructType>(typ); struct_ty) {
                 map_line(loc);
+                std::string callee;
+                if (struct_ty->recursive) {
+                    auto copy = ident;
+                    if (copy.starts_with("(*")) {
+                        copy = copy.substr(0, copy.size() - 1);  // remove last ')'
+                        copy = copy.substr(2);                   // remove '(*'
+                        callee = ident;
+                    }
+                    else {
+                        callee = brgen::concat("(*", ident, ")");
+                    }
+                    w.writeln("if (!", copy, ") {");
+                    {
+                        auto indent = w.indent_scope();
+                        auto struct_name = ast::as<ast::Member>(struct_ty->base.lock())->ident->ident;
+                        auto initialize = brgen::concat(initialize_method, "<", struct_name, ">()");
+                        w.writeln(copy, " = ", initialize, "; // initialize recursive struct");
+                    }
+                    w.writeln("}");
+                }
+                else {
+                    callee = ident;
+                }
                 auto args = state_variable_to_argument(ast::cast_to<ast::StructType>(typ), false);
-                auto call = brgen::concat(ident, ".decode(r", args, ")");
+                auto call = brgen::concat(callee, ".decode(r", args, ")");
                 if (use_error) {
                     w.writeln("if (auto err = ", call, ") {");
                 }
@@ -1883,6 +1956,7 @@ namespace j2cp2 {
                 w.writeln("#include <binary/float.h>");
                 w.writeln("#include <view/iovec.h>");
                 w.writeln("#include <binary/number.h>");
+                w.writeln("#include <memory>");
                 if (use_error) {
                     w.writeln("#include <error/error.h>");
                 }
