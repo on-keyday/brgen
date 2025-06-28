@@ -9,9 +9,13 @@
 namespace brgen::ast::tool {
     struct FormatSorter {
        private:
+        struct Dependency {
+            std::set<std::shared_ptr<ast::Format>> depends;
+            std::vector<std::shared_ptr<ast::Format>> ordered;
+        };
         std::set<std::shared_ptr<ast::Format>> format;
         std::vector<std::shared_ptr<ast::Format>> ordered_format;
-        std::map<std::shared_ptr<ast::Format>, std::set<std::shared_ptr<ast::Format>>> format_deps;
+        std::map<std::shared_ptr<ast::Format>, Dependency> format_deps;
 
         void collect_format(const std::shared_ptr<ast::Node>& node) {
             ast::traverse(node, [&](const std::shared_ptr<ast::Node>& node) {
@@ -39,7 +43,10 @@ namespace brgen::ast::tool {
                     if (auto s = ast::as<ast::StructType>(b)) {
                         auto maybe_fmt = s->base.lock();
                         if (ast::as<ast::Format>(maybe_fmt)) {
-                            dep.insert(ast::cast_to<ast::Format>(maybe_fmt));
+                            auto inserted = dep.depends.insert(ast::cast_to<ast::Format>(maybe_fmt));
+                            if (inserted.second) {
+                                dep.ordered.push_back(ast::cast_to<ast::Format>(maybe_fmt));
+                            }
                         }
                     }
                 }
@@ -86,13 +93,13 @@ namespace brgen::ast::tool {
                     return;  // recursive so, return
                 }
                 visited.insert(f);
-                for (auto& dep : format_deps[f]) {
+                for (auto& dep : format_deps[f].ordered) {
                     visit_(visit_, dep);
                 }
                 sorted.push_back(f);
             };
             std::stable_sort(ordered_format.begin(), ordered_format.end(), [&](auto& a, auto& b) {
-                return format_deps[a].size() < format_deps[b].size();
+                return format_deps[a].ordered.size() < format_deps[b].ordered.size();
             });
             for (auto& f : ordered_format) {
                 visit(visit, f);

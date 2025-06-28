@@ -1,125 +1,126 @@
 {
-    // IntelliSense を使用して利用可能な属性を学べます。
-    // 既存の属性の説明をホバーして表示します。
-    // 詳細情報は次を確認してください: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "Debug brgen",
-            "type": "go",
-            "request": "launch",
-            "mode": "debug",
-            "program": "${workspaceRoot}/src/tool/brgen",
-            "args": ["-config","test-brgen.json","-debug"],
-            "cwd": "${workspaceRoot}",
-            "output": "${workspaceRoot}/tool/br_debuggee"
-        },
-        {
-            "name": "Debug src2json",
-            "type": "cppvsdbg",
-            "request": "launch",
-            "program": "${workspaceRoot}/tool/src2json",
-            "args": [
-                "${workspaceFolder}/example/safetensor.bgn",
-                "--print-json","--print-on-error"
-            ],
-            "stopAtEntry": false,
-            "cwd": "${workspaceRoot}",
-            "environment": [],
-            "console": "integratedTerminal",
-            //"preLaunchTask": "build",
-            "symbolSearchPath": "lib\\"
-        },
-        {
-            "name": "Debug json2go",
-            "type": "go",
-            "request": "launch",
-            "mode": "exec",
-            "program":"C:\\Users\\ukfco\\AppData\\Local\\Temp\\cmptest-hA8hBNemvvh4XwCaJ2cKyJern6zIiVqq\\varint_test.go\\TestVarint\\Rfwv26cTD99HRMsse8oLw74IlUtyBPTd\\test.exe","args":["C:\\Users\\ukfco\\AppData\\Local\\Temp\\cmptest-hA8hBNemvvh4XwCaJ2cKyJern6zIiVqq\\varint.dat","C:\\Users\\ukfco\\AppData\\Local\\Temp\\cmptest-hA8hBNemvvh4XwCaJ2cKyJern6zIiVqq\\varint_test.go\\TestVarint\\Rfwv26cTD99HRMsse8oLw74IlUtyBPTd\\output.bin"],
-            "cwd": "${workspaceRoot}",
-            "output": "${workspaceRoot}/tool/j2g_debuggee"
-        },
-        {
-            "name": "Debug test",
-            "type": "cppvsdbg",
-            "request": "launch",
-            "program": "${workspaceRoot}/built/native/Debug/test/deep_copy_test.exe",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceRoot}",
-            "environment": [],
-            "console": "integratedTerminal",
-            //"preLaunchTask": "build",
-            "symbolSearchPath": "lib\\"
-        },
-        {
-            "name": "Debug json2cpp",
-            "type": "cppvsdbg",
-            "request": "launch",
-            "program": "${workspaceRoot}/tool/json2cpp2",
-            "args": [
-                "-f", "./ignore/sample.json"
-                //,"-r",
-                //"-b","./example/wire_data/websocket.dat","--hex","--jit"
-                //*/
-            ],
-            "stopAtEntry": false,
-            "cwd": "${workspaceRoot}",
-            "environment": [],
-            "console": "integratedTerminal",
-            //"preLaunchTask": "build",
-            "symbolSearchPath": "lib\\"
-        },
-        {
-            "name":"Debug generator",
-            "type": "go",
-            "request": "launch",
-            "mode": "exec",
-            "program": "${workspaceRoot}/tool/gen_ast2csharp.exe",
-            "args": ["/dev/stdout"],
-            "cwd": "${workspaceRoot}",
-
-        },
-        {
-            "name": "Debug attach",
-            "type": "cppvsdbg",
-            "request": "attach",
-            "processId": "${command:pickProcess}"
-        },
-        {
-            "type": "extensionHost",
-            "request": "launch",
-            "name": "Launch LSP Client",
-            "runtimeExecutable": "${execPath}",
-            "args": [
-                "--extensionDevelopmentPath=${workspaceRoot}/lsp"
-            ],
-            "outFiles": [
-                "${workspaceRoot}/lsp/client/out/**/*.js"
-            ],
-            "preLaunchTask": "npm_build_and_watch"
-        },
-        {
-            "type": "node",
-            "request": "attach",
-            "name": "Attach to LSP Server",
-            "port": 6009,
-            "restart": true,
-            "outFiles": [
-                "${workspaceRoot}/lsp/server/out/**/*.js"
-            ]
-        },
-        {
-            "type": "cppvsdbg",
-            "request": "launch",
-            "name": "Debug cmptest",
-            "program": "${workspaceRoot}/tool/cmptest",
-            "cwd": "${workspaceRoot}",
-            "args": [
-                "--test-info-file" ,
-                "./ignore/example/test_info.json",
-                "--test-config-file" ,"./testkit/cmptest.json" ,"-d"
-            ],
-        }
-    ]
+  // IntelliSense を使用して利用可能な属性を学べます。
+  // 既存の属性の説明をホバーして表示します。
+  // 詳細情報は次を確認してください: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug brgen",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "program": "${workspaceRoot}/src/tool/brgen",
+      "args": ["-config", "test-brgen.json", "-debug"],
+      "cwd": "${workspaceRoot}",
+      "output": "${workspaceRoot}/tool/br_debuggee"
+    },
+    {
+      "name": "Debug src2json",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceRoot}/tool/src2json",
+      "args": [
+        "${workspaceFolder}/example/safetensor.bgn",
+        "--print-json",
+        "--print-on-error"
+      ],
+      "stopAtEntry": false,
+      "cwd": "${workspaceRoot}",
+      "environment": [],
+      "console": "integratedTerminal",
+      //"preLaunchTask": "build",
+      "symbolSearchPath": "lib\\"
+    },
+    {
+      "name": "Debug json2go",
+      "type": "go",
+      "request": "launch",
+      "mode": "exec",
+      "program": "C:\\Users\\ukfco\\AppData\\Local\\Temp\\cmptest-hA8hBNemvvh4XwCaJ2cKyJern6zIiVqq\\varint_test.go\\TestVarint\\Rfwv26cTD99HRMsse8oLw74IlUtyBPTd\\test.exe",
+      "args": [
+        "C:\\Users\\ukfco\\AppData\\Local\\Temp\\cmptest-hA8hBNemvvh4XwCaJ2cKyJern6zIiVqq\\varint.dat",
+        "C:\\Users\\ukfco\\AppData\\Local\\Temp\\cmptest-hA8hBNemvvh4XwCaJ2cKyJern6zIiVqq\\varint_test.go\\TestVarint\\Rfwv26cTD99HRMsse8oLw74IlUtyBPTd\\output.bin"
+      ],
+      "cwd": "${workspaceRoot}",
+      "output": "${workspaceRoot}/tool/j2g_debuggee"
+    },
+    {
+      "name": "Debug test",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceRoot}/built/native/Debug/test/deep_copy_test.exe",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceRoot}",
+      "environment": [],
+      "console": "integratedTerminal",
+      //"preLaunchTask": "build",
+      "symbolSearchPath": "lib\\"
+    },
+    {
+      "name": "Debug json2cpp",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceRoot}/tool/json2cpp2",
+      "args": [
+        "-f",
+        "C:/workspace/shbrgen/rebrgen/save/ebm.json"
+        //,"-r",
+        //"-b","./example/wire_data/websocket.dat","--hex","--jit"
+        //*/
+      ],
+      "stopAtEntry": false,
+      "cwd": "${workspaceRoot}",
+      "environment": [],
+      "console": "integratedTerminal",
+      //"preLaunchTask": "build",
+      "symbolSearchPath": "lib\\"
+    },
+    {
+      "name": "Debug generator",
+      "type": "go",
+      "request": "launch",
+      "mode": "exec",
+      "program": "${workspaceRoot}/tool/gen_ast2csharp.exe",
+      "args": ["/dev/stdout"],
+      "cwd": "${workspaceRoot}"
+    },
+    {
+      "name": "Debug attach",
+      "type": "cppvsdbg",
+      "request": "attach",
+      "processId": "${command:pickProcess}"
+    },
+    {
+      "type": "extensionHost",
+      "request": "launch",
+      "name": "Launch LSP Client",
+      "runtimeExecutable": "${execPath}",
+      "args": ["--extensionDevelopmentPath=${workspaceRoot}/lsp"],
+      "outFiles": ["${workspaceRoot}/lsp/client/out/**/*.js"],
+      "preLaunchTask": "npm_build_and_watch"
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to LSP Server",
+      "port": 6009,
+      "restart": true,
+      "outFiles": ["${workspaceRoot}/lsp/server/out/**/*.js"]
+    },
+    {
+      "type": "cppvsdbg",
+      "request": "launch",
+      "name": "Debug cmptest",
+      "program": "${workspaceRoot}/tool/cmptest",
+      "cwd": "${workspaceRoot}",
+      "args": [
+        "--test-info-file",
+        "./ignore/example/test_info.json",
+        "--test-config-file",
+        "./testkit/cmptest.json",
+        "-d"
+      ]
+    }
+  ]
 }
