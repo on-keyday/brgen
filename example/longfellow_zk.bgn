@@ -1,0 +1,76 @@
+config.url = "https://github.com/google/longfellow-zk/blob/b1c59dda99d3baadd5b86e0b215d01661b508b76/lib/proto/circuit.h#L116"
+
+format Number:
+    value :u24
+
+enum FieldID:
+    :u24
+    NONE = 0
+    P256_ID = 1
+    P384_ID = 2
+    P521_ID = 3
+    GF2_128_ID = 4
+    GF2_16_ID = 5
+    FP128_ID = 6
+    FP64_ID = 7
+    GOLDI_ID = 8
+    FP64_2_ID = 9
+    SECP_ID = 10
+
+fn kbytes_per_field_id(field_id :FieldID) -> u32:
+    match field_id:
+        FieldID.NONE => 0
+        FieldID.P256_ID => 32
+        FieldID.P384_ID => 48
+        FieldID.P521_ID => 66
+        FieldID.GF2_128_ID => 16
+        FieldID.GF2_16_ID => 2
+        FieldID.FP128_ID => 16
+        FieldID.FP64_ID => 8
+        FieldID.GOLDI_ID => 32
+        FieldID.FP64_2_ID => 16
+        FieldID.SECP_ID => 32
+        .. => 0
+
+
+
+state FieldParseState:
+    field_len :u32
+
+parse_state :FieldParseState
+
+format FieldData:
+    data :[parse_state.field_len]u8 # todo: switch parser by field_id
+
+format CircuitInfo:
+    nv :Number # number of outputs for one copy
+    nc :Number # number of copies
+    npub_in: Number # number of public inputs
+    subfield_boundary :Number # Least input wire not known to be in the subfield
+    ninputs :Number # number of inputs
+    l_len :Number # length of the layers
+    n_constants :Number # number of constants
+
+
+
+format Layer:
+    logw :Number # number of bindings rounds for the hand variables
+    nw :Number # number of inputs
+    n_terms :Number # number of quads
+    quads :[n_terms.value]QuadCorner
+
+format QuadCorner:
+    g_delta :Number
+    h0_delta :Number
+    h1_delta :Number
+    kstore_id :Number
+
+
+format CircuitRep:
+    version :u8(1)
+    field_id :FieldID
+    circuit :CircuitInfo
+    parse_state.field_len = kbytes_per_field_id(field_id)
+    field_data :[circuit.n_constants.value]FieldData
+    layer_info :[circuit.l_len.value]Layer
+    id :[32]u8 # 32 byte circuit id
