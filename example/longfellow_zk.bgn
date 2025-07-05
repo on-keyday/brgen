@@ -40,7 +40,7 @@ state FieldParseState:
 parse_state :FieldParseState
 
 format FieldData:
-    data :[parse_state.field_len]u8 # todo: switch parser by field_id
+    data :[parse_state.field_len]u8 
 
 format CircuitInfo:
     nv :Number # number of outputs for one copy
