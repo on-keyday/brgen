@@ -19,7 +19,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@427ee2cf860166e404d0d69b4f2b24012bb7af4f # v2.2.3
+        uses: Kesin11/actions-timeline@a7eaabf426cdae26c3582c3fa674b897170dec8f # v2.2.4
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Download Linux artifacts
@@ -145,7 +145,7 @@ jobs:
     needs: prepare_release
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@427ee2cf860166e404d0d69b4f2b24012bb7af4f # v2.2.3
+        uses: Kesin11/actions-timeline@a7eaabf426cdae26c3582c3fa674b897170dec8f # v2.2.4
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Download Artifacts
@@ -158,7 +158,7 @@ jobs:
           tar -xzf artifacts/artifacts.tar.gz -C ./artifacts
           ls -Ral .
       - name: Release
-        uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631 # v2.2.2
+        uses: softprops/action-gh-release@72f2c25fcb47643c292f7107632f7a47c1df5cd8 # v2.3.2
         with:
           files: |
             ./artifacts/brgen-checksum.txt
