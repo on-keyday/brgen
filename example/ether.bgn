@@ -23,7 +23,7 @@ format MacAddress:
 
 format VlanTag:
     priority :u3
-    drop_eligibility_indicator :u1 # old name: cfi
+    drop_eligibility_indicator :u1 # 802.1Q.2011
     vlan_id :u12
 
 format EthernetFrame:
