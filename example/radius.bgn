@@ -27,3 +27,61 @@ format Integer:
 
 format Enum:
     value :u32
+
+enum RadiusCode:
+    :u8
+    access_request = 1
+    access_accept = 2
+    access_reject = 3
+    accounting_request = 4
+    accounting_response = 5
+    accounting_status = 6
+    password_request = 7
+    password_ack = 8
+    password_reject = 9
+    disconnect_request = 10
+    disconnect_ack = 11
+    disconnect_reject = 12
+    coa_request = 13
+    coa_ack = 14
+    coa_reject = 15
+
+format RadiusHeader:
+    code :RadiusCode
+    identifier :u8
+    length :u16
+    authenticator :[16]u8
+
+enum AttributeType:
+    :u8
+    user_name = 1
+    user_password = 2
+    chap_password = 3
+    nas_ip_address = 4
+    nas_port_id = 5
+    service_type = 6
+    framed_protocol = 7
+    framed_ip_address = 8
+    framed_ip_netmask = 9
+    framed_routing = 10
+    filter_id = 11
+    framed_mtu = 12
+    framed_compression = 13
+    login_ip_host = 14
+    login_service = 15
+    login_tcp_port = 16
+    reply_message = 18
+    callback_number = 19
+    callback_id = 20
+    framed_route = 22
+
+format Attribute:
+    type :AttributeType
+    length :u8
+    length >= 2
+    value :[length - 2]u8
+
+format RadiusPacket:
+    header :RadiusHeader
+    header.length >= 20
+    attributes :[..]Attribute(input = input.subrange(header.length - 20))
