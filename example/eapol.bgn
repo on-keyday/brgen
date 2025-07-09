@@ -1,0 +1,42 @@
+config.url = "https://vocal.com/secure-communication/eapol-extensible-authentication-protocol-over-lan/"
+
+format EAPOLHeader:
+    version :u8(1)
+    type :u8
+    length :u16
+    data :[length]u8
+
+enum EAPCode:
+    :u8
+    request = 0x01
+    response = 0x02
+    success = 0x03
+    failure = 0x04
+
+format EAPPacket:
+    code :EAPCode
+    id :u8
+    length :u16
+    length >= 4
+    match code:
+        EAPCode.request => auth_data :EAPPacketBodyData(input = input.subrange(length - 4))
+        EAPCode.response => auth_data :EAPPacketBodyData(input = input.subrange(length - 4))
+        .. => data :[length - 4]u8
+
+
+enum EAPAuthType:
+    :u8
+    identity = 0x01
+    notification = 0x02
+    nak = 0x03
+    md5_challenge = 0x04
+    one_time_password = 0x05
+    gtc = 0x06
+    tls = 0x0d
+    ttls = 0x12
+    peap = 0x13
+    eap_fast = 0x17
+
+format EAPPacketBodyData:
+    eap_type :EAPAuthType
+    type_specific_data :[..]u8 
