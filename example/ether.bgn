@@ -21,17 +21,22 @@ format MacAddress:
     oui :OUI
     nic :[3]u8
 
+format VlanTag:
+    priority :u3
+    cfi :u1
+    vlan_id :u12
+
 format EthernetFrame:
     dstMac :[6]u8
     srcMac :[6]u8
     ether_type :u16
     if ether_type == u16(EtherType.vlan):
-        vlan_tag :u16
+        vlan_tag :VlanTag
         ether_type2 :u16
     elif ether_type == u16(EtherType.service_vlen):
-        service_vlan_tag :u16
+        service_vlan_tag :VlanTag
         dummy_ether_type :u16(u16(EtherType.vlan))
-        vlan_tag :u16
+        vlan_tag :VlanTag
         ether_type2 :u16
     len ::= available(ether_type2) ? ether_type2 : ether_type
     len <= 0x5dc || len >= 0x600
