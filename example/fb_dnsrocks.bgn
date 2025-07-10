@@ -1,0 +1,17 @@
+config.url = "https://github.com/facebook/dns/blob/main/dnsrocks/db/answer.go#L166"
+
+TypeAAAA ::= u16(28)
+TypeA ::= u16(1)
+
+format RR:
+    qtype :u16
+    ch :u8
+    if ch == '='+1 || ch == '*'+1:
+        firstLocByte :u8
+        secondLocByte :u8
+        if firstLocByte == 0xff:
+            remainder :[secondLocByte]u8
+    ttl :u32
+    tai_timestamp :u64
+    if qtype == TypeA || qtype == TypeAAAA:
+        weight :u32
