@@ -2978,6 +2978,7 @@ type UnionType struct {
 	Candidates           []*UnionCandidate
 	BaseType             *StructUnionType
 	CommonType           Type
+	IsStrictCommonType   bool
 	MemberCandidates     []*Field
 }
 
@@ -4881,6 +4882,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				Candidates           []uintptr    `json:"candidates"`
 				BaseType             *uintptr     `json:"base_type"`
 				CommonType           *uintptr     `json:"common_type"`
+				IsStrictCommonType   bool         `json:"is_strict_common_type"`
 				MemberCandidates     []uintptr    `json:"member_candidates"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
@@ -4903,6 +4905,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.CommonType != nil {
 				v.CommonType = n.node[*tmp.CommonType].(Type)
 			}
+			v.IsStrictCommonType = tmp.IsStrictCommonType
 			v.MemberCandidates = make([]*Field, len(tmp.MemberCandidates))
 			for j, k := range tmp.MemberCandidates {
 				v.MemberCandidates[j] = n.node[k].(*Field)

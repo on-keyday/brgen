@@ -592,6 +592,7 @@ class UnionType(Type):
     candidates: List[UnionCandidate]
     base_type: Optional[StructUnionType]
     common_type: Optional[Type]
+    is_strict_common_type: bool
     member_candidates: List[Field]
 
 
@@ -1881,6 +1882,8 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].common_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at UnionType::common_type'))
                 else:
                     node[i].common_type = None
+                x = ast.node[i].body["is_strict_common_type"]
+                node[i].is_strict_common_type = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at UnionType::is_strict_common_type'))
                 node[i].member_candidates = [(node[x] if isinstance(node[x],Field) else raiseError(TypeError('type mismatch at UnionType::member_candidates'))) for x in ast.node[i].body["member_candidates"]]
             case NodeType.RANGE_TYPE:
                 x = ast.node[i].body["is_explicit"]

@@ -7316,6 +7316,7 @@ pub struct UnionType {
 	pub candidates: Vec<Rc<RefCell<UnionCandidate>>>,
 	pub base_type: Option<Weak<RefCell<StructUnionType>>>,
 	pub common_type: Option<Type>,
+	pub is_strict_common_type: bool,
 	pub member_candidates: Vec<Rc<RefCell<Field>>>,
 }
 
@@ -9805,6 +9806,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				candidates: Vec::new(),
 				base_type: None,
 				common_type: None,
+				is_strict_common_type: false,
 				member_candidates: Vec::new(),
 				})))
 			},
@@ -13647,6 +13649,14 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().common_type = Some(common_type_body.try_into()?);
 				}
+				let is_strict_common_type_body = match raw_node.body.get("is_strict_common_type") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"is_strict_common_type")),
+				};
+				node.borrow_mut().is_strict_common_type = match is_strict_common_type_body.as_bool() {
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(is_strict_common_type_body.into(),JSONType::Bool)),
+				};
 				let member_candidates_body = match raw_node.body.get("member_candidates") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"member_candidates")),

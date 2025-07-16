@@ -972,6 +972,7 @@ export interface UnionType extends Type {
 	candidates: UnionCandidate[];
 	base_type: StructUnionType|null;
 	common_type: Type|null;
+	is_strict_common_type: boolean;
 	member_candidates: Field[];
 }
 
@@ -1949,6 +1950,7 @@ export function parseAST(obj: JsonAst): ParseResult {
 				candidates: [],
 				base_type: null,
 				common_type: null,
+				is_strict_common_type: false,
 				member_candidates: [],
 			}
 			c.node.push(n);
@@ -4038,6 +4040,11 @@ export function parseAST(obj: JsonAst): ParseResult {
 				throw new Error('invalid node list at UnionType::common_type');
 			}
 			n.common_type = tmpcommon_type;
+			const tmpis_strict_common_type = on.body?.is_strict_common_type;
+			if (typeof tmpis_strict_common_type !== "boolean") {
+				throw new Error('invalid node list at UnionType::is_strict_common_type');
+			}
+			n.is_strict_common_type = on.body.is_strict_common_type;
 			for (const o of on.body.member_candidates) {
 				if (typeof o !== 'number') {
 					throw new Error('invalid node list at UnionType::member_candidates');

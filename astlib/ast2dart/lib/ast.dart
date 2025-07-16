@@ -836,6 +836,7 @@ class UnionType extends Type {
     List<UnionCandidate>? candidates = [];
     StructUnionType? baseType;
     Type? commonType;
+    bool isStrictCommonType = false;
     List<Field>? memberCandidates = [];
 factory UnionType.fromJson(Map<String, dynamic> json) => _$UnionTypeFromJson(json);
 }
