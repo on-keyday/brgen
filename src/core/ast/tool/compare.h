@@ -159,7 +159,7 @@ namespace brgen::ast::tool {
         return false;
     }
 
-    brgen::result<std::shared_ptr<ast::Type>> common_type(std::shared_ptr<ast::Type>& a, std::shared_ptr<ast::Type>& b) {
+    inline brgen::result<std::shared_ptr<ast::Type>> common_type(std::shared_ptr<ast::Type>& a, std::shared_ptr<ast::Type>& b) {
         if (auto ok = int_type_fitting(a, b); !ok) {
             return ok.transform([](auto&&...) { return nullptr; });
         }
@@ -232,7 +232,7 @@ namespace brgen::ast::tool {
     // OrCond_common_type is used for OrCond type inference
     // this function uses common_type first
     // and also infer common type between range and other types based on RangeType.base_type
-    brgen::result<std::shared_ptr<ast::Type>> OrCond_common_type(std::shared_ptr<ast::Type>& a, std::shared_ptr<ast::Type>& b) {
+    inline brgen::result<std::shared_ptr<ast::Type>> OrCond_common_type(std::shared_ptr<ast::Type>& a, std::shared_ptr<ast::Type>& b) {
         // special edge case for int literal type
         if (auto t1 = ast::as<ast::IntLiteralType>(a), t2 = ast::as<ast::IntLiteralType>(b); t1 && t2) {
             if (t1->bit_size == t2->bit_size) {

@@ -2083,7 +2083,6 @@ namespace j2cp2 {
                 if (fmt->body->struct_type->bit_alignment != ast::BitAlignment::byte_aligned) {
                     continue;
                 }
-                w.writeln("//sort DEBUG: struct ", fmt->ident->ident, " code");
             }
             for (auto& fmt : sorted) {
                 write_format_fns(ast::cast_to<ast::Format>(fmt));

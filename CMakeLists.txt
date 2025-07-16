@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.26)
 enable_testing()
 project(brgen VERSION 0.0.2)
-
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
   if(NOT "$ENV{FUTILS_TARGET_TRIPLE}" STREQUAL "")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -target=$ENV{FUTILS_TARGET_TRIPLE}")

@@ -504,6 +504,7 @@ namespace brgen::ast {
         std::vector<std::shared_ptr<UnionCandidate>> candidates;
         std::weak_ptr<StructUnionType> base_type;
         std::shared_ptr<Type> common_type;
+        bool is_strict_common_type = false;
         std::vector<std::shared_ptr<Field>> member_candidates;
 
         void dump(auto&& field_) {
@@ -512,6 +513,7 @@ namespace brgen::ast {
             sdebugf(candidates);
             sdebugf(base_type);
             sdebugf(common_type);
+            sdebugf(is_strict_common_type);
             sdebugf(member_candidates);
         }
 

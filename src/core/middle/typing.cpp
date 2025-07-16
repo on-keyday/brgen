@@ -1718,6 +1718,7 @@ namespace brgen::middle {
             if (u->common_type) {
                 return;
             }
+            bool is_strict = false;  // none
             for (auto& c : u->candidates) {
                 auto f = c->field.lock();
                 if (!f) {
@@ -1726,18 +1727,24 @@ namespace brgen::middle {
                 if (!u->common_type) {
                     if (auto is_union = ast::as<ast::UnionType>(f->field_type)) {
                         u->common_type = is_union->common_type;
+                        is_strict = is_union->is_strict_common_type;
                     }
                     else {
                         u->common_type = f->field_type;
+                        is_strict = true;
                     }
                 }
                 else {
+                    auto original_common_type = u->common_type;
                     u->common_type = common_type(u->common_type, f->field_type);
                     if (!u->common_type) {
+                        is_strict = false;
                         break;
                     }
+                    is_strict = is_strict && (original_common_type == u->common_type);
                 }
             }
+            u->is_strict_common_type = is_strict;
         }
 
         void typing_metadata(ast::Metadata* m) {
