@@ -1020,8 +1020,10 @@ namespace j2cp2 {
                         }
                         auto ident = str.to_string(field->ident);
                         if (ast::as<ast::UnionType>(field->field_type)) {
-                            ident.erase(0, 2);  // remove '(*'
-                            ident.pop_back();   // remove ')'
+                            if (ident.starts_with("(*") && !ident.starts_with("(*this")) {
+                                ident.erase(0, 2);  // remove '(*'
+                                ident.pop_back();   // remove ')'
+                            }
                         }
                         w.writeln("v(v, \"", field->ident->ident, "\",", ident, ");");
                     }
