@@ -85,6 +85,9 @@ const argConverter = Object.freeze({
         if(opt.use_constexpr){
             args.push("--use-constexpr");
         }
+        if(opt.force_optional_getter){
+            args.push("--force-optional-getter");
+        }
         return args;
     },
     [RequestLanguage.GO] : (opt :GoOption) => {

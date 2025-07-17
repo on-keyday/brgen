@@ -22,6 +22,7 @@ export const enum ConfigKey {
     CPP_USE_CONSTEXPR = "use_constexpr",
     CPP_ENUM_STRINGER = "enum_stringer",
     CPP_ADD_VISIT = "add_visit",
+    CPP_FORCE_OPTIONAL_GETTER = "force_optional_getter",
     GO_OMIT_MUST_ENCODE = "omit_must_encode",
     GO_OMIT_DECODE_EXACT = "omit_decode_exact",
     GO_OMIT_VISITOR= "omit_visitors",

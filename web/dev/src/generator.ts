@@ -90,6 +90,7 @@ const handleCpp = async (ui :UIModel,  s :JobResult) => {
     const addVisit = ui.getLanguageConfig(Language.CPP,ConfigKey.CPP_ADD_VISIT);
     const useConstexpr = ui.getLanguageConfig(Language.CPP,ConfigKey.CPP_USE_CONSTEXPR);
     const compileViaAPI = ui.getLanguageConfig(Language.CPP,ConfigKey.CPP_COMPILE_VIA_API);
+    const forceOptionalGetter = ui.getLanguageConfig(Language.CPP,ConfigKey.CPP_FORCE_OPTIONAL_GETTER);
     const cppOption : CppOption = {      
         use_line_map: useMap === true,
         use_error: useError === true,
@@ -98,6 +99,7 @@ const handleCpp = async (ui :UIModel,  s :JobResult) => {
         enum_stringer: enumStringer === true,
         add_visit: addVisit === true,
         use_constexpr: useConstexpr === true,
+        force_optional_getter: forceOptionalGetter === true,
     };
     let result : JobResult | undefined = undefined;
     let mappingInfo :any;

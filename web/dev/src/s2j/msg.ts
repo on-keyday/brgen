@@ -76,6 +76,7 @@ export interface CppOption extends CallOption {
     enum_stringer :boolean
     add_visit :boolean
     use_constexpr: boolean
+    force_optional_getter :boolean
 }
 
 export interface GoOption extends CallOption {

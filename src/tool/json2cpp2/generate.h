@@ -109,6 +109,7 @@ namespace j2cp2 {
         bool enum_stringer = false;
         bool add_visit = false;
         bool use_constexpr = false;
+        bool force_optional_getter = false;
         ast::Format* current_format = nullptr;
         Context ctx;
         std::vector<std::string> struct_names;
@@ -625,7 +626,8 @@ namespace j2cp2 {
             auto opt_type_name = type_name;
             auto mut_opt_type_name = opt_type_name;
             std::string null = "std::nullopt";
-            if (ut->is_strict_common_type) {
+            const auto is_pointer_getter = ut->is_strict_common_type && !force_optional_getter;
+            if (is_pointer_getter) {
                 opt_type_name = "const " + opt_type_name + "*";
                 mut_opt_type_name = mut_opt_type_name + "*";
                 null = "nullptr";
@@ -634,7 +636,7 @@ namespace j2cp2 {
                 opt_type_name = "std::optional<" + opt_type_name + ">";
             }
             w.writeln(opt_type_name, " ", uf->ident->ident, "(", get_args, ") const;");
-            if (ut->is_strict_common_type) {
+            if (is_pointer_getter) {
                 w.writeln(mut_opt_type_name, " ", uf->ident->ident, "();");
             }
             w.writeln("bool ", uf->ident->ident, "(", type_name, "&& v", set_args, ");");
@@ -655,12 +657,12 @@ namespace j2cp2 {
                         auto indent = w.indent_scope();
                         auto make_access = [&](const std::shared_ptr<ast::Field>& f) {
                             auto a = str.to_string(f->ident);
-                            check_variant_alternative(f->belong_struct.lock(), ut->is_strict_common_type ? ReturnType::pointer : ReturnType::optional);
+                            check_variant_alternative(f->belong_struct.lock(), is_pointer_getter ? ReturnType::pointer : ReturnType::optional);
                             map_line(f->loc);
                             if (is_recursive) {
                                 a = a.substr(2, a.size() - 3);  // remove '(*' and ')'
                             }
-                            if (ut->is_strict_common_type) {
+                            if (is_pointer_getter) {
                                 w.writeln("return std::addressof(", a, ");");
                             }
                             else {
@@ -709,7 +711,7 @@ namespace j2cp2 {
                         str.map_ident(uf->ident, "(*", prefix, ".", uf->ident->ident + "(", args, "))");
                     }
                     w.writeln("}");
-                    if (ut->is_strict_common_type) {
+                    if (is_pointer_getter) {
                         if (use_constexpr) {
                             w.write("constexpr ");
                         }
