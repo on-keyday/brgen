@@ -635,6 +635,11 @@ namespace j2cp2 {
             else {
                 opt_type_name = "std::optional<" + opt_type_name + ">";
             }
+            {
+                auto args = state_variable_to_argument(fmt->body->struct_type, false);
+                args.erase(0, 1);
+                str.map_ident(uf->ident, "(*", prefix, ".", uf->ident->ident + "(", args, "))");
+            }
             w.writeln(opt_type_name, " ", uf->ident->ident, "(", get_args, ") const;");
             if (is_pointer_getter) {
                 w.writeln(mut_opt_type_name, " ", uf->ident->ident, "();");
@@ -706,9 +711,6 @@ namespace j2cp2 {
                         if (!end_else) {
                             w.writeln("return ", null, ";");
                         }
-                        auto args = state_variable_to_argument(fmt->body->struct_type, false);
-                        args.erase(0, 1);
-                        str.map_ident(uf->ident, "(*", prefix, ".", uf->ident->ident + "(", args, "))");
                     }
                     w.writeln("}");
                     if (is_pointer_getter) {
@@ -1016,6 +1018,10 @@ namespace j2cp2 {
                             continue;
                         }
                         auto ident = str.to_string(field->ident);
+                        if (ast::as<ast::UnionType>(field->field_type)) {
+                            ident.erase(0, 2);  // remove '(*'
+                            ident.pop_back();   // remove ')'
+                        }
                         w.writeln("v(v, \"", field->ident->ident, "\",", ident, ");");
                     }
                 }
