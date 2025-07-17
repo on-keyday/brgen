@@ -1004,13 +1004,14 @@ namespace j2cp2 {
             }
         }
 
-        void write_visit_struct(const std::shared_ptr<ast::StructType>& s) {
+        void write_visit_struct(std::string_view struct_name, const std::shared_ptr<ast::StructType>& s) {
             if (!add_visit) {
                 return;
             }
+            w.writeln("constexpr static const char* visitor_name = \"", struct_name, "\";");
             w.writeln("template<typename Visitor>");
             w.writeln("void visit(Visitor&& v) {");
-            {
+            auto write_body = [&] {
                 auto indent = w.indent_scope();
                 for (auto& f : s->fields) {
                     if (auto field = ast::as<ast::Field>(f); field) {
@@ -1025,7 +1026,12 @@ namespace j2cp2 {
                         w.writeln("v(v, \"", field->ident->ident, "\",", ident, ");");
                     }
                 }
-            }
+            };
+            write_body();
+            w.writeln("}");
+            w.writeln("template<typename Visitor>");
+            w.writeln("void visit(Visitor&& v) const {");
+            write_body();
             w.writeln("}");
         }
 
@@ -1109,7 +1115,7 @@ namespace j2cp2 {
                     if (s->fixed_header_size) {
                         w.writeln("static constexpr size_t fixed_header_size = ", brgen::nums(s->fixed_header_size / 8), ";");
                     }
-                    write_visit_struct(s);
+                    write_visit_struct(struct_name, s);
                 }
             }
             w.write("}");
