@@ -1,9 +1,16 @@
 # brgen - BinaRy encoder/decoder GENerator
 
-ネットワーク・プロトコルのパケットやファイルフォーマットなどの解析/生成のためのコードを吐くジェネレーター
-及びバイナリフォーマット定義言語
+ネットワーク・プロトコルのパケットやファイルフォーマットなどの解析/生成のためのコードを吐くジェネレーター及びバイナリフォーマット定義言語
+
+読み方: ビーアールジェン(英語圏向け)あるいはビーアールゲン(筆者の読み方/ローマ字風)
 
 the generators that generate encoder/decoder code for parse/create network packet, binary file, etc...　 and binary format definition language
+
+Here are the pronunciations for brgen:
+
+B-R-Gen (for English speakers)
+
+Alternatively, B-R-Gehn (the author's preferred pronunciation, with a Romanized "gen" sound)
 
 # 目標(Goal)
 
