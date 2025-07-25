@@ -22,17 +22,21 @@ module.exports = grammar({
 
   // Whitespace and comments are handled here. They can appear almost anywhere.
   extras: ($) => [
-    /\s/, // Any whitespace character (space, tab, newline)
+    /[ \t]/, // Any whitespace character (space, tab)
     $.comment,
+    $._skipped_space, // Virtual token for skipped whitespace
+  ],
+
+  externals: ($) => [
+    $._new_indent, // A virtual token for an increase in indentation
+    $._same_indent, // A virtual token for the same indentation level
+    $._dedent, // A virtual token for a decrease in indentation
+    $._skipped_space, // A virtual token for skipped whitespace
   ],
 
   // Conflicts that might arise and need resolution.
   // Precedence rules for binary operators usually resolve these.
-  conflicts: ($) => [
-    [$.indent_block],
-    [$.enum_member, $.prim],
-    [$.enum_member],
-  ],
+  conflicts: ($) => [[$.enum_member, $.prim], [$.enum_member]],
 
   // Let Tree-sitter know that these rules are variations of a common type.
   supertypes: ($) => [$._statement, $._expression, $._type],
@@ -64,7 +68,14 @@ module.exports = grammar({
     // Block of indented statements.
     // NOTE: True indentation-sensitivity requires an external scanner.
     // This is a simplified version that captures the structure.
-    indent_block: ($) => seq(":", repeat1($._statement)),
+    indent_block: ($) =>
+      seq(
+        ":",
+        $._new_indent,
+        repeat1($._statement),
+        repeat(seq($._same_indent, repeat1($._statement))),
+        $._dedent
+      ),
 
     format_definition: ($) =>
       seq("format", field("name", $.identifier), $.indent_block),
@@ -316,7 +327,13 @@ module.exports = grammar({
 
     // ## Types and Fields ##
     field_definition: ($) =>
-      prec(1, seq(optional(field("name", $.identifier)), $.anonymous_field)),
+      prec(
+        12,
+        choice(
+          seq(field("name", $.identifier), $.anonymous_field),
+          $.anonymous_field
+        )
+      ),
 
     anonymous_field: ($) =>
       prec.right(
@@ -365,7 +382,7 @@ module.exports = grammar({
     type_literal: ($) => seq("<", $._type, ">"),
 
     // ## Tokens ##
-    comment: ($) => token(seq("#", /.*/)),
+    comment: ($) => token(seq("#", /.*[\x0a\x0d]*/)),
 
     // From your lexer: not_(space_or_punct) implies a broad range of characters.
     // \p{L} matches any Unicode letter, \p{N} any number.
