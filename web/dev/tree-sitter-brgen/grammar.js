@@ -90,8 +90,11 @@ module.exports = grammar({
           "enum",
           field("name", $.identifier),
           ":",
-          field("base_type", optional($.anonymous_field)),
-          repeat1($.enum_member)
+          $._new_indent,
+          optional(seq(field("base_type", $.anonymous_field), $._same_indent)),
+          $.enum_member,
+          repeat1(seq($._same_indent, $.enum_member)),
+          $._dedent
         )
       ),
 
@@ -315,7 +318,10 @@ module.exports = grammar({
           "match",
           optional(field("value", $._expression)),
           ":",
-          repeat1($.match_branch)
+          $._new_indent,
+          $.match_branch,
+          repeat1(seq($._same_indent, $.match_branch)),
+          $._dedent
         )
       ),
 

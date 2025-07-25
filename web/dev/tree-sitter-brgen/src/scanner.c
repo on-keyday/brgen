@@ -179,6 +179,10 @@ bool tree_sitter_brgen_external_scanner_scan(void *payload, TSLexer *lexer, cons
                         if (next_indent == last_indent) {
                             // special case: same indent after pseudo-dedent
                             printf("  Same indent after dedent: %u\n", last_indent);
+                            if (!valid_symbols[SAME_INDENT]) {
+                                printf("  No SAME_INDENT symbol available, skipping\n");
+                                return false;  // No SAME_INDENT symbol available
+                            }
                             lexer->result_symbol = SAME_INDENT;
                             lexer->mark_end(lexer);
                             scanner->stack_size++;  // Push back the indent level
