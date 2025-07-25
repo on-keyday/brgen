@@ -9,6 +9,7 @@
 #include <map>
 #include "ast.h"
 #include "../common/file.h"
+#include "core/lexer/lexer_enum.h"
 
 namespace brgen::ast {
 
@@ -161,25 +162,25 @@ namespace brgen::ast {
         }
 
        private:
-        [[nodiscard]] auto token_expect_error(auto&& expected, auto&& found) {
+        [[nodiscard]] auto token_expect_error(auto&& expected, const char* kind) {
             std::string buf;
-            appends(buf, "expect token ", expected, " but found ");
+            appends(buf, "expect token ", kind, " `", expected, "` but found token ");
             if (eos()) {
-                append(buf, "<EOF>");
+                append(buf, "`<EOF>`");
             }
             else {
-                append(buf, found(cur));
+                appends(buf, "`", cur->token, "`(tag: ", lexer::enum_array<lexer::Tag>[int(cur->tag)].second, ")");
             }
             return error(last_loc(), std::move(buf));
         }
 
        public:
         auto token_error(lexer::Tag tag) {
-            return token_expect_error(lexer::to_string(tag), [](auto& cur) { return lexer::enum_array<lexer::Tag>[int(cur->tag)].second; });
+            return token_expect_error(lexer::to_string(tag), "tag");
         }
 
         auto token_error(std::string_view s) {
-            return token_expect_error(s, [](auto& cur) { return cur->token; });
+            return token_expect_error(s, "literal");
         }
 
         lexer::Token must_consume_token(std ::string_view view) {

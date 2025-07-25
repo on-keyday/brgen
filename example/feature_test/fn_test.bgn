@@ -1,0 +1,11 @@
+# this is lexer test
+fn W
+    
+format X:
+  x :u8
+
+enum Y
+
+state Z
+
+format X:
