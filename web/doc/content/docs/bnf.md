@@ -17,15 +17,24 @@ weight: 1
 - 一部の構文は意味解析による AST のノードの変更によって実現されているため、BNF から文法を完全に理解できるわけではありません。これとは別に意味論も理解する必要があります。
 
 ```
+# <name> - ルール名(明示的に定義されているものはそれを参照、そうでないものは説明文章になっている)
+# := - 定義
+# "a" - リテラル(その文字通りにマッチ)
+# () - グループ化
+# | - 逐次マッチ(PEGとかの/に近い意味)
+# * - 0回以上の繰り返し
+# + - 1回以上の繰り返し
+# ? - オプショナル
+
 <space> := " " | "\t"
 <line> := "\r\n" | "\r" | "\n"
 <comment> := "#" <any unicode char> <line>
 <indent> := <spaces at beginning of line followed by character except '#'>
-<skip lines> := *(<space> | <comment> | <line>)
+<skip line> := *(<space> | <comment> | <line>)
 <skip white> := *(<indent> | <space> | <comment> | <line>)
 <skip space> := *(<space> | <comment>)
 
-<program> := <skip line> *(<statement> <skip>) <eof>
+<program> := <skip line> *(<statement> <skip white>) <eof>
 <statement> := <loop> | <format> | <state> | <enum> | <fn> | <return> | <break> | <continue> | <field> | <expr>
 <indent block> := ":" <skip space> <line> +(<indent> <statement> <skip line>)
 <loop> := "for" (<range loop> | <expr>? (";" <expr>? (";" <expr>?)?)?)  <indent block>
@@ -61,7 +70,7 @@ weight: 1
 <binary digit> := "0" | "1"
 <oct digit> := [0-7]
 <digit> :=[0-9]
-<int literal> := +<digit> | "0x" +<hex digit> | "0b" +<binary digit>
+<int literal> := +<digit> | "0x" +<hex digit> | "0b" +<binary digit> | "0o" +<oct digit>
 <bool literal> := "true" | "false"
 <string literal> := "\""  *(<escape sequence> | <any unicode char except '"'>) "\""
 <regex literal> := "/" *(<escape sequence> | <any unicode char except '/'>) "/"

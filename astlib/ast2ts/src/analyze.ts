@@ -585,15 +585,32 @@ export const analyzeSourceCode  = async (prevSemanticTokens :SemTokensStub|null,
     if(tokens.tokens == null){
         return null;
     }
+    let prevToken :ast2ts.Token|null = null;
     tokens.tokens.forEach((token:ast2ts.Token)=>{
         console.log(`token: ${stringEscape(token.token)} ${token.tag} ${token.loc.line} ${token.loc.col}`)
         if(token.tag===ast2ts.TokenTag.keyword){
             if(token.token==="input"||token.token==="output"||token.token=="config"||
                token.token=="fn"||token.token=="format"||token.token=="enum"||
-               token.token=="cast"||token.token=="state"){
+               token.token=="state"){
                 locList.push({loc:token.loc,length: token.token.length,index:9});
+                prevToken = token;
                 return;
             }
+        }
+        if(prevToken !== null && prevToken.tag === ast2ts.TokenTag.keyword && 
+            prevToken.token === "fn" && token.tag === ast2ts.TokenTag.ident 
+        ) {
+            locList.push({ loc: token.loc, length: token.token.length, index: 8 });
+            prevToken = token;
+            return;
+        }
+        else if(prevToken !== null && prevToken.tag === ast2ts.TokenTag.keyword && 
+            (prevToken.token === "format"||
+                prevToken.token === "enum"||prevToken.token === "state"
+            ) && token.tag === ast2ts.TokenTag.ident) {
+            locList.push({ loc: token.loc, length: token.token.length, index: 7 });
+            prevToken = token;
+            return;
         }
         const type = mapForTokenTypes.get(token.tag);
         if(type===undefined){
@@ -604,6 +621,7 @@ export const analyzeSourceCode  = async (prevSemanticTokens :SemTokensStub|null,
             return;
         }
         locList.push({loc:token.loc,length: token.token.length,index:index});
+        prevToken = token;
     });
     
     let ast_ :ast2ts.AstFile;
