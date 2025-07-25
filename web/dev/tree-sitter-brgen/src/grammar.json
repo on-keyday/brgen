@@ -3,10 +3,100 @@
   "name": "brgen",
   "rules": {
     "program": {
-      "type": "REPEAT",
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "skip_lines"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "_statement"
+              },
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "skip_white"
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "skip_lines": {
+      "type": "REPEAT1",
       "content": {
-        "type": "SYMBOL",
-        "name": "_statement"
+        "type": "CHOICE",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "space"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "comment"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "line"
+          }
+        ]
+      }
+    },
+    "skip_white": {
+      "type": "REPEAT1",
+      "content": {
+        "type": "CHOICE",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "space"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "comment"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "line"
+          }
+        ]
+      }
+    },
+    "skip_space": {
+      "type": "REPEAT1",
+      "content": {
+        "type": "CHOICE",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "space"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "comment"
+          }
+        ]
       }
     },
     "_statement": {
@@ -14,29 +104,65 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "int_literal"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_primitive_placeholder"
+          "name": "expr"
         }
       ]
     },
-    "_primitive_placeholder": {
-      "type": "STRING",
-      "value": "placeholder"
-    },
-    "_space": {
+    "space": {
       "type": "PATTERN",
-      "value": "[ \\t]"
+      "value": "[ \\t]+"
     },
-    "_line": {
+    "line": {
       "type": "PATTERN",
       "value": "[\\r\\n]+"
     },
-    "_comment": {
+    "comment": {
       "type": "PATTERN",
       "value": "#.*[\\r\\n]*"
+    },
+    "expr": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_unary"
+        }
+      ]
+    },
+    "unary_op": {
+      "type": "PATTERN",
+      "value": "[-!]"
+    },
+    "_unary": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "unary_op"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_unary"
+            }
+          ]
+        },
+        {
+          "type": "SYMBOL",
+          "name": "prim"
+        }
+      ]
+    },
+    "prim": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "int_literal"
+        }
+      ]
     },
     "digit": {
       "type": "PATTERN",
@@ -49,6 +175,10 @@
     "binary_digit": {
       "type": "PATTERN",
       "value": "[01]+"
+    },
+    "octal_digit": {
+      "type": "PATTERN",
+      "value": "[0-7]+"
     },
     "int_literal": {
       "type": "CHOICE",
@@ -82,24 +212,24 @@
               "name": "binary_digit"
             }
           ]
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "STRING",
+              "value": "0o"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "octal_digit"
+            }
+          ]
         }
       ]
     }
   },
-  "extras": [
-    {
-      "type": "SYMBOL",
-      "name": "_space"
-    },
-    {
-      "type": "SYMBOL",
-      "name": "_line"
-    },
-    {
-      "type": "SYMBOL",
-      "name": "_comment"
-    }
-  ],
+  "extras": [],
   "conflicts": [],
   "precedences": [],
   "externals": [],

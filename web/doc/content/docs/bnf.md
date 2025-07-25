@@ -30,11 +30,11 @@ weight: 1
 <line> := "\r\n" | "\r" | "\n"
 <comment> := "#" <any unicode char> <line>
 <indent> := <spaces at beginning of line followed by character except '#'>
-<skip lines> := *(<space> | <comment> | <line>)
+<skip line> := *(<space> | <comment> | <line>)
 <skip white> := *(<indent> | <space> | <comment> | <line>)
 <skip space> := *(<space> | <comment>)
 
-<program> := <skip line> *(<statement> <skip>) <eof>
+<program> := <skip line> *(<statement> <skip white>) <eof>
 <statement> := <loop> | <format> | <state> | <enum> | <fn> | <return> | <break> | <continue> | <field> | <expr>
 <indent block> := ":" <skip space> <line> +(<indent> <statement> <skip line>)
 <loop> := "for" (<range loop> | <expr>? (";" <expr>? (";" <expr>?)?)?)  <indent block>
