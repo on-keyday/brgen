@@ -1,0 +1,38 @@
+{
+  "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/config.schema.json",
+  "grammars": [
+    {
+      "name": "brgen",
+      "camelcase": "brgen",
+      "title": "brgen",
+      "scope": "source.brgen",
+      "file-types": [
+        "brgen"
+      ],
+      "injection-regex": "^brgen$",
+      "class-name": "TreeSitterBrgen"
+    }
+  ],
+  "metadata": {
+    "version": "0.1.0",
+    "license": "MIT",
+    "description": "brgen parser in tree-sitter",
+    "authors": [
+      {
+        "name": "on-keyday"
+      }
+    ],
+    "links": {
+      "repository": "https://github.com/on-keyday/brgen"
+    }
+  },
+  "bindings": {
+    "c": true,
+    "go": true,
+    "node": true,
+    "python": true,
+    "rust": true,
+    "swift": true,
+    "zig": false
+  }
+}

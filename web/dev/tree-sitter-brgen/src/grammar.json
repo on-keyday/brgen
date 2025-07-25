@@ -1,0 +1,109 @@
+{
+  "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/grammar.schema.json",
+  "name": "brgen",
+  "rules": {
+    "program": {
+      "type": "REPEAT",
+      "content": {
+        "type": "SYMBOL",
+        "name": "_statement"
+      }
+    },
+    "_statement": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "int_literal"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_primitive_placeholder"
+        }
+      ]
+    },
+    "_primitive_placeholder": {
+      "type": "STRING",
+      "value": "placeholder"
+    },
+    "_space": {
+      "type": "PATTERN",
+      "value": "[ \\t]"
+    },
+    "_line": {
+      "type": "PATTERN",
+      "value": "[\\r\\n]+"
+    },
+    "_comment": {
+      "type": "PATTERN",
+      "value": "#.*[\\r\\n]*"
+    },
+    "digit": {
+      "type": "PATTERN",
+      "value": "[0-9]+"
+    },
+    "hex_digit": {
+      "type": "PATTERN",
+      "value": "[0-9a-fA-F]+"
+    },
+    "binary_digit": {
+      "type": "PATTERN",
+      "value": "[01]+"
+    },
+    "int_literal": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "digit"
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "STRING",
+              "value": "0x"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "hex_digit"
+            }
+          ]
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "STRING",
+              "value": "0b"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "binary_digit"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "extras": [
+    {
+      "type": "SYMBOL",
+      "name": "_space"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_line"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_comment"
+    }
+  ],
+  "conflicts": [],
+  "precedences": [],
+  "externals": [],
+  "inline": [],
+  "supertypes": [],
+  "reserved": {}
+}
