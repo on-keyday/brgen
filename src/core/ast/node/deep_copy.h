@@ -549,6 +549,7 @@ namespace brgen::ast {
         for (auto& i : node->metadata) {
             new_node->metadata.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
         }
+        new_node->argument_mapping = node->argument_mapping;
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -1381,6 +1382,7 @@ namespace brgen::ast {
         }
         new_node->base_type = deep_copy(node->base_type.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->common_type = deep_copy(node->common_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->is_strict_common_type = node->is_strict_common_type;
         for (auto& i : node->member_candidates) {
             new_node->member_candidates.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
         }
@@ -1522,6 +1524,7 @@ namespace brgen::ast {
         new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->constant_level = node->constant_level;
         new_node->value = node->value;
+        new_node->binary_value = node->binary_value;
         new_node->length = node->length;
         return new_node;
     }
@@ -2991,6 +2994,10 @@ namespace brgen::ast {
                 trace(a->metadata[i], b->metadata[i], "FieldArgument::metadata", i);
                 return false;
             }
+        }
+        if (a->argument_mapping != b->argument_mapping) {
+            trace(a->argument_mapping, b->argument_mapping, "FieldArgument::argument_mapping", -1);
+            return false;
         }
         return true;
     }
@@ -4855,6 +4862,10 @@ namespace brgen::ast {
             trace(a->common_type, b->common_type, "UnionType::common_type", -1);
             return false;
         }
+        if (a->is_strict_common_type != b->is_strict_common_type) {
+            trace(a->is_strict_common_type, b->is_strict_common_type, "UnionType::is_strict_common_type", -1);
+            return false;
+        }
         if (a->member_candidates.size() != b->member_candidates.size()) return false;
         for (size_t i = 0; i < a->member_candidates.size(); i++) {
             if (!deep_equal(a->member_candidates[i], b->member_candidates[i], std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
@@ -5164,6 +5175,10 @@ namespace brgen::ast {
         }
         if (a->value != b->value) {
             trace(a->value, b->value, "StrLiteral::value", -1);
+            return false;
+        }
+        if (a->binary_value != b->binary_value) {
+            trace(a->binary_value, b->binary_value, "StrLiteral::binary_value", -1);
             return false;
         }
         if (a->length != b->length) {
