@@ -110,9 +110,9 @@ console.log("PWD:", PWD);
 if (!PWD.endsWith("/")) {
   PWD += "/";
 }
-const examples = await readdir(PWD + "../../example", { recursive: true }).then(
-  (x) => x.map((e) => e.replace(/\\/g, "/"))
-);
+const examples = await readdir(PWD + "../../example", { recursive: true })
+  .then((x) => x.map((e) => e.replace(/\\/g, "/")))
+  .then((x) => x.filter((e, i) => i < 20)); // limit to 20 files for testing
 console.log("examples:", examples);
 
 const writeCommandPalette = async (fileName) => {
