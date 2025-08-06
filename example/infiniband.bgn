@@ -1,0 +1,36 @@
+config.url = "https://people.cs.pitt.edu/~jacklange/teaching/cs1652-f18/lectures/infiniband.pdf"
+config.url = "https://github.com/torvalds/linux/blob/cca7a0aae8958c9b1cd14116cb8b2f22ace2205e/include/rdma/ib_pack.h#L170"
+
+format LocalRoutingHeader:
+    virtual_lane :u8
+    link_version :u8
+    service_level :u8
+    link_next_header :u8
+    dst_lid :u16
+    packet_length :u16
+    src_lid :u16
+
+format GlobalRoutingHeader:
+    ip_version :u8
+    traffic_class :u8
+    flow_label :u32
+    payload_length :u16
+    next_header :u8
+    hop_limit :u8
+    src_guid :[16]u8
+    dst_guid :[16]u8
+
+format BaseTransportHeader:
+    opcode :u8
+    solicited_event :u8
+    mig_req :u8
+    pad_count :u8
+    transport_header_version :u8
+    pkey :u16
+    destination_qpn :u32
+    ack_req :u8
+    psn :u32
+
+format DirectMemoryAccessHeader:
+    qkey :u32
+    source_qpn :u32
