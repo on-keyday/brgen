@@ -2,7 +2,7 @@
 
 ネットワーク・プロトコルのパケットやファイルフォーマットなどの解析/生成のためのコードを吐くジェネレーター及びバイナリフォーマット定義言語
 
-読み方: ビーアールジェン(英語圏向け)あるいはビーアールゲン(筆者の読み方/ローマ字風)
+読み方: ビーアールジェン(英語圏向け)あるいはビーアールゲン(作者の読み方/ローマ字風)
 
 the generators that generate encoder/decoder code for parse/create network packet, binary file, etc...　 and binary format definition language
 
