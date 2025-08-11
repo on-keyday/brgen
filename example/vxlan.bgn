@@ -1,0 +1,9 @@
+config.url = "https://www.rfc-editor.org/rfc/rfc7348#section-5"
+
+format VXLANHeader:
+    reserved1 :u4
+    indicator :u1(1)
+    reserved2 :u3
+    reserved3 :u24
+    vxlan_id :u24
+    reserved4 :u8
