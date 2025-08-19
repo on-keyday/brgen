@@ -1049,10 +1049,12 @@ namespace brgen::middle {
             }
             if (auto field = ast::as<ast::Field>(stmt)) {
                 selector->expr_type = field->field_type;
+                selector->member->expr_type = field->field_type;
                 selector->base = stmt->ident;
             }
             else if (auto fn = ast::as<ast::Function>(stmt)) {
                 selector->expr_type = fn->func_type;
+                selector->member->expr_type = fn->func_type;
                 selector->base = stmt->ident;
             }
             else if (auto fmt = ast::as<ast::Format>(stmt)) {
