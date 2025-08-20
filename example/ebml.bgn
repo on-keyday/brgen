@@ -1,0 +1,80 @@
+config.url = "https://www.rfc-editor.org/rfc/rfc8794.html#name-vint_width"
+
+state VarintConfig:
+    least_byte :u8
+
+varint_config :VarintConfig
+
+format Varint:
+    value :u64
+
+    fn encode():
+        len := 0
+        varint_marker := u8(0)
+        if   value < 0x80 && varint_config.least_byte <= 1:
+            len = 1
+            varint_marker = 0x80
+        elif value < 0x4000  && varint_config.least_byte <= 2:
+            len = 2
+            varint_marker = 0x40
+        elif value < 0x200000 && varint_config.least_byte <= 3:
+            len = 3
+            varint_marker = 0x20
+        elif value < 0x10000000 && varint_config.least_byte <= 4:
+            len = 4
+            varint_marker = 0x10
+        elif value < 0x0800000000 && varint_config.least_byte <= 5:
+            len = 5
+            varint_marker = 0x08
+        elif value < 0x040000000000 && varint_config.least_byte <= 6:
+            len = 6
+            varint_marker = 0x04
+        elif value < 0x02000000000000 && varint_config.least_byte <= 7:
+            len = 7
+            varint_marker = 0x02
+        elif value < 0x0100000000000000 && varint_config.least_byte <= 8:
+            len = 8
+            varint_marker = 0x01
+        else:
+            error("Value too large for varint")
+        mask ::= varint_marker - 1 
+        first_byte ::= (u8((value >> ((len - 1) * 8)) & 0xff) & mask) | varint_marker
+        output.put(first_byte)
+        for i in len - 1:
+            output.put(u8((value >> ((len - 2 - i) * 8)) & 0xff))
+    
+    fn decode():
+        first_byte := input.get(u8)
+        len := 0
+        varint_marker := u8(0)
+        if first_byte & 0x80 == 0x80:
+            len = 1
+            varint_marker = 0x80
+        elif first_byte & 0xC0 == 0x40:
+            len = 2
+            varint_marker = 0x40
+        elif first_byte & 0xE0 == 0x20:
+            len = 3
+            varint_marker = 0x20
+        elif first_byte & 0xF0 == 0x10:
+            len = 4
+            varint_marker = 0x10
+        elif first_byte & 0xF8 == 0x08:
+            len = 5
+            varint_marker = 0x08
+        elif first_byte & 0xFC == 0x04:
+            len = 6
+            varint_marker = 0x04
+        elif first_byte & 0xFE == 0x02:
+            len = 7
+            varint_marker = 0x02
+        elif first_byte & 0xFF == 0x01:
+            len = 8
+            varint_marker = 0x01
+        else:
+            error("Invalid varint")
+        mask ::= varint_marker - 1
+        value = u64(first_byte & mask) << ((len - 1) * 8)
+        for i in len - 1:
+            next_byte := input.get(u8)
+            value |= u64(next_byte) << ((len - 2 - i) * 8)
