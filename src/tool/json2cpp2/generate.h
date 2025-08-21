@@ -1010,8 +1010,8 @@ namespace j2cp2 {
             }
             w.writeln("constexpr static const char* visitor_name = \"", struct_name, "\";");
             w.writeln("template<typename Visitor>");
-            w.writeln("void visit(Visitor&& v) {");
-            auto write_body = [&] {
+            w.writeln("constexpr void visit(Visitor&& v) {");
+            auto write_body = [&](bool replace_declval = false) {
                 auto indent = w.indent_scope();
                 for (auto& f : s->fields) {
                     if (auto field = ast::as<ast::Field>(f); field) {
@@ -1025,6 +1025,13 @@ namespace j2cp2 {
                                 ident.pop_back();   // remove ')'
                             }
                         }
+                        if (replace_declval) {
+                            auto found = ident.find("(*this)");
+                            if (found != std::string::npos) {
+                                ident.replace(found, strlen("(*this)"), "std::declval<" + std::string(struct_name) + ">()");
+                            }
+                            ident = "visitor_tag<decltype(" + ident + ")>{}";
+                        }
                         w.writeln("v(v, \"", field->ident->ident, "\",", ident, ");");
                     }
                 }
@@ -1032,8 +1039,16 @@ namespace j2cp2 {
             write_body();
             w.writeln("}");
             w.writeln("template<typename Visitor>");
-            w.writeln("void visit(Visitor&& v) const {");
+            w.writeln("constexpr void visit(Visitor&& v) const {");
             write_body();
+            w.writeln("}");
+            w.writeln("template<typename T>");
+            w.writeln("struct visitor_tag {");
+            w.indent_writeln("using type = T;");
+            w.writeln("};");
+            w.writeln("template<typename Visitor>");
+            w.writeln("static constexpr void visit_static(Visitor&& v) {");
+            write_body(true);
             w.writeln("}");
         }
 
@@ -1218,6 +1233,11 @@ namespace j2cp2 {
                     }
                     w.writeln("return std::nullopt;");
                 }
+                w.writeln("}");
+            }
+            if (add_visit) {
+                w.writeln("constexpr const char* visit_enum(", enum_->ident->ident, ") {");
+                w.indent_writeln("return \"", enum_->ident->ident, "\";");
                 w.writeln("}");
             }
         }
