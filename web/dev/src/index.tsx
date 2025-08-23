@@ -18,6 +18,7 @@ import { ConfigKey, ElementID } from "./types";
 import { save } from "./save-data/save";
 import { BM_LANGUAGES, setBMUIConfig } from "./lib/bmgen/bm_caller";
 import { base64ToUint8Array, Uint8ArrayToBase64 } from "./base64";
+import { lazy } from "react";
 
 1 / 2 / 3 / 4;
 
@@ -219,6 +220,7 @@ const setGenerated = async (code: string, lang: string) => {
     }
 }
 
+let lazyInitLanguage = null as null | (() => void);
 const updateUI = async () => {
     const ui: UIModel = {
         getLanguageConfig: (lang, config) => {
@@ -397,6 +399,7 @@ window.addEventListener("keydown", async (e) => {
 
 
 const onContentUpdate = async (e: monaco.editor.IModelContentChangedEvent) => {
+    if (lazyInitLanguage) { lazyInitLanguage(); lazyInitLanguage = null; }
     e.changes.forEach((change) => {
         console.log(change);
     });
@@ -414,6 +417,7 @@ const changeLanguage = async (mode: string) => {
         !BM_LANGUAGES.includes(mode as Language)) {
         throw new Error(`invalid language mode: ${mode}`);
     }
+    lazyInitLanguage = null;
     commonUI.language_select.value = mode;
     storage.setLangMode(mode as Language);
     commonUI.changeLanguageConfig(mode as Language);
@@ -458,11 +462,13 @@ const languageSelector = LanguageList.concat(BM_LANGUAGES as Language[]);
 const queryParameters = new URLSearchParams(window.location.hash.substring(1));
 
 let initialLanguage = storage.getLangMode();
+
 const langParameter = queryParameters.get("lang");
 if (langParameter) {
     if (LanguageList.includes(langParameter as Language) ||
         BM_LANGUAGES.includes(langParameter as Language)) {
         initialLanguage = langParameter as Language;
+        lazyInitLanguage = () => { storage.setLangMode(initialLanguage); }
     }
 }
 let initialSourceCode = storage.getSourceCode();
