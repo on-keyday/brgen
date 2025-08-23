@@ -489,6 +489,32 @@ const commonUI = {
             fontSize: "60%",
             border: "solid 1px black",
         }),
+    copy_link_button: makeButton(ElementID.COPY_LINK_BUTTON, "copy link", async () => {
+        const code = editorUI.editor.getValue();
+        const lang = storage.getLangMode();
+        const query = new URLSearchParams();
+        query.set("code", code);
+        query.set("lang", lang);
+        const queryParam = query.toString();
+        const link = `${location.origin}${location.pathname}?${queryParam}`;
+        if (navigator.clipboard === undefined) {
+            commonUI.copy_link_button.innerText = "not supported";
+            setTimeout(() => {
+                commonUI.copy_link_button.innerText = "copy link";
+            }, 1000);
+            return;
+        }
+        commonUI.copy_link_button.innerText = "copied!";
+        setTimeout(() => {
+            commonUI.copy_link_button.innerText = "copy link";
+        }, 1000);
+        await navigator.clipboard.writeText(link);
+    }, {
+        top: "50%",
+        left: "80%",
+        fontSize: "60%",
+        border: "solid 1px black",
+    }),
     github_link: makeLink(ElementID.GITHUB_LINK, "github", "https://github.com/on-keyday/brgen",
         (e) => {
             e.preventDefault();
@@ -530,6 +556,7 @@ const commonUI = {
 } as const;
 commonUI.title_bar.appendChild(commonUI.language_select);
 commonUI.title_bar.appendChild(commonUI.copy_button);
+commonUI.title_bar.appendChild(commonUI.copy_link_button);
 commonUI.title_bar.appendChild(commonUI.github_link);
 commonUI.title_bar.appendChild(commonUI.noteforgdpr);
 
@@ -738,9 +765,19 @@ const setCommon = (m: Map<string, InputListElement>) => {
 
 const queryParameters = new URLSearchParams(window.location.search);
 
-const modeParameter = queryParameters.get("mode");
-if (modeParameter) {
-    storage.setLangMode(modeParameter as Language);
+const langParameter = queryParameters.get("lang");
+if (langParameter) {
+    storage.setLangMode(langParameter as Language);
+}
+const encodedCode = queryParameters.get("code");
+if (encodedCode) {
+    try {
+        const decodedCode = Buffer.from(encodedCode, 'base64').toString('utf-8');
+        storage.setSourceCode(decodedCode);
+    }
+    catch (e) {
+        console.error(e);
+    }
 }
 
 commonUI.changeLanguageConfig(storage.getLangMode());

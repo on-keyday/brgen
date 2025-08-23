@@ -4,6 +4,7 @@ export const enum ElementID {
     TITLE_BAR = "title_bar",
     LANGUAGE_SELECT = "language-select",
     COPY_BUTTON = "copy-button",
+    COPY_LINK_BUTTON = "copy-link-button",
     GITHUB_LINK = "github-link",
     BALL = "ball",
     BALL_BOUND = "ball-bound",
