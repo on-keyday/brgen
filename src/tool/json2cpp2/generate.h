@@ -1028,7 +1028,7 @@ namespace j2cp2 {
                         if (replace_declval) {
                             auto found = ident.find("(*this)");
                             if (found != std::string::npos) {
-                                ident.replace(found, strlen("(*this)"), "std::declval<" + std::string(struct_name) + ">()");
+                                ident.replace(found, futils::strlen("(*this)"), "std::declval<" + std::string(struct_name) + ">()");
                             }
                             ident = "visitor_tag<decltype(" + ident + ")>{}";
                         }
