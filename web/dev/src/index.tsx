@@ -457,9 +457,13 @@ const languageSelector = LanguageList.concat(BM_LANGUAGES as Language[]);
 
 const queryParameters = new URLSearchParams(window.location.hash.substring(1));
 
+let initialLanguage = storage.getLangMode();
 const langParameter = queryParameters.get("lang");
 if (langParameter) {
-    storage.setLangMode(langParameter as Language);
+    if (LanguageList.includes(langParameter as Language) ||
+        BM_LANGUAGES.includes(langParameter as Language)) {
+        initialLanguage = langParameter as Language;
+    }
 }
 let initialSourceCode = storage.getSourceCode();
 const encodedCode = queryParameters.get("code");
@@ -476,7 +480,7 @@ if (encodedCode) {
 const commonUI = {
     title_bar: title_bar,
     language_select: makeListBox(ElementID.LANGUAGE_SELECT, languageSelector,
-        storage.getLangMode(),
+        initialLanguage,
         async () => {
             const value = commonUI.language_select.value;
             await changeLanguage(value);
@@ -784,7 +788,7 @@ const setCommon = (m: Map<string, InputListElement>) => {
 }
 
 
-commonUI.changeLanguageConfig(storage.getLangMode());
+commonUI.changeLanguageConfig(initialLanguage);
 editorUI.editorModel.setValue(initialSourceCode);
 updateUI();
 editorUI.editorModel.onDidChangeContent(onContentUpdate)
