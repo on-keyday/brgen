@@ -116,8 +116,10 @@ class storageManager {
     }
 
     setLangMode(mode:Language) {
-        this.#storage.setItem(StorageKey.LANG_MODE,mode);
-        this.#langMode = mode;
+        if(LanguageList.includes(mode) || BM_LANGUAGES.includes(mode)) {
+            this.#storage.setItem(StorageKey.LANG_MODE,mode);
+            this.#langMode = mode;
+        }
     }
 
     setSourceCode(code:string) {

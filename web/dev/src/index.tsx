@@ -736,6 +736,13 @@ const setCommon = (m: Map<string, InputListElement>) => {
     }
 }
 
+const queryParameters = new URLSearchParams(window.location.search);
+
+const modeParameter = queryParameters.get("mode");
+if (modeParameter) {
+    storage.setLangMode(modeParameter as Language);
+}
+
 commonUI.changeLanguageConfig(storage.getLangMode());
 editorUI.editorModel.setValue(storage.getSourceCode());
 
