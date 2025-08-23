@@ -64,4 +64,4 @@ mv ./rebrgen/tool/* ./web/dev/src/lib/bmgen
 
 echo "Appending wasm ./web/dev/src/lib/bmgen/wasmCopy.js.txt to ./web/dev/wasmCopy.js"
 cp ./web/dev/wasmCopy.js.txt ./web/dev/wasmCopy.js
-cat ./web/dev/src/lib/bmgen/wasmCopy.js.txt >> ./web/dev/wasmCopy.js
+cat ./web/dev/src/lib/bmgen/wasmCopy.js.txt ./web/dev/src/lib/bmgen/ebmWasmCopy.js.txt >> ./web/dev/wasmCopy.js

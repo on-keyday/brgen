@@ -22,3 +22,4 @@ copyWasm("json2kaitai.wasm");
 
 // for rebrgen
 copyWasm("bmgen/bmgen.wasm");
+copyWasm("bmgen/ebmgen.wasm");

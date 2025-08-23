@@ -17,6 +17,7 @@ import { FileCandidates, registerFileSelectionCallback } from "./s2j/file_select
 import { ConfigKey, ElementID } from "./types";
 import { save } from "./save-data/save";
 import { BM_LANGUAGES, setBMUIConfig } from "./lib/bmgen/bm_caller";
+import { base64ToUint8Array, Uint8ArrayToBase64 } from "./base64";
 
 1 / 2 / 3 / 4;
 
@@ -135,14 +136,14 @@ registerFileSelectionCallback(async () => {
 })
 
 // to disable cursor
-editorUI.generated.onDidChangeModel(async (e) => {
+/*editorUI.generated.onDidChangeModel(async (e) => {
     const area = container2.getElementsByTagName("textarea");
     for (let i = 0; i < area.length; i++) {
         area[i].style.display = "none";
         area[i].hidden = true;
     }
 });
-
+*/
 
 editorUI.setDefault();
 
@@ -403,7 +404,6 @@ const onContentUpdate = async (e: monaco.editor.IModelContentChangedEvent) => {
     await updateUI();
 }
 
-editorUI.editorModel.onDidChangeContent(onContentUpdate)
 
 interface Internal {
     languageElement: HTMLElement | null;
@@ -454,6 +454,25 @@ const deserializeAndApplyLanguageConfig = (m: Map<Language, LanguageConfig>, src
 
 const languageSelector = LanguageList.concat(BM_LANGUAGES as Language[]);
 
+
+const queryParameters = new URLSearchParams(window.location.hash.substring(1));
+
+const langParameter = queryParameters.get("lang");
+if (langParameter) {
+    storage.setLangMode(langParameter as Language);
+}
+let initialSourceCode = storage.getSourceCode();
+const encodedCode = queryParameters.get("code");
+if (encodedCode) {
+    try {
+        const decodedCode = new TextDecoder("utf-8").decode(base64ToUint8Array(encodedCode));
+        initialSourceCode = decodedCode;
+    }
+    catch (e) {
+        console.error(e);
+    }
+}
+
 const commonUI = {
     title_bar: title_bar,
     language_select: makeListBox(ElementID.LANGUAGE_SELECT, languageSelector,
@@ -491,12 +510,13 @@ const commonUI = {
         }),
     copy_link_button: makeButton(ElementID.COPY_LINK_BUTTON, "copy link", async () => {
         const code = editorUI.editor.getValue();
+        const encodedCode = Uint8ArrayToBase64(new TextEncoder().encode(code));
         const lang = storage.getLangMode();
         const query = new URLSearchParams();
-        query.set("code", code);
+        query.set("code", encodedCode);
         query.set("lang", lang);
         const queryParam = query.toString();
-        const link = `${location.origin}${location.pathname}?${queryParam}`;
+        const link = `${location.origin}${location.pathname}#${queryParam}`;
         if (navigator.clipboard === undefined) {
             commonUI.copy_link_button.innerText = "not supported";
             setTimeout(() => {
@@ -510,8 +530,8 @@ const commonUI = {
         }, 1000);
         await navigator.clipboard.writeText(link);
     }, {
-        top: "50%",
-        left: "80%",
+        top: "10%",
+        left: "83%",
         fontSize: "60%",
         border: "solid 1px black",
     }),
@@ -763,25 +783,12 @@ const setCommon = (m: Map<string, InputListElement>) => {
     }
 }
 
-const queryParameters = new URLSearchParams(window.location.search);
-
-const langParameter = queryParameters.get("lang");
-if (langParameter) {
-    storage.setLangMode(langParameter as Language);
-}
-const encodedCode = queryParameters.get("code");
-if (encodedCode) {
-    try {
-        const decodedCode = Buffer.from(encodedCode, 'base64').toString('utf-8');
-        storage.setSourceCode(decodedCode);
-    }
-    catch (e) {
-        console.error(e);
-    }
-}
 
 commonUI.changeLanguageConfig(storage.getLangMode());
-editorUI.editorModel.setValue(storage.getSourceCode());
+editorUI.editorModel.setValue(initialSourceCode);
+updateUI();
+editorUI.editorModel.onDidChangeContent(onContentUpdate)
+
 
 document.getElementById(ElementID.BALL)?.remove();
 document.getElementById(ElementID.BALL_BOUND)?.remove();
