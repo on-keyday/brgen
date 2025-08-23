@@ -23,6 +23,10 @@ Alternatively, B-R-Gehn (the author's preferred pronunciation, with a Romanized 
 本プロダクトは開発途上のものです。使用したことによる効果は保証しかねます。また破壊的変更が予告なしに行われることがあります。
 This product is still under development. We cannot guarantee the effectiveness of using this product. In addition, breaking changes may be made without notice.
 
+現在こちらのリポジトリでサブプロジェクトの開発が進んでいます。
+Currently, a subproject is being developed in this(rebrgen) repository.
+https://github.com/on-keyday/rebrgen
+
 # Document
 
 https://on-keyday.github.io/brgen/doc

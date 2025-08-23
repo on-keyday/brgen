@@ -278,14 +278,13 @@ export const handleBM = async (ui :UIModel, s :JobResult,lang :string) => {
 export const updateTracer = new UpdateTracer();
 
 
-export const updateGenerated = async (ui :UIModel) => {
+export const updateGenerated = async (ui :UIModel,lang :Language) => {
     const value = ui.getValue();
     const traceID = updateTracer.getTraceID();
     if(value === ""){
         ui.setDefault();
         return;
     }
-    const lang = storage.getLangMode();
     if(lang === Language.TOKENIZE) {
        return handleTokenize(ui,traceID,value);
     }

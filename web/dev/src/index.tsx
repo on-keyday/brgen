@@ -234,7 +234,7 @@ const updateUI = async () => {
         mappingCode: mappingCode,
     };
     storage.setLangSpecificOption(serializeLanguageConfig(commonUI.config));
-    await updateGenerated(ui)
+    await updateGenerated(ui, lazyInitLanguage ? initialLanguage : storage.getLangMode());
 }
 
 
