@@ -969,6 +969,7 @@ namespace brgen::middle {
                 auto enum_ = def->base.lock();
                 assert(enum_);
                 selector->expr_type = enum_->enum_type;
+                selector->member->expr_type = enum_->enum_type;
                 auto member = enum_->lookup(selector->member->ident);
                 if (!member) {
                     auto r = error(selector->member->loc, "member of enum ", ty->ident->ident, ".", selector->member->ident, " is not defined");
