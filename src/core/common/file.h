@@ -7,7 +7,6 @@
 #include <helper/disable_self.h>
 #include "error.h"
 #include <map>
-#include <variant>
 #include <file/file_view.h>
 #include "expected.h"
 #include <unicode/utf/view.h>
