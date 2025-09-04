@@ -148,8 +148,6 @@ namespace brgen {
         std::map<fs::path, File> files;
         std::map<lexer::FileIndex, File*> indexes;
         lexer::FileIndex index = lexer::builtin;
-        bool utf16_mode = false;
-        bool file_as_utf16 = false;
         UtfMode input_mode = UtfMode::utf8;
         UtfMode interpret_mode = UtfMode::utf8;
 
@@ -224,7 +222,7 @@ namespace brgen {
         }
 
         void set_file_with_input_mode(File& file, auto&& view) {
-            assert(sizeof(view[1]) == 1);
+            static_assert(sizeof(view[1]) == 1);
             using View = std::decay_t<decltype(view)>;
             using futils::binary::EndianView;
             if (input_mode == UtfMode::utf8) {
