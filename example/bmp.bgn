@@ -1,23 +1,38 @@
 
+enum BMPCompression:    
+    :ul32
+    RGB
+    RLE8
+    RLE4
+    BIT_FIELDS
+    JPEG
+    PNG
 
+BMP_MAGIC_NUMBER ::= 0x4d42
 
-format BMPHeader:
+format BMPFileHeader:
     bfType :ul16
     bfSize :ul32
     bfReserved1 :ul16
     bfReserved2 :ul16
     bfOffBits :ul32
+
+format BMPInfoHeader:
     biSize :ul32
     biWidth :sl32
     biHeight :sl32
     biPlanes :ul16
     biBitCount :ul16
-    biCompression :ul32
+    biCompression :BMPCompression
     biSizeImage :ul32
     biXPelsPerMeter :sl32
     biYPelsPerMeter :sl32
     biClrUsed :ul32
     biClrImportant :ul32
+
+format BMPHeader:
+    file_header :BMPFileHeader
+    info_header :BMPInfoHeader
 
 format RGB:
     b :u8
@@ -26,7 +41,7 @@ format RGB:
 
 format BMP:
     header :BMPHeader
-    data :[header.biSizeImage]u8
+    data :[header.info_header.biSizeImage]u8
 
 state LineState:
     width :u32
