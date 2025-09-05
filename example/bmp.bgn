@@ -39,6 +39,10 @@ format RGB:
     g :u8
     r :u8
 
+format ColorTableEntry:
+    rgb :RGB
+    reserved :u8
+
 format BMP:
     header :BMPHeader
     data :[header.info_header.biSizeImage]u8
