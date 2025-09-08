@@ -181,9 +181,12 @@ namespace brgen::ast {
     };
 
     // .. or ..=
-    constexpr bool is_any_range(auto&& e) {
+    constexpr bool is_any_range(auto&& e, bool rough_any_range = false) {
         auto q = static_cast<ast::Node*>(std::to_address(e));
         if (q && q->node_type == NodeType::range) {
+            if (rough_any_range) {
+                return true;
+            }
             auto p = static_cast<ast::Range*>(q);
             return !p->start && !p->end;
         }
