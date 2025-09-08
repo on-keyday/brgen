@@ -21,6 +21,7 @@ input.endian = endian
 endian に指定されたエンディアンに変更される。
 なお、endian の中身が定数ならば静的に決定され、
 そうでないなら実行時に動的に決定するようなコードを生成する。
+top level に記述すると以降の全体に適用され、format 内部に記述するとその時点以降のエンディアンに影響する。
 
 適用範囲はフォーマットごとである。
 
@@ -68,7 +69,7 @@ bit ビットアラインを強制する
 a :Type(input.peek= true)
 ```
 
-フィールドの読み込みは行うが入力位置を進めないのを示すために使用する
+フィールドの読み込みは行うが入力位置を進めないのを示すために使用する。書き込み時は単に無視される。
 
 ```
 input.offset
@@ -141,4 +142,4 @@ config.rust.crate = "builder"
 ```
 
 これらのように言語固有の設定の場合は`config.<lang>.<setting>`の形でジェネレーター実装者は受け入れるとよいだろう。
-ジェネレータ間共通のメタデータについては[metadata](https://on-keyday.github.io/brgen/doc/docs/metadata)(TODO(on-keyday): 書く)で述べる。
+ジェネレータ間共通のメタデータについては[metadata](https://on-keyday.github.io/brgen/doc/docs/metadata)で述べる。

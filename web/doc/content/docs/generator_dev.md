@@ -58,3 +58,12 @@ tool/sort.h/FormatSorter クラス - Format を AST から抽出して依存関�
 
 Union 実装時にブロックに入ったところで場合分けしたい場合、
 IndentBlock(もしくは ScopedStatement)の StructType が StructUnion に登録されているものになるのでそこから対応を探すというように実装するとよい。
+
+25/09/08 追記
+
+# RE:brgen
+
+さすがに上記の手順でやるのは非常に厳しいため、新しくバックエンドを開発するためのフレームワーク,
+rebrgen を開発した。 https://github.com/on-keyday/rebrgen
+
+TODO(on-keyday): 書く
