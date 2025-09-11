@@ -115,7 +115,7 @@ jobs:
           PREFIX=$(brew --prefix llvm)
           export FUTILS_CXX_COMPILER=$PREFIX/bin/clang++
           export FUTILS_C_COMPILER=$PREFIX/bin/clang
-          export LDFLAGS="-L$PREFIX/lib/c++ -Wl,-rpath,$PREFIX/lib/c++"
+          export LDFLAGS="-L$PREFIX/lib/c++ -L$PREFIX/lib/unwind -lunwind -Wl,-rpath,$PREFIX/lib/c++"
           . build shared Release futils
           cd ..
       - name: Build
@@ -123,7 +123,7 @@ jobs:
           PREFIX=$(brew --prefix llvm)
           export FUTILS_CXX_COMPILER=$PREFIX/bin/clang++
           export FUTILS_C_COMPILER=$PREFIX/bin/clang
-          export LDFLAGS="-L$PREFIX/lib/c++ -Wl,-rpath,$PREFIX/lib/c++"
+          export LDFLAGS="-L$PREFIX/lib/c++ -L$PREFIX/lib/unwind -lunwind -Wl,-rpath,$PREFIX/lib/c++"
           . build.sh native Release
           ./tool/src2json --version
       - name: Pack artifacts
