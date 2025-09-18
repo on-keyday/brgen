@@ -1,0 +1,49 @@
+
+config.url = "https://www.omg.org/cgi-bin/doc?formal/02-06-51"
+
+
+format Version:
+    major :u8
+    minor :u8
+
+enum MsgType:
+    :u8
+    Request
+    Reply
+    CancelRequest
+    LocateRequest
+    LocateReply
+    CloseConnection
+    MessageError
+    Fragment
+
+
+
+format Bool:
+    value :u8
+    value == 1 || value == 0
+
+format Flags:
+    input.endian = config.endian.big
+    reserved :u6
+    more_fragment :u1
+    is_little_endian :u1
+
+
+state EndianState:
+    is_little_endian :bool
+
+endian :EndianState
+
+format MessageHeader:
+    magic :"GIOP"
+    version :Version
+    if version.major == 1 && version.minor == 0:
+        byte_order :Bool
+        endian.is_little_endian = byte_order.value == 1
+    else:
+        flags :Flags
+        endian.is_little_endian = flags.is_little_endian == 1
+    input.endian = endian.is_little_endian
+    message_type :MsgType
+    message_size :u32
