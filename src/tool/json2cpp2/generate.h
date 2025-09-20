@@ -1189,7 +1189,7 @@ namespace j2cp2 {
             }
             w.writeln("};");
             if (enum_stringer) {
-                w.writeln("constexpr const char* to_string(", enum_->ident->ident, " e) {");
+                w.writeln("constexpr const char* to_string(", enum_->ident->ident, " e, bool origin_form = false) {");
                 {
                     auto indent = w.indent_scope();
                     w.writeln("switch(e) {");
@@ -1198,10 +1198,11 @@ namespace j2cp2 {
                         for (auto& c : enum_->members) {
                             map_line(c->loc);
                             auto str = "\"" + c->ident->ident + "\"";
+                            auto mapped = str;
                             if (c->str_literal) {
-                                str = c->str_literal->value;
+                                mapped = c->str_literal->value;
                             }
-                            w.writeln("case ", enum_->ident->ident, "::", c->ident->ident, ": return ", str, ";");
+                            w.writeln("case ", enum_->ident->ident, "::", c->ident->ident, ": return origin_form ? ", str, ":", mapped, " ;");
                         }
                     }
                     w.writeln("}");
