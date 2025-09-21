@@ -33,15 +33,15 @@ export const LanguageList = [
 ];
 
 export const enum WorkerType {
-    SRC2JSON,
-    JSON2CPP2,
-    JSON2GO,
-    JSON2C,
-    JSON2RUST,
-    JSON2TS,
-    JSON2KAITAI,
+    SRC2JSON = "src2json",
+    JSON2CPP2 = "json2cpp2",
+    JSON2GO = "json2go",
+    JSON2C = "json2c",
+    JSON2RUST = "json2rust",
+    JSON2TS = "json2ts",
+    JSON2KAITAI = "json2kaitai",
 
-    BMGEN,
+    BMGEN = "bmgen",
     //BM2CPP,
     //BM2RUST,
 }

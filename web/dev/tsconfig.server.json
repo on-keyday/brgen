@@ -12,6 +12,5 @@
     "moduleResolution": "Node",
     "jsx": "react-jsx"
   },
-  "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules/**", "src/server/*.mts"]
+  "include": ["src/server/nodejs.mts"]
 }

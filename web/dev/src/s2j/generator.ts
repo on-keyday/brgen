@@ -1,17 +1,17 @@
 
-import * as caller from "./s2j/caller";
-import { TraceID } from "./s2j/job_mgr";
-import { UpdateTracer } from "./s2j/update";
-import * as inc from "./cpp_include";
-import  { BMGenOption, COption, CallOption, Cpp2Option, CppOption, GoOption, JobResult,Language, Rust2Option, RustOption, TSOption } from "./s2j/msg.js";
-import {ast2ts} from "ast2ts";
-import {storage} from "./storage";
-import {ConfigKey} from "./types";
-import { BM_LANGUAGES, BM_LSP_LANGUAGES, generateBMCode } from "./lib/bmgen/bm_caller";
+import * as caller from "./caller.js";
+import { TraceID } from "./job_mgr.js";
+import { UpdateTracer } from "./update.js";
+import * as inc from "./cpp_include.js";
+import  { BMGenOption, COption, CallOption, Cpp2Option, CppOption, GoOption, JobResult,Language, Rust2Option, RustOption, TSOption } from "./msg.js";
+import {ast2ts} from "../../node_modules/ast2ts/ast.js";
+import {ConfigKey} from "../types.js";
+import { BM_LANGUAGES, BM_LSP_LANGUAGES, generateBMCode } from "../lib/bmgen/bm_caller.js";
 
 //import { compileCpp } from "./compiler-explorer/api";
 
 export interface UIModel {
+    getWorkerFactory(): caller.IWorkerFactory, 
     getValue():string;
     setDefault():void;
     setGenerated(s :string,lang :string):void;
@@ -52,9 +52,9 @@ const isMappingInfoStruct = (obj :any) :obj is {line_map :MappingInfo[]} => {
 
 
 // returns true if updated
-const handleLanguage = async (ui :UIModel,s :JobResult,generate:(id :TraceID,src :string,option :any)=>Promise<JobResult>,lang :Language,view_lang: string,option :any) => {
+const handleLanguage = async (ui :UIModel,s :JobResult,generate:(factory :caller.IWorkerFactory, id :TraceID,src :string,option :any)=>Promise<JobResult>,lang :Language,view_lang: string,option :any) => {
     if(s.stdout===undefined) throw new Error("stdout is undefined");
-    const res = await generate(s.traceID,s.stdout,option).catch((e) => {
+    const res = await generate(ui.getWorkerFactory(), s.traceID,s.stdout,option).catch((e) => {
         return e as JobResult;
     });
     if(updateTracer.editorAlreadyUpdated(s)) {
@@ -103,8 +103,8 @@ const handleCpp = async (ui :UIModel,  s :JobResult) => {
     };
     let result : JobResult | undefined = undefined;
     let mappingInfo :any;
-    await handleLanguage(ui,s,async(id: TraceID,src :string,option :any) => {
-        result = await caller.getCppCode(id,src,option as CppOption);
+    await handleLanguage(ui,s,async(factory :caller.IWorkerFactory, id: TraceID,src :string,option :any) => {
+        result = await caller.getCppCode(factory, id,src,option as CppOption);
         if(result.code === 0&&cppOption.use_line_map){
            const split = result.stdout!.split(SEPARATOR);
            result.stdout = split[0];
@@ -168,8 +168,8 @@ const handleC = async (ui :UIModel, s :JobResult) => {
         use_memcpy: useMemcpy === true,
         zero_copy: zeroCopy === true,
     };
-    return handleLanguage(ui,s,async(id,src,option)=>{
-        const res = await caller.getCCode(id,src,option as COption);
+    return handleLanguage(ui,s,async(factory, id,src,option)=>{
+        const res = await caller.getCCode(factory, id,src,option as COption);
         if(res.code === 0&&multiFile===true){
             const split = res.stdout!.split(SEPARATOR).join("\n");
             res.stdout = split;
@@ -197,8 +197,8 @@ const handleKaitaiStruct = async (ui :UIModel, s :JobResult) => {
     return handleLanguage(ui,s,caller.getKaitaiStructCode,Language.KAITAI_STRUCT,"yaml",option);
 }
 
-const handleJSONOutput = async (ui :UIModel,id :TraceID,value :string,generator:(id :TraceID,srcCode :string,option:any)=>Promise<JobResult>) => {
-    const s = await generator(id,value,
+const handleJSONOutput = async (ui :UIModel,id :TraceID,value :string,generator:(factory :caller.IWorkerFactory, id :TraceID,srcCode :string,option:any)=>Promise<JobResult>) => {
+    const s = await generator(ui.getWorkerFactory(), id,value,
     {filename: "editor.bgn"}).catch((e) => {
         return e as JobResult;
     });
@@ -226,14 +226,14 @@ const handleBinaryModule = async (ui :UIModel, s :JobResult) => {
     const option :BMGenOption = {
       print_instruction: printInstruction === true,
     };
-    return handleLanguage(ui,s,(id,src,opt) => {
-        return caller.getBinaryModule(id,src,opt as BMGenOption);
+    return handleLanguage(ui,s,(factory,id,src,opt) => {
+        return caller.getBinaryModule(factory, id,src,opt as BMGenOption);
     },Language.BINARY_MODULE,"text/plain",option);
 }
 
-const handleBinaryModuleBased = async (ui :UIModel, s :JobResult,lang :Language,view_lang :string, generator:(id :TraceID,srcCode :string,option:any)=>Promise<JobResult>,opt :any) => {
+const handleBinaryModuleBased = async (ui :UIModel, s :JobResult,lang :Language,view_lang :string, generator:(factory :caller.IWorkerFactory, id :TraceID,srcCode :string,option:any)=>Promise<JobResult>,opt :any) => {
     if(s.stdout===undefined) throw new Error("stdout is undefined");
-    const result = await caller.getBinaryModule(s.traceID,s.stdout,{print_instruction: false});
+    const result = await caller.getBinaryModule(ui.getWorkerFactory(), s.traceID,s.stdout,{print_instruction: false});
     if(updateTracer.editorAlreadyUpdated(s)) {
         return;
     }
@@ -291,7 +291,7 @@ export const updateGenerated = async (ui :UIModel,lang :Language) => {
     if(lang === Language.JSON_DEBUG_AST) {
         return handleDebugAST(ui,traceID,value);
     }
-    const s = await caller.getAST(traceID,value,
+    const s = await caller.getAST(ui.getWorkerFactory(),traceID,value,
     {filename: "editor.bgn"}).catch((e) => {
         return e as JobResult;
     });

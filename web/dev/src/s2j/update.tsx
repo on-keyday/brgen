@@ -1,12 +1,12 @@
-import { JobResult } from "./msg";
+import { JobResult } from "./msg.js";
 
-export class UpdateTracer{
+export class UpdateTracer {
     #traceID: number = 0;
-    getTraceID(){
+    getTraceID() {
         return ++this.#traceID;
     }
-    editorAlreadyUpdated (s :JobResult) {
-        if(this.#traceID !== s.traceID){
+    editorAlreadyUpdated(s: JobResult) {
+        if (this.#traceID !== s.traceID) {
             console.log(`already updated traceID: ${s.traceID} jobID: ${s.jobID}`);
             return true;
         }
