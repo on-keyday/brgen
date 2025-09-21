@@ -34,6 +34,12 @@ module.exports = {
   stats: {
     errorDetails: true,
   },
+  resolve: {
+    fallback: {
+      // これらNode.jsの組み込みモジュールは、バンドルに含めず、エラーも出さないようにする
+      module: false,
+    },
+  },
 };
 
 if (mode === "development") {

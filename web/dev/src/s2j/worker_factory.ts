@@ -1,5 +1,4 @@
 import {IWorker, JobManager} from "./job_mgr.js";
-import { WorkerList, WorkerType } from "./msg";
 
 
 type WorkerMap= Readonly<{[key :string]:()=>IWorker }>;

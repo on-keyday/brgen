@@ -159,7 +159,7 @@ export interface JobResult {
     stdout? :string
     stderr? :string
     originalSourceCode? :string
-    err? :Error
+    err? :any
     code :number
     readonly jobID :number
     readonly traceID:number|null

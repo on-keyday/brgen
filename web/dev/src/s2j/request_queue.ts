@@ -1,5 +1,5 @@
 
-import { JobRequest, JobResult } from "./msg"
+import { JobRequest, JobResult } from "./msg.js"
 
 export class RequestQueue {
     readonly #msgQueue: JobRequest[] = [];

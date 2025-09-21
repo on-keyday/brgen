@@ -1,5 +1,17 @@
-import { UIModel, updateTracer, MappingInfo, updateGenerated } from "./s2j/generator.js";
+import { WorkerFactory } from "./s2j/worker_factory.js";
+import { fixedWorkerMap } from "./s2j/workers.js";
+import { initLSP } from "./lsp/brgen_lsp.js";
+// loading workers...
+const factory = new WorkerFactory();
+factory.addWorker(fixedWorkerMap)
+/*
+WorkerList.forEach((v) => {
+    factory.getWorker(v);
+});
+*/
+initLSP(factory);
 
+import { UIModel, updateTracer, MappingInfo, updateGenerated } from "./s2j/generator.js";
 import "../node_modules/destyle.css/destyle.min.css";
 import * as monaco from "monaco-editor";
 
@@ -7,8 +19,6 @@ import "monaco-editor/esm/vs/language/json/monaco.contribution"
 import "monaco-editor/esm/vs/basic-languages/cpp/cpp.contribution"
 import "monaco-editor/esm/vs/basic-languages/go/go.contribution"
 
-
-import "./lsp/brgen_lsp.js";
 import { JobResult, Language, LanguageList, WorkerList } from "./s2j/msg.js";
 import { makeButton, makeLink, makeListBox, setStyle, makeInputList, InputListElement } from "./ui.js";
 
@@ -18,18 +28,10 @@ import { ConfigKey, ElementID } from "./types.js";
 import { save } from "./save-data/save.js";
 import { BM_LANGUAGES, setBMUIConfig } from "./lib/bmgen/bm_caller.js";
 import { base64ToUint8Array, Uint8ArrayToBase64 } from "./base64.js";
-import { WorkerFactory } from "./s2j/worker_factory.js";
-import { fixedWorkerMap } from "./s2j/workers.js";
-import { initLSP } from "./lsp/brgen_lsp.js";
 
 
-// loading workers...
-const factory = new WorkerFactory();
-factory.addWorker(fixedWorkerMap)
-WorkerList.forEach((v) => {
-    factory.getWorker(v);
-});
-initLSP(factory);
+
+
 
 1 / 2 / 3 / 4;
 

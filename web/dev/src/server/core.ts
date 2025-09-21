@@ -2,6 +2,15 @@
 import { updateGenerated } from "../s2j/generator.js";
 import { Hono } from 'hono'
 import { RequestLanguage } from "../s2j/msg.js";
+import { WorkerFactory } from "../s2j/worker_factory.js";
+import { fixedWorkerMap } from "../s2j/workers.js";
+import {bm_workers} from "../lib/bmgen/bm_workers.js"
+import {ebm_workers} from "../lib/bmgen/ebm_workers.js"
+const worker = new WorkerFactory();
+
+worker.addWorker(fixedWorkerMap)
+worker.addWorker(bm_workers)
+worker.addWorker(ebm_workers)
 
 const app = new Hono()
 
@@ -35,9 +44,13 @@ app.post('/generate', async(c) => {
         getLanguageConfig: (lang,key) => {
             return body.options[key]
         },
-        mappingCode: () => {}
+        mappingCode: () => {},
+        getWorkerFactory: () => {
+            return worker
+        }
     },body.lang as RequestLanguage)
   }catch(e :any) {
+    console.log(e);
     return c.json({"error": e.toString()},500)
   }
   return c.json({"result": result})

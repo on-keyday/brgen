@@ -298,6 +298,9 @@ export const updateGenerated = async (ui :UIModel,lang :Language) => {
     if(updateTracer.editorAlreadyUpdated(s)) {
         return;
     }
+    if(s.err) {
+        throw s.err;
+    }
     if(s.stdout===undefined) throw new Error("stdout is undefined");
     console.log(s.stdout);
     console.log(s.stderr);

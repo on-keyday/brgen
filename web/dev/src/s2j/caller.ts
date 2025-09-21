@@ -1,4 +1,4 @@
-import {AstOption, BMGenOption, COption, CallOption, Cpp2Option, CppOption, GoOption, JobRequest, LanguageKey, LanguageList, LanguageToOptionType, LanguageToWorkerType, RequestLanguage, Rust2Option, RustOption, TSOption, WorkerList, WorkerType }  from "./msg.js";
+import {AstOption, BMGenOption, COption, CallOption, CppOption, GoOption, LanguageKey, LanguageToOptionType, LanguageToWorkerType, RequestLanguage, Rust2Option, RustOption, TSOption, WorkerList, WorkerType }  from "./msg.js";
 import {JobManager, TraceID} from "./job_mgr.js";
 
 

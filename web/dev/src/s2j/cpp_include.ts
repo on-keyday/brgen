@@ -1,4 +1,4 @@
-import { clear } from "console";
+
 
 
 const RAW_GIT_URL='https://raw.githubusercontent.com/on-keyday/utils/main/src/include'

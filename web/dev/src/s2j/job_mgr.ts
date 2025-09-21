@@ -20,7 +20,7 @@ export class JobManager {
     }
 
     #onerror(e :ErrorEvent) {
-        console.error(e);
+        console.error("Error detected!",e);
     }
 
     #onmessage(e :MessageEvent) {

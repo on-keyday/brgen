@@ -125,23 +125,33 @@ export class EmWorkContext  {
         while(true){
             const p = this.#popRequest();
             if(p === undefined) break;
-            await this.#waitForPromise();
-            const args = await makeArgs(p,this.#mod!);
-            if(args instanceof Error) {
+            try {
+                await this.#waitForPromise();
+                const args = await makeArgs(p,this.#mod!);
+                if(args instanceof Error) {
+                    const res: JobResult = {
+                        lang: p.lang,
+                        jobID: p.jobID,
+                        traceID: p.traceID,
+                        err: args,
+                        code: -1,
+                    }
+                    this.#postResult(res);
+                    continue;
+                }
+                await this.#exec(p,args);
+            } catch(e :any) {
                 const res: JobResult = {
                     lang: p.lang,
                     jobID: p.jobID,
                     traceID: p.traceID,
-                    err: args,
+                    err: e,
                     code: -1,
                 }
                 this.#postResult(res);
-                continue;
-            }
-            await this.#exec(p,args);
+            }   
         }
     }
-
 
 }
 
