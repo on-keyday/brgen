@@ -23,7 +23,8 @@ interface GenerateRequest {
 function isGenerateRequest(x :any): x is GenerateRequest {
     return typeof x?.source_code === "string" &&
          typeof x?.lang === "string" &&
-        typeof x?.options === "object";
+        typeof x?.options === "object"&&
+        !Array.isArray(x?.options);
 }
 
 app.post('/generate', async(c) => {
