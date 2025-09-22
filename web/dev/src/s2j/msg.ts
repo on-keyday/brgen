@@ -145,14 +145,57 @@ export const LanguageToWorkerType = Object.freeze({
 
 
 export type LanguageKey = keyof LanguageToOptionType;
+export type TraceID = {id :number, cancel :SharedArrayBuffer|null};
+let sharedArrayBufferInfoShown = false;
+export const newTraceID = (id :number) :TraceID => {
+    if(globalThis.SharedArrayBuffer === undefined) {
+        if(!sharedArrayBufferInfoShown) {
+            console.warn("SharedArrayBuffer is not supported in this environment. Cancellation of long running tasks will not be available.");
+            sharedArrayBufferInfoShown = true;
+        }
+        return {id, cancel :null};
+    }
+    if(!sharedArrayBufferInfoShown){
+        console.log("cancellation of long running tasks is enabled.");
+        sharedArrayBufferInfoShown = true;
+    }
+    return {id, cancel :new SharedArrayBuffer(4)};
+}
+
+export const traceIDGetID = (traceID :TraceID) :number => {
+    return traceID.id;
+}
+
+export const traceIDCancel = (traceID :TraceID) => {
+    if(!traceID.cancel) {
+        return;
+    }
+    const view = new Int32Array(traceID.cancel);
+    Atomics.store(view,0,1);
+    Atomics.notify(view,0);
+}
+
+export const traceIDCanceled = (traceID :TraceID) :boolean => {
+    if(!traceID.cancel) {
+        return false;
+    }
+    const view = new Int32Array(traceID.cancel);
+    if(Atomics.load(view,0) !== 0){
+        console.log(`traceID ${traceID.id} cancel requested`);
+        return true;
+    }
+    return false;
+}
 
 export interface JobRequest {
     readonly lang :RequestLanguage
-    readonly traceID:number|null
+    readonly traceID: TraceID
     readonly jobID :number
     readonly sourceCode :string
     arguments? :string[]
 }
+
+
 
 export interface JobResult {
     readonly lang :RequestLanguage
@@ -162,7 +205,11 @@ export interface JobResult {
     err? :any
     code :number
     readonly jobID :number
-    readonly traceID:number|null
+    readonly traceID:TraceID
+}
+
+export const isJobResult = (obj :any) :obj is JobResult => {
+    return obj && typeof obj === "object" && typeof obj.jobID === "number" && typeof obj.code === "number" && typeof obj.lang === "string";
 }
 
 export {RequestLanguage as Language}

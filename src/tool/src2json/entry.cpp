@@ -9,6 +9,8 @@
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
+#include <emscripten/val.h>
+#include <emscripten/bind.h>
 #include "../common/em_main.h"
 #else
 #define EMSCRIPTEN_KEEPALIVE
@@ -25,6 +27,24 @@ extern "C" int EMSCRIPTEN_KEEPALIVE emscripten_main(const char* cmdline) {
     cap.network = false;
     return em_main(cmdline, src2json_main, cap);
 }
+
+emscripten::val callback;
+void set_cancel_callback(emscripten::val cb) {
+    callback = cb;
+}
+
+EMSCRIPTEN_BINDINGS(my_module) {
+    function("set_cancel_callback", &set_cancel_callback);
+}
+
+bool js_cancel() {
+    if (callback.isNull() || callback.isUndefined()) {
+        return false;
+    }
+    auto ret = callback();
+    return ret.as<bool>();
+}
+
 #elif defined(SRC2JSON_DLL)
 bool init_hook() {
     cout.set_hook_write(cout_hook);

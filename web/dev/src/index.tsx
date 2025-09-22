@@ -11,7 +11,7 @@ WorkerList.forEach((v) => {
 */
 initLSP(factory);
 
-import { UIModel, updateTracer, MappingInfo, updateGenerated } from "./s2j/generator.js";
+import { UIModel, MappingInfo, updateGenerated } from "./s2j/generator.js";
 import "../node_modules/destyle.css/destyle.min.css";
 import * as monaco from "monaco-editor";
 
@@ -28,6 +28,7 @@ import { ConfigKey, ElementID } from "./types.js";
 import { save } from "./save-data/save.js";
 import { BM_LANGUAGES, setBMUIConfig } from "./lib/bmgen/bm_caller.js";
 import { base64ToUint8Array, Uint8ArrayToBase64 } from "./base64.js";
+import { UpdateTracer } from "./s2j/update.js";
 
 
 
@@ -233,6 +234,7 @@ const setGenerated = async (code: string, lang: string) => {
     }
 }
 
+const updateTracer = new UpdateTracer();
 
 let lazyInitLanguage = null as null | (() => void);
 const updateUI = async () => {
@@ -248,7 +250,10 @@ const updateUI = async () => {
         mappingCode: mappingCode,
         getWorkerFactory: () => {
             return factory;
-        }
+        },
+        getUpdateTracer: () => {
+            return updateTracer;
+        },
     };
     storage.setLangSpecificOption(serializeLanguageConfig(commonUI.config));
     await updateGenerated(ui, lazyInitLanguage ? initialLanguage : storage.getLangMode());

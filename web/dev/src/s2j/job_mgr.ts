@@ -1,8 +1,7 @@
 
 
-import {JobRequest,JobResult, RequestLanguage }  from "./msg.js";
+import {JobRequest,JobResult, RequestLanguage,TraceID }  from "./msg.js";
 
-export type TraceID = number|null;
 
 export interface IWorker {
     onmessage: ((msg :MessageEvent) => void)|null;

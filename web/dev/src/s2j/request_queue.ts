@@ -1,5 +1,5 @@
 
-import { JobRequest, JobResult } from "./msg.js"
+import { JobRequest, JobResult, traceIDGetID } from "./msg.js"
 
 export class RequestQueue {
     readonly #msgQueue: JobRequest[] = [];
@@ -16,31 +16,31 @@ export class RequestQueue {
     }
 
     #postRequest(ev: JobRequest) {
-        console.time(`msg queueing ${ev.traceID}.${ev.jobID}`)
+        console.time(`msg queueing ${traceIDGetID(ev.traceID)}.${ev.jobID}`)
         this.#msgQueue.push(ev);
     }
 
     repostRequest(ev: JobRequest) {
-        console.timeEnd(`msg handling ${ev.traceID}.${ev.jobID}`) // cancel previous
-        console.log(`requeueing ${ev.traceID}.${ev.jobID}`)
-        console.time(`msg queueing ${ev.traceID}.${ev.jobID}`)
+        console.timeEnd(`msg handling ${traceIDGetID(ev.traceID)}.${ev.jobID}`) // cancel previous
+        console.log(`requeueing ${traceIDGetID(ev.traceID)}.${ev.jobID}`)
+        console.time(`msg queueing ${traceIDGetID(ev.traceID)}.${ev.jobID}`)
         this.#msgQueue.push(ev);
     }
 
     popRequest(): JobRequest | undefined {
         const r = this.#msgQueue.shift();
         if(r !== undefined){
-            console.timeEnd(`msg queueing ${r.traceID}.${r.jobID}`)
-            console.time(`msg handling ${r.traceID}.${r.jobID}`)
+            console.timeEnd(`msg queueing ${traceIDGetID(r.traceID)}.${r.jobID}`)
+            console.time(`msg handling ${traceIDGetID(r.traceID)}.${r.jobID}`)
         }
         return r;
     }
 
     postResult(msg: JobResult) {
-        console.timeEnd(`msg handling ${msg.traceID}.${msg.jobID}`)
-        console.time(`msg posting ${msg.traceID}.${msg.jobID}`)
+        console.timeEnd(`msg handling ${traceIDGetID(msg.traceID)}.${msg.jobID}`)
+        console.time(`msg posting ${traceIDGetID(msg.traceID)}.${msg.jobID}`)
         //this.#postQueue.push(msg);
         globalThis.postMessage(msg);
-        console.timeEnd(`msg posting ${msg.traceID}.${msg.jobID}`)
+        console.timeEnd(`msg posting ${traceIDGetID(msg.traceID)}.${msg.jobID}`)
     }
 }

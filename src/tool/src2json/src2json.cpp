@@ -27,8 +27,8 @@
 #ifdef SRC2JSON_DLL
 #include "hook.h"
 #include "capi_export.h"
-#include "entry.h"
 #endif
+#include "entry.h"
 #include "../common/load_json.h"
 #include "version.h"
 
@@ -410,6 +410,8 @@ int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& f
         return exit_err;
     }
 
+    may_cancel_task();
+
     *p = std::move(*res);
 
     if (!flags.not_resolve_import) {
@@ -422,6 +424,7 @@ int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& f
             report(std::move(res2.error()));
             return exit_err;
         }
+        may_cancel_task();
     }
 
     if (!flags.not_resolve_available) {
@@ -430,10 +433,12 @@ int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& f
             report(std::move(res2.error()));
             return exit_err;
         }
+        may_cancel_task();
     }
 
     if (!flags.not_resolve_endian_spec) {
         brgen::middle::replace_specify_order(*p);
+        may_cancel_task();
     }
 
     if (!flags.not_resolve_explicit_error) {
@@ -442,6 +447,7 @@ int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& f
             report(std::move(res2.error()));
             return exit_err;
         }
+        may_cancel_task();
     }
 
     if (!flags.not_resolve_io_operation) {
@@ -450,14 +456,17 @@ int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& f
             report(std::move(res2.error()));
             return exit_err;
         }
+        may_cancel_task();
     }
 
     if (!flags.not_resolve_metadata) {
         brgen::middle::replace_metadata(*p);
+        may_cancel_task();
     }
 
     if (!flags.not_resolve_assert) {
         brgen::middle::replace_assert(*p);
+        may_cancel_task();
     }
 
     if (!flags.not_resolve_type) {
@@ -482,6 +491,7 @@ int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& f
             auto src_err = brgen::to_source_error(files)(std::move(warns));
             print_errors(src_err);
         }
+        may_cancel_task();
     }
 
     if (!flags.disable_unused_warning) {
@@ -494,26 +504,32 @@ int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& f
             auto tmp = brgen::to_source_error(files)(std::move(warns));
             print_errors(tmp);
         }
+        may_cancel_task();
     }
 
     if (!flags.not_detect_recursive_type) {
         brgen::middle::mark_recursive_reference(*p);
+        may_cancel_task();
     }
 
     if (!flags.not_detect_non_dynamic) {
         brgen::middle::detect_non_dynamic_type(*p);
+        may_cancel_task();
     }
 
     if (!flags.not_analyze_size_alignment) {
         brgen::middle::analyze_bit_size_and_alignment(*p);
+        may_cancel_task();
     }
 
     if (!flags.not_resolve_state_dependency) {
         brgen::middle::resolve_state_dependency(*p);
+        may_cancel_task();
     }
 
     if (!flags.not_analyze_block_trait) {
         brgen::middle::analyze_block_trait(*p);
+        may_cancel_task();
     }
 
     return exit_ok;
@@ -696,6 +712,7 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
     if (code != exit_ok) {
         return code;
     }
+    may_cancel_task();
 
     if (flags.check_ast) {
         if (!cap.check_ast) {
@@ -720,6 +737,7 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
             report_error(flags, nullptr, files, std::move(res.error()), false, "tokens");
             return exit_err;
         }
+        may_cancel_task();
         if (!cout.is_tty() || flags.print_json) {
             auto d = dump_json_file(files, true, *res, "tokens", brgen::SourceError{});
             cout << futils::wrap::pack(d.out(), cout.is_tty() ? "\n" : "");
@@ -765,8 +783,9 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
     if (do_direct_ast_pass(flags, cap, files, res, src_err)) {
         return exit_ok;
     }
-
+    may_cancel_task();
     auto d = dump_json_file(files, true, dump_ast_json(flags, res), "ast", src_err);
+    may_cancel_task();
     cout << futils::wrap::pack(d.out(), cout.is_tty() ? "\n" : "");
 
     return exit_ok;
@@ -795,6 +814,7 @@ int src2json_main_noexcept(int argc, char** argv, const Capability& cap) {
             }
         },
         [&](Flags& flags, futils::cmdline::option::Context& ctx) {
+            may_cancel_task();
             return Main(flags, ctx, cap);
         },
         true);

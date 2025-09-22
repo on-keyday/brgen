@@ -6,7 +6,7 @@ import 'monaco-editor/esm/vs/editor/contrib/hover/browser/hoverContribution.js';
 import * as caller from "../s2j/caller.js";
 import {ast2ts,analyze} from "ast2ts"
 import { UpdateTracer } from "../s2j/update.js";
-import { JobResult } from "../s2j/msg.js";
+import { JobResult, TraceID } from "../s2j/msg.js";
 
 export const initLSP = (factory :caller.IWorkerFactory) => {
 
@@ -38,7 +38,7 @@ export const initLSP = (factory :caller.IWorkerFactory) => {
     const context = {
         prevSemTokens : null as analyze.SemTokensStub|null,
         prevNode : null as ast2ts.ParseResult|null,
-        traceID : -1,
+        traceID : null as TraceID|null,
     };
 
     const provideTokens = async(model :monaco.editor.ITextModel, lastResultId :string|null, token: monaco.CancellationToken):Promise<monaco.languages.SemanticTokens|null> => {

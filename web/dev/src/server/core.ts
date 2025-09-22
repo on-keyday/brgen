@@ -6,13 +6,8 @@ import { WorkerFactory } from "../s2j/worker_factory.js";
 import { fixedWorkerMap } from "../s2j/workers.js";
 import {bm_workers} from "../lib/bmgen/bm_workers.js"
 import {ebm_workers} from "../lib/bmgen/ebm_workers.js"
-const worker = new WorkerFactory();
+import { UpdateTracer } from "../s2j/update.js";
 
-worker.addWorker(fixedWorkerMap)
-worker.addWorker(bm_workers)
-worker.addWorker(ebm_workers)
-
-const app = new Hono()
 
 interface GenerateRequest {
     source_code :string;
@@ -27,34 +22,64 @@ function isGenerateRequest(x :any): x is GenerateRequest {
         !Array.isArray(x?.options);
 }
 
-app.post('/generate', async(c) => {
-  const body = await c.req.json()
-  if(!isGenerateRequest(body)){
-    return c.json({"error": "invalid json"},400)
-  }
-  let result :string | null = null
-  try {
-    await updateGenerated({
-        getValue: () => {
-            return body.source_code
-        },
-        setDefault: ()=> {},
-        setGenerated: (s, lang) => {
-            result = s;
-        },
-        getLanguageConfig: (lang,key) => {
-            return body.options[key]
-        },
-        mappingCode: () => {},
-        getWorkerFactory: () => {
-            return worker
-        }
-    },body.lang as RequestLanguage)
-  }catch(e :any) {
-    console.log(e);
-    return c.json({"error": e.toString()},500)
-  }
-  return c.json({"result": result})
-})
+interface IFileSystem {
+    getResource(path :string) :Promise<{data: Uint8Array<ArrayBuffer>, contentType? :string} | null>;
+}
 
-export default app
+export const createApp = (fs :IFileSystem) => {
+    const worker = new WorkerFactory();
+
+    worker.addWorker(fixedWorkerMap)
+    worker.addWorker(bm_workers)
+    worker.addWorker(ebm_workers)
+
+    const app = new Hono()
+    app.get("/brgen/:filename{.*}",(c) => {
+        const path = c.req.param("filename") || "index.html";
+        return fs.getResource(path).then((data) => {
+            if(data === null) {
+                return c.text("Not Found",404);
+            }
+            return c.body(data.data,{headers: data.contentType ? { 
+                "Content-Type": data.contentType,
+                "Cross-Origin-Opener-Policy": "same-origin",
+                "Cross-Origin-Embedder-Policy": "require-corp"
+             } : {}});
+        });
+    })
+
+    app.post('/generate', async(c) => {
+        const body = await c.req.json()
+        if(!isGenerateRequest(body)){
+            return c.json({"error": "invalid json"},400)
+        }
+        let result :string | null = null
+        try {
+            const updateTracer = new UpdateTracer(); // per request
+            await updateGenerated({
+                getValue: () => {
+                    return body.source_code
+                },
+                setDefault: ()=> {},
+                setGenerated: (s, lang) => {
+                    result = s;
+                },
+                getLanguageConfig: (lang,key) => {
+                    return body.options[key]
+                },
+                mappingCode: () => {},
+                getWorkerFactory: () => {
+                    return worker
+                },
+                getUpdateTracer: () => {
+                    return updateTracer;
+                }
+            },body.lang as RequestLanguage)
+        }catch(e :any) {
+            console.log(e);
+            return c.json({"error": e.toString()},500)
+        }
+        return c.json({"result": result})
+    })
+    return app;
+}

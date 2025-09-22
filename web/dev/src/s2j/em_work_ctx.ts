@@ -1,5 +1,5 @@
 
-import { JobRequest, JobResult } from "./msg.js";
+import { JobRequest, JobResult, TraceID, traceIDCanceled, traceIDGetID } from "./msg.js";
 import { RequestQueue } from "./request_queue.js";
 import { MyEmscriptenModule } from "./emscripten_mod.js";
 
@@ -78,7 +78,7 @@ export class EmWorkContext  {
         }
     }
 
-    async #callEmscriptenMain(args: string[]): Promise<number> {
+    async #callEmscriptenMain(traceID :TraceID, args: string[]): Promise<number> {
         await this.#waitForPromise();
         let arg: string = "";
         for (let i = 0; i < args.length; i++) {
@@ -86,6 +86,15 @@ export class EmWorkContext  {
             arg += encodeURIComponent(args[i]);
         }
         try {
+            if(traceIDCanceled(traceID)) {
+                console.log(`canceled traceID before emscripten_main: ${traceIDGetID(traceID)} `);
+                return -1;
+            }
+            if(this.#mod!.set_cancel_callback) {
+                this.#mod!.set_cancel_callback(() => {
+                    return traceIDCanceled(traceID);
+                });
+            }
             return this.#mod!.ccall("emscripten_main", "number", ["string"], [arg]);
         }catch(e) {
             console.log(e);
@@ -107,7 +116,7 @@ export class EmWorkContext  {
             args.push(v);
         });
         this.#setCapture(id);
-        const code = await this.#callEmscriptenMain(args);
+        const code = await this.#callEmscriptenMain(e.traceID, args);
         const result: JobResult = {
             lang: e.lang,
             stdout: this.#textCapture.stdout,
