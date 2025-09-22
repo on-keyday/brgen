@@ -39,6 +39,7 @@ type GeneratorHandler struct {
 
 	dirBaseSuffixChan chan *DirBaseSuffix
 	dirBaseSuffix     []*DirBaseSuffix
+	loadAstBlock      chan struct{} // TODO(on-keyday): temporary solution for CI
 }
 
 func (g *GeneratorHandler) Printf(format string, args ...interface{}) {
@@ -121,6 +122,7 @@ func (g *GeneratorHandler) Init(src2json string, libs2j string, output []*Output
 	g.resultQueue = make(chan *Result, 1)
 	g.errQueue = make(chan error, 1)
 	g.dirBaseSuffixChan = make(chan *DirBaseSuffix, 1)
+	g.loadAstBlock = make(chan struct{}, 100)
 	err := g.loadSrc2JSON(src2json, libs2j)
 	if err != nil {
 		return err
@@ -234,6 +236,8 @@ func (g *GeneratorHandler) loadAstLibS2J(path string) ([]byte, error) {
 }
 
 func (g *GeneratorHandler) loadAst(path string) ([]byte, error) {
+	g.loadAstBlock <- struct{}{}
+	defer func() { <-g.loadAstBlock }()
 	if g.libs2j != nil {
 		return g.loadAstLibS2J(path)
 	}
