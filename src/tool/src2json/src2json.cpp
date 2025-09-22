@@ -29,8 +29,7 @@
 #include "capi_export.h"
 #include "entry.h"
 #endif
-#include "../common/generate.h"
-
+#include "../common/load_json.h"
 #include "version.h"
 
 struct Flags : futils::cmdline::templ::HelpOption {
