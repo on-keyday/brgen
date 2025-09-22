@@ -298,7 +298,7 @@ func (g *GeneratorHandler) generateAST(path string, reqwg *sync.WaitGroup) {
 }
 
 func (g *GeneratorHandler) dispatchGenerator(out *Output) error {
-	gen := NewGenerator(g.ctx, &g.works, g.stderr, g.resultQueue /*&g.outputCount,*/, g.dirBaseSuffixChan)
+	gen := NewGenerator(g.ctx, &g.works, g.stderr, g.resultQueue /*&g.outputCount,*/, g.dirBaseSuffixChan, g.loadAstBlock)
 	err := gen.StartGenerator(out)
 	if err != nil {
 		if err == ErrIgnoreMissing {

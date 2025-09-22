@@ -32,18 +32,18 @@ type Result struct {
 }
 
 type Generator struct {
-	generatorPath []string
-	outputDir     string
-	args          []string
-	spec          Spec
-	result        chan *Result
-	request       chan *Result
-	ctx           context.Context
-	stderr        io.Writer
-	//outputCount       *atomic.Int64
+	generatorPath     []string
+	outputDir         string
+	args              []string
+	spec              Spec
+	result            chan *Result
+	request           chan *Result
+	ctx               context.Context
+	stderr            io.Writer
 	works             *sync.WaitGroup
 	dirBaseSuffixChan chan *DirBaseSuffix
 	stdinStream       *request.ProcessClient
+	generatorBlock    chan struct{} // TODO(on-keyday): temporary solution for CI
 }
 
 func (g *Generator) cmdline() []string {
@@ -64,7 +64,7 @@ func printf(stderr io.Writer, format string, args ...interface{}) {
 	fmt.Fprintf(stderr, "brgen: %s", fmt.Sprintf(format, args...))
 }
 
-func NewGenerator(ctx context.Context, work *sync.WaitGroup, stderr io.Writer, res chan *Result /*outputCount *atomic.Int64,*/, dirBaseSuffixChan chan *DirBaseSuffix) *Generator {
+func NewGenerator(ctx context.Context, work *sync.WaitGroup, stderr io.Writer, res chan *Result /*outputCount *atomic.Int64,*/, dirBaseSuffixChan chan *DirBaseSuffix, generatorBlock chan struct{}) *Generator {
 	return &Generator{
 		works:             work,
 		ctx:               ctx,
@@ -72,6 +72,7 @@ func NewGenerator(ctx context.Context, work *sync.WaitGroup, stderr io.Writer, r
 		request:           make(chan *Result),
 		result:            res,
 		dirBaseSuffixChan: dirBaseSuffixChan,
+		generatorBlock:    generatorBlock,
 	}
 }
 
@@ -162,6 +163,8 @@ func (g *Generator) sendGenerated(fileBase string, data []byte) {
 
 func (g *Generator) handleRequest(req *Result) {
 	defer g.works.Done() // this Done is for the generator handlers Add
+	g.generatorBlock <- struct{}{}
+	defer func() { <-g.generatorBlock }()
 	if g.stdinStream != nil {
 		g.handleStdinStreamRequest(req)
 		return
