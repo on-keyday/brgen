@@ -27,6 +27,7 @@
 #ifdef SRC2JSON_DLL
 #include "hook.h"
 #include "capi_export.h"
+#include "entry.h"
 #endif
 #include "../common/generate.h"
 
@@ -351,6 +352,26 @@ auto print_errors(const brgen::SourceError& err, bool warn_as_error = false) {
             print_error(msg);
         }
     });
+}
+
+bool do_direct_ast_pass(Flags& flags, const Capability& cap, brgen::FileSet& files, const std::shared_ptr<brgen::ast::Program>& ast, const brgen::SourceError& err) {
+    if (!cap.direct_ast_pass) {
+        return false;
+    }
+#ifdef SRC2JSON_DLL
+    if (out_callback) {  // if not set, not direct ast pass mode
+        // for C-API direct ast pass mode
+        auto file_list = files.file_list();
+        brgen::ast::DirectASTPassInterface ret{
+            .files = &file_list,
+            .error = &err,
+            .ast = &ast,
+        };
+        out_callback((const char*)&ret, sizeof(ret), S2J_CAPABILITY_DIRECT_AST_PASS, out_callback_data);
+        return true;
+    }
+#endif
+    return false;
 }
 
 auto report_error(Flags& flags, auto&& elem, brgen::FileSet& files, brgen::LocationError&& loc_err, bool warn = false, const char* key = "ast") {
@@ -740,6 +761,10 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
     if (!cap.ast_json) {
         print_error("print ast json is disabled");
         return exit_err;
+    }
+
+    if (do_direct_ast_pass(flags, cap, files, res, src_err)) {
+        return exit_ok;
     }
 
     auto d = dump_json_file(files, true, dump_ast_json(flags, res), "ast", src_err);

@@ -2,6 +2,7 @@
 #pragma once
 #include "json.h"
 #include <json/convert_json.h>
+#include <memory>
 
 namespace futils::comb2 {
     bool from_json(Pos& pos, const auto& j) {
@@ -93,6 +94,14 @@ namespace brgen {
                 FROM_JSON_PARAM(error, "error")
                 JSON_PARAM_END()
             }
+        };
+
+        // for C-API direct ast pass mode interface
+        struct Program;
+        struct DirectASTPassInterface {
+            const std::vector<std::string>* const files = nullptr;
+            const SourceError* const error = nullptr;
+            const std::shared_ptr<Program>* const ast = nullptr;
         };
     }  // namespace ast
 }  // namespace brgen

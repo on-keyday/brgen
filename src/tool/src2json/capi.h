@@ -28,6 +28,7 @@ struct Capability {
     bool parser;
     bool importer;
     bool ast_json;
+    bool direct_ast_pass;
 };
 
 #ifdef __cplusplus
@@ -41,6 +42,7 @@ constexpr auto default_capability = Capability{
     .parser = true,
     .importer = true,
     .ast_json = true,
+    .direct_ast_pass = false,  // default disabled
 };
 #endif
 
@@ -53,6 +55,7 @@ constexpr auto default_capability = Capability{
 #define S2J_CAPABILITY_PARSER (1 << 6)
 #define S2J_CAPABILITY_IMPORTER (1 << 7)
 #define S2J_CAPABILITY_AST_JSON (1 << 8)
+#define S2J_CAPABILITY_DIRECT_AST_PASS (1 << 9)  // default disabled. for C++ user
 
 #define S2J_CAPABILITY_ALL (S2J_CAPABILITY_STDIN | S2J_CAPABILITY_NETWORK | S2J_CAPABILITY_FILE | S2J_CAPABILITY_ARGV | S2J_CAPABILITY_CHECK_AST | S2J_CAPABILITY_LEXER | S2J_CAPABILITY_PARSER | S2J_CAPABILITY_IMPORTER | S2J_CAPABILITY_AST_JSON)
 typedef uint64_t CAPABILITY;
@@ -69,11 +72,20 @@ constexpr Capability to_capability(CAPABILITY c) {
     cap.parser = (c & S2J_CAPABILITY_PARSER) != 0;
     cap.importer = (c & S2J_CAPABILITY_IMPORTER) != 0;
     cap.ast_json = (c & S2J_CAPABILITY_AST_JSON) != 0;
+    cap.direct_ast_pass = (c & S2J_CAPABILITY_DIRECT_AST_PASS) != 0;
     return cap;
 }
 #endif
 // using size_t for abi compatibility
-// is_stderr: 0 for stdout, 1 for stderr 
+// is_stderr: 0 for stdout, 1 for stderr
+// if direct_ast_pass is enabled, is_stderr with S2J_CAPABILITY_DIRECT_AST_PASS is used for direct ast pass
+// then str is pointer to brgen::ast::DirectASTPassInterface struct, len is sizeof(struct)
+// otherwise, str is pointer to char buffer, len is size of buffer
+// direct_ast_pass is currently used only in success pass
+// be careful about inter-dll compatibility of shared ast
+// also, do not release the dll while ast is used
+#define IS_STDERR(x) (((x) & 1) == 1)
+#define IS_DIRECT_AST_PASS(x) (((x) & S2J_CAPABILITY_DIRECT_AST_PASS) != 0)
 typedef void (*out_callback_t)(const char* str, size_t len, size_t is_stderr, void* data);
 S2J_EXPORT int libs2j_call(int argc, char** argv, CAPABILITY cap, out_callback_t out_callback, void* data);
 #ifdef __cplusplus
