@@ -68,6 +68,11 @@ extern "C" int libs2j_call(int argc, char** argv, CAPABILITY cap, out_callback_t
             return {};
         };
     }
+    else {  // use default console output behavior
+        out_callback = nullptr;
+        out_callback_data = nullptr;
+        worker_hook() = nullptr;
+    }
     auto cap2 = to_capability(cap);
     return src2json_main(argc, argv, cap2);
 }
