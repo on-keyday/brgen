@@ -85,10 +85,15 @@ func (g *Generator) execGenerator(cmd *exec.Cmd, targetFile string) ([]byte, err
 	cmd.Stderr = errBuf
 	buf := bytes.NewBuffer(nil)
 	cmd.Stdout = buf
-	g.Printf("execGenerator: starting process: %s\n", targetFile)
+	g.Printf("execGenerator: %s: starting process: %s\n", g.generatorPath[0], targetFile)
 	err := cmd.Run()
-	g.Printf("execGenerator: done process: %s\n", targetFile)
+	g.Printf("execGenerator: %s: done process: %s\n", g.generatorPath[0], targetFile)
 	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			if exitErr.ExitCode() != 1 && exitErr.ExitCode() != 101 {
+				_ = exitErr
+			}
+		}
 		if errBuf.Len() > 0 {
 			return nil, fmt.Errorf("%w: %s", err, errBuf.String())
 		}

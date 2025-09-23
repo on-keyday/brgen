@@ -228,7 +228,13 @@ func (g *GeneratorHandler) loadAstLibS2J(path string) ([]byte, error) {
 	args := g.appendConfig([]string{"src2json", path, "--print-json", "--print-on-error", "--no-color"})
 	g.Printf("loadAst: call for %s\n", path)
 	res, err := g.libs2j.Call(args, s2jgo.CAPABILITY_ALL&^s2jgo.CAPABILITY_STDIN&^s2jgo.CAPABILITY_ARGV&^s2jgo.CAPABILITY_NETWORK)
-	g.Printf("loadAst: done for %s\n", path)
+	lenStderr := 0
+	lenStdout := 0
+	if res != nil {
+		lenStderr = len(res.Stderr)
+		lenStdout = len(res.Stdout)
+	}
+	g.Printf("loadAst: done for %s Stdout len: %d Stderr len: %d\n", path, lenStdout, lenStderr)
 	if err != nil {
 		return nil, err
 	}

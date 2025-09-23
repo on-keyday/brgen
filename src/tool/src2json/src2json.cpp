@@ -18,6 +18,7 @@
 #include <core/middle/type_attribute.h>
 #include <core/middle/analyze_block_trait.h>
 #include "../common/print.h"
+#include "tool/common/send.h"
 #include <core/ast/node_type_list.h>
 #include <core/ast/kill_node.h>
 #include <wrap/cin.h>
@@ -239,6 +240,9 @@ auto do_lex(brgen::File* file, size_t limit) {
 
 int check_ast(std::string_view name, futils::view::rvec view) {
     auto loaded = load_json(0, name, view);
+    if (!loaded) {
+        return exit_err;
+    }
     print_ok();
     return exit_ok;
 }
@@ -633,6 +637,7 @@ int load_file(Flags& flags, brgen::FileSet& files, brgen::File*& input, const Ca
 }
 
 int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap) {
+    send_as_text = true;  // currrently, src2json not support binary mode
     if (flags.version) {
         cout << futils::wrap::pack("src2json version ", src2json_version, " (lang version ", lang_version, ")\n");
         return exit_ok;
