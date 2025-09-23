@@ -3,4 +3,4 @@ extensions:
       pack: codeql/cpp-all
       extensible: sourceModel
     data:
-      - ["futils::wrap", "UtfIn", False, "operator>>", "", "",  "Argument[*0]", "remote", "manual"]
+      - ["futils::wrap", "UtfIn", false, "operator>>", "", "",  "Argument[*0]", "remote", "manual"]

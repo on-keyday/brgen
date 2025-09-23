@@ -158,5 +158,5 @@
     "-compile-commands-dir=${workspaceFolder}/built/native/Debug",
     "--fallback-style=none"
   ],
-  "codeQL.createQuery.qlPackLocation": "c:\\workspace\\shbrgen\\brgen"
+  "codeQL.createQuery.qlPackLocation": "${workspaceFolder}"
 }
