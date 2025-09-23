@@ -1,17 +1,18 @@
 
-import * as caller from "./s2j/caller";
-import { TraceID } from "./s2j/job_mgr";
-import { UpdateTracer } from "./s2j/update";
-import * as inc from "./cpp_include";
-import  { BMGenOption, COption, CallOption, Cpp2Option, CppOption, GoOption, JobResult,Language, Rust2Option, RustOption, TSOption } from "./s2j/msg.js";
-import {ast2ts} from "ast2ts";
-import {storage} from "./storage";
-import {ConfigKey} from "./types";
-import { BM_LANGUAGES, BM_LSP_LANGUAGES, generateBMCode } from "./lib/bmgen/bm_caller";
+import * as caller from "./caller.js";
+import { isJobResult, TraceID } from "./msg.js";
+import { UpdateTracer } from "./update.js";
+import * as inc from "./cpp_include.js";
+import  { BMGenOption, COption, CallOption, Cpp2Option, CppOption, GoOption, JobResult,Language, Rust2Option, RustOption, TSOption } from "./msg.js";
+import {ast2ts} from "../../node_modules/ast2ts/ast.js";
+import {ConfigKey} from "../types.js";
+import { BM_LANGUAGES, BM_LSP_LANGUAGES, generateBMCode } from "../lib/bmgen/bm_caller.js";
 
 //import { compileCpp } from "./compiler-explorer/api";
 
 export interface UIModel {
+    getWorkerFactory(): caller.IWorkerFactory, 
+    getUpdateTracer(): UpdateTracer;
     getValue():string;
     setDefault():void;
     setGenerated(s :string,lang :string):void;
@@ -52,12 +53,12 @@ const isMappingInfoStruct = (obj :any) :obj is {line_map :MappingInfo[]} => {
 
 
 // returns true if updated
-const handleLanguage = async (ui :UIModel,s :JobResult,generate:(id :TraceID,src :string,option :any)=>Promise<JobResult>,lang :Language,view_lang: string,option :any) => {
+const handleLanguage = async (ui :UIModel,s :JobResult,generate:(factory :caller.IWorkerFactory, id :TraceID,src :string,option :any)=>Promise<JobResult>,lang :Language,view_lang: string,option :any) => {
     if(s.stdout===undefined) throw new Error("stdout is undefined");
-    const res = await generate(s.traceID,s.stdout,option).catch((e) => {
+    const res = await generate(ui.getWorkerFactory(), s.traceID,s.stdout,option).catch((e) => {
         return e as JobResult;
     });
-    if(updateTracer.editorAlreadyUpdated(s)) {
+    if(ui.getUpdateTracer().editorAlreadyUpdated(s)) {
         return;
     }
     console.log(res);
@@ -103,8 +104,8 @@ const handleCpp = async (ui :UIModel,  s :JobResult) => {
     };
     let result : JobResult | undefined = undefined;
     let mappingInfo :any;
-    await handleLanguage(ui,s,async(id: TraceID,src :string,option :any) => {
-        result = await caller.getCppCode(id,src,option as CppOption);
+    await handleLanguage(ui,s,async(factory :caller.IWorkerFactory, id: TraceID,src :string,option :any) => {
+        result = await caller.getCppCode(factory, id,src,option as CppOption);
         if(result.code === 0&&cppOption.use_line_map){
            const split = result.stdout!.split(SEPARATOR);
            result.stdout = split[0];
@@ -112,7 +113,7 @@ const handleCpp = async (ui :UIModel,  s :JobResult) => {
         }
         if(result.code === 0&&expandInclude===true){
             const expanded = await inc.resolveInclude(result.stdout!,(url :string)=>{
-                if(updateTracer.editorAlreadyUpdated(s)) return;
+                if(ui.getUpdateTracer().editorAlreadyUpdated(s)) return;
                 ui.setGenerated(`maybe external server call is delayed\nfetching ${url}`,"text/plain");
             });
             result.stdout = expanded;
@@ -123,12 +124,12 @@ const handleCpp = async (ui :UIModel,  s :JobResult) => {
     // TypeScript may not infer that `result` will be assigned within the async function below.
     // Therefore, we explicitly cast `result` as `JobResult | undefined` to avoid type errors.
     result = result as JobResult | undefined;
-    if(result&&!updateTracer.editorAlreadyUpdated(result)){
+    if(result&&!ui.getUpdateTracer().editorAlreadyUpdated(result)){
         if(isMappingInfoStruct(mappingInfo)) {
             // wait for editor update 
             setTimeout(() => {
                 if(result===undefined) throw new Error("result is undefined");
-                if(updateTracer.editorAlreadyUpdated(s)) return;
+                if(ui.getUpdateTracer().editorAlreadyUpdated(s)) return;
                 console.log(mappingInfo);
                 ui.mappingCode(mappingInfo.line_map,s,Language.CPP,0);
             },1);
@@ -168,8 +169,8 @@ const handleC = async (ui :UIModel, s :JobResult) => {
         use_memcpy: useMemcpy === true,
         zero_copy: zeroCopy === true,
     };
-    return handleLanguage(ui,s,async(id,src,option)=>{
-        const res = await caller.getCCode(id,src,option as COption);
+    return handleLanguage(ui,s,async(factory, id,src,option)=>{
+        const res = await caller.getCCode(factory, id,src,option as COption);
         if(res.code === 0&&multiFile===true){
             const split = res.stdout!.split(SEPARATOR).join("\n");
             res.stdout = split;
@@ -197,12 +198,12 @@ const handleKaitaiStruct = async (ui :UIModel, s :JobResult) => {
     return handleLanguage(ui,s,caller.getKaitaiStructCode,Language.KAITAI_STRUCT,"yaml",option);
 }
 
-const handleJSONOutput = async (ui :UIModel,id :TraceID,value :string,generator:(id :TraceID,srcCode :string,option:any)=>Promise<JobResult>) => {
-    const s = await generator(id,value,
+const handleJSONOutput = async (ui :UIModel,id :TraceID,value :string,generator:(factory :caller.IWorkerFactory, id :TraceID,srcCode :string,option:any)=>Promise<JobResult>) => {
+    const s = await generator(ui.getWorkerFactory(), id,value,
     {filename: "editor.bgn"}).catch((e) => {
         return e as JobResult;
     });
-    if(updateTracer.editorAlreadyUpdated(s)) {
+    if(ui.getUpdateTracer().editorAlreadyUpdated(s)) {
         return;
     }
     if(s.stdout===undefined) throw new Error("stdout is undefined");
@@ -226,15 +227,15 @@ const handleBinaryModule = async (ui :UIModel, s :JobResult) => {
     const option :BMGenOption = {
       print_instruction: printInstruction === true,
     };
-    return handleLanguage(ui,s,(id,src,opt) => {
-        return caller.getBinaryModule(id,src,opt as BMGenOption);
+    return handleLanguage(ui,s,(factory,id,src,opt) => {
+        return caller.getBinaryModule(factory, id,src,opt as BMGenOption);
     },Language.BINARY_MODULE,"text/plain",option);
 }
 
-const handleBinaryModuleBased = async (ui :UIModel, s :JobResult,lang :Language,view_lang :string, generator:(id :TraceID,srcCode :string,option:any)=>Promise<JobResult>,opt :any) => {
+const handleBinaryModuleBased = async (ui :UIModel, s :JobResult,lang :Language,view_lang :string, generator:(factory :caller.IWorkerFactory, id :TraceID,srcCode :string,option:any)=>Promise<JobResult>,opt :any) => {
     if(s.stdout===undefined) throw new Error("stdout is undefined");
-    const result = await caller.getBinaryModule(s.traceID,s.stdout,{print_instruction: false});
-    if(updateTracer.editorAlreadyUpdated(s)) {
+    const result = await caller.getBinaryModule(ui.getWorkerFactory(), s.traceID,s.stdout,{print_instruction: false});
+    if(ui.getUpdateTracer().editorAlreadyUpdated(s)) {
         return;
     }
     if(result.stdout === undefined || result.stdout === "") {
@@ -275,12 +276,10 @@ export const handleBM = async (ui :UIModel, s :JobResult,lang :string) => {
     },{})
 }
 
-export const updateTracer = new UpdateTracer();
-
 
 export const updateGenerated = async (ui :UIModel,lang :Language) => {
     const value = ui.getValue();
-    const traceID = updateTracer.getTraceID();
+    const traceID = ui.getUpdateTracer().getTraceID();
     if(value === ""){
         ui.setDefault();
         return;
@@ -291,12 +290,18 @@ export const updateGenerated = async (ui :UIModel,lang :Language) => {
     if(lang === Language.JSON_DEBUG_AST) {
         return handleDebugAST(ui,traceID,value);
     }
-    const s = await caller.getAST(traceID,value,
+    const s = await caller.getAST(ui.getWorkerFactory(),traceID,value,
     {filename: "editor.bgn"}).catch((e) => {
-        return e as JobResult;
+        if(isJobResult(e)) {
+            return e;
+        }
+        throw e;
     });
-    if(updateTracer.editorAlreadyUpdated(s)) {
+    if(ui.getUpdateTracer().editorAlreadyUpdated(s)) {
         return;
+    }
+    if(s.err) {
+        throw s.err;
     }
     if(s.stdout===undefined) throw new Error("stdout is undefined");
     console.log(s.stdout);

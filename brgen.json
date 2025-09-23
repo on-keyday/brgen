@@ -18,7 +18,11 @@
     {
       "generator": "./tool/json2cpp2",
       "output_dir": "./ignore/example/cpp2/",
-      "args": ["--add-line-map", "--use-error", "--use-overflow-check"]
+      "args": [
+        "--add-line-map",
+        "--use-error",
+        "--use-overflow-check"
+      ]
     },
     {
       "generator": "./tool/json2go",
@@ -46,17 +50,27 @@
     {
       "generator": "./tool/src2json",
       "output_dir": "/dev/stdout",
-      "args": ["--check-ast", "--stdin", "--force-ok"]
+      "args": [
+        "--no-color",
+        "--check-ast",
+        "--stdin",
+        "--force-ok"
+      ]
     },
     {
       "generator": "./tool/json2mermaid",
       "output_dir": "./ignore/example/mermaid/",
-      "args": ["-as-code-block", "-format"]
+      "args": [
+        "-as-code-block",
+        "-format"
+      ]
     },
     {
       "generator": "./tool/json2rust",
       "output_dir": "./ignore/example/rust/",
-      "args": ["--add-map"],
+      "args": [
+        "--add-map"
+      ],
       "ignore_missing": true
     },
     {
@@ -82,7 +96,9 @@
     {
       "generator": "./tool/json2ts",
       "output_dir": "./ignore/example/ts/",
-      "args": ["--javascript"]
+      "args": [
+        "--javascript"
+      ]
     }
   ]
 }

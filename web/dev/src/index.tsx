@@ -1,5 +1,17 @@
-import { UIModel, updateTracer, MappingInfo, updateGenerated } from "./generator";
+import { WorkerFactory } from "./s2j/worker_factory.js";
+import { fixedWorkerMap } from "./s2j/workers.js";
+import { initLSP } from "./lsp/brgen_lsp.js";
+// loading workers...
+const factory = new WorkerFactory();
+factory.addWorker(fixedWorkerMap)
+/*
+WorkerList.forEach((v) => {
+    factory.getWorker(v);
+});
+*/
+initLSP(factory);
 
+import { UIModel, MappingInfo, updateGenerated } from "./s2j/generator.js";
 import "../node_modules/destyle.css/destyle.min.css";
 import * as monaco from "monaco-editor";
 
@@ -7,18 +19,20 @@ import "monaco-editor/esm/vs/language/json/monaco.contribution"
 import "monaco-editor/esm/vs/basic-languages/cpp/cpp.contribution"
 import "monaco-editor/esm/vs/basic-languages/go/go.contribution"
 
+import { JobResult, Language, LanguageList, WorkerList } from "./s2j/msg.js";
+import { makeButton, makeLink, makeListBox, setStyle, makeInputList, InputListElement } from "./ui.js";
 
-import "./s2j/brgen_lsp.js";
-import { JobResult, Language, LanguageList } from "./s2j/msg.js";
-import { makeButton, makeLink, makeListBox, setStyle, makeInputList, InputListElement } from "./ui";
+import { storage } from "./storage.js";
+import { FileCandidates, registerFileSelectionCallback } from "./lsp/file_select.js";
+import { ConfigKey, ElementID } from "./types.js";
+import { save } from "./save-data/save.js";
+import { BM_LANGUAGES, setBMUIConfig } from "./lib/bmgen/bm_caller.js";
+import { base64ToUint8Array, Uint8ArrayToBase64 } from "./base64.js";
+import { UpdateTracer } from "./s2j/update.js";
 
-import { storage } from "./storage";
-import { FileCandidates, registerFileSelectionCallback } from "./s2j/file_select";
-import { ConfigKey, ElementID } from "./types";
-import { save } from "./save-data/save";
-import { BM_LANGUAGES, setBMUIConfig } from "./lib/bmgen/bm_caller";
-import { base64ToUint8Array, Uint8ArrayToBase64 } from "./base64";
-import { lazy } from "react";
+
+
+
 
 1 / 2 / 3 / 4;
 
@@ -220,6 +234,8 @@ const setGenerated = async (code: string, lang: string) => {
     }
 }
 
+const updateTracer = new UpdateTracer();
+
 let lazyInitLanguage = null as null | (() => void);
 const updateUI = async () => {
     const ui: UIModel = {
@@ -232,6 +248,12 @@ const updateUI = async () => {
         setGenerated: setGenerated,
         setDefault: () => editorUI.setDefault(),
         mappingCode: mappingCode,
+        getWorkerFactory: () => {
+            return factory;
+        },
+        getUpdateTracer: () => {
+            return updateTracer;
+        },
     };
     storage.setLangSpecificOption(serializeLanguageConfig(commonUI.config));
     await updateGenerated(ui, lazyInitLanguage ? initialLanguage : storage.getLangMode());

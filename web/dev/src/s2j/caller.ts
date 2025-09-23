@@ -1,38 +1,8 @@
-import {AstOption, BMGenOption, COption, CallOption, Cpp2Option, CppOption, GoOption, JobRequest, LanguageKey, LanguageList, LanguageToOptionType, LanguageToWorkerType, RequestLanguage, Rust2Option, RustOption, TSOption, WorkerList, WorkerType }  from "./msg.js";
-import {JobManager,TraceID} from "./job_mgr.js";
-
-const workerMap = Object.freeze({
-    [WorkerType.SRC2JSON]:()=> new Worker(new URL("./worker/src2json_worker.js",import.meta.url),{type:"module"}),
-    [WorkerType.JSON2CPP2]:()=> new Worker(new URL("./worker/json2cpp2_worker.js",import.meta.url),{type:"module"}),
-    [WorkerType.JSON2GO]:()=> new Worker(new URL("./worker/json2go_worker.js",import.meta.url),{type:"module"}),
-    [WorkerType.JSON2C]:()=> new Worker(new URL("./worker/json2c_worker.js",import.meta.url),{type:"module"}),
-    [WorkerType.JSON2RUST]:()=> new Worker(new URL("./worker/json2rust_worker.js",import.meta.url),{type:"module"}),
-    [WorkerType.JSON2TS]:()=> new Worker(new URL("./worker/json2ts_worker.js",import.meta.url),{type:"module"}),
-    [WorkerType.JSON2KAITAI]:()=> new Worker(new URL("./worker/json2kaitai_worker.js",import.meta.url),{type:"module"}),
-
-    [WorkerType.BMGEN]:()=> new Worker(new URL("./worker/bmgen/bmgen_worker.js",import.meta.url),{type:"module"}),
-    //[WorkerType.BM2CPP]:()=> new Worker(new URL("./worker/bmgen/bm2cpp_worker.js",import.meta.url),{type:"module"}),
-    //[WorkerType.BM2RUST]:()=> new Worker(new URL("./worker/bmgen/bm2rust_worker.js",import.meta.url),{type:"module"}),
-});
+import {AstOption, BMGenOption, COption, CallOption, CppOption, GoOption, LanguageKey, LanguageToOptionType, LanguageToWorkerType, RequestLanguage, Rust2Option, RustOption, TSOption, WorkerList, WorkerType }  from "./msg.js";
+import {JobManager} from "./job_mgr.js";
+import {TraceID } from "./msg.js";
 
 
-const WorkerFactory = class {
-
-    #jobs = new Map<WorkerType,JobManager>();
-
-    getWorker = (lang :WorkerType) => {
-        let mgr = this.#jobs.get(lang);
-        if(mgr) return mgr;
-        const worker = workerMap[lang]();
-        mgr = new JobManager(worker);
-        this.#jobs.set(lang,mgr);
-        return mgr;
-    }
-
-  
-}
-
-const factory = new WorkerFactory();
 
 const argConverter = Object.freeze({
     [RequestLanguage.TOKENIZE] : (opt :CallOption) => {
@@ -163,7 +133,13 @@ const argConverter = Object.freeze({
 })
 
 
-export function getLanguage<L extends LanguageKey>(traceID :TraceID,sourceCode :string, lang:L,option :LanguageToOptionType[L]) {
+
+export interface IWorkerFactory {
+    getWorker(lang :WorkerType) :JobManager
+}
+
+
+export function getLanguage<L extends LanguageKey>(factory :IWorkerFactory, traceID :TraceID,sourceCode :string, lang:L,option :LanguageToOptionType[L]) {
     const mgr = factory.getWorker(LanguageToWorkerType[lang as RequestLanguage]);
     const req = mgr.getRequest(traceID,lang,sourceCode);
     const convert = argConverter[lang] as (opt :LanguageToOptionType[L]) => string[];
@@ -171,52 +147,46 @@ export function getLanguage<L extends LanguageKey>(traceID :TraceID,sourceCode :
     return mgr.doRequest(req);
 }
 
-export const loadWorkers = () => {
-    WorkerList.forEach((v) => {
-        factory.getWorker(v);
-    });
+
+
+export const getAST = (factory :IWorkerFactory,id :TraceID,sourceCode :string,options :AstOption) => {
+    return getLanguage(factory, id,sourceCode,RequestLanguage.JSON_AST,options)
 }
 
-loadWorkers();
-
-export const getAST = (id :TraceID,sourceCode :string,options :AstOption) => {
-    return getLanguage(id,sourceCode,RequestLanguage.JSON_AST,options)
+export const getDebugAST = (factory :IWorkerFactory,id :TraceID,sourceCode :string,options :CallOption) => {
+    return getLanguage(factory,id,sourceCode,RequestLanguage.JSON_DEBUG_AST,options)
 }
 
-export const getDebugAST = (id :TraceID,sourceCode :string,options :CallOption) => {
-    return getLanguage(id,sourceCode,RequestLanguage.JSON_DEBUG_AST,options)
+export const getTokens = (factory :IWorkerFactory,id :TraceID,sourceCode :string,options :CallOption) => {
+    return getLanguage(factory,id,sourceCode,RequestLanguage.TOKENIZE,options)
 }
 
-export const getTokens = (id :TraceID,sourceCode :string,options :CallOption) => {
-    return getLanguage(id,sourceCode,RequestLanguage.TOKENIZE,options)
+export const getCppCode = (factory :IWorkerFactory,id :TraceID,sourceCode :string,options :CppOption) => {
+    return getLanguage(factory,id,sourceCode,RequestLanguage.CPP,options)
 }
 
-export const getCppCode = (id :TraceID,sourceCode :string,options :CppOption) => {
-    return getLanguage(id,sourceCode,RequestLanguage.CPP,options)
+export const getGoCode = (factory :IWorkerFactory,id :TraceID,sourceCode :string,options :GoOption) => {
+    return getLanguage(factory,id,sourceCode,RequestLanguage.GO,options)
 }
 
-export const getGoCode = (id :TraceID,sourceCode :string,options :GoOption) => {
-    return getLanguage(id,sourceCode,RequestLanguage.GO,options)
+export const getCCode = (factory :IWorkerFactory,id :TraceID,sourceCode :string,options :COption) => {
+    return getLanguage(factory,id,sourceCode,RequestLanguage.C,options)
 }
 
-export const getCCode = (id :TraceID,sourceCode :string,options :COption) => {
-    return getLanguage(id,sourceCode,RequestLanguage.C,options)
+export const getRustCode = (factory :IWorkerFactory,id :TraceID,sourceCode :string,options :RustOption) => {
+    return getLanguage(factory,id,sourceCode,RequestLanguage.RUST,options)
 }
 
-export const getRustCode = (id :TraceID,sourceCode :string,options :RustOption) => {
-    return getLanguage(id,sourceCode,RequestLanguage.RUST,options)
+export const getTSCode = (factory :IWorkerFactory,id :TraceID,sourceCode :string,options :TSOption) => {
+    return getLanguage(factory,id,sourceCode,RequestLanguage.TYPESCRIPT,options)
 }
 
-export const getTSCode = (id :TraceID,sourceCode :string,options :TSOption) => {
-    return getLanguage(id,sourceCode,RequestLanguage.TYPESCRIPT,options)
+export const getKaitaiStructCode = (factory :IWorkerFactory,id :TraceID,sourceCode :string,options :CallOption) => {
+    return getLanguage(factory,id,sourceCode,RequestLanguage.KAITAI_STRUCT,options)
 }
 
-export const getKaitaiStructCode = (id :TraceID,sourceCode :string,options :CallOption) => {
-    return getLanguage(id,sourceCode,RequestLanguage.KAITAI_STRUCT,options)
-}
-
-export const getBinaryModule = (id :TraceID,sourceCode :string,options :BMGenOption) => {
-    return getLanguage(id,sourceCode,RequestLanguage.BINARY_MODULE,options)
+export const getBinaryModule = (factory :IWorkerFactory,id :TraceID,sourceCode :string,options :BMGenOption) => {
+    return getLanguage(factory,id,sourceCode,RequestLanguage.BINARY_MODULE,options)
 }
 
 /*

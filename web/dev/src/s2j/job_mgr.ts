@@ -1,19 +1,25 @@
 
-import {JobRequest,JobResult, RequestLanguage }  from "./msg.js";
 
-export type TraceID = number|null;
+import {JobRequest,JobResult, RequestLanguage,TraceID }  from "./msg.js";
+
+
+export interface IWorker {
+    onmessage: ((msg :MessageEvent) => void)|null;
+    onerror: ((msg :ErrorEvent) => void)|null;
+    postMessage: (msg :JobRequest) => void;
+}
 export class JobManager {
-    #worker :Worker;
+    #worker :IWorker;
     #resolverMap = new Map<number, {resolve : (value :JobResult) => void, reject : (reason :any) => void}>();
     #jobID = 0;
-    constructor(worker :Worker){
+    constructor(worker :IWorker){
         this.#worker = worker;
         this.#worker.onmessage = this.#onmessage.bind(this);
         this.#worker.onerror = this.#onerror.bind(this);
     }
 
     #onerror(e :ErrorEvent) {
-        console.error(e);
+        console.error("Error detected!",e);
     }
 
     #onmessage(e :MessageEvent) {

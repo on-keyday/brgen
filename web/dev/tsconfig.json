@@ -1,16 +1,16 @@
 {
-    "compilerOptions": {
-        "target": "es2022",
-        "module": "ES2022",
-        "sourceMap": true,
-        "outDir": "./out",
-        "rootDir": "./src",
-        "allowJs": true,    
-        "strict": true,   
-        "lib": ["ES2022","DOM"],
-        "paths": {},
-        "moduleResolution": "Node",
-        "jsx": "react-jsx"
-    },
-    "include": ["**/*.ts", "**/*.tsx"],
+  "compilerOptions": {
+    "target": "es2022",
+    "module": "ES2022",
+    "sourceMap": true,
+    "outDir": "./out",
+    "rootDir": "./src",
+    "allowJs": true,
+    "strict": true,
+    "lib": ["ES2022", "DOM"],
+    "paths": {},
+    "moduleResolution": "Node",
+    "jsx": "react-jsx"
+  },
+  "include": ["**/*.ts", "**/*.tsx", "**/*.mts"]
 }

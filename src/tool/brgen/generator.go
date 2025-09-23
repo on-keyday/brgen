@@ -32,18 +32,18 @@ type Result struct {
 }
 
 type Generator struct {
-	generatorPath []string
-	outputDir     string
-	args          []string
-	spec          Spec
-	result        chan *Result
-	request       chan *Result
-	ctx           context.Context
-	stderr        io.Writer
-	//outputCount       *atomic.Int64
+	generatorPath     []string
+	outputDir         string
+	args              []string
+	spec              Spec
+	result            chan *Result
+	request           chan *Result
+	ctx               context.Context
+	stderr            io.Writer
 	works             *sync.WaitGroup
 	dirBaseSuffixChan chan *DirBaseSuffix
 	stdinStream       *request.ProcessClient
+	generatorBlock    chan struct{} // TODO(on-keyday): temporary solution for CI
 }
 
 func (g *Generator) cmdline() []string {
@@ -64,7 +64,7 @@ func printf(stderr io.Writer, format string, args ...interface{}) {
 	fmt.Fprintf(stderr, "brgen: %s", fmt.Sprintf(format, args...))
 }
 
-func NewGenerator(ctx context.Context, work *sync.WaitGroup, stderr io.Writer, res chan *Result /*outputCount *atomic.Int64,*/, dirBaseSuffixChan chan *DirBaseSuffix) *Generator {
+func NewGenerator(ctx context.Context, work *sync.WaitGroup, stderr io.Writer, res chan *Result /*outputCount *atomic.Int64,*/, dirBaseSuffixChan chan *DirBaseSuffix, generatorBlock chan struct{}) *Generator {
 	return &Generator{
 		works:             work,
 		ctx:               ctx,
@@ -72,6 +72,7 @@ func NewGenerator(ctx context.Context, work *sync.WaitGroup, stderr io.Writer, r
 		request:           make(chan *Result),
 		result:            res,
 		dirBaseSuffixChan: dirBaseSuffixChan,
+		generatorBlock:    generatorBlock,
 	}
 }
 
@@ -84,10 +85,15 @@ func (g *Generator) execGenerator(cmd *exec.Cmd, targetFile string) ([]byte, err
 	cmd.Stderr = errBuf
 	buf := bytes.NewBuffer(nil)
 	cmd.Stdout = buf
-	g.Printf("execGenerator: starting process: %s\n", targetFile)
+	g.Printf("execGenerator: %s: starting process: %s\n", g.generatorPath[0], targetFile)
 	err := cmd.Run()
-	g.Printf("execGenerator: done process: %s\n", targetFile)
+	g.Printf("execGenerator: %s: done process: %s\n", g.generatorPath[0], targetFile)
 	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			if exitErr.ExitCode() != 1 && exitErr.ExitCode() != 101 {
+				_ = exitErr
+			}
+		}
 		if errBuf.Len() > 0 {
 			return nil, fmt.Errorf("%w: %s", err, errBuf.String())
 		}
@@ -162,6 +168,8 @@ func (g *Generator) sendGenerated(fileBase string, data []byte) {
 
 func (g *Generator) handleRequest(req *Result) {
 	defer g.works.Done() // this Done is for the generator handlers Add
+	g.generatorBlock <- struct{}{}
+	defer func() { <-g.generatorBlock }()
 	if g.stdinStream != nil {
 		g.handleStdinStreamRequest(req)
 		return

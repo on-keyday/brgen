@@ -10,20 +10,25 @@ package s2jgo
 #define S2J_CAPABILITY_PARSER (1 << 6)
 #define S2J_CAPABILITY_IMPORTER (1 << 7)
 #define S2J_CAPABILITY_AST_JSON (1 << 8)
+#define S2J_CAPABILITY_DIRECT_AST_PASS (1 << 9) // for C++ only
+
+#define S2J_CAPABILITY_ALL (S2J_CAPABILITY_STDIN | S2J_CAPABILITY_NETWORK | S2J_CAPABILITY_FILE | S2J_CAPABILITY_ARGV | S2J_CAPABILITY_CHECK_AST | S2J_CAPABILITY_LEXER | S2J_CAPABILITY_PARSER | S2J_CAPABILITY_IMPORTER | S2J_CAPABILITY_AST_JSON)
 */
 
 type Capability uint64
 
 const (
-	CAPABILITY_STDIN     Capability = 1 << 0
-	CAPABILITY_NETWORK   Capability = 1 << 1
-	CAPABILITY_FILE      Capability = 1 << 2
-	CAPABILITY_ARGV      Capability = 1 << 3
-	CAPABILITY_CHECK_AST Capability = 1 << 4
-	CAPABILITY_LEXER     Capability = 1 << 5
-	CAPABILITY_PARSER    Capability = 1 << 6
-	CAPABILITY_IMPORTER  Capability = 1 << 7
-	CAPABILITY_AST_JSON  Capability = 1 << 8
+	CAPABILITY_STDIN           Capability = 1 << 0
+	CAPABILITY_NETWORK         Capability = 1 << 1
+	CAPABILITY_FILE            Capability = 1 << 2
+	CAPABILITY_ARGV            Capability = 1 << 3
+	CAPABILITY_CHECK_AST       Capability = 1 << 4
+	CAPABILITY_LEXER           Capability = 1 << 5
+	CAPABILITY_PARSER          Capability = 1 << 6
+	CAPABILITY_IMPORTER        Capability = 1 << 7
+	CAPABILITY_AST_JSON        Capability = 1 << 8
+	CAPABILITY_DIRECT_AST_PASS Capability = 1 << 9
 
-	CAPABILITY_ALL Capability = 0xffffffffffffffff
+	// exclude CAPABILITY_DIRECT_AST_PASS because it's for only C++ code and not supported in Go
+	CAPABILITY_ALL Capability = CAPABILITY_STDIN | CAPABILITY_NETWORK | CAPABILITY_FILE | CAPABILITY_ARGV | CAPABILITY_CHECK_AST | CAPABILITY_LEXER | CAPABILITY_PARSER | CAPABILITY_IMPORTER | CAPABILITY_AST_JSON
 )

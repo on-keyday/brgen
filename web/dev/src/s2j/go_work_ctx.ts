@@ -1,7 +1,7 @@
 
 import "../lib/go_wasm_exec.js";
-import { RequestQueue } from "./request_queue";
-import { JobRequest, JobResult } from "./msg"
+import { RequestQueue } from "./request_queue.js";
+import { JobRequest, JobResult } from "./msg.js"
 
 declare class Go {
     constructor();
@@ -69,32 +69,44 @@ export class GoWorkContext  {
         while(true){
             const p = this.#msgQueue.popRequest();
             if(p === undefined) break;
-            const src = makeArgs(p);
-            if(src instanceof Error) {
+            try {
+                const src = makeArgs(p);
+                if(src instanceof Error) {
+                    const res: JobResult = {
+                        lang: p.lang,
+                        jobID: p.jobID,
+                        traceID: p.traceID,
+                        err: src,
+                        code: -1,
+                    }
+                    this.#msgQueue.postResult(res);
+                    continue;
+                }
+                const arg = ["json2go"]
+                if(p.arguments !== undefined) {
+                    arg.push(...p.arguments);
+                }
+                const result = await this.#exec(p,src,arg);
                 const res: JobResult = {
                     lang: p.lang,
                     jobID: p.jobID,
                     traceID: p.traceID,
-                    err: src,
+                    code: result.code,
+                    stdout: result.stdout,
+                    stderr: result.stderr,
+                }
+                this.#msgQueue.postResult(res);
+            } catch(e :any) {
+                const res: JobResult = {
+                    lang: p.lang,
+                    jobID: p.jobID,
+                    traceID: p.traceID,
+                    err: e,
                     code: -1,
                 }
                 this.#msgQueue.postResult(res);
                 continue;
             }
-            const arg = ["json2go"]
-            if(p.arguments !== undefined) {
-                arg.push(...p.arguments);
-            }
-            const result = await this.#exec(p,src,arg);
-            const res: JobResult = {
-                lang: p.lang,
-                jobID: p.jobID,
-                traceID: p.traceID,
-                code: result.code,
-                stdout: result.stdout,
-                stderr: result.stderr,
-            }
-            this.#msgQueue.postResult(res);
         }
     }
 
