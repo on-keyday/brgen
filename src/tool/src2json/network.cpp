@@ -193,6 +193,7 @@ int network_main(const char* port, bool unsafe, const Capability& cap) {
     unsafe_escape = unsafe;
     global_cap = cap;
     global_cap.network = false;
+    global_cap.direct_ast_pass = false;
     fnet::server::HTTPServ serv;
     serv.next = handler;
     auto s = fnet::server::make_state(&serv, fnet::server::http_handler);
