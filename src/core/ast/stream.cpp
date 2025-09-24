@@ -133,10 +133,20 @@ namespace brgen::ast {
         }
         else {
             appends(buf, "`", cur->token, "`(kind: ", lexer::enum_array<lexer::Tag>[int(cur->tag)].second, ")");
+            if (cur->token == "]") {
+                appends(buf, ", did you forget opening bracket `[`?");
+            }
+            else if (cur->token == ">") {
+                appends(buf, ", did you forget opening angle bracket `<`?");
+            }
+            else if (cur->token == ")") {
+                appends(buf, ", did you forget opening parenthesis `(`?");
+            }
         }
         if (hint.size()) {
-            appends(buf, " (hint: ", hint, ")");
+            appends(buf, " hint: ", hint);
         }
+
         auto err = error(last_loc(), std::move(buf));
         if (last_skip) {
             return err.error((*last_skip)->loc, "when parsing started here");
