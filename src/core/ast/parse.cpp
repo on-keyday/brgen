@@ -1192,7 +1192,7 @@ namespace brgen::ast {
                 return std::make_shared<BoolType>(bool_->loc, true);
             }
 
-            auto ident = s.must_consume_token(lexer::Tag::ident, "to specify type name");
+            auto ident = s.must_consume_token(lexer::Tag::ident, "to specify type name, types are like `T`, `[]T`, `[x][10]T`, `fn(p :T,:U) -> T`, `\"magic_number\"`, `/regex/`, `imported.T`");
 
             if (auto desc = is_int_type(ident.token)) {
                 return std::make_shared<IntType>(ident.loc, desc->bit_size, desc->endian, desc->is_signed, true);
