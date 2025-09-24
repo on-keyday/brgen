@@ -74,7 +74,9 @@ export const typeToString = (type :ast2ts.Type|null|undefined) :string => {
         const sign = type.is_signed?"s":"u";
         const endian = type.endian == ast2ts.Endian.big?"b":
                        type.endian == ast2ts.Endian.little?"l":"";
-        return sign+endian+type.bit_size?.toString()||"unknown";
+        let type_str = sign+endian+type.bit_size?.toString()||"unknown";
+        type_str += `(${type.is_signed ? "signed" : "unsigned"} ${bitSize(type.bit_size)} ${type.endian == ast2ts.Endian.big ? "big-endian" : type.endian == ast2ts.Endian.little ? "little-endian" : "context dependent endian (default: big-endian)"})`;
+        return type_str;
     }
     if(ast2ts.isArrayType(type)) {
         if(type.length_value) {
@@ -315,7 +317,11 @@ export const analyzeHover = async (prevNode :ast2ts.ParseResult, pos :number) =>
         return makeHover("assert",`assertion ${found.is_io_related?"(io_related)":""}`); 
     }
     else if(ast2ts.isType(found)){
-        return makeHover("type",`type (type: ${found.node_type || "unknown"}, size: ${bitSize(found.bit_size)}, align: ${found.bit_alignment})`);
+        let sign = "";
+        if(ast2ts.isIntType(found)) {
+            sign = found.is_signed?"signed":"unsigned";
+        }
+        return makeHover("type",`type (type: ${found.node_type || "unknown"}${sign ? `(${sign})` : ""}, size: ${bitSize(found.bit_size)}, align: ${found.bit_alignment})`);
     }
     else if(ast2ts.isMatch(found)){
         return makeHover("match",`match (exhaustive: ${found.struct_union_type?.exhaustive||false},${found.trial_match?" trial_match,":""} expr_type: ${found.expr_type?.node_type||"unknown"}, size: ${bitSize(found.struct_union_type?.bit_size)} align: ${found.struct_union_type?.bit_alignment})`);
