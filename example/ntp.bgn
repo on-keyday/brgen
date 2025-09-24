@@ -43,7 +43,7 @@ format NtpPacket:
     mode :Mode
     stratum :u8
     poll :u8
-    precision :s8
+    precision :i8
     root_delay :ShortFormat
     root_dispersion :ShortFormat
     reference_id :ReferenceID

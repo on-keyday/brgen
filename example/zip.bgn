@@ -83,7 +83,7 @@ format CentralDirEntry:
     diskNumberStart :u16
     internalFileAttributes :u16
     externalFileAttributes :u32
-    relativeOffsetOfLocalHeader :s32
+    relativeOffsetOfLocalHeader :i32
     fileName :[fileNameLength]u8
     # input.subrange(offsetFromCurrentPosition, length?)
     extraField :[..]ExtraField(input = input.subrange(extraFieldLength))

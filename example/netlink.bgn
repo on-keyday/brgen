@@ -126,7 +126,7 @@ format NetLinkMessage:
     align :[..]u8(input.align = 32) # Align to 32-bit boundary
 
 format NetLinkError:
-    error :s32
+    error :i32
     hdr :NetLinkHeader
     error_content :[..]u8
 

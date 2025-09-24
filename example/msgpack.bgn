@@ -54,16 +54,16 @@ format MsgPack:
             fn value() -> u8:
                 return u8(type)
         Type(0x80)..Type(0x8f):
-            fn value() -> s8:
-                return s8(type)
+            fn value() -> i8:
+                return i8(type)
         Type.u8 => value :u8
         Type.u16 => value :u16
         Type.u32 => value :u32
         Type.u64 => value :u64
-        Type.s8 => value :s8
-        Type.s16 => value :s16
-        Type.s32 => value :s32
-        Type.s64 => value :s64
+        Type.s8 => value :i8
+        Type.s16 => value :i16
+        Type.s32 => value :i32
+        Type.s64 => value :i64
         Type.f32 => value :f32
         Type.f64 => value :f64
         Type(0xa0)..Type(0xbf):
@@ -103,40 +103,40 @@ format MsgPack:
             length :u32
             value :[length]MapPair
         Type.fixext1:
-            type :s8
+            type :i8
             value :[1]u8
         Type.fixext2:
-            type :s8
+            type :i8
             value :[2]u8
         Type.fixext4:
-            type :s8
+            type :i8
             value :[4]u8
         Type.fixext8:   
-            type :s8
+            type :i8
             value :[8]u8
         Type.fixext16:
-            type :s8
+            type :i8
             value :[16]u8
         Type.ext8:
             length :u8
-            type :s8
+            type :i8
             value :[length]u8
         Type.ext16:
             length :u16
-            type :s8
+            type :i8
             value :[length]u8
         Type.ext32:
             length :u32
-            type :s8
+            type :i8
             value :[length]u8
         Type.timestamp32:
-            type :s8(-1)
+            type :i8(-1)
             sec :u32
         Type.timestamp64:
-            type :s8(-1)
+            type :i8(-1)
             timestamp :Timestamp64
         Type.timestamp96:
-            type :s8(-1)
+            type :i8(-1)
             nanosec :u32
             sec :u64
         .. => error("invalid type")

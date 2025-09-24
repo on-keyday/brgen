@@ -71,7 +71,7 @@ export const typeToString = (type :ast2ts.Type|null|undefined) :string => {
         return b;
     }
     if(ast2ts.isIntType(type)) {
-        const sign = type.is_signed?"s":"u";
+        const sign = type.is_signed?"i":"u";
         const endian = type.endian == ast2ts.Endian.big?"b":
                        type.endian == ast2ts.Endian.little?"l":"";
         let type_str = sign+endian+type.bit_size?.toString()||"unknown";

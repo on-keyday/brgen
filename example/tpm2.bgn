@@ -878,7 +878,7 @@ format TPM2Commit:
     signHandle :u32
     auth :AuthCommand
     p1 :ECCPoint
-    s2_ :Bytes16
+    s2 :Bytes16
     y2 :ECCPoint
 
 format TPM2CommitResponse:

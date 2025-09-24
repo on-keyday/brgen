@@ -4,7 +4,7 @@ format Bool:
     value == 0 || value == 1
 
 format Int:
-    value :s32
+    value :i32
 
     fn encode():
         v := (u32(value) << 1) ^ (u32(value) >> 31)
@@ -27,7 +27,7 @@ format Int:
 
 # TODO(on-keyday): generics?
 format Long:
-    value :s64
+    value :i64
 
     fn encode():
         v := (u64(value) << 1) ^ (u64(value) >> 63)

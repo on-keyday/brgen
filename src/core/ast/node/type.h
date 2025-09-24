@@ -87,7 +87,7 @@ namespace brgen::ast {
     constexpr auto float_prefix = 'f';
     constexpr auto big_endian_prefix = 'b';
     constexpr auto little_endian_prefix = 'l';
-    constexpr auto signed_prefix = 's';
+    constexpr auto signed_prefix = 'i';
     constexpr auto unsigned_prefix = 'u';
 
     inline Endian detect_endian_prefix(std::string_view str) {

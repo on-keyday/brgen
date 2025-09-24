@@ -16,7 +16,7 @@ format BPFHeader:
 format Instruction:
     input.endian = config.endian.native
     config.type = u64
-    immediate :s32 
+    immediate :i32 
     offset :u16
     src :u4
     dst :u4
