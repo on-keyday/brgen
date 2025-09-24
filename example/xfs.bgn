@@ -58,7 +58,7 @@ format SuperBlock:
     CRC                 : u32
     SpinoAlign          : u32
     Pquotino            : u64
-    Lsn                 : s64
+    Lsn                 : i64
     MetaUUID            : [16]u8
 
 config.url= "https://github.com/masahiro331/go-xfs-filesystem/blob/main/xfs/ag.go"

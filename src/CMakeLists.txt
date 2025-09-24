@@ -135,9 +135,15 @@ if(S2J_LIB)
 add_library(s2j SHARED 
     "tool/src2json/src2json.cpp" 
     "tool/src2json/entry.cpp"
+    # to avoid link error in PIC format platform, use source directly
+    "core/ast/parse.cpp"
+    "core/ast/stream.cpp"
+    "core/middle/typing.cpp"
+    "core/middle/type_attribute.cpp"
+    "core/middle/analyze_block_trait.cpp"
 )
 target_compile_definitions(s2j PRIVATE SRC2JSON_DLL)
-target_link_libraries(s2j futils core)
+target_link_libraries(s2j futils)
 install(TARGETS s2j DESTINATION "tool" OPTIONAL)
 endif()
 

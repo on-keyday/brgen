@@ -38,7 +38,7 @@ format AuthenticatorAssertionResponse:
     user_handle :[user_handle_len]u8
 
 enum Algorithm:
-    :s32
+    :i32
     Ed25519 = -8
     ES256 = -7
     RS256 = -257
@@ -249,5 +249,5 @@ format Session:
     user_verification :UserVerificationRequirement
     allowed_credentials :CredentialIDs
     extensions :Extensions
-    expires :s64
+    expires :i64
 

@@ -9,7 +9,7 @@ input.bit_order = config.bit_order.lsb
 format StructPointer:
     config.type = u64
     magic :u2(0)
-    offset :s30
+    offset :i30
     sizeOfDataInWord :u16
     sizeOfPointerInWord :u16
 
