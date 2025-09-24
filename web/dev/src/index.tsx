@@ -42,7 +42,7 @@ interface PuppeteerDebug {
     onPuppeteerCandidatesLoaded?: (candidates: FileCandidates) => void;
 }
 
-const puppeteerDebug = (globalThis as any) as PuppeteerDebug;
+const puppeteerDebug = process.env.NODE_ENV === 'development' ? (globalThis as any) as PuppeteerDebug : undefined;
 
 if (window.MonacoEnvironment === undefined) {
     window.MonacoEnvironment = {
@@ -122,7 +122,7 @@ registerFileSelectionCallback(async () => {
             placeHolder: "Select example file",
             candidates: text.split("\n").filter((e) => e !== ""),
         }
-        if (typeof puppeteerDebug.onPuppeteerCandidatesLoaded === 'function') {
+        if (typeof puppeteerDebug?.onPuppeteerCandidatesLoaded === 'function') {
             puppeteerDebug.onPuppeteerCandidatesLoaded(c);
         }
         return c;
@@ -141,7 +141,7 @@ registerFileSelectionCallback(async () => {
                 range: editorUI.editorModel.getFullModelRange(),
                 text: text,
             }]);
-            if (typeof puppeteerDebug.onPuppeteerSampleLoaded === 'function') {
+            if (typeof puppeteerDebug?.onPuppeteerSampleLoaded === 'function') {
                 puppeteerDebug.onPuppeteerSampleLoaded(s, text);
             }
         }).catch((e) => {
@@ -229,7 +229,7 @@ const setGenerated = async (code: string, lang: string) => {
     // callback for puppeteer debugging
     // TODO(on-keyday): is this safe? 
     //                  may cause XSS attack if unsafe code that injects onPuppeteerCodeGenerated is executed
-    if (typeof puppeteerDebug.onPuppeteerCodeGenerated === 'function') {
+    if (typeof puppeteerDebug?.onPuppeteerCodeGenerated === 'function') {
         puppeteerDebug.onPuppeteerCodeGenerated(lang, code);
     }
 }

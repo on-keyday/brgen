@@ -1,5 +1,6 @@
 const process = require("process");
 const path = require("path");
+const webpack = require("webpack");
 
 require("./wasmCopy");
 
@@ -40,6 +41,11 @@ module.exports = {
       module: false,
     },
   },
+  plugins: [
+    new webpack.DefinePlugin({
+      "process.env.NODE_ENV": JSON.stringify(mode),
+    }),
+  ],
 };
 
 if (mode === "development") {

@@ -383,6 +383,9 @@ jobs:
   build-pages:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    strategy:
+      matrix:
+        env: ["development", "production"]
     steps:
       - name: Timeline
         uses: Kesin11/actions-timeline@a7eaabf426cdae26c3582c3fa674b897170dec8f # v2.2.4
@@ -420,7 +423,12 @@ jobs:
           cd utils
           git pull
           rm -rf built
-          . build wasm-em Release futils
+          if [ "${{ matrix.env }}" = "production" ]; then
+          MODE=Release
+          else
+          MODE=Debug
+          fi
+          . build wasm-em $MODE futils
           cd ..
       - name: Set up ast2ts
         run: |
@@ -447,9 +455,15 @@ jobs:
             echo "$WASMEXEC_FILE not found"
             exit 1
           fi
-          export WEB_PRODUCTION="production"
+          export WEB_PRODUCTION=${{ matrix.env }}
+          echo "WEB_PRODUCTION=$WEB_PRODUCTION"
           rm -rf built
-          . build.sh wasm-em Release
+          if [ "${{ matrix.env }}" = "production" ]; then
+            MODE=Release
+          else
+            MODE=Debug
+          fi
+          . build.sh wasm-em $MODE
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@75d2e84710de30f6ff7268e08f310b60ef14033f # v3.0.0
         with:
@@ -463,10 +477,11 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: brgen-web
+          name: brgen-web-${{ matrix.env }}
           path: "./web/public"
       - name: Setup Pages
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
+        if: matrix.env == 'production'
 
   run-test:
     needs: build-linux
