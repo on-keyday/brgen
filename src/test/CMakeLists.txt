@@ -11,12 +11,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcoverage-mapping")
 endif()
 
 add_library(parse_core STATIC 
-"../core/ast/parse.cpp"
-"../core/middle/typing.cpp"
-"../core/middle/type_attribute.cpp"
-"../core/middle/analyze_block_trait.cpp"
 "../tool/src2json/test.cpp"
 )
+target_link_libraries(parse_core futils core)
 
 add_library(ast_test_component STATIC
 "core/ast_test_component.cpp"

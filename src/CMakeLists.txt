@@ -4,16 +4,20 @@ cmake_minimum_required(VERSION 3.22.1)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tool")
 
-# Setting C++ targets
-add_executable(src2json 
-    "tool/src2json/src2json.cpp" 
-    "tool/src2json/entry.cpp"
+add_library(core STATIC 
     "core/ast/parse.cpp"
+    "core/ast/stream.cpp"
     "core/middle/typing.cpp"
     "core/middle/type_attribute.cpp"
     "core/middle/analyze_block_trait.cpp"
 )
-target_link_libraries(src2json futils)
+
+# Setting C++ targets
+add_executable(src2json 
+    "tool/src2json/src2json.cpp" 
+    "tool/src2json/entry.cpp"
+)
+target_link_libraries(src2json futils core)
 add_compile_definitions(BRGEN_VERSION="${PROJECT_VERSION}")
 
 
@@ -131,13 +135,9 @@ if(S2J_LIB)
 add_library(s2j SHARED 
     "tool/src2json/src2json.cpp" 
     "tool/src2json/entry.cpp"
-    "core/ast/parse.cpp"
-    "core/middle/typing.cpp"
-    "core/middle/type_attribute.cpp"
-    "core/middle/analyze_block_trait.cpp"
 )
 target_compile_definitions(s2j PRIVATE SRC2JSON_DLL)
-target_link_libraries(s2j futils)
+target_link_libraries(s2j futils core)
 install(TARGETS s2j DESTINATION "tool" OPTIONAL)
 endif()
 

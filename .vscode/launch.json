@@ -20,7 +20,7 @@
       "request": "launch",
       "program": "${workspaceRoot}/tool/src2json",
       "args": [
-        "${workspaceFolder}/example/safetensor.bgn",
+        "C:\\workspace\\shbrgen\\rebrgen\\src\\test\\simple_case.bgn",
         "--print-json",
         "--print-on-error"
       ],

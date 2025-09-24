@@ -7,8 +7,10 @@
 #include <helper/defer.h>
 #include <code/src_location.h>
 #include <map>
+#include <string_view>
 #include "ast.h"
 #include "../common/file.h"
+#include "core/common/error.h"
 #include "core/lexer/lexer_enum.h"
 
 namespace brgen::ast {
@@ -18,6 +20,7 @@ namespace brgen::ast {
         std::list<lexer::Token> tokens;
         using iterator = typename std::list<lexer::Token>::iterator;
         iterator cur;
+        std::optional<iterator> last_skip;
         File* input;
         size_t line = 1;
         size_t col = 1;
@@ -28,59 +31,15 @@ namespace brgen::ast {
         Stream() = default;
         friend struct Context;
 
-        void maybe_parse() {
-            if (cur == tokens.end()) {
-                auto token = input->parse(lex_option);
-                if (!token) {
-                    return;
-                }
-                if (token->tag == lexer::Tag::error) {
-                    token->loc.line = line;
-                    token->loc.col = col;
-                    error(token->loc, std::move(token->token)).report();
-                }
-                token->loc.line = line;
-                token->loc.col = col;
-                col += token->loc.pos.len();
-                if (token->tag == lexer::Tag::line) {
-                    line++;
-                    col = 1;
-                }
-                if (collect_comments && token->tag == lexer::Tag::comment) {
-                    comments.push_back(std::make_shared<Comment>(token->loc, token->token));
-                }
-                tokens.push_back(std::move(*token));
-                cur = std::prev(tokens.end());
-            }
-        }
+        void maybe_parse();
 
-        lexer::Loc last_loc() {
-            if (eos()) {
-                if (cur == tokens.begin()) {
-                    return lexer::Loc{lexer::Pos{0, 0}, input->index(), 1, 1};
-                }
-                auto copy = cur;
-                copy--;
-                return {lexer::Pos{copy->loc.pos.end, copy->loc.pos.end + 1}, copy->loc.file, copy->loc.line, copy->loc.col};
-            }
-            else {
-                return cur->loc;
-            }
-        }
+        lexer::Loc last_loc();
 
        public:
         // discard tokens before cur
-        void shrink() {
-            tokens.erase(tokens.begin(), cur);
-            cur = tokens.begin();
-        }
+        void shrink();
 
-        std::list<lexer::Token> take() {
-            auto copy = std::move(tokens);
-            tokens.clear();
-            cur = tokens.begin();
-            return copy;
-        }
+        std::list<lexer::Token> take();
 
         [[noreturn]] void report_error(auto&&... data) {
             error(last_loc(), "parser error: ", data...).report();
@@ -91,176 +50,58 @@ namespace brgen::ast {
         }
 
         // end of stream
-        bool eos() {
-            maybe_parse();
-            return cur == tokens.end();
-        }
+        bool eos();
 
-        void consume() {
-            if (eos()) {
-                return;
-            }
-            cur++;
-        }
+        void consume();
 
-        lexer::Loc loc() {
-            maybe_parse();
-            if (eos()) {
-                return last_loc();
-            }
-            return cur->loc;
-        }
+        lexer::Loc loc();
 
-        bool expect_token(lexer::Tag tag) {
-            if (eos()) {
-                return false;
-            }
-            return cur->tag == tag;
-        }
+        bool expect_token(lexer::Tag tag);
+        bool expect_token(std::string_view s);
 
-        bool expect_token(std::string_view s) {
-            if (eos()) {
-                return false;
-            }
-            return cur->token == s;
-        }
+        std::optional<lexer::Token> peek_token(std::string_view s);
 
-        std::optional<lexer::Token> peek_token(std::string_view s) {
-            if (!expect_token(s)) {
-                return std::nullopt;
-            }
-            // only copy for fallback
-            return *cur;
-        }
+        std::optional<lexer::Token> peek_token(lexer::Tag t);
 
-        std::optional<lexer::Token> peek_token(lexer::Tag t) {
-            if (!expect_token(t)) {
-                return std::nullopt;
-            }
-            // only copy for fallback
-            return *cur;
-        }
+        lexer::Token peek_token();
 
-        lexer::Token peek_token() {
-            return *cur;
-        }
+        std::optional<lexer::Token> consume_token(std::string_view s);
 
-        std::optional<lexer::Token> consume_token(std::string_view s) {
-            if (auto token = peek_token(s)) {
-                consume();
-                return token;
-            }
-            return std::nullopt;
-        }
-
-        std::optional<lexer::Token> consume_token(lexer::Tag t) {
-            if (auto token = peek_token(t)) {
-                consume();
-                return token;
-            }
-            return std::nullopt;
-        }
+        std::optional<lexer::Token> consume_token(lexer::Tag t);
 
        private:
-        [[nodiscard]] auto token_expect_error(auto&& expected, const char* kind) {
-            std::string buf;
-            appends(buf, "expect token ", kind, " `", expected, "` but found token ");
-            if (eos()) {
-                append(buf, "`<EOF>`");
-            }
-            else {
-                appends(buf, "`", cur->token, "`(tag: ", lexer::enum_array<lexer::Tag>[int(cur->tag)].second, ")");
-            }
-            return error(last_loc(), std::move(buf));
-        }
+        [[nodiscard]] LocationError token_expect_error(std::string_view expected, const char* kind, std::string_view hint);
 
        public:
-        auto token_error(lexer::Tag tag) {
-            return token_expect_error(lexer::to_string(tag), "tag");
-        }
+        [[nodiscard]] LocationError token_error(lexer::Tag tag, std::string_view hint);
 
-        auto token_error(std::string_view s) {
-            return token_expect_error(s, "literal");
-        }
+        [[nodiscard]] LocationError token_error(std::string_view s, std::string_view hint);
 
-        lexer::Token must_consume_token(std ::string_view view) {
-            auto f = consume_token(view);
-            if (!f) {
-                token_error(view).report();
-            }
-            return *f;
-        }
+        lexer::Token must_consume_token(std ::string_view view, std::string_view hint);
 
-        lexer::Token must_consume_token(lexer::Tag tag) {
-            auto f = consume_token(tag);
-            if (!f) {
-                token_error(tag).report();
-            }
-            return *f;
-        }
+        lexer::Token must_consume_token(lexer::Tag tag, std::string_view hint);
 
        private:
-        void skip_tag(auto... t) {
-            while (!eos()) {
-                if ((... || expect_token(t))) {
-                    consume();
-                    continue;
-                }
-                break;
-            }
-        }
+        void skip_tag(auto... t);
 
        public:
         // Tag::space, Tag::comment
-        void skip_space() {
-            skip_tag(lexer::Tag::space, lexer::Tag::comment);
-        }
+        void skip_space();
 
         // Tag::space, Tag::line, Tag::comment
-        void skip_line() {
-            skip_tag(lexer::Tag::space, lexer::Tag::line, lexer::Tag::comment);
-        }
+        void skip_line();
 
         // Tag::space, Tag::line, Tag::indent, Tag::comment
-        void skip_white() {
-            skip_tag(lexer::Tag::space, lexer::Tag::line, lexer::Tag::indent, lexer::Tag::comment);
-        }
+        void skip_white();
 
-        std::shared_ptr<Node> get_comments() {
-            if (comments.size() == 0) {
-                return nullptr;
-            }
-            if (comments.size() == 1) {
-                auto c = std::move(comments[0]);
-                comments.clear();
-                return c;
-            }
-            auto c = std::make_shared<CommentGroup>(comments[0]->loc, std::move(comments));
-            comments.clear();
-            return c;
-        }
+        std::shared_ptr<Node> get_comments();
 
-        void backward() {
-            if (cur == tokens.begin()) {
-                return;
-            }
-            cur--;
-        }
+        void backward();
+        std::optional<lexer::Token> prev_token();
 
-        std::optional<lexer::Token> prev_token() {
-            if (cur == tokens.begin()) {
-                return std::nullopt;
-            }
-            return *std::prev(cur);
-        }
+        void set_collect_comments(bool b);
 
-        void set_collect_comments(bool b) {
-            collect_comments = b;
-        }
-
-        void set_regex_mode(bool b) {
-            lex_option.regex_mode = b;
-        }
+        void set_regex_mode(bool b);
 
        private:
         auto enter_stream(auto&& fn) -> result<std::invoke_result_t<decltype(fn), Stream&>> {

@@ -6,6 +6,8 @@
 
 namespace brgen::ast {
 
+    constexpr auto must_success = "THIS MUST BE SUCCESS; if shown, parser bug!!";
+
     struct ParserState {
         bool collect_comment = false;
         bool error_tolerant = false;
@@ -142,11 +144,11 @@ namespace brgen::ast {
                 }
                 if (auto p = s.prev_token(); p && p->tag == lexer::Tag::line) {
                     s.backward();  // for error report correctly
-                    state.errors.locations.push_back(s.token_error(":").locations[0]);
-                    s.must_consume_token(lexer::Tag::line);
+                    state.errors.locations.push_back(s.token_error(":", "line expected after ':'").locations[0]);
+                    s.must_consume_token(lexer::Tag::line, must_success);
                 }
                 else {
-                    state.errors.locations.push_back(s.token_error(":").locations[0]);
+                    state.errors.locations.push_back(s.token_error(":", "line expected after ':'").locations[0]);
                 }
                 return;  // error tolerant mode; ignore error
             }
@@ -168,11 +170,11 @@ namespace brgen::ast {
                 }
                 if (auto line = s.prev_token(); line && line->tag == lexer::Tag::line) {
                     s.backward();  // for error report correctly
-                    state.errors.locations.push_back(s.token_error(":").locations[0]);
-                    s.must_consume_token(lexer::Tag::line);
+                    state.errors.locations.push_back(s.token_error(":", "line expected after ':'").locations[0]);
+                    s.must_consume_token(lexer::Tag::line, must_success);
                 }
                 else {
-                    state.errors.locations.push_back(s.token_error(":").locations[0]);
+                    state.errors.locations.push_back(s.token_error(":", "line expected after ':'").locations[0]);
                 }
                 return;  // error tolerant mode; ignore error
             }
@@ -181,27 +183,27 @@ namespace brgen::ast {
         }
 
         // :\\r\\n
-        void must_consume_indent_sign() {
+        void must_consume_indent_sign(std::string_view hint) {
             s.skip_white();
             if (state.error_tolerant) {
                 consume_ident_sign_with_error_tolerant();
                 return;
             }
-            s.must_consume_token(":");
+            s.must_consume_token(":", hint);
             s.skip_space();
-            s.must_consume_token(lexer::Tag::line);
+            s.must_consume_token(lexer::Tag::line, "line expected after ':'");
             s.skip_line();
         }
 
         /*
             <indent scope> ::= ":" <line> (<indent> <statement>)+
         */
-        std::shared_ptr<IndentBlock> parse_indent_block(const std::shared_ptr<Node>& scope_owner, std::vector<std::shared_ptr<Ident>>* ident = nullptr) {
+        std::shared_ptr<IndentBlock> parse_indent_block(const std::shared_ptr<Node>& scope_owner, std::string_view hint, std::vector<std::shared_ptr<Ident>>* ident = nullptr) {
             // Consume the initial indent sign
-            must_consume_indent_sign();
+            must_consume_indent_sign(hint);
 
             // Get the base indent token
-            auto base = s.must_consume_token(lexer::Tag::indent);
+            auto base = s.must_consume_token(lexer::Tag::indent, "indent expected after ':'");
 
             // Create a shared pointer for the IndentBlock
             auto block = std::make_shared<IndentBlock>(base.loc);
@@ -249,7 +251,7 @@ namespace brgen::ast {
                 if (indent->token.size() != current_indent) {
                     break;
                 }
-                s.must_consume_token(lexer::Tag::indent);
+                s.must_consume_token(lexer::Tag::indent, "to start a new line in indent block");
                 parse_a_line();
             }
 
@@ -359,7 +361,7 @@ namespace brgen::ast {
             }
 
             // Consume the initial indent sign
-            must_consume_indent_sign();
+            must_consume_indent_sign("to start match branch");
 
             auto stmt_with_struct = [&](lexer::Loc loc, std::shared_ptr<ast::MatchBranch>& br) {
                 auto scoped = std::make_shared<ScopedStatement>(loc);
@@ -392,7 +394,7 @@ namespace brgen::ast {
                 auto sym = s.consume_token("=>");
                 if (!sym) {
                     auto tok = s.peek_token(":");
-                    auto block = parse_indent_block(br);
+                    auto block = parse_indent_block(br, "to start block style match branch");
                     union_->structs.push_back(block->struct_type);
                     br->then = std::move(block);
                     br->sym_loc = tok->loc;
@@ -405,7 +407,7 @@ namespace brgen::ast {
             };
 
             // Get the base indent token
-            auto base = s.must_consume_token(lexer::Tag::indent);
+            auto base = s.must_consume_token(lexer::Tag::indent, "indent expected after `match`");
 
             // Create a new context for the current indent level
             auto current_indent = base.token.size();
@@ -419,7 +421,7 @@ namespace brgen::ast {
                 if (indent->token.size() < current_indent) {
                     break;
                 }
-                s.must_consume_token(lexer::Tag::indent);
+                s.must_consume_token(lexer::Tag::indent, "to start a new line in match branch");
                 match->branch.push_back(parse_match_branch());
             }
 
@@ -455,13 +457,13 @@ namespace brgen::ast {
                 export_union_field(nullptr, cond, union_);
             };
 
-            auto body_with_struct = [&](lexer::Loc loc, auto& block, const std::shared_ptr<If>& owner) {
-                auto tmp = parse_indent_block(owner);
+            auto body_with_struct = [&](lexer::Loc loc, auto& block, const std::shared_ptr<If>& owner, std::string_view hint) {
+                auto tmp = parse_indent_block(owner, hint);
                 union_->structs.push_back(tmp->struct_type);
                 block = std::move(tmp);
             };
 
-            body_with_struct(if_->loc, if_->then, if_);
+            body_with_struct(if_->loc, if_->then, if_, "to start `if` body");
 
             auto cur_indent = state.current_indent();
 
@@ -477,7 +479,7 @@ namespace brgen::ast {
 
             auto consume_indent = [&] {
                 if (cur_indent != 0) {
-                    s.must_consume_token(lexer::Tag::indent);
+                    s.must_consume_token(lexer::Tag::indent, "to start a new line in if block");
                 }
             };
 
@@ -495,7 +497,7 @@ namespace brgen::ast {
                 s.skip_white();
                 elif->cond = parse_expr_identity();
                 cond.push_back(elif->cond);
-                body_with_struct(tok->loc, elif->then, elif);
+                body_with_struct(tok->loc, elif->then, elif, "to start `elif` body");
                 current_if->els = elif;
                 current_if = std::move(elif);
                 if (detect_end()) {
@@ -519,7 +521,7 @@ namespace brgen::ast {
                 identity->expr = range;
                 cond.push_back(std::move(identity));
                 if_->struct_union_type->exhaustive = true;
-                body_with_struct(if_->loc, current_if->els, current_if);
+                body_with_struct(if_->loc, current_if->els, current_if, "to start `else` body");
             }
             else {
                 if (cur_indent != 0) {
@@ -533,13 +535,13 @@ namespace brgen::ast {
             return if_;
         }
 
-        std::shared_ptr<Ident> parse_ident_no_scope() {
-            auto token = s.must_consume_token(lexer::Tag::ident);
+        std::shared_ptr<Ident> parse_ident_no_scope(std::string_view hint) {
+            auto token = s.must_consume_token(lexer::Tag::ident, hint);
             return std::make_shared<Ident>(token.loc, std::move(token.token));
         }
 
-        std::shared_ptr<Ident> parse_ident() {
-            auto ident = parse_ident_no_scope();
+        std::shared_ptr<Ident> parse_ident(std::string_view hint) {
+            auto ident = parse_ident_no_scope(hint);
             auto scope = state.current_scope();
             scope->push(ident);
             ident->scope = std::move(scope);
@@ -551,7 +553,7 @@ namespace brgen::ast {
             s.skip_white();
             paren->expr = parse_expr();
             s.skip_white();
-            token = s.must_consume_token(")");
+            token = s.must_consume_token(")", "to close parenthesis");
             paren->end_loc = token.loc;
             return paren;
         }
@@ -578,7 +580,7 @@ namespace brgen::ast {
             s.skip_line();
             auto typ = parse_type(false);
             s.skip_line();
-            auto end_tok = s.must_consume_token(">");
+            auto end_tok = s.must_consume_token(">", "to close type literal");
             auto literal = std::make_shared<TypeLiteral>(lit.loc, std::move(typ), end_tok.loc);
             return literal;
         }
@@ -674,16 +676,16 @@ namespace brgen::ast {
                         assert(false);
                     }
                     auto type_literal = std::make_shared<TypeLiteral>(i->loc, std::move(type), i->loc);
-                    s.must_consume_token(lexer::Tag::ident);
+                    s.must_consume_token(lexer::Tag::ident, "THIS MUST BE SUCCESS; if shown, parser bug!!");
                     return type_literal;
                 }
             }
             else if (state.error_tolerant) {  // not found ident
-                auto err = s.token_error(lexer::Tag::ident);
+                auto err = s.token_error(lexer::Tag::ident, "field, variable, type name for type literal or function name expected");
                 state.errors.locations.push_back(err.locations[0]);
                 return std::make_shared<BadExpr>(s.loc(), brgen::concat(state.errors.locations.back().msg));
             }
-            return parse_ident();
+            return parse_ident("field, variable, type name for type literal or function name expected");
         }
 
         void collect_args(const std::shared_ptr<Expr>& args, auto& res) {
@@ -704,7 +706,7 @@ namespace brgen::ast {
                 collect_args(call->raw_arguments, call->arguments);
                 s.skip_white();
             }
-            token = s.must_consume_token(")");
+            token = s.must_consume_token(")", "to close function call");
             call->end_loc = token.loc;
             return call;
         }
@@ -723,14 +725,14 @@ namespace brgen::ast {
             s.skip_white();
             call->index = parse_expr();
             s.skip_white();
-            token = s.must_consume_token("]");
+            token = s.must_consume_token("]", "to close index");
             call->end_loc = token.loc;
             return call;
         }
 
         std::shared_ptr<MemberAccess> parse_access(lexer::Token&& token, auto&& p) {
             s.skip_white();
-            auto ident = parse_ident_no_scope();
+            auto ident = parse_ident_no_scope("member ident expected after '.'");
             ident->usage = IdentUsage::reference_member;
             auto member = std::make_shared<MemberAccess>(token.loc, std::move(p), std::move(ident));
             member->member->base = member;
@@ -955,7 +957,7 @@ namespace brgen::ast {
                         if (!cop->then) {
                             cop->then = std::move(expr);
                             s.skip_white();
-                            auto token = s.must_consume_token(":");
+                            auto token = s.must_consume_token(":", "to separate `then` and `else` part of conditional expression");
                             cop->els_loc = token.loc;
                             stack.push_back(std::move(op));
                             s.skip_white();
@@ -1065,14 +1067,15 @@ namespace brgen::ast {
         }
 
         /*
-            <loop> ::= "loop" <expr>? (";" <expr>?)? (";" <expr>?)? <indent block>
+            <loop> ::= "for" <expr>? (";" <expr>?)? (";" <expr>?)? <indent block>
         */
         std::shared_ptr<Loop> parse_for(lexer::Token&& token) {
             auto for_ = std::make_shared<Loop>(token.loc);
             auto cs = state.cond_scope(for_->cond_scope, for_);
             s.skip_white();
+            constexpr auto hint = "to start `for` body";
             if (s.expect_token(":")) {
-                for_->body = parse_indent_block(for_);
+                for_->body = parse_indent_block(for_, hint);
                 return for_;
             }
             if (!s.expect_token(";")) {
@@ -1087,32 +1090,32 @@ namespace brgen::ast {
                     check_assignment(bin);
                     for_->init = std::move(bin);
                     s.skip_white();
-                    for_->body = parse_indent_block(for_);
+                    for_->body = parse_indent_block(for_, hint);
                     return for_;
                 }
             }
             if (s.expect_token(":")) {
                 for_->cond = std::move(for_->init);
-                for_->body = parse_indent_block(for_);
+                for_->body = parse_indent_block(for_, hint);
                 return for_;
             }
-            s.must_consume_token(";");
+            s.must_consume_token(";", " to separate `init` and `cond` part of `for` loop");
             s.skip_white();
             if (!s.expect_token(";")) {
                 for_->cond = parse_expr();
                 s.skip_white();
             }
             if (s.expect_token(":")) {
-                for_->body = parse_indent_block(for_);
+                for_->body = parse_indent_block(for_, hint);
                 return for_;
             }
-            s.must_consume_token(";");
+            s.must_consume_token(";", " to separate `cond` and `step` part of `for` loop");
             s.skip_white();
             if (!s.expect_token(":")) {
                 for_->step = parse_expr();
                 s.skip_white();
             }
-            for_->body = parse_indent_block(for_);
+            for_->body = parse_indent_block(for_, hint);
             return for_;
         }
 
@@ -1123,23 +1126,23 @@ namespace brgen::ast {
         std::shared_ptr<FunctionType> parse_func_type(lexer::Token&& tok) {
             auto func_type = std::make_shared<FunctionType>(tok.loc, true);
             s.skip_white();
-            s.must_consume_token("(");
+            s.must_consume_token("(", "to open function type parameter list");
             s.skip_white();
             bool second = false;
             while (!s.expect_token(")")) {
                 if (second) {
-                    s.must_consume_token(",");
+                    s.must_consume_token(",", "to separate function type parameters");
                 }
                 if (s.consume_token(lexer::Tag::ident)) {
                     s.skip_white();
                 }
-                s.must_consume_token(":");
+                s.must_consume_token(":", "to separate function type parameter name and type");
                 s.skip_white();
                 func_type->parameters.push_back(parse_type(true));
                 s.skip_white();
                 second = true;
             }
-            s.must_consume_token(")");
+            s.must_consume_token(")", "to close function type parameter list");
             s.skip_space();  // for safety, skip only space, not line
             if (s.consume_token("->")) {
                 s.skip_white();
@@ -1163,7 +1166,7 @@ namespace brgen::ast {
                     expr = parse_expr();
                     s.skip_white();
                 }
-                auto end_tok = s.must_consume_token("]");
+                auto end_tok = s.must_consume_token("]", "to close array type");
                 s.skip_space();
                 auto base_type = parse_type(as_argument);
                 return std::make_shared<ArrayType>(arr_begin->loc, std::move(expr), end_tok.loc, std::move(base_type), true);
@@ -1189,7 +1192,7 @@ namespace brgen::ast {
                 return std::make_shared<BoolType>(bool_->loc, true);
             }
 
-            auto ident = s.must_consume_token(lexer::Tag::ident);
+            auto ident = s.must_consume_token(lexer::Tag::ident, "to specify type name");
 
             if (auto desc = is_int_type(ident.token)) {
                 return std::make_shared<IntType>(ident.loc, desc->bit_size, desc->endian, desc->is_signed, true);
@@ -1241,7 +1244,7 @@ namespace brgen::ast {
                 token = std::move(*tmp);
             }
             else {
-                token = s.must_consume_token(":");
+                token = s.must_consume_token(":", "to specify field type");
             }
 
             auto field = std::make_shared<Field>(ident ? ident->loc : token.loc);
@@ -1273,7 +1276,7 @@ namespace brgen::ast {
                     s.skip_white();
                 }
 
-                auto e = s.must_consume_token(")");
+                auto e = s.must_consume_token(")", "to close field argument");
                 field_argument->end_loc = e.loc;
 
                 field->arguments = std::move(field_argument);
@@ -1308,7 +1311,7 @@ namespace brgen::ast {
         }
 
         std::shared_ptr<EnumMember> parse_enum_member(const std::shared_ptr<ast::Enum>& enum_, size_t& offset, ast::EnumMember*& prev_specified) {
-            auto ident = parse_ident();
+            auto ident = parse_ident("enum member ident expected");
             ident->usage = IdentUsage::define_enum_member;
             ident->expr_type = enum_->enum_type;
             ident->constant_level = ConstantLevel::constant;
@@ -1360,9 +1363,9 @@ namespace brgen::ast {
             s.skip_white();
             enum_->base_type = parse_type(false);
             s.skip_space();
-            s.must_consume_token(lexer::Tag::line);
+            s.must_consume_token(lexer::Tag::line, "to separate enum base type");
             s.skip_line();
-            auto indent = s.must_consume_token(lexer::Tag::indent);
+            auto indent = s.must_consume_token(lexer::Tag::indent, "to start enum member block");
             if (indent.token.size() != base.token.size()) {
                 s.report_error(indent.loc, "indent size must be same as enum base");
             }
@@ -1376,15 +1379,15 @@ namespace brgen::ast {
             // set enum type
             auto enum_ = std::make_shared<Enum>(token.loc);
             s.skip_white();
-            enum_->ident = parse_ident();
+            enum_->ident = parse_ident("enum name expected");
             enum_->ident->usage = IdentUsage::define_enum;
             enum_->ident->base = enum_;
             check_duplicated_def(enum_->ident.get());
             enum_->enum_type = std::make_shared<EnumType>(enum_->loc);
             enum_->enum_type->base = enum_;
-            must_consume_indent_sign();  // :<CR><LF>
+            must_consume_indent_sign("to start enum member block");  // :<CR><LF>
 
-            auto base = s.must_consume_token(lexer::Tag::indent);
+            auto base = s.must_consume_token(lexer::Tag::indent, "to start enum member block");
             auto m_scope = state.enter_member(enum_);
             auto s_scope = state.new_indent(s, base.token.size(), enum_->scope, enum_);
             if (auto tok = s.consume_token(":")) {
@@ -1398,7 +1401,7 @@ namespace brgen::ast {
                 if (indent->token.size() != base.token.size()) {
                     break;
                 }
-                s.must_consume_token(lexer::Tag::indent);
+                s.must_consume_token(lexer::Tag::indent, "to continue enum member block");
                 parse_enum_member(enum_, offset, prev_specified);
             }
             state.add_to_struct(enum_);
@@ -1412,13 +1415,13 @@ namespace brgen::ast {
             auto fmt = std::make_shared<Format>(token.loc);
             s.skip_white();
 
-            fmt->ident = parse_ident();
+            fmt->ident = parse_ident("format name expected");
             fmt->ident->usage = IdentUsage::define_format;
             fmt->ident->base = fmt;
             check_duplicated_def(fmt->ident.get());
             {
                 auto m_scope = state.enter_member(fmt);
-                fmt->body = parse_indent_block(fmt);
+                fmt->body = parse_indent_block(fmt, "to start `format` body");
             }
             // because fmt->ident->expr_type = fmt->body->struct_type
             // makes circular reference, so not use it
@@ -1474,13 +1477,13 @@ namespace brgen::ast {
             auto state_ = std::make_shared<State>(token.loc);
             s.skip_white();
 
-            state_->ident = parse_ident();
+            state_->ident = parse_ident("state name expected");
             state_->ident->usage = IdentUsage::define_state;
             state_->ident->base = state_;
             check_duplicated_def(state_->ident.get());
             {
                 auto m_scope = state.enter_member(state_);
-                state_->body = parse_indent_block(state_);
+                state_->body = parse_indent_block(state_, "to start `state` body");
             }
             // `state_->ident->expr_type = state_->body->struct_type`
             // makes circular reference, so not use it
@@ -1495,7 +1498,7 @@ namespace brgen::ast {
         std::shared_ptr<Function> parse_fn(lexer::Token&& token) {
             auto fn = std::make_shared<Function>(token.loc);
             s.skip_white();
-            fn->ident = parse_ident();
+            fn->ident = parse_ident("function name expected");
             fn->ident->usage = IdentUsage::define_fn;
             fn->ident->base = fn;
             check_duplicated_def(fn->ident.get());
@@ -1506,7 +1509,7 @@ namespace brgen::ast {
             s.skip_white();
             lexer::Loc end_loc;
             std::vector<std::shared_ptr<Ident>> ident_param;
-            auto b = s.must_consume_token("(");
+            auto b = s.must_consume_token("(", "to open function parameter list");
             for (;;) {
                 s.skip_white();
                 if (auto t = s.consume_token(")")) {
@@ -1515,14 +1518,14 @@ namespace brgen::ast {
                 }
                 std::shared_ptr<Ident> ident;
                 if (!s.expect_token(":")) {
-                    ident = parse_ident_no_scope();
+                    ident = parse_ident_no_scope("to specify function parameter name");
                     ident->usage = IdentUsage::define_arg;
                     ident->scope = state.current_scope();
                     ident_param.push_back(ident);
                     s.skip_white();
                 }
                 if (!s.expect_token(":")) {
-                    s.must_consume_token(":");
+                    s.must_consume_token(":", "to separate function parameter name and type");
                 }
 
                 auto f = parse_field(std::move(ident), true);
@@ -1532,7 +1535,8 @@ namespace brgen::ast {
                 if (s.expect_token(")") || s.consume_token(",")) {
                     continue;
                 }
-                s.must_consume_token(",");  // this must be error
+                // this must fail
+                s.must_consume_token(",", "to separate function parameters. maybe you forget `)` to close function parameter list");
             }
             s.skip_white();
             if (auto r = s.consume_token("->")) {
@@ -1550,7 +1554,7 @@ namespace brgen::ast {
             {
                 auto m_scope = state.enter_member(fn);
                 // auto typ = state.enter_struct(fn->struct_type);
-                fn->body = parse_indent_block(fn, &ident_param);
+                fn->body = parse_indent_block(fn, "to start `fn` body", &ident_param);
             }
 
             return fn;
@@ -1590,7 +1594,7 @@ namespace brgen::ast {
                 s.skip_space();
 
                 if (!s.eos() && s.expect_token(lexer::Tag::line)) {
-                    s.must_consume_token(lexer::Tag::line);
+                    s.must_consume_token(lexer::Tag::line, must_success);
                     s.skip_line();
                     set_skip();
                 }
