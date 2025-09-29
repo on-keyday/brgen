@@ -10,7 +10,7 @@ Here are the pronunciations for brgen:
 
 B-R-Gen (for English speakers)
 
-Alternatively, B-R-Gehn (the author's  (not means preferred for other people) pronunciation, with a Romanized "gen" sound)
+Alternatively, B-R-Gehn (the author's  (not means preferred for other people) pronunciation, with a Romanized(romaji) "gen" sound)
 
 # 目標(Goal)
 
