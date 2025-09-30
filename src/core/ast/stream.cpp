@@ -142,6 +142,9 @@ namespace brgen::ast {
             else if (cur->token == ")") {
                 appends(buf, ", did you forget opening parenthesis `(`?");
             }
+            else if (cur->token == "{" || cur->token == "}") {
+                appends(buf, ", this language uses python-like blocks, so `{}` is not used.");
+            }
         }
         if (hint.size()) {
             appends(buf, " hint: ", hint);
