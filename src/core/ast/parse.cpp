@@ -1,6 +1,7 @@
 /*license*/
 #include "stream.h"
 #include "node/scope.h"
+#include "strutil/append.h"
 #include "parse.h"
 #include <fnet/util/base64.h>
 
@@ -189,7 +190,7 @@ namespace brgen::ast {
                 consume_ident_sign_with_error_tolerant();
                 return;
             }
-            s.must_consume_token(":", std::format("{}, only `:` is needed", hint));
+            s.must_consume_token(":", futils::strutil::concat<std::string>(hint, ", only `:` is needed"));
             s.skip_space();
             s.must_consume_token(lexer::Tag::line, "line expected after ':'");
             s.skip_line();
