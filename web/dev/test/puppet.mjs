@@ -5,6 +5,12 @@ import { env, cwd } from "process";
 
 import { readdir } from "fs/promises";
 
+import { LanguageList } from "../out/s2j/msg.js";
+import { BM_LANGUAGES } from "../out/lib/bmgen/bm_caller.js";
+import { EBM_LANGUAGES } from "../out/lib/bmgen/ebm_caller.js";
+
+const selectTarget = LanguageList.concat(BM_LANGUAGES).concat(EBM_LANGUAGES);
+
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const headless = env.TEST_ENV === "github";
@@ -29,13 +35,15 @@ console.log("page loaded");
 const resolver = {
   resolve: undefined,
 };
-const exported = (name) => async () => {
-  console.log(name, "called");
-  if (resolver.resolve !== undefined) {
-    resolver.resolve();
-    resolver.resolve = undefined;
-  }
-};
+const exported =
+  (name) =>
+  async (...args) => {
+    console.log(name, "called", " args:", args);
+    if (resolver.resolve !== undefined) {
+      resolver.resolve();
+      resolver.resolve = undefined;
+    }
+  };
 await page.exposeFunction(
   "onPuppeteerCodeGenerated",
   exported("onPuppeteerCodeGenerated")
@@ -54,7 +62,6 @@ const waitForEvent = async () => {
     new Promise((resolve) => {
       resolver.resolve = resolve;
     }),
-    wait(500),
   ]);
 };
 
@@ -90,17 +97,18 @@ const setJS = async () => {
 };
 
 const selectLanguages = async () => {
-  await clickSelect("tokens");
-  await clickSelect("json ast");
-  await clickSelect("json ast (debug)");
-  await clickSelect("cpp");
-  await clickSelect("go");
-  await clickSelect("c");
-  await clickSelect("rust");
-  await clickSelect("typescript");
-  await setJS();
-  await clickSelect("typescript");
-  await setJS();
+  for (let lang of selectTarget) {
+    if (lang == "json ast (debug)") {
+      continue; // skip
+    }
+    console.log("selecting language:", lang);
+    await clickSelect(lang);
+    if (lang === "typescript") {
+      await setJS();
+      await clickSelect(lang);
+      await setJS(); // reset
+    }
+  }
 };
 
 await selectLanguages();

@@ -42,7 +42,7 @@ import { bm_workers } from "./lib/bmgen/bm_workers.js";
 1 / 2 / 3 / 4;
 
 interface PuppeteerDebug {
-    onPuppeteerCodeGenerated?: (lang: string, code: string) => void;
+    onPuppeteerCodeGenerated?: (lang: string, code: string, success: boolean) => void;
     onPuppeteerSampleLoaded?: (file: string, code: string) => void;
     onPuppeteerCandidatesLoaded?: (candidates: FileCandidates) => void;
 }
@@ -220,8 +220,16 @@ setWindowSize();
 
 window.addEventListener("resize", setWindowSize);
 
+const debugDone = (lang: string, code: string, success: boolean) => {
+    // callback for puppeteer debugging
+    // TODO(on-keyday): is this safe? 
+    //                  may cause XSS attack if unsafe code that injects onPuppeteerCodeGenerated is executed
+    if (typeof puppeteerDebug?.onPuppeteerCodeGenerated === 'function') {
+        puppeteerDebug.onPuppeteerCodeGenerated(lang, code, success);
+    }
+}
 
-const setGenerated = async (code: string, lang: string) => {
+const setGenerated = (code: string, lang: string, debug_success: boolean) => {
     const top = editorUI.generated.getScrollTop();
     const model = monaco.editor.createModel(code, lang);
     const curModel = editorUI.generated.getModel();
@@ -231,12 +239,7 @@ const setGenerated = async (code: string, lang: string) => {
     editorUI.generated.setModel(model);
     editorUI.generated.setScrollTop(top);
 
-    // callback for puppeteer debugging
-    // TODO(on-keyday): is this safe? 
-    //                  may cause XSS attack if unsafe code that injects onPuppeteerCodeGenerated is executed
-    if (typeof puppeteerDebug?.onPuppeteerCodeGenerated === 'function') {
-        puppeteerDebug.onPuppeteerCodeGenerated(lang, code);
-    }
+    debugDone(lang, code, debug_success);
 }
 
 const updateTracer = new UpdateTracer();
@@ -250,8 +253,13 @@ const updateUI = async () => {
         getValue: () => {
             return editorUI.editor.getValue();
         },
-        setGenerated: setGenerated,
-        setDefault: () => editorUI.setDefault(),
+        setGenerated: (code: string, lang: string) => {
+            return setGenerated(code, lang, true);
+        },
+        setDefault: () => {
+            editorUI.setDefault();
+            debugDone("text", "(generated code)", false);
+        },
         mappingCode: mappingCode,
         getWorkerFactory: () => {
             return factory;
@@ -261,7 +269,21 @@ const updateUI = async () => {
         },
     };
     storage.setLangSpecificOption(serializeLanguageConfig(commonUI.config));
-    await updateGenerated(ui, lazyInitLanguage ? initialLanguage : storage.getLangMode());
+    try {
+        await updateGenerated(ui, lazyInitLanguage ? initialLanguage : storage.getLangMode());
+    } catch (error) {
+        console.error("Error updating generated code:", error);
+        if (error instanceof Error) {
+            setGenerated(`// failed to generate code: ${error.message}`, "text", false);
+            return;
+        }
+        try {
+            error = JSON.stringify(error);
+        } catch (e) {
+            error = String(error);
+        }
+        setGenerated(`// failed to generate code: ${error}`, "text", false);
+    }
 }
 
 
