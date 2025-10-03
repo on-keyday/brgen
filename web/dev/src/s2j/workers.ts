@@ -10,6 +10,7 @@ export const fixedWorkerMap = Object.freeze({
     [WorkerType.JSON2KAITAI]:()=> new Worker(new URL("./worker/json2kaitai_worker.js",import.meta.url),{type:"module"}),
 
     [WorkerType.BMGEN]:()=> new Worker(new URL("./worker/bmgen/bmgen_worker.js",import.meta.url),{type:"module"}),
+    [WorkerType.EBMGEN]:()=> new Worker(new URL("./worker/bmgen/ebmgen_worker.js",import.meta.url),{type:"module"}),
     //[WorkerType.BM2CPP]:()=> new Worker(new URL("./worker/bmgen/bm2cpp_worker.js",import.meta.url),{type:"module"}),
     //[WorkerType.BM2RUST]:()=> new Worker(new URL("./worker/bmgen/bm2rust_worker.js",import.meta.url),{type:"module"}),
 });

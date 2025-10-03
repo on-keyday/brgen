@@ -1,4 +1,5 @@
 import { BM_LANGUAGES } from "./lib/bmgen/bm_caller.js";
+import { EBM_LANGUAGES } from "./lib/bmgen/ebm_caller.js";
 import { Language,LanguageList } from "./s2j/msg.js";
 const enum StorageKey {
     LANG_MODE = "lang_mode",
@@ -116,7 +117,7 @@ class storageManager {
     }
 
     setLangMode(mode:Language) {
-        if(LanguageList.includes(mode) || BM_LANGUAGES.includes(mode)) {
+        if(LanguageList.includes(mode) || BM_LANGUAGES.includes(mode) || EBM_LANGUAGES.includes(mode)) {
             this.#storage.setItem(StorageKey.LANG_MODE,mode);
             this.#langMode = mode;
         }

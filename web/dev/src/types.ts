@@ -35,6 +35,9 @@ export const enum ConfigKey {
     C_ZERO_COPY = "zero_copy",
 
     BM_PRINT_INSTRUCTION = "print_instruction",
+    EBM_NO_OUTPUT = "no_output",
+    EBM_PRINT_INSTRUCTION = "print_instruction",
+    EBM_CONTROL_FLOW_GRAPH = "control_flow_graph",
     RUST2_USE_ASYNC = "use_async",
     RUST2_USE_COPY_ON_WRITE_VEC = "copy_on_write_vec",
 }

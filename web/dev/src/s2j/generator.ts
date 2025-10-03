@@ -1,12 +1,13 @@
 
 import * as caller from "./caller.js";
-import { isJobResult, TraceID } from "./msg.js";
+import { EBMGenOption, isJobResult, TraceID } from "./msg.js";
 import { UpdateTracer } from "./update.js";
 import * as inc from "./cpp_include.js";
 import  { BMGenOption, COption, CallOption, Cpp2Option, CppOption, GoOption, JobResult,Language, Rust2Option, RustOption, TSOption } from "./msg.js";
 import {ast2ts} from "../../node_modules/ast2ts/ast.js";
 import {ConfigKey} from "../types.js";
 import { BM_LANGUAGES, BM_LSP_LANGUAGES, generateBMCode } from "../lib/bmgen/bm_caller.js";
+import { EBM_LANGUAGES,EBM_LSP_LANGUAGES,generateEBMCode } from "../lib/bmgen/ebm_caller.js";
 
 //import { compileCpp } from "./compiler-explorer/api";
 
@@ -232,9 +233,23 @@ const handleBinaryModule = async (ui :UIModel, s :JobResult) => {
     },Language.BINARY_MODULE,"text/plain",option);
 }
 
-const handleBinaryModuleBased = async (ui :UIModel, s :JobResult,lang :Language,view_lang :string, generator:(factory :caller.IWorkerFactory, id :TraceID,srcCode :string,option:any)=>Promise<JobResult>,opt :any) => {
+const handleExtendedBinaryModule = async (ui :UIModel, s :JobResult) => {
+    const printInstruction = ui.getLanguageConfig(Language.EBM,ConfigKey.EBM_PRINT_INSTRUCTION);
+    const controlFlowGraph = ui.getLanguageConfig(Language.EBM,ConfigKey.EBM_CONTROL_FLOW_GRAPH);
+    const noOutput = ui.getLanguageConfig(Language.EBM,ConfigKey.EBM_NO_OUTPUT);
+    const option :EBMGenOption = {
+        print_instruction: printInstruction === true,
+        control_flow_graph: controlFlowGraph === true,
+        no_output: noOutput === true,
+    };
+    return handleLanguage(ui,s,(factory,id,src,opt) => {
+        return caller.getEBM(factory, id,src,opt as EBMGenOption);
+    },Language.EBM,"text/plain",option);
+}
+
+const handleBinaryModuleBased = async (getBase :(factory: caller.IWorkerFactory, id: TraceID, sourceCode: string, options: any) => Promise<JobResult>, ui :UIModel, s :JobResult,lang :Language,view_lang :string, generator:(factory :caller.IWorkerFactory, id :TraceID,srcCode :string,option:any)=>Promise<JobResult>,opt :any) => {
     if(s.stdout===undefined) throw new Error("stdout is undefined");
-    const result = await caller.getBinaryModule(ui.getWorkerFactory(), s.traceID,s.stdout,{print_instruction: false});
+    const result = await getBase(ui.getWorkerFactory(), s.traceID,s.stdout,{print_instruction: false});
     if(ui.getUpdateTracer().editorAlreadyUpdated(s)) {
         return;
     }
@@ -267,12 +282,15 @@ export const handleRust2 = async (ui :UIModel, s :JobResult) => {
 }
 */
 
+export const handleEBM = async (ui :UIModel, s :JobResult,lang :string) => {
+    return handleBinaryModuleBased(caller.getEBM, ui,s,lang as Language,(EBM_LSP_LANGUAGES as any)[lang],(factory,id,srcCode,_) :Promise<JobResult> =>{
+        return generateEBMCode(factory,ui,id,lang,srcCode);
+    },{})
+}
+
 export const handleBM = async (ui :UIModel, s :JobResult,lang :string) => {
-    if(!BM_LANGUAGES.includes(lang)){
-        throw new Error(`invalid language ${lang}`);
-    }
-    return handleBinaryModuleBased(ui,s,lang as Language,(BM_LSP_LANGUAGES as any)[lang],(id,srcCode,_) :Promise<JobResult> =>{
-        return generateBMCode(ui,id,lang,srcCode);
+    return handleBinaryModuleBased(caller.getBinaryModule, ui,s,lang as Language,(BM_LSP_LANGUAGES as any)[lang],(factory,id,srcCode,_) :Promise<JobResult> =>{
+        return generateBMCode(factory,ui,id,lang,srcCode);
     },{})
 }
 
@@ -329,11 +347,19 @@ export const updateGenerated = async (ui :UIModel,lang :Language) => {
             return handleKaitaiStruct(ui,s);
         case Language.BINARY_MODULE:
             return handleBinaryModule(ui,s);
+        case Language.EBM:
+            return handleExtendedBinaryModule(ui,s);
         //case Language.CPP_2:
         //    return handleCpp2(ui,s);
         //case Language.RUST_2:
         //    return handleRust2(ui,s);
         default: // for additional languages
-            return handleBM(ui,s,lang);
+            if(BM_LANGUAGES.includes(lang)){
+                return handleBM(ui,s,lang);
+            }
+            if(EBM_LANGUAGES.includes(lang)){
+                return handleEBM(ui,s,lang);
+            }
+            throw new Error(`invalid language ${lang}`);
     }
 }

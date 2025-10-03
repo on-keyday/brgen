@@ -4,6 +4,8 @@ import { initLSP } from "./lsp/brgen_lsp.js";
 // loading workers...
 const factory = new WorkerFactory();
 factory.addWorker(fixedWorkerMap)
+factory.addWorker(bm_workers)
+factory.addWorker(ebm_workers)
 /*
 WorkerList.forEach((v) => {
     factory.getWorker(v);
@@ -29,6 +31,9 @@ import { save } from "./save-data/save.js";
 import { BM_LANGUAGES, setBMUIConfig } from "./lib/bmgen/bm_caller.js";
 import { base64ToUint8Array, Uint8ArrayToBase64 } from "./base64.js";
 import { UpdateTracer } from "./s2j/update.js";
+import { EBM_LANGUAGES, setEBMUIConfig } from "./lib/bmgen/ebm_caller.js";
+import { ebm_workers } from "./lib/bmgen/ebm_workers.js";
+import { bm_workers } from "./lib/bmgen/bm_workers.js";
 
 
 
@@ -436,7 +441,8 @@ interface Internal {
 
 const changeLanguage = async (mode: string) => {
     if (!LanguageList.includes(mode as Language) &&
-        !BM_LANGUAGES.includes(mode as Language)) {
+        !BM_LANGUAGES.includes(mode as Language) &&
+        !EBM_LANGUAGES.includes(mode as Language)) {
         throw new Error(`invalid language mode: ${mode}`);
     }
     lazyInitLanguage = null;
@@ -478,7 +484,7 @@ const deserializeAndApplyLanguageConfig = (m: Map<Language, LanguageConfig>, src
     });
 }
 
-const languageSelector = LanguageList.concat(BM_LANGUAGES as Language[]);
+const languageSelector = LanguageList.concat(BM_LANGUAGES as Language[]).concat(EBM_LANGUAGES as Language[]);
 
 
 const queryParameters = new URLSearchParams(window.location.hash.substring(1));
@@ -794,9 +800,39 @@ const setCommon = (m: Map<string, InputListElement>) => {
         updateUI();
     }));
 
+    const ebm = new Map<string, InputListElement>();
+    ebm.set(ConfigKey.EBM_PRINT_INSTRUCTION, {
+        "type": "checkbox",
+        "value": false,
+    });
+    ebm.set(ConfigKey.EBM_NO_OUTPUT, {
+        "type": "checkbox",
+        "value": false,
+    });
+    ebm.set(ConfigKey.EBM_CONTROL_FLOW_GRAPH, {
+        "type": "checkbox",
+        "value": false,
+    });
+    setCommon(ebm);
+    commonUI.config.set(Language.EBM, languageSpecificConfig(ebm, ConfigKey.COMMON_FILE_NAME, (change) => {
+        updateUI();
+    }));
 
     // add configs from rebrgen binary module based generators
     setBMUIConfig({
+        set_flags: (lang: string, setter: (nest_setter: (conf_name: string, elem: InputListElement) => void) => void) => {
+            const new_lang_map = new Map<string, InputListElement>();
+            setter((conf_name, elem) => {
+                new_lang_map.set(conf_name, elem);
+            })
+            setCommon(new_lang_map);
+            commonUI.config.set(lang as Language, languageSpecificConfig(new_lang_map, ConfigKey.COMMON_FILE_NAME, (change) => {
+                updateUI();
+            }));
+        }
+    })
+
+    setEBMUIConfig({
         set_flags: (lang: string, setter: (nest_setter: (conf_name: string, elem: InputListElement) => void) => void) => {
             const new_lang_map = new Map<string, InputListElement>();
             setter((conf_name, elem) => {

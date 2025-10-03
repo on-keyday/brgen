@@ -1,4 +1,4 @@
-import {AstOption, BMGenOption, COption, CallOption, CppOption, GoOption, LanguageKey, LanguageToOptionType, LanguageToWorkerType, RequestLanguage, Rust2Option, RustOption, TSOption, WorkerList, WorkerType }  from "./msg.js";
+import {AstOption, BMGenOption, COption, CallOption, CppOption, EBMGenOption, GoOption, LanguageKey, LanguageToOptionType, LanguageToWorkerType, RequestLanguage, Rust2Option, RustOption, TSOption, WorkerList, WorkerType }  from "./msg.js";
 import {JobManager} from "./job_mgr.js";
 import {TraceID } from "./msg.js";
 
@@ -114,6 +114,19 @@ const argConverter = Object.freeze({
         }
         return args;
     },
+    [RequestLanguage.EBM] : (opt :EBMGenOption) => {
+        const args :string[] = [];
+        if(opt.print_instruction){
+            args.push("--debug-print","-");
+        }
+        if(!opt.no_output) {
+            args.push("--output","-","--base64");
+        }
+        if(opt.control_flow_graph) {
+            args.push("--cfg-output","-");
+        }
+        return args;
+    }
     /*
     [RequestLanguage.CPP_2] : (opt :Cpp2Option) => {
         const args :string[] = [];
@@ -187,6 +200,10 @@ export const getKaitaiStructCode = (factory :IWorkerFactory,id :TraceID,sourceCo
 
 export const getBinaryModule = (factory :IWorkerFactory,id :TraceID,sourceCode :string,options :BMGenOption) => {
     return getLanguage(factory,id,sourceCode,RequestLanguage.BINARY_MODULE,options)
+}
+
+export const getEBM = (factory :IWorkerFactory,id :TraceID,sourceCode :string,options :EBMGenOption) => {
+    return getLanguage(factory,id,sourceCode,RequestLanguage.EBM,options)
 }
 
 /*
