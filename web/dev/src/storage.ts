@@ -106,6 +106,10 @@ class storageManager {
             this.#langMode = mode as Language;
             return mode as Language;
         }
+        if(EBM_LANGUAGES.includes(mode)) {
+            this.#langMode = mode as Language;
+            return mode as Language;
+        }
         this.#langMode = Language.CPP;
         return Language.CPP;
     }
