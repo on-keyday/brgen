@@ -100,6 +100,7 @@ namespace j2cp2 {
         std::map<std::shared_ptr<ast::StructType>, AnonymousStruct> anonymous_struct;
         std::map<ast::EnumMember*, std::string> enum_member_map;
         std::map<ast::StructUnionType*, PrefixedBitField> prefixed_bit_field;
+        std::set<std::shared_ptr<ast::Member>> prefixed_int_field;
         std::vector<ast::LineMap> line_map;
         std::vector<std::function<void()>> accessor_funcs;
         bool enable_line_map = false;
@@ -277,6 +278,7 @@ namespace j2cp2 {
                     .union_field = union_f,
                     .candidates = union_ty,
                 };
+                prefixed_int_field.insert(union_f);
             }
         }
 
@@ -1019,10 +1021,14 @@ namespace j2cp2 {
                             continue;
                         }
                         auto ident = str.to_string(field->ident);
+                        bool maybe_rvalue = true;
                         if (ast::as<ast::UnionType>(field->field_type)) {
                             if (ident.starts_with("(*") && !ident.starts_with("(*this")) {
                                 ident.erase(0, 2);  // remove '(*'
                                 ident.pop_back();   // remove ')'
+                            }
+                            if (!force_optional_getter && !prefixed_int_field.contains(f)) {
+                                maybe_rvalue = false;
                             }
                         }
                         if (replace_declval) {
@@ -1030,7 +1036,10 @@ namespace j2cp2 {
                             if (found != std::string::npos) {
                                 ident.replace(found, futils::strlen("(*this)"), "std::declval<" + std::string(struct_name) + ">()");
                             }
-                            ident = "visitor_tag<decltype(" + ident + ")>{}";
+                            if (maybe_rvalue && ident.back() != ')') {
+                                maybe_rvalue = false;
+                            }
+                            ident = "visitor_tag<decltype(" + ident + ")," + (maybe_rvalue ? "true" : "false") + ">{}";
                         }
                         w.writeln("v(v, \"", field->ident->ident, "\",", ident, ");");
                     }
@@ -1042,9 +1051,10 @@ namespace j2cp2 {
             w.writeln("constexpr void visit(Visitor&& v) const {");
             write_body();
             w.writeln("}");
-            w.writeln("template<typename T>");
+            w.writeln("template<typename T,bool rvalue = false>");
             w.writeln("struct visitor_tag {");
             w.indent_writeln("using type = T;");
+            w.indent_writeln("static constexpr bool is_rvalue = rvalue;");
             w.writeln("};");
             w.writeln("template<typename Visitor>");
             w.writeln("static constexpr void visit_static(Visitor&& v) {");
