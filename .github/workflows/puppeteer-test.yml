@@ -33,6 +33,7 @@ jobs:
         run:
           | # see https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md
           echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
+          chmod +x ./script/fetch_rebrgen.sh
           ./script/fetch_rebrgen.sh
           cd astlib/ast2ts
           tsc || true # allow error
