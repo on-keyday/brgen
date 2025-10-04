@@ -29,12 +29,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install -yq fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-khmeros fonts-kacst fonts-freefont-ttf dbus dbus-x11
 
+      - name: Fetch rebrgen
+        run: |
+          chmod +x ./script/fetch_rebrgen.sh
+          ./script/fetch_rebrgen.sh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Test
         run:
           | # see https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md
           echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
-          chmod +x ./script/fetch_rebrgen.sh
-          ./script/fetch_rebrgen.sh
           cd astlib/ast2ts
           tsc || true # allow error
           cd ../../web/public
