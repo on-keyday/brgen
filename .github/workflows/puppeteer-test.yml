@@ -34,7 +34,7 @@ jobs:
           chmod +x ./script/fetch_rebrgen.sh
           ./script/fetch_rebrgen.sh
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
 
       - name: Test
         run:
