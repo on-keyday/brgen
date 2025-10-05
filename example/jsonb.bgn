@@ -1,0 +1,40 @@
+config.url = "https://sqlite.org/draft/jsonb.html"
+
+enum ElementType:
+    :u4
+    NULL
+    TRUE
+    FALSE
+    INT
+    INT5
+    FLOAT
+    FLOAT5
+    TEXT
+    TEXTJ
+    TEXT5
+    TEXTRAW
+    ARRAY
+    OBJECT
+    RESERVED13
+    RESERVED14
+    RESERVED15
+
+format JSONBHeader:
+    len_or_ext_len_size :u4
+    type :ElementType
+    match len_or_ext_len_size:
+        12 => len :u8
+        13 => len :u16
+        14 => len :u32
+        15 => len :u64
+    
+    fn length() -> u64:
+        if available(len):
+            return len
+        else:
+            return len_or_ext_len_size 
+    
+
+format JSONBElement:
+    header :JSONBHeader
+    body :[header.length()]u8
