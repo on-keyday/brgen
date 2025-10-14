@@ -10,7 +10,7 @@
     "highlight.js": "^11.9.0",
     "hono": "^4.9.8",
     "json2rust": "file:../../src/tool/json2rust/pkg",
-    "monaco-editor": "^0.52.0",
+    "monaco-editor": "^0.54.0",
     "puppeteer": "^24.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
