@@ -409,7 +409,7 @@ namespace brgen::middle {
             T l_val = 0;
             T r_val = 0;
             auto update_fill = [&](auto l_val, auto r_val, bool inclusive) {
-                for (auto it = unfilled.begin(); it != unfilled.end(); it++) {
+                for (auto it = unfilled.begin(); it != unfilled.end();) {
                     auto& u = *it;
                     bool cond = false;
                     if (inclusive) {
@@ -425,9 +425,10 @@ namespace brgen::middle {
                         if (r_val < u.end) {
                             unfilled.insert(it, {r_val + 1, u.end});
                         }
-                        unfilled.erase(it, unfilled.end());
-                        break;
+                        it = unfilled.erase(it);
+                        continue;
                     }
+                    it++;
                 }
             };
             auto range_eval = [&](ast::Range* range) {
