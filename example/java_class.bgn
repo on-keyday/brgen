@@ -1,0 +1,554 @@
+
+config.url = "https://docs.oracle.com/javase/specs/jvms/se22/html/jvms-4.html"
+
+input.endian = config.endian.big
+
+format ClassFile:
+    magic :u32(0xCAFEBABE)
+    version :Version
+    constant_pool_count :u16
+    constant_pool_count > 0
+    constant_pool :[constant_pool_count - 1]ConstantInfo
+    access_flags :AccessFlags
+    this_class :ConstantPoolIndex
+    super_class :ConstantPoolIndex
+    interfaces_count :u16
+    interfaces :[interfaces_count]ConstantPoolIndex
+    fields_count :u16
+    fields :[fields_count]FieldInfo
+    methods_count :u16
+    methods :[methods_count]MethodInfo
+    attributes_count :u16
+    attributes :[attributes_count]AttributeInfo
+
+format Version:
+    minor :u16
+    major :u16
+
+enum AccessFlags:
+    :u16
+    Module = 0x8000
+    Mandated = 0x8000
+    Enum = 0x4000
+    Annotation = 0x2000
+    Synthetic = 0x1000
+    Strict = 0x0800
+    Abstract = 0x0400
+    Interface = 0x0200
+    Native = 0x0100
+    Transient = 0x0080
+    VarArgs = 0x0080
+    Volatile = 0x0040
+    Bridge = 0x0040
+    StaticPhase = 0x0040
+    Super = 0x0020
+    Synchronized = 0x0020
+    Open = 0x0020
+    Final = 0x0010
+    Static = 0x0008
+    Protected = 0x0004
+    Private = 0x0002
+    Public = 0x0001
+
+format ConstantPoolIndex:
+    value :u16
+
+format BootStrapMethodIndex:
+    value :u16
+
+enum ConstantTag:
+    :u8
+    Utf8 = 1
+    Integer = 3
+    Float = 4
+    Long = 5
+    Double = 6
+    Class = 7
+    String = 8
+    FieldRef = 9
+    MethodRef = 10
+    InterfaceMethodRef = 11
+    NameAndType = 12
+    MethodHandle = 15
+    MethodType = 16
+    Dynamic = 17
+    InvokeDynamic = 18
+    Module = 19
+    Package = 20
+
+format ConstantInfo:
+    tag :ConstantTag
+    match tag:
+        ConstantTag.Utf8 => utf8 :ConstantUtf8Body
+        ConstantTag.Integer => integer :ConstantNumericBody
+        ConstantTag.Float => float :ConstantNumericBody
+        ConstantTag.Long => long :ConstantLongNumericBody
+        ConstantTag.Double => double :ConstantLongNumericBody
+        ConstantTag.Class => class :ConstantInfoClassBody
+        ConstantTag.FieldRef => field :ConstantRefBody
+        ConstantTag.MethodRef => method :ConstantRefBody
+        ConstantTag.InterfaceMethodRef => interface_method :ConstantRefBody
+        ConstantTag.String => string :StringInfoBody
+        ConstantTag.NameAndType => name_and_type :ConstantNameAndTypeBody
+        ConstantTag.MethodHandle => method_handle :ConstantMethodHandleBody
+        ConstantTag.MethodType => method_type :ConstantMethodTypeBody
+        ConstantTag.Dynamic => dynamic :ConstantDynamicBody
+        ConstantTag.InvokeDynamic => invoke_dynamic :ConstantDynamicBody
+        ConstantTag.Module => module :ConstantNamedBody
+        ConstantTag.Package => package :ConstantNamedBody
+
+format ConstantInfoClassBody:
+    name_index :ConstantPoolIndex
+
+format ConstantRefBody:
+    class_index :ConstantPoolIndex
+    name_and_type_index :ConstantPoolIndex
+
+format StringInfoBody:
+    string_index :ConstantPoolIndex
+
+format ConstantNumericBody:
+    bytes :u32
+
+format ConstantLongNumericBody:
+    high_bytes :u32
+    low_bytes :u32
+
+format ConstantNameAndTypeBody:
+    name_index :ConstantPoolIndex
+    descriptor_index :ConstantPoolIndex
+
+format ConstantUtf8Body:
+    length :u16
+    bytes :[length]u8
+
+format ConstantMethodHandleBody:
+    reference_kind :u8
+    reference_kind >= 1 && reference_kind <= 9
+    reference_index :ConstantPoolIndex
+
+format ConstantMethodTypeBody:
+    descriptor_index :ConstantPoolIndex
+
+format ConstantDynamicBody:
+    bootstrap_method_attr_index :BootStrapMethodIndex
+    name_and_type_index :ConstantPoolIndex
+
+format ConstantNamedBody:
+    name_index :ConstantPoolIndex
+
+format FieldInfo:
+    access_flags :AccessFlags
+    name_index :ConstantPoolIndex
+    descriptor_index :ConstantPoolIndex
+    attributes_count :u16
+    attributes :[attributes_count]AttributeInfo
+
+format MethodInfo:
+    access_flags :AccessFlags
+    name_index :ConstantPoolIndex
+    descriptor_index :ConstantPoolIndex
+    attributes_count :u16
+    attributes :[attributes_count]AttributeInfo
+
+format AttributeInfo:
+    attribute_name_index :ConstantPoolIndex
+    attribute_length :u32
+    info :[attribute_length]u8
+
+format ConstantValueAttributeBody:
+    constant_value_index :ConstantPoolIndex
+
+format CodeAttributeBody:
+    max_stack :u16
+    max_locals :u16
+    code_length :u32
+    code :[code_length]u8
+    exception_table_length :u16
+    exception_table :[exception_table_length]ExceptionTableEntry
+    attributes_count :u16
+    attributes :[attributes_count]AttributeInfo
+
+format ExceptionTableEntry:
+    start_pc :u16
+    end_pc :u16
+    handler_pc :u16
+    catch_type :ConstantPoolIndex
+
+format StackMapTableAttributeBody:
+    number_of_entries :u16
+    entries :[number_of_entries]StackMapFrame
+
+enum VerificationTypeInfoTag:
+    :u8
+    Top = 0
+    Integer = 1
+    Float = 2
+    Long = 4
+    Double = 3
+    Null = 5
+    UninitializedThis = 6
+    Object = 7
+    Uninitialized = 8
+
+format VerificationTypeInfo:
+    tag :VerificationTypeInfoTag
+    match tag:
+        VerificationTypeInfoTag.Object => cpool_index :ConstantPoolIndex
+        VerificationTypeInfoTag.Uninitialized => offset :u16
+
+enum StackMapFrameType:
+    :u8
+    Same = 0..63
+    SameLocals1StackItem = 64..=127
+    SameLocals1StackItemExtended = 247
+    Chop = 248..=250
+    SameExtended = 251
+    Append = 252..=254
+    FullFrame = 255
+
+format StackMapFrame:
+    frame_type :StackMapFrameType
+    match frame_type:
+        StackMapFrameType.Same => ..
+        StackMapFrameType.SameLocals1StackItem => stack :VerificationTypeInfo
+        StackMapFrameType.SameLocals1StackItemExtended:
+            offset_delta :u16 
+            stack :VerificationTypeInfo
+        StackMapFrameType.Chop => offset_delta :u16
+        StackMapFrameType.SameExtended => offset_delta :u16
+        StackMapFrameType.Append: 
+           offset_delta :u16 
+           locals :[u8(frame_type) - 251]VerificationTypeInfo
+        StackMapFrameType.FullFrame: 
+            offset_delta :u16 
+            number_of_locals :u16 
+            locals :[number_of_locals]VerificationTypeInfo
+            number_of_stack_items :u16
+            stack :[number_of_stack_items]VerificationTypeInfo
+
+format ExceptionsAttributeBody:
+    number_of_exceptions :u16
+    exception_index_table :[number_of_exceptions]ConstantPoolIndex
+
+format InnerClassesAttributeBody:
+    number_of_classes :u16
+    classes :[number_of_classes]InnerClassInfo
+
+format InnerClassInfo:
+    inner_class_info_index :ConstantPoolIndex
+    outer_class_info_index :ConstantPoolIndex
+    inner_name_index :ConstantPoolIndex
+    inner_class_access_flags :AccessFlags
+
+format EnclosingMethodAttributeBody:
+    class_index :ConstantPoolIndex
+    method_index :ConstantPoolIndex
+
+format SyntheticAttributeBody:
+    ..
+
+format SignatureAttributeBody:
+    signature_index :ConstantPoolIndex
+
+format SourceFileAttributeBody:
+    sourcefile_index :ConstantPoolIndex
+
+format SourceDebugExtensionAttributeBody:
+    debug_extension :[..]u8
+
+format LineNumberTableAttributeBody:
+    line_number_table_length :u16
+    line_number_table :[line_number_table_length]LineNumberEntry
+
+format LineNumberEntry:
+    start_pc :u16
+    line_number :u16
+
+format LocalVariableTableAttributeBody:
+    local_variable_table_length :u16
+    local_variable_table :[local_variable_table_length]LocalVariableEntry
+
+format LocalVariableEntry:
+    start_pc :u16
+    length :u16
+    name_index :ConstantPoolIndex
+    descriptor_index :ConstantPoolIndex
+    index :u16
+
+format LocalVariableTypeTableAttributeBody:
+    local_variable_type_table_length :u16
+    local_variable_type_table :[local_variable_type_table_length]LocalVariableTypeEntry
+
+format LocalVariableTypeEntry:
+    start_pc :u16
+    length :u16
+    name_index :ConstantPoolIndex
+    signature_index :ConstantPoolIndex
+    index :u16
+
+format DeprecatedAttributeBody:
+    ..
+
+format RuntimeVisibleAnnotationsAttributeBody:
+    num_annotations :u16
+    annotations :[num_annotations]Annotation
+
+format Annotation:
+    type_index :ConstantPoolIndex
+    num_element_value_pairs :u16
+    element_value_pairs :[num_element_value_pairs]ElementValuePair
+
+format ElementValuePair:
+    element_name_index :ConstantPoolIndex
+    value :ElementValue
+
+enum ElementValueTag:
+    :u8
+    Byte = 'B'
+    Char = 'C'
+    Double = 'D'
+    Float = 'F'
+    Int = 'I'
+    Long = 'J'
+    Short = 'S'
+    Boolean = 'Z'
+    String = 's'
+    Enum = 'e'
+    Class = 'c'
+    Annotation = '@'
+    Array = '['
+
+format ElementValue:
+    tag :ElementValueTag
+    match tag:
+        ElementValueTag.Byte,
+        ElementValueTag.Char,
+        ElementValueTag.Double,
+        ElementValueTag.Float,
+        ElementValueTag.Int,
+        ElementValueTag.Long,
+        ElementValueTag.Short,
+        ElementValueTag.Boolean,
+        ElementValueTag.String => const_value_index :ConstantPoolIndex
+        ElementValueTag.Enum:
+            type_name_index :ConstantPoolIndex
+            const_name_index :ConstantPoolIndex
+        ElementValueTag.Class => class_info_index :ConstantPoolIndex
+        ElementValueTag.Annotation => annotation_value :Annotation
+        ElementValueTag.Array:
+            num_values :u16
+            values :[num_values]ElementValue
+
+format RuntimeInvisibleAnnotationsAttributeBody:
+    num_annotations :u16
+    annotations :[num_annotations]Annotation
+
+format RuntimeVisibleParameterAnnotationsAttributeBody:
+    num_parameters :u8
+    parameter_annotations :[num_parameters]ParameterAnnotation
+
+format ParameterAnnotation:
+    num_annotations :u16
+    annotations :[num_annotations]Annotation
+
+format RuntimeInvisibleParameterAnnotationsAttributeBody:
+    num_parameters :u8
+    parameter_annotations :[num_parameters]ParameterAnnotation
+
+format RuntimeVisibleTypeAnnotationsAttributeBody:
+    num_annotations :u16
+    annotations :[num_annotations]TypeAnnotation
+
+format TypeAnnotation:
+    target_info :TargetInfo
+    target_path :TypePath
+    type_index :ConstantPoolIndex
+    num_element_value_pairs :u16
+    element_value_pairs :[num_element_value_pairs]ElementValuePair
+
+format TargetInfo:
+    target_type :TargetType
+    match target_type:
+        TargetType.TypeParameterOfGenericClassOrInterface,
+        TargetType.TypeParameterOfGenericMethodOrConstructor => parameter_target :ParameterTarget
+        TargetType.TypeInExtendsOrImplementsClause => supertype_target :SuperTypeTarget
+        TargetType.TypeInBoundOfTypeParameterOfGenericClassOrInterface,
+        TargetType.TypeInBoundOfTypeParameterOfGenericMethodOrConstructor => type_parameter_bound_target :TypeParameterBoundTarget
+        TargetType.TypeInFieldOrRecordComponentDeclaration,
+        TargetType.ReturnTypeOfMethodOrTypeOfNewlyConstructedObject,
+        TargetType.ReceiverTypeOfMethodOrConstructor => empty_target :EmptyTarget
+        TargetType.TypeInFormalParameterDeclarationOfMethodConstructorOrLambda => formal_parameter_target :FormalParameterTarget
+        TargetType.TypeInThrowsClauseOfMethodOrConstructor => throws_target :ThrowsTarget
+        TargetType.TypeInLocalVariableDeclaration,
+        TargetType.TypeInResourceDeclaration => local_var_target :LocalVarTarget
+        TargetType.TypeInExceptionParameterDeclaration => catch_target :CatchTarget
+        TargetType.TypeInInstanceofExpression,
+        TargetType.TypeInNewExpression,
+        TargetType.TypeInfMethodReferenceExpressionUsingGlobalNew,
+        TargetType.TypeInMethodReferenceExpressionUsingGlobalIdentifier,
+        TargetType.TypeInCastExpression => offset_target :OffsetTarget
+        TargetType.TypeArgumentForGenericConstructorInNewExpressionOrExplicitConstructorInvocation,
+        TargetType.TypeArgumentForGenericMethodInMethodInvocationExpression,
+        TargetType.TypeArgumentForGenericConstructorInMethodReferenceExpressionUsingGlobalNew,
+        TargetType.TypeArgumentForGenericMethodInMethodReferenceExpressionUsingGlobalIdentifier => type_argument_target :TypeArgumentTarget
+
+enum TargetType:
+    :u8
+    TypeParameterOfGenericClassOrInterface = 0x00
+    TypeParameterOfGenericMethodOrConstructor = 0x01 
+    TypeInExtendsOrImplementsClause = 0x10
+    TypeInBoundOfTypeParameterOfGenericClassOrInterface = 0x11
+    TypeInBoundOfTypeParameterOfGenericMethodOrConstructor = 0x12
+    TypeInFieldOrRecordComponentDeclaration = 0x13
+    ReturnTypeOfMethodOrTypeOfNewlyConstructedObject = 0x14
+    ReceiverTypeOfMethodOrConstructor = 0x15
+    TypeInFormalParameterDeclarationOfMethodConstructorOrLambda = 0x16
+    TypeInThrowsClauseOfMethodOrConstructor = 0x17
+    TypeInLocalVariableDeclaration = 0x40
+    TypeInResourceDeclaration = 0x41
+    TypeInExceptionParameterDeclaration = 0x42
+    TypeInInstanceofExpression = 0x43
+    TypeInNewExpression = 0x44
+    TypeInfMethodReferenceExpressionUsingGlobalNew = 0x45
+    TypeInMethodReferenceExpressionUsingGlobalIdentifier = 0x46
+    TypeInCastExpression = 0x47
+    TypeArgumentForGenericConstructorInNewExpressionOrExplicitConstructorInvocation = 0x48
+    TypeArgumentForGenericMethodInMethodInvocationExpression = 0x49
+    TypeArgumentForGenericConstructorInMethodReferenceExpressionUsingGlobalNew = 0x4A
+    TypeArgumentForGenericMethodInMethodReferenceExpressionUsingGlobalIdentifier = 0x4B
+
+format ParameterTarget:
+    type_parameter_index :u8
+
+format SuperTypeTarget:
+    supertype_index :u16
+
+format TypeParameterBoundTarget:
+    type_parameter_index :u8
+    bound_index :u8
+
+format EmptyTarget:
+    ..
+
+format FormalParameterTarget:
+    formal_parameter_index :u8
+
+format ThrowsTarget:
+    throws_type_index :u16
+
+format LocalVarTarget:
+    table_length :u16
+    table :[table_length]LocalVarTargetEntry
+
+format LocalVarTargetEntry:
+    start_pc :u16
+    length :u16
+    index :u16
+
+format CatchTarget:
+    exception_table_index :u16
+
+format OffsetTarget:
+    offset :u16
+
+format TypeArgumentTarget:
+    offset :u16
+    type_argument_index :u8
+
+
+format TypePath:
+    path_length :u8
+    path :[path_length]TypePathEntry
+
+format TypePathEntry:
+    type_path_kind :u8
+    type_path_kind >= 0 && type_path_kind <= 3
+    type_argument_index :u8
+
+format AnnotationDefaultAttributeBody:
+    default_value :ElementValue
+
+format BootStrapMethodsAttributeBody:
+    num_bootstrap_methods :u16
+    bootstrap_methods :[num_bootstrap_methods]BootstrapMethod
+
+format BootstrapMethod:
+    bootstrap_method_ref :ConstantPoolIndex
+    num_bootstrap_arguments :u16
+    bootstrap_arguments :[num_bootstrap_arguments]ConstantPoolIndex
+
+
+format MethodParametersAttributeBody:
+    parameters_count :u8
+    parameters :[parameters_count]MethodParameter
+
+format MethodParameter:
+    name_index :ConstantPoolIndex
+    access_flags :AccessFlags
+
+format ModuleAttributeBody:
+    module_name_index :ConstantPoolIndex
+    module_flags :AccessFlags
+    module_version_index :ConstantPoolIndex
+    requires_count :u16
+    requires :[requires_count]Require
+    exports_count :u16
+    exports :[exports_count]Export
+    opens_count :u16
+    opens :[opens_count]Open
+    uses_count :u16
+    uses :[uses_count]ConstantPoolIndex
+    provides_count :u16
+    provides :[provides_count]Provide
+
+format Require:
+    requires_index :ConstantPoolIndex
+    requires_flags :AccessFlags
+    requires_version_index :ConstantPoolIndex
+
+format Export:
+    exports_index :ConstantPoolIndex
+    exports_flags :AccessFlags
+    exports_to_count :u16
+    exports_to :[exports_to_count]ConstantPoolIndex
+
+format Open:
+    opens_index :ConstantPoolIndex
+    opens_flags :AccessFlags
+    opens_to_count :u16
+    opens_to :[opens_to_count]ConstantPoolIndex
+
+format Provide:
+    provides_index :ConstantPoolIndex
+    provides_with_count :u16
+    provides_with :[provides_with_count]ConstantPoolIndex
+
+format ModulePackagesAttributeBody:
+    package_count :u16
+    package_index :[package_count]ConstantPoolIndex
+
+format ModuleMainClassAttributeBody:
+    main_class_index :ConstantPoolIndex
+
+format NestHostAttributeBody:
+    host_class_index :ConstantPoolIndex
+
+format NestMembersAttributeBody:
+    number_of_classes :u16
+    classes :[number_of_classes]ConstantPoolIndex
+
+format RecordAttributeBody:
+    number_of_components :u16
+    components :[number_of_components]RecordComponent
+
+format RecordComponent:
+    name_index :ConstantPoolIndex
+    descriptor_index :ConstantPoolIndex
+    attributes_count :u16
+    attributes :[attributes_count]AttributeInfo
+
+
+format PermittedSubclassesAttributeBody:
+    number_of_classes :u16
+    classes :[number_of_classes]ConstantPoolIndex
