@@ -2,10 +2,10 @@
 
 export namespace ast2ts {
 
-export type NodeType = "program" | "comment" | "comment_group" | "field_argument" | "expr" | "binary" | "unary" | "cond" | "ident" | "call" | "if" | "member_access" | "paren" | "index" | "match" | "range" | "identity" | "tmp_var" | "import" | "cast" | "available" | "specify_order" | "explicit_error" | "io_operation" | "or_cond" | "bad_expr" | "stmt" | "loop" | "indent_block" | "scoped_statement" | "match_branch" | "union_candidate" | "return" | "break" | "continue" | "assert" | "implicit_yield" | "metadata" | "type" | "int_type" | "float_type" | "ident_type" | "int_literal_type" | "str_literal_type" | "regex_literal_type" | "void_type" | "bool_type" | "array_type" | "function_type" | "struct_type" | "struct_union_type" | "union_type" | "range_type" | "enum_type" | "meta_type" | "optional_type" | "generic_type" | "literal" | "int_literal" | "bool_literal" | "str_literal" | "regex_literal" | "char_literal" | "type_literal" | "special_literal" | "member" | "field" | "format" | "state" | "enum" | "enum_member" | "function";
+export type NodeType = "program" | "comment" | "comment_group" | "field_argument" | "expr" | "binary" | "unary" | "cond" | "ident" | "call" | "if" | "member_access" | "paren" | "index" | "match" | "range" | "identity" | "tmp_var" | "import" | "cast" | "available" | "specify_order" | "explicit_error" | "io_operation" | "or_cond" | "sizeof_" | "bad_expr" | "stmt" | "loop" | "indent_block" | "scoped_statement" | "match_branch" | "union_candidate" | "return" | "break" | "continue" | "assert" | "implicit_yield" | "metadata" | "type" | "int_type" | "float_type" | "ident_type" | "int_literal_type" | "str_literal_type" | "regex_literal_type" | "void_type" | "bool_type" | "array_type" | "function_type" | "struct_type" | "struct_union_type" | "union_type" | "range_type" | "enum_type" | "meta_type" | "optional_type" | "generic_type" | "literal" | "int_literal" | "bool_literal" | "str_literal" | "regex_literal" | "char_literal" | "type_literal" | "special_literal" | "member" | "field" | "format" | "state" | "enum" | "enum_member" | "function";
 
 export function isNodeType(obj: any): obj is NodeType {
-	return obj && typeof obj === 'string' && (obj === "program" || obj === "comment" || obj === "comment_group" || obj === "field_argument" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "identity" || obj === "tmp_var" || obj === "import" || obj === "cast" || obj === "available" || obj === "specify_order" || obj === "explicit_error" || obj === "io_operation" || obj === "or_cond" || obj === "bad_expr" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "scoped_statement" || obj === "match_branch" || obj === "union_candidate" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "metadata" || obj === "type" || obj === "int_type" || obj === "float_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "regex_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "struct_union_type" || obj === "union_type" || obj === "range_type" || obj === "enum_type" || obj === "meta_type" || obj === "optional_type" || obj === "generic_type" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "regex_literal" || obj === "char_literal" || obj === "type_literal" || obj === "special_literal" || obj === "member" || obj === "field" || obj === "format" || obj === "state" || obj === "enum" || obj === "enum_member" || obj === "function")
+	return obj && typeof obj === 'string' && (obj === "program" || obj === "comment" || obj === "comment_group" || obj === "field_argument" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "identity" || obj === "tmp_var" || obj === "import" || obj === "cast" || obj === "available" || obj === "specify_order" || obj === "explicit_error" || obj === "io_operation" || obj === "or_cond" || obj === "sizeof_" || obj === "bad_expr" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "scoped_statement" || obj === "match_branch" || obj === "union_candidate" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "metadata" || obj === "type" || obj === "int_type" || obj === "float_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "regex_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "struct_union_type" || obj === "union_type" || obj === "range_type" || obj === "enum_type" || obj === "meta_type" || obj === "optional_type" || obj === "generic_type" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "regex_literal" || obj === "char_literal" || obj === "type_literal" || obj === "special_literal" || obj === "member" || obj === "field" || obj === "format" || obj === "state" || obj === "enum" || obj === "enum_member" || obj === "function")
 }
 
 export const enum TokenTag {
@@ -323,6 +323,7 @@ export function isNode(obj: any): obj is Node {
 	if (isExplicitError(obj)) return true;
 	if (isIoOperation(obj)) return true;
 	if (isOrCond(obj)) return true;
+	if (isSizeof(obj)) return true;
 	if (isBadExpr(obj)) return true;
 	if (isLoop(obj)) return true;
 	if (isIndentBlock(obj)) return true;
@@ -395,6 +396,7 @@ export function isExpr(obj: any): obj is Expr {
 	if (isExplicitError(obj)) return true;
 	if (isIoOperation(obj)) return true;
 	if (isOrCond(obj)) return true;
+	if (isSizeof(obj)) return true;
 	if (isBadExpr(obj)) return true;
 	if (isIntLiteral(obj)) return true;
 	if (isBoolLiteral(obj)) return true;
@@ -691,6 +693,7 @@ export function isCast(obj: any): obj is Cast {
 export interface Available extends Expr {
 	base: Call|null;
 	target: Expr|null;
+	expected_type: Type|null;
 }
 
 export function isAvailable(obj: any): obj is Available {
@@ -734,6 +737,15 @@ export interface OrCond extends Expr {
 
 export function isOrCond(obj: any): obj is OrCond {
 	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "or_cond"
+}
+
+export interface Sizeof extends Expr {
+	base: Call|null;
+	target: Expr|null;
+}
+
+export function isSizeof(obj: any): obj is Sizeof {
+	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "sizeof_"
 }
 
 export interface BadExpr extends Expr {
@@ -1578,6 +1590,7 @@ export function parseAST(obj: JsonAst): ParseResult {
 				constant_level: ConstantLevel.unknown,
 				base: null,
 				target: null,
+				expected_type: null,
 			}
 			c.node.push(n);
 			break;
@@ -1629,6 +1642,18 @@ export function parseAST(obj: JsonAst): ParseResult {
 				constant_level: ConstantLevel.unknown,
 				base: null,
 				conds: [],
+			}
+			c.node.push(n);
+			break;
+		}
+		case "sizeof_": {
+			const n :Sizeof = {
+				node_type: "sizeof_",
+				loc: on.loc,
+				expr_type: null,
+				constant_level: ConstantLevel.unknown,
+				base: null,
+				target: null,
 			}
 			c.node.push(n);
 			break;
@@ -3016,6 +3041,14 @@ export function parseAST(obj: JsonAst): ParseResult {
 				throw new Error('invalid node list at Available::target');
 			}
 			n.target = tmptarget;
+			if (on.body?.expected_type !== null && typeof on.body?.expected_type !== 'number') {
+				throw new Error('invalid node list at Available::expected_type');
+			}
+			const tmpexpected_type = on.body.expected_type === null ? null : c.node[on.body.expected_type];
+			if (!(tmpexpected_type === null || isType(tmpexpected_type))) {
+				throw new Error('invalid node list at Available::expected_type');
+			}
+			n.expected_type = tmpexpected_type;
 			break;
 		}
 		case "specify_order": {
@@ -3167,6 +3200,39 @@ export function parseAST(obj: JsonAst): ParseResult {
 				}
 				n.conds.push(tmpconds);
 			}
+			break;
+		}
+		case "sizeof_": {
+			const n :Sizeof = cnode as Sizeof;
+			if (on.body?.expr_type !== null && typeof on.body?.expr_type !== 'number') {
+				throw new Error('invalid node list at Sizeof::expr_type');
+			}
+			const tmpexpr_type = on.body.expr_type === null ? null : c.node[on.body.expr_type];
+			if (!(tmpexpr_type === null || isType(tmpexpr_type))) {
+				throw new Error('invalid node list at Sizeof::expr_type');
+			}
+			n.expr_type = tmpexpr_type;
+			const tmpconstant_level = on.body?.constant_level;
+			if (!isConstantLevel(tmpconstant_level)) {
+				throw new Error('invalid node list at Sizeof::constant_level');
+			}
+			n.constant_level = tmpconstant_level;
+			if (on.body?.base !== null && typeof on.body?.base !== 'number') {
+				throw new Error('invalid node list at Sizeof::base');
+			}
+			const tmpbase = on.body.base === null ? null : c.node[on.body.base];
+			if (!(tmpbase === null || isCall(tmpbase))) {
+				throw new Error('invalid node list at Sizeof::base');
+			}
+			n.base = tmpbase;
+			if (on.body?.target !== null && typeof on.body?.target !== 'number') {
+				throw new Error('invalid node list at Sizeof::target');
+			}
+			const tmptarget = on.body.target === null ? null : c.node[on.body.target];
+			if (!(tmptarget === null || isExpr(tmptarget))) {
+				throw new Error('invalid node list at Sizeof::target');
+			}
+			n.target = tmptarget;
 			break;
 		}
 		case "bad_expr": {
@@ -4989,7 +5055,7 @@ export function getChildCount(node: Node): number {
 	    return 0;
      }
      const n :Available = node as Available;
-		return  + (n.expr_type === null ? 0 : 1) + (n.base === null ? 0 : 1) + (n.target === null ? 0 : 1);
+		return  + (n.expr_type === null ? 0 : 1) + (n.base === null ? 0 : 1) + (n.target === null ? 0 : 1) + (n.expected_type === null ? 0 : 1);
 	}
 	case "specify_order": {
      if (!isSpecifyOrder(node)) {
@@ -5018,6 +5084,13 @@ export function getChildCount(node: Node): number {
      }
      const n :OrCond = node as OrCond;
 		return  + (n.expr_type === null ? 0 : 1) + (n.base === null ? 0 : 1) + n.conds.length;
+	}
+	case "sizeof_": {
+     if (!isSizeof(node)) {
+	    return 0;
+     }
+     const n :Sizeof = node as Sizeof;
+		return  + (n.expr_type === null ? 0 : 1) + (n.base === null ? 0 : 1) + (n.target === null ? 0 : 1);
 	}
 	case "bad_expr": {
      if (!isBadExpr(node)) {
@@ -5815,6 +5888,12 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 					return;
 				}
 			}
+			if (n.expected_type !== null) {
+				const result = fn(fn, n.expected_type);
+				if (result === false) {
+					return;
+				}
+			}
 			break;
 		}
 		case "specify_order": {
@@ -5911,6 +5990,31 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			for (const e of n.conds) {
 				const result = fn(fn, e);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "sizeof_": {
+			if (!isSizeof(node)) {
+				break;
+			}
+			const n :Sizeof = node as Sizeof;
+			if (n.expr_type !== null) {
+				const result = fn(fn, n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.base !== null) {
+				const result = fn(fn, n.base);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.target !== null) {
+				const result = fn(fn, n.target);
 				if (result === false) {
 					return;
 				}
@@ -7090,6 +7194,12 @@ export async function walkAsync(node: Node, fn: VisitFnAsync<Node>) {
 					return;
 				}
 			}
+			if (n.expected_type !== null) {
+				const result = await fn(fn, n.expected_type);
+				if (result === false) {
+					return;
+				}
+			}
 			break;
 		}
 		case "specify_order": {
@@ -7186,6 +7296,31 @@ export async function walkAsync(node: Node, fn: VisitFnAsync<Node>) {
 			}
 			for (const e of n.conds) {
 				const result = await fn(fn, e);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "sizeof_": {
+			if (!isSizeof(node)) {
+				break;
+			}
+			const n :Sizeof = node as Sizeof;
+			if (n.expr_type !== null) {
+				const result = await fn(fn, n.expr_type);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.base !== null) {
+				const result = await fn(fn, n.base);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.target !== null) {
+				const result = await fn(fn, n.target);
 				if (result === false) {
 					return;
 				}

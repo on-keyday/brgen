@@ -39,6 +39,7 @@ namespace brgen::ast {
         explicit_error,
         io_operation,
         or_cond,
+        sizeof_,
 
         // bad expr
         bad_expr,
@@ -173,6 +174,7 @@ namespace brgen::ast {
         {NodeType::regex_literal_type, "regex_literal_type"},
         {NodeType::identity, "identity"},
         {NodeType::or_cond, "or_cond"},
+        {NodeType::sizeof_, "sizeof_"},
     };
 
     constexpr std::array<std::pair<NodeType, const char*>, std::size(node_type_str_array)> sorted_node_type_str_array = [] {

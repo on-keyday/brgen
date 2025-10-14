@@ -1,5 +1,6 @@
 /*license*/
 #pragma once
+#include <memory>
 #include "base.h"
 #include "expr.h"
 #include "type.h"
@@ -84,7 +85,7 @@ namespace brgen::ast {
         std::shared_ptr<Call> base;
         std::vector<std::shared_ptr<Expr>> arguments;
 
-        Cast(std::shared_ptr<Call>&& c, std::shared_ptr<Type>&& type,const std::vector<std::shared_ptr<Expr>>& a)
+        Cast(std::shared_ptr<Call>&& c, std::shared_ptr<Type>&& type, const std::vector<std::shared_ptr<Expr>>& a)
             : Expr(c->loc, NodeType::cast), base(std::move(c)), arguments(a) {
             expr_type = std::move(type);
         }
@@ -105,12 +106,34 @@ namespace brgen::ast {
         define_node_type(NodeType::available);
         std::shared_ptr<Call> base;
         std::shared_ptr<Expr> target;
+        std::shared_ptr<Type> expected_type;
 
         Available(std::shared_ptr<Expr>&& a, std::shared_ptr<Call>&& c)
             : Expr(a->loc, NodeType::available), base(std::move(c)), target(std::move(a)) {}
 
         Available()
             : Expr({}, NodeType::available) {}
+
+        void dump(auto&& field_) {
+            Expr::dump(field_);
+            sdebugf_omit(base);
+            sdebugf(target);
+            sdebugf(expected_type);
+        }
+    };
+
+    // SizeOf represents sizeof(ident) expression
+    // ident maybe type literal or expression
+    struct SizeOf : Expr {
+        define_node_type(NodeType::sizeof_);
+        std::shared_ptr<Call> base;
+        std::shared_ptr<Expr> target;
+
+        SizeOf(std::shared_ptr<Expr>&& a, std::shared_ptr<Call>&& c)
+            : Expr(a->loc, NodeType::sizeof_), base(std::move(c)), target(std::move(a)) {}
+
+        SizeOf()
+            : Expr({}, NodeType::sizeof_) {}
 
         void dump(auto&& field_) {
             Expr::dump(field_);

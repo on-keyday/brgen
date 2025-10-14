@@ -13,8 +13,8 @@ weight: 1
 
 ## バイナリをダウンロードする場合
 
-- windows(x64),mac,linux(x64,arm),android(arm,termux)のビルド済みバイナリを配布しています
-- 現在(2024/5/10)の最新バージョンは[v0.0.6](https://github.com/on-keyday/brgen/releases/tag/v0.0.6)です
+- windows(x64),mac,linux(x64,arm),android(arm,termux,実験的)のビルド済みバイナリを配布しています
+- 現在(2025/10/15)の最新バージョンは[v0.0.7](https://github.com/on-keyday/brgen/releases/tag/v0.0.7)です
   - バージョン update 頻度は今現在は作者の気分次第です。
 - WebPlayground は常に main ブランチの最新版が反映されています
 - VSCode 拡張で LSP サーバーを提供しています。現在は 上記リリースページ での提供です。

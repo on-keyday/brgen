@@ -1,0 +1,8 @@
+
+enum Hello:
+    A = 1
+    B = 2
+
+test :Hello 
+
+test.is_defined == true

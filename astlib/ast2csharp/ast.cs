@@ -29,6 +29,7 @@ SpecifyOrder,
 ExplicitError,
 IoOperation,
 OrCond,
+Sizeof,
 BadExpr,
 Stmt,
 Loop,
@@ -435,6 +436,7 @@ public class Available : Expr{
 	public ConstantLevel ConstantLevel{get;set;}
 	public Call? Base{get;set;}
 	public Expr? Target{get;set;}
+	public Type? ExpectedType{get;set;}
 }
 public class SpecifyOrder : Expr{
 	public Loc Loc{get;set;}
@@ -466,6 +468,13 @@ public class OrCond : Expr{
 	public ConstantLevel ConstantLevel{get;set;}
 	public Binary? Base{get;set;}
 	public List<Expr>? Conds{get;set;}
+}
+public class Sizeof : Expr{
+	public Loc Loc{get;set;}
+	public Type? ExprType{get;set;}
+	public ConstantLevel ConstantLevel{get;set;}
+	public Call? Base{get;set;}
+	public Expr? Target{get;set;}
 }
 public class BadExpr : Expr{
 	public Loc Loc{get;set;}
@@ -974,6 +983,9 @@ public static class Ast {
            case NodeType.OrCond:
                nodes[i] = new OrCond() { Loc = ast.Node[i].Loc };
                break;
+           case NodeType.Sizeof:
+               nodes[i] = new Sizeof() { Loc = ast.Node[i].Loc };
+               break;
            case NodeType.BadExpr:
                nodes[i] = new BadExpr() { Loc = ast.Node[i].Loc };
                break;
@@ -1270,6 +1282,7 @@ public static class Ast {
                node.ConstantLevel = ast.Node[i].Body[constant_level];
                node.Base = ast.Node[i].Body[base];
                node.Target = ast.Node[i].Body[target];
+               node.ExpectedType = ast.Node[i].Body[expected_type];
            case NodeType.SpecifyOrder:
                var node = nodes[i] as SpecifyOrder;
                node.Loc = ast.Node[i].Body[loc];
@@ -1301,6 +1314,13 @@ public static class Ast {
                node.ConstantLevel = ast.Node[i].Body[constant_level];
                node.Base = ast.Node[i].Body[base];
                node.Conds = ast.Node[i].Body[conds];
+           case NodeType.Sizeof:
+               var node = nodes[i] as Sizeof;
+               node.Loc = ast.Node[i].Body[loc];
+               node.ExprType = ast.Node[i].Body[expr_type];
+               node.ConstantLevel = ast.Node[i].Body[constant_level];
+               node.Base = ast.Node[i].Body[base];
+               node.Target = ast.Node[i].Body[target];
            case NodeType.BadExpr:
                var node = nodes[i] as BadExpr;
                node.Loc = ast.Node[i].Body[loc];

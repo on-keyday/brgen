@@ -35,7 +35,8 @@ const (
 	NodeTypeExplicitError    NodeType = 65554
 	NodeTypeIoOperation      NodeType = 65555
 	NodeTypeOrCond           NodeType = 65556
-	NodeTypeBadExpr          NodeType = 65557
+	NodeTypeSizeof           NodeType = 65557
+	NodeTypeBadExpr          NodeType = 65558
 	NodeTypeStmt             NodeType = 131072
 	NodeTypeLoop             NodeType = 131073
 	NodeTypeIndentBlock      NodeType = 131074
@@ -136,6 +137,8 @@ func (n NodeType) String() string {
 		return "io_operation"
 	case NodeTypeOrCond:
 		return "or_cond"
+	case NodeTypeSizeof:
+		return "sizeof_"
 	case NodeTypeBadExpr:
 		return "bad_expr"
 	case NodeTypeStmt:
@@ -291,6 +294,8 @@ func (n *NodeType) UnmarshalJSON(data []byte) error {
 		*n = NodeTypeIoOperation
 	case "or_cond":
 		*n = NodeTypeOrCond
+	case "sizeof_":
+		*n = NodeTypeSizeof
 	case "bad_expr":
 		*n = NodeTypeBadExpr
 	case "stmt":
@@ -485,6 +490,10 @@ func (n *IoOperation) GetNodeType() NodeType {
 
 func (n *OrCond) GetNodeType() NodeType {
 	return NodeTypeOrCond
+}
+
+func (n *Sizeof) GetNodeType() NodeType {
+	return NodeTypeSizeof
 }
 
 func (n *BadExpr) GetNodeType() NodeType {
@@ -2250,6 +2259,7 @@ type Available struct {
 	ConstantLevel ConstantLevel
 	Base          *Call
 	Target        Expr
+	ExpectedType  Type
 }
 
 func (n *Available) isExpr() {}
@@ -2364,6 +2374,30 @@ func (n *OrCond) GetConstantLevel() ConstantLevel {
 func (n *OrCond) isNode() {}
 
 func (n *OrCond) GetLoc() Loc {
+	return n.Loc
+}
+
+type Sizeof struct {
+	Loc           Loc
+	ExprType      Type
+	ConstantLevel ConstantLevel
+	Base          *Call
+	Target        Expr
+}
+
+func (n *Sizeof) isExpr() {}
+
+func (n *Sizeof) GetExprType() Type {
+	return n.ExprType
+}
+
+func (n *Sizeof) GetConstantLevel() ConstantLevel {
+	return n.ConstantLevel
+}
+
+func (n *Sizeof) isNode() {}
+
+func (n *Sizeof) GetLoc() Loc {
 	return n.Loc
 }
 
@@ -3703,6 +3737,8 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			n.node[i] = &IoOperation{Loc: raw.Loc}
 		case NodeTypeOrCond:
 			n.node[i] = &OrCond{Loc: raw.Loc}
+		case NodeTypeSizeof:
+			n.node[i] = &Sizeof{Loc: raw.Loc}
 		case NodeTypeBadExpr:
 			n.node[i] = &BadExpr{Loc: raw.Loc}
 		case NodeTypeLoop:
@@ -4269,6 +4305,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				ConstantLevel ConstantLevel `json:"constant_level"`
 				Base          *uintptr      `json:"base"`
 				Target        *uintptr      `json:"target"`
+				ExpectedType  *uintptr      `json:"expected_type"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -4282,6 +4319,9 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			}
 			if tmp.Target != nil {
 				v.Target = n.node[*tmp.Target].(Expr)
+			}
+			if tmp.ExpectedType != nil {
+				v.ExpectedType = n.node[*tmp.ExpectedType].(Type)
 			}
 		case NodeTypeSpecifyOrder:
 			v := n.node[i].(*SpecifyOrder)
@@ -4374,6 +4414,27 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.Conds = make([]Expr, len(tmp.Conds))
 			for j, k := range tmp.Conds {
 				v.Conds[j] = n.node[k].(Expr)
+			}
+		case NodeTypeSizeof:
+			v := n.node[i].(*Sizeof)
+			var tmp struct {
+				ExprType      *uintptr      `json:"expr_type"`
+				ConstantLevel ConstantLevel `json:"constant_level"`
+				Base          *uintptr      `json:"base"`
+				Target        *uintptr      `json:"target"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			if tmp.ExprType != nil {
+				v.ExprType = n.node[*tmp.ExprType].(Type)
+			}
+			v.ConstantLevel = tmp.ConstantLevel
+			if tmp.Base != nil {
+				v.Base = n.node[*tmp.Base].(*Call)
+			}
+			if tmp.Target != nil {
+				v.Target = n.node[*tmp.Target].(Expr)
 			}
 		case NodeTypeBadExpr:
 			v := n.node[i].(*BadExpr)
@@ -5695,6 +5756,11 @@ func Walk(n Node, f Visitor) {
 				return
 			}
 		}
+		if v.ExpectedType != nil {
+			if !f.Visit(f, v.ExpectedType) {
+				return
+			}
+		}
 	case *SpecifyOrder:
 		if v.ExprType != nil {
 			if !f.Visit(f, v.ExprType) {
@@ -5756,6 +5822,22 @@ func Walk(n Node, f Visitor) {
 		}
 		for _, w := range v.Conds {
 			if !f.Visit(f, w) {
+				return
+			}
+		}
+	case *Sizeof:
+		if v.ExprType != nil {
+			if !f.Visit(f, v.ExprType) {
+				return
+			}
+		}
+		if v.Base != nil {
+			if !f.Visit(f, v.Base) {
+				return
+			}
+		}
+		if v.Target != nil {
+			if !f.Visit(f, v.Target) {
 				return
 			}
 		}

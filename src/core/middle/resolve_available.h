@@ -2,6 +2,7 @@
 #pragma once
 #include <core/ast/traverse.h>
 #include <core/common/error.h>
+#include "core/ast/node/type.h"
 
 namespace brgen::middle {
 
@@ -19,20 +20,27 @@ namespace brgen::middle {
                     if (!ident) {
                         return;
                     }
-                    if (ident->ident != "available") {
+                    if (ident->ident != "available" && ident->ident != "sizeof") {
                         return;
                     }
                     if (p->arguments.size() < 1) {
-                        error(p->loc, "invalid available; must have at least one argument").report();
+                        error(p->loc, "invalid ", ident->ident, "; must have at least one argument").report();
                     }
                     if (!ast::as<ast::MemberAccess>(p->arguments[0]) && !ast::as<ast::Ident>(p->arguments[0])) {
-                        error(p->arguments[0]->loc, "invalid target of available; must be an ident or member access").report();
+                        error(p->arguments[0]->loc, "invalid target of ", ident->ident, "; must be an ident or member access").report();
                     }
                     ident->usage = ast::IdentUsage::reference_builtin_fn;
                     auto t = p->arguments[0];
-                    auto a = std::make_shared<ast::Available>(std::move(t), ast::cast_to<ast::Call>(std::move(node)));
-                    a->expr_type = std::make_shared<ast::BoolType>(ident->loc);
-                    node = std::move(a);
+                    if (ident->ident == "available") {
+                        auto a = std::make_shared<ast::Available>(std::move(t), ast::cast_to<ast::Call>(std::move(node)));
+                        a->expr_type = std::make_shared<ast::BoolType>(ident->loc);
+                        node = std::move(a);
+                    }
+                    else {
+                        auto a = std::make_shared<ast::SizeOf>(std::move(t), ast::cast_to<ast::Call>(std::move(node)));
+                        a->expr_type = std::make_shared<ast::IntType>(ident->loc, 64, ast::Endian::unspec, false);
+                        node = std::move(a);
+                    }
                 }
             }
         };
