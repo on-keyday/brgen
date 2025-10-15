@@ -66,6 +66,7 @@ namespace brgen::ast {
             CASE(ExplicitError)
             CASE(IOOperation)
             CASE(OrCond)
+            CASE(SizeOf)
 
             CASE(BadExpr)
 

@@ -30,6 +30,7 @@ class NodeType(PyEnum):
     EXPLICIT_ERROR = "explicit_error"
     IO_OPERATION = "io_operation"
     OR_COND = "or_cond"
+    SIZEOF_ = "sizeof_"
     BAD_EXPR = "bad_expr"
     STMT = "stmt"
     LOOP = "loop"
@@ -425,6 +426,7 @@ class Cast(Expr):
 class Available(Expr):
     base: Optional[Call]
     target: Optional[Expr]
+    expected_type: Optional[Type]
 
 
 class SpecifyOrder(Expr):
@@ -448,6 +450,11 @@ class IoOperation(Expr):
 class OrCond(Expr):
     base: Optional[Binary]
     conds: List[Expr]
+
+
+class Sizeof(Expr):
+    base: Optional[Call]
+    target: Optional[Expr]
 
 
 class BadExpr(Expr):
@@ -962,6 +969,8 @@ def ast2node(ast :JsonAst) -> Program:
                 node.append(IoOperation())
             case NodeType.OR_COND:
                 node.append(OrCond())
+            case NodeType.SIZEOF:
+                node.append(Sizeof())
             case NodeType.BAD_EXPR:
                 node.append(BadExpr())
             case NodeType.LOOP:
@@ -1411,6 +1420,11 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].target = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at Available::target'))
                 else:
                     node[i].target = None
+                if ast.node[i].body["expected_type"] is not None:
+                    x = node[ast.node[i].body["expected_type"]]
+                    node[i].expected_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at Available::expected_type'))
+                else:
+                    node[i].expected_type = None
             case NodeType.SPECIFY_ORDER:
                 if ast.node[i].body["expr_type"] is not None:
                     x = node[ast.node[i].body["expr_type"]]
@@ -1478,6 +1492,23 @@ def ast2node(ast :JsonAst) -> Program:
                 else:
                     node[i].base = None
                 node[i].conds = [(node[x] if isinstance(node[x],Expr) else raiseError(TypeError('type mismatch at OrCond::conds'))) for x in ast.node[i].body["conds"]]
+            case NodeType.SIZEOF:
+                if ast.node[i].body["expr_type"] is not None:
+                    x = node[ast.node[i].body["expr_type"]]
+                    node[i].expr_type = x if isinstance(x,Type) else raiseError(TypeError('type mismatch at Sizeof::expr_type'))
+                else:
+                    node[i].expr_type = None
+                node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
+                if ast.node[i].body["base"] is not None:
+                    x = node[ast.node[i].body["base"]]
+                    node[i].base = x if isinstance(x,Call) else raiseError(TypeError('type mismatch at Sizeof::base'))
+                else:
+                    node[i].base = None
+                if ast.node[i].body["target"] is not None:
+                    x = node[ast.node[i].body["target"]]
+                    node[i].target = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at Sizeof::target'))
+                else:
+                    node[i].target = None
             case NodeType.BAD_EXPR:
                 if ast.node[i].body["expr_type"] is not None:
                     x = node[ast.node[i].body["expr_type"]]
@@ -2453,6 +2484,9 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
           if x.target is not None:
               if f(f,x.target) == False:
                   return
+          if x.expected_type is not None:
+              if f(f,x.expected_type) == False:
+                  return
         case x if isinstance(x,SpecifyOrder):
           if x.expr_type is not None:
               if f(f,x.expr_type) == False:
@@ -2492,6 +2526,16 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
                   return
           for i in range(len(x.conds)):
               if f(f,x.conds[i]) == False:
+                  return
+        case x if isinstance(x,Sizeof):
+          if x.expr_type is not None:
+              if f(f,x.expr_type) == False:
+                  return
+          if x.base is not None:
+              if f(f,x.base) == False:
+                  return
+          if x.target is not None:
+              if f(f,x.target) == False:
                   return
         case x if isinstance(x,BadExpr):
           if x.expr_type is not None:

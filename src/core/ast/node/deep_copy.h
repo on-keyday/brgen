@@ -86,6 +86,9 @@ namespace brgen::ast {
         if (ast::as<OrCond>(node)) {
             return deep_copy(ast::cast_to<OrCond>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         }
+        if (ast::as<SizeOf>(node)) {
+            return deep_copy(ast::cast_to<SizeOf>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        }
         if (ast::as<BadExpr>(node)) {
             return deep_copy(ast::cast_to<BadExpr>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         }
@@ -278,6 +281,9 @@ namespace brgen::ast {
         }
         if (ast::as<OrCond>(node)) {
             return deep_copy(ast::cast_to<OrCond>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        }
+        if (ast::as<SizeOf>(node)) {
+            return deep_copy(ast::cast_to<SizeOf>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         }
         if (ast::as<BadExpr>(node)) {
             return deep_copy(ast::cast_to<BadExpr>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
@@ -843,6 +849,7 @@ namespace brgen::ast {
         new_node->constant_level = node->constant_level;
         new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         new_node->target = deep_copy(node->target, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expected_type = deep_copy(node->expected_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -918,6 +925,23 @@ namespace brgen::ast {
         for (auto& i : node->conds) {
             new_node->conds.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
         }
+        return new_node;
+    }
+    template <class NodeM, class ScopeM>
+    std::shared_ptr<SizeOf> deep_copy(const std::shared_ptr<SizeOf>& node, NodeM&& node_map, ScopeM&& scope_map) {
+        if (!node) {
+            return nullptr;
+        }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<SizeOf>(it->second);
+        }
+        auto new_node = std::make_shared<SizeOf>();
+        node_map[node] = new_node;
+        new_node->loc = node->loc;
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->constant_level = node->constant_level;
+        new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->target = deep_copy(node->target, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
         return new_node;
     }
     template <class NodeM, class ScopeM>
@@ -1932,6 +1956,13 @@ namespace brgen::ast {
             }
             return deep_equal(ast::cast_to<OrCond>(a), ast::cast_to<OrCond>(b), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace));
         }
+        if (ast::as<SizeOf>(a)) {
+            if (!ast::as<SizeOf>(b)) {
+                trace(a, b, "Node::node_type", -1);
+                return false;
+            }
+            return deep_equal(ast::cast_to<SizeOf>(a), ast::cast_to<SizeOf>(b), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace));
+        }
         if (ast::as<BadExpr>(a)) {
             if (!ast::as<BadExpr>(b)) {
                 trace(a, b, "Node::node_type", -1);
@@ -2381,6 +2412,13 @@ namespace brgen::ast {
                 return false;
             }
             return deep_equal(ast::cast_to<OrCond>(a), ast::cast_to<OrCond>(b), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace));
+        }
+        if (ast::as<SizeOf>(a)) {
+            if (!ast::as<SizeOf>(b)) {
+                trace(a, b, "Expr::node_type", -1);
+                return false;
+            }
+            return deep_equal(ast::cast_to<SizeOf>(a), ast::cast_to<SizeOf>(b), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace));
         }
         if (ast::as<BadExpr>(a)) {
             if (!ast::as<BadExpr>(b)) {
@@ -3660,6 +3698,10 @@ namespace brgen::ast {
             trace(a->target, b->target, "Available::target", -1);
             return false;
         }
+        if (!deep_equal(a->expected_type, b->expected_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expected_type, b->expected_type, "Available::expected_type", -1);
+            return false;
+        }
         return true;
     }
     template <class NodeM, class ScopeM, class BackTracer = NullBackTracer>
@@ -3825,6 +3867,43 @@ namespace brgen::ast {
                 trace(a->conds[i], b->conds[i], "OrCond::conds", i);
                 return false;
             }
+        }
+        return true;
+    }
+    template <class NodeM, class ScopeM, class BackTracer = NullBackTracer>
+    constexpr bool deep_equal(const std::shared_ptr<SizeOf>& a, const std::shared_ptr<SizeOf>& b, NodeM&& node_map, ScopeM&& scope_map, BackTracer&& trace = BackTracer{}) {
+        if (!a && !b) return true;
+        if (!a || !b) {
+            trace(a, b, "SizeOf", -1);
+            return false;
+        }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "SizeOf", -1);
+                return false;
+            }
+            return true;
+        }
+        node_map[a] = b;
+        if (a->loc != b->loc) {
+            trace(a->loc, b->loc, "SizeOf::loc", -1);
+            return false;
+        }
+        if (!deep_equal(a->expr_type, b->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->expr_type, b->expr_type, "SizeOf::expr_type", -1);
+            return false;
+        }
+        if (a->constant_level != b->constant_level) {
+            trace(a->constant_level, b->constant_level, "SizeOf::constant_level", -1);
+            return false;
+        }
+        if (!deep_equal(a->base, b->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->base, b->base, "SizeOf::base", -1);
+            return false;
+        }
+        if (!deep_equal(a->target, b->target, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->target, b->target, "SizeOf::target", -1);
+            return false;
         }
         return true;
     }

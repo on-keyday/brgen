@@ -1,0 +1,8 @@
+
+format X:
+    a :u8
+    b :u8
+    c :u8
+    d :u8
+
+sizeof(X) == 4

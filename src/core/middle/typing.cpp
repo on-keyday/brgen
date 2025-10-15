@@ -1015,6 +1015,19 @@ namespace brgen::middle {
                     .error(selector->target->loc, "type is ", ast::node_type_to_string(selector->target->expr_type->node_type))
                     .report();
             }
+            else if (auto ident = ast::as<ast::IdentType>(selector->target->expr_type)) {
+                if (auto enum_ = ast::as<ast::EnumType>(ident->base.lock())) {
+                    if (selector->member->ident == "is_defined") {
+                        selector->member->usage = ast::IdentUsage::reference_builtin_fn;
+                        selector->expr_type = std::make_shared<ast::BoolType>(selector->loc);
+                        selector->constant_level = selector->target->constant_level;
+                        return;  // is_defined is a builtin function of enum
+                    }
+                }
+                error(selector->member->loc, "member ", selector->member->ident, " is not usable for enum; use `.is_defined` instead")
+                    .error(selector->target->loc, "type is ", ast::node_type_to_string(selector->target->expr_type->node_type))
+                    .report();
+            }
             error(selector->target->loc, "expect struct type but not")
                 .error(selector->target->expr_type->loc, "type is ", ast::node_type_to_string(selector->target->expr_type->node_type))
                 .report();
@@ -1420,6 +1433,21 @@ namespace brgen::middle {
                     typing_expr(a->base->arguments[i], false);
                 }
                 a->constant_level = ast::ConstantLevel::variable;
+                if (a->base->arguments.size() > 1) {
+                    if (auto type_lit = ast::as<ast::TypeLiteral>(a->base->arguments[1])) {
+                        typing_object(type_lit->type_literal);
+                        a->expected_type = type_lit->type_literal;
+                    }
+                    else {
+                        error(a->base->arguments[1]->loc, "expect type literal but not")
+                            .error(a->base->arguments[1]->loc, "type is ", ast::node_type_to_string(a->base->arguments[1]->node_type))
+                            .report();
+                    }
+                }
+            }
+            if (auto s = ast::as<ast::SizeOf>(expr)) {
+                typing_expr(s->target, false);
+                s->constant_level = ast::ConstantLevel::variable;  // TODO(on-keyday): make this constant if possible
             }
             if (auto b = ast::as<ast::SpecifyOrder>(expr)) {
                 typing_specify_order(b);

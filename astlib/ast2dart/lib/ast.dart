@@ -51,6 +51,8 @@ ExplicitError,
 IoOperation,
 @JsonValue('or_cond')
 OrCond,
+@JsonValue('sizeof_')
+Sizeof,
 @JsonValue('bad_expr')
 BadExpr,
 @JsonValue('stmt')
@@ -642,6 +644,7 @@ factory Cast.fromJson(Map<String, dynamic> json) => _$CastFromJson(json);
 class Available extends Expr {
     Call? base;
     Expr? target;
+    Type? expectedType;
 factory Available.fromJson(Map<String, dynamic> json) => _$AvailableFromJson(json);
 }
 @JsonSerializable()
@@ -670,6 +673,12 @@ class OrCond extends Expr {
     Binary? base;
     List<Expr>? conds = [];
 factory OrCond.fromJson(Map<String, dynamic> json) => _$OrCondFromJson(json);
+}
+@JsonSerializable()
+class Sizeof extends Expr {
+    Call? base;
+    Expr? target;
+factory Sizeof.fromJson(Map<String, dynamic> json) => _$SizeofFromJson(json);
 }
 @JsonSerializable()
 class BadExpr extends Expr {

@@ -71,6 +71,7 @@ impl From<&Node> for NodeType {
 			Node::ExplicitError(_) => Self::ExplicitError,
 			Node::IoOperation(_) => Self::IoOperation,
 			Node::OrCond(_) => Self::OrCond,
+			Node::Sizeof(_) => Self::Sizeof,
 			Node::BadExpr(_) => Self::BadExpr,
 			Node::Loop(_) => Self::Loop,
 			Node::IndentBlock(_) => Self::IndentBlock,
@@ -151,6 +152,7 @@ impl From<&NodeWeak> for NodeType {
 			NodeWeak::ExplicitError(_) => Self::ExplicitError,
 			NodeWeak::IoOperation(_) => Self::IoOperation,
 			NodeWeak::OrCond(_) => Self::OrCond,
+			NodeWeak::Sizeof(_) => Self::Sizeof,
 			NodeWeak::BadExpr(_) => Self::BadExpr,
 			NodeWeak::Loop(_) => Self::Loop,
 			NodeWeak::IndentBlock(_) => Self::IndentBlock,
@@ -232,6 +234,7 @@ pub enum NodeType {
 	ExplicitError,
 	IoOperation,
 	OrCond,
+	Sizeof,
 	BadExpr,
 	Stmt,
 	Loop,
@@ -309,6 +312,7 @@ impl TryFrom<&str> for NodeType {
 			"explicit_error" =>Ok(Self::ExplicitError),
 			"io_operation" =>Ok(Self::IoOperation),
 			"or_cond" =>Ok(Self::OrCond),
+			"sizeof_" =>Ok(Self::Sizeof),
 			"bad_expr" =>Ok(Self::BadExpr),
 			"stmt" =>Ok(Self::Stmt),
 			"loop" =>Ok(Self::Loop),
@@ -389,6 +393,7 @@ impl NodeType {
 			Self::ExplicitError => "explicit_error",
 			Self::IoOperation => "io_operation",
 			Self::OrCond => "or_cond",
+			Self::Sizeof => "sizeof_",
 			Self::BadExpr => "bad_expr",
 			Self::Stmt => "stmt",
 			Self::Loop => "loop",
@@ -1235,6 +1240,7 @@ pub enum Node {
 	ExplicitError(Rc<RefCell<ExplicitError>>),
 	IoOperation(Rc<RefCell<IoOperation>>),
 	OrCond(Rc<RefCell<OrCond>>),
+	Sizeof(Rc<RefCell<Sizeof>>),
 	BadExpr(Rc<RefCell<BadExpr>>),
 	Loop(Rc<RefCell<Loop>>),
 	IndentBlock(Rc<RefCell<IndentBlock>>),
@@ -1306,6 +1312,7 @@ pub enum NodeWeak {
 	ExplicitError(Weak<RefCell<ExplicitError>>),
 	IoOperation(Weak<RefCell<IoOperation>>),
 	OrCond(Weak<RefCell<OrCond>>),
+	Sizeof(Weak<RefCell<Sizeof>>),
 	BadExpr(Weak<RefCell<BadExpr>>),
 	Loop(Weak<RefCell<Loop>>),
 	IndentBlock(Weak<RefCell<IndentBlock>>),
@@ -1378,6 +1385,7 @@ impl Node {
             Node::ExplicitError(node)=>node.borrow().loc.clone(),
             Node::IoOperation(node)=>node.borrow().loc.clone(),
             Node::OrCond(node)=>node.borrow().loc.clone(),
+            Node::Sizeof(node)=>node.borrow().loc.clone(),
             Node::BadExpr(node)=>node.borrow().loc.clone(),
             Node::Loop(node)=>node.borrow().loc.clone(),
             Node::IndentBlock(node)=>node.borrow().loc.clone(),
@@ -1452,6 +1460,7 @@ impl From<&Node> for NodeWeak {
 			Node::ExplicitError(node)=>Self::ExplicitError(Rc::downgrade(node)),
 			Node::IoOperation(node)=>Self::IoOperation(Rc::downgrade(node)),
 			Node::OrCond(node)=>Self::OrCond(Rc::downgrade(node)),
+			Node::Sizeof(node)=>Self::Sizeof(Rc::downgrade(node)),
 			Node::BadExpr(node)=>Self::BadExpr(Rc::downgrade(node)),
 			Node::Loop(node)=>Self::Loop(Rc::downgrade(node)),
 			Node::IndentBlock(node)=>Self::IndentBlock(Rc::downgrade(node)),
@@ -1533,6 +1542,7 @@ impl TryFrom<&NodeWeak> for Node {
 			NodeWeak::ExplicitError(node)=>Ok(Self::ExplicitError(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::ExplicitError))?)),
 			NodeWeak::IoOperation(node)=>Ok(Self::IoOperation(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::IoOperation))?)),
 			NodeWeak::OrCond(node)=>Ok(Self::OrCond(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::OrCond))?)),
+			NodeWeak::Sizeof(node)=>Ok(Self::Sizeof(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Sizeof))?)),
 			NodeWeak::BadExpr(node)=>Ok(Self::BadExpr(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::BadExpr))?)),
 			NodeWeak::Loop(node)=>Ok(Self::Loop(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Loop))?)),
 			NodeWeak::IndentBlock(node)=>Ok(Self::IndentBlock(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::IndentBlock))?)),
@@ -1615,6 +1625,7 @@ pub enum Expr {
 	ExplicitError(Rc<RefCell<ExplicitError>>),
 	IoOperation(Rc<RefCell<IoOperation>>),
 	OrCond(Rc<RefCell<OrCond>>),
+	Sizeof(Rc<RefCell<Sizeof>>),
 	BadExpr(Rc<RefCell<BadExpr>>),
 	IntLiteral(Rc<RefCell<IntLiteral>>),
 	BoolLiteral(Rc<RefCell<BoolLiteral>>),
@@ -1647,6 +1658,7 @@ pub enum ExprWeak {
 	ExplicitError(Weak<RefCell<ExplicitError>>),
 	IoOperation(Weak<RefCell<IoOperation>>),
 	OrCond(Weak<RefCell<OrCond>>),
+	Sizeof(Weak<RefCell<Sizeof>>),
 	BadExpr(Weak<RefCell<BadExpr>>),
 	IntLiteral(Weak<RefCell<IntLiteral>>),
 	BoolLiteral(Weak<RefCell<BoolLiteral>>),
@@ -1680,6 +1692,7 @@ impl Expr {
             Expr::ExplicitError(node)=>node.borrow().loc.clone(),
             Expr::IoOperation(node)=>node.borrow().loc.clone(),
             Expr::OrCond(node)=>node.borrow().loc.clone(),
+            Expr::Sizeof(node)=>node.borrow().loc.clone(),
             Expr::BadExpr(node)=>node.borrow().loc.clone(),
             Expr::IntLiteral(node)=>node.borrow().loc.clone(),
             Expr::BoolLiteral(node)=>node.borrow().loc.clone(),
@@ -1712,6 +1725,7 @@ impl Expr {
             Expr::ExplicitError(node)=>node.borrow().expr_type.clone(),
             Expr::IoOperation(node)=>node.borrow().expr_type.clone(),
             Expr::OrCond(node)=>node.borrow().expr_type.clone(),
+            Expr::Sizeof(node)=>node.borrow().expr_type.clone(),
             Expr::BadExpr(node)=>node.borrow().expr_type.clone(),
             Expr::IntLiteral(node)=>node.borrow().expr_type.clone(),
             Expr::BoolLiteral(node)=>node.borrow().expr_type.clone(),
@@ -1744,6 +1758,7 @@ impl Expr {
             Expr::ExplicitError(node)=>node.borrow().constant_level.clone(),
             Expr::IoOperation(node)=>node.borrow().constant_level.clone(),
             Expr::OrCond(node)=>node.borrow().constant_level.clone(),
+            Expr::Sizeof(node)=>node.borrow().constant_level.clone(),
             Expr::BadExpr(node)=>node.borrow().constant_level.clone(),
             Expr::IntLiteral(node)=>node.borrow().constant_level.clone(),
             Expr::BoolLiteral(node)=>node.borrow().constant_level.clone(),
@@ -1779,6 +1794,7 @@ impl From<&Expr> for ExprWeak {
 			Expr::ExplicitError(node)=>Self::ExplicitError(Rc::downgrade(node)),
 			Expr::IoOperation(node)=>Self::IoOperation(Rc::downgrade(node)),
 			Expr::OrCond(node)=>Self::OrCond(Rc::downgrade(node)),
+			Expr::Sizeof(node)=>Self::Sizeof(Rc::downgrade(node)),
 			Expr::BadExpr(node)=>Self::BadExpr(Rc::downgrade(node)),
 			Expr::IntLiteral(node)=>Self::IntLiteral(Rc::downgrade(node)),
 			Expr::BoolLiteral(node)=>Self::BoolLiteral(Rc::downgrade(node)),
@@ -1821,6 +1837,7 @@ impl TryFrom<&ExprWeak> for Expr {
 			ExprWeak::ExplicitError(node)=>Ok(Self::ExplicitError(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::ExplicitError))?)),
 			ExprWeak::IoOperation(node)=>Ok(Self::IoOperation(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::IoOperation))?)),
 			ExprWeak::OrCond(node)=>Ok(Self::OrCond(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::OrCond))?)),
+			ExprWeak::Sizeof(node)=>Ok(Self::Sizeof(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Sizeof))?)),
 			ExprWeak::BadExpr(node)=>Ok(Self::BadExpr(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::BadExpr))?)),
 			ExprWeak::IntLiteral(node)=>Ok(Self::IntLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::IntLiteral))?)),
 			ExprWeak::BoolLiteral(node)=>Ok(Self::BoolLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::BoolLiteral))?)),
@@ -1870,6 +1887,7 @@ impl TryFrom<&Node> for Expr {
 			Node::ExplicitError(node)=>Ok(Self::ExplicitError(node.clone())),
 			Node::IoOperation(node)=>Ok(Self::IoOperation(node.clone())),
 			Node::OrCond(node)=>Ok(Self::OrCond(node.clone())),
+			Node::Sizeof(node)=>Ok(Self::Sizeof(node.clone())),
 			Node::BadExpr(node)=>Ok(Self::BadExpr(node.clone())),
 			Node::IntLiteral(node)=>Ok(Self::IntLiteral(node.clone())),
 			Node::BoolLiteral(node)=>Ok(Self::BoolLiteral(node.clone())),
@@ -1913,6 +1931,7 @@ impl From<&Expr> for Node {
 			Expr::ExplicitError(node)=>Self::ExplicitError(node.clone()),
 			Expr::IoOperation(node)=>Self::IoOperation(node.clone()),
 			Expr::OrCond(node)=>Self::OrCond(node.clone()),
+			Expr::Sizeof(node)=>Self::Sizeof(node.clone()),
 			Expr::BadExpr(node)=>Self::BadExpr(node.clone()),
 			Expr::IntLiteral(node)=>Self::IntLiteral(node.clone()),
 			Expr::BoolLiteral(node)=>Self::BoolLiteral(node.clone()),
@@ -1955,6 +1974,7 @@ impl TryFrom<&ExprWeak> for Node {
 			ExprWeak::ExplicitError(node)=>Ok(Self::ExplicitError(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::ExplicitError))?)),
 			ExprWeak::IoOperation(node)=>Ok(Self::IoOperation(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::IoOperation))?)),
 			ExprWeak::OrCond(node)=>Ok(Self::OrCond(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::OrCond))?)),
+			ExprWeak::Sizeof(node)=>Ok(Self::Sizeof(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::Sizeof))?)),
 			ExprWeak::BadExpr(node)=>Ok(Self::BadExpr(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::BadExpr))?)),
 			ExprWeak::IntLiteral(node)=>Ok(Self::IntLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::IntLiteral))?)),
 			ExprWeak::BoolLiteral(node)=>Ok(Self::BoolLiteral(node.upgrade().ok_or(Error::InvalidNodeType(NodeType::BoolLiteral))?)),
@@ -1997,6 +2017,7 @@ impl From<&ExprWeak> for NodeWeak {
 			ExprWeak::ExplicitError(node)=>Self::ExplicitError(node.clone()),
 			ExprWeak::IoOperation(node)=>Self::IoOperation(node.clone()),
 			ExprWeak::OrCond(node)=>Self::OrCond(node.clone()),
+			ExprWeak::Sizeof(node)=>Self::Sizeof(node.clone()),
 			ExprWeak::BadExpr(node)=>Self::BadExpr(node.clone()),
 			ExprWeak::IntLiteral(node)=>Self::IntLiteral(node.clone()),
 			ExprWeak::BoolLiteral(node)=>Self::BoolLiteral(node.clone()),
@@ -2039,6 +2060,7 @@ impl TryFrom<&NodeWeak> for ExprWeak {
 			NodeWeak::ExplicitError(node)=>Ok(Self::ExplicitError(node.clone())),
 			NodeWeak::IoOperation(node)=>Ok(Self::IoOperation(node.clone())),
 			NodeWeak::OrCond(node)=>Ok(Self::OrCond(node.clone())),
+			NodeWeak::Sizeof(node)=>Ok(Self::Sizeof(node.clone())),
 			NodeWeak::BadExpr(node)=>Ok(Self::BadExpr(node.clone())),
 			NodeWeak::IntLiteral(node)=>Ok(Self::IntLiteral(node.clone())),
 			NodeWeak::BoolLiteral(node)=>Ok(Self::BoolLiteral(node.clone())),
@@ -2083,6 +2105,7 @@ impl TryFrom<&Node> for ExprWeak {
 			Node::ExplicitError(node)=>Ok(Self::ExplicitError(Rc::downgrade(node))),
 			Node::IoOperation(node)=>Ok(Self::IoOperation(Rc::downgrade(node))),
 			Node::OrCond(node)=>Ok(Self::OrCond(Rc::downgrade(node))),
+			Node::Sizeof(node)=>Ok(Self::Sizeof(Rc::downgrade(node))),
 			Node::BadExpr(node)=>Ok(Self::BadExpr(Rc::downgrade(node))),
 			Node::IntLiteral(node)=>Ok(Self::IntLiteral(Rc::downgrade(node))),
 			Node::BoolLiteral(node)=>Ok(Self::BoolLiteral(Rc::downgrade(node))),
@@ -2126,6 +2149,7 @@ impl From<&Expr> for NodeType {
 			Expr::ExplicitError(_)=>NodeType::ExplicitError,
 			Expr::IoOperation(_)=>NodeType::IoOperation,
 			Expr::OrCond(_)=>NodeType::OrCond,
+			Expr::Sizeof(_)=>NodeType::Sizeof,
 			Expr::BadExpr(_)=>NodeType::BadExpr,
 			Expr::IntLiteral(_)=>NodeType::IntLiteral,
 			Expr::BoolLiteral(_)=>NodeType::BoolLiteral,
@@ -5001,6 +5025,7 @@ pub struct Available {
 	pub constant_level: ConstantLevel,
 	pub base: Option<Rc<RefCell<Call>>>,
 	pub target: Option<Expr>,
+	pub expected_type: Option<Type>,
 }
 
 impl From<&Rc<RefCell<Available>>> for NodeType {
@@ -5388,6 +5413,85 @@ impl From<&Rc<RefCell<OrCond>>> for Node {
 
 impl From<Rc<RefCell<OrCond>>> for Node {
 	fn from(node:Rc<RefCell<OrCond>>)-> Self{
+		Self::from(&node)
+	}
+}
+
+#[derive(Debug,Clone)]
+pub struct Sizeof {
+	pub loc: Loc,
+	pub expr_type: Option<Type>,
+	pub constant_level: ConstantLevel,
+	pub base: Option<Rc<RefCell<Call>>>,
+	pub target: Option<Expr>,
+}
+
+impl From<&Rc<RefCell<Sizeof>>> for NodeType {
+	fn from(_:&Rc<RefCell<Sizeof>>)-> Self{
+       NodeType::Sizeof
+	}
+}
+
+impl From<Rc<RefCell<Sizeof>>> for NodeType {
+	fn from(node:Rc<RefCell<Sizeof>>)-> Self{
+		Self::from(&node)
+	}
+}
+
+impl TryFrom<&Expr> for Rc<RefCell<Sizeof>> {
+	type Error = Error;
+	fn try_from(node:&Expr)->Result<Self,Self::Error>{
+		match node {
+			Expr::Sizeof(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(Node::from(node).into())),
+		}
+	}
+}
+
+impl TryFrom<Expr> for Rc<RefCell<Sizeof>> {
+	type Error = Error;
+	fn try_from(node:Expr)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
+impl From<&Rc<RefCell<Sizeof>>> for Expr {
+	fn from(node:&Rc<RefCell<Sizeof>>)-> Self{
+		Expr::Sizeof(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Sizeof>>> for Expr {
+	fn from(node:Rc<RefCell<Sizeof>>)-> Self{
+		Self::from(&node)
+	}
+}
+
+impl TryFrom<&Node> for Rc<RefCell<Sizeof>> {
+	type Error = Error;
+	fn try_from(node:&Node)->Result<Self,Self::Error>{
+		match node {
+			Node::Sizeof(node)=>Ok(node.clone()),
+			_=> Err(Error::InvalidNodeType(node.into())),
+		}
+	}
+}
+
+impl TryFrom<Node> for Rc<RefCell<Sizeof>> {
+	type Error = Error;
+	fn try_from(node:Node)->Result<Self,Self::Error>{
+		Self::try_from(&node)
+	}
+}
+
+impl From<&Rc<RefCell<Sizeof>>> for Node {
+	fn from(node:&Rc<RefCell<Sizeof>>)-> Self{
+		Node::Sizeof(node.clone())
+	}
+}
+
+impl From<Rc<RefCell<Sizeof>>> for Node {
+	fn from(node:Rc<RefCell<Sizeof>>)-> Self{
 		Self::from(&node)
 	}
 }
@@ -9521,6 +9625,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				constant_level: ConstantLevel::Unknown,
 				base: None,
 				target: None,
+				expected_type: None,
 				})))
 			},
 			NodeType::SpecifyOrder => {
@@ -9560,6 +9665,15 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				constant_level: ConstantLevel::Unknown,
 				base: None,
 				conds: Vec::new(),
+				})))
+			},
+			NodeType::Sizeof => {
+				Node::Sizeof(Rc::new(RefCell::new(Sizeof {
+				loc: raw_node.loc.clone(),
+				expr_type: None,
+				constant_level: ConstantLevel::Unknown,
+				base: None,
+				target: None,
 				})))
 			},
 			NodeType::BadExpr => {
@@ -11615,6 +11729,21 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().target = Some(target_body.try_into()?);
 				}
+				let expected_type_body = match raw_node.body.get("expected_type") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"expected_type")),
+				};
+ 				if !expected_type_body.is_null() {
+					let expected_type_body = match expected_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(expected_type_body.into(),JSONType::Number)),
+					};
+					let expected_type_body = match nodes.get(expected_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(expected_type_body as usize)),
+					};
+					node.borrow_mut().expected_type = Some(expected_type_body.try_into()?);
+				}
 			},
 			NodeType::SpecifyOrder => {
 				let node = nodes[i].clone();
@@ -11923,6 +12052,73 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						None => return Err(Error::IndexOutOfBounds(link as usize)),
 					};
 					node.borrow_mut().conds.push(conds_body.try_into()?);
+				}
+			},
+			NodeType::Sizeof => {
+				let node = nodes[i].clone();
+				let node = match node {
+					Node::Sizeof(node)=>node,
+					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
+				};
+				let expr_type_body = match raw_node.body.get("expr_type") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"expr_type")),
+				};
+ 				if !expr_type_body.is_null() {
+					let expr_type_body = match expr_type_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(expr_type_body.into(),JSONType::Number)),
+					};
+					let expr_type_body = match nodes.get(expr_type_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(expr_type_body as usize)),
+					};
+					node.borrow_mut().expr_type = Some(expr_type_body.try_into()?);
+				}
+				let constant_level_body = match raw_node.body.get("constant_level") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"constant_level")),
+				};
+				node.borrow_mut().constant_level = match constant_level_body.as_str() {
+					Some(v)=>match ConstantLevel::try_from(v) {
+						Ok(v)=>v,
+						Err(_) => return Err(Error::InvalidEnumValue(v.to_string())),
+					},
+					None=>return Err(Error::MismatchJSONType(constant_level_body.into(),JSONType::String)),
+				};
+				let base_body = match raw_node.body.get("base") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"base")),
+				};
+ 				if !base_body.is_null() {
+					let base_body = match base_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(base_body.into(),JSONType::Number)),
+					};
+					let base_body = match nodes.get(base_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(base_body as usize)),
+					};
+					let base_body = match base_body {
+						Node::Call(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),base_body.into())),
+					};
+					node.borrow_mut().base = Some(base_body.clone());
+				}
+				let target_body = match raw_node.body.get("target") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"target")),
+				};
+ 				if !target_body.is_null() {
+					let target_body = match target_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(target_body.into(),JSONType::Number)),
+					};
+					let target_body = match nodes.get(target_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(target_body as usize)),
+					};
+					node.borrow_mut().target = Some(target_body.try_into()?);
 				}
 			},
 			NodeType::BadExpr => {
@@ -15585,6 +15781,11 @@ where
 					return;
 				}
 			}
+			if let Some(node) = &node.borrow().expected_type{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
 		},
 		Node::SpecifyOrder(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
@@ -15649,6 +15850,23 @@ where
 				}
 			}
 			for node in &node.borrow().conds{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
+		},
+		Node::Sizeof(node)=>{
+			if let Some(node) = &node.borrow().expr_type{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
+			if let Some(node) = &node.borrow().base{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
+			if let Some(node) = &node.borrow().target{
 				if !f.visit(&node.into()){
 					return;
 				}
