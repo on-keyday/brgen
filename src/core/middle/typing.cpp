@@ -1020,7 +1020,7 @@ namespace brgen::middle {
                     if (selector->member->ident == "is_defined") {
                         selector->member->usage = ast::IdentUsage::reference_builtin_fn;
                         selector->expr_type = std::make_shared<ast::BoolType>(selector->loc);
-                        selector->constant_level = ast::ConstantLevel::constant;
+                        selector->constant_level = selector->target->constant_level;
                         return;  // is_defined is a builtin function of enum
                     }
                 }
