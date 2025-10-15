@@ -266,6 +266,9 @@ func main() {
 		if p == "IoOperation" {
 			return "IOOperation"
 		}
+		if p == "Sizeof" {
+			return "SizeOf"
+		}
 		return p
 	}, map[string]string{})
 	if err != nil {
