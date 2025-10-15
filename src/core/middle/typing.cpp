@@ -1024,6 +1024,9 @@ namespace brgen::middle {
                         return;  // is_defined is a builtin function of enum
                     }
                 }
+                error(selector->member->loc, "member ", selector->member->ident, " is not usable for enum; use `.is_defined` instead")
+                    .error(selector->target->loc, "type is ", ast::node_type_to_string(selector->target->expr_type->node_type))
+                    .report();
             }
             error(selector->target->loc, "expect struct type but not")
                 .error(selector->target->expr_type->loc, "type is ", ast::node_type_to_string(selector->target->expr_type->node_type))
