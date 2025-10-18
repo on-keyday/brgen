@@ -1,14 +1,15 @@
 use clap::{arg, Parser};
+use colored::Colorize;
 use futures::{self, future};
 use serde::Deserialize;
 use std::{
     fs,
     path::{Path, PathBuf},
+    result,
     sync::Arc,
 };
 use tokio::task::JoinHandle;
 use uuid::Uuid;
-
 #[derive(Parser)]
 struct Args {
     #[arg(long, short('c'), help("test config file (json)"))]
@@ -233,6 +234,19 @@ struct PrepareInfo {
     run_command: Vec<String>,
 }
 
+#[derive(Clone)]
+struct ResultInfo {
+    runner: String,
+    source: String,
+    format_name: String,
+    input_name: String,
+    output: Option<std::process::Output>,
+    failure_case: bool,
+}
+
+const CONFIRMED_DECODER_FAILURE_EXIT_CODE: i32 = 10;
+const UNEXPECTED_ENCODER_FAILURE_EXIT_CODE: i32 = 20;
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let timer = std::time::Instant::now();
@@ -306,12 +320,12 @@ async fn main() -> anyhow::Result<()> {
     {
         let cache = binary_cache.clone();
         let send = send.clone();
-
+        println!(
+            "Running test setup: runner name={}, source={}",
+            runner_name, source_name
+        );
+        println!("-----------------------------------------");
         let h: JoinHandle<anyhow::Result<()>> = tokio::spawn(async move {
-            println!(
-                "Running test setup: runner name={}, source={}",
-                runner_name, source_name
-            );
             let runner_dir = {
                 let mut cache = cache.lock().unwrap();
                 cache.runner_dir()?
@@ -366,14 +380,16 @@ async fn main() -> anyhow::Result<()> {
             "Test setup completed: runner name={}, source={}",
             prepare_info.runner, prepare_info.source
         );
-        println!(
-            "STDOUT:\n########\n{}\n########\n",
-            String::from_utf8_lossy(&output.stdout)
-        );
-        println!(
-            "STDERR:\n########\n{}\n########\n",
-            String::from_utf8_lossy(&output.stderr)
-        );
+        if parsed.print_stdout {
+            println!(
+                "STDOUT:\n########\n{}\n########\n",
+                String::from_utf8_lossy(&output.stdout)
+            );
+            println!(
+                "STDERR:\n########\n{}\n########\n",
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
         println!("status: {}", output.status);
         if !output.status.success() {
             println!("Test setup failed, skipping tests for this setup.");
@@ -383,11 +399,19 @@ async fn main() -> anyhow::Result<()> {
         println!("----------------------------------------");
     }
 
-    future::try_join_all(handles).await?;
+    let all_errors = future::try_join_all(handles).await?;
+    for res in all_errors {
+        if let Err(e) = res {
+            println!("Error during setup: {}", e);
+        }
+    }
 
     println!("Setup all tests in {:?}", timer.elapsed());
+    println!("----------------------------------------");
 
     let mut test_handles = Vec::new();
+
+    let (send2, mut recv2) = tokio::sync::mpsc::channel(100);
     for p in setup_infos {
         println!(
             "Ready to run tests: runner name={}, source={}",
@@ -408,85 +432,152 @@ async fn main() -> anyhow::Result<()> {
             let source = p.source.clone();
             let runner_dir = p.runner_dir.clone();
             let runner = p.runner.clone();
-            let h: JoinHandle<anyhow::Result<()>> = tokio::spawn(async move {
-                let (input_path, _input_data) = cache
-                    .lock()
-                    .unwrap()
-                    .read_input_binary(&PathBuf::from(&input.binary), input.hex)?;
-                println!(
-                    "Running test: runner={}, input={} source={}, format={}, binary={} hex={}",
-                    runner, input.name, source, input.format_name, input.binary, input.hex
-                );
-                if runner_command.is_empty() {
-                    return Err(std::io::Error::new(
-                        std::io::ErrorKind::Other,
-                        format!(
-                            "run_command is empty: runner={}, input={}",
-                            runner, input.name
-                        ),
-                    )
-                    .into());
-                }
-                let task_dir = runner_dir.join(format!(
-                    "task-{}-{}-{}",
-                    input.name,
-                    input.format_name,
-                    Uuid::new_v4()
-                ));
-                fs::create_dir_all(&task_dir)?;
-                let replaced_run_command: Vec<String> = runner_command
-                    .iter()
-                    .map(|s| s.replace("$WORK_DIR", &path_str(&std::env::current_dir().unwrap())))
-                    .collect();
-                tokio::process::Command::new(replaced_run_command[0].clone())
-                    .args(&replaced_run_command[1..])
-                    .current_dir(&task_dir)
-                    .env(
-                        "UNICTEST_ORIGINAL_WORK_DIR",
-                        &path_str(&std::env::current_dir().unwrap()),
-                    )
-                    .env("UNICTEST_SOURCE_FILE", &source)
-                    .env("UNICTEST_WORK_DIR", &task_dir)
-                    .env("UNICTEST_RUNNER_DIR", &runner_dir)
-                    .env("UNICTEST_RUNNER_NAME", &runner)
-                    .env("UNICTEST_BINARY_FILE", &input_path)
-                    .env("UNICTEST_INPUT_NAME", &input.name)
-                    .env("UNICTEST_INPUT_FORMAT", &input.format_name)
-                    .env(
-                        "UNICTEST_FAILURE_CASE",
-                        if input.failure_case { "1" } else { "0" },
-                    )
-                    .output()
-                    .await
-                    .and_then(|output| {
-                        println!(
-                            "Test completed: runner name={}, source={}, format={}, input={}",
-                            runner, source, input.format_name, input.binary
-                        );
-                        println!(
-                            "STDOUT:\n########\n{}\n########\n",
-                            String::from_utf8_lossy(&output.stdout)
-                        );
-                        println!(
-                            "STDERR:\n########\n{}\n########\n",
-                            String::from_utf8_lossy(&output.stderr)
-                        );
-                        println!("status: {}", output.status);
+            let send2 = send2.clone();
+            println!(
+                "Running test: runner={}, input={} source={}, format={}, binary={} hex={}",
+                runner, input.name, source, input.format_name, input.binary, input.hex
+            );
+            println!("----------------------------------------");
+            let h: JoinHandle<()> = tokio::spawn(async move {
+                let send3 = send2.clone();
+                let result_info = ResultInfo {
+                    runner: runner.clone(),
+                    source: source.clone(),
+                    format_name: input.format_name.clone(),
+                    input_name: input.name.clone(),
+                    output: None,
+                    failure_case: input.failure_case,
+                };
+                let mut result_info2 = result_info.clone();
+                let f: anyhow::Result<()> = async move {
+                    let (input_path, _input_data) = cache
+                        .lock()
+                        .unwrap()
+                        .read_input_binary(&PathBuf::from(&input.binary), input.hex)?;
 
-                        if output.status.success() && input.failure_case {
-                            println!("expected failure case, but succeeded");
-                        } else if !output.status.success() && !input.failure_case {
-                            println!("expected success case, but failed");
-                        }
-                        println!("----------------------------------------");
-                        Ok(())
-                    })?;
-                Ok(())
+                    if runner_command.is_empty() {
+                        return Err(std::io::Error::new(
+                            std::io::ErrorKind::Other,
+                            format!(
+                                "run_command is empty: runner={}, input={}",
+                                runner, input.name
+                            ),
+                        )
+                        .into());
+                    }
+                    let task_dir = runner_dir.join(format!(
+                        "task-{}-{}-{}",
+                        input.name,
+                        input.format_name,
+                        Uuid::new_v4()
+                    ));
+                    fs::create_dir_all(&task_dir)?;
+                    let replaced_run_command: Vec<String> = runner_command
+                        .iter()
+                        .map(|s| {
+                            s.replace("$WORK_DIR", &path_str(&std::env::current_dir().unwrap()))
+                        })
+                        .collect();
+                    let output = tokio::process::Command::new(replaced_run_command[0].clone())
+                        .args(&replaced_run_command[1..])
+                        .current_dir(&task_dir)
+                        .env(
+                            "UNICTEST_ORIGINAL_WORK_DIR",
+                            &path_str(&std::env::current_dir().unwrap()),
+                        )
+                        .env("UNICTEST_SOURCE_FILE", &source)
+                        .env("UNICTEST_WORK_DIR", &task_dir)
+                        .env("UNICTEST_RUNNER_DIR", &runner_dir)
+                        .env("UNICTEST_RUNNER_NAME", &runner)
+                        .env("UNICTEST_BINARY_FILE", &input_path)
+                        .env("UNICTEST_INPUT_NAME", &input.name)
+                        .env("UNICTEST_INPUT_FORMAT", &input.format_name)
+                        .env(
+                            "UNICTEST_FAILURE_CASE",
+                            if input.failure_case { "1" } else { "0" },
+                        )
+                        .output()
+                        .await?;
+                    result_info2.output = Some(output);
+                    send2.send(Ok(result_info2)).await?;
+                    Ok(())
+                }
+                .await;
+                if let Err(e) = f {
+                    send3.send(Err((e, result_info))).await.unwrap();
+                }
             });
             test_handles.push(h);
         }
     }
+    drop(send2);
+
+    while let Some(result) = recv2.recv().await {
+        let result = match result {
+            Ok(x) => x,
+            Err((e, result)) => {
+                println!(
+                    "{}: Error during test execution: runner name={}, source={}, format={}, input={}: {}",
+                    "FAIL".red(),
+                    result.runner,
+                    result.source,
+                    result.format_name,
+                    result.input_name,
+                    e
+                );
+                println!("----------------------------------------");
+                continue;
+            }
+        };
+        let output = result.output.as_ref().unwrap();
+        let is_passed = (output.status.success() && !result.failure_case)
+            || (output.status.code() == Some(CONFIRMED_DECODER_FAILURE_EXIT_CODE)
+                && result.failure_case);
+        println!(
+            "{}: Test completed runner name={}, source={}, format={}, input={}",
+            if is_passed {
+                "PASS".green()
+            } else {
+                "FAIL".red()
+            },
+            result.runner,
+            result.source,
+            result.format_name,
+            result.input_name
+        );
+        if parsed.print_stdout {
+            println!(
+                "STDOUT:\n########\n{}\n########\n",
+                String::from_utf8_lossy(&output.stdout)
+            );
+            println!(
+                "STDERR:\n########\n{}\n########\n",
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+        println!("status: {}", output.status);
+        if output.status.success() && result.failure_case {
+            println!("expected failure, but succeeded");
+        } else if output.status.code() == Some(CONFIRMED_DECODER_FAILURE_EXIT_CODE)
+            && !result.failure_case
+        {
+            println!("expected success, but failed");
+        } else if output.status.code() == Some(CONFIRMED_DECODER_FAILURE_EXIT_CODE)
+            && result.failure_case
+        {
+            println!("decode error as expected");
+        } else if output.status.code() == Some(UNEXPECTED_ENCODER_FAILURE_EXIT_CODE) {
+            println!("unexpected encode error");
+        } else if !output.status.success() {
+            println!("test internal error");
+        } else {
+            println!("test succeeded as expected");
+        }
+        println!("----------------------------------------");
+    }
+
     futures::future::try_join_all(test_handles).await?;
+
     println!("All tests completed in {:?}", timer.elapsed());
     if parsed.save_tmp_dir {
         let cache = binary_cache.lock().unwrap();
