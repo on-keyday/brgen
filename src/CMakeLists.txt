@@ -121,6 +121,11 @@ if("$ENV{BRGEN_RUST_ENABLED}" STREQUAL "1")
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/tool/cmptest
     )
 
+    add_custom_target(
+        unictest ALL
+        COMMAND "cargo" "build" "--bins" "${RUST_RELEASE_OPTION}" "--target-dir" "${CMAKE_BINARY_DIR}/tool/unictest/target"
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/tool/unictest
+    )
 endif()
 
 # Libraries
@@ -318,4 +323,5 @@ if("$ENV{BRGEN_RUST_ENABLED}" STREQUAL "1")
     endif()
     install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/json2rust/target/${RUST_TARGET_DIR}/json2rust${SUFFIX}" DESTINATION tool OPTIONAL)
     install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/cmptest/target/${RUST_TARGET_DIR}/cmptest${SUFFIX}" DESTINATION tool OPTIONAL)
+    install(PROGRAMS "${CMAKE_BINARY_DIR}/tool/unictest/target/${RUST_TARGET_DIR}/unictest${SUFFIX}" DESTINATION tool OPTIONAL)
 endif()

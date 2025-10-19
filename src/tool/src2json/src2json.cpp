@@ -75,6 +75,10 @@ struct Flags : futils::cmdline::templ::HelpOption {
     std::string_view argv_input;
     bool argv_mode;
 
+    // for dll interface
+    const char* sized_argv_input = nullptr;
+    size_t sized_argv_size = 0;
+
     size_t tokenization_limit = 0;
 
     bool collect_comments = false;
@@ -195,6 +199,13 @@ struct Flags : futils::cmdline::templ::HelpOption {
         ctx.VarBool(&use_unsafe_escape, "unsafe-escape", "use unsafe escape (this flag make json escape via http unsafe; ansi color escape sequence is not escaped)");
 
         ctx.VarBool(&error_tolerant, "error-tolerant", "error tolerant mode (for lsp) (experimental)");
+
+        ctx.VarFunc(&sized_argv_input, "sized-argv", "treat cmdline arg as input  (this is not designed for human and disabled in cli mode. this is used from other process to pass mmaped file)", "(source code)", [&](const char* data, auto) {
+            sized_argv_input = data;
+            return true;
+        });
+
+        ctx.VarInt(&sized_argv_size, "sized-argv-size", "set size of argv input (use with --sized-argv)", "<size>");
     }
 };
 
@@ -688,6 +699,29 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
     }
     if (flags.detected_stdio_type) {
         print_stdio_type();
+    }
+
+#ifndef SRC2JSON_DLL
+    if (flags.sized_argv_input != nullptr) {
+        print_error("--sized-argv is only available in dll mode");
+        return exit_err;
+    }
+#endif
+
+    if (flags.argv_input.size() > 0 && flags.sized_argv_input != nullptr) {
+        print_error("cannot use --argv and --sized-argv at the same time");
+        return exit_err;
+    }
+
+    if (flags.sized_argv_input != nullptr) {
+        if (flags.sized_argv_size == 0) {
+            print_error("--sized-argv-size must be greater than 0 when --sized-argv is used");
+            return exit_err;
+        }
+        // SAFETY: Caller MUST ensure sized_argv_input points to valid, readable memory
+        // of at least sized_argv_size bytes. Violating this causes undefined behavior.
+        // This is only safe when called from trusted DLL host with mmap'd files.
+        flags.argv_input = std::string_view(flags.sized_argv_input, flags.sized_argv_size);
     }
 
     flags.argv_mode = flags.argv_input.size() > 0;
