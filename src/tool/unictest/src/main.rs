@@ -586,7 +586,6 @@ async fn main() -> anyhow::Result<()> {
 
     futures::future::try_join_all(test_handles).await?;
 
-    println!("All tests completed in {:?}", timer.elapsed());
     let failed_count = test_results.iter().filter(|&&x| !x).count();
     println!("All tests completed in {:?}", timer.elapsed());
     println!("Total: {}, {}: {}, {}: {}", 
