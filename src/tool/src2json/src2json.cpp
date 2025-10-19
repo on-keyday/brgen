@@ -718,6 +718,9 @@ int Main(Flags& flags, futils::cmdline::option::Context&, const Capability& cap)
             print_error("--sized-argv-size must be greater than 0 when --sized-argv is used");
             return exit_err;
         }
+        // SAFETY: Caller MUST ensure sized_argv_input points to valid, readable memory
+        // of at least sized_argv_size bytes. Violating this causes undefined behavior.
+        // This is only safe when called from trusted DLL host with mmap'd files.
         flags.argv_input = std::string_view(flags.sized_argv_input, flags.sized_argv_size);
     }
 

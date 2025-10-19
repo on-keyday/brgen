@@ -216,6 +216,9 @@ impl InputBinaryCache {
     pub fn remove_tmp_dir(&self) {
         if let Some(dir) = &self.tmp_dir {
             fs::remove_dir_all(dir).unwrap();
+            if let Err(e) = fs::remove_dir_all(dir) {
+                eprintln!("Warning: Failed to remove temporary directory {}: {}", path_str(dir), e);
+            }
         }
     }
 
@@ -504,13 +507,16 @@ async fn main() -> anyhow::Result<()> {
                 }
                 .await;
                 if let Err(e) = f {
-                    send3.send(Err((e, result_info))).await.unwrap();
+                    if let Err(send_err) = send3.send(Err((e, result_info))).await {
+                        eprintln!("Failed to send error result: {}", send_err);
+                    }
                 }
             });
             test_handles.push(h);
         }
     }
     drop(send2);
+    let mut test_results = Vec::new();
 
     while let Some(result) = recv2.recv().await {
         let result = match result {
@@ -526,6 +532,7 @@ async fn main() -> anyhow::Result<()> {
                     e
                 );
                 println!("----------------------------------------");
+                test_results.push(false);
                 continue;
             }
         };
@@ -533,6 +540,7 @@ async fn main() -> anyhow::Result<()> {
         let is_passed = (output.status.success() && !result.failure_case)
             || (output.status.code() == Some(CONFIRMED_DECODER_FAILURE_EXIT_CODE)
                 && result.failure_case);
+        test_results.push(is_passed);
         println!(
             "{}: Test completed runner name={}, source={}, format={}, input={}",
             if is_passed {
@@ -579,6 +587,15 @@ async fn main() -> anyhow::Result<()> {
     futures::future::try_join_all(test_handles).await?;
 
     println!("All tests completed in {:?}", timer.elapsed());
+    let failed_count = test_results.iter().filter(|&&x| !x).count();
+    println!("All tests completed in {:?}", timer.elapsed());
+    println!("Total: {}, {}: {}, {}: {}", 
+        test_results.len(), 
+        "PASS".green(),
+        test_results.len() - failed_count,
+        "FAIL".red(),
+        failed_count);
+
     if parsed.save_tmp_dir {
         let cache = binary_cache.lock().unwrap();
         cache.print_tmp_dir();
@@ -605,6 +622,9 @@ async fn main() -> anyhow::Result<()> {
                 println!("Removed temporary directory {}", path_str(&tmp_dir));
             }
         }
+    }
+    if failed_count > 0 {
+        std::process::exit(1);
     }
     Ok(())
 }
