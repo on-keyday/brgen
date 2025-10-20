@@ -3,7 +3,7 @@ use colored::Colorize;
 use futures::{self, future};
 use serde::Deserialize;
 use std::{
-    fs,
+    any, fs,
     path::{Path, PathBuf},
 };
 use tokio::task::JoinHandle;
@@ -103,11 +103,12 @@ fn compile_hex(input: Vec<u8>) -> anyhow::Result<Vec<u8>> {
         } else if b'A' <= c && c <= b'F' {
             c - b'A' + 10
         } else {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                format!("invalid hex string at {}:{}:{}", line, col, c as char),
-            )
-            .into());
+            return Err(anyhow::anyhow!(
+                "invalid hex string at line {}, column {}: invalid character {}",
+                line,
+                col,
+                c as char
+            ));
         };
         if let Some(msb) = pair {
             hex.push(msb << 4 | lsb);
@@ -119,11 +120,12 @@ fn compile_hex(input: Vec<u8>) -> anyhow::Result<Vec<u8>> {
         col += 1;
     }
     if let Some(x) = pair {
-        Err(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            format!("invalid hex string; missing pair for {x}"),
-        )
-        .into())
+        Err(anyhow::anyhow!(
+            "invalid hex string at line {}, column {}: odd number of hex digits, missing pair for {}",
+            line,
+            col,
+            x
+        ))
     } else {
         Ok(hex)
     }
