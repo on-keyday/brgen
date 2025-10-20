@@ -307,16 +307,18 @@ async fn run_source_setup(
     binary_cache: &mut InputBinaryCache,
     current_dir: &String,
     parsed: &Args,
-) -> anyhow::Result<usize> {
+) -> anyhow::Result<(usize, std::collections::HashMap<String, String>)> {
     let replaced_setup_command: Vec<String> = common_setup_commands
         .iter()
         .map(|s| s.replace("$WORK_DIR", &current_dir))
         .collect();
     let mut common_setup_handles = Vec::new();
+    let mut source_dir_map = std::collections::HashMap::new();
 
     let (source_send, mut source_recv) = tokio::sync::mpsc::channel(100);
     for (source_name, candidate_formats) in runner_source_map.into_iter() {
         let source_dir = binary_cache.runner_dir()?;
+        source_dir_map.insert(source_name.clone(), path_str(&source_dir));
         println!("Running common source setup: source={}", source_name);
         println!("-----------------------------------------");
         let replaced_setup_command = replaced_setup_command.clone();
@@ -362,11 +364,12 @@ async fn run_source_setup(
         }
     }
 
-    Ok(scheduling_fail_count)
+    Ok((scheduling_fail_count, source_dir_map))
 }
 
 async fn run_setup(
     runner_source_map: RunnerInputMatrix,
+    source_dir_map: Option<std::collections::HashMap<String, String>>,
     binary_cache: &mut InputBinaryCache,
     current_dir: &String,
     parsed: &Args,
@@ -386,6 +389,17 @@ async fn run_setup(
         );
         println!("-----------------------------------------");
         let current_dir = current_dir.clone();
+
+        let source_dir = if let Some(map) = &source_dir_map {
+            if let Some(dir) = map.get(&source_name) {
+                dir.clone()
+            } else {
+                String::new()
+            }
+        } else {
+            String::new()
+        };
+
         let h: JoinHandle<anyhow::Result<()>> = tokio::spawn(async move {
             if setup_command.is_empty() {
                 return Err(std::io::Error::new(
@@ -410,6 +424,7 @@ async fn run_setup(
                 .env("UNICTEST_RUNNER_DIR", &runner_dir)
                 .env("UNICTEST_RUNNER_NAME", &runner_name)
                 .env("UNICTEST_CANDIDATE_FORMATS", &candidate_formats.join(","))
+                .env("UNICTEST_SOURCE_SETUP_DIR", &source_dir)
                 .output()
                 .await?;
             send.send((
@@ -684,8 +699,10 @@ async fn main() -> anyhow::Result<()> {
 
     let mut scheduling_fail_count = 0;
 
+    let mut source_dir_map = None;
+
     if let Some(common_setup_commands) = &test_config.common_source_setup {
-        let fail_count = run_source_setup(
+        let (fail_count, source_dir_map_) = run_source_setup(
             common_setup_commands.clone(),
             source_format_map,
             &mut runner_source_map,
@@ -695,12 +712,19 @@ async fn main() -> anyhow::Result<()> {
         )
         .await?;
         scheduling_fail_count += fail_count;
+        source_dir_map = Some(source_dir_map_);
         println!("Common source setup completed in {:?}", timer.elapsed());
         println!("----------------------------------------");
     }
 
-    let (setup_infos, fail_count2) =
-        run_setup(runner_source_map, &mut binary_cache, &current_dir, &parsed).await?;
+    let (setup_infos, fail_count2) = run_setup(
+        runner_source_map,
+        source_dir_map,
+        &mut binary_cache,
+        &current_dir,
+        &parsed,
+    )
+    .await?;
     scheduling_fail_count += fail_count2;
 
     println!("Setup all tests in {:?}", timer.elapsed());
