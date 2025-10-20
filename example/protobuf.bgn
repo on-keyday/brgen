@@ -1,24 +1,31 @@
 
 format Varint:
+    len :u8
     value :u64
 
     fn decode():
+        value = 0
+        len = 0
         for:
             v := input.get()
+            value |= u64(v & 0x7f) << (7 * len)
+            len += 1
             if v < 0x80:
-                value = v
                 return
-            value = (value << 7) | u64(v & 0x7f)    
       
 
     fn encode():
+        value_copy := value
+        counter := 0
         for:
-            v := u8(value & 0x7f)
-            value = value >> 7
-            if value == 0:
+            v := u8(value_copy & 0x7f)
+            value_copy = value_copy >> 7
+            if value_copy == 0 && (len == 0 || counter + 1 >= len):
                 output.put(v)
                 return
             output.put(v | 0x80)
+            counter += 1
+
 
 enum WireType:
     Varint = 0
