@@ -311,6 +311,8 @@ async fn main() -> anyhow::Result<()> {
 
     let mut handles = Vec::new();
 
+    let scheduling_count = runner_source_map.len();
+
     let (send, mut recv) = tokio::sync::mpsc::channel(100);
     for ((runner_name, source_name), (setup_command, run_command, candidate_formats)) in
         runner_source_map.into_iter()
@@ -367,6 +369,7 @@ async fn main() -> anyhow::Result<()> {
     }
     drop(send);
     let mut setup_infos = Vec::new();
+    let mut scheduling_fail_count = 0;
     while let Some((output, prepare_info)) = recv.recv().await {
         println!(
             "Test setup completed: runner name={}, source={}",
@@ -385,6 +388,7 @@ async fn main() -> anyhow::Result<()> {
         println!("status: {}", output.status);
         if !output.status.success() {
             println!("Test setup failed, skipping tests for this setup.");
+            scheduling_fail_count += 1;
         } else {
             setup_infos.push(prepare_info);
         }
@@ -395,6 +399,7 @@ async fn main() -> anyhow::Result<()> {
     for res in all_errors {
         if let Err(e) = res {
             println!("Error during setup: {}", e);
+            scheduling_fail_count += 1;
         }
     }
 
@@ -415,7 +420,7 @@ async fn main() -> anyhow::Result<()> {
         println!("----------------------------------------");
 
         for input in &inputs {
-            if !p.candidate_formats.contains(&input.format_name) {
+            if p.source != input.source || !p.candidate_formats.contains(&input.format_name) {
                 continue;
             }
             let input = input.clone();
@@ -590,6 +595,14 @@ async fn main() -> anyhow::Result<()> {
         "FAIL".red(),
         failed_count
     );
+    if scheduling_fail_count > 0 {
+        println!(
+            "{}: {} source file setups failed due to setup errors (total {} source files)",
+            "FAIL".red(),
+            scheduling_fail_count,
+            scheduling_count
+        );
+    }
 
     if parsed.save_tmp_dir {
         binary_cache.print_tmp_dir();
@@ -616,7 +629,7 @@ async fn main() -> anyhow::Result<()> {
             }
         }
     }
-    if failed_count > 0 {
+    if failed_count > 0 || scheduling_fail_count > 0 {
         std::process::exit(1);
     }
     Ok(())
