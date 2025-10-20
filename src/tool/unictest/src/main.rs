@@ -333,7 +333,7 @@ async fn run_source_setup(
                 .current_dir(&source_dir)
                 .env("UNICTEST_ORIGINAL_WORK_DIR", &current_dir)
                 .env("UNICTEST_SOURCE_FILE", &source_name)
-                .env("UNICTEST_WORK_DIR", &source_dir)
+                .env("UNICTEST_SOURCE_SETUP_DIR", &source_dir)
                 .env("UNICTEST_CANDIDATE_FORMATS", &candidate_formats.join(","))
                 .output()
                 .await?;
