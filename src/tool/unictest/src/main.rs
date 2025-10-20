@@ -5,7 +5,6 @@ use serde::Deserialize;
 use std::{
     fs,
     path::{Path, PathBuf},
-    sync::Arc,
 };
 use tokio::task::JoinHandle;
 use uuid::Uuid;
@@ -131,7 +130,7 @@ fn compile_hex(input: Vec<u8>) -> anyhow::Result<Vec<u8>> {
 }
 
 struct InputBinaryCache {
-    input_binaries: std::collections::HashMap<(PathBuf, bool), (PathBuf, Vec<u8>)>,
+    input_binaries: std::collections::HashMap<(PathBuf, bool), PathBuf>,
     tmp_dir: Option<PathBuf>,
 }
 
@@ -150,11 +149,7 @@ impl InputBinaryCache {
         }
     }
 
-    fn read_input_binary(
-        &mut self,
-        path: &PathBuf,
-        is_hex: bool,
-    ) -> anyhow::Result<(PathBuf, Vec<u8>)> {
+    fn read_input_binary(&mut self, path: &PathBuf, is_hex: bool) -> anyhow::Result<PathBuf> {
         let key = (path.clone(), is_hex);
         if let Some(x) = self.input_binaries.get(&key) {
             return Ok(x.clone());
@@ -172,11 +167,14 @@ impl InputBinaryCache {
             let t = if is_hex {
                 let c = compile_hex(t)?;
                 let tmp_path = self.get_tmp_dir()?;
-                let tmp_path = tmp_path.join(path.file_name().unwrap());
+                let tmp_path = tmp_path.join(
+                    path.file_name()
+                        .ok_or_else(|| anyhow::anyhow!("invalid file name: {}", path.display()))?,
+                );
                 fs::write(tmp_path.clone(), &c)?;
-                (tmp_path, c)
+                tmp_path
             } else {
-                (path.clone(), t)
+                path.clone()
             };
             self.input_binaries.insert(key.clone(), t);
             Ok(self.input_binaries.get(&key).unwrap().clone())
@@ -205,7 +203,6 @@ impl InputBinaryCache {
 
     pub fn remove_tmp_dir(&self) {
         if let Some(dir) = &self.tmp_dir {
-            fs::remove_dir_all(dir).unwrap();
             if let Err(e) = fs::remove_dir_all(dir) {
                 eprintln!(
                     "Warning: Failed to remove temporary directory {}: {}",
@@ -252,6 +249,8 @@ async fn main() -> anyhow::Result<()> {
     let mut d1 = serde_json::Deserializer::from_str(&test_config);
     let test_config = TestConfig::deserialize(&mut d1)?;
     println!("Loaded test config from file {}", parsed.test_config_file);
+    let current_dir = std::env::current_dir()?;
+    let current_dir = path_str(&current_dir);
     // replace RunnerConfig::File with actual TestRunner
     let test_runner = test_config
         .runners
@@ -261,9 +260,7 @@ async fn main() -> anyhow::Result<()> {
                 RunnerConfig::TestRunner(runner) => Ok(runner),
                 RunnerConfig::File(runner_file) => {
                     // replace $WORK_DIR in file path
-                    let runner_file = runner_file
-                        .file
-                        .replace("$WORK_DIR", &path_str(&std::env::current_dir().unwrap()));
+                    let runner_file = runner_file.file.replace("$WORK_DIR", &current_dir);
                     let runner_config_str = fs::read_to_string(Path::new(&runner_file))?;
                     let mut d2 = serde_json::Deserializer::from_str(&runner_config_str);
                     let mut actual_runner: TestRunner = TestRunner::deserialize(&mut d2)?;
@@ -280,18 +277,14 @@ async fn main() -> anyhow::Result<()> {
         .into_iter()
         .map(|input| TestInput {
             name: input.name,
-            binary: input
-                .binary
-                .replace("$WORK_DIR", &path_str(&std::env::current_dir().unwrap())),
+            binary: input.binary.replace("$WORK_DIR", &current_dir),
             format_name: input.format_name,
-            source: input
-                .source
-                .replace("$WORK_DIR", &path_str(&std::env::current_dir().unwrap())),
+            source: input.source.replace("$WORK_DIR", &current_dir),
             failure_case: input.failure_case,
             hex: input.hex,
         })
         .collect::<Vec<_>>();
-    let binary_cache = Arc::new(std::sync::Mutex::new(InputBinaryCache::new()));
+    let mut binary_cache = InputBinaryCache::new();
     let mut runner_source_map = std::collections::HashMap::new();
     for input in &inputs {
         for runner in &test_runner {
@@ -317,22 +310,19 @@ async fn main() -> anyhow::Result<()> {
     let mut handles = Vec::new();
 
     let (send, mut recv) = tokio::sync::mpsc::channel(100);
-
     for ((runner_name, source_name), (setup_command, run_command, candidate_formats)) in
         runner_source_map.into_iter()
     {
-        let cache = binary_cache.clone();
+        // for each runner, allocate runner dir
+        let runner_dir = binary_cache.runner_dir()?;
         let send = send.clone();
         println!(
             "Running test setup: runner name={}, source={}",
             runner_name, source_name
         );
         println!("-----------------------------------------");
+        let current_dir = current_dir.clone();
         let h: JoinHandle<anyhow::Result<()>> = tokio::spawn(async move {
-            let runner_dir = {
-                let mut cache = cache.lock().unwrap();
-                cache.runner_dir()?
-            };
             if setup_command.is_empty() {
                 return Err(std::io::Error::new(
                     std::io::ErrorKind::Other,
@@ -346,15 +336,12 @@ async fn main() -> anyhow::Result<()> {
             // replace $WORK_DIR to current working dir
             let replaced_setup_command: Vec<String> = setup_command
                 .iter()
-                .map(|s| s.replace("$WORK_DIR", &path_str(&std::env::current_dir().unwrap())))
+                .map(|s| s.replace("$WORK_DIR", &current_dir))
                 .collect();
             let spawned = tokio::process::Command::new(replaced_setup_command[0].clone())
                 .args(&replaced_setup_command[1..])
                 .current_dir(&runner_dir)
-                .env(
-                    "UNICTEST_ORIGINAL_WORK_DIR",
-                    &path_str(&std::env::current_dir().unwrap()),
-                )
+                .env("UNICTEST_ORIGINAL_WORK_DIR", &current_dir)
                 .env("UNICTEST_SOURCE_FILE", &source_name)
                 .env("UNICTEST_RUNNER_DIR", &runner_dir)
                 .env("UNICTEST_RUNNER_NAME", &runner_name)
@@ -430,7 +417,8 @@ async fn main() -> anyhow::Result<()> {
                 continue;
             }
             let input = input.clone();
-            let cache = binary_cache.clone();
+            let input_path =
+                binary_cache.read_input_binary(&PathBuf::from(&input.binary), input.hex)?;
             let runner_command = p.run_command.clone();
             let source = p.source.clone();
             let runner_dir = p.runner_dir.clone();
@@ -441,6 +429,7 @@ async fn main() -> anyhow::Result<()> {
                 runner, input.name, source, input.format_name, input.binary, input.hex
             );
             println!("----------------------------------------");
+            let current_dir = current_dir.clone();
             let h: JoinHandle<()> = tokio::spawn(async move {
                 let send3 = send2.clone();
                 let result_info = ResultInfo {
@@ -452,12 +441,8 @@ async fn main() -> anyhow::Result<()> {
                     failure_case: input.failure_case,
                 };
                 let mut result_info2 = result_info.clone();
-                let f: anyhow::Result<()> = async move {
-                    let (input_path, _input_data) = cache
-                        .lock()
-                        .unwrap()
-                        .read_input_binary(&PathBuf::from(&input.binary), input.hex)?;
 
+                let f: anyhow::Result<()> = async move {
                     if runner_command.is_empty() {
                         return Err(std::io::Error::new(
                             std::io::ErrorKind::Other,
@@ -477,17 +462,12 @@ async fn main() -> anyhow::Result<()> {
                     fs::create_dir_all(&task_dir)?;
                     let replaced_run_command: Vec<String> = runner_command
                         .iter()
-                        .map(|s| {
-                            s.replace("$WORK_DIR", &path_str(&std::env::current_dir().unwrap()))
-                        })
+                        .map(|s| s.replace("$WORK_DIR", &current_dir))
                         .collect();
                     let output = tokio::process::Command::new(replaced_run_command[0].clone())
                         .args(&replaced_run_command[1..])
                         .current_dir(&task_dir)
-                        .env(
-                            "UNICTEST_ORIGINAL_WORK_DIR",
-                            &path_str(&std::env::current_dir().unwrap()),
-                        )
+                        .env("UNICTEST_ORIGINAL_WORK_DIR", &current_dir)
                         .env("UNICTEST_SOURCE_FILE", &source)
                         .env("UNICTEST_WORK_DIR", &task_dir)
                         .env("UNICTEST_RUNNER_DIR", &runner_dir)
@@ -610,17 +590,15 @@ async fn main() -> anyhow::Result<()> {
     );
 
     if parsed.save_tmp_dir {
-        let cache = binary_cache.lock().unwrap();
-        cache.print_tmp_dir();
+        binary_cache.print_tmp_dir();
     } else {
-        let cache = binary_cache.lock().unwrap();
-        cache.remove_tmp_dir();
+        binary_cache.remove_tmp_dir();
     }
     if parsed.clean_tmp {
         let tmp_dir = std::env::temp_dir().join("unictest");
         if tmp_dir.exists() {
             if parsed.save_tmp_dir {
-                let current_tmp = binary_cache.lock().unwrap().tmp_dir.clone();
+                let current_tmp = binary_cache.tmp_dir.clone();
                 // remove all except current tmp dir
                 for entry in fs::read_dir(tmp_dir)? {
                     let entry = entry?;
