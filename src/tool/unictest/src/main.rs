@@ -5,7 +5,6 @@ use serde::Deserialize;
 use std::{
     fs,
     path::{Path, PathBuf},
-    result,
     sync::Arc,
 };
 use tokio::task::JoinHandle;
@@ -14,22 +13,13 @@ use uuid::Uuid;
 struct Args {
     #[arg(long, short('c'), help("test config file (json)"))]
     test_config_file: String,
-    #[arg(long, short('d'), help("debug mode"))]
-    debug: bool,
-    #[arg(long, help("save tmp dir"))]
+    #[arg(long, help("save current executed temporary directory"))]
     save_tmp_dir: bool,
-    #[arg(long, help("print fail command"))]
-    print_fail_command: bool,
-    #[arg(
-        long("as-vscode"),
-        help("print fail command as vscode launch.json compatible")
-    )]
-    vscode: bool,
     #[arg(long, help("expected test count that will be loaded"))]
     expected_test_total: Option<usize>,
     #[arg(
         long,
-        help("clean temporary directory (except current temporary directory if --save-tmp-dir specified) (remove cmptest-* in $TMP)")
+        help("clean temporary directory (except current temporary directory if --save-tmp-dir specified) (remove unictest/* in $TMP)")
     )]
     clean_tmp: bool,
     #[arg(long, help("print stdout of test (for debug)"))]
@@ -217,7 +207,11 @@ impl InputBinaryCache {
         if let Some(dir) = &self.tmp_dir {
             fs::remove_dir_all(dir).unwrap();
             if let Err(e) = fs::remove_dir_all(dir) {
-                eprintln!("Warning: Failed to remove temporary directory {}: {}", path_str(dir), e);
+                eprintln!(
+                    "Warning: Failed to remove temporary directory {}: {}",
+                    path_str(dir),
+                    e
+                );
             }
         }
     }
@@ -257,6 +251,7 @@ async fn main() -> anyhow::Result<()> {
     let test_config = fs::read_to_string(Path::new(&parsed.test_config_file))?;
     let mut d1 = serde_json::Deserializer::from_str(&test_config);
     let test_config = TestConfig::deserialize(&mut d1)?;
+    println!("Loaded test config from file {}", parsed.test_config_file);
     // replace RunnerConfig::File with actual TestRunner
     let test_runner = test_config
         .runners
@@ -265,10 +260,15 @@ async fn main() -> anyhow::Result<()> {
             match runner {
                 RunnerConfig::TestRunner(runner) => Ok(runner),
                 RunnerConfig::File(runner_file) => {
-                    let runner_config_str = fs::read_to_string(Path::new(&runner_file.file))?;
+                    // replace $WORK_DIR in file path
+                    let runner_file = runner_file
+                        .file
+                        .replace("$WORK_DIR", &path_str(&std::env::current_dir().unwrap()));
+                    let runner_config_str = fs::read_to_string(Path::new(&runner_file))?;
                     let mut d2 = serde_json::Deserializer::from_str(&runner_config_str);
                     let mut actual_runner: TestRunner = TestRunner::deserialize(&mut d2)?;
-                    actual_runner.file = Some(runner_file.file.clone());
+                    println!("Loaded runner config from file {}", runner_file);
+                    actual_runner.file = Some(runner_file.clone());
                     Ok(actual_runner)
                 }
             }
@@ -516,6 +516,18 @@ async fn main() -> anyhow::Result<()> {
         }
     }
     drop(send2);
+    if let Some(expected_count) = parsed.expected_test_total {
+        let actual_count = test_handles.len();
+        if expected_count != actual_count {
+            println!(
+                "{}: Expected test count {}, but got {}",
+                "FAIL".red(),
+                expected_count,
+                actual_count
+            );
+            std::process::exit(1);
+        }
+    }
     let mut test_results = Vec::new();
 
     while let Some(result) = recv2.recv().await {
@@ -588,12 +600,14 @@ async fn main() -> anyhow::Result<()> {
 
     let failed_count = test_results.iter().filter(|&&x| !x).count();
     println!("All tests completed in {:?}", timer.elapsed());
-    println!("Total: {}, {}: {}, {}: {}", 
-        test_results.len(), 
+    println!(
+        "Total: {}, {}: {}, {}: {}",
+        test_results.len(),
         "PASS".green(),
         test_results.len() - failed_count,
         "FAIL".red(),
-        failed_count);
+        failed_count
+    );
 
     if parsed.save_tmp_dir {
         let cache = binary_cache.lock().unwrap();
