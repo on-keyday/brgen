@@ -67,6 +67,9 @@ pub enum RunnerConfig {
 
 #[derive(Deserialize, Clone)]
 pub struct TestConfig {
+    // common source code setup commands
+    pub common_source_setup: Option<Vec<String>>,
+    // test runners
     pub runners: Vec<RunnerConfig>,
     // test input binary file
     pub inputs: Vec<TestInput>,
@@ -243,53 +246,39 @@ struct ResultInfo {
 const CONFIRMED_DECODER_FAILURE_EXIT_CODE: i32 = 10;
 const UNEXPECTED_ENCODER_FAILURE_EXIT_CODE: i32 = 20;
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
-    let timer = std::time::Instant::now();
-    let parsed = Args::parse();
-    let test_config = fs::read_to_string(Path::new(&parsed.test_config_file))?;
-    let mut d1 = serde_json::Deserializer::from_str(&test_config);
-    let test_config = TestConfig::deserialize(&mut d1)?;
-    println!("Loaded test config from file {}", parsed.test_config_file);
-    let current_dir = std::env::current_dir()?;
-    let current_dir = path_str(&current_dir);
-    // replace RunnerConfig::File with actual TestRunner
-    let test_runner = test_config
-        .runners
-        .into_iter()
-        .map(|runner| -> Result<TestRunner, anyhow::Error> {
-            match runner {
-                RunnerConfig::TestRunner(runner) => Ok(runner),
-                RunnerConfig::File(runner_file) => {
-                    // replace $WORK_DIR in file path
-                    let runner_file = runner_file.file.replace("$WORK_DIR", &current_dir);
-                    let runner_config_str = fs::read_to_string(Path::new(&runner_file))?;
-                    let mut d2 = serde_json::Deserializer::from_str(&runner_config_str);
-                    let mut actual_runner: TestRunner = TestRunner::deserialize(&mut d2)?;
-                    println!("Loaded runner config from file {}", runner_file);
-                    actual_runner.file = Some(runner_file.clone());
-                    Ok(actual_runner)
-                }
-            }
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-    // replace $WORK_DIR in binary and source paths
-    let inputs = test_config
-        .inputs
-        .into_iter()
-        .map(|input| TestInput {
-            name: input.name,
-            binary: input.binary.replace("$WORK_DIR", &current_dir),
-            format_name: input.format_name,
-            source: input.source.replace("$WORK_DIR", &current_dir),
-            failure_case: input.failure_case,
-            hex: input.hex,
-        })
-        .collect::<Vec<_>>();
-    let mut binary_cache = InputBinaryCache::new();
+pub fn print_output(output: &std::process::Output, print_stdout: bool) {
+    if print_stdout {
+        println!(
+            "STDOUT:\n########\n{}\n########\n",
+            String::from_utf8_lossy(&output.stdout)
+        );
+        println!(
+            "STDERR:\n########\n{}\n########\n",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+    println!("status: {}", output.status);
+}
+
+type RunnerInputMatrix =
+    std::collections::HashMap<(String, String), (Vec<String>, Vec<String>, Vec<String>)>;
+
+type SourceCodeFormatMap = std::collections::HashMap<String, Vec<String>>;
+
+fn make_runner_input_matrix(
+    runners: &Vec<TestRunner>,
+    inputs: &Vec<TestInput>,
+) -> (RunnerInputMatrix, SourceCodeFormatMap) {
     let mut runner_source_map = std::collections::HashMap::new();
-    for input in &inputs {
-        for runner in &test_runner {
+    let mut source_format_map: SourceCodeFormatMap = std::collections::HashMap::new();
+    for input in inputs {
+        let entry = source_format_map
+            .entry(input.source.clone())
+            .or_insert_with(Vec::new);
+        if !entry.contains(&input.format_name) {
+            entry.push(input.format_name.clone());
+        }
+        for runner in runners {
             let key = (runner.name.clone(), input.source.clone());
             let entry = runner_source_map.entry(key);
             entry
@@ -308,10 +297,81 @@ async fn main() -> anyhow::Result<()> {
                 });
         }
     }
+    (runner_source_map, source_format_map)
+}
 
-    let mut handles = Vec::new();
+async fn run_source_setup(
+    common_setup_commands: Vec<String>,
+    runner_source_map: SourceCodeFormatMap,
+    source_runner_matrix: &mut RunnerInputMatrix,
+    binary_cache: &mut InputBinaryCache,
+    current_dir: &String,
+    parsed: &Args,
+) -> anyhow::Result<usize> {
+    let replaced_setup_command: Vec<String> = common_setup_commands
+        .iter()
+        .map(|s| s.replace("$WORK_DIR", &current_dir))
+        .collect();
+    let mut common_setup_handles = Vec::new();
 
-    let scheduling_count = runner_source_map.len();
+    let (source_send, mut source_recv) = tokio::sync::mpsc::channel(100);
+    for (source_name, candidate_formats) in runner_source_map.into_iter() {
+        let source_dir = binary_cache.runner_dir()?;
+        println!("Running common source setup: source={}", source_name);
+        println!("-----------------------------------------");
+        let replaced_setup_command = replaced_setup_command.clone();
+        let source_name = source_name.clone();
+        let candidate_formats = candidate_formats.clone();
+        let source_dir = source_dir.clone();
+        let current_dir = current_dir.clone();
+        let source_send = source_send.clone();
+        let h = tokio::spawn(async move {
+            let spawned = tokio::process::Command::new(replaced_setup_command[0].clone())
+                .args(&replaced_setup_command[1..])
+                .current_dir(&source_dir)
+                .env("UNICTEST_ORIGINAL_WORK_DIR", &current_dir)
+                .env("UNICTEST_SOURCE_FILE", &source_name)
+                .env("UNICTEST_WORK_DIR", &source_dir)
+                .env("UNICTEST_CANDIDATE_FORMATS", &candidate_formats.join(","))
+                .output()
+                .await?;
+            source_send.send((spawned, source_name)).await?;
+            Ok::<(), anyhow::Error>(())
+        });
+        common_setup_handles.push(h);
+    }
+    drop(source_send);
+    let mut scheduling_fail_count = 0;
+    while let Some((output, source_name)) = source_recv.recv().await {
+        println!("Common source setup completed: source={}", source_name);
+        print_output(&output, parsed.print_stdout);
+        if !output.status.success() {
+            println!("Common source setup failed for source={}", source_name);
+            // remove all entries with this source from source_runner_matrix
+            source_runner_matrix.retain(|(_, s), _| s != &source_name);
+            scheduling_fail_count += 1;
+        }
+        println!("----------------------------------------");
+    }
+    let result = futures::future::try_join_all(common_setup_handles).await?;
+
+    for res in result {
+        if let Err(e) = res {
+            println!("Error during common source setup: {}", e);
+            scheduling_fail_count += 1;
+        }
+    }
+
+    Ok(scheduling_fail_count)
+}
+
+async fn run_setup(
+    runner_source_map: RunnerInputMatrix,
+    binary_cache: &mut InputBinaryCache,
+    current_dir: &String,
+    parsed: &Args,
+) -> anyhow::Result<(Vec<PrepareInfo>, usize)> {
+    let mut handles: Vec<_> = Vec::new();
 
     let (send, mut recv) = tokio::sync::mpsc::channel(100);
     for ((runner_name, source_name), (setup_command, run_command, candidate_formats)) in
@@ -375,17 +435,7 @@ async fn main() -> anyhow::Result<()> {
             "Test setup completed: runner name={}, source={}",
             prepare_info.runner, prepare_info.source
         );
-        if parsed.print_stdout {
-            println!(
-                "STDOUT:\n########\n{}\n########\n",
-                String::from_utf8_lossy(&output.stdout)
-            );
-            println!(
-                "STDERR:\n########\n{}\n########\n",
-                String::from_utf8_lossy(&output.stderr)
-            );
-        }
-        println!("status: {}", output.status);
+        print_output(&output, parsed.print_stdout);
         if !output.status.success() {
             println!("Test setup failed, skipping tests for this setup.");
             scheduling_fail_count += 1;
@@ -402,10 +452,16 @@ async fn main() -> anyhow::Result<()> {
             scheduling_fail_count += 1;
         }
     }
+    Ok((setup_infos, scheduling_fail_count))
+}
 
-    println!("Setup all tests in {:?}", timer.elapsed());
-    println!("----------------------------------------");
-
+async fn run_tests(
+    parsed: &Args,
+    setup_infos: Vec<PrepareInfo>,
+    inputs: Vec<TestInput>,
+    binary_cache: &mut InputBinaryCache,
+    current_dir: &String,
+) -> anyhow::Result<Vec<bool>> {
     let mut test_handles = Vec::new();
 
     let (send2, mut recv2) = tokio::sync::mpsc::channel(100);
@@ -552,17 +608,7 @@ async fn main() -> anyhow::Result<()> {
             result.format_name,
             result.input_name
         );
-        if parsed.print_stdout {
-            println!(
-                "STDOUT:\n########\n{}\n########\n",
-                String::from_utf8_lossy(&output.stdout)
-            );
-            println!(
-                "STDERR:\n########\n{}\n########\n",
-                String::from_utf8_lossy(&output.stderr)
-            );
-        }
-        println!("status: {}", output.status);
+        print_output(output, parsed.print_stdout);
         if output.status.success() && result.failure_case {
             println!("expected failure, but succeeded");
         } else if output.status.code() == Some(CONFIRMED_DECODER_FAILURE_EXIT_CODE)
@@ -584,6 +630,90 @@ async fn main() -> anyhow::Result<()> {
     }
 
     futures::future::try_join_all(test_handles).await?;
+    Ok(test_results)
+}
+
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    let timer = std::time::Instant::now();
+    let parsed = Args::parse();
+    let test_config = fs::read_to_string(Path::new(&parsed.test_config_file))?;
+    let mut d1 = serde_json::Deserializer::from_str(&test_config);
+    let test_config = TestConfig::deserialize(&mut d1)?;
+    println!("Loaded test config from file {}", parsed.test_config_file);
+    let current_dir = std::env::current_dir()?;
+    let current_dir = path_str(&current_dir);
+    // replace RunnerConfig::File with actual TestRunner
+    let test_runner = test_config
+        .runners
+        .into_iter()
+        .map(|runner| -> Result<TestRunner, anyhow::Error> {
+            match runner {
+                RunnerConfig::TestRunner(runner) => Ok(runner),
+                RunnerConfig::File(runner_file) => {
+                    // replace $WORK_DIR in file path
+                    let runner_file = runner_file.file.replace("$WORK_DIR", &current_dir);
+                    let runner_config_str = fs::read_to_string(Path::new(&runner_file))?;
+                    let mut d2 = serde_json::Deserializer::from_str(&runner_config_str);
+                    let mut actual_runner: TestRunner = TestRunner::deserialize(&mut d2)?;
+                    println!("Loaded runner config from file {}", runner_file);
+                    actual_runner.file = Some(runner_file.clone());
+                    Ok(actual_runner)
+                }
+            }
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    // replace $WORK_DIR in binary and source paths
+    let inputs = test_config
+        .inputs
+        .into_iter()
+        .map(|input| TestInput {
+            name: input.name,
+            binary: input.binary.replace("$WORK_DIR", &current_dir),
+            format_name: input.format_name,
+            source: input.source.replace("$WORK_DIR", &current_dir),
+            failure_case: input.failure_case,
+            hex: input.hex,
+        })
+        .collect::<Vec<_>>();
+    let mut binary_cache = InputBinaryCache::new();
+
+    let (mut runner_source_map, source_format_map) =
+        make_runner_input_matrix(&test_runner, &inputs);
+    let scheduling_count = runner_source_map.len();
+
+    let mut scheduling_fail_count = 0;
+
+    if let Some(common_setup_commands) = &test_config.common_source_setup {
+        let fail_count = run_source_setup(
+            common_setup_commands.clone(),
+            source_format_map,
+            &mut runner_source_map,
+            &mut binary_cache,
+            &current_dir,
+            &parsed,
+        )
+        .await?;
+        scheduling_fail_count += fail_count;
+        println!("Common source setup completed in {:?}", timer.elapsed());
+        println!("----------------------------------------");
+    }
+
+    let (setup_infos, fail_count2) =
+        run_setup(runner_source_map, &mut binary_cache, &current_dir, &parsed).await?;
+    scheduling_fail_count += fail_count2;
+
+    println!("Setup all tests in {:?}", timer.elapsed());
+    println!("----------------------------------------");
+
+    let test_results = run_tests(
+        &parsed,
+        setup_infos,
+        inputs,
+        &mut binary_cache,
+        &current_dir,
+    )
+    .await?;
 
     let failed_count = test_results.iter().filter(|&&x| !x).count();
     println!("All tests completed in {:?}", timer.elapsed());
