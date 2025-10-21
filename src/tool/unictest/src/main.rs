@@ -23,6 +23,14 @@ struct Args {
     clean_tmp: bool,
     #[arg(long, help("print stdout of test (for debug)"))]
     print_stdout: bool,
+
+    #[arg(
+        long,
+        help(
+            "verbose output (only specifying to test script, not used in unictest command itself)"
+        )
+    )]
+    verbose: bool,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -321,7 +329,7 @@ async fn run_source_setup(
         .collect();
     let mut common_setup_handles = Vec::new();
     let mut source_dir_map = std::collections::HashMap::new();
-
+    let verbose = parsed.verbose;
     let (source_send, mut source_recv) = tokio::sync::mpsc::channel(100);
     for (source_name, candidate_formats) in runner_source_map.into_iter() {
         let source_dir = binary_cache.runner_dir()?;
@@ -338,6 +346,7 @@ async fn run_source_setup(
             let spawned = tokio::process::Command::new(replaced_setup_command[0].clone())
                 .args(&replaced_setup_command[1..])
                 .current_dir(&source_dir)
+                .env("UNICTEST_VERBOSE", if verbose { "1" } else { "0" })
                 .env("UNICTEST_ORIGINAL_WORK_DIR", &current_dir)
                 .env("UNICTEST_SOURCE_FILE", &source_name)
                 .env("UNICTEST_SOURCE_SETUP_DIR", &source_dir)
@@ -382,6 +391,7 @@ async fn run_setup(
     parsed: &Args,
 ) -> anyhow::Result<(Vec<PrepareInfo>, usize)> {
     let mut handles: Vec<_> = Vec::new();
+    let verbose = parsed.verbose;
 
     let (send, mut recv) = tokio::sync::mpsc::channel(100);
     for ((runner_name, source_name), (setup_command, run_command, candidate_formats)) in
@@ -426,6 +436,7 @@ async fn run_setup(
             let spawned = tokio::process::Command::new(replaced_setup_command[0].clone())
                 .args(&replaced_setup_command[1..])
                 .current_dir(&runner_dir)
+                .env("UNICTEST_VERBOSE", if verbose { "1" } else { "0" })
                 .env("UNICTEST_ORIGINAL_WORK_DIR", &current_dir)
                 .env("UNICTEST_SOURCE_FILE", &source_name)
                 .env("UNICTEST_RUNNER_DIR", &runner_dir)
@@ -485,6 +496,7 @@ async fn run_tests(
     current_dir: &String,
 ) -> anyhow::Result<Vec<bool>> {
     let mut test_handles = Vec::new();
+    let verbose = parsed.verbose;
 
     let (send2, mut recv2) = tokio::sync::mpsc::channel(100);
     for p in setup_infos {
@@ -552,6 +564,7 @@ async fn run_tests(
                     let output = tokio::process::Command::new(replaced_run_command[0].clone())
                         .args(&replaced_run_command[1..])
                         .current_dir(&task_dir)
+                        .env("UNICTEST_VERBOSE", if verbose { "1" } else { "0" })
                         .env("UNICTEST_ORIGINAL_WORK_DIR", &current_dir)
                         .env("UNICTEST_SOURCE_FILE", &source)
                         .env("UNICTEST_WORK_DIR", &task_dir)
