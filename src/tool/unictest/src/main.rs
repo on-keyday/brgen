@@ -54,7 +54,7 @@ pub struct TestInput {
 }
 
 #[derive(Deserialize, Clone, Debug)]
-pub struct TestRunnerFile {
+pub struct TestFile {
     pub file: String,
 }
 
@@ -62,7 +62,14 @@ pub struct TestRunnerFile {
 #[serde(untagged)]
 pub enum RunnerConfig {
     TestRunner(TestRunner),
-    File(TestRunnerFile),
+    File(TestFile),
+}
+
+#[derive(Deserialize, Clone, Debug)]
+#[serde(untagged)]
+pub enum InputConfig {
+    TestInput(Vec<TestInput>),
+    File(TestFile),
 }
 
 #[derive(Deserialize, Clone)]
@@ -72,7 +79,7 @@ pub struct TestConfig {
     // test runners
     pub runners: Vec<RunnerConfig>,
     // test input binary file
-    pub inputs: Vec<TestInput>,
+    pub inputs: InputConfig,
 }
 
 fn compile_hex(input: Vec<u8>) -> anyhow::Result<Vec<u8>> {
@@ -679,16 +686,24 @@ async fn main() -> anyhow::Result<()> {
         })
         .collect::<Result<Vec<_>, _>>()?;
     // replace $WORK_DIR in binary and source paths
-    let inputs = test_config
-        .inputs
+    let inputs = match test_config.inputs {
+        InputConfig::TestInput(input) => input,
+        InputConfig::File(file) => {
+            // replace $WORK_DIR in file path
+            let input_file = file.file.replace("$WORK_DIR", &current_dir);
+            let input_config_str = fs::read_to_string(Path::new(&input_file))?;
+            let mut d2 = serde_json::Deserializer::from_str(&input_config_str);
+            let actual_input: Vec<TestInput> = Vec::<TestInput>::deserialize(&mut d2)?;
+            println!("Loaded input config from file {}", input_file);
+            actual_input
+        }
+    };
+    let inputs = inputs
         .into_iter()
-        .map(|input| TestInput {
-            name: input.name,
-            binary: input.binary.replace("$WORK_DIR", &current_dir),
-            format_name: input.format_name,
-            source: input.source.replace("$WORK_DIR", &current_dir),
-            failure_case: input.failure_case,
-            hex: input.hex,
+        .map(|mut input| {
+            input.binary = input.binary.replace("$WORK_DIR", &current_dir);
+            input.source = input.source.replace("$WORK_DIR", &current_dir);
+            input
         })
         .collect::<Vec<_>>();
     let mut binary_cache = InputBinaryCache::new();
