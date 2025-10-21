@@ -706,6 +706,7 @@ async fn main() -> anyhow::Result<()> {
             input
         })
         .collect::<Vec<_>>();
+
     let mut binary_cache = InputBinaryCache::new();
 
     let (mut runner_source_map, source_format_map) =
