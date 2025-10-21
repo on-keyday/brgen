@@ -28,36 +28,35 @@ format PureLabel:
 
     
 
-format Label:
-    length :u8
-    if length & 0xc0 == 0xc0:
-        input.backward()
-        pointer :u16
-    else:
-        length <= 63
-        data :[length]u8
+format DNSLabel:
+    prefix :u2
+    match prefix:
+        0b11 => pointer :u14
+        0b00:
+            len :u6
+            label :[len]u8
+        .. => error("unexpected label")
 
-format DomainName:
-    labels :[]Label
-    
-    fn decode():
-        for:
-           label :Label
-           labels[labels.length] = label
-           if label.length == 0 || available(label.pointer):
-              break
-    
+format DomainName: 
+    labels :[]DNSLabel
+
     fn encode():
         for i in labels.length:
-            if labels[i].length == 0 || available(labels[i].pointer):
-                i == labels.length - 1
             output.put(labels[i])
-    
-#format DomainName2:
-#    for:
-#        label :Label
-#        if label.length == 0 || available(label.pointer):
-#            break
+            if available(labels[i].pointer) || u8(labels[i].len) == 0:
+                i + 1 == labels.length
+
+    fn decode():
+        for:
+            lab := input.get(DNSLabel)
+            if available(lab.pointer):
+                labels[labels.length] = lab
+                break
+            if u8(lab.len) == 0:
+                labels[labels.length] = lab
+                break
+            labels[labels.length] = lab
+            
 
 format DNSQuestion:
     name :DomainName
