@@ -1,23 +1,27 @@
 # quic varint
 # prefix = 0 (8-bit data)
+00
 3A
 12
 24
 3f
 
 # prefix = 1 (16-bit data)
+40 00
 40 85
 40 F3
 40 9B
 7F FF
 
 # prefix = 2 (32-bit data)
+80 00 00 00
 80 01 2B 3D
 80 04 E6 7F
 80 00 AB CD
 BF FF FF FF
 
 # prefix = 3 (64-bit data)
+C0 00 00 00 00 00 00 00
 C0 12 34 56 78 9A BC DE 
 C0 00 12 34 56 78 9A BC 
 C0 98 76 54 32 1F ED CB 
