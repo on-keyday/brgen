@@ -14,7 +14,7 @@ format Frame:
     RSV2 :u1
     RSV3 :u1
     Opcode :OpCode
-    Opcode.is_defined == true
+    # Opcode.is_defined == true
     Mask :u1
     PayloadLength :u7
     match PayloadLength:
