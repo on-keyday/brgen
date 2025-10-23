@@ -31,6 +31,12 @@ struct Args {
         )
     )]
     verbose: bool,
+
+    #[arg(
+        long,
+        help("use shorter path for temporary directory (for Windows cmd.exe limitation)")
+    )]
+    shorter_path: bool,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -152,6 +158,7 @@ fn compile_hex(input: Vec<u8>) -> anyhow::Result<Vec<u8>> {
 struct InputBinaryCache {
     input_binaries: std::collections::HashMap<(PathBuf, bool), PathBuf>,
     tmp_dir: Option<PathBuf>,
+    shorter: bool,
 }
 
 fn path_str(path: &PathBuf) -> String {
@@ -162,10 +169,11 @@ fn path_str(path: &PathBuf) -> String {
 }
 
 impl InputBinaryCache {
-    fn new() -> Self {
+    fn new(shorter: bool) -> Self {
         Self {
             input_binaries: std::collections::HashMap::new(),
             tmp_dir: None,
+            shorter,
         }
     }
 
@@ -201,13 +209,30 @@ impl InputBinaryCache {
         }
     }
 
+    fn get_short_random_string() -> String {
+        // 5 character random string
+        Uuid::new_v4()
+            .to_bytes_le()
+            .iter()
+            .skip(10)
+            .take(5)
+            .map(|b| format!("{:02x}", b))
+            .collect::<String>()
+    }
+
     fn get_tmp_dir(&mut self) -> anyhow::Result<PathBuf> {
         if let Some(x) = &self.tmp_dir {
             Ok(x.clone())
         } else {
             let dir = std::env::temp_dir();
             let dir = dir.join("unictest");
-            let dir = dir.join(format!("test-run-{}", Uuid::new_v4()));
+            let dir = if self.shorter {
+                // 5 character random string
+                let rand_str = Self::get_short_random_string();
+                dir.join(format!("tr-{}", rand_str))
+            } else {
+                dir.join(format!("test-run-{}", Uuid::new_v4()))
+            };
             fs::create_dir_all(&dir)?;
             self.tmp_dir = Some(dir.clone());
             Ok(dir)
@@ -216,7 +241,12 @@ impl InputBinaryCache {
 
     fn runner_dir(&mut self) -> anyhow::Result<PathBuf> {
         let tmp_dir = self.get_tmp_dir()?;
-        let runner_dir = tmp_dir.join(format!("runner-{}", Uuid::new_v4()));
+        let runner_dir = if self.shorter {
+            let rand_str = Self::get_short_random_string();
+            tmp_dir.join(format!("r-{}", rand_str))
+        } else {
+            tmp_dir.join(format!("runner-{}", Uuid::new_v4()))
+        };
         fs::create_dir_all(&runner_dir)?;
         Ok(runner_dir)
     }
@@ -527,6 +557,7 @@ async fn run_tests(
             );
             println!("----------------------------------------");
             let current_dir = current_dir.clone();
+            let shorter = parsed.shorter_path;
             let h: JoinHandle<()> = tokio::spawn(async move {
                 let send3 = send2.clone();
                 let result_info = ResultInfo {
@@ -550,12 +581,17 @@ async fn run_tests(
                         )
                         .into());
                     }
-                    let task_dir = runner_dir.join(format!(
-                        "task-{}-{}-{}",
-                        input.name,
-                        input.format_name,
-                        Uuid::new_v4()
-                    ));
+                    let task_dir = if shorter {
+                        let rand_str = InputBinaryCache::get_short_random_string();
+                        runner_dir.join(format!("t-{}", rand_str))
+                    } else {
+                        runner_dir.join(format!(
+                            "task-{}-{}-{}",
+                            input.name,
+                            input.format_name,
+                            Uuid::new_v4()
+                        ))
+                    };
                     fs::create_dir_all(&task_dir)?;
                     let replaced_run_command: Vec<String> = runner_command
                         .iter()
@@ -719,7 +755,7 @@ async fn main() -> anyhow::Result<()> {
             input
         })
         .collect::<Vec<_>>();
-    let mut binary_cache = InputBinaryCache::new();
+    let mut binary_cache = InputBinaryCache::new(parsed.shorter_path);
 
     let (mut runner_source_map, source_format_map) =
         make_runner_input_matrix(&test_runner, &inputs);
