@@ -1,0 +1,87 @@
+config.url = "http://osecpu.osask.jp/wiki/?page0043"
+
+input.endian = config.endian.big
+
+format Register:
+    reg :u8
+
+format AssignImmediateOperand:
+    reg :Register
+    imm :u32
+
+format TernaryOperand:
+    dest :Register 
+    src1 :Register
+    src2 :Register
+
+format ConditionalOperand:
+    condition_reg :Register
+
+enum OpCode:
+    :u8
+    NOP = 0x00
+    LABEL = 0x01
+    JUMP = 0x03
+    CND = 0x04
+    OR  = 0x10
+    XOR = 0x11
+    AND = 0x12
+    ADD = 0x14
+    SUB = 0x15
+    MUL = 0x16
+    SHL = 0x18
+    SHR = 0x19
+    DIV = 0x1A # signed
+    MOD = 0x1B # signed
+    PCP = 0x1e
+    CMP = 0x20
+    CMPNE = 0x21
+    CMPL = 0x22
+    CMPGE = 0x23
+    CMPLE = 0x24
+    CMPG = 0x25
+    TSTZ = 0x26 # reg1 & reg2 == 0
+    TSTNZ = 0x27 # reg1 & reg2 != 0
+
+enum LabelAttribute:
+    :u8
+    NORMAL = 0x00
+    PUBLIC = 0x01
+
+format LabelOperand:
+    opt :LabelAttribute
+    imm :u32
+
+format Instruction:
+    opcode :OpCode
+    match opcode:
+        OpCode.NOP:
+            ..
+        OpCode.LABEL:
+            operand :LabelOperand
+        OpCode.JUMP:
+            operand :ConditionalOperand
+        OpCode.CND:
+            operand :ConditionalOperand
+        OpCode.OR,
+        OpCode.XOR,
+        OpCode.AND,
+        OpCode.ADD,
+        OpCode.SUB,
+        OpCode.MUL,
+        OpCode.SHL,
+        OpCode.SHR,
+        OpCode.DIV,
+        OpCode.MOD,
+        OpCode.PCP:
+            operand :TernaryOperand
+        OpCode.CMP,
+        OpCode.CMPNE,
+        OpCode.CMPL,
+        OpCode.CMPGE,
+        OpCode.CMPLE,
+        OpCode.CMPG,
+        OpCode.TSTZ,
+        OpCode.TSTNZ:
+            operand :TernaryOperand
+
