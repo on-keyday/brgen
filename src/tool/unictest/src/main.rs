@@ -37,6 +37,12 @@ struct Args {
         help("use shorter path for temporary directory (for Windows cmd.exe limitation)")
     )]
     shorter_path: bool,
+
+    #[arg(long, help("target runner"),action = clap::ArgAction::Append)]
+    target_runner: Vec<String>,
+
+    #[arg(long, help("target input"),action = clap::ArgAction::Append)]
+    target_input: Vec<String>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -733,6 +739,16 @@ async fn main() -> anyhow::Result<()> {
                 }
             }
         })
+        .filter(|r| {
+            if parsed.target_runner.is_empty() {
+                true
+            } else {
+                match r {
+                    Ok(runner) => parsed.target_runner.contains(&runner.name),
+                    Err(_) => true,
+                }
+            }
+        })
         .collect::<Result<Vec<_>, _>>()?;
     // replace $WORK_DIR in binary and source paths
     let inputs = match test_config.inputs {
@@ -749,6 +765,13 @@ async fn main() -> anyhow::Result<()> {
     };
     let inputs = inputs
         .into_iter()
+        .filter(|input| {
+            if parsed.target_input.is_empty() {
+                true
+            } else {
+                parsed.target_input.contains(&input.name)
+            }
+        })
         .map(|mut input| {
             input.binary = input.binary.replace("$WORK_DIR", &current_dir);
             input.source = input.source.replace("$WORK_DIR", &current_dir);
