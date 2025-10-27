@@ -1161,13 +1161,15 @@ func (g *Generator) writeTypeDecode(ident string, typ ast2go.Type, p *ast2go.Fie
 			}
 			g.PrintfFunc("len_%s := int(%s)\n", p.Ident.Ident, length)
 			g.PrintfFunc("if len_%s != 0 {\n", p.Ident.Ident)
-			g.PrintfFunc("tmp%s := make([]byte, len_%s)\n", p.Ident.Ident, p.Ident.Ident)
-			g.PrintfFunc("n_%s, err := io.ReadFull(r,tmp%s[:])\n", p.Ident.Ident, p.Ident.Ident)
+			g.imports["bytes"] = struct{}{}
+			g.PrintfFunc("// to prevent from allocation attack, allocate empty slice first\n")
+			g.PrintfFunc("tmp%s := bytes.NewBuffer([]byte{})\n", p.Ident.Ident)
+			g.PrintfFunc("n_%s, err := io.CopyN(tmp%s, r, int64(len_%s))\n", p.Ident.Ident, p.Ident.Ident, p.Ident.Ident)
 			g.PrintfFunc("if err != nil {\n")
 			g.imports["fmt"] = struct{}{}
 			g.PrintfFunc("return fmt.Errorf(\"read %s: expect %%d bytes but read %%d bytes: %%w\", len_%s, n_%s, err)\n", p.Ident.Ident, p.Ident.Ident, p.Ident.Ident)
 			g.PrintfFunc("}\n")
-			g.PrintfFunc("%s = tmp%s[:]\n", ident, p.Ident.Ident)
+			g.PrintfFunc("%s = tmp%s.Bytes()\n", ident, p.Ident.Ident)
 			g.PrintfFunc("} else {\n")
 			g.PrintfFunc("%s = nil\n", ident)
 			g.PrintfFunc("}\n")
