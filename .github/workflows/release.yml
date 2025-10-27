@@ -22,11 +22,16 @@ jobs:
         uses: Kesin11/actions-timeline@54d513e0b5ff1158f1cf8321108d666a5a6c1fca # v2.2.5
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Download Linux artifacts
+      - name: Download Linux artifacts (LLVM)
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: brgen-linux
-          path: ./artifacts/linux
+          path: ./artifacts/linux-llvm
+      - name: Download Linux artifacts (GCC)
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with:
+          name: brgen-linux-gcc
+          path: ./artifacts/linux-gcc
       - name: Download MacOS artifacts
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
@@ -74,7 +79,8 @@ jobs:
           mv brgen-licenses.zip ../artifacts
       - name: Copy License Archive to Each Artifact
         run: |
-          cp artifacts/brgen-licenses.tar.gz artifacts/linux
+          cp artifacts/brgen-licenses.tar.gz artifacts/linux-llvm
+          cp artifacts/brgen-licenses.tar.gz artifacts/linux-gcc
           cp artifacts/brgen-licenses.tar.gz artifacts/macos
           cp artifacts/brgen-licenses.tar.gz artifacts/windows
           cp artifacts/brgen-licenses.tar.gz artifacts/vscode-extension
@@ -89,7 +95,8 @@ jobs:
           cp artifacts/brgen-licenses.tar.gz artifacts/web
       - name: Make Archive
         run: |
-          tar -czf artifacts/brgen-linux.tar.gz -C artifacts/linux .
+          tar -czf artifacts/brgen-linux-llvm.tar.gz -C artifacts/linux-llvm .
+          tar -czf artifacts/brgen-linux-gcc.tar.gz -C artifacts/linux-gcc .
           tar -czf artifacts/brgen-linux-arm.tar.gz -C artifacts/linux-arm .
           tar -czf artifacts/brgen-macos.tar.gz -C artifacts/macos .
           tar -czf artifacts/brgen-android.tar.gz -C artifacts/android .
@@ -107,7 +114,8 @@ jobs:
       - name: Calculate SHA256
         run: |
           cd artifacts
-          sha256sum brgen-linux.tar.gz > brgen-checksum.txt
+          sha256sum brgen-linux-llvm.tar.gz > brgen-checksum.txt
+          sha256sum brgen-linux-gcc.tar.gz >> brgen-checksum.txt
           sha256sum brgen-linux-arm.tar.gz >> brgen-checksum.txt
           sha256sum brgen-macos.tar.gz >> brgen-checksum.txt
           sha256sum brgen-android.tar.gz >> brgen-checksum.txt
@@ -121,7 +129,8 @@ jobs:
         run: |
           mkdir bundle
           mv artifacts/brgen-checksum.txt bundle
-          mv artifacts/brgen-linux.tar.gz bundle
+          mv artifacts/brgen-linux-llvm.tar.gz bundle
+          mv artifacts/brgen-linux-gcc.tar.gz bundle
           mv artifacts/brgen-linux-arm.tar.gz bundle
           mv artifacts/brgen-macos.tar.gz bundle
           mv artifacts/brgen-android.tar.gz bundle
@@ -162,7 +171,8 @@ jobs:
         with:
           files: |
             ./artifacts/brgen-checksum.txt
-            ./artifacts/brgen-linux.tar.gz
+            ./artifacts/brgen-linux-llvm.tar.gz
+            ./artifacts/brgen-linux-gcc.tar.gz
             ./artifacts/brgen-linux-arm.tar.gz
             ./artifacts/brgen-macos.tar.gz
             ./artifacts/brgen-android.tar.gz
