@@ -10,6 +10,9 @@ jobs:
   build-linux:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      matrix:
+        env: ["llvm", "gcc"]
     steps:
       - name: Timeline
         uses: Kesin11/actions-timeline@54d513e0b5ff1158f1cf8321108d666a5a6c1fca # v2.2.5
@@ -26,27 +29,38 @@ jobs:
           platform: x64
       - name: Install libc++-dev and libc++abi-dev
         run: sudo apt-get install libc++-dev libc++abi-dev -y
+        if: matrix.env == 'llvm'
       - name: Cache
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         # prevent renovate from updating this
         if: (!startsWith(github.ref , 'refs/heads/renovate/')) && (!startsWith(github.ref , 'refs/heads/dependabot/'))
         id: cache_linux
         env:
-          cache-name: cache-linux-built
+          cache-name: cache-linux-built-${{ matrix.env }}
         with:
           path: |
             ./built
             ./utils
-          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.sh') }}
+          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.sh') }}-${{ matrix.env }}
       - name: Pull Utils
         if: ${{ steps.cache_linux.outputs.cache-hit }}
         run: |
           cd utils
           git pull
+          # default is llvm
+          if [ "${{ matrix.env }}" = "gcc" ]; then
+            export FUTILS_CXX_COMPILER=g++
+            export FUTILS_C_COMPILER=gcc
+          fi
           . build shared Release futils
           cd ..
       - name: Build
         run: |
+          # default is llvm
+          if [ "${{ matrix.env }}" = "gcc" ]; then
+            export FUTILS_CXX_COMPILER=g++
+            export FUTILS_C_COMPILER=gcc
+          fi
           . build.sh native Release
           ./tool/src2json --version
       - name: Pack artifacts
@@ -64,7 +78,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: brgen-linux
+          name: brgen-linux-${{ matrix.env }}
           path: ./artifacts
   build-macos:
     runs-on: macos-latest
