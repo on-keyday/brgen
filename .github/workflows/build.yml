@@ -297,7 +297,7 @@ jobs:
 
   build-android:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - name: Timeline
         uses: Kesin11/actions-timeline@54d513e0b5ff1158f1cf8321108d666a5a6c1fca # v2.2.5
