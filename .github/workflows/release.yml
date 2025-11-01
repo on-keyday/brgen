@@ -25,7 +25,7 @@ jobs:
       - name: Download Linux artifacts (LLVM)
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
-          name: brgen-linux
+          name: brgen-linux-llvm
           path: ./artifacts/linux-llvm
       - name: Download Linux artifacts (GCC)
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
