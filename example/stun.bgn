@@ -13,18 +13,35 @@ enum StunAddrFamily:
     IPv4 = 0x01
     IPv6 = 0x02
 
+MAGIC_COOKIE ::= 0x2112A442
+
 format StunHeader:
-    type :u16
+    msg_type :MessageType
     length :u16
-    magic_cookie :u32(0x2112A442)
+    magic_cookie :u32(MAGIC_COOKIE)
     transaction_id :[12]u8
+
+format StunPacket:
+    header :StunHeader
+    attributes :[..]Attribute(input = input.subrange(header.length))
 
 format Attribute:
     type :AttributeType
     length :u16
-    value :[length]u8
+    match type:
+        AttributeType.mapped_address:
+            mapped_address :MappedAddress(input = input.subrange(length))
+        AttributeType.change_request:
+            change_request :ChangeRequest(input = input.subrange(length))
+        AttributeType.error_code:
+            error_code :ErrorCode(input = input.subrange(length))
+        AttributeType.xor_mapped_address:
+            xor_mapped_address :MappedAddress(input = input.subrange(length))
+        ..:
+            data :[length]u8
 
 format MappedAddress:
+    padding :u8
     family :StunAddrFamily
     family == StunAddrFamily.IPv4 || family == StunAddrFamily.IPv6
     port :u16
