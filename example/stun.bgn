@@ -2,6 +2,12 @@
 enum MessageType:
     :u16
     BindingRequest = 0x0001
+    Allocate = 0x0003
+    Refresh = 0x0004
+    Send = 0x0006
+    Data = 0x0007
+    CreatePermission = 0x0008
+    ChannelBind = 0x0009
     BindingResponse = 0x0101
     BindingErrorResponse = 0x0111
     SharedSecretRequest = 0x0002
@@ -37,6 +43,14 @@ format Attribute:
             error_code :ErrorCode(input = input.subrange(length))
         AttributeType.xor_mapped_address:
             xor_mapped_address :MappedAddress(input = input.subrange(length))
+        AttributeType.user_name:
+            user_name :UserName(input = input.subrange(length))
+        AttributeType.password:
+            password :Password(input = input.subrange(length))
+        AttributeType.realm:
+            realm :Realm(input = input.subrange(length))
+        AttributeType.message_integrity:
+            message_integrity :MessageIntegrity(input = input.subrange(length))
         ..:
             data :[length]u8
 
@@ -57,7 +71,29 @@ format ErrorCode:
     reserved :u22
     class :u3
     number :u7
+
+format UserName:
+    name :[..]u8
+
+format Password:
+    password :[..]u8
+
+format Realm:
+    realm :[..]u8
+
+format MessageIntegrity:
+    hash :[..]u8
    
+format PasswordAlgorithm:
+    algorithm :u8 
+    len :u8
+    parameter :[len]u8
+
+format PasswordAlgorithmList:
+    algorithms :[..]PasswordAlgorithm
+
+
+
 enum AttributeType:
     :u16
     reserved = 0x0000
@@ -75,3 +111,30 @@ enum AttributeType:
     realm = 0x0014
     nonce = 0x0015
     xor_mapped_address = 0x0020
+
+
+# also TURN
+config.url = "https://www.rfc-editor.org/rfc/rfc5766#section-14"
+format ChannelNumber:
+    number :u16
+    reserved :u16(0x0000)
+
+format Lifetime:
+    seconds :u32
+
+format EvenPort:
+    r :u1
+    reserved :u7(0)
+
+format RequestedTransport:
+    protocol :u8
+    reserved :u24(0)    
+
+format ReservationToken:
+    reservation_token :u64
+
+format DontFragment:
+    ..
+
+format Data:
+    data :[..]u8
