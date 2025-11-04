@@ -1,0 +1,38 @@
+input.endian = config.endian.native
+
+format YaraHeader:
+    magic :"YARA"
+    version :u8 
+    num_buffers :u8 
+
+format YaraFile:
+    header :YaraHeader
+    file_buffers :[header.num_buffers]ArenaFileBuffer
+    array_buffer_info.file_buffer = file_buffers
+    buffers :BufferInstance 
+    relocation_info :[..]ArenaRef
+
+format ArenaRef:
+    buffer_id :u32 
+    offset :u32
+
+state ArrayBufferInfo:
+    file_buffer :[]ArenaFileBuffer
+
+array_buffer_info :ArrayBufferInfo
+
+format ArenaFileBuffer:
+    offset :u64 
+    size :u32
+
+format BufferInstance:
+    buffers :[][]u8 
+
+    fn encode():
+        for buf in buffers:
+            output.put(buf)
+    
+    fn decode():
+        for fb in array_buffer_info.file_buffer:
+            buffers[buffers.length] = input.get(<[fb.size]u8>)
+
