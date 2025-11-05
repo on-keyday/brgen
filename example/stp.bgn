@@ -1,14 +1,35 @@
-# spaning tree protocol
+# spanning tree protocol
 
 format BridgeID:
     priority :u16
-    mac :u48
+    mac :[6]u8
 
-format BDPU:
+enum PortRole:
+    :u2 
+    unknown = 0
+    alternate = 1
+    root = 2
+    designated = 3
+
+format Flags: # from msb
+    topology_change_ack :u1
+    agreement :u1
+    forwarding :u1
+    learning :u1
+    port_role :PortRole
+    proposal :u1
+    topology_change :u1
+
+enum BPDUType:
+    :u8
+    configuration = 0x00
+    tcn = 0x80
+
+format BPDU:
     protocol_id :u16
     version :u8
-    bpdu_type :u8
-    flags :u8
+    bpdu_type :BPDUType
+    flags :Flags
     root_id :BridgeID
     root_path_cost :u32
     bridge_id :BridgeID
