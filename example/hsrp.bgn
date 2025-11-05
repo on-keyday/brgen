@@ -1,0 +1,29 @@
+config.url = "https://www.rfc-editor.org/rfc/rfc2281#section-5.1"
+
+enum HSRPOpcode:
+    :u8
+    hello = 0
+    coup = 1
+    resign = 2
+    init = 3
+
+enum HSRPState:
+    :u8
+    INITIAL = 0
+    LEARN = 1
+    LISTEN = 2
+    ACTIVE = 4
+    STANDBY = 8
+    FAULT = 16
+
+format HSRPPacket:
+    version :u8
+    opcode :HSRPOpcode
+    state_ :HSRPState
+    hello_time :u8
+    hold_time :u8
+    priority :u8
+    group :u8
+    reserved :u8
+    authentication_data :[8]u8
+    virtual_ip_address :[4]u8 

@@ -11,7 +11,7 @@ enum PortRole:
     root = 2
     designated = 3
 
-format Flags: # from msb
+format Flags: # from msb including RSTP
     topology_change_ack :u1
     agreement :u1
     forwarding :u1
@@ -24,6 +24,12 @@ enum BPDUType:
     :u8
     configuration = 0x00
     tcn = 0x80
+
+enum RootPathCost:
+    ten_gigabit = 2
+    gigabit = 4
+    fast_ethernet = 19
+    ethernet = 100
 
 format BPDU:
     protocol_id :u16
