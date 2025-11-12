@@ -61,7 +61,7 @@
   "private": true,
   "main": "./client/out/extension.js",
   "dependencies": {
-    "@types/node": "^22.0.0",
+    "@types/node": "^24.0.0",
     "@types/vscode": "^1.83.0",
     "ast2ts": "file:../astlib/ast2ts/out",
     "typescript": "^5.2.2"
