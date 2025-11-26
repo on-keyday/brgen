@@ -114,7 +114,9 @@ namespace j2cp2 {
         ast::Format* current_format = nullptr;
         Context ctx;
         std::vector<std::string> struct_names;
+        bool bytes_type_overwritten = false;
         std::string bytes_type = "::futils::view::rvec";
+        std::string namespace_override;
         std::string vector_type = "std::vector";
         std::string recursive_type = "std::shared_ptr";
         std::string initialize_method = "std::make_shared";
@@ -2139,6 +2141,9 @@ namespace j2cp2 {
             }
             futils::helper::DynDefer defer;
             std::vector<std::string> namespaces;
+            if (namespace_override.size()) {
+                namespaces.push_back(namespace_override);
+            }
             std::string source_include = "";
             for (auto& wm : prog->metadata) {
                 auto m = wm.lock();
@@ -2151,9 +2156,15 @@ namespace j2cp2 {
                     continue;
                 }
                 if (m->name == "config.cpp.namespace") {
+                    if (namespace_override.size()) {
+                        continue;
+                    }
                     namespaces.push_back(*name);
                 }
                 else if (m->name == "config.cpp.bytes_type") {
+                    if (bytes_type_overwritten) {
+                        continue;
+                    }
                     this->bytes_type = std::move(*name);
                 }
                 else if (m->name == "config.cpp.vector_type") {

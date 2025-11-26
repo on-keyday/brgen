@@ -10,6 +10,7 @@
 #include <file/file_view.h>
 #include "generate.h"
 #include <wrap/argv.h>
+#include <string_view>
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
 #include "../common/em_main.h"
@@ -32,6 +33,8 @@ struct Flags : futils::cmdline::templ::HelpOption {
     bool use_constexpr = false;
     bool dll_export = false;
     bool force_optional_getter = false;
+    std::string_view bytes_override;
+    std::string_view namespace_override;
     j2cp2::GenerateMode mode = j2cp2::GenerateMode::header_only;
     void bind(futils::cmdline::option::Context& ctx) {
         bind_help(ctx);
@@ -47,6 +50,8 @@ struct Flags : futils::cmdline::templ::HelpOption {
         ctx.VarBool(&use_constexpr, "use-constexpr", "use constexpr for functions");
         ctx.VarBool(&dll_export, "dll-export", "use dll export");
         ctx.VarBool(&force_optional_getter, "force-optional-getter", "force optional getter for union type");
+        ctx.VarString<true>(&bytes_override, "bytes-override", "override bytes type", "TYPE");
+        ctx.VarString<true>(&namespace_override, "namespace-override", "override namespace", "NAMESPACE");
         ctx.VarMap<std::string, j2cp2::GenerateMode, std::map>(
             &mode, "mode", "generate mode: header_only, header_file, source_file", "MODE",
             std::map<std::string, j2cp2::GenerateMode>{
@@ -68,6 +73,13 @@ int cpp_generate(const Flags& flags, brgen::request::GenerateSource& req, std::s
     g.mode = flags.mode;
     g.dll_export = flags.dll_export;
     g.force_optional_getter = flags.force_optional_getter;
+    if (flags.bytes_override.size()) {
+        g.bytes_type = std::string(flags.bytes_override);
+        g.bytes_type_overwritten = true;
+    }
+    if (flags.namespace_override.size()) {
+        g.namespace_override = std::string(flags.namespace_override);
+    }
     auto prog = brgen::ast::cast_to<brgen::ast::Program>(res);
     g.write_program(prog);
     send_source(req.id, std::move(g.w.out()), req.name + (flags.mode == j2cp2::GenerateMode::source_file ? ".cpp" : ".hpp"));
