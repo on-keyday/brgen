@@ -374,7 +374,7 @@ func (g *Generator) writePrefixedBitFieldDecode(b *PrefixedBitField) {
 		typ := fmt.Sprintf("uint%d", bitSize)
 		g.PrintfFunc("var %s %s\n", tmpVar, typ)
 		g.writeReadUint(bitSize, tmpVar, tmpVar, false, nil, ast2go.EndianUnspec)
-		g.PrintfFunc("%s &= ^%s(1 << %d)\n", tmpVar, typ, bitSize-b.PrefixSize)
+		g.PrintfFunc("%s &= %s(1 << %d) - 1\n", tmpVar, typ, bitSize-b.PrefixSize)
 		setField := g.exprStringer.ExprString(b.UnionField.Ident)
 		toReplace := regexp.MustCompile(fmt.Sprintf(`%s\(\)`, b.UnionField.Ident.Ident))
 		maxType := fmt.Sprintf("uint%d", b.MaxSize)
