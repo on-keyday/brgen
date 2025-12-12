@@ -1,0 +1,51 @@
+config.url = "https://www.rfc-editor.org/rfc/rfc7011"
+
+format MessageHeader:
+    version :u16
+    length :u16 
+    export_time :u32
+    sequence_number :u32
+    observation_domain_id :u32
+
+format FieldSpecifier:
+    enterprise :u1
+    information_element_id :u15
+    field_length :u8
+    enterprise_number :u32 
+
+format SetHeader:
+    set_id :u16
+    length :u16
+
+format Set:
+    header :SetHeader
+    data :[header.length - 4]u8
+
+format RecordHeader:
+    template_id :u16
+    template_id > 255
+    field_count :u16
+
+format TemplateRecord:
+    header :RecordHeader
+    fields :[header.field_count]FieldSpecifier
+
+format OptionTemplateRecord:
+    header :RecordHeader
+    scope_field_count :u16
+    header.field_count > scope_field_count
+    scope_field_count != 0
+    fields :[header.field_count - scope_field_count]FieldSpecifier
+    scope_fields :[scope_field_count]FieldSpecifier
+
+format DataRecord:
+    template_id :u16
+
+
+format InformationElement:
+    length :u8
+    if length == 0xff:
+        variable_length :u16
+        information_element :[variable_length]u8
+    else:
+        information_element :[length]u8
