@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-inkwell = { version="0.7.0", features = ["llvm17-0","llvm17-0-no-llvm-linking"] }
+inkwell = { version="0.8.0", features = ["llvm17-0","llvm17-0-no-llvm-linking"] }
 ast2rust = { path ="../../../astlib/ast2rust/core" }
 serde = "1.0.200"
 serde_json = "1.0.116"
