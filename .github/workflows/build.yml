@@ -31,7 +31,7 @@ jobs:
         run: sudo apt-get install libc++-dev libc++abi-dev -y
         if: matrix.env == 'llvm'
       - name: Cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7 # v5.0.2
         # prevent renovate from updating this
         if: (!startsWith(github.ref , 'refs/heads/renovate/')) && (!startsWith(github.ref , 'refs/heads/dependabot/'))
         id: cache_linux
@@ -110,7 +110,7 @@ jobs:
           echo "libc++abi"
           nm $LIBCPP/libc++abi.1.dylib | c++filt
       - name: Cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7 # v5.0.2
         # prevent renovate from updating this
         if: (!startsWith(github.ref , 'refs/heads/renovate/')) && (!startsWith(github.ref , 'refs/heads/dependabot/'))
         id: cache_macos
@@ -176,7 +176,7 @@ jobs:
           version: latest
           platform: x64
       - name: Cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7 # v5.0.2
         id: cache_windows
         # prevent renovate from updating this
         if: (!startsWith(github.ref , 'refs/heads/renovate/')) && (!startsWith(github.ref , 'refs/heads/dependabot/'))
@@ -417,7 +417,7 @@ jobs:
         with:
           go-version: "1.25"
       - name: Cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7 # v5.0.2
         # prevent renovate from updating this
         if: (!startsWith(github.ref , 'refs/heads/renovate/')) && (!startsWith(github.ref , 'refs/heads/dependabot/'))
         id: cache_web
