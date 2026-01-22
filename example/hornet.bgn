@@ -1,0 +1,22 @@
+config.url = "https://github.com/Project-SAN/HORNET/blob/main/README.md#%E3%83%91%E3%82%B1%E3%83%83%E3%83%88%E3%83%95%E3%83%AC%E3%83%BC%E3%83%A0%E5%BD%A2%E5%BC%8F"
+
+enum Direction:
+    :u8
+    forward = 0
+    backward = 1
+
+enum PacketType:
+    :u8
+    setup = 0
+    data = 1
+
+format Frame:
+    direction :Direction
+    packet_type :PacketType
+    hops :u8
+    reserved :u8
+    chdr_specific :[16]u8
+    ahdr_len :ul32
+    payload_len :ul32
+    ahdr_bytes :[ahdr_len]u8
+    payload :[payload_len]u8
