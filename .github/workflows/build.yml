@@ -375,7 +375,7 @@ jobs:
         run: |
           go install github.com/Songmu/gocredits/cmd/gocredits@latest
       - name: Set up ruby
-        uses: ruby/setup-ruby@e69dcf3ded5967f30d7ef595704928d91cdae930 # v1.285.0
+        uses: ruby/setup-ruby@90be1154f987f4dc0fe0dd0feedac9e473aa4ba8 # v1.286.0
         with:
           ruby-version: ruby
       - uses: github/setup-licensed@be11bcbb82e3140b6cf260e647c3efeeca8fcefd # v1.3.1
