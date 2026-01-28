@@ -15,7 +15,7 @@ jobs:
         env: ["llvm", "gcc"]
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@54d513e0b5ff1158f1cf8321108d666a5a6c1fca # v2.2.5
+        uses: Kesin11/actions-timeline@e018cfefea60b4f44266998551211a35a58b8097 # v3.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
@@ -85,7 +85,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@54d513e0b5ff1158f1cf8321108d666a5a6c1fca # v2.2.5
+        uses: Kesin11/actions-timeline@e018cfefea60b4f44266998551211a35a58b8097 # v3.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
@@ -163,7 +163,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@54d513e0b5ff1158f1cf8321108d666a5a6c1fca # v2.2.5
+        uses: Kesin11/actions-timeline@e018cfefea60b4f44266998551211a35a58b8097 # v3.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
@@ -223,7 +223,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@54d513e0b5ff1158f1cf8321108d666a5a6c1fca # v2.2.5
+        uses: Kesin11/actions-timeline@e018cfefea60b4f44266998551211a35a58b8097 # v3.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
@@ -259,7 +259,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@54d513e0b5ff1158f1cf8321108d666a5a6c1fca # v2.2.5
+        uses: Kesin11/actions-timeline@e018cfefea60b4f44266998551211a35a58b8097 # v3.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
@@ -300,7 +300,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@54d513e0b5ff1158f1cf8321108d666a5a6c1fca # v2.2.5
+        uses: Kesin11/actions-timeline@e018cfefea60b4f44266998551211a35a58b8097 # v3.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
@@ -345,7 +345,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@54d513e0b5ff1158f1cf8321108d666a5a6c1fca # v2.2.5
+        uses: Kesin11/actions-timeline@e018cfefea60b4f44266998551211a35a58b8097 # v3.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
@@ -402,7 +402,7 @@ jobs:
         env: ["development", "production"]
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@54d513e0b5ff1158f1cf8321108d666a5a6c1fca # v2.2.5
+        uses: Kesin11/actions-timeline@e018cfefea60b4f44266998551211a35a58b8097 # v3.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout
