@@ -14,11 +14,9 @@ export function initBrgenLanguage(): void {
   initialized = true;
 
   const service = getGeneratorService();
-  // Ensure workers are registered before passing the factory to LSP.
-  // initLSP will synchronously register the language and providers;
-  // the factory itself handles lazy worker creation.
-  service.init().then(() => {
-    // factory is usable even before init completes for language registration
-  });
+  // Core workers are registered synchronously in the constructor,
+  // so factory.getWorker() works immediately for src2json etc.
+  // Kick off BM/EBM dynamic imports in the background.
+  service.init();
   initLSP(service.factory);
 }
