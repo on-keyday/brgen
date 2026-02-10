@@ -1,5 +1,5 @@
 import "destyle.css";
-import { useEffect, useCallback, useRef } from "preact/hooks";
+import { useEffect, useCallback, useRef, useState } from "preact/hooks";
 import * as monaco from "monaco-editor";
 import { useEditorStore } from "./stores/editorStore";
 import { useGeneratorStore, debouncedGenerate, immediateGenerate } from "./stores/generatorStore";
@@ -7,6 +7,7 @@ import { MonacoEditor } from "./components/MonacoEditor";
 import { LanguageSelector } from "./components/LanguageSelector";
 import { ConfigPanel } from "./components/ConfigPanel";
 import { ActionBar } from "./components/ActionBar";
+import { FilePicker } from "./components/FilePicker";
 import { SourceMapOverlay } from "./components/SourceMapOverlay";
 import styles from "./components/App.module.css";
 import { initBrgenLanguage } from "./brgen_language";
@@ -25,9 +26,29 @@ export function App() {
   const generatedEditorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const overlayRef = useRef(new SourceMapOverlay());
 
+  // File picker state
+  const [filePickerOpen, setFilePickerOpen] = useState(false);
+
   const handleSourceEditorRef = useCallback(
     (editor: monaco.editor.IStandaloneCodeEditor | null) => {
       sourceEditorRef.current = editor;
+
+      // Register "Load Example File" action on the source editor (public API)
+      if (editor) {
+        editor.addAction({
+          id: "brgen.loadExampleFile",
+          label: "Load Example File",
+          contextMenuGroupId: "z_commands",
+          contextMenuOrder: 1,
+          // Ctrl+Shift+O to open file picker (avoids conflict with Ctrl+P used by other tools)
+          keybindings: [
+            monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyO,
+          ],
+          run: () => {
+            setFilePickerOpen(true);
+          },
+        });
+      }
     },
     [],
   );
@@ -93,6 +114,29 @@ export function App() {
     immediateGenerate();
   }, []);
 
+  // Handle example file selection from the file picker
+  const handleFileSelect = useCallback(
+    (filePath: string) => {
+      fetch(filePath)
+        .then((res) => {
+          if (!res.ok) throw new Error(`Failed to fetch ${filePath}: ${res.status}`);
+          const ct = res.headers.get("content-type") ?? "";
+          if (ct.includes("text/html")) {
+            throw new Error(`${filePath} returned HTML (SPA fallback?)`);
+          }
+          return res.text();
+        })
+        .then((text) => {
+          setSource(text);
+          immediateGenerate();
+        })
+        .catch((e) => {
+          console.error("Failed to load example file:", e);
+        });
+    },
+    [setSource],
+  );
+
   // Determine the Monaco language for the generated output
   const generatedLang = result?.monacoLang ?? "text/plain";
   const generatedCode = result?.code ?? "(generated code)";
@@ -106,6 +150,14 @@ export function App() {
         <LanguageSelector value={language} onChange={handleLanguageChange} />
 
         <ConfigPanel language={language} onConfigChange={handleConfigChange} />
+
+        <button
+          class={styles.button}
+          onClick={() => setFilePickerOpen(true)}
+          title="Load example .bgn file (Ctrl+Shift+O)"
+        >
+          Load Example
+        </button>
 
         <div class={styles.titleBarSpacer} />
 
@@ -142,6 +194,13 @@ export function App() {
           />
         </div>
       </div>
+
+      {/* File picker modal */}
+      <FilePicker
+        open={filePickerOpen}
+        onClose={() => setFilePickerOpen(false)}
+        onSelect={handleFileSelect}
+      />
     </div>
   );
 }

@@ -168,3 +168,92 @@
   background-color: #555555;
   margin: 0 4px;
 }
+
+/* File picker modal (VS Code quick-open style) */
+.filePickerOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  padding-top: 80px;
+}
+
+.filePickerModal {
+  background-color: #252526;
+  border: 1px solid #404040;
+  border-radius: 6px;
+  width: 600px;
+  max-width: 90vw;
+  max-height: 400px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  align-self: flex-start;
+}
+
+.filePickerInput {
+  background-color: #3c3c3c;
+  color: #cccccc;
+  border: none;
+  border-bottom: 1px solid #404040;
+  padding: 10px 14px;
+  font-size: 14px;
+  outline: none;
+  border-radius: 6px 6px 0 0;
+}
+
+.filePickerInput::placeholder {
+  color: #888888;
+}
+
+.filePickerList {
+  overflow-y: auto;
+  flex: 1;
+  padding: 4px 0;
+}
+
+.filePickerItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.filePickerItem:hover {
+  background-color: #2a2d2e;
+}
+
+.filePickerItemActive {
+  background-color: #094771;
+}
+
+.filePickerItemActive:hover {
+  background-color: #094771;
+}
+
+.filePickerFileName {
+  color: #cccccc;
+  white-space: nowrap;
+}
+
+.filePickerFileDir {
+  color: #888888;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.filePickerEmpty {
+  padding: 12px 14px;
+  color: #888888;
+  font-size: 14px;
+  text-align: center;
+}

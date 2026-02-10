@@ -5,7 +5,8 @@ import path from "path";
 export default defineConfig({
   plugins: [preact()],
   root: ".",
-  publicDir: false,
+  // web/public/ (one level up) contains example/ with .bgn files and index.txt
+  publicDir: "../public",
   build: {
     outDir: "dist",
     emptyOutDir: true,
