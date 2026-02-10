@@ -1,8 +1,14 @@
 
 import * as monaco from  "monaco-editor";
-import 'monaco-editor/esm/vs/editor/contrib/semanticTokens/browser/documentSemanticTokens.js';
-import 'monaco-editor/esm/vs/editor/contrib/semanticTokens/browser/viewportSemanticTokens.js';
-import 'monaco-editor/esm/vs/editor/contrib/hover/browser/hoverContribution.js';
+// NOTE: Semantic token and hover contributions are loaded via editor.main.js
+// (which is the entry point for `import "monaco-editor"`). Do NOT add explicit
+// sub-path side-effect imports like:
+//   import 'monaco-editor/esm/vs/editor/contrib/semanticTokens/browser/documentSemanticTokens.js';
+//   import 'monaco-editor/esm/vs/editor/contrib/hover/browser/hoverContribution.js';
+// In Vite, these resolve to raw ESM outside the pre-bundle, creating a module
+// identity split: registerEditorFeature() pushes to a different editorFeatures[]
+// array than the one StandaloneServices.initialize() reads, so the feature is
+// never instantiated.
 import * as caller from "../s2j/caller.js";
 import {ast2ts,analyze} from "ast2ts"
 import { UpdateTracer } from "../s2j/update.js";
@@ -143,6 +149,5 @@ export const initLSP = (factory :caller.IWorkerFactory) => {
             },
         }));
     })
-
 
 }
