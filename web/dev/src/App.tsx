@@ -12,6 +12,12 @@ import { SourceMapOverlay } from "./components/SourceMapOverlay";
 import styles from "./components/App.module.css";
 import { initBrgenLanguage } from "./brgen_language";
 
+// Initialize brgen language mode (registration, theme, semantic tokens, hover)
+// BEFORE any Monaco editor/model is created. This must run at module scope
+// so that monaco.languages.register("brgen") and onLanguage callbacks are
+// set up before MonacoEditor's useEffect creates a model with language="brgen".
+initBrgenLanguage();
+
 export function App() {
   const source = useEditorStore((s) => s.source);
   const language = useEditorStore((s) => s.language);
@@ -59,11 +65,6 @@ export function App() {
     },
     [],
   );
-
-  // Initialize brgen language mode and LSP once
-  useEffect(() => {
-    initBrgenLanguage();
-  }, []);
 
   // Run initial generation on mount
   useEffect(() => {
