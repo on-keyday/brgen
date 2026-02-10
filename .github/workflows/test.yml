@@ -8,11 +8,11 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@54d513e0b5ff1158f1cf8321108d666a5a6c1fca # v2.2.5
+        uses: Kesin11/actions-timeline@7c7e0821d38f27460f4a71ef874a1c8cf23602e4 # v2.2.6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Set up Ninja
         uses: seanmiddleditch/gha-setup-ninja@7e868db0f3406270dd46e1dac26c65f621456723 # master
       - name: Set up Clang
