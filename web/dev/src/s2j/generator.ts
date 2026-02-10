@@ -4,7 +4,7 @@ import { EBMGenOption, isJobResult, TraceID } from "./msg.js";
 import { UpdateTracer } from "./update.js";
 import * as inc from "./cpp_include.js";
 import  { BMGenOption, COption, CallOption, Cpp2Option, CppOption, GoOption, JobResult,Language, Rust2Option, RustOption, TSOption } from "./msg.js";
-import {ast2ts} from "../../node_modules/ast2ts/ast.js";
+import {ast2ts} from "ast2ts";
 import {ConfigKey} from "../types.js";
 import { BM_LANGUAGES, BM_LSP_LANGUAGES, generateBMCode } from "../lib/bmgen/bm_caller.js";
 import { EBM_LANGUAGES,EBM_LSP_LANGUAGES,generateEBMCode } from "../lib/bmgen/ebm_caller.js";
