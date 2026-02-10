@@ -36,9 +36,16 @@ module.exports = {
     errorDetails: true,
   },
   resolve: {
+    alias: {
+      "node:module": false,
+      "node:fs": false,
+      "node:path": false,
+    },
     fallback: {
       // これらNode.jsの組み込みモジュールは、バンドルに含めず、エラーも出さないようにする
       module: false,
+      fs: false,
+      path: false,
     },
   },
   plugins: [
