@@ -36,10 +36,11 @@ module.exports = {
     errorDetails: true,
   },
   resolve: {
-    alias: {
-      "node:module": false,
-      "node:fs": false,
-      "node:path": false,
+    externals: {
+      // node: スキーム付きの入力をそのまま外部参照として扱う設定
+      'node:module': 'commonjs node:module', 
+      'node:fs': 'commonjs node:fs',
+      'node:path': 'commonjs node:path',
     },
     fallback: {
       // これらNode.jsの組み込みモジュールは、バンドルに含めず、エラーも出さないようにする
