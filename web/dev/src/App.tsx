@@ -1,25 +1,39 @@
 import "destyle.css";
-import { WorkerFactory } from "./s2j/worker_factory";
-import { fixedWorkerMap } from "./s2j/workers";
-import { LanguageList, Language } from "./s2j/msg";
-import { UpdateTracer } from "./s2j/update";
+import { getGeneratorService } from "./generator_service";
+import { languageRegistry, getLanguagesByCategory, LanguageCategory } from "./languages";
 
-// Verify worker layer imports resolve correctly at build time
-const _workerFactory = new WorkerFactory();
-_workerFactory.addWorker(fixedWorkerMap);
-const _updateTracer = new UpdateTracer();
-const _languages = LanguageList;
+// Verify Phase 2 modules compile and initialize correctly
+const _service = getGeneratorService();
+const _registry = languageRegistry;
+const _byCategory = getLanguagesByCategory();
 
 export function App() {
+  const categories = [
+    LanguageCategory.ANALYSIS,
+    LanguageCategory.GENERATOR,
+    LanguageCategory.INTERMEDIATE,
+    LanguageCategory.BM,
+    LanguageCategory.EBM,
+  ];
   return (
     <div style={{ padding: "20px", color: "white", backgroundColor: "#1e1e1e", minHeight: "100vh" }}>
       <h1>brgen Web Playground</h1>
-      <p>Vite + Preact pipeline working. Worker layer integrated.</p>
+      <p>Vite + Preact pipeline working. Adapter layer integrated.</p>
       <p style={{ color: "#888", marginTop: "10px" }}>
-        Available languages: {_languages.length}
+        Total languages: {_registry.length}
       </p>
+      <ul style={{ color: "#aaa", marginTop: "10px", listStyle: "none" }}>
+        {categories.map(cat => {
+          const langs = _byCategory.get(cat) ?? [];
+          return (
+            <li key={cat}>
+              {cat}: {langs.map(l => l.displayName).join(", ")}
+            </li>
+          );
+        })}
+      </ul>
       <p style={{ color: "#888", marginTop: "10px" }}>
-        Next: adapter layer, stores, and UI components.
+        Next: Zustand stores and UI components.
       </p>
     </div>
   );
