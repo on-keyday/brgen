@@ -14,5 +14,6 @@
     "jsxImportSource": "preact",
     "skipLibCheck": true
   },
-  "include": ["**/*.ts", "**/*.tsx", "**/*.mts"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.mts"],
+  "exclude": ["node_modules", "dist", "out"]
 }

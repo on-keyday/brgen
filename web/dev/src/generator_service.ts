@@ -45,7 +45,7 @@ export type ConfigReader = (lang: Language, key: ConfigKey) => any;
  * dispatch while giving the new Preact UI a simple interface.
  */
 export class GeneratorService {
-    readonly factory: WorkerFactory;
+    readonly factory: InstanceType<typeof WorkerFactory>;
     readonly updateTracer: UpdateTracer;
     #initPromise: Promise<void> | null = null;
 

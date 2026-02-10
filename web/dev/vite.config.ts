@@ -32,6 +32,13 @@ export default defineConfig({
       "ast2ts": path.resolve(__dirname, "node_modules/ast2ts/index.js"),
     },
   },
+  optimizeDeps: {
+    // ast2ts is a CJS file: symlink with no package.json in its target dir.
+    // Vite's dev server won't pre-bundle it automatically, so esbuild never
+    // converts CJS → ESM and we get "does not provide an export named 'ast2ts'".
+    // Force pre-bundling so named exports work in dev mode.
+    include: ["ast2ts"],
+  },
   server: {
     headers: {
       // Required for SharedArrayBuffer (WASM workers)

@@ -1,72 +1,147 @@
 import "destyle.css";
+import { useEffect, useCallback, useRef } from "preact/hooks";
+import * as monaco from "monaco-editor";
 import { useEditorStore } from "./stores/editorStore";
-import { useConfigStore } from "./stores/configStore";
-import { useGeneratorStore, immediateGenerate } from "./stores/generatorStore";
-import { languageRegistry, getLanguagesByCategory, LanguageCategory } from "./languages";
-
-const categories = [
-  LanguageCategory.ANALYSIS,
-  LanguageCategory.GENERATOR,
-  LanguageCategory.INTERMEDIATE,
-  LanguageCategory.BM,
-  LanguageCategory.EBM,
-];
-const byCategory = getLanguagesByCategory();
+import { useGeneratorStore, debouncedGenerate, immediateGenerate } from "./stores/generatorStore";
+import { MonacoEditor } from "./components/MonacoEditor";
+import { LanguageSelector } from "./components/LanguageSelector";
+import { ConfigPanel } from "./components/ConfigPanel";
+import { ActionBar } from "./components/ActionBar";
+import { SourceMapOverlay } from "./components/SourceMapOverlay";
+import styles from "./components/App.module.css";
+import { initBrgenLanguage } from "./brgen_language";
 
 export function App() {
-  const source = useEditorStore(s => s.source);
-  const language = useEditorStore(s => s.language);
-  const setLanguage = useEditorStore(s => s.setLanguage);
-  const generating = useGeneratorStore(s => s.generating);
-  const result = useGeneratorStore(s => s.result);
+  const source = useEditorStore((s) => s.source);
+  const language = useEditorStore((s) => s.language);
+  const setSource = useEditorStore((s) => s.setSource);
+  const setLanguage = useEditorStore((s) => s.setLanguage);
+  const generating = useGeneratorStore((s) => s.generating);
+  const result = useGeneratorStore((s) => s.result);
+  const mappingInfo = useGeneratorStore((s) => s.mappingInfo);
+
+  // Editor instance refs for source map overlay
+  const sourceEditorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const generatedEditorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const overlayRef = useRef(new SourceMapOverlay());
+
+  const handleSourceEditorRef = useCallback(
+    (editor: monaco.editor.IStandaloneCodeEditor | null) => {
+      sourceEditorRef.current = editor;
+    },
+    [],
+  );
+
+  const handleGeneratedEditorRef = useCallback(
+    (editor: monaco.editor.IStandaloneCodeEditor | null) => {
+      generatedEditorRef.current = editor;
+    },
+    [],
+  );
+
+  // Initialize brgen language mode and LSP once
+  useEffect(() => {
+    initBrgenLanguage();
+  }, []);
+
+  // Run initial generation on mount
+  useEffect(() => {
+    immediateGenerate();
+  }, []);
+
+  // Apply source map decorations when mappingInfo changes
+  useEffect(() => {
+    overlayRef.current.apply(
+      sourceEditorRef.current,
+      generatedEditorRef.current,
+      mappingInfo,
+    );
+    return () => {
+      overlayRef.current.clear();
+    };
+  }, [mappingInfo]);
+
+  // Ctrl+S handler
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === "s") {
+        e.preventDefault();
+        immediateGenerate();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  const handleSourceChange = useCallback(
+    (newSource: string) => {
+      setSource(newSource);
+      debouncedGenerate();
+    },
+    [setSource],
+  );
+
+  const handleLanguageChange = useCallback(
+    (lang: string) => {
+      setLanguage(lang as any);
+      immediateGenerate();
+    },
+    [setLanguage],
+  );
+
+  const handleConfigChange = useCallback(() => {
+    immediateGenerate();
+  }, []);
+
+  // Determine the Monaco language for the generated output
+  const generatedLang = result?.monacoLang ?? "text/plain";
+  const generatedCode = result?.code ?? "(generated code)";
 
   return (
-    <div style={{ padding: "20px", color: "white", backgroundColor: "#1e1e1e", minHeight: "100vh" }}>
-      <h1>brgen Web Playground</h1>
-      <p>Vite + Preact + Zustand pipeline working. Stores integrated.</p>
+    <div class={styles.app}>
+      {/* Title bar */}
+      <div class={styles.titleBar}>
+        <span class={styles.titleText}>brgen</span>
 
-      <div style={{ marginTop: "10px" }}>
-        <label style={{ color: "#aaa" }}>
-          Language:{" "}
-          <select
-            value={language}
-            onChange={e => {
-              setLanguage(e.currentTarget.value as any);
-              immediateGenerate();
-            }}
-            style={{ backgroundColor: "#333", color: "white", padding: "4px" }}
-          >
-            {categories.map(cat => {
-              const langs = byCategory.get(cat) ?? [];
-              if (langs.length === 0) return null;
-              return (
-                <optgroup key={cat} label={cat}>
-                  {langs.map(l => (
-                    <option key={l.id} value={l.id}>{l.displayName}</option>
-                  ))}
-                </optgroup>
-              );
-            })}
-          </select>
-        </label>
+        <LanguageSelector value={language} onChange={handleLanguageChange} />
+
+        <ConfigPanel language={language} onConfigChange={handleConfigChange} />
+
+        <div class={styles.titleBarSpacer} />
+
+        {generating && (
+          <span class={`${styles.statusIndicator} ${styles.statusGenerating}`}>
+            generating...
+          </span>
+        )}
+
+        <ActionBar />
       </div>
 
-      <p style={{ color: "#888", marginTop: "10px" }}>
-        Source: {source.length} chars | Total languages: {languageRegistry.length}
-        {generating && " | Generating..."}
-      </p>
-
-      {result && (
-        <div style={{ marginTop: "10px" }}>
-          <p style={{ color: result.isError ? "#f66" : "#6f6" }}>
-            Result: {result.monacoLang} ({result.code.length} chars)
-          </p>
+      {/* Editor panels */}
+      <div class={styles.editorArea}>
+        {/* Source editor */}
+        <div class={styles.editorPanel}>
+          <MonacoEditor
+            value={source}
+            language="brgen"
+            onChange={handleSourceChange}
+            theme="brgen-theme"
+            semanticHighlighting
+            editorRef={handleSourceEditorRef}
+          />
         </div>
-      )}
 
-      <p style={{ color: "#888", marginTop: "10px" }}>
-        Next: Preact UI components (Monaco editor panels, config panel, etc.)
-      </p>
+        {/* Generated output editor */}
+        <div class={styles.editorPanel}>
+          <MonacoEditor
+            value={generatedCode}
+            language={generatedLang}
+            readOnly
+            editorRef={handleGeneratedEditorRef}
+          />
+        </div>
+      </div>
     </div>
   );
 }
