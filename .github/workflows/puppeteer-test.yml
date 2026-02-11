@@ -43,9 +43,8 @@ jobs:
           cd astlib/ast2ts
           tsc || true # allow error
           cd ../../web/public
-          npx http-server -p 8080 &
           cd ../dev
           npm install
-          tsc || true # allow error
+          npx vite dev --port 8080 &
           sleep 5
           TEST_ENV=github node test/puppet.mjs
