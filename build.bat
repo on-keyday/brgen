@@ -48,8 +48,7 @@ rem    copy ..\..\..\LICENSE .\pkg\LICENSE
 rem    cd ../../../
     python script/copy_bmgen_stub.py
     cd ./web/dev
-    call tsc
-    call webpack
+    call npm run build
     cd ../../
     python script/copy_example.py
 )

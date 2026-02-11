@@ -65,10 +65,10 @@ const handleLanguage = async (ui :UIModel,s :JobResult,generate:(factory :caller
     console.log(res);
     if(res.stdout === undefined || res.stdout === "") {
         if(res.stderr!==undefined&&res.stderr!==""){
-            ui.setGenerated(res.stderr,"text/plain");
+            ui.setGenerated(res.stderr,"plaintext");
         }
         else{
-            ui.setGenerated("(no output. maybe generator is crashed)","text/plain");
+            ui.setGenerated("(no output. maybe generator is crashed)","plaintext");
         }
     }
     else{
@@ -115,7 +115,7 @@ const handleCpp = async (ui :UIModel,  s :JobResult) => {
         if(result.code === 0&&expandInclude===true){
             const expanded = await inc.resolveInclude(result.stdout!,(url :string)=>{
                 if(ui.getUpdateTracer().editorAlreadyUpdated(s)) return;
-                ui.setGenerated(`maybe external server call is delayed\nfetching ${url}`,"text/plain");
+                ui.setGenerated(`maybe external server call is delayed\nfetching ${url}`,"plaintext");
             });
             result.stdout = expanded;
         }
@@ -127,13 +127,7 @@ const handleCpp = async (ui :UIModel,  s :JobResult) => {
     result = result as JobResult | undefined;
     if(result&&!ui.getUpdateTracer().editorAlreadyUpdated(result)){
         if(isMappingInfoStruct(mappingInfo)) {
-            // wait for editor update 
-            setTimeout(() => {
-                if(result===undefined) throw new Error("result is undefined");
-                if(ui.getUpdateTracer().editorAlreadyUpdated(s)) return;
-                console.log(mappingInfo);
-                ui.mappingCode(mappingInfo.line_map,s,Language.CPP,0);
-            },1);
+            ui.mappingCode(mappingInfo.line_map,s,Language.CPP,0);
         }
         /*
         if(compileViaAPI===true) {
@@ -230,7 +224,7 @@ const handleBinaryModule = async (ui :UIModel, s :JobResult) => {
     };
     return handleLanguage(ui,s,(factory,id,src,opt) => {
         return caller.getBinaryModule(factory, id,src,opt as BMGenOption);
-    },Language.BINARY_MODULE,"text/plain",option);
+    },Language.BINARY_MODULE,"plaintext",option);
 }
 
 const handleExtendedBinaryModule = async (ui :UIModel, s :JobResult) => {
@@ -244,7 +238,7 @@ const handleExtendedBinaryModule = async (ui :UIModel, s :JobResult) => {
     };
     return handleLanguage(ui,s,(factory,id,src,opt) => {
         return caller.getEBM(factory, id,src,opt as EBMGenOption);
-    },Language.EBM,"text/plain",option);
+    },Language.EBM,"plaintext",option);
 }
 
 const handleBinaryModuleBased = async (getBase :(factory: caller.IWorkerFactory, id: TraceID, sourceCode: string, options: any) => Promise<JobResult>, ui :UIModel, s :JobResult,lang :Language,view_lang :string, generator:(factory :caller.IWorkerFactory, id :TraceID,srcCode :string,option:any)=>Promise<JobResult>,opt :any) => {
@@ -255,10 +249,10 @@ const handleBinaryModuleBased = async (getBase :(factory: caller.IWorkerFactory,
     }
     if(result.stdout === undefined || result.stdout === "") {
         if(result.stderr!==undefined&&result.stderr!==""){
-            ui.setGenerated(result.stderr,"text/plain");
+            ui.setGenerated(result.stderr,"plaintext");
         }
         else{
-            ui.setGenerated("(no output. maybe generator is crashed)","text/plain");
+            ui.setGenerated("(no output. maybe generator is crashed)","plaintext");
         }
         return;
     }
@@ -282,10 +276,35 @@ export const handleRust2 = async (ui :UIModel, s :JobResult) => {
 }
 */
 
+const ebmSourceMapConfigKey = "source-map";
+
 export const handleEBM = async (ui :UIModel, s :JobResult,lang :string) => {
-    return handleBinaryModuleBased(caller.getEBM, ui,s,lang as Language,(EBM_LSP_LANGUAGES as any)[lang],(factory,id,srcCode,_) :Promise<JobResult> =>{
-        return generateEBMCode(factory,ui,id,lang,srcCode);
+    let mappingInfo :any = undefined;
+    let gotResult : JobResult | undefined = undefined;
+    await handleBinaryModuleBased(caller.getEBM, ui,s,lang as Language,(EBM_LSP_LANGUAGES as any)[lang],async (factory,id,srcCode,_) :Promise<JobResult> =>{
+        let hasMappingInfo = false;
+        const result = (await generateEBMCode(factory,{
+            getLanguageConfig: (configLang: Language, key: string) => {
+                const conf = ui.getLanguageConfig(configLang, key as ConfigKey);
+                if(key === ebmSourceMapConfigKey) {
+                    hasMappingInfo = conf === true;
+                }
+                return conf;
+            }
+        },id,lang,srcCode)) as JobResult;
+        if(result.code === 0 && hasMappingInfo){
+           const split = result.stdout!.split(SEPARATOR);
+           result.stdout = split[0];
+           mappingInfo = JSON.parse(split[1]);
+           gotResult = result;
+        }
+        return result;
     },{})
+    if(gotResult&&!ui.getUpdateTracer().editorAlreadyUpdated(gotResult)){
+        if(isMappingInfoStruct(mappingInfo)) {
+            ui.mappingCode(mappingInfo.line_map,s,lang as Language,0);
+        }
+    }
 }
 
 export const handleBM = async (ui :UIModel, s :JobResult,lang :string) => {

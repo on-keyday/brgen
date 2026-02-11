@@ -5,11 +5,12 @@ import path from "path";
 export default defineConfig({
   plugins: [preact()],
   root: ".",
+  base: "./",
   // web/public/ (one level up) contains example/ with .bgn files and index.txt
-  publicDir: "../public",
+  // publicDir: "../public",
   build: {
-    outDir: "dist",
-    emptyOutDir: true,
+    outDir: "../public",
+    emptyOutDir: false,
     commonjsOptions: {
       // ast2ts is CJS (symlinked from astlib/ast2ts/out/ with no package.json).
       // Include it in CJS→ESM conversion so named exports work.

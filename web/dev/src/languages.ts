@@ -35,8 +35,8 @@ const coreMonacoLang: Record<string, string> = {
     [Language.RUST]: "rust",
     [Language.TYPESCRIPT]: "typescript",
     [Language.KAITAI_STRUCT]: "yaml",
-    [Language.BINARY_MODULE]: "text/plain",
-    [Language.EBM]: "text/plain",
+    [Language.BINARY_MODULE]: "plaintext",
+    [Language.EBM]: "plaintext",
 };
 
 const coreDisplayName: Record<string, string> = {
@@ -75,7 +75,7 @@ function buildLanguageRegistry(): LanguageMeta[] {
         registry.push({
             id: lang,
             displayName: coreDisplayName[lang] ?? lang,
-            monacoLang: coreMonacoLang[lang] ?? "text/plain",
+            monacoLang: coreMonacoLang[lang] ?? "plaintext",
             category: coreCategory[lang] ?? LanguageCategory.GENERATOR,
         });
     }
@@ -85,7 +85,7 @@ function buildLanguageRegistry(): LanguageMeta[] {
         registry.push({
             id: lang,
             displayName: lang,
-            monacoLang: (BM_LSP_LANGUAGES as Record<string, string>)[lang] ?? "text/plain",
+            monacoLang: (BM_LSP_LANGUAGES as Record<string, string>)[lang] ?? "plaintext",
             category: LanguageCategory.BM,
         });
     }
@@ -95,7 +95,7 @@ function buildLanguageRegistry(): LanguageMeta[] {
         registry.push({
             id: lang,
             displayName: lang,
-            monacoLang: (EBM_LSP_LANGUAGES as Record<string, string>)[lang] ?? "text/plain",
+            monacoLang: (EBM_LSP_LANGUAGES as Record<string, string>)[lang] ?? "plaintext",
             category: LanguageCategory.EBM,
         });
     }
@@ -114,9 +114,9 @@ export function getLanguageMeta(id: string): LanguageMeta | undefined {
     return languageRegistry.find(l => l.id === id);
 }
 
-/** Get the Monaco editor language ID for a given language. Falls back to "text/plain". */
+/** Get the Monaco editor language ID for a given language. Falls back to "plaintext". */
 export function getMonacoLang(id: string): string {
-    return getLanguageMeta(id)?.monacoLang ?? "text/plain";
+    return getLanguageMeta(id)?.monacoLang ?? "plaintext";
 }
 
 /** Get languages grouped by category, for building grouped dropdowns. */

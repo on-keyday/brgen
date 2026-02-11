@@ -103,15 +103,16 @@ func generate(rw io.Writer, defs *gen.Defs) {
 				}
 				w.Printf(";\n\n")
 			} else {
-				w.Printf("export const enum %s {\n", d.Name)
+				w.Printf("export const %s = {\n", d.Name)
 				for _, val := range d.Values {
 					if d.IsBitField {
-						w.Printf("	%s = %s,\n", val.Name, val.NumericValue)
+						w.Printf("	%s: %s,\n", val.Name, val.NumericValue)
 					} else {
-						w.Printf("	%s = %q,\n", val.Name, val.Value)
+						w.Printf("	%s: %q,\n", val.Name, val.Value)
 					}
 				}
-				w.Printf("};\n\n")
+				w.Printf("} as const;\n\n")
+				w.Printf("export type %[1]s = (typeof %[1]s)[keyof typeof %[1]s];\n\n",d.Name)
 			}
 			w.Printf("export function is%s(obj: any): obj is %s {\n", d.Name, d.Name)
 			if d.IsBitField {

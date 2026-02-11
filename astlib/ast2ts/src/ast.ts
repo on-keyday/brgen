@@ -8,232 +8,256 @@ export function isNodeType(obj: any): obj is NodeType {
 	return obj && typeof obj === 'string' && (obj === "program" || obj === "comment" || obj === "comment_group" || obj === "field_argument" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "identity" || obj === "tmp_var" || obj === "import" || obj === "cast" || obj === "available" || obj === "specify_order" || obj === "explicit_error" || obj === "io_operation" || obj === "or_cond" || obj === "sizeof_" || obj === "bad_expr" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "scoped_statement" || obj === "match_branch" || obj === "union_candidate" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "metadata" || obj === "type" || obj === "int_type" || obj === "float_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "regex_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "struct_union_type" || obj === "union_type" || obj === "range_type" || obj === "enum_type" || obj === "meta_type" || obj === "optional_type" || obj === "generic_type" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "regex_literal" || obj === "char_literal" || obj === "type_literal" || obj === "special_literal" || obj === "member" || obj === "field" || obj === "format" || obj === "state" || obj === "enum" || obj === "enum_member" || obj === "function")
 }
 
-export const enum TokenTag {
-	indent = "indent",
-	space = "space",
-	line = "line",
-	punct = "punct",
-	int_literal = "int_literal",
-	bool_literal = "bool_literal",
-	str_literal = "str_literal",
-	regex_literal = "regex_literal",
-	char_literal = "char_literal",
-	keyword = "keyword",
-	ident = "ident",
-	comment = "comment",
-	error = "error",
-	unknown = "unknown",
-	partial_str_literal = "partial_str_literal",
-	partial_char_literal = "partial_char_literal",
-	partial_regex_literal = "partial_regex_literal",
-};
+export const TokenTag = {
+	indent: "indent",
+	space: "space",
+	line: "line",
+	punct: "punct",
+	int_literal: "int_literal",
+	bool_literal: "bool_literal",
+	str_literal: "str_literal",
+	regex_literal: "regex_literal",
+	char_literal: "char_literal",
+	keyword: "keyword",
+	ident: "ident",
+	comment: "comment",
+	error: "error",
+	unknown: "unknown",
+	partial_str_literal: "partial_str_literal",
+	partial_char_literal: "partial_char_literal",
+	partial_regex_literal: "partial_regex_literal",
+} as const;
+
+export type TokenTag = (typeof TokenTag)[keyof typeof TokenTag];
 
 export function isTokenTag(obj: any): obj is TokenTag {
 	return obj && typeof obj === 'string' && (obj === "indent" || obj === "space" || obj === "line" || obj === "punct" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "regex_literal" || obj === "char_literal" || obj === "keyword" || obj === "ident" || obj === "comment" || obj === "error" || obj === "unknown" || obj === "partial_str_literal" || obj === "partial_char_literal" || obj === "partial_regex_literal")
 }
 
-export const enum UnaryOp {
-	not = "!",
-	minus_sign = "-",
-};
+export const UnaryOp = {
+	not: "!",
+	minus_sign: "-",
+} as const;
+
+export type UnaryOp = (typeof UnaryOp)[keyof typeof UnaryOp];
 
 export function isUnaryOp(obj: any): obj is UnaryOp {
 	return obj && typeof obj === 'string' && (obj === "!" || obj === "-")
 }
 
-export const enum BinaryOp {
-	mul = "*",
-	div = "/",
-	mod = "%",
-	left_arithmetic_shift = "<<<",
-	right_arithmetic_shift = ">>>",
-	left_logical_shift = "<<",
-	right_logical_shift = ">>",
-	bit_and = "&",
-	add = "+",
-	sub = "-",
-	bit_or = "|",
-	bit_xor = "^",
-	equal = "==",
-	not_equal = "!=",
-	less = "<",
-	less_or_eq = "<=",
-	grater = ">",
-	grater_or_eq = ">=",
-	logical_and = "&&",
-	logical_or = "||",
-	cond_op_1 = "?",
-	cond_op_2 = ":",
-	range_exclusive = "..",
-	range_inclusive = "..=",
-	assign = "=",
-	define_assign = ":=",
-	const_assign = "::=",
-	add_assign = "+=",
-	sub_assign = "-=",
-	mul_assign = "*=",
-	div_assign = "/=",
-	mod_assign = "%=",
-	left_logical_shift_assign = "<<=",
-	right_logical_shift_assign = ">>=",
-	left_arithmetic_shift_assign = "<<<=",
-	right_arithmetic_shift_assign = ">>>=",
-	bit_and_assign = "&=",
-	bit_or_assign = "|=",
-	bit_xor_assign = "^=",
-	comma = ",",
-	in_assign = "in",
-	append_assign = "append",
-};
+export const BinaryOp = {
+	mul: "*",
+	div: "/",
+	mod: "%",
+	left_arithmetic_shift: "<<<",
+	right_arithmetic_shift: ">>>",
+	left_logical_shift: "<<",
+	right_logical_shift: ">>",
+	bit_and: "&",
+	add: "+",
+	sub: "-",
+	bit_or: "|",
+	bit_xor: "^",
+	equal: "==",
+	not_equal: "!=",
+	less: "<",
+	less_or_eq: "<=",
+	grater: ">",
+	grater_or_eq: ">=",
+	logical_and: "&&",
+	logical_or: "||",
+	cond_op_1: "?",
+	cond_op_2: ":",
+	range_exclusive: "..",
+	range_inclusive: "..=",
+	assign: "=",
+	define_assign: ":=",
+	const_assign: "::=",
+	add_assign: "+=",
+	sub_assign: "-=",
+	mul_assign: "*=",
+	div_assign: "/=",
+	mod_assign: "%=",
+	left_logical_shift_assign: "<<=",
+	right_logical_shift_assign: ">>=",
+	left_arithmetic_shift_assign: "<<<=",
+	right_arithmetic_shift_assign: ">>>=",
+	bit_and_assign: "&=",
+	bit_or_assign: "|=",
+	bit_xor_assign: "^=",
+	comma: ",",
+	in_assign: "in",
+	append_assign: "append",
+} as const;
+
+export type BinaryOp = (typeof BinaryOp)[keyof typeof BinaryOp];
 
 export function isBinaryOp(obj: any): obj is BinaryOp {
 	return obj && typeof obj === 'string' && (obj === "*" || obj === "/" || obj === "%" || obj === "<<<" || obj === ">>>" || obj === "<<" || obj === ">>" || obj === "&" || obj === "+" || obj === "-" || obj === "|" || obj === "^" || obj === "==" || obj === "!=" || obj === "<" || obj === "<=" || obj === ">" || obj === ">=" || obj === "&&" || obj === "||" || obj === "?" || obj === ":" || obj === ".." || obj === "..=" || obj === "=" || obj === ":=" || obj === "::=" || obj === "+=" || obj === "-=" || obj === "*=" || obj === "/=" || obj === "%=" || obj === "<<=" || obj === ">>=" || obj === "<<<=" || obj === ">>>=" || obj === "&=" || obj === "|=" || obj === "^=" || obj === "," || obj === "in" || obj === "append")
 }
 
-export const enum IdentUsage {
-	unknown = "unknown",
-	bad_ident = "bad_ident",
-	reference = "reference",
-	define_variable = "define_variable",
-	define_const = "define_const",
-	define_field = "define_field",
-	define_format = "define_format",
-	define_state = "define_state",
-	define_enum = "define_enum",
-	define_enum_member = "define_enum_member",
-	define_fn = "define_fn",
-	define_cast_fn = "define_cast_fn",
-	define_arg = "define_arg",
-	reference_type = "reference_type",
-	reference_member = "reference_member",
-	reference_member_type = "reference_member_type",
-	maybe_type = "maybe_type",
-	reference_builtin_fn = "reference_builtin_fn",
-};
+export const IdentUsage = {
+	unknown: "unknown",
+	bad_ident: "bad_ident",
+	reference: "reference",
+	define_variable: "define_variable",
+	define_const: "define_const",
+	define_field: "define_field",
+	define_format: "define_format",
+	define_state: "define_state",
+	define_enum: "define_enum",
+	define_enum_member: "define_enum_member",
+	define_fn: "define_fn",
+	define_cast_fn: "define_cast_fn",
+	define_arg: "define_arg",
+	reference_type: "reference_type",
+	reference_member: "reference_member",
+	reference_member_type: "reference_member_type",
+	maybe_type: "maybe_type",
+	reference_builtin_fn: "reference_builtin_fn",
+} as const;
+
+export type IdentUsage = (typeof IdentUsage)[keyof typeof IdentUsage];
 
 export function isIdentUsage(obj: any): obj is IdentUsage {
 	return obj && typeof obj === 'string' && (obj === "unknown" || obj === "bad_ident" || obj === "reference" || obj === "define_variable" || obj === "define_const" || obj === "define_field" || obj === "define_format" || obj === "define_state" || obj === "define_enum" || obj === "define_enum_member" || obj === "define_fn" || obj === "define_cast_fn" || obj === "define_arg" || obj === "reference_type" || obj === "reference_member" || obj === "reference_member_type" || obj === "maybe_type" || obj === "reference_builtin_fn")
 }
 
-export const enum Endian {
-	unspec = "unspec",
-	big = "big",
-	little = "little",
-};
+export const Endian = {
+	unspec: "unspec",
+	big: "big",
+	little: "little",
+} as const;
+
+export type Endian = (typeof Endian)[keyof typeof Endian];
 
 export function isEndian(obj: any): obj is Endian {
 	return obj && typeof obj === 'string' && (obj === "unspec" || obj === "big" || obj === "little")
 }
 
-export const enum ConstantLevel {
-	unknown = "unknown",
-	constant = "constant",
-	immutable_variable = "immutable_variable",
-	variable = "variable",
-};
+export const ConstantLevel = {
+	unknown: "unknown",
+	constant: "constant",
+	immutable_variable: "immutable_variable",
+	variable: "variable",
+} as const;
+
+export type ConstantLevel = (typeof ConstantLevel)[keyof typeof ConstantLevel];
 
 export function isConstantLevel(obj: any): obj is ConstantLevel {
 	return obj && typeof obj === 'string' && (obj === "unknown" || obj === "constant" || obj === "immutable_variable" || obj === "variable")
 }
 
-export const enum BitAlignment {
-	byte_aligned = "byte_aligned",
-	bit_1 = "bit_1",
-	bit_2 = "bit_2",
-	bit_3 = "bit_3",
-	bit_4 = "bit_4",
-	bit_5 = "bit_5",
-	bit_6 = "bit_6",
-	bit_7 = "bit_7",
-	not_target = "not_target",
-	not_decidable = "not_decidable",
-};
+export const BitAlignment = {
+	byte_aligned: "byte_aligned",
+	bit_1: "bit_1",
+	bit_2: "bit_2",
+	bit_3: "bit_3",
+	bit_4: "bit_4",
+	bit_5: "bit_5",
+	bit_6: "bit_6",
+	bit_7: "bit_7",
+	not_target: "not_target",
+	not_decidable: "not_decidable",
+} as const;
+
+export type BitAlignment = (typeof BitAlignment)[keyof typeof BitAlignment];
 
 export function isBitAlignment(obj: any): obj is BitAlignment {
 	return obj && typeof obj === 'string' && (obj === "byte_aligned" || obj === "bit_1" || obj === "bit_2" || obj === "bit_3" || obj === "bit_4" || obj === "bit_5" || obj === "bit_6" || obj === "bit_7" || obj === "not_target" || obj === "not_decidable")
 }
 
-export const enum Follow {
-	unknown = "unknown",
-	end = "end",
-	fixed = "fixed",
-	constant = "constant",
-	normal = "normal",
-};
+export const Follow = {
+	unknown: "unknown",
+	end: "end",
+	fixed: "fixed",
+	constant: "constant",
+	normal: "normal",
+} as const;
+
+export type Follow = (typeof Follow)[keyof typeof Follow];
 
 export function isFollow(obj: any): obj is Follow {
 	return obj && typeof obj === 'string' && (obj === "unknown" || obj === "end" || obj === "fixed" || obj === "constant" || obj === "normal")
 }
 
-export const enum IoMethod {
-	unspec = "unspec",
-	output_put = "output_put",
-	input_peek = "input_peek",
-	input_get = "input_get",
-	input_backward = "input_backward",
-	input_offset = "input_offset",
-	input_bit_offset = "input_bit_offset",
-	input_remain = "input_remain",
-	input_subrange = "input_subrange",
-	config_endian_little = "config_endian_little",
-	config_endian_big = "config_endian_big",
-	config_endian_native = "config_endian_native",
-	config_bit_order_lsb = "config_bit_order_lsb",
-	config_bit_order_msb = "config_bit_order_msb",
-};
+export const IoMethod = {
+	unspec: "unspec",
+	output_put: "output_put",
+	input_peek: "input_peek",
+	input_get: "input_get",
+	input_backward: "input_backward",
+	input_offset: "input_offset",
+	input_bit_offset: "input_bit_offset",
+	input_remain: "input_remain",
+	input_subrange: "input_subrange",
+	config_endian_little: "config_endian_little",
+	config_endian_big: "config_endian_big",
+	config_endian_native: "config_endian_native",
+	config_bit_order_lsb: "config_bit_order_lsb",
+	config_bit_order_msb: "config_bit_order_msb",
+} as const;
+
+export type IoMethod = (typeof IoMethod)[keyof typeof IoMethod];
 
 export function isIoMethod(obj: any): obj is IoMethod {
 	return obj && typeof obj === 'string' && (obj === "unspec" || obj === "output_put" || obj === "input_peek" || obj === "input_get" || obj === "input_backward" || obj === "input_offset" || obj === "input_bit_offset" || obj === "input_remain" || obj === "input_subrange" || obj === "config_endian_little" || obj === "config_endian_big" || obj === "config_endian_native" || obj === "config_bit_order_lsb" || obj === "config_bit_order_msb")
 }
 
-export const enum SpecialLiteralKind {
-	input = "input",
-	output = "output",
-	config = "config",
-};
+export const SpecialLiteralKind = {
+	input: "input",
+	output: "output",
+	config: "config",
+} as const;
+
+export type SpecialLiteralKind = (typeof SpecialLiteralKind)[keyof typeof SpecialLiteralKind];
 
 export function isSpecialLiteralKind(obj: any): obj is SpecialLiteralKind {
 	return obj && typeof obj === 'string' && (obj === "input" || obj === "output" || obj === "config")
 }
 
-export const enum OrderType {
-	byte = "byte",
-	bit_stream = "bit_stream",
-	bit_mapping = "bit_mapping",
-	bit_both = "bit_both",
-};
+export const OrderType = {
+	byte: "byte",
+	bit_stream: "bit_stream",
+	bit_mapping: "bit_mapping",
+	bit_both: "bit_both",
+} as const;
+
+export type OrderType = (typeof OrderType)[keyof typeof OrderType];
 
 export function isOrderType(obj: any): obj is OrderType {
 	return obj && typeof obj === 'string' && (obj === "byte" || obj === "bit_stream" || obj === "bit_mapping" || obj === "bit_both")
 }
 
-export const enum BlockTrait {
-	none = 0,
-	fixed_primitive = 1,
-	fixed_float = 2,
-	fixed_array = 4,
-	variable_array = 8,
-	struct = 16,
-	conditional = 32,
-	static_peek = 64,
-	bit_field = 128,
-	read_state = 256,
-	write_state = 512,
-	terminal_pattern = 1024,
-	bit_stream = 2048,
-	dynamic_order = 4096,
-	full_input = 8192,
-	backward_input = 16384,
-	magic_value = 32768,
-	assertion = 65536,
-	explicit_error = 131072,
-	procedural = 262144,
-	for_loop = 524288,
-	local_variable = 1048576,
-	description_only = 2097152,
-	uncommon_size = 4194304,
-	control_flow_change = 8388608,
-};
+export const BlockTrait = {
+	none: 0,
+	fixed_primitive: 1,
+	fixed_float: 2,
+	fixed_array: 4,
+	variable_array: 8,
+	struct: 16,
+	conditional: 32,
+	static_peek: 64,
+	bit_field: 128,
+	read_state: 256,
+	write_state: 512,
+	terminal_pattern: 1024,
+	bit_stream: 2048,
+	dynamic_order: 4096,
+	full_input: 8192,
+	backward_input: 16384,
+	magic_value: 32768,
+	assertion: 65536,
+	explicit_error: 131072,
+	procedural: 262144,
+	for_loop: 524288,
+	local_variable: 1048576,
+	description_only: 2097152,
+	uncommon_size: 4194304,
+	control_flow_change: 8388608,
+} as const;
+
+export type BlockTrait = (typeof BlockTrait)[keyof typeof BlockTrait];
 
 export function isBlockTrait(obj: any): obj is BlockTrait {
 	return typeof obj === 'number' && Number.isInteger(obj) // easy check
@@ -271,12 +295,14 @@ export function BlockTraitToString(v: BlockTrait): string {
   return result.join(' | ');
 }
 
-export const enum FieldArgumentMapping {
-	none = 0,
-	direct = 1,
-	repeat = 2,
-	some_candidate = 4,
-};
+export const FieldArgumentMapping = {
+	none: 0,
+	direct: 1,
+	repeat: 2,
+	some_candidate: 4,
+} as const;
+
+export type FieldArgumentMapping = (typeof FieldArgumentMapping)[keyof typeof FieldArgumentMapping];
 
 export function isFieldArgumentMapping(obj: any): obj is FieldArgumentMapping {
 	return typeof obj === 'number' && Number.isInteger(obj) // easy check

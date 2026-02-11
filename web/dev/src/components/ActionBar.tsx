@@ -20,6 +20,14 @@ export function ActionBar() {
       >
         github
       </a>
+      <a
+        class={styles.linkButton}
+        href="./doc/"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        docs
+      </a>
       <PrivacyLink />
     </>
   );

@@ -52,6 +52,7 @@ export class SourceMapOverlay {
 
     // Clear previous decorations
     this.clear();
+    console.log("Applying source map overlay decorations.");
 
     if (!sourceEditor || !generatedEditor || !mappingInfo || mappingInfo.length === 0) {
       return;
@@ -98,6 +99,7 @@ export class SourceMapOverlay {
       }
     }
 
+    console.log(`Applying ${sourceDecos.length} source and ${generatedDecos.length} generated decorations.`);
     this.#sourceDecorations = sourceEditor.createDecorationsCollection(sourceDecos);
     this.#generatedDecorations = generatedEditor.createDecorationsCollection(generatedDecos);
   }

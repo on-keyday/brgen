@@ -43,8 +43,6 @@ export interface MonacoEditorProps {
   readOnly?: boolean;
   /** Optional Monaco theme name */
   theme?: string;
-  /** Enable semantic highlighting */
-  semanticHighlighting?: boolean;
   /** Callback to receive the editor instance (called on mount, null on unmount) */
   editorRef?: (editor: monaco.editor.IStandaloneCodeEditor | null) => void;
 }
@@ -53,6 +51,14 @@ export interface MonacoEditorProps {
  * Wraps a Monaco editor instance as a Preact component.
  * Manages the lifecycle: create on mount, dispose on unmount.
  * Value and language changes are applied without recreating the editor.
+ *
+ * Design notes on value synchronization:
+ * - For writable editors: the editor's internal state is the source of truth.
+ *   The onChange callback notifies the parent of user edits. When `value` prop
+ *   changes externally (e.g., loading a file), we apply it via `applyEdits`
+ *   to preserve undo history.
+ * - For read-only editors: `value` prop is the source of truth. We use
+ *   `model.setValue()` for simplicity since undo/cursor don't matter.
  */
 export function MonacoEditor({
   value,
@@ -60,13 +66,22 @@ export function MonacoEditor({
   onChange,
   readOnly = false,
   theme,
-  semanticHighlighting = false,
   editorRef: editorRefCallback,
 }: MonacoEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
-  /** Suppress onChange while we programmatically set value */
+
+  // Track the latest onChange in a ref so the model's onDidChangeContent
+  // listener always calls the current callback without re-subscribing.
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
+  // Track whether a programmatic edit is in progress to avoid feedback loops.
   const suppressChange = useRef(false);
+
+  // Track the last value we pushed INTO the editor from props, so we can
+  // distinguish "our prop changed" from "editor echoed back what we set".
+  const lastPushedValue = useRef(value);
 
   // Create editor on mount
   useEffect(() => {
@@ -81,8 +96,14 @@ export function MonacoEditor({
       colorDecorators: true,
       readOnly,
       hover: { enabled: true },
-      theme: theme ?? (readOnly ? undefined : undefined),
-      "semanticHighlighting.enabled": semanticHighlighting,
+      theme,
+      // Always enable semantic highlighting for all editors. Monaco's
+      // standalone configurationService is a global singleton: the LAST
+      // editor created wins. If one editor passes `false` (the default),
+      // it overwrites the global config and cancels the scheduled
+      // _fetchDocumentSemanticTokens for ALL editors — including ones
+      // that need it (e.g., the brgen source editor).
+      "semanticHighlighting.enabled": true,
       minimap: { enabled: false },
       scrollBeyondLastLine: false,
     });
@@ -90,15 +111,17 @@ export function MonacoEditor({
     editorRef.current = editor;
     editorRefCallback?.(editor);
 
-    if (onChange) {
-      model.onDidChangeContent(() => {
-        if (suppressChange.current) return;
-        onChange(editor.getValue());
-      });
-    }
+    // Listen for user edits (writable editors only)
+    const disposable = model.onDidChangeContent(() => {
+      if (suppressChange.current) return;
+      const val = editor.getValue();
+      lastPushedValue.current = val;
+      onChangeRef.current?.(val);
+    });
 
     return () => {
       editorRefCallback?.(null);
+      disposable.dispose();
       editor.dispose();
       model.dispose();
       editorRef.current = null;
@@ -107,49 +130,46 @@ export function MonacoEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Sync value changes from props (external updates)
+  // Sync value changes from props (external updates only)
   useEffect(() => {
     const editor = editorRef.current;
     if (!editor) return;
-    const currentValue = editor.getValue();
-    if (currentValue !== value) {
-      suppressChange.current = true;
-      const model = editor.getModel();
-      if (model) {
-        // Preserve scroll position
-        const scrollTop = editor.getScrollTop();
-        model.setValue(value);
-        editor.setScrollTop(scrollTop);
-      }
-      suppressChange.current = false;
+    const model = editor.getModel();
+    if (!model) return;
+
+    // Skip if this is just the editor echoing back a user edit we already
+    // forwarded via onChange (the Zustand round-trip).
+    if (value === lastPushedValue.current) return;
+
+    // The value genuinely changed externally (file load, sharing link, etc.)
+    lastPushedValue.current = value;
+    suppressChange.current = true;
+
+    if (readOnly) {
+      // For read-only editors, setValue is fine (no undo/cursor to preserve)
+      model.setValue(value);
+    } else {
+      // For writable editors, use applyEdits to preserve undo stack.
+      // Replace the entire content as a single edit operation.
+      const fullRange = model.getFullModelRange();
+      model.applyEdits([{
+        range: fullRange,
+        text: value,
+      }]);
     }
-  }, [value]);
+
+    suppressChange.current = false;
+  }, [value, readOnly]);
 
   // Sync language changes
   useEffect(() => {
     const editor = editorRef.current;
     if (!editor) return;
     const model = editor.getModel();
-    if (model) {
-      const currentLang = model.getLanguageId();
-      if (currentLang !== language) {
-        // For read-only editors, swap the model to change language properly
-        if (readOnly) {
-          const scrollTop = editor.getScrollTop();
-          const oldModel = model;
-          const newModel = monaco.editor.createModel(
-            editor.getValue(),
-            language,
-          );
-          editor.setModel(newModel);
-          editor.setScrollTop(scrollTop);
-          oldModel.dispose();
-        } else {
-          monaco.editor.setModelLanguage(model, language);
-        }
-      }
+    if (model && model.getLanguageId() !== language) {
+      monaco.editor.setModelLanguage(model, language);
     }
-  }, [language, readOnly]);
+  }, [language]);
 
   return (
     <div

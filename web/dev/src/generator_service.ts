@@ -113,7 +113,7 @@ export class GeneratorService {
 
         let result: GenerateResult = {
             code: "(generated code)",
-            monacoLang: "text/plain",
+            monacoLang: "plaintext",
             isError: false,
             lang: lang,
         };
@@ -125,13 +125,13 @@ export class GeneratorService {
             setDefault: () => {
                 result = {
                     code: "(generated code)",
-                    monacoLang: "text/plain",
+                    monacoLang: "plaintext",
                     isError: false,
                     lang: lang,
                 };
             },
             setGenerated: (s: string, monacoLang: string) => {
-                const isError = monacoLang === "text/plain" && (
+                const isError = monacoLang === "plaintext" && (
                     s.startsWith("(no output") ||
                     s.startsWith("// failed") ||
                     s.includes("error")
@@ -156,7 +156,7 @@ export class GeneratorService {
         } catch (error: any) {
             result = {
                 code: `// failed to generate code: ${error?.message ?? error}`,
-                monacoLang: "text/plain",
+                monacoLang: "plaintext",
                 isError: true,
                 lang: lang,
             };

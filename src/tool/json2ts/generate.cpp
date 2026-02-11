@@ -1010,9 +1010,10 @@ namespace json2ts {
         void write_enum(const std::shared_ptr<ast::Enum>& enum_) {
             futils::helper::DynDefer d;
             if (typescript) {
-                w.writeln("export const enum ", enum_->ident->ident, " {");
+                w.writeln("export const ", enum_->ident->ident, " = {");
                 d = futils::helper::defer_ex([&] {
-                    w.writeln("}");
+                    w.writeln("} as const;");
+		    w.writeln("export type ", enum_->ident->ident, " = (typeof ",enum_->ident->ident ,")[keyof typeof ", enum_->ident->ident ,"];");
                 });
             }
             {
@@ -1020,7 +1021,7 @@ namespace json2ts {
                 for (auto& elem : enum_->members) {
                     auto v = str.to_string(elem->value);
                     if (typescript) {
-                        w.writeln(elem->ident->ident, " = ", v, ",");
+                        w.writeln(elem->ident->ident, ": ", v, ",");
                         str.map_ident(elem->ident, enum_->ident->ident, ".", elem->ident->ident);
                     }
                     else {

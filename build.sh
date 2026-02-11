@@ -72,8 +72,7 @@ python script/dirty_patch.py
 python script/copy_bmgen_stub.py
 (
    cd ./web/dev || exit
-   tsc
-   webpack
+   npm run build
 )
 python script/copy_example.py
 fi

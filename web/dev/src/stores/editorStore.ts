@@ -68,6 +68,8 @@ export interface EditorState {
     source: string;
     /** Currently selected target language */
     language: Language;
+    /** Whether to force save language mode if some edits are made */
+    forceSaveLanguage: boolean;
 
     /** Update source code (persists to localStorage) */
     setSource: (source: string) => void;
@@ -83,23 +85,31 @@ export const useEditorStore = create<EditorState>()((set, get) => {
     const initialLang = urlOverrides.lang ?? loadLang();
     const initialSource = urlOverrides.source ?? loadSource();
 
+    /*
     // If URL provided overrides, persist them
     if (urlOverrides.lang) {
         try { localStorage.setItem(STORAGE_KEY_LANG, initialLang); } catch {}
     }
+    */
 
     return {
         source: initialSource,
         language: initialLang,
+        forceSaveLanguage: urlOverrides.lang ? true : false,
 
         setSource: (source: string) => {
-            set({ source });
+            const forceSave = get().forceSaveLanguage;
+            if (forceSave) {
+                // Persist language mode if forced
+                try { localStorage.setItem(STORAGE_KEY_LANG, get().language); } catch {}
+            }
+            set({ source, forceSaveLanguage: false });
             try { localStorage.setItem(STORAGE_KEY_SOURCE, source); } catch {}
         },
 
         setLanguage: (lang: Language) => {
             if (!allLanguageIds.includes(lang)) return;
-            set({ language: lang });
+            set({ language: lang, forceSaveLanguage: false });
             try { localStorage.setItem(STORAGE_KEY_LANG, lang); } catch {}
         },
 

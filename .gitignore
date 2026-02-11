@@ -27,6 +27,8 @@ testdata/
 go_dump_env.bat
 /web/public/doc
 /web/public/example
+/web/public/assets
+/web/public/index.html
 /web/doc/resources/_gen
 license_cache
 pkg/

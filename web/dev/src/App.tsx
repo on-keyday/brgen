@@ -1,4 +1,4 @@
-import "destyle.css";
+import resetCSS from "destyle.css?inline";
 import { useEffect, useCallback, useRef, useState } from "preact/hooks";
 import * as monaco from "monaco-editor";
 import { useEditorStore } from "./stores/editorStore";
@@ -11,6 +11,12 @@ import { FilePicker } from "./components/FilePicker";
 import { SourceMapOverlay } from "./components/SourceMapOverlay";
 import styles from "./components/App.module.css";
 import { initBrgenLanguage } from "./brgen_language";
+
+
+// inject reset CSS styles
+const styleElem = document.createElement("style");
+styleElem.textContent = resetCSS;
+document.head.appendChild(styleElem);
 
 // Initialize brgen language mode (registration, theme, semantic tokens, hover)
 // BEFORE any Monaco editor/model is created. This must run at module scope
@@ -100,7 +106,7 @@ export function App() {
       setSource(newSource);
       debouncedGenerate();
     },
-    [setSource],
+    [setSource, setLanguage],
   );
 
   const handleLanguageChange = useCallback(
@@ -139,7 +145,7 @@ export function App() {
   );
 
   // Determine the Monaco language for the generated output
-  const generatedLang = result?.monacoLang ?? "text/plain";
+  const generatedLang = result?.monacoLang ?? "plaintext";
   const generatedCode = result?.code ?? "(generated code)";
 
   return (
@@ -180,7 +186,6 @@ export function App() {
             language="brgen"
             onChange={handleSourceChange}
             theme="brgen-theme"
-            semanticHighlighting
             editorRef={handleSourceEditorRef}
           />
         </div>
