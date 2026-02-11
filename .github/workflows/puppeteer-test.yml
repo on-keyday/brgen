@@ -47,4 +47,5 @@ jobs:
           npm install
           npx vite dev --port 8080 &
           sleep 5
+          npm install puppeteer
           TEST_ENV=github node test/puppet.mjs
