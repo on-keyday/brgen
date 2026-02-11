@@ -48,4 +48,5 @@ jobs:
           npx vite dev --port 8080 &
           sleep 5
           npm install puppeteer
+          tsc || true # allow error
           TEST_ENV=github node test/puppet.mjs
