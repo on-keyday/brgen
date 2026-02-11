@@ -98,7 +98,7 @@ export class EmWorkContext  {
             return this.#mod!.ccall("emscripten_main", "number", ["string"], [arg]);
         }catch(e) {
             console.log(e);
-            if(e instanceof WebAssembly.RuntimeError) {
+            if(e instanceof WebAssembly.RuntimeError || typeof e == "number" /*in production, this is caused because of C++ exception or other crashes */) {
                 console.log("reloading webassembly module")
                 this.#initModule();// reload module
             }
