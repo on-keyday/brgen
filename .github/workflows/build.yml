@@ -1,6 +1,9 @@
 name: brgen-build
 run-name: Build
-on: push
+on:
+  push:
+  repository_dispatch:
+    types: [rebrgen-build-success]
 
 concurrency:
   group: build-${{ github.ref_name }}
