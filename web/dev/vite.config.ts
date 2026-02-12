@@ -1,9 +1,23 @@
 import { defineConfig } from "vite";
 import preact from "@preact/preset-vite";
 import path from "path";
+import { viteStaticCopy } from 'vite-plugin-static-copy'
 
 export default defineConfig({
-  plugins: [preact()],
+  plugins: [
+    preact(),
+    viteStaticCopy({
+      targets: [
+        {
+          // コピー元のディレクトリ（動的に増減する .map をワイルドカードで指定）
+          src: 'src/lib/bmgen/*.map',
+          // コピー先（dist 内の階層）
+          // Wasmが dist/assets に入るなら 'assets'、dist 直下なら './'
+          dest: './assets' 
+        }
+      ]
+  })
+  ],
   root: ".",
   base: "./",
   // web/public/ (one level up) contains example/ with .bgn files and index.txt
@@ -51,5 +65,5 @@ export default defineConfig({
   worker: {
     format: "es",
   },
-  assetsInclude: ["**/*.wasm"],
+  assetsInclude: ["**/*.wasm"]
 });
