@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es2022",
+    "target": "ES2022",
     "module": "ES2022",
     "sourceMap": true,
     "outDir": "./out",
@@ -9,8 +9,11 @@
     "strict": true,
     "lib": ["ES2022", "DOM"],
     "paths": {},
-    "moduleResolution": "Node",
-    "jsx": "react-jsx"
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
+    "skipLibCheck": true
   },
-  "include": ["**/*.ts", "**/*.tsx", "**/*.mts"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.mts"],
+  "exclude": ["node_modules", "dist", "out"]
 }

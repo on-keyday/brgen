@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>brgen language playground (dev)</title>
+    <meta name="description" content="web playground to try binary encoder/decoder code generator">
+    <meta name="google" content="notranslate" />
+    <meta name="google-site-verification" content="k2XVrxpity4LVkhrAtIBM41GMoU7I0qCsJdVaAxcgag" />
+    <style id="ball-bound">
+        #ball {
+            overflow: visible;
+            width: auto;
+            height: auto;
+            animation: bounce 1s infinite;
+            margin: 0 auto;
+            z-index: 100;
+            color: white;
+            text-shadow:
+                -1px -1px 0 black,
+                1px -1px 0 black,
+                -1px 1px 0 black,
+                1px 1px 0 black;
+            top: 100%;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-100px);
+            }
+            60% {
+                transform: translateY(-50px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="ball"><h2 id="playground-jump" style="text-align: center;">Brgen Web Playground<br>now loading</h2></div>
+    <noscript>enable JavaScript to use this application <a href="https://github.com/on-keyday/brgen"></a></noscript>
+    <div id="app"></div>
+    <script type="module" src="/src/main.tsx"></script>
+</body>
+</html>

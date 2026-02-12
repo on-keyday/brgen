@@ -445,10 +445,11 @@ export interface RangeStub {
     end: PosStub;
 }
 
-export const enum DiagnosticSeverityStub {
-    Error = 1,
-    Warning = 2,
-}
+export const DiagnosticSeverityStub = {
+    Error: 1,
+    Warning: 2,
+} as const;
+export type DiagnosticSeverityStub = (typeof DiagnosticSeverityStub)[keyof typeof DiagnosticSeverityStub];
 
 export interface DiagnosticStub {
     range: RangeStub;
@@ -768,9 +769,10 @@ export interface RangeStub {
     end: PosStub;
 }
 
-export const enum SymbolKindStub {
-    Variable = 13,
-}
+export const SymbolKindStub = {
+    Variable: 13,
+} as const;
+export type SymbolKindStub = (typeof SymbolKindStub)[keyof typeof SymbolKindStub];
 
 export interface DocumentSymbolStub {
     name: string;
