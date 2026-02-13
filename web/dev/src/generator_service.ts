@@ -154,8 +154,16 @@ export class GeneratorService {
         try {
             await updateGenerated(ui, lang);
         } catch (error: any) {
+            let msg = error?.message
+            if (!msg) {
+                try {
+                    msg = JSON.stringify(error)
+                } catch(_) {
+                    msg = error
+                }
+            }
             result = {
-                code: `// failed to generate code: ${error?.message ?? error}`,
+                code: `// failed to generate code: ${msg}`,
                 monacoLang: "plaintext",
                 isError: true,
                 lang: lang,
