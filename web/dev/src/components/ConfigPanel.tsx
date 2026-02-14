@@ -99,6 +99,19 @@ function ConfigInput({ entry, onChange }: ConfigInputProps) {
           placeholder={entry.name}
         />
       );
+    case "choice":
+      <select
+        class={styles.select}
+        value={entry.value as string}
+        onChange={(e) => onChange(e.currentTarget.value)}
+        title={entry.name}
+      >
+        {entry.candidates?.map((l) => (
+          <option key={l} value={l}>
+            {l}
+          </option>
+        ))}
+      </select>
     default:
       return null;
   }

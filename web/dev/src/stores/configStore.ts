@@ -9,8 +9,9 @@ const STORAGE_KEY = "lang_specific_option";
 /** Matches the existing InputListElement shape from ui.tsx */
 export interface ConfigEntry {
     name?: string;
-    readonly type: "checkbox" | "number" | "text";
+    readonly type: "checkbox" | "number" | "text" | "choice";
     value: boolean | number | string;
+    candidates? :string[];
     data?: any;
 }
 
