@@ -9,6 +9,10 @@ export interface ConfigPanelProps {
   onConfigChange?: () => void;
 }
 
+const adjustDisplayName = (x: string) => {
+  return x.replaceAll("-", " ").replaceAll("_", " ")
+}
+
 /**
  * Per-language configuration controls.
  * Shows a dropdown of config keys for the selected language,
@@ -44,7 +48,7 @@ export function ConfigPanel({ language, onConfigChange }: ConfigPanelProps) {
       >
         {keys.map((k) => (
           <option key={k} value={k}>
-            {k}
+            {adjustDisplayName(k)}
           </option>
         ))}
       </select>

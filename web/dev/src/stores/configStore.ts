@@ -42,7 +42,7 @@ function buildDefaultConfig(): Record<string, Record<string, ConfigEntry>> {
 
     const common = (): Record<string, ConfigEntry> => ({
         [ConfigKey.COMMON_FILE_NAME]: { type: "text", value: "editor.bgn" },
-        [ConfigKey.COMMON_SAVE_LOCATION]: { type: "text", value: "" },
+        // [ConfigKey.COMMON_SAVE_LOCATION]: { type: "text", value: "" },
     });
 
     // Analysis languages -- common config only

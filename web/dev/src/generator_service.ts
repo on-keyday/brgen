@@ -52,10 +52,6 @@ export class GeneratorService {
     constructor() {
         this.factory = new WorkerFactory();
         this.updateTracer = new UpdateTracer();
-        // Register core workers synchronously so that the factory is
-        // usable immediately (needed by initLSP which is called at
-        // module scope before any async init completes).
-        this.factory.addWorker(fixedWorkerMap);
     }
 
     /**
@@ -73,6 +69,8 @@ export class GeneratorService {
         // Core workers (fixedWorkerMap) are already registered in the constructor.
         // BM/EBM workers are dynamically imported (they may be stubs with empty arrays)
         const loaders: Promise<void>[] = [];
+
+        this.factory.addWorker(fixedWorkerMap);
 
         if (BM_LANGUAGES.length > 0) {
             loaders.push(
