@@ -100,7 +100,7 @@ function ConfigInput({ entry, onChange }: ConfigInputProps) {
         />
       );
     case "choice":
-      <select
+      return (<select
         class={styles.select}
         value={entry.value as string}
         onChange={(e) => onChange(e.currentTarget.value)}
@@ -112,6 +112,7 @@ function ConfigInput({ entry, onChange }: ConfigInputProps) {
           </option>
         ))}
       </select>
+      )
     default:
       return null;
   }
