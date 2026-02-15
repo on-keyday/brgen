@@ -1193,6 +1193,11 @@ namespace brgen::ast {
                 return std::make_shared<BoolType>(bool_->loc, true);
             }
 
+            if (auto format = s.consume_token("format")) {
+                auto fmt = parse_format(std::move(*format), true);
+                return fmt->body->struct_type;
+            }
+
             auto ident = s.must_consume_token(lexer::Tag::ident, "to specify type name, types are like `T`, `[]T`, `[x][10]T`, `fn(p :T,:U) -> T`, `\"magic_number\"`, `/regex/`, `imported.T`");
 
             if (auto desc = is_int_type(ident.token)) {
@@ -1412,14 +1417,23 @@ namespace brgen::ast {
         /*
             <format> ::= "format" <ident> <indent block>
         */
-        std::shared_ptr<Format> parse_format(lexer::Token&& token) {
+        std::shared_ptr<Format> parse_format(lexer::Token&& token, bool allow_anonymous) {
             auto fmt = std::make_shared<Format>(token.loc);
             s.skip_white();
-
-            fmt->ident = parse_ident("format name expected");
-            fmt->ident->usage = IdentUsage::define_format;
-            fmt->ident->base = fmt;
-            check_duplicated_def(fmt->ident.get());
+            auto ident_parse = [&] {
+                fmt->ident = parse_ident("format name expected");
+                fmt->ident->usage = IdentUsage::define_format;
+                fmt->ident->base = fmt;
+                check_duplicated_def(fmt->ident.get());
+            };
+            if (allow_anonymous) {
+                if (!s.peek_token(":")) {
+                    ident_parse();
+                }
+            }
+            else {
+                ident_parse();
+            }
             {
                 auto m_scope = state.enter_member(fmt);
                 fmt->body = parse_indent_block(fmt, "to start `format` body");
@@ -1608,7 +1622,7 @@ namespace brgen::ast {
 
             if (auto format = s.consume_token("format")) {
                 set_skip();
-                return parse_format(std::move(*format));
+                return parse_format(std::move(*format), false);
             }
 
             if (auto state_ = s.consume_token("state")) {

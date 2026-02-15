@@ -1,0 +1,10 @@
+format X:
+    len :u8
+    inline :format:
+        x :u8
+    named_inline: [len]format Item:
+        hello :u8
+    if len == 0:
+        why :u16
+    reuse :Item
+    inline.x == 0
