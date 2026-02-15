@@ -62,6 +62,11 @@ namespace brgen::middle {
             one_element(&s->statement);
             return;
         }
+        if (auto t = ast::as<ast::StructType>(node)) {  // for inlined format
+            for (auto& lock : t->fields) {
+                collect_unused_warnings(lock, err_or_warn);
+            }
+        }
         ast::traverse(node, [&](auto&& f) {
             collect_unused_warnings(f, err_or_warn);
         });
@@ -90,11 +95,17 @@ namespace brgen::middle {
         }
         if (auto b = ast::as<ast::IndentBlock>(node)) {
             each_element(b->elements);
+            for (auto& lock : b->struct_type->fields) {  // for nested decl
+                replace_assert(lock);
+            }
             return;
         }
         if (auto s = ast::as<ast::ScopedStatement>(node)) {
             auto base_match = ast::as<ast::MatchBranch>(s->struct_type->base.lock())->belong.lock();
             one_element(&s->statement);
+            for (auto& lock : s->struct_type->fields) {  // for nested decl
+                replace_assert(lock);
+            }
             return;
         }
         ast::traverse(node, [&](auto&& f) {

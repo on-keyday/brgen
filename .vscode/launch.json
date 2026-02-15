@@ -20,7 +20,7 @@
       "request": "launch",
       "program": "${workspaceRoot}/tool/src2json",
       "args": [
-        "C:\\workspace\\shbrgen\\rebrgen\\src\\test\\simple_case.bgn",
+        "${workspaceRoot}/example/feature_test/inline_format.bgn",
         "--print-json",
         "--print-on-error"
       ],

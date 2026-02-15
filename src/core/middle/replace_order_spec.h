@@ -39,10 +39,16 @@ namespace brgen::middle {
         }
         if (auto b = ast::as<ast::IndentBlock>(node)) {
             each_element(b->elements);
+            for (auto& f : b->struct_type->fields) {  // for nested decl
+                replace_specify_order(f);
+            }
             return;
         }
         if (auto s = ast::as<ast::ScopedStatement>(node)) {
             one_element(&s->statement);
+            for (auto& f : s->struct_type->fields) {  // for nested decl
+                replace_specify_order(f);
+            }
             return;
         }
         ast::traverse(node, [&](auto&& f) {

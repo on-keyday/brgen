@@ -38,12 +38,19 @@ namespace brgen::middle {
             }
             if (auto b = ast::as<ast::IndentBlock>(node)) {
                 each_element(b->elements);
+                for (auto& l : b->struct_type->fields) {  // for nested decl
+                    f(f, l);
+                }
                 return;
             }
             if (auto s = ast::as<ast::ScopedStatement>(node)) {
                 one_element(&s->statement);
+                for (auto& l : s->struct_type->fields) {  // for nested decl
+                    f(f, l);
+                }
                 return;
             }
+
             ast::traverse(node, [&](auto&& v) {
                 f(f, v);
             });

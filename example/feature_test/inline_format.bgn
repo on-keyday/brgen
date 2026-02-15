@@ -1,9 +1,15 @@
+# inline format test
 format X:
     len :u8
     inline :format:
         x :u8
     named_inline: [len]format Item:
-        hello :u8
+        config.type = u8
+        input.endian = config.endian.little
+        hello :u16
+        hello == 2
+        if hello == 0:
+            error("oh no")
     if len == 0:
         why :u16
     reuse :Item

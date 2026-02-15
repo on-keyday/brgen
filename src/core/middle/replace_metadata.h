@@ -62,12 +62,19 @@ namespace brgen::middle {
         }
         if (auto b = ast::as<ast::IndentBlock>(node)) {
             each_element(b->elements, b->metadata);
+            for (auto& f : b->struct_type->fields) {
+                replace_metadata(f);
+            }
             return;
         }
         if (auto s = ast::as<ast::ScopedStatement>(node)) {
             one_element(&s->statement);
+            for (auto& f : s->struct_type->fields) {
+                replace_metadata(f);
+            }
             return;
         }
+
         ast::traverse(node, [&](NodeReplacer f) -> void {
             replace_metadata(f);
         });

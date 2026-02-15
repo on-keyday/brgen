@@ -874,7 +874,7 @@ int src2json_main_except(int argc, char** argv, const Capability& cap) {
 
 int src2json_main(int argc, char** argv, const Capability& cap) {
 // SEH for windows
-#ifdef _WIN32
+#if 0
     __try {
         return src2json_main_except(argc, argv, cap);
     } __except (1) {
