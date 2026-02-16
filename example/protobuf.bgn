@@ -61,12 +61,12 @@ format Tag:
     fn type() -> WireType:
         return WireType(tag.value & 0x7)
     fn set_type(w :WireType):
-        tag.value = tag.value & 0x7
+        tag.value = tag.value & 0xfffffffffffffff8
         tag.value = tag.value | u64(w) & 0x7
     fn number() -> u64:
         return tag.value >> 3
     fn set_number(x :u64):
-        tag.value = tag.value & 0xfffffffffffffff8
+        tag.value = tag.value & 0x7
         tag.value = tag.value | x << 3
 
 format Field:
