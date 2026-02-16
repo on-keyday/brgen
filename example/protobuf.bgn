@@ -13,6 +13,12 @@ fn zigzagEncode32(x :i32) -> u32:
 fn zigzagDecode32(x :u32) -> i32:
     return i32(x >> 1) ^ -i32(x & 1) 
 
+format Fixed32:
+    value :u32
+
+format Fixed64:
+    value :u64
+
 format Varint:
     len :u8
     value :u64
@@ -65,17 +71,18 @@ format Tag:
 
 format Field:
     tag :Tag
+    config.go.union = "noheap"
 
     
     match tag.type():
         WireType.Varint => value_vi :Varint
-        WireType.Fixed64 => value_64 :u64
+        WireType.Fixed64 => value_64 :Fixed64
         WireType.LengthDelimited:
             length :Varint
             value_data :[length.value]u8
         WireType.StartGroup => ..
         WireType.EndGroup => ..
-        WireType.Fixed32 => value_32 :u32
+        WireType.Fixed32 => value_32 :Fixed32
         .. => error("unexpected wire type")
 
 format Message:
