@@ -1269,7 +1269,9 @@ namespace brgen::ast {
                 check_duplicated_def(field->ident.get());
             }
 
-            field->belong = state.current_member();
+            if (!as_argument) {
+                field->belong = state.current_member();
+            }
 
             if (auto b = s.consume_token("(")) {
                 s.skip_white();
@@ -1288,7 +1290,9 @@ namespace brgen::ast {
                 field->arguments = std::move(field_argument);
             }
 
-            state.add_to_struct(field);
+            if (!as_argument) {
+                state.add_to_struct(field);
+            }
 
             return field;
         }
@@ -1545,6 +1549,7 @@ namespace brgen::ast {
 
                 auto f = parse_field(std::move(ident), true);
                 auto field = cast_to<Field>(f);
+                field->belong = fn;
                 fn->parameters.push_back(field);
                 fn->func_type->parameters.push_back(field->field_type);
                 if (s.expect_token(")") || s.consume_token(",")) {
