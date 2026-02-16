@@ -1,3 +1,17 @@
+config.go.package = "wire"
+input.endian = config.endian.little
+
+fn zigzagEncode64(x :i64) -> u64:
+    return u64((x << 1) ^ (x >> 63))
+
+fn zigzagDecode64(x :u64) -> i64:
+    return i64(x >> 1) ^ -i64(x & 1) 
+
+fn zigzagEncode32(x :i32) -> u32:
+    return u32((x << 1) ^ (x >> 31))
+
+fn zigzagDecode32(x :u32) -> i32:
+    return i32(x >> 1) ^ -i32(x & 1) 
 
 format Varint:
     len :u8
@@ -7,6 +21,7 @@ format Varint:
         value = 0
         len = 0
         for:
+            len <= 9
             v := input.get()
             value |= u64(v & 0x7f) << (7 * len)
             len += 1
@@ -35,19 +50,33 @@ enum WireType:
     EndGroup = 4
     Fixed32 = 5
 
-format Field:
-    id :Varint
+format Tag:
+    tag :Varint
     fn type() -> WireType:
-        return WireType(id.value & 0x7)
+        return WireType(tag.value & 0x7)
+    fn set_type(w :WireType):
+        tag.value = tag.value & 0x7
+        tag.value = tag.value | u64(w) & 0x7
     fn number() -> u64:
-        return id.value >> 3
+        return tag.value >> 3
+    fn set_number(x :u64):
+        tag.value = tag.value & 0xfffffffffffffff8
+        tag.value = tag.value | x << 3
+
+format Field:
+    tag :Tag
+
     
-    match type():
-        WireType.Varint => value :Varint
-        WireType.Fixed64 => value :u64
+    match tag.type():
+        WireType.Varint => value_vi :Varint
+        WireType.Fixed64 => value_64 :u64
         WireType.LengthDelimited:
             length :Varint
-            value :[length]u8
+            value_data :[length.value]u8
         WireType.StartGroup => ..
         WireType.EndGroup => ..
-        WireType.Fixed32 => value :u32
+        WireType.Fixed32 => value_32 :u32
+        .. => error("unexpected wire type")
+
+format Message:
+    fields :[..]Field
