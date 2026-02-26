@@ -79,7 +79,7 @@ jobs:
           cp -a ./script/make_cpp_tests.sh ./artifacts
           cp -a ./testkit ./artifacts/testkit
       - name: Upload artifacts
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: brgen-linux-${{ matrix.env }}
           path: ./artifacts
@@ -156,7 +156,7 @@ jobs:
           cp -a ./script/make_cpp_tests.sh ./artifacts
           cp -a ./testkit ./artifacts/testkit
       - name: Upload artifacts
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: brgen-macos
           path: ./artifacts
@@ -216,7 +216,7 @@ jobs:
           copy /Y script\make_cpp_tests.bat artifacts
           xcopy /E /I /Y testkit artifacts\testkit
       - name: Upload artifacts
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: brgen-windows
           path: ./artifacts
@@ -252,7 +252,7 @@ jobs:
           cp -a ./lsp/LICENSE ./artifacts
           cp -a ./lsp/brgen-lsp-*.vsix ./artifacts
       - name: Upload artifacts
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: brgen-vscode-extension
           path: ./artifacts
@@ -293,7 +293,7 @@ jobs:
           cp -a ./script/make_cpp_tests.sh ./artifacts
           cp -a ./testkit ./artifacts/testkit
       - name: Upload artifacts
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: brgen-linux-arm
           path: ./artifacts
@@ -338,7 +338,7 @@ jobs:
           cp -a ./script/make_cpp_tests.sh ./artifacts
           cp -a ./testkit ./artifacts/testkit
       - name: Upload artifacts
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: brgen-android
           path: ./artifacts
@@ -392,7 +392,7 @@ jobs:
         run: |
           ls -alR ./license_cache
       - name: Upload artifacts
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: brgen-licenses
           path: ./license_cache
@@ -492,7 +492,7 @@ jobs:
           hugo --minify
           cd ../..
       - name: Upload artifact
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: brgen-web-${{ matrix.env }}
           path: "./web/public"
