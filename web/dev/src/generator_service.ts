@@ -48,10 +48,12 @@ export class GeneratorService {
     readonly factory: InstanceType<typeof WorkerFactory>;
     readonly updateTracer: UpdateTracer;
     #initPromise: Promise<void> | null = null;
+    #customWorkerMaps: Readonly<{[key: string]: () => import("./s2j/job_mgr").IWorker}>[] | null;
 
-    constructor() {
+    constructor(customWorkerMaps?: Readonly<{[key: string]: () => import("./s2j/job_mgr").IWorker}>[]) {
         this.factory = new WorkerFactory();
         this.updateTracer = new UpdateTracer();
+        this.#customWorkerMaps = customWorkerMaps ?? null;
     }
 
     /**
@@ -66,8 +68,15 @@ export class GeneratorService {
     }
 
     async #doInit(): Promise<void> {
-        // Core workers (fixedWorkerMap) are already registered in the constructor.
-        // BM/EBM workers are dynamically imported (they may be stubs with empty arrays)
+        if (this.#customWorkerMaps) {
+            // Server mode: use the provided worker maps
+            for (const map of this.#customWorkerMaps) {
+                this.factory.addWorker(map);
+            }
+            return;
+        }
+
+        // Browser mode: Core workers + dynamically imported BM/EBM workers
         const loaders: Promise<void>[] = [];
 
         this.factory.addWorker(fixedWorkerMap);
