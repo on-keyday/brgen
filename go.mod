@@ -1,10 +1,10 @@
 module github.com/on-keyday/brgen
 
-go 1.24.0
+go 1.25.0
 
 require github.com/iancoleman/strcase v0.3.0
 
-require golang.org/x/net v0.50.0
+require golang.org/x/net v0.51.0
 
 require (
 	golang.org/x/sys v0.41.0
