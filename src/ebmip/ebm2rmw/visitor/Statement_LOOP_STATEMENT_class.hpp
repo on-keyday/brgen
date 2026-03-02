@@ -27,6 +27,7 @@
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 
+#include <cstddef>
 #include "../codegen.hpp"
 DEFINE_VISITOR(Statement_LOOP_STATEMENT) {
     using namespace CODEGEN_NAMESPACE;
@@ -39,12 +40,14 @@ DEFINE_VISITOR(Statement_LOOP_STATEMENT) {
         MAYBE(res, ctx.visit(*init));
     }
     size_t loop_start_index = ctx.config().env.access_instructions().size();
+    std::optional<size_t> jif_instr_index;
     if (auto cond = ctx.loop.condition()) {
         MAYBE(res, ctx.visit(cond->cond));
         ctx.config().env.add_instruction({
                                              .op = ebm::OpCode::JUMP_IF_FALSE,
                                          },
                                          std::format("while ({}) {{", tidy_condition_brace(std::move(res.str_repr))));
+        jif_instr_index = ctx.config().env.access_instructions().size() - 1;
     }
     else {
         ctx.config().env.add_instruction({
@@ -58,17 +61,21 @@ DEFINE_VISITOR(Statement_LOOP_STATEMENT) {
     }
     ebm::Instruction instr;
     instr.op = ebm::OpCode::JUMP;
-    MAYBE(to_top, varint(ctx.config().env.access_instructions().size() - loop_start_index + 1));
+    MAYBE(to_top, varint(ctx.config().env.access_instructions().size() - loop_start_index));
     ebm::JumpOffset jump_offset;
     jump_offset.offset = to_top;
     jump_offset.backward(true);
     instr.target(jump_offset);
     ctx.config().env.add_instruction(instr, "}");
-    ebm::Instruction& jump_instr = ctx.config().env.access_instructions().back().instr;
-    MAYBE(offset, varint(ctx.config().env.access_instructions().size() - loop_start_index + 1));
-    jump_offset.offset = offset;
-    jump_offset.backward(false);
-    jump_instr.target(jump_offset);
+    size_t loop_end_index = ctx.config().env.access_instructions().size();
+    if (jif_instr_index.has_value()) {
+        ebm::Instruction& jif_instr = ctx.config().env.access_instructions()[jif_instr_index.value()].instr;
+        ebm::JumpOffset jif_offset;
+        MAYBE(jif_off, varint(loop_end_index - jif_instr_index.value()));
+        jif_offset.offset = jif_off;
+        jif_offset.backward(false);
+        jif_instr.target(jif_offset);
+    }
     ctx.config().env.add_instruction({.op = ebm::OpCode::NOP}, "end_loop");
     return {};
 }

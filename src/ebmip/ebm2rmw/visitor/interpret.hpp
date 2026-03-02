@@ -23,7 +23,15 @@ namespace ebm2rmw {
     using TmpCodeWriter = futils::code::CodeWriter<std::string>;
 
     struct Value {
-        std::variant<std::monostate, std::uint64_t, std::string, std::uint8_t*, std::shared_ptr<Value>, std::unordered_map<std::uint64_t, std::shared_ptr<Value>>, Function> value;
+        std::variant<std::monostate,
+                     std::uint64_t,
+                     std::string,
+                     std::uint8_t*,
+                     std::shared_ptr<Value>,
+                     std::unordered_map<std::uint64_t, std::shared_ptr<Value>>,
+                     Function,
+                     std::vector<std::shared_ptr<Value>>>
+            value;
 
         void unref() {
             if (auto ptr = std::get_if<std::shared_ptr<Value>>(&value)) {
@@ -38,7 +46,7 @@ namespace ebm2rmw {
             // if monotstate, make it an object
             if (std::holds_alternative<std::monostate>(value)) {
                 value = std::unordered_map<std::uint64_t, std::shared_ptr<Value>>{};
-                if (ctx.flags().print_step) {
+                if (ctx.flags().print_state) {
                     futils::wrap::cout_wrap() << "  create object\n";
                 }
             }
@@ -49,8 +57,17 @@ namespace ebm2rmw {
                 std::string buf;
                 buf.resize(size);
                 value = buf;
-                if (ctx.flags().print_step) {
+                if (ctx.flags().print_state) {
                     futils::wrap::cout_wrap() << "  create bytes of size " << size << "\n";
+                }
+            }
+        }
+
+        void may_vector(InitialContext& ctx) {
+            if (std::holds_alternative<std::monostate>(value)) {
+                value = std::vector<std::shared_ptr<Value>>{};
+                if (ctx.flags().print_state) {
+                    futils::wrap::cout_wrap() << "  create vector\n";
                 }
             }
         }
@@ -70,24 +87,57 @@ namespace ebm2rmw {
                 w.write("}");
             }
             else if (std::holds_alternative<std::unordered_map<std::uint64_t, std::shared_ptr<Value>>>(value)) {
-                w.write("{");
-                auto& m = std::get<std::unordered_map<std::uint64_t, std::shared_ptr<Value>>>(value);
-                bool first = true;
-                for (auto& [k, v] : m) {
-                    if (!first) {
-                        w.write(", ");
+                w.writeln("{");
+                {
+                    auto indented = w.indent_scope();
+                    auto& m = std::get<std::unordered_map<std::uint64_t, std::shared_ptr<Value>>>(value);
+                    bool first = true;
+                    for (auto& [k, v] : m) {
+                        if (first) {
+                            first = false;
+                        }
+                        else {
+                            if (w.out().back() == '\n') {
+                                w.out().pop_back();
+                                w.should_write_indent(false);
+                            }
+                            w.writeln(",");
+                        }
+                        auto ident = ctx.identifier(ebm::StatementRef{k});
+                        w.write(ident);
+                        w.write(": ");
+                        v->print(ctx, w);
                     }
-                    first = false;
-                    auto ident = ctx.identifier(ebm::StatementRef{k});
-                    w.write(ident);
-                    w.write(": ");
-                    v->print(ctx, w);
+                    if (w.out().back() != '\n') {
+                        w.writeln();
+                    }
                 }
-                w.write("}");
+                w.writeln("}");
             }
             else if (std::holds_alternative<Function>(value)) {
                 auto ident = ctx.identifier(std::get<Function>(value).id);
                 w.write("<function ", ident, ">");
+            }
+            else if (std::holds_alternative<std::vector<std::shared_ptr<Value>>>(value)) {
+                w.writeln("[");
+                {
+                    auto indented = w.indent_scope();
+                    auto& vec = std::get<std::vector<std::shared_ptr<Value>>>(value);
+                    for (size_t i = 0; i < vec.size(); i++) {
+                        if (i > 0) {
+                            if (w.out().back() == '\n') {
+                                w.out().pop_back();
+                                w.should_write_indent(false);
+                            }
+                            w.writeln(",");
+                        }
+                        vec[i]->print(ctx, w);
+                    }
+                    if (w.out().back() != '\n') {
+                        w.writeln();
+                    }
+                }
+                w.write("]");
             }
             else if (std::holds_alternative<std::uint8_t*>(value)) {
                 w.write("<bytes>");
@@ -102,8 +152,60 @@ namespace ebm2rmw {
         std::shared_ptr<Value> self;
         std::map<std::uint64_t, std::shared_ptr<Value>> params;
         std::map<std::uint64_t, std::shared_ptr<Value>> heap;
-        std::vector<Value> stack;
+        std::vector<std::pair<ebm::OpCode, Value>> stack;
     };
+
+    inline std::string instruction_args(const ebm::Instruction& instr, InitialContext& ctx, size_t ip) {
+        std::string args;
+        instr.visit([&](auto&& self, std::string_view name, auto&& value) -> void {
+            if (name == "op") {
+                return;
+            }
+            using T = std::decay_t<decltype(value)>;
+            if constexpr (std::is_pointer_v<T>) {
+                if (value) {
+                    self(self, name, *value);
+                }
+            }
+            else {
+                if (args.size() > 0) {
+                    if (args.back() != '{') {
+                        args += ", ";
+                    }
+                }
+                if constexpr (std::is_same_v<T, ebm::StatementRef>) {
+                    auto ident = ctx.identifier(value);
+                    args += std::format("{}={}({})", name, ident, get_id(value));
+                }
+                else if constexpr (std::is_same_v<T, ebm::Varint>) {
+                    args += std::format("{}={}", name, value.value());
+                }
+                else if constexpr (std::is_same_v<T, bool>) {
+                    args += std::format("{}={}", name, value ? "true" : "false");
+                }
+                else if constexpr (std::is_integral_v<T>) {
+                    args += std::format("{}={}", name, value);
+                }
+                else if constexpr (has_visit<T, decltype(self)>) {
+                    args += std::format("{}={{", name);
+                    value.visit(self);
+                    if constexpr (std::is_same_v<T, ebm::JumpOffset>) {
+                        if (value.backward()) {
+                            args += std::format(",ip-{} = {}", value.offset.value(), ip - value.offset.value());
+                        }
+                        else {
+                            args += std::format(",ip+{} = {}", value.offset.value(), ip + value.offset.value());
+                        }
+                    }
+                    args += "}";
+                }
+                else {
+                    args += std::format("{}={}", name, to_string(value));
+                }
+            }
+        });
+        return args;
+    }
 
     struct RuntimeEnv {
         futils::view::rvec input;
@@ -145,26 +247,77 @@ namespace ebm2rmw {
         }
 
        private:
-        auto new_frame() {
+        auto new_frame(bool& no_error) {
             call_stack.emplace_back(std::make_shared<StackFrame>());
             return futils::helper::defer([&] {
-                call_stack.pop_back();
+                if (no_error) {
+                    call_stack.pop_back();
+                }
             });
         }
 
        public:
         ebmgen::expected<void> interpret(InitialContext& ctx, ebm::StatementRef self_type, std::map<std::uint64_t, std::shared_ptr<Value>>& params) {
             size_t ip = 0;
-            const auto frame = new_frame();
+            bool no_error = false;
+            const auto frame = new_frame(no_error);
             auto& this_ = *call_stack.back();
             this_.params = params;
             MAYBE(self_obj, new_object(ctx, self_type));
             this_.self = self_obj;
             auto res = interpret_impl(ctx, ip);
             if (!res) {
-                if (ip < ctx.config().env.get_instructions().size()) {
-                    return ebmgen::unexpect_error("Runtime error at instruction {}: {}:{}:{}", ip, to_string(ctx.config().env.get_instructions()[ip].instr.op), ctx.config().env.get_instructions()[ip].str_repr, res.error().error());
-                }
+                auto dump_on_error = [&] {
+                    if (!ctx.flags().print_state && !ctx.flags().print_step && !ctx.flags().print_error_stack) {
+                        return;
+                    }
+                    if (no_error) {
+                        return;
+                    }
+                    auto& env = ctx.config().env;
+                    futils::code::CodeWriter<std::string> w;
+                    size_t call_stack_depth = 0;
+                    for (auto& frame : call_stack) {
+                        auto& self = frame->self;
+                        auto& params = frame->params;
+                        auto& heap = frame->heap;
+                        auto& stack = frame->stack;
+                        w.writeln("=== Stack ", std::to_string(call_stack_depth), " ===");
+                        w.writeln("IP: ", std::to_string(ip));
+                        if (env.get_instructions().size() > ip) {
+                            w.writeln("Current Instruction: ", to_string(env.get_instructions()[ip].instr.op, true), " ", env.get_instructions()[ip].str_repr);
+                        }
+                        w.writeln("Self:");
+                        self->print(ctx, w);
+                        w.writeln();
+                        w.writeln("Params:");
+                        for (auto& [k, v] : params) {
+                            w.write("  ", std::to_string(k), ": ");
+                            v->print(ctx, w);
+                            w.writeln();
+                        }
+                        w.writeln("Heap:");
+                        for (auto& [k, v] : heap) {
+                            w.write("  ", std::to_string(k), ": ");
+                            v->print(ctx, w);
+                            w.writeln();
+                        }
+                        w.writeln("Stack:");
+                        for (size_t i = 0; i < stack.size(); i++) {
+                            w.write("  [", std::to_string(i), "]: ");
+                            stack[i].second.print(ctx, w);
+                            w.write(" by ", to_string(stack[i].first, true));
+                            w.writeln();
+                        }
+                        call_stack_depth++;
+                    }
+                    futils::wrap::cout_wrap() << w.out();
+                };
+                dump_on_error();
+                return ebmgen::unexpect_error(std::move(res.error()));
+            }
+            else {
+                no_error = true;
             }
             return res;
         }
@@ -182,108 +335,41 @@ namespace ebm2rmw {
                 assert(!stack.empty());
                 auto val = std::move(stack.back());
                 stack.pop_back();
-                if (ctx.flags().print_step) {
+                if (ctx.flags().print_state) {
                     futils::wrap::cout_wrap() << "  stack_pop: ";
                     TmpCodeWriter w;
-                    val.print(ctx, w);
-                    futils::wrap::cout_wrap() << w.out() << "\n";
+                    val.second.print(ctx, w);
+                    futils::wrap::cout_wrap() << w.out() << " from opcode " << to_string(val.first, true) << "\n";
                 }
-                return val;
+                return val.second;
             };
-            auto stack_push_with_stack = [&](std::vector<Value>& s, Value val) {
-                if (ctx.flags().print_step) {
+            auto stack_push_with_stack = [&](std::vector<std::pair<ebm::OpCode, Value>>& s, Value val) {
+                if (ctx.flags().print_state) {
                     futils::wrap::cout_wrap() << "  stack_push: ";
                     TmpCodeWriter w;
                     val.print(ctx, w);
-                    futils::wrap::cout_wrap() << w.out() << "\n";
+                    futils::wrap::cout_wrap() << w.out() << " from opcode " << to_string(env.get_instructions()[ip].instr.op, true) << "\n";
                 }
-                s.push_back(std::move(val));
+                s.push_back(std::make_pair(env.get_instructions()[ip].instr.op, std::move(val)));
             };
             auto stack_push = [&](Value val) {
                 stack_push_with_stack(stack, std::move(val));
             };
             auto& heap = this_.heap;
             bool no_error = false;
-            auto dump_on_error = futils::helper::defer([&] {
-                if (!ctx.flags().print_step) {
-                    return;
+            auto print_step = [&](const Instruction& instr) {
+                auto args = instruction_args(instr.instr, ctx, ip);
+                futils::wrap::cout_wrap() << "ip=" << ip << ", op=" << to_string(instr.instr.op, true);
+                if (args.size() > 0) {
+                    futils::wrap::cout_wrap() << ", args={" << args << "}";
                 }
-                if (no_error) {
-                    return;
-                }
-                futils::code::CodeWriter<std::string> w;
-                w.writeln("=== Stack ", std::to_string(call_stack.size()), " ===");
-                w.writeln("Self:");
-                self->print(ctx, w);
-                w.writeln();
-                w.writeln("Params:");
-                for (auto& [k, v] : params) {
-                    w.write("  ", std::to_string(k), ": ");
-                    v->print(ctx, w);
-                    w.writeln();
-                }
-                w.writeln("Heap:");
-                for (auto& [k, v] : heap) {
-                    w.write("  ", std::to_string(k), ": ");
-                    v->print(ctx, w);
-                    w.writeln();
-                }
-                w.writeln("Stack:");
-                for (size_t i = 0; i < stack.size(); i++) {
-                    w.write("  [", std::to_string(i), "]: ");
-                    stack[i].print(ctx, w);
-                    w.writeln();
-                }
-                futils::wrap::cout_wrap() << w.out();
-            });
+                futils::wrap::cout_wrap() << ", str_repr=" << instr.str_repr << ", stack_size=" << stack.size() << ", call_stack_size=" << call_stack.size() << "\n";
+            };
+
             while (ip < env.get_instructions().size()) {
                 auto& instr = env.get_instructions()[ip];
                 if (ctx.flags().print_step) {
-                    std::string args;
-                    instr.instr.visit([&](auto&& self, std::string_view name, auto&& value) -> void {
-                        if (name == "op") {
-                            return;
-                        }
-                        using T = std::decay_t<decltype(value)>;
-                        if constexpr (std::is_pointer_v<T>) {
-                            if (value) {
-                                self(self, name, *value);
-                            }
-                        }
-                        else {
-                            if (args.size() > 0) {
-                                if (args.back() != '{') {
-                                    args += ", ";
-                                }
-                            }
-                            if constexpr (std::is_same_v<T, ebm::StatementRef>) {
-                                auto ident = ctx.identifier(value);
-                                args += std::format("{}={}({})", name, ident, get_id(value));
-                            }
-                            else if constexpr (std::is_same_v<T, ebm::Varint>) {
-                                args += std::format("{}={}", name, value.value());
-                            }
-                            else if constexpr (std::is_same_v<T, bool>) {
-                                args += std::format("{}={}", name, value ? "true" : "false");
-                            }
-                            else if constexpr (std::is_integral_v<T>) {
-                                args += std::format("{}={}", name, value);
-                            }
-                            else if constexpr (has_visit<T, decltype(self)>) {
-                                args += std::format("{}={{", name);
-                                value.visit(self);
-                                args += "}";
-                            }
-                            else {
-                                args += std::format("{}={}", name, to_string(value));
-                            }
-                        }
-                    });
-                    futils::wrap::cout_wrap() << "ip=" << ip << ", op=" << to_string(instr.instr.op, true);
-                    if (args.size() > 0) {
-                        futils::wrap::cout_wrap() << ", args={" << args << "}";
-                    }
-                    futils::wrap::cout_wrap() << ", str_repr=" << instr.str_repr << ", stack_size=" << stack.size() << ", call_stack_size=" << call_stack.size() << "\n";
+                    print_step(instr);
                 }
                 if (auto bop = OpCode_to_BinaryOp(instr.instr.op)) {
                     if (stack.size() < 2) {
@@ -368,7 +454,7 @@ namespace ebm2rmw {
                         if (found == heap.end()) {
                             return ebmgen::unexpect_error("undefined local variable");
                         }
-                        if (ctx.flags().print_step) {
+                        if (ctx.flags().print_state) {
                             futils::wrap::cout_wrap() << "  heap_load: [" << reg->index.id.value() << "] = ";
                             TmpCodeWriter w;
                             found->second->print(ctx, w);
@@ -388,7 +474,7 @@ namespace ebm2rmw {
                         auto val = stack_pop();
                         val.unref();
                         auto val_ptr = std::make_shared<Value>(std::move(val));
-                        if (ctx.flags().print_step) {
+                        if (ctx.flags().print_state) {
                             futils::wrap::cout_wrap() << "  heap_store: [" << reg->index.id.value() << "] = ";
                             TmpCodeWriter w;
                             val_ptr->print(ctx, w);
@@ -514,7 +600,7 @@ namespace ebm2rmw {
                         auto& ref = obj[member_id->id.value()];
                         if (!ref) {
                             ref = std::make_shared<Value>();
-                            if (ctx.flags().print_step) {
+                            if (ctx.flags().print_state) {
                                 futils::wrap::cout_wrap() << "  create member [" << member_id->id.value() << "]\n";
                             }
                             if (ctx.config().env.has_function(*member_id)) {
@@ -524,7 +610,8 @@ namespace ebm2rmw {
                                 if (ctx.config().env.has_function(prop->getter_function.id)) {
                                     // invoke getter function and store result in ref
                                     auto func_enter = ctx.config().env.new_function(prop->getter_function.id);
-                                    auto frame = new_frame();
+                                    bool no_error = false;
+                                    auto frame = new_frame(no_error);
                                     auto& new_this = *call_stack.back();
                                     new_this.self = base_ptr;
                                     size_t func_ip = 0;
@@ -534,6 +621,7 @@ namespace ebm2rmw {
                                     }
                                     *ref = stack_pop();
                                     ref->unref();
+                                    no_error = true;
                                 }
                             }
                         }
@@ -557,7 +645,7 @@ namespace ebm2rmw {
                         if (!num_args) {
                             return ebmgen::unexpect_error("missing argument number in CALL");
                         }
-                        if (stack.size() < num_args->value() + 1) {
+                        if (stack.size() < num_args->value() + 2) {
                             return ebmgen::unexpect_error("stack underflow on CALL");
                         }
                         auto callee = stack_pop();
@@ -581,12 +669,14 @@ namespace ebm2rmw {
                             return ebmgen::unexpect_error("CALL new self is not an object");
                         }
                         auto func_enter = ctx.config().env.new_function(func.id);
-                        const auto frame = new_frame();
+                        bool no_error = false;
+                        const auto frame = new_frame(no_error);
                         auto& new_this = *call_stack.back();
                         new_this.params = std::move(call_params);
                         new_this.self = std::get<std::shared_ptr<Value>>(new_self.value);
                         size_t func_ip = 0;
                         MAYBE_VOID(r, interpret_impl(ctx, func_ip));
+                        no_error = true;
                         break;
                     }
                     case ebm::OpCode::JUMP_IF_FALSE: {
@@ -652,6 +742,29 @@ namespace ebm2rmw {
                         val.unref();
                         bool is_error = std::holds_alternative<std::string>(val.value);
                         stack_push(Value{std::uint64_t(is_error ? 1 : 0)});
+                        break;
+                    }
+                    case ebm::OpCode::VECTOR_PUSH: {
+                        if (stack.empty()) {
+                            return ebmgen::unexpect_error("stack underflow on VECTOR_PUSH");
+                        }
+                        auto elem_val = stack_pop();
+                        elem_val.unref();
+                        if (stack.empty()) {
+                            return ebmgen::unexpect_error("stack underflow on VECTOR_PUSH");
+                        }
+                        auto val = stack_pop();
+                        if (!std::holds_alternative<std::shared_ptr<Value>>(val.value)) {
+                            return ebmgen::unexpect_error("VECTOR_PUSH target is not an object");
+                        }
+                        auto vec_ptr = std::get<std::shared_ptr<Value>>(val.value);
+                        vec_ptr->may_vector(ctx);
+                        if (!std::holds_alternative<std::vector<std::shared_ptr<Value>>>(vec_ptr->value)) {
+                            return ebmgen::unexpect_error("VECTOR_PUSH target is not a vector");
+                        }
+                        auto& vec = std::get<std::vector<std::shared_ptr<Value>>>(vec_ptr->value);
+                        auto elem_ptr = std::make_shared<Value>(std::move(elem_val));
+                        vec.push_back(std::move(elem_ptr));
                         break;
                     }
                     default:

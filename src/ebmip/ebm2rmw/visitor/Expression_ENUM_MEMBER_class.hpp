@@ -23,10 +23,8 @@
 #include "ebm/extended_binary_module.hpp"
 DEFINE_VISITOR(Expression_ENUM_MEMBER) {
     using namespace CODEGEN_NAMESPACE;
-    auto enum_decl = ctx.identifier(ctx.enum_decl);
-    MAYBE(ident, ctx.identifier(ctx.member));
-    ebm::Instruction inst{.op = ebm::OpCode::LOAD_MEMBER};
-    ctx.config().env.add_instruction(std::move(inst), std::format("{}.{}", enum_decl, ident));
+    MAYBE(enum_member_decl, ctx.get_field<"body.id.enum_member_decl">(ctx.member));
+    MAYBE(value, ctx.visit(enum_member_decl.value));
     /*here to write the hook*/
     return {};
 }

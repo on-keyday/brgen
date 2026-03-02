@@ -21,7 +21,6 @@
 
 #include "../codegen.hpp"
 #include <ebmgen/interactive/debugger.hpp>
-#include "ebmcodegen/stub/util.hpp"
 #include "file/file_view.h"
 #include "interpret.hpp"
 #include "wrap/cout.h"
@@ -41,9 +40,26 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
     auto entry_decode_fn = *entry_stmt.body.struct_decl()->decode_fn();
     auto f = ctx.config().env.new_function(entry_decode_fn);
     auto res = ctx.visit(entry_decode_fn);
-    if (ctx.flags().dump_code) {
-        for (auto& instr : ctx.config().env.get_instructions()) {
-            futils::wrap::cerr_wrap() << to_string(instr.instr.op, true) << " // " << tidy_condition_brace(instr.str_repr) << "\n";
+    if (ctx.flags().dump_ops) {
+        for (auto& func : ctx.config().env.get_function_insert_order()) {
+            MAYBE(func_decl, ctx.get_field<"func_decl">(ebm::StatementRef{func}));
+            if (!is_nil(func_decl.parent_format)) {
+                futils::wrap::cout_wrap() << "Function " << ctx.identifier(func_decl.parent_format) << "." << ctx.identifier(ebm::StatementRef{func}) << ":\n";
+            }
+            else {
+                futils::wrap::cout_wrap() << "Function " << ctx.identifier(ebm::StatementRef{func}) << ":\n";
+            }
+            size_t instr_index = 0;
+            InitialContext ictx{.visitor = ctx.visitor};
+            for (auto& instr : ctx.config().env.get_functions()[func]) {
+                futils::wrap::cout_wrap() << instr_index << ":  " << to_string(instr.instr.op, true);
+                auto args = instruction_args(instr.instr, ictx, instr_index);
+                if (!args.empty()) {
+                    futils::wrap::cout_wrap() << ", args={" << args << "}";
+                }
+                futils::wrap::cout_wrap() << " // " << instr.str_repr << "\n";
+                instr_index++;
+            }
         }
     }
     if (!res) {

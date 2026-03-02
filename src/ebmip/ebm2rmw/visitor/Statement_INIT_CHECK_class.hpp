@@ -27,16 +27,18 @@ DEFINE_VISITOR(Statement_INIT_CHECK) {
     using namespace CODEGEN_NAMESPACE;
     /*here to write the hook*/
     if (ctx.init_check.init_check_type == ebm::InitCheckType::field_init_decode) {
+        /*
         MAYBE(got, ctx.get(ctx.init_check.expect_value));
-        if (ctx.is(ebm::TypeKind::STRUCT, got.body.type) || ctx.is(ebm::TypeKind::RECURSIVE_STRUCT, got.body.type)) {
-            MAYBE(type_name, ctx.identifier(got.body.type));
-            MAYBE(type_impl, ctx.get(got.body.type));
-            MAYBE(id, type_impl.body.id());
-            ebm::Instruction instr;
-            instr.op = ebm::OpCode::NEW_STRUCT;
-            instr.struct_id(from_weak(id));
-            ctx.config().env.add_instruction(std::move(instr), std::format("new {}", type_name));
-        }
+          if (ctx.is(ebm::TypeKind::STRUCT, got.body.type) || ctx.is(ebm::TypeKind::RECURSIVE_STRUCT, got.body.type)) {
+              MAYBE(type_name, ctx.identifier(got.body.type));
+              MAYBE(type_impl, ctx.get(got.body.type));
+              MAYBE(id, type_impl.body.id());
+              ebm::Instruction instr;
+              instr.op = ebm::OpCode::NEW_STRUCT;
+              instr.struct_id(from_weak(id));
+              ctx.config().env.add_instruction(std::move(instr), std::format("new {}", type_name));
+          }
+          */
     }
     return {};
 }

@@ -166,7 +166,7 @@
         "--entry-point",
         "ExtendedBinaryModule",
         "--debug-unimplemented",
-        "--print-step",
+        "--dump-ops",
         "--binary-file",
         "${workspaceRoot}/save/ebm_schema.ebm"
       ],
