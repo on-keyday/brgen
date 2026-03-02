@@ -1033,6 +1033,8 @@ enum OpCode:
     ARRAY_LEN       = 0x96 
     NEW_BYTES       = 0x97
     VECTOR_PUSH     = 0x98
+    LOAD_FUNC       = 0x99
+    CALL_GETTER     = 0x9A
 
     MAX_OPCODE      = 0xFF
 
@@ -1113,5 +1115,9 @@ format Instruction:
             member_id :StatementRef
         OpCode.LOAD_MEMBER_REF:
             member_id :StatementRef
+        OpCode.LOAD_FUNC:
+            func_id :StatementRef
+        OpCode.CALL_GETTER:
+            func_id :StatementRef
         OpCode.NEW_BYTES:
             imm :OptionalImmediateSize

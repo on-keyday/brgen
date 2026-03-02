@@ -2,6 +2,7 @@
 #pragma once
 
 #include "../codegen.hpp"
+#include "binary/flags.h"
 #include "ebm/extended_binary_module.hpp"
 
 namespace std {
@@ -292,5 +293,19 @@ namespace ebm2rmw {
             }
             return layout->second.element_type;
         }
+
+        expected<TypeLayout> get_vector_element_type(ebm::TypeRef vector_type) {
+            auto layout = context().vector_layouts.find(vector_type);
+            if (layout == context().vector_layouts.end()) {
+                return ebmgen::unexpect_error("vector layout not found");
+            }
+            return layout->second.element_type;
+        }
+    };
+
+    struct LayoutScratch {
+        futils::binary::flags_t<std::uint64_t, 32, 32> scratch;
+        bits_flag_alias_method(scratch, 0, offset);
+        bits_flag_alias_method(scratch, 1, size);
     };
 }  // namespace ebm2rmw

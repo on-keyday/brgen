@@ -1352,6 +1352,15 @@ namespace ebm {
                 return false;
             }
         }
+        if (auto got = j.at("func_id")) {
+            StatementRef tmp;
+            if(!futils::json::convert_from_json(*got, tmp)) {
+                return false;
+            }
+            if(!obj.func_id(std::move(tmp))) {
+                return false;
+            }
+        }
         if (auto got = j.at("imm")) {
             OptionalImmediateSize tmp;
             if(!futils::json::convert_from_json(*got, tmp)) {
@@ -4043,6 +4052,14 @@ namespace ebm {
             }
             if (s == "VECTOR_PUSH") {
                 obj = OpCode::VECTOR_PUSH;
+                return true;
+            }
+            if (s == "LOAD_FUNC") {
+                obj = OpCode::LOAD_FUNC;
+                return true;
+            }
+            if (s == "CALL_GETTER") {
+                obj = OpCode::CALL_GETTER;
                 return true;
             }
             if (s == "MAX_OPCODE") {

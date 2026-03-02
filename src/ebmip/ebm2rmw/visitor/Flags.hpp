@@ -29,4 +29,4 @@ FILE_EXTENSIONS(".txt", ".json", ".md");
 DEFINE_BOOL_FLAG(dump_ops, false, "dump-ops", "dump generated code");
 DEFINE_BOOL_FLAG(print_step, false, "print-step", "print each step of execution");
 DEFINE_BOOL_FLAG(print_state, false, "print-state", "print state after each instruction");
-DEFINE_BOOL_FLAG(print_error_stack, false, "print-error-stack", "print error stack when error occurs");
+DEFINE_BOOL_FLAG(print_final_stack, false, "print-final-stack", "print final stack on execution stopped");

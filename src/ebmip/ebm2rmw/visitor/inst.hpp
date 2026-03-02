@@ -11,6 +11,7 @@ namespace ebm2rmw {
     struct Instruction {
         ebm::Instruction instr;
         std::string str_repr;
+        std::uint64_t scratch = 0;
     };
 
     struct FunctionDecl {
@@ -46,6 +47,13 @@ namespace ebm2rmw {
             }
         }
 
+        size_t get_local(ebm::StatementRef local_id) const {
+            auto& func = *instructions;
+            auto found = func.local_indices.find(local_id);
+            assert(found != func.local_indices.end());
+            return found->second;
+        }
+
         void add_error_slot(ebm::StatementRef error_id) {
             auto& func = *instructions;
             if (!func.error_slot) {
@@ -54,10 +62,11 @@ namespace ebm2rmw {
             func.local_indices[error_id] = *func.error_slot;
         }
 
-        void add_instruction(const ebm::Instruction& instr, std::string str_repr) {
+        void add_instruction(const ebm::Instruction& instr, std::string str_repr, std::uint64_t scratch = 0) {
             instructions->instructions.push_back(Instruction{
                 .instr = instr,
                 .str_repr = std::move(str_repr),
+                .scratch = scratch,
             });
         }
 

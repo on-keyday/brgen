@@ -21,24 +21,33 @@
 
 #include "../codegen.hpp"
 #include "ebm/extended_binary_module.hpp"
+#include "ebmcodegen/stub/util.hpp"
 #include "inst.hpp"
+#include "layout.hpp"
 DEFINE_VISITOR(Expression_MEMBER_ACCESS) {
     using namespace CODEGEN_NAMESPACE;
     /*here to write the hook*/
-    auto current_lvalue = ctx.config().is_lvalue;
-    ctx.config().is_lvalue = true;  // set lvalue context for member access
-    MAYBE(base, ctx.visit(ctx.base));
-    ctx.config().is_lvalue = current_lvalue;  // restore lvalue context
     MAYBE(name, ctx.module().get_expression(ctx.member));
     MAYBE(id_, name.body.id());
     auto id = from_weak(id_);
     // maybe add function
-    if (ctx.is(ebm::StatementKind::FUNCTION_DECL, id)) {
+    if (auto func_decl = ctx.get_field<"func_decl">(id)) {
         if (!ctx.config().env.has_function(id)) {
             auto f = ctx.config().env.new_function(id);
             MAYBE(_, ctx.visit(id));  // add function to instructions
         }
+        ebm::Instruction instr;
+        instr.op = ebm::OpCode::LOAD_FUNC;
+        instr.func_id(id);
+        auto identifier = ctx.identifier(id);
+        auto parent_ident = ctx.identifier(func_decl->parent_format);
+        ctx.config().env.add_instruction(instr, std::format("{}.{}", parent_ident, identifier));
+        return Result{.str_repr = std::move(identifier)};
     }
+    auto current_lvalue = ctx.config().is_lvalue;
+    ctx.config().is_lvalue = true;  // set lvalue context for member access
+    MAYBE(base, ctx.visit(ctx.base));
+    ctx.config().is_lvalue = current_lvalue;  // restore lvalue context
     if (ctx.is(ebm::StatementKind::PROPERTY_DECL, id)) {
         auto prop = ctx.get_field<"property_decl">(id);
         if (prop) {
@@ -47,12 +56,48 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS) {
                 MAYBE(_, ctx.visit(prop->getter_function.id));  // add function to instructions
             }
         }
+        ebm::Instruction instr;
+        instr.op = ebm::OpCode::CALL_GETTER;
+        instr.func_id(prop->getter_function.id);
+        auto identifier = ctx.identifier(id);
+        auto str_repr = std::format("{}.{}", base.str_repr, identifier);
+        ctx.config().env.add_instruction(instr, str_repr);
+        return Result{.str_repr = str_repr};
+    }
+    auto identifier = ctx.identifier(id);
+    LayoutScratch layout_scratch;
+    InitialContext ictx{.visitor = ctx.visitor};
+    LayoutAccess access{ictx};
+    StructLayout* struct_layout;
+    if (auto union_field = get_variant_member_from_field(ctx, id)) {
+        MAYBE(base_layout, analyze_layout(ictx, *union_field));
+        struct_layout = access.get_struct_layout_detail(*union_field);
+    }
+    else {
+        MAYBE(base_type, ctx.get_field<"type">(ctx.base));
+        MAYBE(base_layout, analyze_layout(ictx, base_type));
+        struct_layout = access.get_struct_layout_detail(base_type);
+    }
+    if (!struct_layout) {
+        return ebmgen::unexpect_error("member access base is not a struct or union");
+    }
+    for (auto& field : struct_layout->fields) {
+        if (field.field == id) {
+            if (field.offset > (1ULL << 32) - 1) {
+                return ebmgen::unexpect_error("field offset too large for member access: {}", field.offset);
+            }
+            if (field.type.size > (1ULL << 32) - 1) {
+                return ebmgen::unexpect_error("field size too large for member access: {}", field.type.size);
+            }
+            layout_scratch.offset(field.offset);
+            layout_scratch.size(field.type.size);
+            break;
+        }
     }
     ebm::Instruction instr;
     instr.op = ctx.config().is_lvalue ? ebm::OpCode::LOAD_MEMBER_REF : ebm::OpCode::LOAD_MEMBER;
     instr.member_id(id);
-    auto identifier = ctx.identifier(id);
     auto str_repr = std::format("{}.{}", base.str_repr, identifier);
-    ctx.config().env.add_instruction(instr, str_repr);
+    ctx.config().env.add_instruction(instr, str_repr, layout_scratch.scratch.as_value());
     return Result{.str_repr = str_repr};
 }

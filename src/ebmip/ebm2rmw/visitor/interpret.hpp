@@ -22,6 +22,30 @@ namespace ebm2rmw {
 
     using TmpCodeWriter = futils::code::CodeWriter<std::string>;
 
+    inline ebmgen::expected<std::uint64_t> decode_uint64(ObjectRef obj_ref, bool strict = true) {
+        if (obj_ref.raw_object.size() > 8 || (strict && obj_ref.raw_object.size() != 8)) {
+            return ebmgen::unexpect_error("invalid uint64 object size");
+        }
+        std::uint64_t int_value = 0;
+        for (size_t i = 0; i < obj_ref.raw_object.size(); i++) {
+            int_value |= static_cast<std::uint64_t>(static_cast<unsigned char>(obj_ref.raw_object[i])) << (i * 8);
+        }
+        return int_value;
+    }
+
+    inline ebmgen::expected<void> encode_uint64(ObjectRef& obj_ref, std::uint64_t value, bool strict = true) {
+        if (obj_ref.raw_object.size() > 8 || (strict && obj_ref.raw_object.size() != 8)) {
+            return ebmgen::unexpect_error("invalid uint64 object size");
+        }
+        if (value == 1346) {
+            ;
+        }
+        for (size_t i = 0; i < obj_ref.raw_object.size(); i++) {
+            obj_ref.raw_object[i] = static_cast<std::uint8_t>((value >> (i * 8)) & 0xFF);
+        }
+        return {};
+    }
+
     inline void print_layout(InitialContext& ctx, TmpCodeWriter& w, ObjectRef ref) {
         LayoutAccess access(ctx);
         if (auto detail = access.get_struct_layout_detail(ref.type)) {
@@ -40,6 +64,11 @@ namespace ebm2rmw {
                         w.write("size=", std::to_string(res->raw_object.size()), " ");
                         if (type_kind == ebm::TypeKind::STRUCT) {
                             print_layout(ctx, w, *res);
+                        }
+                        else if (type_kind == ebm::TypeKind::VECTOR) {
+                            if (auto slot = decode_uint64(*res); slot) {
+                                w.write("slot=", std::to_string(*slot));
+                            }
                         }
                         else {
                             std::string hex_output;
@@ -94,7 +123,9 @@ namespace ebm2rmw {
         void as_int(InitialContext& ctx) {
             unref();
             if (auto obj_ref = std::get_if<ObjectRef>(&value)) {
-                if (ctx.get_kind(obj_ref->type) != ebm::TypeKind::UINT) {
+                auto kind = ctx.get_kind(obj_ref->type);
+                if (kind != ebm::TypeKind::UINT && kind != ebm::TypeKind::INT &&
+                    kind != ebm::TypeKind::BOOL && kind != ebm::TypeKind::ENUM) {
                     return;
                 }
                 std::uint64_t int_value = 0;
@@ -129,13 +160,14 @@ namespace ebm2rmw {
         }
     };
 
+    using BytesArena = std::vector<std::vector<std::uint8_t>>;
+
     struct StackFrame {
         ObjectRef self;
         std::map<std::uint64_t, Value> params;
-        std::map<std::uint64_t, Value> heap;
+        std::vector<Value> heap;
         std::vector<std::pair<ebm::OpCode, Value>> stack;
-
-        std::vector<std::vector<std::uint8_t>> byte_arrays;
+        BytesArena local_bytes_arena;  // temporary storage for byte arrays in local variables
     };
 
     inline std::string instruction_args(const ebm::Instruction& instr, InitialContext& ctx, size_t ip, const FunctionDecl* func_decl) {
@@ -209,19 +241,70 @@ namespace ebm2rmw {
         ebmgen::expected<ObjectRef> new_object(InitialContext& ctx, ebm::StatementRef ref, StackFrame& frame) {
             LayoutAccess access{ctx};
             MAYBE(layout, access.get_struct_layout(ref));
-            auto& bytes_arena = frame.byte_arrays;
             bytes_arena.emplace_back();
             auto& raw_object = bytes_arena.back();
             raw_object.resize(layout.size);
             return ObjectRef(layout.type, futils::view::wvec(raw_object));
         }
 
+        ebmgen::expected<ObjectRef> vector_alloc_back(InitialContext& ctx, ObjectRef vec, BytesArena& bytes_arena) {
+            LayoutAccess access(ctx);
+            MAYBE(layout, access.get_vector_element_type(vec.type));
+            MAYBE(index, decode_uint64(vec));
+            if (index == 0) {
+                bytes_arena.emplace_back();
+                index = bytes_arena.size();  // 1-based index
+                MAYBE_VOID(_, encode_uint64(vec, index));
+            }
+            size_t actual_index = index - 1;
+            if (actual_index >= bytes_arena.size()) {
+                return ebmgen::unexpect_error("invalid vector index: {} (out of {})", actual_index, bytes_arena.size());
+            }
+            bytes_arena[actual_index].resize(bytes_arena[actual_index].size() + layout.size);
+            auto elem_place = futils::view::wvec(bytes_arena[actual_index]).substr(bytes_arena[actual_index].size() - layout.size, layout.size);
+            return ObjectRef(layout.type, elem_place);
+        }
+
+        ebmgen::expected<futils::view::wvec> get_bytes(InitialContext& ctx, ObjectRef& obj_ref, size_t size, BytesArena& bytes_arena) {
+            if (ctx.is(ebm::TypeKind::VECTOR, obj_ref.type)) {
+                MAYBE(index, decode_uint64(obj_ref));
+                if (index == 0) {
+                    bytes_arena.emplace_back();
+                    index = bytes_arena.size();  // 1-based index
+                    MAYBE_VOID(_, encode_uint64(obj_ref, index));
+                }
+                size_t actual_index = index - 1;
+                if (actual_index >= bytes_arena.size()) {
+                    return ebmgen::unexpect_error("invalid byte array index: {} (out of {})", actual_index, bytes_arena.size());
+                }
+                auto& byte_array = bytes_arena[actual_index];
+                byte_array.resize(size);
+                return futils::view::wvec(byte_array);
+            }
+            if (ctx.is(ebm::TypeKind::ARRAY, obj_ref.type)) {
+                if (obj_ref.raw_object.size() < size) {
+                    return ebmgen::unexpect_error("invalid array object size: expected {}, got {}", size, obj_ref.raw_object.size());
+                }
+                return futils::view::wvec(obj_ref.raw_object);
+            }
+            return {};
+        }
+
        private:
+        std::vector<std::shared_ptr<StackFrame>> frame_pool;
+
         auto new_frame(bool& no_error) {
-            call_stack.emplace_back(std::make_shared<StackFrame>());
+            if (frame_pool.empty()) {
+                frame_pool.push_back(std::make_shared<StackFrame>());
+            }
+            auto frame = frame_pool.back();
+            frame_pool.pop_back();
+            call_stack.push_back(frame);
             return futils::helper::defer([&] {
                 if (no_error) {
+                    auto popped_frame = call_stack.back();
                     call_stack.pop_back();
+                    frame_pool.push_back(std::move(popped_frame));
                 }
             });
         }
@@ -236,63 +319,67 @@ namespace ebm2rmw {
             MAYBE(self_obj, new_object(ctx, self_type, this_));
             this_.self = self_obj;
             auto res = interpret_impl(ctx, ip);
-            if (!res) {
-                auto dump_on_error = [&] {
-                    if (!ctx.flags().print_state && !ctx.flags().print_step && !ctx.flags().print_error_stack) {
-                        return;
+            auto dump_stack = [&] {
+                auto& env = ctx.config().env;
+                futils::code::CodeWriter<std::string> w;
+                size_t call_stack_depth = 0;
+                for (auto& frame : call_stack) {
+                    auto& self = frame->self;
+                    auto& params = frame->params;
+                    auto& heap = frame->heap;
+                    auto& stack = frame->stack;
+                    w.writeln("=== Stack ", std::to_string(call_stack_depth), " ===");
+                    w.writeln("IP: ", std::to_string(ip));
+                    if (env.get_instructions().size() > ip) {
+                        w.writeln("Current Instruction: ", to_string(env.get_instructions()[ip].instr.op, true), " ", env.get_instructions()[ip].str_repr);
                     }
-                    if (no_error) {
-                        return;
-                    }
-                    auto& env = ctx.config().env;
-                    futils::code::CodeWriter<std::string> w;
-                    size_t call_stack_depth = 0;
-                    for (auto& frame : call_stack) {
-                        auto& self = frame->self;
-                        auto& params = frame->params;
-                        auto& heap = frame->heap;
-                        auto& stack = frame->stack;
-                        w.writeln("=== Stack ", std::to_string(call_stack_depth), " ===");
-                        w.writeln("IP: ", std::to_string(ip));
-                        if (env.get_instructions().size() > ip) {
-                            w.writeln("Current Instruction: ", to_string(env.get_instructions()[ip].instr.op, true), " ", env.get_instructions()[ip].str_repr);
-                        }
-                        w.writeln("Self:");
-                        print_layout(ctx, w, self);
+                    w.writeln("Self:");
+                    print_layout(ctx, w, self);
+                    w.writeln();
+                    w.writeln("Params:");
+                    for (auto& [k, v] : params) {
+                        w.write("  ", std::to_string(k), ": ");
+                        v.print(ctx, w);
                         w.writeln();
-                        w.writeln("Params:");
-                        for (auto& [k, v] : params) {
-                            w.write("  ", std::to_string(k), ": ");
-                            v.print(ctx, w);
-                            w.writeln();
-                        }
-                        w.writeln("Heap:");
-                        for (auto& [k, v] : heap) {
-                            w.write("  ", std::to_string(k), ": ");
-                            v.print(ctx, w);
-                            w.writeln();
-                        }
-                        w.writeln("Stack:");
-                        for (size_t i = 0; i < stack.size(); i++) {
-                            w.write("  [", std::to_string(i), "]: ");
-                            stack[i].second.print(ctx, w);
-                            w.write(" by ", to_string(stack[i].first, true));
-                            w.writeln();
-                        }
-                        call_stack_depth++;
                     }
-                    futils::wrap::cout_wrap() << w.out();
-                };
-                dump_on_error();
+                    w.writeln("Heap:");
+                    for (size_t i = 0; i < heap.size(); i++) {
+                        w.write("  [", std::to_string(i), "]: ");
+                        heap[i].print(ctx, w);
+                        w.writeln();
+                    }
+                    w.writeln("Stack:");
+                    for (size_t i = 0; i < stack.size(); i++) {
+                        w.write("  [", std::to_string(i), "]: ");
+                        stack[i].second.print(ctx, w);
+                        w.write(" by ", to_string(stack[i].first, true));
+                        w.writeln();
+                    }
+                    if (call_stack_depth == 0) {
+                        w.writeln("Bytes Arena: size=", std::to_string(bytes_arena.size()));
+                    }
+                    w.writeln("Local Bytes Arena: size=", std::to_string(frame->local_bytes_arena.size()));
+                    call_stack_depth++;
+                }
+                futils::wrap::cout_wrap() << w.out();
+            };
+            if (!res) {
+                if (ctx.flags().print_final_stack) {
+                    dump_stack();
+                }
                 return ebmgen::unexpect_error(std::move(res.error()));
             }
             else {
                 no_error = true;
+                if (ctx.flags().print_final_stack) {
+                    dump_stack();
+                }
             }
             return res;
         }
 
        private:
+        BytesArena bytes_arena;
         std::vector<std::shared_ptr<StackFrame>> call_stack;
 
         ebmgen::expected<void> interpret_impl(InitialContext& ctx, size_t& ip) {
@@ -301,7 +388,8 @@ namespace ebm2rmw {
             auto& self = this_.self;
             auto& params = this_.params;
             auto& stack = this_.stack;
-            auto& bytes_arena = this_.byte_arrays;
+            auto& local_bytes_arena = this_.local_bytes_arena;
+            local_bytes_arena.clear();
             auto stack_pop = [&] {
                 assert(!stack.empty());
                 auto val = std::move(stack.back());
@@ -327,6 +415,7 @@ namespace ebm2rmw {
                 stack_push_with_stack(stack, std::move(val));
             };
             auto& heap = this_.heap;
+            heap.resize(env.get_current_function()->local_count);
             bool no_error = false;
             auto print_step = [&](const Instruction& instr) {
                 auto args = instruction_args(instr.instr, ctx, ip, env.get_current_function());
@@ -408,8 +497,8 @@ namespace ebm2rmw {
                                 return ebmgen::unexpect_error("failed to get u8 array layout for size {}", v->value());
                             }
                             std::vector<std::uint8_t> byte_array(v->value());
-                            bytes_arena.push_back(std::move(byte_array));
-                            stack_push(Value{ObjectRef(array_layout->type, bytes_arena.back())});
+                            local_bytes_arena.push_back(std::move(byte_array));
+                            stack_push(Value{ObjectRef(array_layout->type, local_bytes_arena.back())});
                         }
                         else {
                             return ebmgen::unexpect_error("missing size immediate in NEW_BYTES");
@@ -422,45 +511,34 @@ namespace ebm2rmw {
                     }
                     case ebm::OpCode::LOAD_LOCAL:
                     case ebm::OpCode::LOAD_LOCAL_REF: {
-                        auto reg = instr.instr.reg();
-                        if (!reg) {
-                            return ebmgen::unexpect_error("missing register index in LOAD_LOCAL");
-                        }
-                        auto found = heap.find(reg->index.id.value());
-                        if (found == heap.end()) {
-                            return ebmgen::unexpect_error("undefined local variable");
-                        }
+                        auto& found = heap[instr.scratch];
                         if (ctx.flags().print_state) {
-                            futils::wrap::cout_wrap() << "  heap_load: [" << reg->index.id.value() << "] = ";
+                            futils::wrap::cout_wrap() << "  heap_load: [" << instr.scratch << "] = ";
                             TmpCodeWriter w;
-                            found->second.print(ctx, w);
+                            found.print(ctx, w);
                             futils::wrap::cout_wrap() << w.out() << "\n";
                         }
                         if (instr.instr.op == ebm::OpCode::LOAD_LOCAL) {
-                            stack_push(Value{found->second});
+                            stack_push(Value{found});
                         }
                         else {
-                            stack_push(Value{&found->second});
+                            stack_push(Value{&found});
                         }
                         break;
                     }
                     case ebm::OpCode::STORE_LOCAL: {
-                        auto reg = instr.instr.reg();
-                        if (!reg) {
-                            return ebmgen::unexpect_error("missing register index in STORE_LOCAL");
-                        }
                         if (stack.empty()) {
                             return ebmgen::unexpect_error("stack underflow on STORE_LOCAL");
                         }
                         auto val = stack_pop();
                         val.unref();
                         if (ctx.flags().print_state) {
-                            futils::wrap::cout_wrap() << "  heap_store: [" << reg->index.id.value() << "] = ";
+                            futils::wrap::cout_wrap() << "  heap_store: [" << instr.scratch << "] = ";
                             TmpCodeWriter w;
                             val.print(ctx, w);
                             futils::wrap::cout_wrap() << w.out() << "\n";
                         }
-                        heap[reg->index.id.value()] = std::move(val);
+                        heap[instr.scratch] = std::move(val);
                         break;
                     }
                     case ebm::OpCode::STORE_REF: {
@@ -479,9 +557,6 @@ namespace ebm2rmw {
                                     break;
                                 }
                                 if (auto int_src = std::get_if<std::uint64_t>(&val.value)) {
-                                    if (ctx.get_kind(object_ref->type) != ebm::TypeKind::UINT) {
-                                        return ebmgen::unexpect_error("target object is not an integer in STORE_REF");
-                                    }
                                     for (size_t i = 0; i < sizeof(std::uint64_t); i++) {
                                         object_ref->raw_object[i] = static_cast<char>((*int_src >> (i * 8)) & 0xFF);
                                     }
@@ -567,14 +642,16 @@ namespace ebm2rmw {
                         if (!std::holds_alternative<ObjectRef>(target.value)) {
                             return ebmgen::unexpect_error("READ_BYTES target is not an object");
                         }
-                        auto& arr = std::get<ObjectRef>(target.value);
-                        auto& byte_array = arr.raw_object;
-                        if (offset_value + size > byte_array.size()) {
-                            return ebmgen::unexpect_error("READ_BYTES out of bounds: offset {} + size {} exceeds array size {}", offset_value, size, byte_array.size());
-                        }
                         auto read = input.substr(input_pos, size);
                         if (read.size() < size) {
                             return ebmgen::unexpect_error("expected {} bytes, but only {} bytes available in input", size, read.size());
+                        }
+                        auto& arr = std::get<ObjectRef>(target.value);
+                        // currently, vector allocation point should be front of the call stack,
+                        // so that we can assume the vector elements are alive until interpret() returns.
+                        MAYBE(byte_array, get_bytes(ctx, arr, offset_value + size, bytes_arena));
+                        if (offset_value + size > byte_array.size()) {
+                            return ebmgen::unexpect_error("READ_BYTES out of bounds: offset {} + size {} exceeds array size {}", offset_value, size, byte_array.size());
                         }
                         std::copy(read.begin(), read.end(), byte_array.begin() + offset_value);
                         input_pos += size;
@@ -592,31 +669,32 @@ namespace ebm2rmw {
                             return ebmgen::unexpect_error("base value is not an object");
                         }
                         auto base_ref = std::get<ObjectRef>(member_base_val.value);
-                        auto member_id = instr.instr.member_id();
-                        if (ctx.config().env.has_function(*member_id)) {
-                            stack_push(Value{Function{*member_id, true}});
-                            break;  // if it's a method, we push a Function wrapper and handle it in CALL
+                        LayoutScratch scratch{instr.scratch};
+                        auto range = base_ref.raw_object.substr(scratch.offset(), scratch.size());
+                        if (range.size() != scratch.size()) {
+                            return ebmgen::unexpect_error("LOAD_MEMBER range out of bounds");
                         }
-                        else if (auto prop = ctx.get_field<"property_decl">(*member_id)) {
-                            if (ctx.config().env.has_function(prop->getter_function.id)) {
-                                // invoke getter function and store result in ref
-                                auto func_enter = ctx.config().env.new_function(prop->getter_function.id);
-                                bool no_error = false;
-                                auto frame = new_frame(no_error);
-                                auto& new_this = *call_stack.back();
-                                new_this.self = base_ref;
-                                size_t func_ip = 0;
-                                MAYBE_VOID(r, interpret_impl(ctx, func_ip));
-                                if (stack.empty()) {
-                                    return ebmgen::unexpect_error("stack underflow after getter call");
-                                }
-                                no_error = true;
-                                break;  // no need to set ref since getter should have pushed the value onto the stack
-                            }
+                        MAYBE(field_decl, ctx.get_field<"field_decl">(instr.instr.member_id()));
+                        stack_push(Value{ObjectRef(field_decl.field_type, range)});
+                        break;
+                    }
+                    case ebm::OpCode::CALL_GETTER: {
+                        if (stack.empty()) {
+                            return ebmgen::unexpect_error("stack underflow on CALL_GETTER");
                         }
-                        LayoutAccess access{ctx};
-                        MAYBE(object, access.read_member(base_ref, *member_id));
-                        stack_push(Value{object});
+                        auto obj_val = stack_pop();
+                        obj_val.unref();
+                        if (!std::holds_alternative<ObjectRef>(obj_val.value)) {
+                            return ebmgen::unexpect_error("CALL_GETTER target is not an object");
+                        }
+                        auto func_enter = ctx.config().env.new_function(*instr.instr.func_id());
+                        bool no_error = false;
+                        const auto frame = new_frame(no_error);
+                        auto& new_this = *call_stack.back();
+                        new_this.self = std::get<ObjectRef>(obj_val.value);
+                        size_t func_ip = 0;
+                        MAYBE_VOID(r, interpret_impl(ctx, func_ip));
+                        no_error = true;
                         break;
                     }
                     case ebm::OpCode::LOAD_PARAM: {
@@ -629,6 +707,14 @@ namespace ebm2rmw {
                             return ebmgen::unexpect_error("undefined parameter variable");
                         }
                         stack_push(Value{found->second});
+                        break;
+                    }
+                    case ebm::OpCode::LOAD_FUNC: {
+                        auto func_id = instr.instr.func_id();
+                        if (!func_id) {
+                            return ebmgen::unexpect_error("missing function id in LOAD_FUNC");
+                        }
+                        stack_push(Value{Function{*func_id}});
                         break;
                     }
                     case ebm::OpCode::CALL: {
@@ -725,32 +811,40 @@ namespace ebm2rmw {
                         no_error = true;
                         return {};
                     }
-                    case ebm::OpCode::IS_ERROR: {
-                        // currently, halt on error, so IS_ERROR always returns false.
-                        // In the future, if we want to support error values, we can change this to check if the top of the stack is an error value.
+                    case ebm::OpCode::POP: {
                         if (stack.empty()) {
-                            return ebmgen::unexpect_error("stack underflow on IS_ERROR");
+                            return ebmgen::unexpect_error("stack underflow on POP");
                         }
-                        auto val = stack_pop();
-                        val.unref();
-                        stack_push(Value{std::uint64_t(0)});
+                        stack_pop();
                         break;
                     }
                     case ebm::OpCode::VECTOR_PUSH: {
-                        if (stack.empty()) {
+                        if (stack.size() < 2) {
                             return ebmgen::unexpect_error("stack underflow on VECTOR_PUSH");
                         }
                         auto elem_val = stack_pop();
                         elem_val.unref();
-                        if (stack.empty()) {
-                            return ebmgen::unexpect_error("stack underflow on VECTOR_PUSH");
-                        }
                         auto val = stack_pop();
                         val.unref();
                         if (!std::holds_alternative<ObjectRef>(val.value)) {
                             return ebmgen::unexpect_error("VECTOR_PUSH target is not an object");
                         }
                         auto vec_ptr = std::get<ObjectRef>(val.value);
+                        MAYBE(elem_place, vector_alloc_back(ctx, vec_ptr, bytes_arena));
+                        if (std::holds_alternative<std::uint64_t>(elem_val.value)) {
+                            auto int_val = std::get<std::uint64_t>(elem_val.value);
+                            MAYBE_VOID(_, encode_uint64(elem_place, int_val, false));
+                        }
+                        else if (std::holds_alternative<ObjectRef>(elem_val.value)) {
+                            auto obj_ref = std::get<ObjectRef>(elem_val.value);
+                            if (obj_ref.raw_object.size() != elem_place.raw_object.size()) {
+                                return ebmgen::unexpect_error("element size mismatch in VECTOR_PUSH: expected {}, got {}", elem_place.raw_object.size(), obj_ref.raw_object.size());
+                            }
+                            std::copy(obj_ref.raw_object.begin(), obj_ref.raw_object.end(), elem_place.raw_object.begin());
+                        }
+                        else {
+                            return ebmgen::unexpect_error("unsupported element type in VECTOR_PUSH");
+                        }
                         break;
                     }
                     default:

@@ -26,6 +26,10 @@
 DEFINE_VISITOR(Statement_IF_STATEMENT) {
     using namespace CODEGEN_NAMESPACE;
     /*here to write the hook*/
+    if (ctx.get_kind(ctx.if_statement.condition.cond) == ebm::ExpressionKind::IS_ERROR) {
+        // this if is needless, so skip
+        return {};
+    }
     MAYBE(cond_expr, ctx.visit(ctx.if_statement.condition.cond));
     ctx.config().env.add_instruction({
                                          .op = ebm::OpCode::JUMP_IF_FALSE,

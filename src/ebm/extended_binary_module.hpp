@@ -1630,6 +1630,8 @@ namespace ebm {
         ARRAY_LEN = 0x96,
         NEW_BYTES = 0x97,
         VECTOR_PUSH = 0x98,
+        LOAD_FUNC = 0x99,
+        CALL_GETTER = 0x9A,
         MAX_OPCODE = 0xFF,
     };
     constexpr const char* to_string(OpCode e, bool origin_form = false) {
@@ -1713,6 +1715,8 @@ namespace ebm {
             case OpCode::ARRAY_LEN: return origin_form ? "ARRAY_LEN":"ARRAY_LEN" ;
             case OpCode::NEW_BYTES: return origin_form ? "NEW_BYTES":"NEW_BYTES" ;
             case OpCode::VECTOR_PUSH: return origin_form ? "VECTOR_PUSH":"VECTOR_PUSH" ;
+            case OpCode::LOAD_FUNC: return origin_form ? "LOAD_FUNC":"LOAD_FUNC" ;
+            case OpCode::CALL_GETTER: return origin_form ? "CALL_GETTER":"CALL_GETTER" ;
             case OpCode::MAX_OPCODE: return origin_form ? "MAX_OPCODE":"MAX_OPCODE" ;
         }
         return "";
@@ -1958,6 +1962,12 @@ namespace ebm {
         }
         if (str == "VECTOR_PUSH") {
             return OpCode::VECTOR_PUSH;
+        }
+        if (str == "LOAD_FUNC") {
+            return OpCode::LOAD_FUNC;
+        }
+        if (str == "CALL_GETTER") {
+            return OpCode::CALL_GETTER;
         }
         if (str == "MAX_OPCODE") {
             return OpCode::MAX_OPCODE;
@@ -5289,9 +5299,15 @@ namespace ebm {
             StatementRef member_id;
         };
         struct EBM_API union_struct_200{
+            StatementRef func_id;
+        };
+        struct EBM_API union_struct_201{
+            StatementRef func_id;
+        };
+        struct EBM_API union_struct_202{
             OptionalImmediateSize imm;
         };
-        std::variant<std::monostate, union_struct_180, union_struct_181, union_struct_182, union_struct_183, union_struct_184, union_struct_185, union_struct_186, union_struct_187, union_struct_188, union_struct_189, union_struct_190, union_struct_191, union_struct_192, union_struct_193, union_struct_194, union_struct_195, union_struct_196, union_struct_197, union_struct_198, union_struct_199, union_struct_200> union_variant_179;
+        std::variant<std::monostate, union_struct_180, union_struct_181, union_struct_182, union_struct_183, union_struct_184, union_struct_185, union_struct_186, union_struct_187, union_struct_188, union_struct_189, union_struct_190, union_struct_191, union_struct_192, union_struct_193, union_struct_194, union_struct_195, union_struct_196, union_struct_197, union_struct_198, union_struct_199, union_struct_200, union_struct_201, union_struct_202> union_variant_179;
         const Varint* arg_num() const;
         Varint* arg_num();
         bool arg_num(Varint&& v);
@@ -5300,6 +5316,10 @@ namespace ebm {
         CastType* cast_type();
         bool cast_type(CastType&& v);
         bool cast_type(const CastType& v);
+        const StatementRef* func_id() const;
+        StatementRef* func_id();
+        bool func_id(StatementRef&& v);
+        bool func_id(const StatementRef& v);
         const OptionalImmediateSize* imm() const;
         OptionalImmediateSize* imm();
         bool imm(OptionalImmediateSize&& v);
@@ -5349,6 +5369,7 @@ namespace ebm {
             v(v, "op",(*this).op);
             v(v, "arg_num",(*this).arg_num());
             v(v, "cast_type",(*this).cast_type());
+            v(v, "func_id",(*this).func_id());
             v(v, "imm",(*this).imm());
             v(v, "member_id",(*this).member_id());
             v(v, "msg_id",(*this).msg_id());
@@ -5365,6 +5386,7 @@ namespace ebm {
             v(v, "op",(*this).op);
             v(v, "arg_num",(*this).arg_num());
             v(v, "cast_type",(*this).cast_type());
+            v(v, "func_id",(*this).func_id());
             v(v, "imm",(*this).imm());
             v(v, "member_id",(*this).member_id());
             v(v, "msg_id",(*this).msg_id());
@@ -5386,6 +5408,7 @@ namespace ebm {
             v(v, "op",visitor_tag<decltype(std::declval<Instruction>().op),false>{});
             v(v, "arg_num",visitor_tag<decltype(std::declval<Instruction>().arg_num()),false>{});
             v(v, "cast_type",visitor_tag<decltype(std::declval<Instruction>().cast_type()),false>{});
+            v(v, "func_id",visitor_tag<decltype(std::declval<Instruction>().func_id()),false>{});
             v(v, "imm",visitor_tag<decltype(std::declval<Instruction>().imm()),false>{});
             v(v, "member_id",visitor_tag<decltype(std::declval<Instruction>().member_id()),false>{});
             v(v, "msg_id",visitor_tag<decltype(std::declval<Instruction>().msg_id()),false>{});

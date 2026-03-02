@@ -30,15 +30,20 @@ DEFINE_VISITOR(Statement_VARIABLE_DECL) {
     /*here to write the hook*/
     MAYBE(initial_value, ctx.visit(ctx.var_decl.initial_value));
     auto identifier = ctx.identifier();
+    if (ctx.get_kind(ctx.var_decl.var_type) == ebm::TypeKind::DECODER_RETURN) {
+        ctx.config().env.add_instruction(ebm::Instruction{.op = ebm::OpCode::POP}, "<decoder return value>");
+        return {};
+    }
     ebm::Instruction instr;
     instr.op = ebm::OpCode::STORE_LOCAL;
     instr.reg(ebm::RegisterIndex{.index = ctx.item_id});
-    ctx.config().env.add_instruction(instr, std::format("{} := {}", identifier, initial_value.str_repr));
     if (ctx.get_kind(ctx.var_decl.var_type) == ebm::TypeKind::DECODER_RETURN) {
         ctx.config().env.add_error_slot(ctx.item_id);
     }
     else {
         ctx.config().env.add_local(ctx.item_id);
     }
+    auto offset = ctx.config().env.get_local(ctx.item_id);
+    ctx.config().env.add_instruction(instr, std::format("{} := {}", identifier, initial_value.str_repr), offset);
     return {};
 }
