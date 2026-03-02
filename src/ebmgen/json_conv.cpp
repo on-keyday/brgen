@@ -3817,6 +3817,10 @@ namespace ebm {
                 obj = OpCode::PUSH_SUCCESS;
                 return true;
             }
+            if (s == "LOAD_LOCAL_REF") {
+                obj = OpCode::LOAD_LOCAL_REF;
+                return true;
+            }
             if (s == "ADD") {
                 obj = OpCode::ADD;
                 return true;
@@ -4007,6 +4011,10 @@ namespace ebm {
             }
             if (s == "NEW_STRUCT") {
                 obj = OpCode::NEW_STRUCT;
+                return true;
+            }
+            if (s == "LOAD_MEMBER_REF") {
+                obj = OpCode::LOAD_MEMBER_REF;
                 return true;
             }
             if (s == "LOAD_MEMBER") {

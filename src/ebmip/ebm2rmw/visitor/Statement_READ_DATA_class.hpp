@@ -55,7 +55,10 @@ DEFINE_VISITOR(Statement_READ_DATA) {
         }
     }
     if (is_bytes) {
+        auto current_lvalue = ctx.config().is_lvalue;
+        ctx.config().is_lvalue = true;
         MAYBE(target, ctx.visit(ctx.read_data.target));
+        ctx.config().is_lvalue = current_lvalue;
         ebm::Instruction instr;
         instr.op = ebm::OpCode::READ_BYTES;
         ebm::OptionalImmediateSize imm;

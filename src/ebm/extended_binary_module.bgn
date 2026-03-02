@@ -955,6 +955,7 @@ enum OpCode:
     LOAD_SELF       = 0x19
     STORE_REF       = 0x1A
     PUSH_SUCCESS    = 0x1B
+    LOAD_LOCAL_REF = 0x1C
     
     # --- 0x20: Arithmetic & Logic ---
     # name mapping with BinaryOp enum
@@ -1024,7 +1025,7 @@ enum OpCode:
 
     # --- 0x90: Object & Structure ---
     NEW_STRUCT      = 0x90 
-    # SET_MEMBER      = 0x91 
+    LOAD_MEMBER_REF  = 0x91 
     LOAD_MEMBER      = 0x92 
     NEW_ARRAY       = 0x93 
     ARRAY_SET       = 0x94 
@@ -1081,6 +1082,8 @@ format Instruction:
         # -- Variable Access --
         OpCode.LOAD_LOCAL:
             reg :RegisterIndex
+        OpCode.LOAD_LOCAL_REF:
+            reg :RegisterIndex
         OpCode.STORE_LOCAL:
             reg :RegisterIndex
         OpCode.LOAD_PARAM:
@@ -1107,6 +1110,8 @@ format Instruction:
         OpCode.NEW_STRUCT:
             struct_id :StatementRef
         OpCode.LOAD_MEMBER:
+            member_id :StatementRef
+        OpCode.LOAD_MEMBER_REF:
             member_id :StatementRef
         OpCode.NEW_BYTES:
             imm :OptionalImmediateSize

@@ -24,8 +24,12 @@
 DEFINE_VISITOR(Statement_ASSIGNMENT) {
     using namespace CODEGEN_NAMESPACE;
     /*here to write the hook*/
+    auto current_lvalue = ctx.config().is_lvalue;
+    ctx.config().is_lvalue = false;
     MAYBE(val, ctx.visit(ctx.value));
+    ctx.config().is_lvalue = true;
     MAYBE(ref, ctx.visit(ctx.target));
+    ctx.config().is_lvalue = current_lvalue;
     ctx.config().env.add_instruction({
                                          .op = ebm::OpCode::STORE_REF,
                                      },

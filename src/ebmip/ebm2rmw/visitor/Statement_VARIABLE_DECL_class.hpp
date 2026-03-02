@@ -34,5 +34,11 @@ DEFINE_VISITOR(Statement_VARIABLE_DECL) {
     instr.op = ebm::OpCode::STORE_LOCAL;
     instr.reg(ebm::RegisterIndex{.index = ctx.item_id});
     ctx.config().env.add_instruction(instr, std::format("{} := {}", identifier, initial_value.str_repr));
+    if (ctx.get_kind(ctx.var_decl.var_type) == ebm::TypeKind::DECODER_RETURN) {
+        ctx.config().env.add_error_slot(ctx.item_id);
+    }
+    else {
+        ctx.config().env.add_local(ctx.item_id);
+    }
     return {};
 }

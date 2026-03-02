@@ -28,7 +28,10 @@ DEFINE_VISITOR(Expression_CALL) {
     /*here to write the hook*/
     // if member function, also push base at first
     if (auto base = ctx.get_field<"base">(ctx.call_desc.callee)) {
+        auto current_lvalue = ctx.config().is_lvalue;
+        ctx.config().is_lvalue = true;
         MAYBE(base_res, ctx.visit(*base));
+        ctx.config().is_lvalue = current_lvalue;
     }
     std::vector<std::string> arg_strs;
     for (auto& arg : ctx.call_desc.arguments.container | std::views::reverse) {

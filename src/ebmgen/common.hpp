@@ -247,24 +247,27 @@ namespace ebm {
         return ref.id;
     }
 
-    constexpr bool operator==(const ebm::AnyRef& lhs, const ebm::AnyRef& rhs) {
+    template <ebmgen::AnyRef T>
+    constexpr bool operator==(const T& lhs, const T& rhs) {
         return get_id(lhs) == get_id(rhs);
     }
 
-    constexpr bool operator!=(const ebm::AnyRef& lhs, const ebm::AnyRef& rhs) {
+    template <ebmgen::AnyRef T>
+    constexpr bool operator!=(const T& lhs, const T& rhs) {
         return !(lhs == rhs);
     }
 
-    constexpr auto operator<=>(const ebm::AnyRef& lhs, const ebm::AnyRef& rhs) {
+    template <ebmgen::AnyRef T>
+    constexpr auto operator<=>(const T& lhs, const T& rhs) {
         return get_id(lhs) <=> get_id(rhs);
     }
 
 }  // namespace ebm
 
 namespace std {
-    template <>
-    struct hash<ebm::AnyRef> {
-        size_t operator()(const ebm::AnyRef& ref) const noexcept {
+    template <ebmgen::AnyRef T>
+    struct hash<T> {
+        size_t operator()(const T& ref) const noexcept {
             return std::hash<std::uint64_t>{}(get_id(ref));
         }
     };

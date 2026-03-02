@@ -23,6 +23,7 @@
 #include <ebmgen/interactive/debugger.hpp>
 #include "file/file_view.h"
 #include "interpret.hpp"
+#include "layout.hpp"
 #include "wrap/cout.h"
 DEFINE_VISITOR(Statement_PROGRAM_DECL) {
     using namespace CODEGEN_NAMESPACE;
@@ -39,6 +40,8 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
     MAYBE(entry_stmt, ctx.get(from_any_ref<ebm::StatementRef>(entry_stmt_ref)));
     auto entry_decode_fn = *entry_stmt.body.struct_decl()->decode_fn();
     auto f = ctx.config().env.new_function(entry_decode_fn);
+    TypeLayoutContext layout_ctx;
+    ctx.config().layout_context = &layout_ctx;
     auto res = ctx.visit(entry_decode_fn);
     if (ctx.flags().dump_ops) {
         for (auto& func : ctx.config().env.get_function_insert_order()) {
@@ -51,9 +54,11 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
             }
             size_t instr_index = 0;
             InitialContext ictx{.visitor = ctx.visitor};
-            for (auto& instr : ctx.config().env.get_functions()[func]) {
-                futils::wrap::cout_wrap() << instr_index << ":  " << to_string(instr.instr.op, true);
-                auto args = instruction_args(instr.instr, ictx, instr_index);
+            auto& func_body = ctx.config().env.get_functions()[func];
+            futils::wrap::cout_wrap() << " max local: " << func_body.local_count << "\n";
+            for (auto& instr : func_body.instructions) {
+                futils::wrap::cout_wrap() << " " << instr_index << ":  " << to_string(instr.instr.op, true);
+                auto args = instruction_args(instr.instr, ictx, instr_index, &func_body);
                 if (!args.empty()) {
                     futils::wrap::cout_wrap() << ", args={" << args << "}";
                 }
@@ -78,10 +83,10 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
     MAYBE(fnt, ctx.module().get_statement(entry_decode_fn));
     MAYBE(decl, fnt.body.func_decl());
     RuntimeEnv runtime;
-    std::map<std::uint64_t, std::shared_ptr<Value>> params;
+    std::map<std::uint64_t, Value> params;
     for (auto& param : decl.params.container) {
         // dummy
-        params[param.id.value()] = std::make_shared<Value>();
+        params[param.id.value()] = Value{};
     }
     runtime.input = futils::view::rvec(file.data(), file.size());
     runtime.input_pos = 0;

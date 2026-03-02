@@ -27,7 +27,7 @@ DEFINE_VISITOR(Expression_IDENTIFIER) {
     auto ident = ctx.identifier(ctx.id);
     if (ctx.is(ebm::StatementKind::VARIABLE_DECL, ctx.id)) {
         ebm::Instruction instr;
-        instr.op = ebm::OpCode::LOAD_LOCAL;
+        instr.op = ctx.config().is_lvalue ?  ebm::OpCode::LOAD_LOCAL_REF :ebm::OpCode::LOAD_LOCAL;
         instr.reg(ebm::RegisterIndex{.index = from_weak(ctx.id)});
         ctx.config().env.add_instruction(instr, ident);
         return Result{.str_repr = std::move(ident)};

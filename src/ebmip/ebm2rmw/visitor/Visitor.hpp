@@ -8,4 +8,6 @@
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 
 /*here to write the hook*/
-Env env;
+struct Env env;
+struct TypeLayoutContext* layout_context;
+bool is_lvalue = false;

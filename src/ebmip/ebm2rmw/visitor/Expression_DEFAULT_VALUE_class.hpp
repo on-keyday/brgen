@@ -20,6 +20,7 @@
 #include "../codegen.hpp"
 #include "ebm/extended_binary_module.hpp"
 #include "ebmcodegen/stub/util.hpp"
+#include "layout.hpp"
 DEFINE_VISITOR(Expression_DEFAULT_VALUE) {
     using namespace CODEGEN_NAMESPACE;
     /*here to write the hook*/
@@ -35,6 +36,10 @@ DEFINE_VISITOR(Expression_DEFAULT_VALUE) {
             MAYBE(t, ctx.get(ctx.type));
             MAYBE(size, t.body.length());
             ebm::Instruction instr;
+            InitialContext ictx{.visitor = ctx.visitor};
+
+            MAYBE(_, analyze_layout(ictx, ctx.type));
+
             instr.op = ebm::OpCode::NEW_BYTES;
             ebm::OptionalImmediateSize imm;
             imm.is_immediate(true);
@@ -55,6 +60,9 @@ DEFINE_VISITOR(Expression_DEFAULT_VALUE) {
     if (ctx.is(ebm::TypeKind::STRUCT)) {
         ebm::Instruction instr;
         instr.op = ebm::OpCode::NEW_STRUCT;
+        InitialContext ictx{.visitor = ctx.visitor};
+
+        MAYBE(_, analyze_layout(ictx, ctx.type));
         MAYBE(type_impl, ctx.get(ctx.type));
         MAYBE(struct_id, type_impl.body.id());
         instr.struct_id(from_weak(struct_id));

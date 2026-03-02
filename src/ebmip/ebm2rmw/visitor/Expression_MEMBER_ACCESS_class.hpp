@@ -25,7 +25,10 @@
 DEFINE_VISITOR(Expression_MEMBER_ACCESS) {
     using namespace CODEGEN_NAMESPACE;
     /*here to write the hook*/
+    auto current_lvalue = ctx.config().is_lvalue;
+    ctx.config().is_lvalue = true;  // set lvalue context for member access
     MAYBE(base, ctx.visit(ctx.base));
+    ctx.config().is_lvalue = current_lvalue;  // restore lvalue context
     MAYBE(name, ctx.module().get_expression(ctx.member));
     MAYBE(id_, name.body.id());
     auto id = from_weak(id_);
@@ -46,7 +49,7 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS) {
         }
     }
     ebm::Instruction instr;
-    instr.op = ebm::OpCode::LOAD_MEMBER;
+    instr.op = ctx.config().is_lvalue ? ebm::OpCode::LOAD_MEMBER_REF : ebm::OpCode::LOAD_MEMBER;
     instr.member_id(id);
     auto identifier = ctx.identifier(id);
     auto str_repr = std::format("{}.{}", base.str_repr, identifier);
