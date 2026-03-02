@@ -18,7 +18,8 @@ namespace ebm2rmw {
         std::vector<Instruction> instructions;
         size_t local_count = 0;
         std::unordered_map<ebm::StatementRef, size_t> local_indices;
-        std::optional<size_t> error_slot;
+        size_t param_count = 0;
+        std::unordered_map<ebm::StatementRef, size_t> param_indices;
     };
 
     struct Env {
@@ -54,12 +55,11 @@ namespace ebm2rmw {
             return found->second;
         }
 
-        void add_error_slot(ebm::StatementRef error_id) {
+        void add_param(ebm::StatementRef param_id) {
             auto& func = *instructions;
-            if (!func.error_slot) {
-                func.error_slot = func.local_count++;
+            if (func.param_indices.find(param_id) == func.param_indices.end()) {
+                func.param_indices[param_id] = func.param_count++;
             }
-            func.local_indices[error_id] = *func.error_slot;
         }
 
         void add_instruction(const ebm::Instruction& instr, std::string str_repr, std::uint64_t scratch = 0) {

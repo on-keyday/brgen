@@ -238,16 +238,17 @@ namespace ebm2rmw {
         futils::view::rvec input;
         size_t input_pos = 0;
 
-        ebmgen::expected<ObjectRef> new_object(InitialContext& ctx, ebm::StatementRef ref, StackFrame& frame) {
+        ebmgen::expected<ObjectRef> new_object(InitialContext& ctx, ebm::StatementRef ref) {
             LayoutAccess access{ctx};
             MAYBE(layout, access.get_struct_layout(ref));
             bytes_arena.emplace_back();
             auto& raw_object = bytes_arena.back();
             raw_object.resize(layout.size);
+            bytes_arena_usage += layout.size;
             return ObjectRef(layout.type, futils::view::wvec(raw_object));
         }
 
-        ebmgen::expected<ObjectRef> vector_alloc_back(InitialContext& ctx, ObjectRef vec, BytesArena& bytes_arena) {
+        ebmgen::expected<ObjectRef> vector_alloc_back(InitialContext& ctx, ObjectRef vec) {
             LayoutAccess access(ctx);
             MAYBE(layout, access.get_vector_element_type(vec.type));
             MAYBE(index, decode_uint64(vec));
@@ -261,11 +262,12 @@ namespace ebm2rmw {
                 return ebmgen::unexpect_error("invalid vector index: {} (out of {})", actual_index, bytes_arena.size());
             }
             bytes_arena[actual_index].resize(bytes_arena[actual_index].size() + layout.size);
+            bytes_arena_usage += layout.size;
             auto elem_place = futils::view::wvec(bytes_arena[actual_index]).substr(bytes_arena[actual_index].size() - layout.size, layout.size);
             return ObjectRef(layout.type, elem_place);
         }
 
-        ebmgen::expected<futils::view::wvec> get_bytes(InitialContext& ctx, ObjectRef& obj_ref, size_t size, BytesArena& bytes_arena) {
+        ebmgen::expected<futils::view::wvec> get_bytes(InitialContext& ctx, ObjectRef& obj_ref, size_t size) {
             if (ctx.is(ebm::TypeKind::VECTOR, obj_ref.type)) {
                 MAYBE(index, decode_uint64(obj_ref));
                 if (index == 0) {
@@ -279,6 +281,7 @@ namespace ebm2rmw {
                 }
                 auto& byte_array = bytes_arena[actual_index];
                 byte_array.resize(size);
+                bytes_arena_usage += size;
                 return futils::view::wvec(byte_array);
             }
             if (ctx.is(ebm::TypeKind::ARRAY, obj_ref.type)) {
@@ -316,7 +319,7 @@ namespace ebm2rmw {
             const auto frame = new_frame(no_error);
             auto& this_ = *call_stack.back();
             this_.params = params;
-            MAYBE(self_obj, new_object(ctx, self_type, this_));
+            MAYBE(self_obj, new_object(ctx, self_type));
             this_.self = self_obj;
             auto res = interpret_impl(ctx, ip);
             auto dump_stack = [&] {
@@ -356,9 +359,9 @@ namespace ebm2rmw {
                         w.writeln();
                     }
                     if (call_stack_depth == 0) {
-                        w.writeln("Bytes Arena: size=", std::to_string(bytes_arena.size()));
+                        w.writeln("Bytes Arena: chunk=", std::to_string(bytes_arena.size()), " usage=", std::to_string(bytes_arena_usage), " bytes");
                     }
-                    w.writeln("Local Bytes Arena: size=", std::to_string(frame->local_bytes_arena.size()));
+                    w.writeln("Local Bytes Arena: chunk=", std::to_string(frame->local_bytes_arena.size()));
                     call_stack_depth++;
                 }
                 futils::wrap::cout_wrap() << w.out();
@@ -380,6 +383,7 @@ namespace ebm2rmw {
 
        private:
         BytesArena bytes_arena;
+        size_t bytes_arena_usage = 0;
         std::vector<std::shared_ptr<StackFrame>> call_stack;
 
         ebmgen::expected<void> interpret_impl(InitialContext& ctx, size_t& ip) {
@@ -390,6 +394,7 @@ namespace ebm2rmw {
             auto& stack = this_.stack;
             auto& local_bytes_arena = this_.local_bytes_arena;
             local_bytes_arena.clear();
+            stack.reserve(128);  // arbitrary initial stack size, can grow as needed
             auto stack_pop = [&] {
                 assert(!stack.empty());
                 auto val = std::move(stack.back());
@@ -649,13 +654,12 @@ namespace ebm2rmw {
                         auto& arr = std::get<ObjectRef>(target.value);
                         // currently, vector allocation point should be front of the call stack,
                         // so that we can assume the vector elements are alive until interpret() returns.
-                        MAYBE(byte_array, get_bytes(ctx, arr, offset_value + size, bytes_arena));
+                        MAYBE(byte_array, get_bytes(ctx, arr, offset_value + size));
                         if (offset_value + size > byte_array.size()) {
                             return ebmgen::unexpect_error("READ_BYTES out of bounds: offset {} + size {} exceeds array size {}", offset_value, size, byte_array.size());
                         }
                         std::copy(read.begin(), read.end(), byte_array.begin() + offset_value);
                         input_pos += size;
-                        stack_push(Value{std::move(arr)});
                         break;
                     }
                     case ebm::OpCode::LOAD_MEMBER:
@@ -793,7 +797,7 @@ namespace ebm2rmw {
                         if (!struct_id) {
                             return ebmgen::unexpect_error("missing struct id in NEW_STRUCT");
                         }
-                        MAYBE(obj, new_object(ctx, *struct_id, this_));
+                        MAYBE(obj, new_object(ctx, *struct_id));
                         stack_push(Value{obj});
                         break;
                     }
@@ -830,7 +834,7 @@ namespace ebm2rmw {
                             return ebmgen::unexpect_error("VECTOR_PUSH target is not an object");
                         }
                         auto vec_ptr = std::get<ObjectRef>(val.value);
-                        MAYBE(elem_place, vector_alloc_back(ctx, vec_ptr, bytes_arena));
+                        MAYBE(elem_place, vector_alloc_back(ctx, vec_ptr));
                         if (std::holds_alternative<std::uint64_t>(elem_val.value)) {
                             auto int_val = std::get<std::uint64_t>(elem_val.value);
                             MAYBE_VOID(_, encode_uint64(elem_place, int_val, false));
