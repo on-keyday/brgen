@@ -1027,6 +1027,11 @@ namespace ebmcodegen {
                 w.write("web_filtered.insert_range(std::set{__VA_ARGS__})");
             }
             w.writeln();
+            w.write("#define WEB_MAP_TYPE(flag_name,type_name) ");
+            if (!on_define) {
+                w.write("web_type_map[flag_name] = type_name");
+            }
+            w.writeln();
             auto map_name = [&](auto name, auto dst, auto src) {
                 w.write("#define ", name, "(", src, ") ");
                 if (!on_define) {

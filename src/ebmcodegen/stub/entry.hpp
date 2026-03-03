@@ -10,6 +10,7 @@
 #include <file/file_stream.h>
 #include <json/stringer.h>
 #include <set>
+#include <unordered_map>
 #include "ebmgen/mapping.hpp"
 #include "flags.hpp"
 #if defined(__EMSCRIPTEN__)
@@ -49,6 +50,7 @@ namespace ebmcodegen {
         std::string_view dump_test_separator;
 
         std::set<std::string_view> web_filtered;
+        std::unordered_map<std::string_view, std::string_view> web_type_map;
 
         std::unordered_map<std::string_view, std::string_view*> config_map;
 
@@ -99,7 +101,7 @@ namespace ebmcodegen {
     namespace internal {
         int load_file(auto& flags, auto& output, futils::cmdline::option::Context& ctx, auto&& then) {
             if (flags.show_flags) {
-                futils::wrap::cout_wrap() << flag_description_json(ctx, flags.lang_name, flags.ui_lang_name, flags.lsp_name, flags.webworker_name, flags.file_extensions, flags.web_filtered) << '\n';
+                futils::wrap::cout_wrap() << flag_description_json(ctx, flags.lang_name, flags.ui_lang_name, flags.lsp_name, flags.webworker_name, flags.file_extensions, flags.web_filtered, flags.web_type_map) << '\n';
                 return 0;
             }
             if (flags.input.empty()) {

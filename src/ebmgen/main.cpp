@@ -33,6 +33,8 @@
 #include <wrap/exepath.h>
 #include <filesystem>
 #include "interactive/debugger.hpp"
+#include <string_view>
+#include <unordered_map>
 #include <unordered_set>
 #include <testutil/timer.h>
 #include <number/hex/bin2hex.h>
@@ -148,7 +150,7 @@ auto& cerr = futils::wrap::cerr_wrap();
 
 int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
     if (flags.show_flags) {
-        cout << ebmcodegen::flag_description_json(ctx, "ebm", "ebm", "text", "ebmgen", {".ebm", ".ebm.json", ".txt"}, std::unordered_set<std::string>{"help", "show-flags"});
+        cout << ebmcodegen::flag_description_json(ctx, "ebm", "ebm", "text", "ebmgen", {".ebm", ".ebm.json", ".txt"}, std::unordered_set<std::string>{"help", "show-flags"}, std::unordered_map<std::string_view, std::string_view>{});
         return 0;
     }
     if (flags.input.empty()) {

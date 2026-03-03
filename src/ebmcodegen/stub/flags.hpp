@@ -4,7 +4,7 @@
 #include "cmdline/option/optcontext.h"
 #include "json/stringer.h"
 namespace ebmcodegen {
-    auto flag_description_json(futils::cmdline::option::Context& ctx, const char* lang_name, const char* ui_lang_name, const char* lsp_name, const char* webworker_name, std::vector<std::string_view> file_exts, auto&& web_filtered) {
+    auto flag_description_json(futils::cmdline::option::Context& ctx, const char* lang_name, const char* ui_lang_name, const char* lsp_name, const char* webworker_name, std::vector<std::string_view> file_exts, auto&& web_filtered, auto&& web_type_map) {
         futils::json::Stringer<> str;
         str.set_indent("  ");
         auto root_obj = str.object();
@@ -21,7 +21,13 @@ namespace ebmcodegen {
                     obj("name", opt->mainname);
                     obj("help", opt->help);
                     obj("argdesc", opt->argdesc);
-                    obj("type", opt->type);
+                    obj("original_type", opt->type);
+                    if (auto map_it = web_type_map.find(opt->mainname); map_it != web_type_map.end()) {
+                        obj("type", map_it->second);
+                    }
+                    else {
+                        obj("type", opt->type);
+                    }
                     obj("web_filtered", web_filtered.contains(opt->mainname));
                 });
             }
