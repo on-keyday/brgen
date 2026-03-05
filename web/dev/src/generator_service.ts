@@ -96,6 +96,14 @@ export class GeneratorService {
             );
         }
 
+        // prefetch src2json workers that is root of all generation workers,
+        // so that the first generation is faster
+        this.factory.getWorker("src2json");
+        // also ebmgen is root of EBM generation workers, prefetch it as well if EBM languages are supporte
+        if (EBM_LANGUAGES.length > 0) {
+            this.factory.getWorker("ebmgen");
+        }
+
         await Promise.all(loaders);
     }
 

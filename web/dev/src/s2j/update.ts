@@ -1,4 +1,5 @@
-import { JobResult, newTraceID, TraceID, traceIDCancel, traceIDGetID } from "./msg.js";
+import type { JobResult, TraceID} from "./msg.js";
+import { newTraceID, traceIDCancel, traceIDGetID } from "./msg.js";
 
 export class UpdateTracer {
     #traceID: number = 0;

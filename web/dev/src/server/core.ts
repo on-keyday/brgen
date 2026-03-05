@@ -3,6 +3,7 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 import { GeneratorService, GenerateResult, ConfigReader } from "../generator_service.js";
 import { Language } from "../s2j/msg.js";
 import { languageRegistry, allLanguageIds } from "../languages.js";
+/*
 import {
     directFixedWorkerMap,
     createDirectBmWorkerMap,
@@ -10,9 +11,17 @@ import {
 } from "./workers.js";
 import { BM_LANGUAGES } from "../lib/bmgen/bm_caller.js";
 import { EBM_LANGUAGES } from "../lib/bmgen/ebm_caller.js";
+*/
 import { createMcpServer } from "./mcp.js";
 
+import WebWorker  from "web-worker";
+if (typeof globalThis.Worker === "undefined") {
+    // @ts-ignore
+    globalThis.Worker = WebWorker;
+}
+
 export async function createGeneratorService(): Promise<GeneratorService> {
+    /*
     const workerMaps = [directFixedWorkerMap];
 
     if (BM_LANGUAGES.length > 0) {
@@ -21,8 +30,9 @@ export async function createGeneratorService(): Promise<GeneratorService> {
     if (EBM_LANGUAGES.length > 0) {
         workerMaps.push(await createDirectEbmWorkerMap());
     }
+    */
 
-    const service = new GeneratorService(workerMaps);
+    const service = new GeneratorService();
     await service.init();
     return service;
 }

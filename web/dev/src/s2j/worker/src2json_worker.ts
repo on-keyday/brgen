@@ -3,9 +3,10 @@
 export { };
 
 import * as src2json from "../../lib/src2json.js";
-import { RequestLanguage, JobRequest } from "../msg.js";
+import { RequestLanguage } from "../msg.js";
+import type { JobRequest } from "../msg.js";
 import { EmWorkContext} from "../em_work_ctx.js";
-import { MyEmscriptenModule } from "../emscripten_mod.js";
+import type { MyEmscriptenModule } from "../emscripten_mod.js";
 import { fetchImportFile } from "../dummy_fs.js";
 
 

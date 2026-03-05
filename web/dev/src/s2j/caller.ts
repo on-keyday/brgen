@@ -1,6 +1,7 @@
-import {AstOption, BMGenOption, COption, CallOption, CppOption, EBMGenOption, GoOption, LanguageKey, LanguageToOptionType, LanguageToWorkerType, RequestLanguage, Rust2Option, RustOption, TSOption, WorkerList, WorkerType }  from "./msg.js";
-import {JobManager} from "./job_mgr.js";
-import {TraceID } from "./msg.js";
+import type {AstOption, BMGenOption, COption, CallOption, CppOption, EBMGenOption, GoOption, LanguageKey, LanguageToOptionType, RustOption, TSOption, WorkerType } from "./msg.js";
+import { LanguageToWorkerType, RequestLanguage, Rust2Option, WorkerList }  from "./msg.js";
+import type {JobManager} from "./job_mgr.js";
+import type {TraceID } from "./msg.js";
 
 
 

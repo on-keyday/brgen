@@ -1,21 +1,23 @@
 
 
-export const enum RequestLanguage {
-    TOKENIZE = "tokens",
-    JSON_AST = "json ast",
-    JSON_DEBUG_AST = "json ast (debug)",
-    CPP = "cpp",
-    GO = "go",
-    C = "c",
-    RUST = "rust",
-    TYPESCRIPT="typescript",
-    KAITAI_STRUCT = "kaitai struct",
+export const RequestLanguage = {
+    TOKENIZE: "tokens",
+    JSON_AST: "json ast",
+    JSON_DEBUG_AST: "json ast (debug)",
+    CPP: "cpp",
+    GO: "go",
+    C: "c",
+    RUST: "rust",
+    TYPESCRIPT: "typescript",
+    KAITAI_STRUCT: "kaitai struct",
 
-    BINARY_MODULE = "binary module",
-    EBM = "ebm",
-    //CPP_2 = "cpp2",
-    //RUST_2 = "rust2",
-}
+    BINARY_MODULE: "binary module",
+    EBM: "ebm",
+    //CPP_2: "cpp2",
+    //RUST_2: "rust2",
+} as const;
+
+export type RequestLanguage = (typeof RequestLanguage)[keyof typeof RequestLanguage];
 
 export const LanguageList = [
     RequestLanguage.TOKENIZE,
@@ -34,20 +36,22 @@ export const LanguageList = [
     //RequestLanguage.RUST_2,
 ];
 
-export const enum WorkerType {
-    SRC2JSON = "src2json",
-    JSON2CPP2 = "json2cpp2",
-    JSON2GO = "json2go",
-    JSON2C = "json2c",
-    JSON2RUST = "json2rust",
-    JSON2TS = "json2ts",
-    JSON2KAITAI = "json2kaitai",
+export const WorkerType = {
+    SRC2JSON: "src2json",
+    JSON2CPP2: "json2cpp2",
+    JSON2GO: "json2go",
+    JSON2C: "json2c",
+    JSON2RUST: "json2rust",
+    JSON2TS: "json2ts",
+    JSON2KAITAI: "json2kaitai",
 
-    BMGEN = "bmgen",
-    EBMGEN = "ebmgen",
+    BMGEN: "bmgen",
+    EBMGEN: "ebmgen",
     //BM2CPP,
     //BM2RUST,
-}
+} as const;
+
+export type WorkerType = (typeof WorkerType)[keyof typeof WorkerType];
 
 export const WorkerList = Object.freeze([
     WorkerType.SRC2JSON,

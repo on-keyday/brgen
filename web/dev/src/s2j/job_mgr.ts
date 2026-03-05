@@ -1,6 +1,6 @@
 
 
-import {JobRequest,JobResult, RequestLanguage,TraceID }  from "./msg.js";
+import type {JobRequest,JobResult, RequestLanguage,TraceID }  from "./msg.js";
 
 
 export interface IWorker {

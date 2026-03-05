@@ -8,7 +8,7 @@ const fetchRawGitContent = async (path :string,progress :(t:string)=>void) => {
     const timer = setTimeout(() => {
         progress(path);
     },100);
-    let res = await fetch(url);
+    const res = await fetch(url);
     if(!res.ok) {
         clearTimeout(timer);
         throw new Error(`failed to fetch ${url}`);

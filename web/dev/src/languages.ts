@@ -3,13 +3,15 @@ import { BM_LANGUAGES, BM_LSP_LANGUAGES, setBMUIConfig } from "./lib/bmgen/bm_ca
 import { EBM_LANGUAGES, EBM_LSP_LANGUAGES, setEBMUIConfig } from "./lib/bmgen/ebm_caller.js";
 import { coreOptionDefs, OptionDef } from "./option_defs";
 
-export const enum LanguageCategory {
-    ANALYSIS = "Analysis",
-    GENERATOR = "Direct Generator",
-    INTERMEDIATE = "Intermediate",
-    BM = "Binary Module",
-    EBM = "Extended Binary Module",
-}
+export const LanguageCategory = {
+    ANALYSIS: "Analysis",
+    GENERATOR: "Direct Generator",
+    INTERMEDIATE: "Intermediate",
+    BM: "Binary Module",
+    EBM: "Extended Binary Module",
+} as const;
+
+export type LanguageCategory = (typeof LanguageCategory)[keyof typeof LanguageCategory];
 
 export type { OptionDef };
 

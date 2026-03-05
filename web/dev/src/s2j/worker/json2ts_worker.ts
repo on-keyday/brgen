@@ -1,9 +1,10 @@
 /// <reference types="emscripten" />
 
 import * as json2ts from "../../lib/json2ts.js";
-import { JobRequest, RequestLanguage } from "../msg.js";
+import type { JobRequest} from "../msg.js";
+import { RequestLanguage } from "../msg.js";
 import { EmWorkContext} from "../em_work_ctx.js";
-import { MyEmscriptenModule } from "../emscripten_mod.js";
+import type { MyEmscriptenModule } from "../emscripten_mod.js";
 
 
 const json2tsModule = json2ts.default as EmscriptenModuleFactory<MyEmscriptenModule>;

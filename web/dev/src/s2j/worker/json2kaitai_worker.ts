@@ -2,7 +2,8 @@
 
 export { };
 
-import { JobRequest, RequestLanguage } from "../msg.js";
+import type { JobRequest} from "../msg.js";
+import { RequestLanguage } from "../msg.js";
 import { GoWorkContext} from "../go_work_ctx.js";
 
 

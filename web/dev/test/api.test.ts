@@ -58,7 +58,7 @@ describe("GET /api/languages", () => {
 describe("POST /api/generate", () => {
     const BGN_SOURCE = "format A:\n  a :u8\n";
 
-    const generate = (body: object) =>
+    const generate = async(body: object) =>
         app.request("/api/generate", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
