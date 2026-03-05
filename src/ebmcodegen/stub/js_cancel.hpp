@@ -8,6 +8,7 @@
 namespace ebmcodegen {
 #ifdef __EMSCRIPTEN__
     inline std::uint8_t cancel_flag = 0;
+    inline emscripten::val callback;
     inline void set_cancel_callback(emscripten::val cb) {
         callback = cb;
     }
