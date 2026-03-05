@@ -497,6 +497,11 @@ jobs:
           cd web/doc
           hugo --minify
           cd ../..
+      - name: Pack server kit
+        if: matrix.env == 'production'
+        run: |
+          chmod +x ./script/pack_server_kit.sh
+          ./script/pack_server_kit.sh
       - name: Upload artifact
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
