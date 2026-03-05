@@ -1,5 +1,8 @@
 import { serve } from "@hono/node-server";
 import { createApp, createGeneratorService } from "./core.js";
+import { installNodePolyfills } from "./node_compat.js";
+
+installNodePolyfills();
 
 const port = parseInt(process.env.PORT ?? "8080", 10);
 
@@ -10,6 +13,8 @@ async function main() {
 
     serve({ fetch: app.fetch, port }, (info) => {
         console.log(`Server is running on http://localhost:${info.port}`);
+        console.log(`  REST API : http://localhost:${info.port}/api/generate`);
+        console.log(`  MCP HTTP : http://localhost:${info.port}/mcp`);
     });
 }
 

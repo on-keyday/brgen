@@ -1,6 +1,7 @@
 import { Language, LanguageList } from "./s2j/msg";
-import { BM_LANGUAGES, BM_LSP_LANGUAGES } from "./lib/bmgen/bm_caller.js";
-import { EBM_LANGUAGES, EBM_LSP_LANGUAGES } from "./lib/bmgen/ebm_caller.js";
+import { BM_LANGUAGES, BM_LSP_LANGUAGES, setBMUIConfig } from "./lib/bmgen/bm_caller.js";
+import { EBM_LANGUAGES, EBM_LSP_LANGUAGES, setEBMUIConfig } from "./lib/bmgen/ebm_caller.js";
+import { coreOptionDefs, OptionDef } from "./option_defs";
 
 export const enum LanguageCategory {
     ANALYSIS = "Analysis",
@@ -9,6 +10,8 @@ export const enum LanguageCategory {
     BM = "Binary Module",
     EBM = "Extended Binary Module",
 }
+
+export type { OptionDef };
 
 export interface LanguageMeta {
     /** The language identifier used throughout the system (matches Language/RequestLanguage enum values) */
@@ -19,6 +22,8 @@ export interface LanguageMeta {
     monacoLang: string;
     /** Grouping category for the language selector */
     category: LanguageCategory;
+    /** Language-specific code generation options */
+    options: readonly OptionDef[];
 }
 
 /**
@@ -70,6 +75,21 @@ const coreCategory: Record<string, LanguageCategory> = {
 function buildLanguageRegistry(): LanguageMeta[] {
     const registry: LanguageMeta[] = [];
 
+    // Collect dynamic options from BM/EBM auto-generated configs
+    const dynamicOptionMap: Record<string, readonly OptionDef[]> = {};
+    const collectOptions = (
+        lang: string,
+        setter: (nest: (name: string, elem: { type: string; candidates?: string[] }) => void) => void,
+    ) => {
+        const opts: OptionDef[] = [];
+        setter((name, elem) => {
+            opts.push({ key: name, type: elem.type as OptionDef["type"], defaultValue: false, candidates: elem.candidates });
+        });
+        dynamicOptionMap[lang] = Object.freeze(opts);
+    };
+    setBMUIConfig({ set_flags: collectOptions });
+    setEBMUIConfig({ set_flags: collectOptions });
+
     // Core languages from LanguageList
     for (const lang of LanguageList) {
         registry.push({
@@ -77,6 +97,7 @@ function buildLanguageRegistry(): LanguageMeta[] {
             displayName: coreDisplayName[lang] ?? lang,
             monacoLang: coreMonacoLang[lang] ?? "plaintext",
             category: coreCategory[lang] ?? LanguageCategory.GENERATOR,
+            options: coreOptionDefs[lang] ?? dynamicOptionMap[lang] ?? [],
         });
     }
 
@@ -87,6 +108,7 @@ function buildLanguageRegistry(): LanguageMeta[] {
             displayName: lang,
             monacoLang: (BM_LSP_LANGUAGES as Record<string, string>)[lang] ?? "plaintext",
             category: LanguageCategory.BM,
+            options: dynamicOptionMap[lang] ?? [],
         });
     }
 
@@ -97,6 +119,7 @@ function buildLanguageRegistry(): LanguageMeta[] {
             displayName: lang,
             monacoLang: (EBM_LSP_LANGUAGES as Record<string, string>)[lang] ?? "plaintext",
             category: LanguageCategory.EBM,
+            options: dynamicOptionMap[lang] ?? [],
         });
     }
 

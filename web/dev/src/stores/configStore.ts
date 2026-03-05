@@ -3,6 +3,7 @@ import { Language } from "../s2j/msg";
 import { ConfigKey } from "../types";
 import { setBMUIConfig } from "../lib/bmgen/bm_caller.js";
 import { setEBMUIConfig } from "../lib/bmgen/ebm_caller.js";
+import { coreOptionDefs } from "../option_defs";
 
 const STORAGE_KEY = "lang_specific_option";
 
@@ -51,63 +52,21 @@ function buildDefaultConfig(): Record<string, Record<string, ConfigEntry>> {
     config["json ast"] = { ...common() };
     config["json ast (debug)"] = { ...common() };
 
-    // C++
-    config["cpp"] = {
-        ...common(),
-        [ConfigKey.CPP_SOURCE_MAP]: { type: "checkbox", value: false },
-        [ConfigKey.CPP_EXPAND_INCLUDE]: { type: "checkbox", value: false },
-        [ConfigKey.CPP_USE_ERROR]: { type: "checkbox", value: false },
-        [ConfigKey.CPP_USE_RAW_UNION]: { type: "checkbox", value: false },
-        [ConfigKey.CPP_CHECK_OVERFLOW]: { type: "checkbox", value: false },
-        [ConfigKey.CPP_ENUM_STRINGER]: { type: "checkbox", value: false },
-        [ConfigKey.CPP_USE_CONSTEXPR]: { type: "checkbox", value: false },
-        [ConfigKey.CPP_ADD_VISIT]: { type: "checkbox", value: false },
-        [ConfigKey.CPP_FORCE_OPTIONAL_GETTER]: { type: "checkbox", value: false },
-    };
-
-    // Go
-    config["go"] = {
-        ...common(),
-        [ConfigKey.GO_OMIT_MUST_ENCODE]: { type: "checkbox", value: false },
-        [ConfigKey.GO_OMIT_DECODE_EXACT]: { type: "checkbox", value: false },
-        [ConfigKey.GO_OMIT_VISITOR]: { type: "checkbox", value: false },
-        [ConfigKey.GO_OMIT_MARSHAL_JSON]: { type: "checkbox", value: false },
-    };
-
-    // C
-    config["c"] = {
-        ...common(),
-        [ConfigKey.C_MULTI_FILE]: { type: "checkbox", value: false },
-        [ConfigKey.C_OMIT_ERROR_CALLBACK]: { type: "checkbox", value: false },
-        [ConfigKey.C_USE_MEMCPY]: { type: "checkbox", value: false },
-        [ConfigKey.C_ZERO_COPY]: { type: "checkbox", value: false },
-    };
-
-    // Rust
+    // Languages with no generator-specific options (common only)
     config["rust"] = { ...common() };
-
-    // TypeScript
-    config["typescript"] = {
-        ...common(),
-        [ConfigKey.TS_JAVASCRIPT]: { type: "checkbox", value: false },
-    };
-
-    // Kaitai Struct
     config["kaitai struct"] = { ...common() };
 
-    // Binary Module
-    config["binary module"] = {
-        ...common(),
-        [ConfigKey.BM_PRINT_INSTRUCTION]: { type: "checkbox", value: false },
-    };
-
-    // Extended Binary Module
-    config["ebm"] = {
-        ...common(),
-        [ConfigKey.EBM_PRINT_INSTRUCTION]: { type: "checkbox", value: false },
-        [ConfigKey.EBM_NO_OUTPUT]: { type: "checkbox", value: false },
-        [ConfigKey.EBM_CONTROL_FLOW_GRAPH]: { type: "checkbox", value: false },
-    };
+    // Build config entries from the SSOT option definitions
+    for (const [lang, defs] of Object.entries(coreOptionDefs)) {
+        config[lang] = { ...common() };
+        for (const def of defs) {
+            config[lang][def.key] = {
+                type: def.type,
+                value: def.defaultValue,
+                ...(def.candidates ? { candidates: def.candidates } : {}),
+            };
+        }
+    }
 
     // BM-based languages (dynamically registered from auto-generated bm_caller.js)
     setBMUIConfig({

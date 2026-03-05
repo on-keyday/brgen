@@ -2,6 +2,7 @@
   "type": "module",
   "dependencies": {
     "@hono/node-server": "^1.13.0",
+    "@modelcontextprotocol/sdk": "^1.27.1",
     "@types/emscripten": "^1.39.8",
     "@types/node": "^24.0.0",
     "assert": "^2.1.0",
@@ -11,6 +12,7 @@
     "json2rust": "file:../../src/tool/json2rust/pkg",
     "monaco-editor": "^0.55.0",
     "preact": "^10.25.0",
+    "zod": "^4.3.6",
     "zustand": "^5.0.0"
   },
   "devDependencies": {
@@ -24,6 +26,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "serve": "tsx src/server/main.ts"
+    "serve": "tsx src/server/main.ts",
+    "mcp": "tsx src/server/mcp_main.ts"
   }
 }
