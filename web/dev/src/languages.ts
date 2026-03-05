@@ -79,11 +79,11 @@ function buildLanguageRegistry(): LanguageMeta[] {
     const dynamicOptionMap: Record<string, readonly OptionDef[]> = {};
     const collectOptions = (
         lang: string,
-        setter: (nest: (name: string, elem: { type: string; candidates?: string[] }) => void) => void,
+        setter: (nest: (name: string, elem: { type: string; candidates?: string[],value?:any,help?: string }) => void) => void,
     ) => {
         const opts: OptionDef[] = [];
         setter((name, elem) => {
-            opts.push({ key: name, type: elem.type as OptionDef["type"], defaultValue: false, candidates: elem.candidates });
+            opts.push({ key: name, type: elem.type as OptionDef["type"], defaultValue: elem.value ?? false, candidates: elem.candidates, help: elem.help });
         });
         dynamicOptionMap[lang] = Object.freeze(opts);
     };

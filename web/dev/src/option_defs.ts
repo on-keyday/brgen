@@ -13,6 +13,7 @@ export interface OptionDef {
     key: string;
     type: "checkbox" | "number" | "text" | "choice";
     defaultValue: boolean | number | string;
+    help?: string;
     candidates?: string[];
 }
 

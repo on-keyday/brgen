@@ -13,6 +13,7 @@ export interface ConfigEntry {
     readonly type: "checkbox" | "number" | "text" | "choice";
     value: boolean | number | string;
     candidates? :string[];
+    help?: string;
     data?: any;
 }
 
