@@ -123,6 +123,7 @@ export class GeneratorService {
         lang: Language,
         getConfig: ConfigReader,
         onResult: GenerateCallback,
+        updateTracer?: UpdateTracer, // for server side, each request may have its own tracer, so allow passing it in
     ): Promise<void> {
         await this.init();
 
@@ -135,7 +136,7 @@ export class GeneratorService {
 
         const ui: UIModel = {
             getWorkerFactory: () => this.factory,
-            getUpdateTracer: () => this.updateTracer,
+            getUpdateTracer: () => updateTracer ?? this.updateTracer,
             getValue: () => source,
             setDefault: () => {
                 result = {

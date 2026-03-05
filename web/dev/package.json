@@ -33,8 +33,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "serve": "cross-env NODE_OPTIONS=\"--experimental-strip-types --experimental-transform-types --experimental-specifier-resolution=node --loader ./src/server/loader.mjs\" vite-node src/server/main.ts",
-    "mcp": "tsx src/server/mcp_main.ts",
-    "test": "vitest run"
+    "serve": "cross-env NODE_OPTIONS=\"--experimental-strip-types --experimental-transform-types  --loader ./src/server/loader.mjs\" vite-node src/server/main.ts",
+    "mcp": "cross-env NODE_OPTIONS=\"--experimental-strip-types --experimental-transform-types  --loader ./src/server/loader.mjs\" vite-node src/server/mcp_main.ts",
+    "test": "cross-env NODE_OPTIONS=\"--experimental-strip-types --experimental-transform-types  --loader ./src/server/loader.mjs\" vitest run"
   }
 }

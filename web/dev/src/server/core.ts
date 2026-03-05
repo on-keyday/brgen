@@ -15,6 +15,7 @@ import { EBM_LANGUAGES } from "../lib/bmgen/ebm_caller.js";
 import { createMcpServer } from "./mcp.js";
 
 import WebWorker  from "web-worker";
+import { UpdateTracer } from "../s2j/update.js";
 if (typeof globalThis.Worker === "undefined") {
     // @ts-ignore
     globalThis.Worker = WebWorker;
@@ -76,6 +77,8 @@ export function createApp(service: GeneratorService): Hono {
             return options[key];
         };
 
+        const tracer = new UpdateTracer();
+
         return new Promise<Response>((resolve) => {
             service.generate(body.source, body.lang as Language, getConfig, (result: GenerateResult) => {
                 resolve(
@@ -86,7 +89,7 @@ export function createApp(service: GeneratorService): Hono {
                         ...(result.mappingInfo ? { mappingInfo: result.mappingInfo } : {}),
                     }),
                 );
-            });
+            },tracer);
         });
     });
 

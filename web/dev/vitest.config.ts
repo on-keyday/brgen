@@ -1,9 +1,22 @@
-import { defineConfig } from "vitest/config";
+import { defineConfig, mergeConfig } from "vitest/config";
+import viteConfig from "./vite.config"; // 既存の vite 設定をインポート
 
-export default defineConfig({
+export default mergeConfig(
+  viteConfig,
+  defineConfig({
     test: {
-        environment: "node",
-        pool: "forks",      // isolate each test file in its own process
-        testTimeout: 60_000, // first request triggers WASM loading (~5-20s)
+      environment: "node",
+      pool: "forks",
+      testTimeout: 60_000,
+      // deps.optimizer.web.include ではなく、server.deps.inline を使用して
+      // シンボリックリンク先の CJS ファイルを Vite/Vitest の変換対象に含める
+      server: {
+        deps: {
+          inline: [/ast2ts/],
+        },
+      },
     },
-});
+    // Vitest (Node.js環境) において shims が不要な場合は alias を上書き、
+    // 必要であれば viteConfig のものをそのまま継承します。
+  })
+);
