@@ -84,6 +84,7 @@ namespace ebm2p4 {
         #define DEFINE_FLAG(type,name,default_,flag_name,flag_func,...) \
             static_assert(ebmcodegen::util::internal::is_c_ident(#name),"name must be a valid C identifier");type name = default_
         #define WEB_FILTERED(...) 
+        #define WEB_MAP_TYPE(flag_name,type_name) 
         #define WEB_UI_NAME(name) 
         #define WEB_LSP_NAME(name) 
         #define WEB_WORKER_NAME(name) 
@@ -129,6 +130,7 @@ namespace ebm2p4 {
         #undef WEB_WORKER_NAME
         #undef FILE_EXTENSIONS
         #undef CONFIG_MAP
+        #undef WEB_MAP_TYPE
         #if __has_include("visitor/Flags_struct_before.hpp")
         #include "visitor/Flags_struct_before.hpp"
         #elif __has_include("visitor/dsl/Flags_struct_before_dsl.hpp")
@@ -160,6 +162,7 @@ namespace ebm2p4 {
             #define DEFINE_FLAG(type,name,default_,flag_name,flag_func,...) \
                 ctx.flag_func(&name,flag_name,__VA_ARGS__)
             #define WEB_FILTERED(...) web_filtered.insert_range(std::set{__VA_ARGS__})
+            #define WEB_MAP_TYPE(flag_name,type_name) static_assert(ebmcodegen::internal::is_web_type_allowed(type_name),"Type " #type_name " is not allowed to be mapped to web");web_type_map[flag_name] = type_name
             #define WEB_UI_NAME(name) ui_lang_name = name
             #define WEB_LSP_NAME(name) lsp_name = name
             #define WEB_WORKER_NAME(name) webworker_name = name
@@ -205,6 +208,7 @@ namespace ebm2p4 {
             #undef WEB_WORKER_NAME
             #undef FILE_EXTENSIONS
             #undef CONFIG_MAP
+            #undef WEB_MAP_TYPE
             #if __has_include("visitor/Flags_bind_before.hpp")
             #include "visitor/Flags_bind_before.hpp"
             #elif __has_include("visitor/dsl/Flags_bind_before_dsl.hpp")

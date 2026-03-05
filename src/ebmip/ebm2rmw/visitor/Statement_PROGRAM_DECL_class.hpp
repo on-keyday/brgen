@@ -32,6 +32,7 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
         return unexpect_error("Entry point is not specified.");
     }
     auto query = std::format("Statement{{ body.struct_decl.has_encode_decode and id == \"{}\" }}", entry_str);
+    futils::wrap::cout_wrap() << "Querying entry point with: " << query << "\n";
     MAYBE(query_result, ebmgen::run_query(ctx.module(), query));
     if (query_result.first.size() != 1) {
         return unexpect_error("Entry point not found: {}", entry_str);

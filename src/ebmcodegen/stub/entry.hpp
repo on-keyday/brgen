@@ -26,6 +26,12 @@ namespace ebmcodegen {
         std::chrono::steady_clock::time_point point = std::chrono::steady_clock::now();
     };
 
+    namespace internal {
+        constexpr bool is_web_type_allowed(std::string_view type_name) {
+            return type_name == "file";
+        }
+    }  // namespace internal
+
     struct Flags : futils::cmdline::templ::HelpOption {
         std::string_view input;
         std::string_view output;
@@ -82,7 +88,7 @@ namespace ebmcodegen {
             ctx.VarString<true>(&dump_test_separator, "test-separator", "dump test info separator when dumping test info to stdout", "SEP");
             ctx.VarBool(&debug_unimplemented, "debug-unimplemented", "debug unimplemented node (for debug)");
             ctx.VarBool(&timing, "timing", "show timing info (for debug)");
-            ctx.VarBoolFunc(&source_map, "source-map", "same as --test-info - --test-separator \"############\" (for WebPlayground compatibility)", [&](bool flag, auto) {
+            ctx.VarBoolFunc(&source_map, "source-map", "Generates WebPlayground/API Server compatible source-map output (same as --test-info - --test-separator \"############\")", [&](bool flag, auto) {
                 if (flag) {
                     dump_test_file = "-";
                     dump_test_separator = "############";

@@ -89,7 +89,7 @@
     "*.rh": "cpp",
     "string_view": "cpp"
   },
-  "editor.formatOnSave": true,
+  "editor.formatOnSave": false,
   "C_Cpp.clang_format_style": "file",
   "brgen-lsp.src2json": "C:/workspace/shbrgen/brgen/tool/src2json.exe",
   "rust-analyzer.linkedProjects": [

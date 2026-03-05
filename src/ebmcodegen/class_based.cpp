@@ -1027,8 +1027,9 @@ namespace ebmcodegen {
                 w.write("web_filtered.insert_range(std::set{__VA_ARGS__})");
             }
             w.writeln();
-            w.write("#define WEB_MAP_TYPE(flag_name,type_name) ");
+            w.write("#define WEB_OPTION_HANDLE_TYPE(flag_name,type_name) ");
             if (!on_define) {
+                w.write("static_assert(ebmcodegen::internal::is_web_type_allowed(type_name),\"Type \" #type_name \" is not allowed to be mapped to web\");");
                 w.write("web_type_map[flag_name] = type_name");
             }
             w.writeln();
@@ -1091,6 +1092,7 @@ namespace ebmcodegen {
             w.writeln("#undef WEB_WORKER_NAME");
             w.writeln("#undef FILE_EXTENSIONS");
             w.writeln("#undef CONFIG_MAP");
+            w.writeln("#undef WEB_OPTION_HANDLE_TYPE");
         };
 
         w.writeln("struct Flags : ebmcodegen::Flags {");

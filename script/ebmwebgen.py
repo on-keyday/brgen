@@ -193,16 +193,19 @@ function set{upper_ui_lang_name}UIConfig(ui) {{
             continue
         flag_name = flag["name"]
         flag_type = flag["type"]
+        escaped_help = flag["help"].replace('"', '\\"') if "help" in flag else ""
         if flag_type == "bool":
             code += f"""        nest_setter("{flag_name}",{{
             type: "checkbox",
             value: false, // Assuming false as default for UI
+            help: "{escaped_help}"
         }});
 """
         elif flag_type == "string":
             code += f"""        nest_setter("{flag_name}",{{
             type: "text",
             value: "", // Assuming empty string as default for UI
+            help: "{escaped_help}"
         }});
 """
         elif flag_type == "map<string,value>":
@@ -212,6 +215,7 @@ function set{upper_ui_lang_name}UIConfig(ui) {{
             code += f"""        nest_setter("{flag_name}",{{
             type: "choice",
             value: {json.dumps(candidates[0])},
+            help: "{escaped_help}",
             candidates: {json.dumps(candidates)}
         }});
 """

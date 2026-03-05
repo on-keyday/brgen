@@ -208,7 +208,7 @@ int print_cmake(CodeWriter& w, Flags& flags) {
     w.indent_writeln("\"main.cpp\"");
     w.writeln(")");
     w.write("target_precompile_headers(", target_name, " ");
-    // codegen.hpp includes user generated code so exclude from this 
+    // codegen.hpp includes user generated code so exclude from this
     w.write_unformatted(R"(PRIVATE
     <format>
     <expected>
@@ -509,7 +509,6 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
     w.writeln("#include <code/code_writer.h>");
     w.writeln("#include <ebmcodegen/stub/code_writer.hpp>");
     w.writeln("#include <ebmcodegen/stub/writer_manager.hpp>");
-
 
     auto ns_name = flags.program_name;
     ebmcodegen::IncludeLocations locations;
@@ -1250,6 +1249,7 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
                         w.writeln("WEB_WORKER_NAME(worker_name)");
                         w.writeln("FILE_EXTENSIONS(file_ext...)");
                         w.writeln("CONFIG_MAP(config_name,flag_name)");
+                        w.writeln("WEB_TYPE_MAP(flag_name,web_type)");
                     }
                 }
                 if (result->visitor_location == suffixes[suffix_pre_validate] ||

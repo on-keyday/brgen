@@ -13,6 +13,7 @@
 #include "ebmcodegen/stub/ops_macros.hpp"
 #include "layout.hpp"
 #include "number/hex/bin2hex.h"
+#include "ebmcodegen/stub/js_cancel.hpp"
 
 namespace ebm2rmw {
     struct Function {
@@ -430,7 +431,7 @@ namespace ebm2rmw {
                 }
                 futils::wrap::cout_wrap() << ", str_repr=" << instr.str_repr << ", stack_size=" << stack.size() << ", call_stack_size=" << call_stack.size() << "\n";
             };
-
+            js_may_cancel_task();
             while (ip < env.get_instructions().size()) {
                 auto& instr = env.get_instructions()[ip];
                 if (ctx.flags().print_step) {

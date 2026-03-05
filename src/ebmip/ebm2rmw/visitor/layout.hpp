@@ -141,7 +141,7 @@ namespace ebm2rmw {
                 type,
                 ArrayLayout{
                     .element_type = element_layout,
-                    .length = length->value(),
+                    .length = static_cast<size_t>(length->value()),
                     .size = layout.size,
                 });
             return layout;
