@@ -22,6 +22,8 @@ DEFINE_VISITOR(entry_before) {
     using namespace CODEGEN_NAMESPACE;
     auto& config = ctx.config();
 
+    ctx.module().register_default_prefix(ebm::StatementKind::STRUCT_DECL,"Struct");
+
     // === Scalar configuration fields ===
 
     // Variable/constant declaration keywords
