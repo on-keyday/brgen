@@ -8,10 +8,11 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import type { Hono } from "hono";
 import { installNodePolyfills } from "../src/server/node_compat.js";
-import { createGeneratorService, createApp } from "../src/server/core.js";
+import { createGeneratorService, createApp, patchWebWorker } from "../src/server/core.js";
 
 // Apply Node.js polyfills (WorkerGlobalScope, file:// fetch) before WASM loads.
 installNodePolyfills();
+patchWebWorker();
 
 let app: Hono;
 beforeAll(async () => {
