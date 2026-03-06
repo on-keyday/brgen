@@ -1,4 +1,4 @@
-import { MyEmscriptenModule } from "./emscripten_mod"
+import type { MyEmscriptenModule } from "./emscripten_mod.js"
 
 export const fetchImportFile = async(mod :MyEmscriptenModule,sourceCode :string) => {
     const regex = /config\s*\.\s*import\s*\(.*\"(.*)\".*\)/g

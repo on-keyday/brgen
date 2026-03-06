@@ -121,6 +121,13 @@
         "./testkit/cmptest.json",
         "-d"
       ]
+    },
+    {
+      "name": "Node Attach",
+      "type": "node",
+      "request": "attach",
+      "port": 9229,
+      "skipFiles": ["<node_internals>/**"]
     }
   ]
 }

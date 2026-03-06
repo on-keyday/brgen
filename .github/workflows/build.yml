@@ -481,6 +481,17 @@ jobs:
             MODE=Debug
           fi
           . build.sh wasm-em $MODE
+      - name: Set up Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f
+        if: matrix.env == 'development'
+        with:
+          node-version: "23.11"
+      - name: Run API server tests
+        if: matrix.env == 'development'
+        run: |
+          cd web/dev
+          npm install
+          npm test
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@75d2e84710de30f6ff7268e08f310b60ef14033f # v3.0.0
         with:
@@ -491,6 +502,13 @@ jobs:
           cd web/doc
           hugo --minify
           cd ../..
+      - name: Pack server kit
+        if: matrix.env == 'production'
+        run: |
+          chmod +x ./script/pack_server_kit.sh
+          ./script/pack_server_kit.sh
+          cp script/api_server.sh web/public/
+          chmod +x web/public/api_server.sh
       - name: Upload artifact
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:

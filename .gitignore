@@ -38,3 +38,5 @@ zig-out/
 rebrgen/
 wasmCopy.js
 /web/dev/dist/
+.claude/
+*.tar.gz

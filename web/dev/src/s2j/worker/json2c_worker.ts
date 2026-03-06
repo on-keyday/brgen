@@ -1,7 +1,8 @@
 import * as json2c from "../../lib/json2c.js";
-import { JobRequest, RequestLanguage } from "../msg.js";
+import type { JobRequest} from "../msg.js";
+import { RequestLanguage } from "../msg.js";
 import { EmWorkContext} from "../em_work_ctx.js";
-import { MyEmscriptenModule } from "../emscripten_mod.js";
+import type { MyEmscriptenModule } from "../emscripten_mod.js";
 
 
 const json2cModule = json2c.default as EmscriptenModuleFactory<MyEmscriptenModule>;

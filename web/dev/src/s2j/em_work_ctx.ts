@@ -1,7 +1,8 @@
 
-import { JobRequest, JobResult, TraceID, traceIDCanceled, traceIDGetID } from "./msg.js";
+import type { JobRequest, JobResult, TraceID } from "./msg.js";
+import {  traceIDCanceled, traceIDGetID } from "./msg.js";
 import { RequestQueue } from "./request_queue.js";
-import { MyEmscriptenModule } from "./emscripten_mod.js";
+import type { MyEmscriptenModule } from "./emscripten_mod.js";
 
 export class EmWorkContext  {
     readonly #msgQueue: RequestQueue;

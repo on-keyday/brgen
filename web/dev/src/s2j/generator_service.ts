@@ -1,11 +1,11 @@
-import { WorkerFactory } from "./s2j/worker_factory";
-import { fixedWorkerMap } from "./s2j/workers";
-import { UpdateTracer } from "./s2j/update";
-import { UIModel, MappingInfo, updateGenerated } from "./s2j/generator";
-import { Language, JobResult } from "./s2j/msg";
-import { ConfigKey } from "./types";
-import { BM_LANGUAGES } from "./lib/bmgen/bm_caller.js";
-import { EBM_LANGUAGES } from "./lib/bmgen/ebm_caller.js";
+import { WorkerFactory } from "./worker_factory";
+import { fixedWorkerMap } from "./workers";
+import { UpdateTracer } from "./update";
+import { UIModel, MappingInfo, updateGenerated } from "./generator";
+import { Language, JobResult } from "./msg";
+import { ConfigKey } from "../common/types";
+import { BM_LANGUAGES } from "../lib/bmgen/bm_caller.js";
+import { EBM_LANGUAGES } from "../lib/bmgen/ebm_caller.js";
 
 /**
  * Result of a code generation request.
@@ -48,10 +48,12 @@ export class GeneratorService {
     readonly factory: InstanceType<typeof WorkerFactory>;
     readonly updateTracer: UpdateTracer;
     #initPromise: Promise<void> | null = null;
+    #customWorkerMaps: Readonly<{[key: string]: () => import("./job_mgr").IWorker}>[] | null;
 
-    constructor() {
+    constructor(customWorkerMaps?: Readonly<{[key: string]: () => import("./job_mgr").IWorker}>[]) {
         this.factory = new WorkerFactory();
         this.updateTracer = new UpdateTracer();
+        this.#customWorkerMaps = customWorkerMaps ?? null;
     }
 
     /**
@@ -66,25 +68,40 @@ export class GeneratorService {
     }
 
     async #doInit(): Promise<void> {
-        // Core workers (fixedWorkerMap) are already registered in the constructor.
-        // BM/EBM workers are dynamically imported (they may be stubs with empty arrays)
+        if (this.#customWorkerMaps) {
+            // Server mode: use the provided worker maps
+            for (const map of this.#customWorkerMaps) {
+                this.factory.addWorker(map);
+            }
+            return;
+        }
+
+        // Browser mode: Core workers + dynamically imported BM/EBM workers
         const loaders: Promise<void>[] = [];
 
         this.factory.addWorker(fixedWorkerMap);
 
         if (BM_LANGUAGES.length > 0) {
             loaders.push(
-                import("./lib/bmgen/bm_workers.js").then(m => {
+                import("../lib/bmgen/bm_workers.js").then(m => {
                     this.factory.addWorker(m.bm_workers);
                 })
             );
         }
         if (EBM_LANGUAGES.length > 0) {
             loaders.push(
-                import("./lib/bmgen/ebm_workers.js").then(m => {
+                import("../lib/bmgen/ebm_workers.js").then(m => {
                     this.factory.addWorker(m.ebm_workers);
                 })
             );
+        }
+
+        // prefetch src2json workers that is root of all generation workers,
+        // so that the first generation is faster
+        this.factory.getWorker("src2json");
+        // also ebmgen is root of EBM generation workers, prefetch it as well if EBM languages are supporte
+        if (EBM_LANGUAGES.length > 0) {
+            this.factory.getWorker("ebmgen");
         }
 
         await Promise.all(loaders);
@@ -106,6 +123,8 @@ export class GeneratorService {
         lang: Language,
         getConfig: ConfigReader,
         onResult: GenerateCallback,
+        updateTracer?: UpdateTracer, // for server side, each request may have its own tracer, so allow passing it in
+        logger?: (...args: any[]) => void, // optional logger for debug output
     ): Promise<void> {
         await this.init();
 
@@ -117,8 +136,15 @@ export class GeneratorService {
         };
 
         const ui: UIModel = {
+            debugLog: (...args: any[]) => {
+                if (logger) {
+                    logger(...args);
+                } else {
+                    console.log(...args);
+                }
+            },
             getWorkerFactory: () => this.factory,
-            getUpdateTracer: () => this.updateTracer,
+            getUpdateTracer: () => updateTracer ?? this.updateTracer,
             getValue: () => source,
             setDefault: () => {
                 result = {

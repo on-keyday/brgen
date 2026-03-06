@@ -1,8 +1,18 @@
 
-import _wbg_init, { InitOutput, json2rust } from "json2rust"
-import { JobRequest, JobResult } from "../msg.js";
+import type { InitOutput} from "json2rust";
+import _wbg_init, { json2rust } from "json2rust"
+import type { JobRequest, JobResult } from "../msg.js";
+import { fetchOrReadWasm } from "./fetch_or_read.js";
 
 let _mod :InitOutput | null = null;
+
+// intercept fetch call so that we do not need to know where the json2rust.wasm is located
+const originalFetch = globalThis.fetch;
+// @ts-ignore
+globalThis.fetch = async (input: RequestInfo, init?: RequestInit) => {
+    const respBuffer = await fetchOrReadWasm(input);
+    return new Response(respBuffer);
+}
 
 const getWasmModule = async () => {
     if (_mod) return _mod;

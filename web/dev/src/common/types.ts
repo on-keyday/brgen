@@ -1,0 +1,47 @@
+export const ElementID = {
+    CONTAINER1: "container1",
+    CONTAINER2: "container2",
+    TITLE_BAR: "title_bar",
+    LANGUAGE_SELECT: "language-select",
+    COPY_BUTTON: "copy-button",
+    COPY_LINK_BUTTON: "copy-link-button",
+    GITHUB_LINK: "github-link",
+    BALL: "ball",
+    BALL_BOUND: "ball-bound",
+    INPUT_LIST: "input-list",
+} as const;
+
+export type ElementID = (typeof ElementID)[keyof typeof ElementID];
+
+export const ConfigKey = {
+    COMMON_FILE_NAME: "file_name",
+    COMMON_SAVE_LOCATION: "save_url",
+    CPP_SOURCE_MAP: "source_map",
+    CPP_EXPAND_INCLUDE: "expand_include",
+    CPP_USE_ERROR: "use_error",
+    CPP_USE_RAW_UNION: "use_raw_union",
+    CPP_CHECK_OVERFLOW: "check_overflow",
+    CPP_COMPILE_VIA_API: "compile_via_api",
+    CPP_USE_CONSTEXPR: "use_constexpr",
+    CPP_ENUM_STRINGER: "enum_stringer",
+    CPP_ADD_VISIT: "add_visit",
+    CPP_FORCE_OPTIONAL_GETTER: "force_optional_getter",
+    GO_OMIT_MUST_ENCODE: "omit_must_encode",
+    GO_OMIT_DECODE_EXACT: "omit_decode_exact",
+    GO_OMIT_VISITOR: "omit_visitors",
+    GO_OMIT_MARSHAL_JSON: "omit_marshal_json",
+    TS_JAVASCRIPT: "javascript",
+    C_MULTI_FILE: "multi_file",
+    C_OMIT_ERROR_CALLBACK: "omit_error",
+    C_USE_MEMCPY: "use_memcpy",
+    C_ZERO_COPY: "zero_copy",
+
+    BM_PRINT_INSTRUCTION: "print_instruction",
+    EBM_NO_OUTPUT: "no_output",
+    EBM_PRINT_INSTRUCTION: "print_instruction",
+    EBM_CONTROL_FLOW_GRAPH: "control_flow_graph",
+    RUST2_USE_ASYNC: "use_async",
+    RUST2_USE_COPY_ON_WRITE_VEC: "copy_on_write_vec",
+} as const;
+
+export type ConfigKey = (typeof ConfigKey)[keyof typeof ConfigKey];

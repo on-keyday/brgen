@@ -1,11 +1,13 @@
 
 import * as caller from "./caller.js";
-import { EBMGenOption, isJobResult, TraceID } from "./msg.js";
-import { UpdateTracer } from "./update.js";
+import type { EBMGenOption, TraceID } from "./msg.js";
+import { isJobResult } from "./msg.js";
+import type { UpdateTracer } from "./update.js";
 import * as inc from "./cpp_include.js";
-import  { BMGenOption, COption, CallOption, Cpp2Option, CppOption, GoOption, JobResult,Language, Rust2Option, RustOption, TSOption } from "./msg.js";
+import type { BMGenOption, COption, CallOption, CppOption, GoOption, JobResult, RustOption, TSOption } from "./msg.js";
+import  { Cpp2Option,Language, Rust2Option } from "./msg.js";
 import {ast2ts} from "ast2ts";
-import {ConfigKey} from "../types.js";
+import {ConfigKey} from "../common/types.js";
 import { BM_LANGUAGES, BM_LSP_LANGUAGES, generateBMCode } from "../lib/bmgen/bm_caller.js";
 import { EBM_LANGUAGES,EBM_LSP_LANGUAGES,generateEBMCode } from "../lib/bmgen/ebm_caller.js";
 
@@ -16,6 +18,7 @@ export interface UIModel {
     getUpdateTracer(): UpdateTracer;
     getValue():string;
     setDefault():void;
+    debugLog(...args :any[]):void;
     setGenerated(s :string,lang :string):void;
     getLanguageConfig(lang :Language, key :ConfigKey):any;
     mappingCode(mappingInfo :MappingInfo[],s :JobResult,lang :Language,offset :number):void;
@@ -62,7 +65,7 @@ const handleLanguage = async (ui :UIModel,s :JobResult,generate:(factory :caller
     if(ui.getUpdateTracer().editorAlreadyUpdated(s)) {
         return;
     }
-    console.log(res);
+    ui.debugLog(res);
     if(res.stdout === undefined || res.stdout === "") {
         if(res.stderr!==undefined&&res.stderr!==""){
             ui.setGenerated(res.stderr,"plaintext");
@@ -129,13 +132,6 @@ const handleCpp = async (ui :UIModel,  s :JobResult) => {
         if(isMappingInfoStruct(mappingInfo)) {
             ui.mappingCode(mappingInfo.line_map,s,Language.CPP,0);
         }
-        /*
-        if(compileViaAPI===true) {
-            compileCpp(result.stdout!).then((res)=>{
-                console.log(res);
-            })
-        }
-        */
     }    
 }
 
@@ -202,8 +198,8 @@ const handleJSONOutput = async (ui :UIModel,id :TraceID,value :string,generator:
         return;
     }
     if(s.stdout===undefined) throw new Error("stdout is undefined");
-    console.log(s.stdout);
-    console.log(s.stderr);
+    ui.debugLog(s.stdout);
+    ui.debugLog(s.stderr);
     const js = JSON.parse(s.stdout);
     ui.setGenerated(JSON.stringify(js,null,4),"json");
     return;
@@ -316,7 +312,7 @@ export const handleBM = async (ui :UIModel, s :JobResult,lang :string) => {
 
 export const updateGenerated = async (ui :UIModel,lang :Language) => {
     const value = ui.getValue();
-    const traceID = ui.getUpdateTracer().getTraceID();
+    const traceID = ui.getUpdateTracer().getTraceID(ui.debugLog);
     if(value === ""){
         ui.setDefault();
         return;
@@ -334,19 +330,19 @@ export const updateGenerated = async (ui :UIModel,lang :Language) => {
         }
         throw e;
     });
-    if(ui.getUpdateTracer().editorAlreadyUpdated(s)) {
+    if(ui.getUpdateTracer().editorAlreadyUpdated(s,ui.debugLog)) {
         return;
     }
     if(s.err) {
         throw s.err;
     }
     if(s.stdout===undefined) throw new Error("stdout is undefined");
-    console.log(s.stdout);
-    console.log(s.stderr);
+    ui.debugLog(s.stdout);
+    ui.debugLog(s.stderr);
     const js = JSON.parse(s.stdout);
     if(ast2ts.isAstFile(js)&&js.ast){
         const ts = ast2ts.parseAST(js.ast);
-        console.log(ts);
+        ui.debugLog(ts);
     }
     switch(lang){
         case Language.JSON_AST:

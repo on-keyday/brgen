@@ -1,11 +1,10 @@
 
 
-import {JobRequest,JobResult, RequestLanguage,TraceID }  from "./msg.js";
+import type {JobRequest,JobResult, RequestLanguage,TraceID }  from "./msg.js";
 
 
 export interface IWorker {
-    onmessage: ((msg :MessageEvent) => void)|null;
-    onerror: ((msg :ErrorEvent) => void)|null;
+    addEventListener: (type :string, listener : (this: any, ev: MessageEvent) => any) => void;
     postMessage: (msg :JobRequest) => void;
 }
 export class JobManager {
@@ -14,8 +13,8 @@ export class JobManager {
     #jobID = 0;
     constructor(worker :IWorker){
         this.#worker = worker;
-        this.#worker.onmessage = this.#onmessage.bind(this);
-        this.#worker.onerror = this.#onerror.bind(this);
+        this.#worker.addEventListener("message", (e) => this.#onmessage(e));
+        this.#worker.addEventListener("error", (e) => this.#onerror(e as any));
     }
 
     #onerror(e :ErrorEvent) {

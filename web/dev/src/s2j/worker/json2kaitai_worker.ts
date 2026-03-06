@@ -2,8 +2,10 @@
 
 export { };
 
-import { JobRequest, RequestLanguage } from "../msg.js";
+import type { JobRequest} from "../msg.js";
+import { RequestLanguage } from "../msg.js";
 import { GoWorkContext} from "../go_work_ctx.js";
+import { fetchOrReadWasm } from "./fetch_or_read.js";
 
 
 
@@ -19,7 +21,7 @@ const requestCallback = (e:JobRequest) => {
 
 
 const j2go_ctx = new GoWorkContext(
-    fetch(new URL("../../lib/json2kaitai.wasm",import.meta.url)).then((r) => r.arrayBuffer()),
+    fetchOrReadWasm(new URL("../../lib/json2kaitai.wasm",import.meta.url)),
     requestCallback, () => {
-    console.log("json2go worker is ready");
+    console.log("json2kaitai worker is ready");
 });

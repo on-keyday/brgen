@@ -1,4 +1,4 @@
-import { languageRegistry, getLanguagesByCategory, LanguageCategory, LanguageMeta } from "../languages";
+import { languageRegistry, getLanguagesByCategory, LanguageCategory, LanguageMeta } from "../common/languages";
 import styles from "./App.module.css";
 
 const categories: LanguageCategory[] = [

@@ -1,7 +1,7 @@
 
 import "../lib/go_wasm_exec.js";
 import { RequestQueue } from "./request_queue.js";
-import { JobRequest, JobResult } from "./msg.js"
+import type { JobRequest, JobResult } from "./msg.js"
 
 declare class Go {
     constructor();

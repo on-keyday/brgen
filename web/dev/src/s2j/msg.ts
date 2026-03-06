@@ -1,21 +1,23 @@
 
 
-export const enum RequestLanguage {
-    TOKENIZE = "tokens",
-    JSON_AST = "json ast",
-    JSON_DEBUG_AST = "json ast (debug)",
-    CPP = "cpp",
-    GO = "go",
-    C = "c",
-    RUST = "rust",
-    TYPESCRIPT="typescript",
-    KAITAI_STRUCT = "kaitai struct",
+export const RequestLanguage = {
+    TOKENIZE: "tokens",
+    JSON_AST: "json ast",
+    JSON_DEBUG_AST: "json ast (debug)",
+    CPP: "cpp",
+    GO: "go",
+    C: "c",
+    RUST: "rust",
+    TYPESCRIPT: "typescript",
+    KAITAI_STRUCT: "kaitai struct",
 
-    BINARY_MODULE = "binary module",
-    EBM = "ebm",
-    //CPP_2 = "cpp2",
-    //RUST_2 = "rust2",
-}
+    BINARY_MODULE: "binary module",
+    EBM: "ebm",
+    //CPP_2: "cpp2",
+    //RUST_2: "rust2",
+} as const;
+
+export type RequestLanguage = (typeof RequestLanguage)[keyof typeof RequestLanguage];
 
 export const LanguageList = [
     RequestLanguage.TOKENIZE,
@@ -34,20 +36,22 @@ export const LanguageList = [
     //RequestLanguage.RUST_2,
 ];
 
-export const enum WorkerType {
-    SRC2JSON = "src2json",
-    JSON2CPP2 = "json2cpp2",
-    JSON2GO = "json2go",
-    JSON2C = "json2c",
-    JSON2RUST = "json2rust",
-    JSON2TS = "json2ts",
-    JSON2KAITAI = "json2kaitai",
+export const WorkerType = {
+    SRC2JSON: "src2json",
+    JSON2CPP2: "json2cpp2",
+    JSON2GO: "json2go",
+    JSON2C: "json2c",
+    JSON2RUST: "json2rust",
+    JSON2TS: "json2ts",
+    JSON2KAITAI: "json2kaitai",
 
-    BMGEN = "bmgen",
-    EBMGEN = "ebmgen",
+    BMGEN: "bmgen",
+    EBMGEN: "ebmgen",
     //BM2CPP,
     //BM2RUST,
-}
+} as const;
+
+export type WorkerType = (typeof WorkerType)[keyof typeof WorkerType];
 
 export const WorkerList = Object.freeze([
     WorkerType.SRC2JSON,
@@ -159,7 +163,7 @@ export const LanguageToWorkerType = Object.freeze({
 export type LanguageKey = keyof LanguageToOptionType;
 export type TraceID = {id :number, cancel :SharedArrayBuffer|null};
 let sharedArrayBufferInfoShown = false;
-export const newTraceID = (id :number) :TraceID => {
+export const newTraceID = (id :number,logger: (...args: any[]) => void = console.log) :TraceID => {
     if(globalThis.SharedArrayBuffer === undefined) {
         if(!sharedArrayBufferInfoShown) {
             console.warn("SharedArrayBuffer is not supported in this environment. Cancellation of long running tasks will not be available.");
@@ -168,7 +172,7 @@ export const newTraceID = (id :number) :TraceID => {
         return {id, cancel :null};
     }
     if(!sharedArrayBufferInfoShown){
-        console.log("cancellation of long running tasks is enabled.");
+        logger?.("cancellation of long running tasks is enabled.");
         sharedArrayBufferInfoShown = true;
     }
     return {id, cancel :new SharedArrayBuffer(4)};

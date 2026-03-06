@@ -1,7 +1,8 @@
 import * as ebmgen  from "../../../lib/bmgen/ebmgen.js";
-import { JobRequest, RequestLanguage } from "../../msg.js";
+import type { JobRequest} from "../../msg.js";
+import { RequestLanguage } from "../../msg.js";
 import { EmWorkContext} from "../../em_work_ctx.js";
-import { MyEmscriptenModule } from "../../emscripten_mod.js";
+import type { MyEmscriptenModule } from "../../emscripten_mod.js";
 
 const ebmgenModule = ebmgen.default as EmscriptenModuleFactory<MyEmscriptenModule>;
 

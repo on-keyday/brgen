@@ -39,6 +39,11 @@ call emcmake cmake -G Ninja -D CMAKE_BUILD_TYPE=%BUILD_TYPE% -DCMAKE_INSTALL_PRE
     exit 1
 )
 rem ninja -C ./built/%BUILD_MODE%/%BUILD_TYPE%
+if not "%PARALLEL_BUILD%" == "" (
+    ninja -C ./built/%BUILD_MODE%/%BUILD_TYPE% -j %PARALLEL_BUILD%
+) else (
+    ninja -C ./built/%BUILD_MODE%/%BUILD_TYPE%
+)
 ninja -C ./built/%BUILD_MODE%/%BUILD_TYPE% install
 
 if "%BUILD_MODE%" == "wasm-em" (

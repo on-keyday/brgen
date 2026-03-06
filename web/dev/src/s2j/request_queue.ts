@@ -1,5 +1,6 @@
 
-import { JobRequest, JobResult, traceIDGetID } from "./msg.js"
+import type { JobRequest, JobResult } from "./msg.js"
+import { traceIDGetID } from "./msg.js"
 
 export class RequestQueue {
     readonly #msgQueue: JobRequest[] = [];

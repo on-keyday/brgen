@@ -1,5 +1,5 @@
-import { initLSP } from "./lsp/brgen_lsp";
-import { getGeneratorService } from "./generator_service";
+import { initLSP } from "./brgen_lsp";
+import { getGeneratorService } from "../s2j/generator_service";
 
 let initialized = false;
 
