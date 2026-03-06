@@ -14,7 +14,8 @@
         "rust",
         "p4",
         "c",
-        "go"
+        "go",
+        "zig"
     ],
     "INTERPRET_TARGET_LANGUAGE": [
         "rmw",

@@ -24,6 +24,11 @@
 #include "../codegen.hpp"
 DEFINE_VISITOR(Expression_TYPE_CAST) {
     using namespace CODEGEN_NAMESPACE;
+
+    if (ctx.config().type_cast_custom) {
+        CALL_OR_PASS(custom_result, ctx.config().type_cast_custom(ctx));
+    }
+
     CodeWriter w;
 
     MAYBE(source_expr_str, ctx.visit(ctx.type_cast_desc.source_expr));

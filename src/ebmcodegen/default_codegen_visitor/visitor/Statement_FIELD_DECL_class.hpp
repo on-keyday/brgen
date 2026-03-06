@@ -34,6 +34,10 @@
 DEFINE_VISITOR(Statement_FIELD_DECL) {
     using namespace CODEGEN_NAMESPACE;
     /*here to write the hook*/
+    if (ctx.config().field_decl_visitor) {
+        MAYBE(res, ctx.config().field_decl_visitor(ctx));
+        return res;
+    }
     if (ctx.field_decl.is_state_variable()) {
         return {};
     }

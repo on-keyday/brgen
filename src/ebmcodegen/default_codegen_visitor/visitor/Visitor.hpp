@@ -9,6 +9,7 @@
 bool use_brace_for_condition = true;
 bool use_elif = false;
 bool auto_output_root = true;
+bool methods_inner_class = false;
 std::string bool_true = "true";
 std::string bool_false = "false";
 std::string bool_type = "bool";
@@ -33,6 +34,7 @@ std::string constant_initializer = "";  // if set, used instead of variable_init
 bool variable_with_type = true;
 bool cast_initial_value_when_no_type = false;  // when variable_with_type is false, wrap initial value with type cast
 std::string variable_type_separator = ":";
+std::string param_type_separator = " ";  // separator between param name and type (e.g. " " for Go, ": " for Zig)
 std::map<ebm::BinaryOp, std::string> alt_binary_op;
 std::map<ebm::UnaryOp, std::string> alt_unary_op;
 std::string metadata_comment_prefix = "/*";
@@ -46,6 +48,7 @@ std::string enum_member_separator = "";
 std::string enum_member_accessor = ".";
 std::string array_size_get_function = "len";
 bool surrounded_array_size = false; /*true: len(x) false: x.len()*/
+std::function<expected<Result>(Context_Expression_ARRAY_SIZE& ctx)> array_size_visitor;
 std::string append_function = "append";
 std::function<expected<Result>(Context_Statement_APPEND& ctx)> append_visitor;
 std::string infinity_loop_keyword = "";
@@ -104,6 +107,7 @@ std::function<expected<Result>(Context_Expression_CAN_READ_STREAM& ctx)> can_rea
 std::function<expected<Result>(Context_Statement_RESERVE_DATA& ctx)> reserve_data_visitor;
 
 std::function<expected<Result>(Context_Statement_COMPOSITE_FIELD_DECL& ctx)> composite_field_decl_visitor;
+std::function<expected<Result>(Context_Statement_FIELD_DECL& ctx)> field_decl_visitor;
 
 std::function<expected<Result>(Context_Statement_RETURN& ctx)> return_visitor;
 

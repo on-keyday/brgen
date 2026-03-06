@@ -35,9 +35,9 @@ DEFINE_VISITOR(Statement_PARAMETER_DECL) {
     }
     auto name = ctx.identifier();
     if (ctx.config().field_name_prior_to_type) {
-        return CODE(name, " ", type.to_writer());
+        return CODE(name, ctx.config().param_type_separator, type.to_writer());
     }
     else {
-        return CODE(type.to_writer(), " ", name);
+        return CODE(type.to_writer(), ctx.config().param_type_separator, name);
     }
 }
