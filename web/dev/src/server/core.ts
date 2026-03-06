@@ -1,8 +1,8 @@
 import { Hono } from "hono";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
-import { GeneratorService, GenerateResult, ConfigReader } from "../generator_service.js";
+import { GeneratorService, GenerateResult, ConfigReader } from "../s2j/generator_service.js";
 import { Language } from "../s2j/msg.js";
-import { languageRegistry, allLanguageIds } from "../languages.js";
+import { languageRegistry, allLanguageIds } from "../common/languages.js";
 /*
 import {
     directFixedWorkerMap,

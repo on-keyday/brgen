@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { Language } from "../s2j/msg";
-import { ConfigKey } from "../types";
-import { getGeneratorService, GenerateResult, ConfigReader } from "../generator_service";
+import { ConfigKey } from "../common/types";
+import { getGeneratorService, GenerateResult, ConfigReader } from "../s2j/generator_service";
 import { MappingInfo } from "../s2j/generator";
 import { useEditorStore } from "./editorStore";
 import { useConfigStore } from "./configStore";

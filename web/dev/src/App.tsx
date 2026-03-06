@@ -10,7 +10,7 @@ import { ActionBar } from "./components/ActionBar";
 import { FilePicker } from "./components/FilePicker";
 import { SourceMapOverlay } from "./components/SourceMapOverlay";
 import styles from "./components/App.module.css";
-import { initBrgenLanguage } from "./brgen_language";
+import { initBrgenLanguage } from "./lsp/brgen_language";
 
 
 // inject reset CSS styles

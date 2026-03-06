@@ -1,8 +1,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { GeneratorService } from "../generator_service.js";
+import { GeneratorService } from "../s2j/generator_service.js";
 import { Language } from "../s2j/msg.js";
-import { languageRegistry, allLanguageIds } from "../languages.js";
+import { languageRegistry, allLanguageIds } from "../common/languages.js";
 import { UpdateTracer } from "../s2j/update.js";
 
 /**

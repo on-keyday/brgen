@@ -1,9 +1,9 @@
 import { create } from "zustand";
 import { Language } from "../s2j/msg";
-import { ConfigKey } from "../types";
+import { ConfigKey } from "../common/types";
 import { setBMUIConfig } from "../lib/bmgen/bm_caller.js";
 import { setEBMUIConfig } from "../lib/bmgen/ebm_caller.js";
-import { coreOptionDefs } from "../option_defs";
+import { coreOptionDefs } from "../common/option_defs";
 
 const STORAGE_KEY = "lang_specific_option";
 

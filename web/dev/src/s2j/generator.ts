@@ -7,7 +7,7 @@ import * as inc from "./cpp_include.js";
 import type { BMGenOption, COption, CallOption, CppOption, GoOption, JobResult, RustOption, TSOption } from "./msg.js";
 import  { Cpp2Option,Language, Rust2Option } from "./msg.js";
 import {ast2ts} from "ast2ts";
-import {ConfigKey} from "../types.js";
+import {ConfigKey} from "../common/types.js";
 import { BM_LANGUAGES, BM_LSP_LANGUAGES, generateBMCode } from "../lib/bmgen/bm_caller.js";
 import { EBM_LANGUAGES,EBM_LSP_LANGUAGES,generateEBMCode } from "../lib/bmgen/ebm_caller.js";
 

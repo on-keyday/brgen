@@ -1,6 +1,6 @@
-import { Language, LanguageList } from "./s2j/msg";
-import { BM_LANGUAGES, BM_LSP_LANGUAGES, setBMUIConfig } from "./lib/bmgen/bm_caller.js";
-import { EBM_LANGUAGES, EBM_LSP_LANGUAGES, setEBMUIConfig } from "./lib/bmgen/ebm_caller.js";
+import { Language, LanguageList } from "../s2j/msg";
+import { BM_LANGUAGES, BM_LSP_LANGUAGES, setBMUIConfig } from "../lib/bmgen/bm_caller.js";
+import { EBM_LANGUAGES, EBM_LSP_LANGUAGES, setEBMUIConfig } from "../lib/bmgen/ebm_caller.js";
 import { coreOptionDefs, OptionDef } from "./option_defs";
 
 export const LanguageCategory = {

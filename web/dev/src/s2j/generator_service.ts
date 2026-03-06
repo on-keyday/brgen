@@ -1,11 +1,11 @@
-import { WorkerFactory } from "./s2j/worker_factory";
-import { fixedWorkerMap } from "./s2j/workers";
-import { UpdateTracer } from "./s2j/update";
-import { UIModel, MappingInfo, updateGenerated } from "./s2j/generator";
-import { Language, JobResult } from "./s2j/msg";
-import { ConfigKey } from "./types";
-import { BM_LANGUAGES } from "./lib/bmgen/bm_caller.js";
-import { EBM_LANGUAGES } from "./lib/bmgen/ebm_caller.js";
+import { WorkerFactory } from "./worker_factory";
+import { fixedWorkerMap } from "./workers";
+import { UpdateTracer } from "./update";
+import { UIModel, MappingInfo, updateGenerated } from "./generator";
+import { Language, JobResult } from "./msg";
+import { ConfigKey } from "../common/types";
+import { BM_LANGUAGES } from "../lib/bmgen/bm_caller.js";
+import { EBM_LANGUAGES } from "../lib/bmgen/ebm_caller.js";
 
 /**
  * Result of a code generation request.
@@ -48,9 +48,9 @@ export class GeneratorService {
     readonly factory: InstanceType<typeof WorkerFactory>;
     readonly updateTracer: UpdateTracer;
     #initPromise: Promise<void> | null = null;
-    #customWorkerMaps: Readonly<{[key: string]: () => import("./s2j/job_mgr").IWorker}>[] | null;
+    #customWorkerMaps: Readonly<{[key: string]: () => import("./job_mgr").IWorker}>[] | null;
 
-    constructor(customWorkerMaps?: Readonly<{[key: string]: () => import("./s2j/job_mgr").IWorker}>[]) {
+    constructor(customWorkerMaps?: Readonly<{[key: string]: () => import("./job_mgr").IWorker}>[]) {
         this.factory = new WorkerFactory();
         this.updateTracer = new UpdateTracer();
         this.#customWorkerMaps = customWorkerMaps ?? null;
@@ -83,14 +83,14 @@ export class GeneratorService {
 
         if (BM_LANGUAGES.length > 0) {
             loaders.push(
-                import("./lib/bmgen/bm_workers.js").then(m => {
+                import("../lib/bmgen/bm_workers.js").then(m => {
                     this.factory.addWorker(m.bm_workers);
                 })
             );
         }
         if (EBM_LANGUAGES.length > 0) {
             loaders.push(
-                import("./lib/bmgen/ebm_workers.js").then(m => {
+                import("../lib/bmgen/ebm_workers.js").then(m => {
                     this.factory.addWorker(m.ebm_workers);
                 })
             );

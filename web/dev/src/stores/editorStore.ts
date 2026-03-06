@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { Language } from "../s2j/msg";
-import { allLanguageIds } from "../languages";
+import { allLanguageIds } from "../common/languages";
 
 const STORAGE_KEY_LANG = "lang_mode";
 const STORAGE_KEY_SOURCE = "source_code";
