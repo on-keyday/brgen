@@ -37,8 +37,8 @@ DEFINE_VISITOR(Statement_FIELD_DECL_before) {
     using namespace CODEGEN_NAMESPACE;
 
     // Check if this field has a variant type with a related_field (tagged union)
-    MAYBE(struct_refs, struct_union_members(ctx, ctx.field_decl.field_type));
-    if (member_refs.size() > 0) {
+    MAYBE(struct_members, struct_union_members(ctx, ctx.field_decl.field_type));
+    if (struct_members.size() > 0) {
         for (auto& member : struct_members) {
             ctx.config().decl_toplevel.push_back(member.second.to_writer());
         }
