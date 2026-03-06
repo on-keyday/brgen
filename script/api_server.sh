@@ -1,14 +1,19 @@
 #!/bin/bash
 set -euo pipefail
 
-SERVER_KIT=${1:-web/public/server-kit.tar.gz}
+SERVER_KIT=${1:-}
 
 
-# if web/public/server-kit.tar.gz is not exists
-# change to address https://on-keyday.github.io/brgen/server-kit.tar.gz
-if [ ! -f "$SERVER_KIT" ]; then
-    echo "No local server kit found at $SERVER_KIT, downloading from https://on-keyday.github.io/brgen/server-kit.tar.gz..."
-    # if directory does not exist, create it
+# if no server kit path is provided, or the file does not exist, download from the official URL
+if [ -z "$SERVER_KIT" ] || [ ! -f "$SERVER_KIT" ]; then
+    # if empty, use temporary directory and remove after use
+    if [ -z "$SERVER_KIT" ]; then
+        SERVER_KIT="$(mktemp)"
+        trap 'echo "Removing temporary server kit..."; rm -f "$SERVER_KIT"; echo "Removed temporary server kit."' EXIT
+        echo "Downloading server kit from https://on-keyday.github.io/brgen/server-kit.tar.gz to temporary file $SERVER_KIT..."
+    else
+        echo "No local server kit found at $SERVER_KIT, downloading from https://on-keyday.github.io/brgen/server-kit.tar.gz..."   
+    fi
     mkdir -p "$(dirname "$SERVER_KIT")"
     curl -f -L -o "$SERVER_KIT" https://on-keyday.github.io/brgen/server-kit.tar.gz
 else
