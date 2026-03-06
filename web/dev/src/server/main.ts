@@ -1,8 +1,9 @@
 import { serve } from "@hono/node-server";
-import { createApp, createGeneratorService } from "./core.js";
+import { createApp, createGeneratorService,patchWebWorker } from "./core.js";
 import { installNodePolyfills } from "./node_compat.js";
 
 installNodePolyfills();
+patchWebWorker()
 
 const port = parseInt(process.env.PORT ?? "8080", 10);
 

@@ -124,6 +124,7 @@ export class GeneratorService {
         getConfig: ConfigReader,
         onResult: GenerateCallback,
         updateTracer?: UpdateTracer, // for server side, each request may have its own tracer, so allow passing it in
+        logger?: (...args: any[]) => void, // optional logger for debug output
     ): Promise<void> {
         await this.init();
 
@@ -135,6 +136,13 @@ export class GeneratorService {
         };
 
         const ui: UIModel = {
+            debugLog: (...args: any[]) => {
+                if (logger) {
+                    logger(...args);
+                } else {
+                    console.log(...args);
+                }
+            },
             getWorkerFactory: () => this.factory,
             getUpdateTracer: () => updateTracer ?? this.updateTracer,
             getValue: () => source,

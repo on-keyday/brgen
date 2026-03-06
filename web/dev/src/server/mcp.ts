@@ -3,6 +3,7 @@ import { z } from "zod";
 import { GeneratorService } from "../generator_service.js";
 import { Language } from "../s2j/msg.js";
 import { languageRegistry, allLanguageIds } from "../languages.js";
+import { UpdateTracer } from "../s2j/update.js";
 
 /**
  * Creates and configures an MCP server exposing brgen's code generation
@@ -12,7 +13,7 @@ import { languageRegistry, allLanguageIds } from "../languages.js";
  *   - generate_code  : Generate code from .bgn source in a target language
  *   - list_languages : List all available target languages with metadata
  */
-export function createMcpServer(service: GeneratorService): McpServer {
+export function createMcpServer(service: GeneratorService,logger?: (...args: any[]) => void): McpServer {
     const server = new McpServer({
         name: "brgen",
         version: "1.0.0",
@@ -55,6 +56,7 @@ export function createMcpServer(service: GeneratorService): McpServer {
             }
 
             return new Promise((resolve) => {
+                const tracer = new UpdateTracer();
                 service.generate(
                     source,
                     lang as Language,
@@ -68,6 +70,8 @@ export function createMcpServer(service: GeneratorService): McpServer {
                             isError: result.isError,
                         });
                     },
+                    tracer,
+                    logger ? (...args) => logger("[Generation]", ...args) : undefined,
                 );
             });
         },

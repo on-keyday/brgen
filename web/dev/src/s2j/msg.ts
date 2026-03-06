@@ -163,7 +163,7 @@ export const LanguageToWorkerType = Object.freeze({
 export type LanguageKey = keyof LanguageToOptionType;
 export type TraceID = {id :number, cancel :SharedArrayBuffer|null};
 let sharedArrayBufferInfoShown = false;
-export const newTraceID = (id :number) :TraceID => {
+export const newTraceID = (id :number,logger: (...args: any[]) => void = console.log) :TraceID => {
     if(globalThis.SharedArrayBuffer === undefined) {
         if(!sharedArrayBufferInfoShown) {
             console.warn("SharedArrayBuffer is not supported in this environment. Cancellation of long running tasks will not be available.");
@@ -172,7 +172,7 @@ export const newTraceID = (id :number) :TraceID => {
         return {id, cancel :null};
     }
     if(!sharedArrayBufferInfoShown){
-        console.log("cancellation of long running tasks is enabled.");
+        logger?.("cancellation of long running tasks is enabled.");
         sharedArrayBufferInfoShown = true;
     }
     return {id, cancel :new SharedArrayBuffer(4)};

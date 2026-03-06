@@ -18,6 +18,7 @@ export interface UIModel {
     getUpdateTracer(): UpdateTracer;
     getValue():string;
     setDefault():void;
+    debugLog(...args :any[]):void;
     setGenerated(s :string,lang :string):void;
     getLanguageConfig(lang :Language, key :ConfigKey):any;
     mappingCode(mappingInfo :MappingInfo[],s :JobResult,lang :Language,offset :number):void;
@@ -64,7 +65,7 @@ const handleLanguage = async (ui :UIModel,s :JobResult,generate:(factory :caller
     if(ui.getUpdateTracer().editorAlreadyUpdated(s)) {
         return;
     }
-    console.log(res);
+    ui.debugLog(res);
     if(res.stdout === undefined || res.stdout === "") {
         if(res.stderr!==undefined&&res.stderr!==""){
             ui.setGenerated(res.stderr,"plaintext");
@@ -131,13 +132,6 @@ const handleCpp = async (ui :UIModel,  s :JobResult) => {
         if(isMappingInfoStruct(mappingInfo)) {
             ui.mappingCode(mappingInfo.line_map,s,Language.CPP,0);
         }
-        /*
-        if(compileViaAPI===true) {
-            compileCpp(result.stdout!).then((res)=>{
-                console.log(res);
-            })
-        }
-        */
     }    
 }
 
@@ -204,8 +198,8 @@ const handleJSONOutput = async (ui :UIModel,id :TraceID,value :string,generator:
         return;
     }
     if(s.stdout===undefined) throw new Error("stdout is undefined");
-    console.log(s.stdout);
-    console.log(s.stderr);
+    ui.debugLog(s.stdout);
+    ui.debugLog(s.stderr);
     const js = JSON.parse(s.stdout);
     ui.setGenerated(JSON.stringify(js,null,4),"json");
     return;
@@ -318,7 +312,7 @@ export const handleBM = async (ui :UIModel, s :JobResult,lang :string) => {
 
 export const updateGenerated = async (ui :UIModel,lang :Language) => {
     const value = ui.getValue();
-    const traceID = ui.getUpdateTracer().getTraceID();
+    const traceID = ui.getUpdateTracer().getTraceID(ui.debugLog);
     if(value === ""){
         ui.setDefault();
         return;
@@ -336,19 +330,19 @@ export const updateGenerated = async (ui :UIModel,lang :Language) => {
         }
         throw e;
     });
-    if(ui.getUpdateTracer().editorAlreadyUpdated(s)) {
+    if(ui.getUpdateTracer().editorAlreadyUpdated(s,ui.debugLog)) {
         return;
     }
     if(s.err) {
         throw s.err;
     }
     if(s.stdout===undefined) throw new Error("stdout is undefined");
-    console.log(s.stdout);
-    console.log(s.stderr);
+    ui.debugLog(s.stdout);
+    ui.debugLog(s.stderr);
     const js = JSON.parse(s.stdout);
     if(ast2ts.isAstFile(js)&&js.ast){
         const ts = ast2ts.parseAST(js.ast);
-        console.log(ts);
+        ui.debugLog(ts);
     }
     switch(lang){
         case Language.JSON_AST:

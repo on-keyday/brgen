@@ -13,12 +13,130 @@ import { BM_LANGUAGES } from "../lib/bmgen/bm_caller.js";
 import { EBM_LANGUAGES } from "../lib/bmgen/ebm_caller.js";
 */
 import { createMcpServer } from "./mcp.js";
+import { UpdateTracer } from "../s2j/update.js";
 
 import WebWorker  from "web-worker";
-import { UpdateTracer } from "../s2j/update.js";
-if (typeof globalThis.Worker === "undefined") {
-    // @ts-ignore
-    globalThis.Worker = WebWorker;
+
+export const patchWebWorker = (stdioHook? :(level: string, ...args: any[]) => void) => {
+
+    if (typeof globalThis.Worker === "undefined") {
+        const OriginalWorker = WebWorker;
+        if(!stdioHook) {
+            globalThis.Worker = OriginalWorker;
+            return;
+        }
+
+        // @ts-ignore
+        globalThis.Worker = class {
+
+            worker : InstanceType<typeof OriginalWorker>;
+
+            messageListener: ((this: any, ev: MessageEvent) => any) | null = null;
+            errorListener: ((this: any, ev: ErrorEvent) => any) | null = null;
+            
+            constructor(scriptURL: string | URL, options?: any) {
+                const originalPath = scriptURL.toString();
+
+                // 注入する初期化コード
+                // 1. console.log をカスタム関数に置き換え
+                // 2. 本来のスクリプトを import する
+                const bootstrapCode = `
+                    (async function() {
+                        const { parentPort, isMainThread } = await import('worker_threads');
+        
+                        // console メソッドを一括置換
+                        ['log', 'warn', 'error', 'info', 'debug'].forEach(method => {
+                            console[method] = (...args) => {
+                                // メインスレッドへログデータを送信
+                                /*
+                                parentPort.postMessage({
+                                    type: 'WORKER_LOG',
+                                    method: method,
+                                    payload: args,
+                                    threadId: import('worker_threads').threadId
+                                });
+                                */
+                            };
+                        });
+
+                        /*
+                        console.log(!isMainThread ? "Worker environment detected" : "Not in a worker environment");
+                        console.log("postMessage is", globalThis.postMessage.toString(),globalThis.postMessage === global.self.postMessage);
+
+                        globalThis.postMessage = (message, transfer) => {
+                            console.trace("Worker postMessage");
+                            try {
+                                parentPort.postMessage(message, transfer);
+                            } catch (err) {
+                                console.error("Failed to post message from worker:", err);
+                            }
+                        }
+                        */
+
+                        // 本来の Worker スクリプトを非同期で読み込み
+                        await import('${originalPath}').catch(err => {
+                            console.error('Worker load error:', err);
+                        });
+                    })();
+                `;
+
+                console.warn("Initializing patched Worker with bootstrap code",bootstrapCode);
+
+                // コードを Base64 化して Data URI として渡す
+                const blob = `data:text/javascript;base64,${Buffer.from(bootstrapCode).toString('base64')}`;
+                
+                const worker = new OriginalWorker(blob, options);
+                this.worker = worker;
+                /*
+
+                const originalDispatchEvent = worker.dispatchEvent.bind(worker);
+
+                worker.dispatchEvent = (event: any): boolean => {
+                    console.trace(`Worker event:`, event);
+                    if (event?.data?.type === 'WORKER_LOG') {
+                        const { method, payload, threadId } = event.data;
+                        stdioHook?.(method, `[Worker ${threadId}]`, ...payload);
+                        return true; // indicate that we've handled the event
+                    }
+                    if(event?.type === "message" && this.messageListener) {
+                        console.warn(`Handling message event`,event.data);
+                        this.messageListener(event);
+                        return true;
+                    }
+                    if(event?.type === "error" && this.errorListener) {
+                        console.warn(`Handling error event`);
+                        this.errorListener(event);
+                        return true;
+                    }
+                    return originalDispatchEvent(event);
+                }
+                */
+            }
+
+            postMessage(message: any, transfer?: any) {
+                //console.trace(`Posting message to worker:`, message);
+                this.worker.postMessage(message, transfer);
+            }
+
+            addEventListener(type: string, listener: (this: any, ev: MessageEvent) => any) {
+                /*
+                console.trace(`add ${type} listener`)
+                if (type === "message") {
+                    if(this.messageListener) {
+                        console.warn("Overwriting existing message listener");
+                    }
+                    this.messageListener = listener;
+                } else if (type === "error") {
+                    if(this.errorListener) {
+                        console.warn("Overwriting existing error listener");
+                    }
+                    this.errorListener = listener as any;
+                }
+                */
+               this.worker.addEventListener(type as any, listener);
+            }
+        };
+    }
 }
 
 export async function createGeneratorService(): Promise<GeneratorService> {
