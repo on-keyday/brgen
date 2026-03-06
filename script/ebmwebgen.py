@@ -157,7 +157,7 @@ const convert{upper_ui_lang_name}OptionToFlags = (opt) => {{
             if (
                 "argdesc" in flag and flag["argdesc"]
             ):  # Check if it's a flag that takes an argument
-                code += f"""    if (opt.{flag_var_name} !== "") {{ // Assuming empty string as default for UI
+                code += f"""    if (opt.{flag_var_name} != null && opt.{flag_var_name} !== "") {{
         flags.push("--{flag_name}", opt.{flag_var_name});
     }}
 """
