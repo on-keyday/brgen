@@ -19,6 +19,8 @@ function clean_up {
     fi
 }
 
+trap clean_up EXIT
+
 # if no server kit path is provided, or the file does not exist, download from the official URL
 if [ -z "$SERVER_KIT" ] || [ ! -f "$SERVER_KIT" ]; then
     # if empty, use temporary directory and remove after use
