@@ -19,7 +19,6 @@
   "devDependencies": {
     "@eslint/js": "^9.39.3",
     "@preact/preset-vite": "^2.9.0",
-    "cross-env": "^10.1.0",
     "eslint": "^9.39.3",
     "tsx": "^4.21.0",
     "typescript": "^5.7.0",

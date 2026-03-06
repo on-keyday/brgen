@@ -507,6 +507,8 @@ jobs:
         run: |
           chmod +x ./script/pack_server_kit.sh
           ./script/pack_server_kit.sh
+          cp script/api_server.sh web/public/
+          chmod +x web/public/api_server.sh
       - name: Upload artifact
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:

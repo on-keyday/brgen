@@ -27,8 +27,14 @@ echo "==> Packing server kit..."
 
 # ---- 1. web/dev: package.json + all source (including lib/ artifacts) ----
 mkdir -p "$STAGING_DIR/web/dev"
-cp web/dev/package.json "$STAGING_DIR/web/dev/"
-cp web/dev/package-lock.json "$STAGING_DIR/web/dev/"
+
+EXCLUDE_PATTERN="monaco-editor|preact$|destyle.css|@types/emscripten"
+
+# 不要なものを消した package.json を作成
+jq "
+  (select(.dependencies != null) | .dependencies) |= with_entries(select(.key | test(\"$EXCLUDE_PATTERN\") | not)) |
+  (select(.devDependencies != null) | .devDependencies) |= with_entries(select(.key | test(\"$EXCLUDE_PATTERN\") | not))
+" web/dev/package.json > "$STAGING_DIR/web/dev/package.json"
 cp web/dev/tsconfig.json "$STAGING_DIR/web/dev/"
 cp web/dev/vite.config.ts "$STAGING_DIR/web/dev/"
 cp web/dev/vitest.config.ts "$STAGING_DIR/web/dev/"
@@ -76,9 +82,13 @@ else
     echo "WARNING: src/tool/json2rust/pkg/ not found -- json2rust dependency will be missing"
 fi
 
+
+
 # ---- 4. Create the .tar.gz ----
 mkdir -p "$OUTPUT_DIR"
 (
+    cd "$STAGING_DIR/web/dev"
+    npm install --package-lock-only
     cd "$STAGING_DIR"
     tar -czf "$OUTPUT_FILE" web/dev astlib/ast2ts src/tool/json2rust
 )
