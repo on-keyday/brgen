@@ -481,6 +481,12 @@ jobs:
             MODE=Debug
           fi
           . build.sh wasm-em $MODE
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        if: matrix.env == 'development'
+        with:
+          node-version: "23.11"
+          cache: "npm"
       - name: Run API server tests
         if: matrix.env == 'development'
         run: |
