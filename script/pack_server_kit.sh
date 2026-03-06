@@ -43,22 +43,13 @@ cp web/dev/vitest.config.ts "$STAGING_DIR/web/dev/"
 # Exclude node_modules if somehow present inside src/.
 # if rsync is not available, can fallback to cp -r but rsync is more robust for copying directories with many files.
 mkdir -p "$STAGING_DIR/web/dev/src"
-if ! command -v rsync &> /dev/null; then
-    echo "rsync not found, falling back to cp -r (may be less efficient)"
-    cp -r web/dev/src/server "$STAGING_DIR/web/dev/src/server"
-    cp -r web/dev/src/lib "$STAGING_DIR/web/dev/src/lib"
-    cp -r web/dev/src/s2j "$STAGING_DIR/web/dev/src/s2j"
-    cp -r web/dev/src/stores "$STAGING_DIR/web/dev/src/stores"
-    cp -r web/dev/src/common "$STAGING_DIR/web/dev/src/common"
-    cp -r web/dev/src/shims "$STAGING_DIR/web/dev/src/shims"
-else
-    rsync -a --exclude='node_modules' web/dev/src/server "$STAGING_DIR/web/dev/src/server"
-    rsync -a --exclude='node_modules' web/dev/src/lib "$STAGING_DIR/web/dev/src/lib"
-    rsync -a --exclude='node_modules' web/dev/src/s2j "$STAGING_DIR/web/dev/src/s2j"
-    rsync -a --exclude='node_modules' web/dev/src/stores "$STAGING_DIR/web/dev/src/stores"
-    rsync -a --exclude='node_modules' web/dev/src/common "$STAGING_DIR/web/dev/src/common"
-    rsync -a --exclude='node_modules' web/dev/src/shims "$STAGING_DIR/web/dev/src/shims"
-fi
+cp -r web/dev/src/server "$STAGING_DIR/web/dev/src/server"
+cp -r web/dev/src/lib "$STAGING_DIR/web/dev/src/lib"
+cp -r web/dev/src/s2j "$STAGING_DIR/web/dev/src/s2j"
+cp -r web/dev/src/stores "$STAGING_DIR/web/dev/src/stores"
+cp -r web/dev/src/common "$STAGING_DIR/web/dev/src/common"
+cp -r web/dev/src/shims "$STAGING_DIR/web/dev/src/shims"
+
 
 # ---- 2. ast2ts package (file: dependency) ----
 if [ -d "astlib/ast2ts/out" ]; then
