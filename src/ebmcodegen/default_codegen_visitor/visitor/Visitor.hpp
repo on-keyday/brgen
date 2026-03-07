@@ -13,6 +13,7 @@ bool methods_inner_class = false;
 std::string bool_true = "true";
 std::string bool_false = "false";
 std::string bool_type = "bool";
+std::string void_type = ""; // for compatibility
 std::string setter_status_ok = "";
 std::string setter_status_failure = "";
 std::string struct_keyword = "struct";
@@ -68,6 +69,7 @@ std::string float_prefix = "f";
 std::string float_suffix = "";
 std::string function_define_keyword = "fn";
 std::function<expected<Result>(Result return_type, std::string_view name, CodeWriter params, Context_Statement_FUNCTION_DECL& ctx)> function_definition_start_wrapper;
+std::function<expected<Result>(Context_Statement_FUNCTION_DECL& ctx)> function_decl_custom;
 std::string encoder_return_type = "EncoderReturn";
 std::string decoder_return_type = "DecoderReturn";
 std::string encoder_input_type = "EncoderInput";
@@ -115,6 +117,7 @@ std::function<expected<Result>(Context_Expression_IS_ERROR& ctx)> is_error_visit
 std::function<expected<Result>(Context_Statement_ERROR_RETURN& ctx)> error_return_visitor;
 std::function<expected<Result>(Context_Statement_ERROR_REPORT& ctx)> error_report_visitor;
 
+std::function<expected<Result>(Context_Expression_CALL&ctx)> call_custom;
 std::function<expected<Result>(Context_Expression_AS_ARG& ctx)> as_arg_visitor;
 
 std::function<expected<Result>(Context_Statement_ENUM_DECL& ctx)> enum_decl_visitor;

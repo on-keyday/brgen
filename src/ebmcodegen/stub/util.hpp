@@ -901,4 +901,58 @@ namespace ebmcodegen::util {
         }
         return result;
     }
+
+    constexpr bool is_int_literal(auto&& kind) { // argument maybe TypeKind or optional<TypeKind>
+        return kind == ebm::ExpressionKind::LITERAL_INT || kind == ebm::ExpressionKind::LITERAL_INT64;
+    }
+
+    ebmgen::expected<std::optional<std::pair<ebm::TypeKind,ebm::TypeRef>>> may_cause_allocation_type(auto&& ctx,ebm::TypeRef type){
+        ebmgen::MappingTable& m = get_visitor(ctx).module_;
+        MAYBE(t, m.get_type(type));
+        switch (t.body.kind) {
+            case ebm::TypeKind::INT:
+            case ebm::TypeKind::UINT:
+            case ebm::TypeKind::FLOAT:
+            case ebm::TypeKind::BOOL: {
+                return std::nullopt;
+            }
+            case ebm::TypeKind::VECTOR: {
+                MAYBE(element_type_ref, t.body.element_type());
+                MAYBE(child,may_cause_allocation_type(ctx, element_type_ref));
+                if(child){ // if element cause it, return it directly, no need to wrap with vector
+                    return child;
+                }
+                return std::make_pair(t.body.kind, type);
+            }
+            case ebm::TypeKind::ARRAY: {
+                MAYBE(element_type_ref, t.body.element_type());
+                return may_cause_allocation_type(ctx, element_type_ref);
+            }
+            case ebm::TypeKind::STRUCT: {
+                MAYBE(decl,ebmgen::access_field<"struct_decl">(m,t.body.id()));
+                if(decl.is_fixed_size()){
+                    return std::nullopt;
+                }
+                return std::make_pair(t.body.kind, type);
+            }
+            case ebm::TypeKind::RECURSIVE_STRUCT: {
+                return std::make_pair(t.body.kind, type);
+            }
+            case ebm::TypeKind::ENUM: {
+                MAYBE(decl,ebmgen::access_field<"enum_decl">(m,t.body.id()));
+                if(is_nil(decl.base_type)){
+                    return std::nullopt;
+                }
+                return may_cause_allocation_type(ctx, decl.base_type);
+            }
+            case ebm::TypeKind::PTR:
+            case ebm::TypeKind::OPTIONAL: {
+                MAYBE(inner_type_ref, t.body.inner_type());
+                return may_cause_allocation_type(ctx, inner_type_ref);
+            }
+            default: {
+                return std::make_pair(t.body.kind, type);
+            }
+        }
+    }
 }  // namespace ebmcodegen::util

@@ -17,6 +17,9 @@
 
 #include "../codegen.hpp"
 #include "ebm/extended_binary_module.hpp"
+#include "ebmcodegen/stub/context.hpp"
+#include "ebmcodegen/stub/make_visitor.hpp"
+#include "ebmcodegen/stub/util.hpp"
 #include "escape/escape.h"
 DEFINE_VISITOR(entry_before) {
     using namespace CODEGEN_NAMESPACE;
@@ -82,6 +85,8 @@ DEFINE_VISITOR(entry_before) {
     config.encoder_input_type = "anytype";  // writer: anytype
     config.decoder_input_type = "anytype";  // reader: anytype
 
+    config.void_type = "void";
+
     // Default values
     // For !void return type, `return;` is correct Zig (not `return {};`)
     config.default_value_option.encoder_return_init = "";
@@ -93,6 +98,10 @@ DEFINE_VISITOR(entry_before) {
 
     // Enum member separator (comma in Zig)
     config.enum_member_separator = ",";
+    config.byte_aligned_int=false;
+
+    config.alt_binary_op[ebm::BinaryOp::logical_and] ="and";
+    config.alt_binary_op[ebm::BinaryOp::logical_or] = "or";
 
     // === Type wrappers ===
 
@@ -176,10 +185,106 @@ DEFINE_VISITOR(entry_before) {
     // Zig parameters use colon separator: name: Type
     config.param_type_separator = ": ";
 
+    config.param_visitor = [](Context_Statement_PARAMETER_DECL& ctx, Result typ) -> expected<Result> {
+        if (ctx.param_decl.is_state_variable()) {
+            // For state variables, we pass a pointer to allow modification
+            return CODE(ctx.identifier(), ": *", typ.to_writer());
+        }
+        if(ctx.get_kind(ctx.param_decl.param_type) == ebm::TypeKind::DECODER_INPUT&&
+           ctx.config().current_param_needs_allocation) {
+            // For encoder/decoder input types, we use anytype pattern
+            return CODE(ctx.identifier(), ": ", typ.to_writer(),", allocator: std.mem.Allocator");
+        }
+        return CODE(ctx.identifier(), ": ", typ.to_writer());
+    };
+
+    config.call_custom = [](Context_Expression_CALL& ctx) -> expected<Result> {
+        ctx.config().current_argument_needs_allocation = false; // reset before processing arguments 
+        auto member = ctx.get_field<"member.body.id.id">(ctx.call_desc.callee);
+        if(member){
+            auto parent_format = ctx.get_field<"func_decl.parent_format">(member);
+            if(parent_format){
+                auto name=ctx.identifier(*parent_format);
+            }
+            if(auto found = ctx.config().needs_allocation.find(*member); found != ctx.config().needs_allocation.end())  {
+                ctx.config().current_argument_needs_allocation = found->second;
+            }
+        }
+        return pass;
+    };
+
+    config.as_arg_visitor = [](Context_Expression_AS_ARG& ctx) -> expected<Result> {
+        MAYBE(target, ctx.visit(ctx.target_expr));
+        auto kind = ctx.get_kind(ctx.type);
+        if (kind == ebm::TypeKind::DECODER_INPUT && ctx.config().current_argument_needs_allocation) {
+            // For decoder input types, we pass the allocator as well
+            return CODE(target.to_writer(), ", allocator");
+        }
+        return target;
+    };
+
     // === Function declaration ===
     // Zig methods: pub fn name(self: *Self, params...) RetType { ... }
     // Zig free functions: pub fn name(params...) RetType { ... }
     // Setters are prefixed with set_ to avoid duplicate names with getters
+
+    config.function_decl_custom = [](Context_Statement_FUNCTION_DECL& ctx) -> expected<Result> {
+        if(ctx.func_decl.kind ==ebm::FunctionKind::DECODE){
+            if(auto found = ctx.config().needs_allocation.find(ctx.item_id); found != ctx.config().needs_allocation.end()){
+                ctx.config().current_param_needs_allocation = found->second;
+                return pass;
+            }
+            bool cause_alloc = false;
+            auto detector = make_visitor<void>(ctx.visitor)
+                .name("AllocationDetector")
+                .not_before_or_after()
+                .not_context("Expression")
+                .not_context("Type")
+                .on([&](auto&& self,Context_Statement_FUNCTION_DECL& ctx) -> expected<void> {
+                    if(auto found = ctx.config().needs_allocation.find(ctx.item_id); found != ctx.config().needs_allocation.end()){
+                        cause_alloc = cause_alloc || found->second;
+                        return {};
+                    }
+                    auto name = ctx.identifier(ctx.func_decl.parent_format);
+                    bool current_cause_alloc = cause_alloc;
+                    cause_alloc = false; // reset for this function
+                    MAYBE_VOID(children,ctx.visit<void>(self,ctx.func_decl.body));
+                    if(cause_alloc){
+                        ctx.config().needs_allocation[ctx.item_id] = true;
+                    }
+                    cause_alloc = cause_alloc || current_cause_alloc; // propagate up if any child causes allocation
+                    return {};
+                })
+                .on([&](auto&& self,Context_Statement_READ_DATA& ctx) -> expected<void> {
+                    if(auto found =ctx.config().allocation_detector_cache.find(ctx.read_data.data_type); found != ctx.config().allocation_detector_cache.end()){
+                        cause_alloc = cause_alloc || found->second;
+                        return {}; // anyway, traverse all children which
+                    }
+                    MAYBE(may_alloc, may_cause_allocation_type(ctx, ctx.read_data.data_type));
+                    if(may_alloc) {
+                        if(may_alloc->first == ebm::TypeKind::STRUCT){
+                            if(auto found = ctx.config().allocation_detector_cache.find(may_alloc->second); found != ctx.config().allocation_detector_cache.end()){
+                                cause_alloc = found->second;
+                                ctx.config().allocation_detector_cache[ctx.read_data.data_type] = cause_alloc;
+                                return {};
+                            }
+                            MAYBE(struct_decl, ctx.get_field<"body.id.struct_decl">(may_alloc->second));
+                            MAYBE(decode_fn,struct_decl.decode_fn());
+                            MAYBE_VOID(traverse,ctx.visit<void>(self,decode_fn));
+                        }
+                        else{
+                            cause_alloc = true;
+                        }
+                    }
+                    return {};
+                })
+                .on_default_traverse_children()
+                .build();
+            MAYBE_VOID(result, ctx.visit<void>(detector, ctx.item_id));
+            ctx.config().current_param_needs_allocation = cause_alloc;
+        }
+        return pass;
+    };
     config.function_definition_start_wrapper = [&](Result return_type, std::string_view name, CodeWriter params, Context_Statement_FUNCTION_DECL& fctx) -> expected<Result> {
         CodeWriter w;
         auto ret_str = return_type.to_string();
@@ -222,6 +327,9 @@ DEFINE_VISITOR(entry_before) {
     // Zig requires explicit builtins for type conversions
     config.type_cast_custom = [&](Context_Expression_TYPE_CAST& tctx) -> expected<Result> {
         MAYBE(source_expr, ctx.visit(tctx.type_cast_desc.source_expr));
+        if(is_int_literal(ctx.get_kind(tctx.type_cast_desc.source_expr))){
+            return source_expr; // for int literals, just return the literal without a cast (Zig can infer the type)
+        }
         MAYBE(target_type, ctx.visit(tctx.type));
         auto cast_kind = tctx.type_cast_desc.cast_kind;
         switch (cast_kind) {
@@ -237,8 +345,8 @@ DEFINE_VISITOR(entry_before) {
             case ebm::CastType::SIGNED_TO_UNSIGNED:
             case ebm::CastType::UNSIGNED_TO_SIGNED:
             case ebm::CastType::LARGE_INT_TO_SMALL_INT:
-                // Zig: @intCast(expr) - works for widening, narrowing, signed/unsigned
-                return CODE("@intCast(", source_expr.to_writer(), ")");
+                // Zig: @as(TargetType, expr) - works for widening, narrowing, signed/unsigned
+                return CODE("@as(",target_type.to_writer(),",", source_expr.to_writer(), ")");
             case ebm::CastType::FLOAT_TO_INT_BIT:
             case ebm::CastType::INT_TO_FLOAT_BIT:
                 // Zig: @bitCast(expr) for reinterpret casts
@@ -392,6 +500,8 @@ DEFINE_VISITOR(entry_before) {
         }
         return CODELINE("// TODO(ebm2zig): READ_DATA not yet implemented");
     };
+
+
 
     return pass;
 }

@@ -247,7 +247,7 @@ namespace ebmgen {
         MAYBE(par_encdec, ctx.state().get_format_encode_decode(base));
         MAYBE(cur_encdec, ctx.state().get_format_encode_decode(ctx.state().get_current_node()));
 
-        EBM_MEMBER_ACCESS(enc_access, cur_encdec.encode_type, base_ref, par_encdec.encode);
+        EBM_MEMBER_ACCESS(enc_access, par_encdec.encode_type, base_ref, par_encdec.encode);
         call_desc.callee = enc_access;
         MAYBE(enc_in_def, ctx.repository().get_expression(cur_encdec.encoder_input));
         EBM_AS_ARG(enc_in_arg, enc_in_def.body.type, cur_encdec.encoder_input);
@@ -388,7 +388,7 @@ namespace ebmgen {
                 }
                 EBM_BLOCK(enc_block, std::move(encode_loop));
                 EBM_ENDIAN_CONVERT(conv, ebm::StatementKind::INT_TO_ARRAY, ebm::Endian::big, casted, buffer, enc_block);
-                return enc_block;
+                return conv;
             });
         if (!do_it) {
             return unexpect_error(std::move(do_it.error()));

@@ -382,7 +382,7 @@ namespace ebmgen {
         MAYBE(par_encdec, ctx.state().get_format_encode_decode(base));
         MAYBE(cur_encdec, ctx.state().get_format_encode_decode(ctx.state().get_current_node()));
 
-        EBM_MEMBER_ACCESS(dec_access, cur_encdec.decode_type, base_ref, par_encdec.decode);
+        EBM_MEMBER_ACCESS(dec_access, par_encdec.decode_type, base_ref, par_encdec.decode);
         call_desc.callee = dec_access;
 
         MAYBE(dec_in_def, ctx.repository().get_expression(cur_encdec.decoder_input));

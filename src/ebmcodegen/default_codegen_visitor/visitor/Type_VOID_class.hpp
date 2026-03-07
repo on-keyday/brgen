@@ -21,6 +21,6 @@
 DEFINE_VISITOR(Type_VOID) {
     using namespace CODEGEN_NAMESPACE;
     /*here to write the hook*/
-    return "";
+    return ctx.config().void_type;
 }
 

@@ -17,6 +17,7 @@
 #include "load_json.hpp"
 #include "convert.hpp"
 #include "debug_printer.hpp"  // Include the new header
+#include "stdin.hpp"
 #include "transform/control_flow_graph.hpp"
 #include "unicode/utf/convert.h"
 #include "wrap/argv.h"
@@ -157,8 +158,7 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
         cerr << "error: input file is required\n";
         return 1;
     }
-    std::variant<std::monostate, futils::file::MMap, std::string> mmapped_input;
-    std::optional<futils::view::rvec> stdin_data;
+    ebmgen::Stdin stdin_data;
     if (flags.input == "-") {
         if (flags.interactive) {
             cerr << "error: interactive mode is not supported for stdin input\n";
@@ -168,26 +168,10 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
             cerr << "error: cannot use auto input format detection for stdin input. please specify --input-format\n";
             return 1;
         }
-        auto& in = futils::wrap::cin_wrap().get_file();
-        // try mmap first
-        auto mmapped = in.mmap(futils::file::r_perm);
-        if (!mmapped) {
-            // this means input is not seekable, read all data
-            std::string data;
-            auto ok = in.read_all([&](auto input) {
-                data.append((const char*)input.data(), input.size());
-                return true;
-            });
-            if (!ok) {
-                cerr << "error: failed to read stdin: " << ok.error().template error<std::string>() << '\n';
-                return 1;
-            }
-            mmapped_input = std::move(data);
-            stdin_data = std::get<std::string>(mmapped_input);
-        }
-        else {
-            mmapped_input = std::move(*mmapped);
-            stdin_data = std::get<futils::file::MMap>(mmapped_input).read_view();
+        auto stdin_result = stdin_data.try_read_stdin();
+        if (!stdin_result) {
+            cerr << "error: failed to read stdin: " << stdin_result.error().error<std::string>() << '\n';
+            return 1;
         }
     }
     ebmgen::verbose_error = flags.verbose;
@@ -215,8 +199,8 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
     if (flags.input_format == InputFormat::EBM) {
         futils::binary::reader r{futils::view::rvec{}};
         futils::error::Error<> err;
-        if (stdin_data) {
-            r.reset_buffer(*stdin_data);
+        if (stdin_data.stdin_data) {
+            r.reset_buffer(*stdin_data.stdin_data);
             err = ebm.decode(r);
         }
         else {
@@ -244,8 +228,8 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
     }
     else if (flags.input_format == InputFormat::JSON_EBM) {
         ebmgen::expected<ebm::ExtendedBinaryModule> ret;
-        if (stdin_data) {
-            ret = ebmgen::decode_json_ebm(*stdin_data);
+        if (stdin_data.stdin_data) {
+            ret = ebmgen::decode_json_ebm(*stdin_data.stdin_data);
         }
         else {
             ret = ebmgen::load_json_ebm(flags.input);
@@ -268,10 +252,10 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
             CAPABILITY capabilities = S2J_CAPABILITY_FILE | S2J_CAPABILITY_IMPORTER | S2J_CAPABILITY_PARSER | S2J_CAPABILITY_AST_JSON | S2J_CAPABILITY_DIRECT_AST_PASS;
             const char* argv[] = {"libs2j", "--no-color", "--print-json", "--print-on-error", input, nullptr, nullptr, nullptr, nullptr};
             std::string argv_size;
-            if (stdin_data) {
+            if (stdin_data.stdin_data) {
                 argv[4] = "--sized-argv";
-                argv[5] = (const char*)stdin_data->data();
-                futils::number::to_string(argv_size, stdin_data->size());
+                argv[5] = (const char*)stdin_data.stdin_data->data();
+                futils::number::to_string(argv_size, stdin_data.stdin_data->size());
                 argv[6] = "--sized-argv-size";
                 argv[7] = argv_size.c_str();
                 capabilities |= S2J_CAPABILITY_ARGV;
@@ -305,8 +289,8 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
             }
         }
         else {
-            if (stdin_data) {
-                ast = ebmgen::load_json_file(*stdin_data, nullptr);
+            if (stdin_data.stdin_data) {
+                ast = ebmgen::load_json_file(*stdin_data.stdin_data, nullptr);
             }
             else {
                 ast = ebmgen::load_json(flags.input, nullptr);

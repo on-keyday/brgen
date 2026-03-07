@@ -12,6 +12,7 @@
 #include <set>
 #include <unordered_map>
 #include "ebmgen/mapping.hpp"
+#include "ebmgen/stdin.hpp"
 #include "flags.hpp"
 #if defined(__EMSCRIPTEN__)
 #include <emscripten.h>
@@ -114,21 +115,34 @@ namespace ebmcodegen {
                 futils::wrap::cerr_wrap() << flags.program_name << ": " << "no input file\n";
                 return 1;
             }
+            ebmgen::Stdin stdin_data;
+            futils::file::View view;
             ebm::ExtendedBinaryModule ebm;
             auto& cout = futils::wrap::cout_wrap();
             auto& cerr = futils::wrap::cerr_wrap();
             flags.debug_timing("start loading file");
-            futils::file::View view;
-            if (auto res = view.open(flags.input); !res) {
-                cerr << flags.program_name << ": " << res.error().template error<std::string>() << '\n';
-                return 1;
+            futils::binary::reader r{futils::view::rvec{}};
+            if (flags.input == "-") {
+                auto stdin_result = stdin_data.try_read_stdin();
+                if (!stdin_result) {
+                    cerr << flags.program_name << ": " << "failed to read stdin: " << stdin_result.error().error<std::string>() << '\n';
+                    return 1;
+                }
+                flags.debug_timing("stdin read");
+                r.reset_buffer(*stdin_data.stdin_data);
             }
-            if (!view.data()) {
-                cerr << flags.program_name << ": " << "Empty file\n";
-                return 1;
+            else {
+                if (auto res = view.open(flags.input); !res) {
+                    cerr << flags.program_name << ": " << res.error().template error<std::string>() << '\n';
+                    return 1;
+                }
+                if (!view.data()) {
+                    cerr << flags.program_name << ": " << "Empty file\n";
+                    return 1;
+                }
+                flags.debug_timing("file opened");
+                r.reset_buffer(view);
             }
-            flags.debug_timing("file opened");
-            futils::binary::reader r{view};
             auto err = ebm.decode(r);
             flags.debug_timing("file decoded");
             if (err) {

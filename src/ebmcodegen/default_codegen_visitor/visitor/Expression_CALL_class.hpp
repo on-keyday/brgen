@@ -20,19 +20,27 @@
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 // This code is included within the visit_Expression_CALL function.
 // We can use variables like `this` (for Visitor) and `call_desc` directly.
-CodeWriter w;
-
-// Get the identifier name from call_desc.callee
-MAYBE(callee, visit_Expression(*this, call_desc.callee));
-w.write(callee.to_writer(), "(");
-bool first = true;
-for (auto& arg : call_desc.arguments.container) {
-    MAYBE(arg_str, visit_Expression(*this, arg));
-    if (!first) {
-        w.write(",");
+#include "../codegen.hpp"
+DEFINE_VISITOR(Expression_CALL) {
+    using namespace CODEGEN_NAMESPACE;
+    if(ctx.config().call_custom) {
+        CALL_OR_PASS(res, ctx.config().call_custom(ctx));
     }
-    first = false;
-    w.write(arg_str.to_writer());
+    /*here to write the hook*/
+    CodeWriter w;
+
+    // Get the identifier name from call_desc.callee
+    MAYBE(callee, ctx.visit(ctx.call_desc.callee));
+    w.write(callee.to_writer(), "(");
+    bool first = true;
+    for (auto& arg : ctx.call_desc.arguments.container) {
+        MAYBE(arg_str, ctx.visit(arg));
+        if (!first) {
+            w.write(",");
+        }
+        first = false;
+        w.write(arg_str.to_writer());
+    }
+    w.write(")");
+    return w;
 }
-w.write(")");
-return w;

@@ -30,6 +30,9 @@
 DEFINE_VISITOR(Statement_FUNCTION_DECL) {
     using namespace CODEGEN_NAMESPACE;
     /*here to write the hook*/
+    if (ctx.config().function_decl_custom) {
+        CALL_OR_PASS(res, ctx.config().function_decl_custom(ctx));
+    }
     auto name = ctx.identifier();
     MAYBE(ret_type, ctx.visit(ctx.func_decl.return_type));
     CodeWriter params;

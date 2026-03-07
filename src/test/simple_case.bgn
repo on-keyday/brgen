@@ -253,7 +253,7 @@ format Varint2:
         mask ::= varint_marker - 1
         value = u64(first_byte & mask) << ((len - 1) * 8)
         for i in len - 1:
-            next_byte := input.get(u8)
+            next_byte ::= input.get(u8)
             value |= u64(next_byte) << ((len - 2 - i) * 8)
 
 fn mapToHiragana(code :u6) -> u16:
