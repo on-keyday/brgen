@@ -305,7 +305,7 @@ export const analyzeHover = async (prevNode :ast2ts.ParseResult, pos :number) =>
                 case ast2ts.IdentUsage.maybe_type:
                     return makeHover(ident.ident,"maybe type");
                 case ast2ts.IdentUsage.define_arg:
-                    return makeHover(ident.ident,"argument");
+                    return makeHover(ident.ident,"function parameter (type: "+typeToString(ident.expr_type)+")");
                 case ast2ts.IdentUsage.reference_builtin_fn:
                     return makeHover(ident.ident,"builtin function");
                 default:

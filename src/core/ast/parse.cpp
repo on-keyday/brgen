@@ -1266,9 +1266,9 @@ namespace brgen::ast {
             if (field->ident) {
                 field->ident->expr_type = field->field_type;
                 field->ident->base = field;
-                field->ident->usage = IdentUsage::define_field;
                 field->ident->constant_level = ConstantLevel::variable;
                 if (!as_parameter) {  // as parameter, duplication check is delayed until all parameters are parsed, because of this case: `fn foo(x :int, x :int)`
+                    field->ident->usage = IdentUsage::define_field;
                     check_duplicated_def(field->ident.get());
                 }
             }
