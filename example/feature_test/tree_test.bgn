@@ -64,10 +64,12 @@ for c == 1:
     return
     return 0
 
-fn test(a :u8, b :u8):
+fn test(a :u8, b :u8,
+  # a :u8
+):
     return a + b
 
-fn test(a :u8, b :u8) -> u8:
+fn test2(a :u8, b :u8) -> u8:
     return a + b
 
 format TCP:

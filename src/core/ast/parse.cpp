@@ -221,7 +221,9 @@ namespace brgen::ast {
 
             if (ident) {
                 for (auto& i : *ident) {
-                    block->scope->push(std::move(i));
+                    i->scope = block->scope;
+                    block->scope->push(i);
+                    check_duplicated_def(i.get());
                 }
             }
 
@@ -1234,7 +1236,7 @@ namespace brgen::ast {
             <field type> ::= ":" <type> ("(" <expr> ")")?
         */
         // may returns expr if not field
-        std::shared_ptr<Node> parse_field(const std::shared_ptr<Expr>& expr, bool as_argument) {
+        std::shared_ptr<Node> parse_field(const std::shared_ptr<Expr>& expr, bool as_parameter) {
             lexer::Token token;
             std::shared_ptr<Ident> ident;
             if (expr) {
@@ -1259,17 +1261,19 @@ namespace brgen::ast {
             field->ident = std::move(ident);
             s.skip_space();
 
-            field->field_type = parse_type(as_argument);
+            field->field_type = parse_type(as_parameter);
 
             if (field->ident) {
                 field->ident->expr_type = field->field_type;
                 field->ident->base = field;
-                field->ident->usage = IdentUsage::define_field;
                 field->ident->constant_level = ConstantLevel::variable;
-                check_duplicated_def(field->ident.get());
+                if (!as_parameter) {  // as parameter, duplication check is delayed until all parameters are parsed, because of this case: `fn foo(x :int, x :int)`
+                    field->ident->usage = IdentUsage::define_field;
+                    check_duplicated_def(field->ident.get());
+                }
             }
 
-            if (!as_argument) {
+            if (!as_parameter) {
                 field->belong = state.current_member();
             }
 
@@ -1290,7 +1294,7 @@ namespace brgen::ast {
                 field->arguments = std::move(field_argument);
             }
 
-            if (!as_argument) {
+            if (!as_parameter) {
                 state.add_to_struct(field);
             }
 
@@ -1539,7 +1543,7 @@ namespace brgen::ast {
                 if (!s.expect_token(":")) {
                     ident = parse_ident_no_scope("to specify function parameter name");
                     ident->usage = IdentUsage::define_arg;
-                    ident->scope = state.current_scope();
+                    // ident->scope = state.current_scope();
                     ident_param.push_back(ident);
                     s.skip_white();
                 }

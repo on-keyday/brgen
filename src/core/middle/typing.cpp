@@ -801,22 +801,28 @@ namespace brgen::middle {
             paren->constant_level = paren->expr->constant_level;
         }
 
+        bool is_reference_or_unknown(ast::IdentUsage usage) {
+            return usage == ast::IdentUsage::unknown ||
+                   usage == ast::IdentUsage::reference ||
+                   usage == ast::IdentUsage::reference_type ||
+                   usage == ast::IdentUsage::maybe_type ||
+                   usage == ast::IdentUsage::reference_member ||
+                   usage == ast::IdentUsage::reference_member_type;
+        }
+
         std::optional<std::shared_ptr<ast::Ident>> find_matching_ident(ast::Ident* ident) {
-            auto search = [&](std::shared_ptr<ast::Ident>& def) {
+            bool global_search = false;
+            auto search = [&](std::shared_ptr<ast::Ident>& def, bool may_forward) {
                 return ident != def.get() &&
                        ident->ident == def->ident &&
-                       def->usage != ast::IdentUsage::unknown &&
-                       def->usage != ast::IdentUsage::reference &&
-                       def->usage != ast::IdentUsage::reference_type &&
-                       def->usage != ast::IdentUsage::maybe_type &&
-                       def->usage != ast::IdentUsage::reference_member &&
-                       def->usage != ast::IdentUsage::reference_member_type;
+                       !is_reference_or_unknown(def->usage);
             };
-            auto found = ident->scope->lookup_local(search, ident);
+            auto found = ident->scope->lookup_backward(search, ident);
             if (found) {
                 return found;
             }
-            return current_global->lookup_global(search);
+            global_search = true;
+            return current_global->lookup_forward(search);
         }
 
         std::shared_ptr<ast::UnionType> lookup_union(const std::shared_ptr<ast::Type>& typ) {

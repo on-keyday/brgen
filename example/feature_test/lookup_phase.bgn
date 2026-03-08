@@ -1,0 +1,27 @@
+format Lookup:
+    fn use_data() -> u32:
+        return data # should be undefined because data is not defined yet
+    use_data() 
+    data :u8 
+    data2 :Data # should be defined because Data is a type defined in this scope
+    fn use_data2() -> u32:
+        return data # should be defined because data is defined in this scope
+    format Data:
+        a :u8 
+        data  # should be undefined because data is not defined in this scope    
+    
+Data # should be undefined because Data is defined in the scope of format Lookup, not in the global scope
+Lookup # should be defined because Lookup is defined in the global scope
+
+format X:
+    len :u8
+    match len:
+        0:
+            a :u8 # this is allowed
+        1:
+            a :u16 # this is also allowed. because a is defined in different branch of match pattern.
+    # len :u8 
+    # a :u8
+    # above 2 pattern is error 
+    # because len and a are already defined in this scope
+    # at here `a`s are merged and implicitly defined as a field of union type of u8 and u16 at here
