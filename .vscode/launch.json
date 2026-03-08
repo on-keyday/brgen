@@ -20,7 +20,7 @@
       "request": "launch",
       "program": "${workspaceRoot}/tool/src2json",
       "args": [
-        "${workspaceRoot}/example/feature_test/tree_test.bgn",
+        "${workspaceRoot}//save/bgn_formats/asn1_der.bgn",
         "--print-json",
         "--print-on-error"
       ],

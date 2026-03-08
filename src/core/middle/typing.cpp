@@ -71,10 +71,10 @@ namespace brgen::middle {
             error(loc, "type mismatch").error(lty->loc, "type not comparable here ", l).error(rty->loc, "and here ", r).report();
         }
 
-        [[noreturn]] void report_not_have_common_type(const std::shared_ptr<ast::Type>& lty, const std::shared_ptr<ast::Type>& rty) {
+        [[noreturn]] void report_not_have_common_type(lexer::Loc loc, const std::shared_ptr<ast::Type>& lty, const std::shared_ptr<ast::Type>& rty) {
             auto l = ast::tool::type_to_string(lty);
             auto r = ast::tool::type_to_string(rty);
-            error(lty->loc, "type not have common type here ", l).error(rty->loc, "and here ", r).report();
+            error(loc, "cannot determine common type").error(lty->loc, "type not have common type here ", l).error(rty->loc, "and here ", r).report();
         }
 
         [[noreturn]] void unsupported(auto&& expr) {
@@ -880,7 +880,7 @@ namespace brgen::middle {
             auto rty = cond->els->expr_type;
             auto ty = common_type(lty, rty);
             if (!ty) {
-                report_not_have_common_type(lty, rty);
+                report_not_have_common_type(cond->loc, lty, rty);
             }
             cond->expr_type = ty;
             cond->constant_level = decide_constant_level(cond->cond->constant_level, decide_constant_level(cond->then->constant_level, cond->els->constant_level));
@@ -1399,7 +1399,7 @@ namespace brgen::middle {
                 else {
                     auto tmp = OrCond_common_type(ty, expr->expr_type);
                     if (!tmp) {
-                        report_not_have_common_type(ty, expr->expr_type);
+                        report_not_have_common_type(or_cond->loc, ty, expr->expr_type);
                     }
                     ty = std::move(tmp);
                     level = decide_constant_level(level, expr->constant_level);
@@ -1464,7 +1464,6 @@ namespace brgen::middle {
                 b->constant_level = ast::ConstantLevel::variable;
             }
             if (expr->expr_type) {
-                typing_object(expr->expr_type);
                 return;  // already typed
             }
             if (try_typing_literal(expr)) {
@@ -1474,6 +1473,7 @@ namespace brgen::middle {
                 typing_io_operation(s);
             }
             else if (try_typing_and_maybe_replace_ident(base_node, expr, on_define)) {
+                typing_object(expr->expr_type);
                 return;
             }
             else if (auto bin = ast::as<ast::Binary>(expr)) {
@@ -1522,6 +1522,7 @@ namespace brgen::middle {
             else {
                 unsupported(expr);
             }
+            typing_object(expr->expr_type);
         }
 
         void unwrap_reference_type_from_ident(ast::IdentType* s) {
@@ -1762,6 +1763,7 @@ namespace brgen::middle {
                 if (!f) {
                     continue;
                 }
+                typing_object(f->field_type);
                 if (!u->common_type) {
                     if (auto is_union = ast::as<ast::UnionType>(f->field_type)) {
                         u->common_type = is_union->common_type;
