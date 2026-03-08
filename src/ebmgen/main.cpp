@@ -21,7 +21,6 @@
 #include "transform/control_flow_graph.hpp"
 #include "unicode/utf/convert.h"
 #include "wrap/argv.h"
-#include "wrap/cin.h"
 #include "wrap/light/string.h"
 #include <file/file_stream.h>  // Required for futils::file::FileStream
 #include <binary/writer.h>     // Required for futils::binary::writer
