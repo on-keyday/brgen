@@ -66,12 +66,7 @@ namespace brgen::ast {
                     return obj;
                 }
             }
-            if (auto got = next) {
-                auto result = got->lookup_forward(fn, true);
-                if (result) {
-                    return result;
-                }
-            }
+
             if (auto got = prev.lock()) {
                 if (this->branch_root) {
                     auto owner_locked = this->owner.lock();
@@ -82,7 +77,16 @@ namespace brgen::ast {
                         only_type_allowed = true;
                     }
                 }
-                return got->lookup_backward(fn, nullptr, may_forward || this->branch_root, only_type_allowed);
+                auto result = got->lookup_backward(fn, nullptr, may_forward || this->branch_root, only_type_allowed);
+                if (result) {
+                    return result;
+                }
+            }
+            if (auto got = next) {
+                auto result = got->lookup_forward(fn, true);
+                if (result) {
+                    return result;
+                }
             }
             return std::nullopt;
         }
