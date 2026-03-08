@@ -20,7 +20,7 @@
       "request": "launch",
       "program": "${workspaceRoot}/tool/src2json",
       "args": [
-        "${workspaceRoot}/example/feature_test/inline_format.bgn",
+        "${workspaceRoot}/example/feature_test/tree_test.bgn",
         "--print-json",
         "--print-on-error"
       ],
