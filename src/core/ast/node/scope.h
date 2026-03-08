@@ -1,8 +1,6 @@
 /*license*/
 #pragma once
 #include "expr.h"
-#include "statement.h"
-#include <variant>
 #include <helper/defer.h>
 
 namespace brgen::ast {
@@ -34,12 +32,18 @@ namespace brgen::ast {
                 if (got->branch.get() == this) {
                     return std::nullopt;
                 }
-                return got->lookup_local(fn);
+                return got->lookup_current(fn);
             }
             return std::nullopt;
         }
 
-        std::optional<std::shared_ptr<Ident>> lookup_local(auto&& fn, ast::Ident* self = nullptr) {
+        bool is_type_ident(const std::shared_ptr<Ident>& ident) {
+            return ident && (ident->usage == IdentUsage::define_format ||
+                             ident->usage == IdentUsage::define_enum ||
+                             ident->usage == IdentUsage::define_state);
+        }
+
+        std::optional<std::shared_ptr<Ident>> lookup_backward(auto&& fn, ast::Ident* self = nullptr, bool may_forward = false, bool only_type_allowed = false) {
             if (auto locked = owner.lock(); locked && locked.get()->node_type == NodeType::program) {
                 return std::nullopt;
             }
@@ -53,25 +57,50 @@ namespace brgen::ast {
                     }
                     continue;
                 }
-                if (fn(obj)) {
+                if (only_type_allowed) {
+                    if (!is_type_ident(obj)) {
+                        continue;
+                    }
+                }
+                if (fn(obj, may_forward)) {
                     return obj;
                 }
             }
+            if (auto got = next) {
+                auto result = got->lookup_forward(fn, true);
+                if (result) {
+                    return result;
+                }
+            }
             if (auto got = prev.lock()) {
-                return got->lookup_local(fn);
+                if (this->branch_root) {
+                    auto owner_locked = this->owner.lock();
+                    if (owner_locked &&
+                        (owner_locked.get()->node_type == NodeType::format ||
+                         owner_locked.get()->node_type == NodeType::state ||
+                         owner_locked.get()->node_type == NodeType::enum_)) {
+                        only_type_allowed = true;
+                    }
+                }
+                return got->lookup_backward(fn, nullptr, may_forward || this->branch_root, only_type_allowed);
             }
             return std::nullopt;
         }
 
-        std::optional<std::shared_ptr<Ident>> lookup_global(auto&& fn) {
+        std::optional<std::shared_ptr<Ident>> lookup_forward(auto&& fn, bool only_type_allowed = false) {
             for (auto& val : objects) {
                 auto obj = val.lock();
-                if (fn(obj)) {
+                if (only_type_allowed) {
+                    if (!is_type_ident(obj)) {
+                        continue;
+                    }
+                }
+                if (fn(obj, true)) {
                     return obj;
                 }
             }
             if (next) {
-                return next->lookup_global(fn);
+                return next->lookup_forward(fn);
             }
             return std::nullopt;
         }
