@@ -29,6 +29,15 @@ DEFINE_VISITOR(Expression_BINARY_OP) {
     MAYBE(left, ctx.visit(ctx.left));
     MAYBE(right, ctx.visit(ctx.right));
     auto str_repr = std::format("({} {} {})", left.str_repr, to_string(ctx.bop), right.str_repr);
+    auto& back = ctx.config().env.access_instructions().back();
+    if (back.instr.op == ebm::OpCode::PUSH_IMM_INT && ctx.bop == ebm::BinaryOp::equal) {
+        ebm::Instruction instr;
+        instr.op = ebm::OpCode::EQ_IMM;
+        instr.value(*back.instr.value());
+        ctx.config().env.access_instructions().pop_back();  // remove the PUSH_IMM_INT instruction
+        ctx.config().env.add_instruction(instr, str_repr);
+        return Result{.str_repr = str_repr};
+    }
     auto op = BinaryOp_to_OpCode(ctx.bop);
     if (op == ebm::OpCode::NOP) {
         return ebmgen::unexpect_error("unsupported binary operation: {}", to_string(ctx.bop));

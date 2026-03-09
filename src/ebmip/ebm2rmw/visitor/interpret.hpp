@@ -534,6 +534,27 @@ namespace ebm2rmw {
                         }
                         break;
                     }
+                    case ebm::OpCode::STORE_LOCAL_IMM: {
+                        MAYBE(imm, instr.instr.value());
+                        if (ctx.flags().print_state) {
+                            futils::wrap::cout_wrap() << "  local_store_imm: [" << instr.scratch << "] = " << imm.value() << "\n";
+                        }
+                        locals[instr.scratch] = Value{imm.value()};
+                        break;
+                    }
+                    case ebm::OpCode::EQ_IMM: {
+                        if (stack.empty()) {
+                            return ebmgen::unexpect_error("stack underflow on EQ_IMM");
+                        }
+                        auto val = stack_pop();
+                        val.as_int();
+                        if (!std::holds_alternative<std::uint64_t>(val.value)) {
+                            return ebmgen::unexpect_error("EQ_IMM operand is not an integer");
+                        }
+                        std::uint64_t result = (std::get<std::uint64_t>(val.value) == instr.instr.value()->value()) ? 1 : 0;
+                        stack_push(Value{result});
+                        break;
+                    }
                     case ebm::OpCode::STORE_LOCAL: {
                         if (stack.empty()) {
                             return ebmgen::unexpect_error("stack underflow on STORE_LOCAL");
@@ -646,17 +667,17 @@ namespace ebm2rmw {
                             size = static_size->value();
                         }
                         else {
-                            if (stack.empty()) {
+                            if (stack.empty()) [[unlikely]] {
                                 return ebmgen::unexpect_error("stack underflow on READ_BYTES");
                             }
                             auto size_expr = stack_pop();
                             size_expr.as_int();
-                            if (!std::holds_alternative<std::uint64_t>(size_expr.value)) {
+                            if (!std::holds_alternative<std::uint64_t>(size_expr.value)) [[unlikely]] {
                                 return ebmgen::unexpect_error("READ_BYTES size is not an integer");
                             }
                             size = static_cast<std::size_t>(std::get<std::uint64_t>(size_expr.value));
                         }
-                        if (stack.empty()) {
+                        if (stack.empty()) [[unlikely]] {
                             return ebmgen::unexpect_error("stack underflow on READ_BYTES target");
                         }
                         size_t offset_value = 0;
@@ -666,18 +687,18 @@ namespace ebm2rmw {
                         }
                         auto target = stack_pop();
                         target.unref();
-                        if (!std::holds_alternative<ObjectRef>(target.value)) {
+                        if (!std::holds_alternative<ObjectRef>(target.value)) [[unlikely]] {
                             return ebmgen::unexpect_error("READ_BYTES target is not an object");
                         }
                         auto read = input.substr(input_pos, size);
-                        if (read.size() < size) {
+                        if (read.size() < size) [[unlikely]] {
                             return ebmgen::unexpect_error("expected {} bytes, but only {} bytes available in input", size, read.size());
                         }
                         auto& arr = std::get<ObjectRef>(target.value);
                         // currently, vector allocation point should be front of the call stack,
                         // so that we can assume the vector elements are alive until interpret() returns.
                         MAYBE(byte_array, get_bytes(ctx, arr, offset_value + size));
-                        if (offset_value + size > byte_array.size()) {
+                        if (offset_value + size > byte_array.size()) [[unlikely]] {
                             return ebmgen::unexpect_error("READ_BYTES out of bounds: offset {} + size {} exceeds array size {}", offset_value, size, byte_array.size());
                         }
                         std::copy(read.begin(), read.end(), byte_array.begin() + offset_value);
@@ -687,30 +708,28 @@ namespace ebm2rmw {
                     case ebm::OpCode::LOAD_SELF_MEMBER: {
                         LayoutScratch scratch{instr.scratch};
                         auto range = self.raw_object.substr(scratch.offset(), scratch.size());
-                        if (range.size() != scratch.size()) {
-                            return ebmgen::unexpect_error("LOAD_SELF_MEMBER range out of bounds");
+                        if (range.size() != scratch.size()) [[unlikely]] {
+                            return ebmgen::unexpect_error("LOAD_SELF_MEMBER range out of bounds: {} expect {} but got {} (offset: {})", instr.str_repr, scratch.size(), range.size(), scratch.offset());
                         }
-                        MAYBE(field_decl, ctx.get_field<"field_decl">(instr.instr.member_id()));
-                        stack_push(Value{ObjectRef(field_decl.field_type, range)});
+                        stack_push(Value{ObjectRef(instr.type_info, range)});
                         break;
                     }
                     case ebm::OpCode::LOAD_MEMBER: {
-                        if (stack.empty()) {
+                        if (stack.empty()) [[unlikely]] {
                             return ebmgen::unexpect_error("stack underflow on LOAD_MEMBER");
                         }
                         auto member_base_val = stack_pop();
                         member_base_val.unref();
-                        if (!std::holds_alternative<ObjectRef>(member_base_val.value)) {
+                        if (!std::holds_alternative<ObjectRef>(member_base_val.value)) [[unlikely]] {
                             return ebmgen::unexpect_error("base value is not an object");
                         }
                         auto base_ref = std::get<ObjectRef>(member_base_val.value);
                         LayoutScratch scratch{instr.scratch};
                         auto range = base_ref.raw_object.substr(scratch.offset(), scratch.size());
-                        if (range.size() != scratch.size()) {
+                        if (range.size() != scratch.size()) [[unlikely]] {
                             return ebmgen::unexpect_error("LOAD_MEMBER range out of bounds");
                         }
-                        MAYBE(field_decl, ctx.get_field<"field_decl">(instr.instr.member_id()));
-                        stack_push(Value{ObjectRef(field_decl.field_type, range)});
+                        stack_push(Value{ObjectRef(instr.type_info, range)});
                         break;
                     }
                     case ebm::OpCode::CALL_GETTER: {
@@ -754,7 +773,7 @@ namespace ebm2rmw {
                         }
                         auto callee = stack_pop();
                         callee.unref();
-                        if (!std::holds_alternative<Function>(callee.value)) {
+                        if (!std::holds_alternative<Function>(callee.value)) [[unlikely]] {
                             return ebmgen::unexpect_error("CALL target is not a function");
                         }
                         auto func = std::get<Function>(callee.value);
@@ -766,7 +785,7 @@ namespace ebm2rmw {
                         }
                         auto new_self = stack_pop();
                         new_self.unref();
-                        if (!std::holds_alternative<ObjectRef>(new_self.value)) {
+                        if (!std::holds_alternative<ObjectRef>(new_self.value)) [[unlikely]] {
                             return ebmgen::unexpect_error("CALL new self is not an object");
                         }
                         auto func_enter = ctx.config().env.new_function(func.id);
@@ -782,10 +801,10 @@ namespace ebm2rmw {
                     }
                     case ebm::OpCode::CALL_DIRECT: {
                         auto num_args = instr.instr.arg_num();
-                        if (!num_args) {
+                        if (!num_args) [[unlikely]] {
                             return ebmgen::unexpect_error("missing argument number in CALL_DIRECT");
                         }
-                        if (stack.size() < num_args->value() + 1) {
+                        if (stack.size() < num_args->value() + 1) [[unlikely]] {
                             return ebmgen::unexpect_error("stack underflow on CALL_DIRECT");
                         }
                         auto func = *instr.instr.func_id();
@@ -797,7 +816,7 @@ namespace ebm2rmw {
                         }
                         auto new_self = stack_pop();
                         new_self.unref();
-                        if (!std::holds_alternative<ObjectRef>(new_self.value)) {
+                        if (!std::holds_alternative<ObjectRef>(new_self.value)) [[unlikely]] {
                             return ebmgen::unexpect_error("CALL_DIRECT new self is not an object");
                         }
                         auto func_enter = ctx.config().env.new_function(func);

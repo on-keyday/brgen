@@ -1,19 +1,17 @@
 /*license*/
 #pragma once
 
-#include <unordered_set>
 #include "ebm/extended_binary_module.hpp"
 #include "inst.hpp"
 namespace ebm2rmw {
     inline std::optional<ebm::StatementRef> is_wrapper_function(std::vector<Instruction>& instructions) {
-        if (instructions.size() != 4) {
+        if (instructions.size() != 3) {
             return std::nullopt;
         }
         if (instructions[0].instr.op == ebm::OpCode::LOAD_SELF_MEMBER &&
-            instructions[1].instr.op == ebm::OpCode::LOAD_PARAM &&
-            instructions[2].instr.op == ebm::OpCode::CALL_DIRECT &&
-            instructions[3].instr.op == ebm::OpCode::RET) {
-            auto func_id = instructions[2].instr.func_id();
+            instructions[1].instr.op == ebm::OpCode::CALL_DIRECT &&
+            instructions[2].instr.op == ebm::OpCode::RET) {
+            auto func_id = instructions[1].instr.func_id();
             if (func_id) {
                 return *func_id;
             }

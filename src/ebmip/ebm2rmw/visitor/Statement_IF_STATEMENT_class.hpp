@@ -49,7 +49,7 @@ DEFINE_VISITOR(Statement_IF_STATEMENT) {
         ctx.config().env.add_instruction({.op = ebm::OpCode::JUMP}, "}");
         auto jump_instr_index = ctx.config().env.access_instructions().size() - 1;
         insert_jump_if_false(ctx.config().env.access_instructions().size());
-        ctx.config().env.add_instruction({.op = ebm::OpCode::NOP}, "else {");
+        // ctx.config().env.add_instruction({.op = ebm::OpCode::NOP}, "else {");
         MAYBE(else_res, ctx.visit(ctx.if_statement.else_block));
         auto else_block_end_index = ctx.config().env.access_instructions().size();
         ebm::Instruction& jump_instr = ctx.config().env.access_instructions()[jump_instr_index].instr;

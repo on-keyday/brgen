@@ -3878,6 +3878,10 @@ namespace ebm {
                 obj = OpCode::LOAD_LOCAL_REF;
                 return true;
             }
+            if (s == "STORE_LOCAL_IMM") {
+                obj = OpCode::STORE_LOCAL_IMM;
+                return true;
+            }
             if (s == "ADD") {
                 obj = OpCode::ADD;
                 return true;
@@ -3960,6 +3964,10 @@ namespace ebm {
             }
             if (s == "GE") {
                 obj = OpCode::GE;
+                return true;
+            }
+            if (s == "EQ_IMM") {
+                obj = OpCode::EQ_IMM;
                 return true;
             }
             if (s == "CAST") {

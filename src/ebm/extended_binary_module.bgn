@@ -957,6 +957,7 @@ enum OpCode:
     STORE_REF       = 0x1A
     PUSH_SUCCESS    = 0x1B
     LOAD_LOCAL_REF = 0x1C
+    STORE_LOCAL_IMM = 0x1D
     
     # --- 0x20: Arithmetic & Logic ---
     # name mapping with BinaryOp enum
@@ -985,6 +986,8 @@ enum OpCode:
     LE              = 0x33, "less_or_eq"
     GT              = 0x34, "greater"
     GE              = 0x35, "greater_or_eq"
+
+    EQ_IMM          = 0x36
 
     # --- 0x40: Type Casting ---
     CAST            = 0x40 
@@ -1094,8 +1097,14 @@ format Instruction:
             reg :RegisterIndex
         OpCode.STORE_LOCAL:
             reg :RegisterIndex
+        OpCode.STORE_LOCAL_IMM:
+            reg :RegisterIndex
+            value :Varint
         OpCode.LOAD_PARAM:
             reg :RegisterIndex
+
+        OpCode.EQ_IMM:
+            value :Varint
 
         # -- Stream Ops with Optimization Flags --
         # Align to byte boundary after boolean flag

@@ -40,7 +40,8 @@ DEFINE_VISITOR(Statement_VARIABLE_DECL) {
     instr.reg(ebm::RegisterIndex{.index = ctx.item_id});
     ctx.config().env.add_local(ctx.item_id);
     auto offset = ctx.config().env.get_local(ctx.item_id);
-    if (ctx.config().env.access_instructions().back().instr.op == ebm::OpCode::NEW_STRUCT) {
+    auto& back = ctx.config().env.access_instructions().back();
+    if (back.instr.op == ebm::OpCode::NEW_STRUCT) {
         auto& last_instr = ctx.config().env.access_instructions().back();
         LayoutScratch layout_scratch{last_instr.scratch};
         auto offset = ctx.config().env.struct_area_offset(layout_scratch.size());
@@ -50,11 +51,17 @@ DEFINE_VISITOR(Statement_VARIABLE_DECL) {
         layout_scratch.offset(static_cast<std::uint32_t>(offset));
         last_instr.scratch = layout_scratch.scratch.as_value();
     }
-    if (ctx.config().env.access_instructions().back().instr.op == ebm::OpCode::NEW_BYTES) {
+    else if (back.instr.op == ebm::OpCode::NEW_BYTES) {
         auto& last_instr = ctx.config().env.access_instructions().back();
         size_t size = last_instr.instr.imm()->size()->value();
         auto offset = ctx.config().env.struct_area_offset(size);
         last_instr.scratch = offset;  // for NEW_BYTES, we directly use scratch as offset to bytes arena
+    }
+    else if (back.instr.op == ebm::OpCode::PUSH_IMM_INT) {
+        instr.op = ebm::OpCode::STORE_LOCAL_IMM;
+        instr.reg(ebm::RegisterIndex{.index = ctx.item_id});
+        instr.value(*back.instr.value());
+        ctx.config().env.access_instructions().pop_back();  // remove the PUSH_IMM_INT instruction
     }
     ctx.config().env.add_instruction(instr, std::format("{} := {}", identifier, initial_value.str_repr), offset);
     return {};

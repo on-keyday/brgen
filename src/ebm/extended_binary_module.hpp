@@ -1575,6 +1575,7 @@ namespace ebm {
         STORE_REF = 0x1A,
         PUSH_SUCCESS = 0x1B,
         LOAD_LOCAL_REF = 0x1C,
+        STORE_LOCAL_IMM = 0x1D,
         ADD = 0x20,
         SUB = 0x21,
         MUL = 0x22,
@@ -1596,6 +1597,7 @@ namespace ebm {
         LE = 0x33,
         GT = 0x34,
         GE = 0x35,
+        EQ_IMM = 0x36,
         CAST = 0x40,
         READ_U8 = 0x50,
         READ_U16 = 0x51,
@@ -1662,6 +1664,7 @@ namespace ebm {
             case OpCode::STORE_REF: return origin_form ? "STORE_REF":"STORE_REF" ;
             case OpCode::PUSH_SUCCESS: return origin_form ? "PUSH_SUCCESS":"PUSH_SUCCESS" ;
             case OpCode::LOAD_LOCAL_REF: return origin_form ? "LOAD_LOCAL_REF":"LOAD_LOCAL_REF" ;
+            case OpCode::STORE_LOCAL_IMM: return origin_form ? "STORE_LOCAL_IMM":"STORE_LOCAL_IMM" ;
             case OpCode::ADD: return origin_form ? "ADD":"add" ;
             case OpCode::SUB: return origin_form ? "SUB":"sub" ;
             case OpCode::MUL: return origin_form ? "MUL":"mul" ;
@@ -1683,6 +1686,7 @@ namespace ebm {
             case OpCode::LE: return origin_form ? "LE":"less_or_eq" ;
             case OpCode::GT: return origin_form ? "GT":"greater" ;
             case OpCode::GE: return origin_form ? "GE":"greater_or_eq" ;
+            case OpCode::EQ_IMM: return origin_form ? "EQ_IMM":"EQ_IMM" ;
             case OpCode::CAST: return origin_form ? "CAST":"CAST" ;
             case OpCode::READ_U8: return origin_form ? "READ_U8":"READ_U8" ;
             case OpCode::READ_U16: return origin_form ? "READ_U16":"READ_U16" ;
@@ -1802,6 +1806,9 @@ namespace ebm {
         if (str == "LOAD_LOCAL_REF") {
             return OpCode::LOAD_LOCAL_REF;
         }
+        if (str == "STORE_LOCAL_IMM") {
+            return OpCode::STORE_LOCAL_IMM;
+        }
         if (str == "add") {
             return OpCode::ADD;
         }
@@ -1864,6 +1871,9 @@ namespace ebm {
         }
         if (str == "greater_or_eq") {
             return OpCode::GE;
+        }
+        if (str == "EQ_IMM") {
+            return OpCode::EQ_IMM;
         }
         if (str == "CAST") {
             return OpCode::CAST;
@@ -5312,52 +5322,59 @@ namespace ebm {
         };
         struct EBM_API union_struct_192{
             RegisterIndex reg;
+            Varint value;
         };
         struct EBM_API union_struct_193{
-            OptionalImmediateSize imm;
+            RegisterIndex reg;
         };
         struct EBM_API union_struct_194{
-            OptionalImmediateSize imm;
+            Varint value;
         };
         struct EBM_API union_struct_195{
             OptionalImmediateSize imm;
-            Varint offset;
         };
         struct EBM_API union_struct_196{
-            SetEndian set_endian;
+            OptionalImmediateSize imm;
         };
         struct EBM_API union_struct_197{
-            CastType cast_type{};
+            OptionalImmediateSize imm;
+            Varint offset;
         };
         struct EBM_API union_struct_198{
-            StatementRef struct_id;
+            SetEndian set_endian;
         };
         struct EBM_API union_struct_199{
-            StatementRef member_id;
+            CastType cast_type{};
         };
         struct EBM_API union_struct_200{
-            StatementRef member_id;
+            StatementRef struct_id;
         };
         struct EBM_API union_struct_201{
-            StatementRef func_id;
+            StatementRef member_id;
         };
         struct EBM_API union_struct_202{
-            StatementRef func_id;
-            Varint arg_num;
+            StatementRef member_id;
         };
         struct EBM_API union_struct_203{
             StatementRef func_id;
         };
         struct EBM_API union_struct_204{
-            OptionalImmediateSize imm;
+            StatementRef func_id;
+            Varint arg_num;
         };
         struct EBM_API union_struct_205{
-            RetValue ret_value;
+            StatementRef func_id;
         };
         struct EBM_API union_struct_206{
+            OptionalImmediateSize imm;
+        };
+        struct EBM_API union_struct_207{
+            RetValue ret_value;
+        };
+        struct EBM_API union_struct_208{
             Varint index;
         };
-        std::variant<std::monostate, union_struct_181, union_struct_182, union_struct_183, union_struct_184, union_struct_185, union_struct_186, union_struct_187, union_struct_188, union_struct_189, union_struct_190, union_struct_191, union_struct_192, union_struct_193, union_struct_194, union_struct_195, union_struct_196, union_struct_197, union_struct_198, union_struct_199, union_struct_200, union_struct_201, union_struct_202, union_struct_203, union_struct_204, union_struct_205, union_struct_206> union_variant_180;
+        std::variant<std::monostate, union_struct_181, union_struct_182, union_struct_183, union_struct_184, union_struct_185, union_struct_186, union_struct_187, union_struct_188, union_struct_189, union_struct_190, union_struct_191, union_struct_192, union_struct_193, union_struct_194, union_struct_195, union_struct_196, union_struct_197, union_struct_198, union_struct_199, union_struct_200, union_struct_201, union_struct_202, union_struct_203, union_struct_204, union_struct_205, union_struct_206, union_struct_207, union_struct_208> union_variant_180;
         const Varint* arg_num() const;
         Varint* arg_num();
         bool arg_num(Varint&& v);

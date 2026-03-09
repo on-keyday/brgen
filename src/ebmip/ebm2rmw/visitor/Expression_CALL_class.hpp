@@ -36,6 +36,10 @@ DEFINE_VISITOR(Expression_CALL) {
     }
     std::vector<std::string> arg_strs;
     for (auto& arg : ctx.call_desc.arguments.container | std::views::reverse) {
+        auto kind = ctx.get_field<"type.kind.optional">(arg);
+        if (kind == ebm::TypeKind::ENCODER_INPUT || kind == ebm::TypeKind::DECODER_INPUT) {
+            continue;
+        }
         MAYBE(arg_res, ctx.visit(arg));
         arg_strs.push_back(arg_res.str_repr);
     }
@@ -75,7 +79,7 @@ DEFINE_VISITOR(Expression_CALL) {
         MAYBE(callee, ctx.visit(ctx.call_desc.callee));
         str_repr = std::format("{}({})", callee.str_repr, join(", ", arg_strs));
     }
-    instr.arg_num(*varint(static_cast<std::uint64_t>(ctx.call_desc.arguments.container.size())));
+    instr.arg_num(*varint(static_cast<std::uint64_t>(arg_strs.size())));
     ctx.config().env.add_instruction(instr, str_repr);
     return Result{.str_repr = str_repr};
 }

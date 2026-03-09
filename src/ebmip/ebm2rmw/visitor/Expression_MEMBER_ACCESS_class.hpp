@@ -102,10 +102,27 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS) {
             break;
         }
     }
+    // if previous instruction is LOAD_SELF_MEMBER, merge
+    auto str_repr = std::format("{}.{}", base.str_repr, identifier);
+    if (!base_is_self && ctx.config().env.access_instructions().size() > 0) {
+        auto& back = ctx.config().env.access_instructions().back();
+        if (back.instr.op == ebm::OpCode::LOAD_SELF_MEMBER || back.instr.op == ebm::OpCode::LOAD_MEMBER) {
+            LayoutScratch prev_scratch{back.scratch};
+            std::uint64_t merged_offset = std::uint64_t(prev_scratch.offset()) + std::uint64_t(layout_scratch.offset());
+            if (merged_offset > (1ULL << 32) - 1) {
+                return ebmgen::unexpect_error("merged field offset too large for member access: {} (str: {})", merged_offset, str_repr);
+            }
+            layout_scratch.offset(merged_offset);
+            back.instr.member_id(id);
+            back.scratch = layout_scratch.scratch.as_value();
+            back.type_info = ctx.type;
+            back.str_repr = str_repr;
+            return Result{.str_repr = str_repr};
+        }
+    }
     ebm::Instruction instr;
     instr.op = base_is_self ? ebm::OpCode::LOAD_SELF_MEMBER : ebm::OpCode::LOAD_MEMBER;
     instr.member_id(id);
-    auto str_repr = std::format("{}.{}", base.str_repr, identifier);
-    ctx.config().env.add_instruction(instr, str_repr, layout_scratch.scratch.as_value());
+    ctx.config().env.add_instruction(instr, str_repr, layout_scratch.scratch.as_value(), ctx.type);
     return Result{.str_repr = str_repr};
 }
