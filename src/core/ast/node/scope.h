@@ -44,14 +44,11 @@ namespace brgen::ast {
         }
 
         std::optional<std::shared_ptr<Ident>> lookup_backward(auto&& fn, ast::Ident* self = nullptr, bool may_forward = false, bool only_type_allowed = false) {
-            if (auto locked = owner.lock(); locked && locked.get()->node_type == NodeType::program) {
-                return std::nullopt;
-            }
             bool myself_appear = !self;
             for (auto it = objects.rbegin(); it != objects.rend(); it++) {
                 auto& val = *it;
                 auto obj = val.lock();
-                if (!myself_appear) {
+                if (!myself_appear && !is_type_ident(obj)) {
                     if (obj.get() == self) {
                         myself_appear = true;
                     }
@@ -82,8 +79,8 @@ namespace brgen::ast {
                     return result;
                 }
             }
-            if (auto got = next) {
-                auto result = got->lookup_forward(fn, true);
+            if (next) {
+                auto result = next->lookup_forward(fn, true);
                 if (result) {
                     return result;
                 }

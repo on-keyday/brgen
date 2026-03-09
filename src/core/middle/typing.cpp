@@ -8,6 +8,7 @@
 #include "../ast/tool/eval.h"
 #include <core/ast/tool/compare.h>
 #include <list>
+#include <memory>
 
 namespace brgen::middle {
 
@@ -88,8 +89,13 @@ namespace brgen::middle {
             warnings.warning(expr->loc, "expression is not typed yet");
         }
 
-        void warn_type_not_found(auto&& expr) {
-            warnings.warning(expr->loc, "type is not found");
+        void warn_type_not_found(auto&& expr, const std::shared_ptr<ast::Ident>& candidate) {
+            if (candidate) {
+                warnings.warning(expr->loc, "type is not found; did you mean ", candidate->ident, "?");
+            }
+            else {
+                warnings.warning(expr->loc, "type is not found");
+            }
         }
 
         void check_bool(ast::Expr* expr) {
@@ -680,7 +686,7 @@ namespace brgen::middle {
             auto cmp_lty = unwrap_ident_type(lty);
             auto cmp_rty = unwrap_ident_type(rty);
             if (!cmp_lty || !cmp_rty) {
-                warn_type_not_found(b);
+                warn_type_not_found(b, nullptr);
                 return;
             }
             auto report_binary_error = [&] {
@@ -810,12 +816,62 @@ namespace brgen::middle {
                    usage == ast::IdentUsage::reference_member_type;
         }
 
-        std::optional<std::shared_ptr<ast::Ident>> find_matching_ident(ast::Ident* ident) {
+        int get_damerau_levenshtein(const std::string& s1, const std::string& s2, size_t min_dist) {
+            size_t n = s1.length();
+            size_t m = s2.length();
+            if (n > m) {
+                return get_damerau_levenshtein(s2, s1, min_dist);
+            }
+
+            if (m - n > min_dist) {
+                return min_dist + 1;  // これ以上の距離の候補は無視する
+            }
+
+            // 2次元DPテーブル
+            // 転置をチェックするために、i-2, j-2 の参照が必要なため、2つ前の状態を保持する
+            std::vector<std::vector<int>> dp(n + 1, std::vector<int>(m + 1, 0));
+
+            for (size_t i = 0; i <= n; ++i) dp[i][0] = i;
+            for (size_t j = 0; j <= m; ++j) dp[0][j] = j;
+
+            for (size_t i = 1; i <= n; ++i) {
+                for (size_t j = 1; j <= m; ++j) {
+                    int cost = (s1[i - 1] == s2[j - 1]) ? 0 : 1;
+
+                    // 基本の3操作（挿入、削除、置換）
+                    dp[i][j] = std::min({
+                        dp[i - 1][j] + 1,        // 削除
+                        dp[i][j - 1] + 1,        // 挿入
+                        dp[i - 1][j - 1] + cost  // 置換
+                    });
+
+                    // 隣接文字の入れ替え（転置）のチェック
+                    if (i > 1 && j > 1 &&
+                        s1[i - 1] == s2[j - 2] && s1[i - 2] == s2[j - 1]) {
+                        dp[i][j] = std::min(dp[i][j], dp[i - 2][j - 2] + cost);
+                    }
+                }
+            }
+            return dp[n][m];
+        }
+
+        std::optional<std::shared_ptr<ast::Ident>> find_matching_ident(ast::Ident* ident, std::shared_ptr<ast::Ident>* levenshtein_candidate = nullptr) {
             bool global_search = false;
+            size_t min_dist = 3;  // これ以上の距離の候補は無視する
             auto search = [&](std::shared_ptr<ast::Ident>& def, bool may_forward) {
-                return ident != def.get() &&
-                       ident->ident == def->ident &&
-                       !is_reference_or_unknown(def->usage);
+                if (ident == def.get() || is_reference_or_unknown(def->usage)) return false;
+                if (ident->ident == def->ident) {
+                    return true;
+                }
+                if (!levenshtein_candidate) {
+                    return false;
+                }
+                size_t dist = get_damerau_levenshtein(ident->ident, def->ident, min_dist);
+                if (dist < min_dist) {
+                    min_dist = dist;
+                    *levenshtein_candidate = def;
+                }
+                return false;
             };
             auto found = ident->scope->lookup_backward(search, ident);
             if (found) {
@@ -1167,12 +1223,12 @@ namespace brgen::middle {
             }
         }
 
-        void typing_ident(const std::shared_ptr<ast::Ident>& ident, bool on_define) {
+        void typing_ident(const std::shared_ptr<ast::Ident>& ident, bool on_define, std::shared_ptr<ast::Ident>* levenshtein_candidate = nullptr) {
             if (ident->base.lock()) {
                 assert(ident->usage != ast::IdentUsage::unknown);
                 return;  // skip
             }
-            if (auto found = find_matching_ident(ident.get())) {
+            if (auto found = find_matching_ident(ident.get(), levenshtein_candidate)) {
                 auto& base = (*found);
                 if (auto def = ast::as<ast::Binary>(base->base.lock());
                     def && !def->expr_type) {
@@ -1467,6 +1523,7 @@ namespace brgen::middle {
                 return;  // already typed
             }
             if (try_typing_literal(expr)) {
+                typing_object(expr->expr_type);
                 return;
             }
             else if (auto s = ast::as<ast::IOOperation>(expr)) {
@@ -1553,14 +1610,15 @@ namespace brgen::middle {
 
         void typing_ident_type(ast::IdentType* s, bool disable_warning = false) {
             // If the object is an identifier, perform identifier typing
+            std::shared_ptr<ast::Ident> candidate;
             if (s->import_ref) {
                 typing_member_access(s->import_ref.get());
             }
             else {
-                typing_ident(s->ident, disable_warning);
+                typing_ident(s->ident, disable_warning, &candidate);
             }
             if (s->ident->usage == ast::IdentUsage::maybe_type) {
-                warn_type_not_found(s->ident);
+                warn_type_not_found(s->ident, candidate);
             }
             if (s->ident->usage != ast::IdentUsage::unknown &&
                 s->ident->usage != ast::IdentUsage::reference_type &&
