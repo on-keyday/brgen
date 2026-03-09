@@ -75,7 +75,7 @@ weight: 1
 <string literal> := "\""  *(<escape sequence> | <any unicode char except '"'>) "\""
 <regex literal> := "/" *(<escape sequence> | <any unicode char except '/'>) "/"
 <char literal> := "'" (<escape sequence> | <any unicode char except "'">) "'"
-<special literal> := "input" | "output" | ""
+<special literal> := "input" | "output" | "config"
 <type literal> := "<" <type> ">"
 <paran> := "(" <expr> ")"
 <if> := "if" <expr> <indent block> *("elif" <expr> <indent block>) ("else" <indent block>)?
