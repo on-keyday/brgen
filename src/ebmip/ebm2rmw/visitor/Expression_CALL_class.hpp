@@ -23,6 +23,7 @@
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 
 #include "../codegen.hpp"
+#include "ebm/extended_binary_module.hpp"
 DEFINE_VISITOR(Expression_CALL) {
     using namespace CODEGEN_NAMESPACE;
     /*here to write the hook*/
@@ -38,10 +39,42 @@ DEFINE_VISITOR(Expression_CALL) {
         MAYBE(arg_res, ctx.visit(arg));
         arg_strs.push_back(arg_res.str_repr);
     }
-    MAYBE(callee, ctx.visit(ctx.call_desc.callee));
-    auto str_repr = std::format("{}({})", callee.str_repr, join(", ", arg_strs));
+    std::string str_repr;
     ebm::Instruction instr;
     instr.op = ebm::OpCode::CALL;
+    // callee maybe function, if so CALL_DIRECT
+    // pattern 1. direct function
+    // pattern 2. member function
+    auto maybe_member_func = ctx.get_field<"member.body.id.id">(ctx.call_desc.callee);
+    if (maybe_member_func) {
+        auto func = ctx.get_field<"func_decl">(*maybe_member_func);
+        if (func) {
+            instr.op = ebm::OpCode::CALL_DIRECT;
+            instr.func_id(*maybe_member_func);
+            str_repr = std::format("{}.{}({})", ctx.identifier(func->parent_format), ctx.identifier(*maybe_member_func), join(", ", arg_strs));
+            if (!ctx.config().env.has_function(*maybe_member_func)) {
+                auto f = ctx.config().env.new_function(*maybe_member_func);
+                MAYBE(_, ctx.visit(*maybe_member_func));  // add function to instructions
+            }
+        }
+    }
+    auto maybe_func = ctx.get_field<"body.id.id">(ctx.call_desc.callee);
+    if (maybe_func) {
+        auto func = ctx.get_field<"func_decl">(*maybe_func);
+        if (func) {
+            instr.op = ebm::OpCode::CALL_DIRECT;
+            instr.func_id(*maybe_func);
+            str_repr = std::format("{}({})", ctx.identifier(*maybe_func), join(", ", arg_strs));
+            if (!ctx.config().env.has_function(*maybe_func)) {
+                auto f = ctx.config().env.new_function(*maybe_func);
+                MAYBE(_, ctx.visit(*maybe_func));  // add function to instructions
+            }
+        }
+    }
+    if (instr.op == ebm::OpCode::CALL) {
+        MAYBE(callee, ctx.visit(ctx.call_desc.callee));
+        str_repr = std::format("{}({})", callee.str_repr, join(", ", arg_strs));
+    }
     instr.arg_num(*varint(static_cast<std::uint64_t>(ctx.call_desc.arguments.container.size())));
     ctx.config().env.add_instruction(instr, str_repr);
     return Result{.str_repr = str_repr};

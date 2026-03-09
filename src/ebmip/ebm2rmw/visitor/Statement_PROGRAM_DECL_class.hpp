@@ -25,6 +25,7 @@
 #include "file/file_view.h"
 #include "interpret.hpp"
 #include "layout.hpp"
+#include "optimize.hpp"
 #include "wrap/cout.h"
 DEFINE_VISITOR(Statement_PROGRAM_DECL) {
     using namespace CODEGEN_NAMESPACE;
@@ -49,11 +50,12 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
         for (auto& func : ctx.config().env.get_function_insert_order()) {
             MAYBE(func_decl, ctx.get_field<"func_decl">(ebm::StatementRef{func}));
             if (!is_nil(func_decl.parent_format)) {
-                futils::wrap::cout_wrap() << "Function " << ctx.identifier(func_decl.parent_format) << "." << ctx.identifier(ebm::StatementRef{func}) << ":\n";
+                futils::wrap::cout_wrap() << "Function " << ctx.identifier(func_decl.parent_format) << "." << ctx.identifier(ebm::StatementRef{func});
             }
             else {
-                futils::wrap::cout_wrap() << "Function " << ctx.identifier(ebm::StatementRef{func}) << ":\n";
+                futils::wrap::cout_wrap() << "Function " << ctx.identifier(ebm::StatementRef{func});
             }
+            futils::wrap::cout_wrap() << " (id: " << get_id(func) << "):\n";
             size_t instr_index = 0;
             InitialContext ictx{.visitor = ctx.visitor};
             auto& func_body = ctx.config().env.get_functions()[func];
@@ -97,6 +99,8 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
     }
     MAYBE(fnt, ctx.module().get_statement(entry_decode_fn));
     MAYBE(decl, fnt.body.func_decl());
+    Optimizer optimizer;
+    optimizer.optimize_function(ctx.config().env);
     RuntimeEnv runtime;
     std::vector<Value> params;
     params.resize(decl.params.container.size());  // initialize parameters with default values (currently all zero/empty, can be extended to support user-specified parameter values)

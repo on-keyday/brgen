@@ -76,6 +76,6 @@ DEFINE_VISITOR(Statement_LOOP_STATEMENT) {
         jif_offset.backward(false);
         jif_instr.target(jif_offset);
     }
-    ctx.config().env.add_instruction({.op = ebm::OpCode::NOP}, "end_loop");
+    // ctx.config().env.add_instruction({.op = ebm::OpCode::NOP}, "end_loop");
     return {};
 }

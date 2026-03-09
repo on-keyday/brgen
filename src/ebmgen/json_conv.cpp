@@ -1370,6 +1370,15 @@ namespace ebm {
                 return false;
             }
         }
+        if (auto got = j.at("index")) {
+            Varint tmp;
+            if(!futils::json::convert_from_json(*got, tmp)) {
+                return false;
+            }
+            if(!obj.index(std::move(tmp))) {
+                return false;
+            }
+        }
         if (auto got = j.at("member_id")) {
             StatementRef tmp;
             if(!futils::json::convert_from_json(*got, tmp)) {
@@ -3813,6 +3822,10 @@ namespace ebm {
                 obj = OpCode::IS_ERROR;
                 return true;
             }
+            if (s == "CALL_DIRECT") {
+                obj = OpCode::CALL_DIRECT;
+                return true;
+            }
             if (s == "POP") {
                 obj = OpCode::POP;
                 return true;
@@ -4095,6 +4108,10 @@ namespace ebm {
             }
             if (s == "CALL_GETTER") {
                 obj = OpCode::CALL_GETTER;
+                return true;
+            }
+            if (s == "ARRAY_GET_IMM") {
+                obj = OpCode::ARRAY_GET_IMM;
                 return true;
             }
             if (s == "MAX_OPCODE") {

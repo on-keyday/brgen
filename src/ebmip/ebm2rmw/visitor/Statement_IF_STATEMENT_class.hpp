@@ -61,6 +61,6 @@ DEFINE_VISITOR(Statement_IF_STATEMENT) {
     else {
         insert_jump_if_false(ctx.config().env.access_instructions().size());
     }
-    ctx.config().env.add_instruction({.op = ebm::OpCode::NOP}, "}");
+    // ctx.config().env.add_instruction({.op = ebm::OpCode::NOP}, "}");
     return {};
 }

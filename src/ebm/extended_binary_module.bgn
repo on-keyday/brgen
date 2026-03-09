@@ -941,6 +941,7 @@ enum OpCode:
     ERROR           = 0x07 
     ASSERT          = 0x08 
     IS_ERROR        = 0x09
+    CALL_DIRECT     = 0x0A
 
     # --- 0x10: Stack & Memory ---
     POP             = 0x10
@@ -1035,6 +1036,7 @@ enum OpCode:
     VECTOR_PUSH     = 0x98
     LOAD_FUNC       = 0x99
     CALL_GETTER     = 0x9A
+    ARRAY_GET_IMM   = 0x9B
 
     MAX_OPCODE      = 0xFF
 
@@ -1121,9 +1123,14 @@ format Instruction:
             member_id :StatementRef
         OpCode.LOAD_FUNC:
             func_id :StatementRef
+        OpCode.CALL_DIRECT:
+            func_id :StatementRef
+            arg_num :Varint
         OpCode.CALL_GETTER:
             func_id :StatementRef
         OpCode.NEW_BYTES:
             imm :OptionalImmediateSize
         OpCode.RET:
             ret_value :RetValue
+        OpCode.ARRAY_GET_IMM:
+            index :Varint

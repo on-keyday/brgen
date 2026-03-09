@@ -593,6 +593,27 @@ namespace ebm2rmw {
                         }
                         break;
                     }
+                    case ebm::OpCode::ARRAY_GET_IMM: {
+                        if (stack.empty()) {
+                            return ebmgen::unexpect_error("stack underflow on ARRAY_GET_IMM");
+                        }
+                        auto base_val = stack_pop();
+                        base_val.unref();
+                        if (!std::holds_alternative<ObjectRef>(base_val.value)) {
+                            return ebmgen::unexpect_error("base value is not an array");
+                        }
+                        auto base_ptr = std::get<ObjectRef>(base_val.value);
+                        auto index = instr.instr.index()->value();
+                        if (index >= base_ptr.raw_object.size()) {
+                            return ebmgen::unexpect_error("array index out of bounds");
+                        }
+                        auto element = base_ptr.raw_object.substr(index, 1);
+                        if (instr.scratch != element.size()) {
+                            return ebmgen::unexpect_error("only byte arrays are supported in ARRAY_GET_IMM");
+                        }
+                        stack_push(Value{ObjectRef{instr.type_info, element}});
+                        break;
+                    }
                     case ebm::OpCode::ARRAY_GET: {
                         if (stack.size() < 2) {
                             return ebmgen::unexpect_error("stack underflow on ARRAY_GET");
@@ -737,8 +758,6 @@ namespace ebm2rmw {
                             return ebmgen::unexpect_error("CALL target is not a function");
                         }
                         auto func = std::get<Function>(callee.value);
-                        MAYBE(func_def, ctx.get(func.id));
-                        MAYBE(decl, func_def.body.func_decl());
                         std::vector<Value> call_params;
                         for (int i = static_cast<int>(num_args->value()) - 1; i >= 0; i--) {
                             auto arg_val = stack_pop();
@@ -751,6 +770,37 @@ namespace ebm2rmw {
                             return ebmgen::unexpect_error("CALL new self is not an object");
                         }
                         auto func_enter = ctx.config().env.new_function(func.id);
+                        bool no_error = false;
+                        const auto frame = new_frame(no_error);
+                        auto& new_this = *call_stack.back();
+                        new_this.params = std::move(call_params);
+                        new_this.self = std::get<ObjectRef>(new_self.value);
+                        size_t func_ip = 0;
+                        MAYBE_VOID(r, interpret_impl(ctx, func_ip));
+                        no_error = true;
+                        break;
+                    }
+                    case ebm::OpCode::CALL_DIRECT: {
+                        auto num_args = instr.instr.arg_num();
+                        if (!num_args) {
+                            return ebmgen::unexpect_error("missing argument number in CALL_DIRECT");
+                        }
+                        if (stack.size() < num_args->value() + 1) {
+                            return ebmgen::unexpect_error("stack underflow on CALL_DIRECT");
+                        }
+                        auto func = *instr.instr.func_id();
+                        std::vector<Value> call_params;
+                        for (int i = static_cast<int>(num_args->value()) - 1; i >= 0; i--) {
+                            auto arg_val = stack_pop();
+                            arg_val.unref();
+                            call_params.push_back(std::move(arg_val));
+                        }
+                        auto new_self = stack_pop();
+                        new_self.unref();
+                        if (!std::holds_alternative<ObjectRef>(new_self.value)) {
+                            return ebmgen::unexpect_error("CALL_DIRECT new self is not an object");
+                        }
+                        auto func_enter = ctx.config().env.new_function(func);
                         bool no_error = false;
                         const auto frame = new_frame(no_error);
                         auto& new_this = *call_stack.back();

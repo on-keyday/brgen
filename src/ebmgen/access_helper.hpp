@@ -1498,6 +1498,9 @@ namespace ebmcodegen {
             else if constexpr (FieldIndex == 114) {
                 return in.imm();
             }
+            else if constexpr (FieldIndex == 39) {
+                return in.index();
+            }
             else if constexpr (FieldIndex == 115) {
                 return in.member_id();
             }
@@ -1560,6 +1563,12 @@ namespace ebmcodegen {
                     return decltype(in->imm())();
                 }
                 return in->imm();
+            }
+            else if constexpr (FieldIndex == 39) {
+                if (!in) {
+                    return decltype(in->index())();
+                }
+                return in->index();
             }
             else if constexpr (FieldIndex == 115) {
                 if (!in) {
@@ -4169,6 +4178,9 @@ namespace ebmcodegen {
         }
         if (field_name == "imm") {
             return 114;
+        }
+        if (field_name == "index") {
+            return 39;
         }
         if (field_name == "member_id") {
             return 115;
@@ -9038,6 +9050,9 @@ namespace ebmcodegen {
             }
             if (field_index == get_field_index<24>("imm")) {
                 return {.index = 37, .is_array = false, .is_ptr = true};
+            }
+            if (field_index == get_field_index<24>("index")) {
+                return {.index = 66, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<24>("member_id")) {
                 return {.index = 60, .is_array = false, .is_ptr = true};

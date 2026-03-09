@@ -1561,6 +1561,7 @@ namespace ebm::zc {
         ERROR = 0x07,
         ASSERT = 0x08,
         IS_ERROR = 0x09,
+        CALL_DIRECT = 0x0A,
         POP = 0x10,
         DUP = 0x11,
         SWAP = 0x12,
@@ -1632,6 +1633,7 @@ namespace ebm::zc {
         VECTOR_PUSH = 0x98,
         LOAD_FUNC = 0x99,
         CALL_GETTER = 0x9A,
+        ARRAY_GET_IMM = 0x9B,
         MAX_OPCODE = 0xFF,
     };
     constexpr const char* to_string(OpCode e, bool origin_form = false) {
@@ -1646,6 +1648,7 @@ namespace ebm::zc {
             case OpCode::ERROR: return origin_form ? "ERROR":"ERROR" ;
             case OpCode::ASSERT: return origin_form ? "ASSERT":"ASSERT" ;
             case OpCode::IS_ERROR: return origin_form ? "IS_ERROR":"IS_ERROR" ;
+            case OpCode::CALL_DIRECT: return origin_form ? "CALL_DIRECT":"CALL_DIRECT" ;
             case OpCode::POP: return origin_form ? "POP":"POP" ;
             case OpCode::DUP: return origin_form ? "DUP":"DUP" ;
             case OpCode::SWAP: return origin_form ? "SWAP":"SWAP" ;
@@ -1717,6 +1720,7 @@ namespace ebm::zc {
             case OpCode::VECTOR_PUSH: return origin_form ? "VECTOR_PUSH":"VECTOR_PUSH" ;
             case OpCode::LOAD_FUNC: return origin_form ? "LOAD_FUNC":"LOAD_FUNC" ;
             case OpCode::CALL_GETTER: return origin_form ? "CALL_GETTER":"CALL_GETTER" ;
+            case OpCode::ARRAY_GET_IMM: return origin_form ? "ARRAY_GET_IMM":"ARRAY_GET_IMM" ;
             case OpCode::MAX_OPCODE: return origin_form ? "MAX_OPCODE":"MAX_OPCODE" ;
         }
         return "";
@@ -1755,6 +1759,9 @@ namespace ebm::zc {
         }
         if (str == "IS_ERROR") {
             return OpCode::IS_ERROR;
+        }
+        if (str == "CALL_DIRECT") {
+            return OpCode::CALL_DIRECT;
         }
         if (str == "POP") {
             return OpCode::POP;
@@ -1968,6 +1975,9 @@ namespace ebm::zc {
         }
         if (str == "CALL_GETTER") {
             return OpCode::CALL_GETTER;
+        }
+        if (str == "ARRAY_GET_IMM") {
+            return OpCode::ARRAY_GET_IMM;
         }
         if (str == "MAX_OPCODE") {
             return OpCode::MAX_OPCODE;
@@ -5333,14 +5343,21 @@ namespace ebm::zc {
         };
         struct EBM_API union_struct_202{
             StatementRef func_id;
+            Varint arg_num;
         };
         struct EBM_API union_struct_203{
-            OptionalImmediateSize imm;
+            StatementRef func_id;
         };
         struct EBM_API union_struct_204{
+            OptionalImmediateSize imm;
+        };
+        struct EBM_API union_struct_205{
             RetValue ret_value;
         };
-        std::variant<std::monostate, union_struct_181, union_struct_182, union_struct_183, union_struct_184, union_struct_185, union_struct_186, union_struct_187, union_struct_188, union_struct_189, union_struct_190, union_struct_191, union_struct_192, union_struct_193, union_struct_194, union_struct_195, union_struct_196, union_struct_197, union_struct_198, union_struct_199, union_struct_200, union_struct_201, union_struct_202, union_struct_203, union_struct_204> union_variant_180;
+        struct EBM_API union_struct_206{
+            Varint index;
+        };
+        std::variant<std::monostate, union_struct_181, union_struct_182, union_struct_183, union_struct_184, union_struct_185, union_struct_186, union_struct_187, union_struct_188, union_struct_189, union_struct_190, union_struct_191, union_struct_192, union_struct_193, union_struct_194, union_struct_195, union_struct_196, union_struct_197, union_struct_198, union_struct_199, union_struct_200, union_struct_201, union_struct_202, union_struct_203, union_struct_204, union_struct_205, union_struct_206> union_variant_180;
         const Varint* arg_num() const;
         Varint* arg_num();
         bool arg_num(Varint&& v);
@@ -5357,6 +5374,10 @@ namespace ebm::zc {
         OptionalImmediateSize* imm();
         bool imm(OptionalImmediateSize&& v);
         bool imm(const OptionalImmediateSize& v);
+        const Varint* index() const;
+        Varint* index();
+        bool index(Varint&& v);
+        bool index(const Varint& v);
         const StatementRef* member_id() const;
         StatementRef* member_id();
         bool member_id(StatementRef&& v);
@@ -5408,6 +5429,7 @@ namespace ebm::zc {
             v(v, "cast_type",(*this).cast_type());
             v(v, "func_id",(*this).func_id());
             v(v, "imm",(*this).imm());
+            v(v, "index",(*this).index());
             v(v, "member_id",(*this).member_id());
             v(v, "msg_id",(*this).msg_id());
             v(v, "offset",(*this).offset());
@@ -5426,6 +5448,7 @@ namespace ebm::zc {
             v(v, "cast_type",(*this).cast_type());
             v(v, "func_id",(*this).func_id());
             v(v, "imm",(*this).imm());
+            v(v, "index",(*this).index());
             v(v, "member_id",(*this).member_id());
             v(v, "msg_id",(*this).msg_id());
             v(v, "offset",(*this).offset());
@@ -5449,6 +5472,7 @@ namespace ebm::zc {
             v(v, "cast_type",visitor_tag<decltype(std::declval<Instruction>().cast_type()),false>{});
             v(v, "func_id",visitor_tag<decltype(std::declval<Instruction>().func_id()),false>{});
             v(v, "imm",visitor_tag<decltype(std::declval<Instruction>().imm()),false>{});
+            v(v, "index",visitor_tag<decltype(std::declval<Instruction>().index()),false>{});
             v(v, "member_id",visitor_tag<decltype(std::declval<Instruction>().member_id()),false>{});
             v(v, "msg_id",visitor_tag<decltype(std::declval<Instruction>().msg_id()),false>{});
             v(v, "offset",visitor_tag<decltype(std::declval<Instruction>().offset()),false>{});

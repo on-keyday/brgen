@@ -28,11 +28,25 @@ DEFINE_VISITOR(Expression_INDEX_ACCESS) {
     ctx.config().is_lvalue = true;  // set lvalue context for index access
     MAYBE(base, ctx.visit(ctx.base));
     ctx.config().is_lvalue = false;  // restore lvalue context for index
-    MAYBE(index, ctx.visit(ctx.index));
+    Result index;
+    auto int_value = ctx.get_field<"int_value">(ctx.index);
+    if (int_value) {
+        index.str_repr = std::to_string(int_value->value());
+    }
+    else {
+        MAYBE(index_, ctx.visit(ctx.index));
+        index = std::move(index_);
+    }
     ctx.config().is_lvalue = current_lvalue;  // restore lvalue context
     auto str_repr = std::format("({}[{}])", base.str_repr, index.str_repr);
     InitialContext ictx{.visitor = ctx.visitor};
     MAYBE(element_layout, analyze_layout(ictx, ctx.type));
-    ctx.config().env.add_instruction({.op = ebm::OpCode::ARRAY_GET}, str_repr, element_layout.size, ctx.type);
+    ebm::Instruction instr;
+    instr.op = ebm::OpCode::ARRAY_GET;
+    if (int_value) {
+        instr.op = ebm::OpCode::ARRAY_GET_IMM;
+        instr.index(*int_value);
+    }
+    ctx.config().env.add_instruction(instr, str_repr, element_layout.size, ctx.type);
     return Result{.str_repr = str_repr};
 }
