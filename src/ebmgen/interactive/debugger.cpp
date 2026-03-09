@@ -90,7 +90,7 @@ namespace ebmgen {
         using Node = futils::comb2::tree::node::GenericNode<NodeType>;
 
         futils::helper::either::expected<std::shared_ptr<Node>, std::pair<futils::code::SrcLoc, std::string>> parse_line(std::string_view line) {
-            auto input = futils::make_ref_seq(std::string_view(line));
+            auto input = futils::make_ref_seq(line);
             futils::comb2::tree::BranchTable table;
             auto res = query::full_expr(input, table, query::recurse);
             if (res != futils::comb2::Status::match || !input.eos()) {
