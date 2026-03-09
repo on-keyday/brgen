@@ -19,6 +19,7 @@
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 
 #include "../codegen.hpp"
+#include "layout.hpp"
 DEFINE_VISITOR(Statement_APPEND) {
     using namespace CODEGEN_NAMESPACE;
     /*here to write the hook*/
@@ -28,6 +29,9 @@ DEFINE_VISITOR(Statement_APPEND) {
     ctx.config().is_lvalue = false;  // restore lvalue context for value
     MAYBE(value, ctx.visit(ctx.value));
     ctx.config().is_lvalue = current_lvalue;  // restore original lvalue context
-    ctx.config().env.add_instruction({.op = ebm::OpCode::VECTOR_PUSH}, std::format("{}.append({})", target.str_repr, value.str_repr));
+    MAYBE(element_type, ctx.get_field<"type.element_type">(ctx.target));
+    InitialContext ictx{.visitor = ctx.visitor};
+    MAYBE(element_layout, analyze_layout(ictx, element_type));
+    ctx.config().env.add_instruction({.op = ebm::OpCode::VECTOR_PUSH}, std::format("{}.append({})", target.str_repr, value.str_repr), element_layout.size, element_type);
     return {};
 }

@@ -25,13 +25,14 @@
 
 #include "../codegen.hpp"
 #include "ebm/extended_binary_module.hpp"
+#include "layout.hpp"
 DEFINE_VISITOR(Statement_VARIABLE_DECL) {
     using namespace CODEGEN_NAMESPACE;
     /*here to write the hook*/
     MAYBE(initial_value, ctx.visit(ctx.var_decl.initial_value));
     auto identifier = ctx.identifier();
-    if (ctx.get_kind(ctx.var_decl.var_type) == ebm::TypeKind::DECODER_RETURN) {
-        ctx.config().env.add_instruction(ebm::Instruction{.op = ebm::OpCode::POP}, "<decoder return value>");
+    auto kind = ctx.get_kind(ctx.var_decl.var_type);
+    if (kind == ebm::TypeKind::DECODER_RETURN || kind == ebm::TypeKind::ENCODER_RETURN) {
         return {};
     }
     ebm::Instruction instr;
@@ -39,6 +40,22 @@ DEFINE_VISITOR(Statement_VARIABLE_DECL) {
     instr.reg(ebm::RegisterIndex{.index = ctx.item_id});
     ctx.config().env.add_local(ctx.item_id);
     auto offset = ctx.config().env.get_local(ctx.item_id);
+    if (ctx.config().env.access_instructions().back().instr.op == ebm::OpCode::NEW_STRUCT) {
+        auto& last_instr = ctx.config().env.access_instructions().back();
+        LayoutScratch layout_scratch{last_instr.scratch};
+        auto offset = ctx.config().env.struct_area_offset(layout_scratch.size());
+        if (offset >= (1ull << 32)) {
+            return ebmgen::unexpect_error("struct area exceeds 4GB limit");
+        }
+        layout_scratch.offset(static_cast<std::uint32_t>(offset));
+        last_instr.scratch = layout_scratch.scratch.as_value();
+    }
+    if (ctx.config().env.access_instructions().back().instr.op == ebm::OpCode::NEW_BYTES) {
+        auto& last_instr = ctx.config().env.access_instructions().back();
+        size_t size = last_instr.instr.imm()->size()->value();
+        auto offset = ctx.config().env.struct_area_offset(size);
+        last_instr.scratch = offset;  // for NEW_BYTES, we directly use scratch as offset to bytes arena
+    }
     ctx.config().env.add_instruction(instr, std::format("{} := {}", identifier, initial_value.str_repr), offset);
     return {};
 }

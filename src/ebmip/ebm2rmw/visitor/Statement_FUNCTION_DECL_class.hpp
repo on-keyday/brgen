@@ -30,5 +30,8 @@
 DEFINE_VISITOR(Statement_FUNCTION_DECL) {
     using namespace CODEGEN_NAMESPACE;
     /*here to write the hook*/
+    for (auto& param : ctx.func_decl.params.container) {
+        ctx.config().env.add_param(param);
+    }
     return ctx.visit(ctx.func_decl.body);
 }

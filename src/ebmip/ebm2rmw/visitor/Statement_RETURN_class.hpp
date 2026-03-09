@@ -24,12 +24,17 @@
 DEFINE_VISITOR(Statement_RETURN) {
     using namespace CODEGEN_NAMESPACE;
     /*here to write the hook*/
-    if (is_nil(ctx.value)) {
-        ctx.config().env.add_instruction({.op = ebm::OpCode::PUSH_NULL}, "<void>");
-        ctx.config().env.add_instruction({.op = ebm::OpCode::RET}, "return");
+    ebm::Instruction instr{.op = ebm::OpCode::RET};
+    ebm::RetValue ret_value{};
+    auto type = ctx.get_field<"type.kind.optional">(ctx.value);
+    bool no_return_value = is_nil(ctx.value) || type == ebm::TypeKind::ENCODER_RETURN || type == ebm::TypeKind::DECODER_RETURN;
+    ret_value.has_value(!no_return_value);
+    instr.ret_value(std::move(ret_value));
+    if (no_return_value) {
+        ctx.config().env.add_instruction(instr, "return");
         return {};
     }
     MAYBE(val, ctx.visit(ctx.value));
-    ctx.config().env.add_instruction({.op = ebm::OpCode::RET}, std::format("return {}", val.str_repr));
+    ctx.config().env.add_instruction(instr, std::format("return {}", val.str_repr));
     return {};
 }

@@ -12,6 +12,7 @@ namespace ebm2rmw {
         ebm::Instruction instr;
         std::string str_repr;
         std::uint64_t scratch = 0;
+        ebm::TypeRef type_info;
     };
 
     struct FunctionDecl {
@@ -20,6 +21,7 @@ namespace ebm2rmw {
         std::unordered_map<ebm::StatementRef, size_t> local_indices;
         size_t param_count = 0;
         std::unordered_map<ebm::StatementRef, size_t> param_indices;
+        size_t structs_area = 0;
     };
 
     struct Env {
@@ -48,6 +50,13 @@ namespace ebm2rmw {
             }
         }
 
+        size_t struct_area_offset(size_t size) {
+            auto& func = *instructions;
+            size_t offset = func.structs_area;
+            func.structs_area += size;
+            return offset;
+        }
+
         size_t get_local(ebm::StatementRef local_id) const {
             auto& func = *instructions;
             auto found = func.local_indices.find(local_id);
@@ -62,11 +71,19 @@ namespace ebm2rmw {
             }
         }
 
-        void add_instruction(const ebm::Instruction& instr, std::string str_repr, std::uint64_t scratch = 0) {
+        size_t get_param(ebm::StatementRef param_id) const {
+            auto& func = *instructions;
+            auto found = func.param_indices.find(param_id);
+            assert(found != func.param_indices.end());
+            return found->second;
+        }
+
+        void add_instruction(const ebm::Instruction& instr, std::string str_repr, std::uint64_t scratch = 0, ebm::TypeRef type_info = {}) {
             instructions->instructions.push_back(Instruction{
                 .instr = instr,
                 .str_repr = std::move(str_repr),
                 .scratch = scratch,
+                .type_info = type_info,
             });
         }
 

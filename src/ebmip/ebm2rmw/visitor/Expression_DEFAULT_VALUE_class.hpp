@@ -46,7 +46,7 @@ DEFINE_VISITOR(Expression_DEFAULT_VALUE) {
             imm.size(size);
             instr.imm(imm);
             auto str_repr = std::format("new byte[{}]{{}}", size.value());
-            ctx.config().env.add_instruction(instr, str_repr);
+            ctx.config().env.add_instruction(instr, str_repr, 0, ctx.type);
             return Result{.str_repr = str_repr};
         }
     }
@@ -62,20 +62,19 @@ DEFINE_VISITOR(Expression_DEFAULT_VALUE) {
         instr.op = ebm::OpCode::NEW_STRUCT;
         InitialContext ictx{.visitor = ctx.visitor};
 
-        MAYBE(_, analyze_layout(ictx, ctx.type));
+        MAYBE(layout, analyze_layout(ictx, ctx.type));
         MAYBE(type_impl, ctx.get(ctx.type));
         MAYBE(struct_id, type_impl.body.id());
         instr.struct_id(from_weak(struct_id));
         auto ident = ctx.identifier(struct_id);
         auto str_repr = std::format("new {}", ident);
-        ctx.config().env.add_instruction(instr, str_repr);
+        LayoutScratch scratch;
+        if (layout.size >= (1ull << 32)) {
+            return ebmgen::unexpect_error("struct size exceeds 4GB limit for default value");
+        }
+        scratch.size(static_cast<std::uint32_t>(layout.size));  // offset will be filled by caller (for example, STORE_LOCAL)
+        ctx.config().env.add_instruction(instr, str_repr, scratch.scratch.as_value(), ctx.type);
         return Result{.str_repr = str_repr};
-    }
-    if (ctx.is(ebm::TypeKind::DECODER_RETURN)) {
-        ebm::Instruction instr;
-        instr.op = ebm::OpCode::PUSH_SUCCESS;
-        ctx.config().env.add_instruction(instr, "<success>");
-        return Result{.str_repr = "<success>"};
     }
     if (ctx.is(ebm::TypeKind::OPTIONAL)) {
         MAYBE(inner_type, ctx.get_field<"inner_type">(ctx.type));

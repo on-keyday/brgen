@@ -20,6 +20,7 @@
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 
 #include "../codegen.hpp"
+#include "layout.hpp"
 DEFINE_VISITOR(Expression_INDEX_ACCESS) {
     using namespace CODEGEN_NAMESPACE;
     /*here to write the hook*/
@@ -30,6 +31,8 @@ DEFINE_VISITOR(Expression_INDEX_ACCESS) {
     MAYBE(index, ctx.visit(ctx.index));
     ctx.config().is_lvalue = current_lvalue;  // restore lvalue context
     auto str_repr = std::format("({}[{}])", base.str_repr, index.str_repr);
-    ctx.config().env.add_instruction({.op = ebm::OpCode::ARRAY_GET}, str_repr);
+    InitialContext ictx{.visitor = ctx.visitor};
+    MAYBE(element_layout, analyze_layout(ictx, ctx.type));
+    ctx.config().env.add_instruction({.op = ebm::OpCode::ARRAY_GET}, str_repr, element_layout.size, ctx.type);
     return Result{.str_repr = str_repr};
 }

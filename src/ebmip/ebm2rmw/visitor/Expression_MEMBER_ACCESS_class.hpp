@@ -44,10 +44,18 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS) {
         ctx.config().env.add_instruction(instr, std::format("{}.{}", parent_ident, identifier));
         return Result{.str_repr = std::move(identifier)};
     }
-    auto current_lvalue = ctx.config().is_lvalue;
-    ctx.config().is_lvalue = true;  // set lvalue context for member access
-    MAYBE(base, ctx.visit(ctx.base));
-    ctx.config().is_lvalue = current_lvalue;  // restore lvalue context
+    Result base;
+    bool base_is_self = ctx.is(ebm::ExpressionKind::SELF, ctx.base);
+    if (!base_is_self) {
+        auto current_lvalue = ctx.config().is_lvalue;
+        ctx.config().is_lvalue = true;  // set lvalue context for member access
+        MAYBE(base_, ctx.visit(ctx.base));
+        ctx.config().is_lvalue = current_lvalue;  // restore lvalue context
+        base = std::move(base_);
+    }
+    else {
+        base = Result{.str_repr = "self"};
+    }
     if (ctx.is(ebm::StatementKind::PROPERTY_DECL, id)) {
         auto prop = ctx.get_field<"property_decl">(id);
         if (prop) {
@@ -95,7 +103,7 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS) {
         }
     }
     ebm::Instruction instr;
-    instr.op = ctx.config().is_lvalue ? ebm::OpCode::LOAD_MEMBER_REF : ebm::OpCode::LOAD_MEMBER;
+    instr.op = base_is_self ? ebm::OpCode::LOAD_SELF_MEMBER : ebm::OpCode::LOAD_MEMBER;
     instr.member_id(id);
     auto str_repr = std::format("{}.{}", base.str_repr, identifier);
     ctx.config().env.add_instruction(instr, str_repr, layout_scratch.scratch.as_value());

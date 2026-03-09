@@ -21,6 +21,7 @@
 
 #include "../codegen.hpp"
 #include <ebmgen/interactive/debugger.hpp>
+#include "ebm/extended_binary_module.hpp"
 #include "file/file_view.h"
 #include "interpret.hpp"
 #include "layout.hpp"
@@ -32,7 +33,7 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
         return unexpect_error("Entry point is not specified.");
     }
     auto query = std::format("Statement{{ body.struct_decl.has_encode_decode and id == \"{}\" }}", entry_str);
-    futils::wrap::cout_wrap() << "Querying entry point with: " << query << "\n";
+    futils::wrap::cerr_wrap() << "Querying entry point with: " << query << "\n";
     MAYBE(query_result, ebmgen::run_query(ctx.module(), query));
     if (query_result.first.size() != 1) {
         return unexpect_error("Entry point not found: {}", entry_str);
@@ -63,6 +64,18 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
                 if (!args.empty()) {
                     futils::wrap::cout_wrap() << ", args={" << args << "}";
                 }
+                if (instr.instr.op == ebm::OpCode::LOAD_MEMBER || instr.instr.op == ebm::OpCode::LOAD_SELF_MEMBER) {
+                    LayoutScratch scratch{instr.scratch};
+                    futils::wrap::cout_wrap() << " member offset: " << scratch.offset() << ", size: " << scratch.size();
+                }
+                if (instr.instr.op == ebm::OpCode::LOAD_LOCAL || instr.instr.op == ebm::OpCode::STORE_LOCAL || instr.instr.op == ebm::OpCode::LOAD_LOCAL_REF) {
+                    auto offset = instr.scratch;
+                    futils::wrap::cout_wrap() << " local offset: " << offset;
+                }
+                if (instr.instr.op == ebm::OpCode::LOAD_PARAM) {
+                    auto offset = instr.scratch;
+                    futils::wrap::cout_wrap() << " param offset: " << offset;
+                }
                 futils::wrap::cout_wrap() << " // " << instr.str_repr << "\n";
                 instr_index++;
             }
@@ -72,6 +85,7 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
         return res;
     }
     if (ctx.flags().binary_file.empty()) {
+        futils::wrap::cerr_wrap() << "No binary file specified, skipping execution.\n";
         return res;
     }
     futils::file::View file;
@@ -84,11 +98,8 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
     MAYBE(fnt, ctx.module().get_statement(entry_decode_fn));
     MAYBE(decl, fnt.body.func_decl());
     RuntimeEnv runtime;
-    std::map<std::uint64_t, Value> params;
-    for (auto& param : decl.params.container) {
-        // dummy
-        params[param.id.value()] = Value{};
-    }
+    std::vector<Value> params;
+    params.resize(decl.params.container.size());  // initialize parameters with default values (currently all zero/empty, can be extended to support user-specified parameter values)
     runtime.input = futils::view::rvec(file.data(), file.size());
     runtime.input_pos = 0;
     InitialContext initial_ctx{.visitor = ctx.visitor};

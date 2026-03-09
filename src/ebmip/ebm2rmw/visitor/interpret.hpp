@@ -101,14 +101,6 @@ namespace ebm2rmw {
 
     struct Value {
         std::variant<std::monostate,
-                     /*
-                     std::string,
-                      std::uint8_t*,
-                      std::shared_ptr<Value>,
-                      std::unordered_map<std::uint64_t, std::shared_ptr<Value>>,
-                      std::vector<std::shared_ptr<Value>>,
-                      */
-                     // ^^^ old heap, to keep existing references valid. will be removed later.
                      ObjectRef,
                      Value*,
                      Function,
@@ -121,14 +113,9 @@ namespace ebm2rmw {
             }
         }
 
-        void as_int(InitialContext& ctx) {
+        void as_int() {
             unref();
             if (auto obj_ref = std::get_if<ObjectRef>(&value)) {
-                auto kind = ctx.get_kind(obj_ref->type);
-                if (kind != ebm::TypeKind::UINT && kind != ebm::TypeKind::INT &&
-                    kind != ebm::TypeKind::BOOL && kind != ebm::TypeKind::ENUM) {
-                    return;
-                }
                 std::uint64_t int_value = 0;
                 for (size_t i = 0; i < obj_ref->raw_object.size(); i++) {
                     int_value |= static_cast<std::uint64_t>(static_cast<unsigned char>(obj_ref->raw_object[i])) << (i * 8);
@@ -165,10 +152,10 @@ namespace ebm2rmw {
 
     struct StackFrame {
         ObjectRef self;
-        std::map<std::uint64_t, Value> params;
-        std::vector<Value> heap;
+        std::vector<Value> params;
+        std::vector<Value> locals;
         std::vector<std::pair<ebm::OpCode, Value>> stack;
-        BytesArena local_bytes_arena;  // temporary storage for byte arrays in local variables
+        std::vector<std::uint8_t> local_bytes;  // for storing local variables of struct/bytes type
     };
 
     inline std::string instruction_args(const ebm::Instruction& instr, InitialContext& ctx, size_t ip, const FunctionDecl* func_decl) {
@@ -239,19 +226,18 @@ namespace ebm2rmw {
         futils::view::rvec input;
         size_t input_pos = 0;
 
-        ebmgen::expected<ObjectRef> new_object(InitialContext& ctx, ebm::StatementRef ref) {
-            LayoutAccess access{ctx};
-            MAYBE(layout, access.get_struct_layout(ref));
-            bytes_arena.emplace_back();
-            auto& raw_object = bytes_arena.back();
-            raw_object.resize(layout.size);
-            bytes_arena_usage += layout.size;
-            return ObjectRef(layout.type, futils::view::wvec(raw_object));
+        ebmgen::expected<ObjectRef> new_object(InitialContext& ctx, futils::view::wvec local_arena, ebm::TypeRef ref, LayoutScratch scratch) {
+            auto offset = scratch.offset();
+            auto size = scratch.size();
+            auto substr = local_arena.substr(offset, size);
+            if (substr.size() != size) {
+                return ebmgen::unexpect_error("invalid local arena object size: expected {}, got {}", size, substr.size());
+            }
+            substr.fill(0);  // zero-initialize the memory
+            return ObjectRef(ref, substr);
         }
 
-        ebmgen::expected<ObjectRef> vector_alloc_back(InitialContext& ctx, ObjectRef vec) {
-            LayoutAccess access(ctx);
-            MAYBE(layout, access.get_vector_element_type(vec.type));
+        ebmgen::expected<ObjectRef> vector_alloc_back(InitialContext& ctx, ObjectRef vec, size_t element_size, ebm::TypeRef element_type) {
             MAYBE(index, decode_uint64(vec));
             if (index == 0) {
                 bytes_arena.emplace_back();
@@ -262,10 +248,10 @@ namespace ebm2rmw {
             if (actual_index >= bytes_arena.size()) {
                 return ebmgen::unexpect_error("invalid vector index: {} (out of {})", actual_index, bytes_arena.size());
             }
-            bytes_arena[actual_index].resize(bytes_arena[actual_index].size() + layout.size);
-            bytes_arena_usage += layout.size;
-            auto elem_place = futils::view::wvec(bytes_arena[actual_index]).substr(bytes_arena[actual_index].size() - layout.size, layout.size);
-            return ObjectRef(layout.type, elem_place);
+            bytes_arena[actual_index].resize(bytes_arena[actual_index].size() + element_size);
+            bytes_arena_usage += element_size;
+            auto elem_place = futils::view::wvec(bytes_arena[actual_index]).substr(bytes_arena[actual_index].size() - element_size, element_size);
+            return ObjectRef(element_type, elem_place);
         }
 
         ebmgen::expected<futils::view::wvec> get_bytes(InitialContext& ctx, ObjectRef& obj_ref, size_t size) {
@@ -313,16 +299,25 @@ namespace ebm2rmw {
             });
         }
 
+        std::uint64_t stats_op_count[256] = {0};
+
        public:
-        ebmgen::expected<void> interpret(InitialContext& ctx, ebm::StatementRef self_type, std::map<std::uint64_t, Value>& params) {
+        ebmgen::expected<void> interpret(InitialContext& ctx, ebm::StatementRef self_type, std::vector<Value>& params) {
             size_t ip = 0;
             bool no_error = false;
+            auto start = ebmcodegen::Timepoint{};
             const auto frame = new_frame(no_error);
             auto& this_ = *call_stack.back();
             this_.params = params;
-            MAYBE(self_obj, new_object(ctx, self_type));
+            LayoutAccess access(ctx);
+            MAYBE(struct_layout, access.get_struct_layout_detail(self_type));
+            std::vector<std::uint8_t> self_bytes(struct_layout.size);
+            LayoutScratch layout{};
+            layout.size(struct_layout.size);
+            MAYBE(self_obj, new_object(ctx, futils::view::wvec(self_bytes), struct_layout.type, layout));
             this_.self = self_obj;
             auto res = interpret_impl(ctx, ip);
+            auto end = ebmcodegen::Timepoint{};
             auto dump_stack = [&] {
                 auto& env = ctx.config().env;
                 futils::code::CodeWriter<std::string> w;
@@ -330,7 +325,7 @@ namespace ebm2rmw {
                 for (auto& frame : call_stack) {
                     auto& self = frame->self;
                     auto& params = frame->params;
-                    auto& heap = frame->heap;
+                    auto& locals = frame->locals;
                     auto& stack = frame->stack;
                     w.writeln("=== Stack ", std::to_string(call_stack_depth), " ===");
                     w.writeln("IP: ", std::to_string(ip));
@@ -341,15 +336,15 @@ namespace ebm2rmw {
                     print_layout(ctx, w, self);
                     w.writeln();
                     w.writeln("Params:");
-                    for (auto& [k, v] : params) {
-                        w.write("  ", std::to_string(k), ": ");
-                        v.print(ctx, w);
+                    for (size_t i = 0; i < params.size(); i++) {
+                        w.write("  [", std::to_string(i), "]: ");
+                        params[i].print(ctx, w);
                         w.writeln();
                     }
-                    w.writeln("Heap:");
-                    for (size_t i = 0; i < heap.size(); i++) {
+                    w.writeln("Locals:");
+                    for (size_t i = 0; i < locals.size(); i++) {
                         w.write("  [", std::to_string(i), "]: ");
-                        heap[i].print(ctx, w);
+                        locals[i].print(ctx, w);
                         w.writeln();
                     }
                     w.writeln("Stack:");
@@ -362,9 +357,16 @@ namespace ebm2rmw {
                     if (call_stack_depth == 0) {
                         w.writeln("Bytes Arena: chunk=", std::to_string(bytes_arena.size()), " usage=", std::to_string(bytes_arena_usage), " bytes");
                     }
-                    w.writeln("Local Bytes Arena: chunk=", std::to_string(frame->local_bytes_arena.size()));
+                    w.writeln("Local Bytes Arena: size=", std::to_string(frame->local_bytes.size()), " bytes");
                     call_stack_depth++;
                 }
+                for (auto [op, count] : std::ranges::views::enumerate(stats_op_count)) {
+                    if (count > 0) {
+                        w.writeln("Op ", to_string(static_cast<ebm::OpCode>(op), true), ": ", std::to_string(count));
+                    }
+                }
+                auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end.point - start.point);
+                w.writeln("Execution time: ", std::to_string(duration.count()), " ms");
                 futils::wrap::cout_wrap() << w.out();
             };
             if (!res) {
@@ -393,8 +395,8 @@ namespace ebm2rmw {
             auto& self = this_.self;
             auto& params = this_.params;
             auto& stack = this_.stack;
-            auto& local_bytes_arena = this_.local_bytes_arena;
-            local_bytes_arena.clear();
+            auto& local_bytes_arena = this_.local_bytes;
+            local_bytes_arena.resize(ctx.config().env.get_current_function()->structs_area);
             stack.reserve(128);  // arbitrary initial stack size, can grow as needed
             auto stack_pop = [&] {
                 assert(!stack.empty());
@@ -420,8 +422,8 @@ namespace ebm2rmw {
             auto stack_push = [&](Value val) {
                 stack_push_with_stack(stack, std::move(val));
             };
-            auto& heap = this_.heap;
-            heap.resize(env.get_current_function()->local_count);
+            auto& locals = this_.locals;
+            locals.resize(env.get_current_function()->local_count);
             bool no_error = false;
             auto print_step = [&](const Instruction& instr) {
                 auto args = instruction_args(instr.instr, ctx, ip, env.get_current_function());
@@ -432,8 +434,11 @@ namespace ebm2rmw {
                 futils::wrap::cout_wrap() << ", str_repr=" << instr.str_repr << ", stack_size=" << stack.size() << ", call_stack_size=" << call_stack.size() << "\n";
             };
             js_may_cancel_task();
-            while (ip < env.get_instructions().size()) {
-                auto& instr = env.get_instructions()[ip];
+            auto instructions = env.get_instructions().data();
+            size_t instruction_count = env.get_instructions().size();
+            while (ip < instruction_count) {
+                auto& instr = instructions[ip];
+                stats_op_count[static_cast<std::uint8_t>(instr.instr.op)]++;
                 if (ctx.flags().print_step) {
                     print_step(instr);
                 }
@@ -445,8 +450,8 @@ namespace ebm2rmw {
                     auto left = stack_pop();
                     auto r = [&]() -> ebmgen::expected<void> {
                         APPLY_BINARY_OP(*bop, [&](auto&& op) -> ebmgen::expected<void> {
-                            right.as_int(ctx);
-                            left.as_int(ctx);
+                            right.as_int();
+                            left.as_int();
                             if (!std::holds_alternative<std::uint64_t>(left.value) || !std::holds_alternative<std::uint64_t>(right.value)) {
                                 return ebmgen::unexpect_error("binary operation operands must be integers");
                             }
@@ -469,7 +474,7 @@ namespace ebm2rmw {
                     auto operand = stack_pop();
                     auto r = [&]() -> ebmgen::expected<void> {
                         APPLY_UNARY_OP(*uop, [&](auto&& op) -> ebmgen::expected<void> {
-                            operand.as_int(ctx);
+                            operand.as_int();
                             if (!std::holds_alternative<std::uint64_t>(operand.value)) {
                                 return ebmgen::unexpect_error("unary operation operand must be an integer");
                             }
@@ -497,14 +502,11 @@ namespace ebm2rmw {
                     case ebm::OpCode::NEW_BYTES: {
                         MAYBE(imm, instr.instr.imm());
                         if (auto v = imm.size()) {
-                            LayoutAccess access(ctx);
-                            auto array_layout = access.get_u8_n_array(v->value());
-                            if (!array_layout) {
-                                return ebmgen::unexpect_error("failed to get u8 array layout for size {}", v->value());
+                            auto value = futils::view::wvec(local_bytes_arena).substr(instr.scratch, v->value());
+                            if (value.size() != v->value()) {
+                                return ebmgen::unexpect_error("invalid local bytes size: expected {}, got {}", v->value(), value.size());
                             }
-                            std::vector<std::uint8_t> byte_array(v->value());
-                            local_bytes_arena.push_back(std::move(byte_array));
-                            stack_push(Value{ObjectRef(array_layout->type, local_bytes_arena.back())});
+                            stack_push(Value{ObjectRef(instr.type_info, value)});
                         }
                         else {
                             return ebmgen::unexpect_error("missing size immediate in NEW_BYTES");
@@ -517,9 +519,9 @@ namespace ebm2rmw {
                     }
                     case ebm::OpCode::LOAD_LOCAL:
                     case ebm::OpCode::LOAD_LOCAL_REF: {
-                        auto& found = heap[instr.scratch];
+                        auto& found = locals[instr.scratch];
                         if (ctx.flags().print_state) {
-                            futils::wrap::cout_wrap() << "  heap_load: [" << instr.scratch << "] = ";
+                            futils::wrap::cout_wrap() << "  local_load: [" << instr.scratch << "] = ";
                             TmpCodeWriter w;
                             found.print(ctx, w);
                             futils::wrap::cout_wrap() << w.out() << "\n";
@@ -539,12 +541,12 @@ namespace ebm2rmw {
                         auto val = stack_pop();
                         val.unref();
                         if (ctx.flags().print_state) {
-                            futils::wrap::cout_wrap() << "  heap_store: [" << instr.scratch << "] = ";
+                            futils::wrap::cout_wrap() << "  locals_store: [" << instr.scratch << "] = ";
                             TmpCodeWriter w;
                             val.print(ctx, w);
                             futils::wrap::cout_wrap() << w.out() << "\n";
                         }
-                        heap[instr.scratch] = std::move(val);
+                        locals[instr.scratch] = std::move(val);
                         break;
                     }
                     case ebm::OpCode::STORE_REF: {
@@ -563,7 +565,7 @@ namespace ebm2rmw {
                                     break;
                                 }
                                 if (auto int_src = std::get_if<std::uint64_t>(&val.value)) {
-                                    for (size_t i = 0; i < sizeof(std::uint64_t); i++) {
+                                    for (size_t i = 0; i < object_ref->raw_object.size(); i++) {
                                         object_ref->raw_object[i] = static_cast<char>((*int_src >> (i * 8)) & 0xFF);
                                     }
                                     break;
@@ -610,12 +612,10 @@ namespace ebm2rmw {
                             return ebmgen::unexpect_error("array index out of bounds");
                         }
                         auto element = base_ptr.raw_object.substr(index, 1);
-                        LayoutAccess access(ctx);
-                        MAYBE(element_layout, access.get_array_element_type(base_ptr.type));
-                        if (element_layout.size != element.size()) {
+                        if (instr.scratch != element.size()) {
                             return ebmgen::unexpect_error("only byte arrays are supported in ARRAY_GET");
                         }
-                        stack_push(Value{ObjectRef{element_layout.type, element}});
+                        stack_push(Value{ObjectRef{instr.type_info, element}});
                         break;
                     }
                     case ebm::OpCode::READ_BYTES: {
@@ -629,7 +629,7 @@ namespace ebm2rmw {
                                 return ebmgen::unexpect_error("stack underflow on READ_BYTES");
                             }
                             auto size_expr = stack_pop();
-                            size_expr.as_int(ctx);
+                            size_expr.as_int();
                             if (!std::holds_alternative<std::uint64_t>(size_expr.value)) {
                                 return ebmgen::unexpect_error("READ_BYTES size is not an integer");
                             }
@@ -663,8 +663,17 @@ namespace ebm2rmw {
                         input_pos += size;
                         break;
                     }
-                    case ebm::OpCode::LOAD_MEMBER:
-                    case ebm::OpCode::LOAD_MEMBER_REF: {
+                    case ebm::OpCode::LOAD_SELF_MEMBER: {
+                        LayoutScratch scratch{instr.scratch};
+                        auto range = self.raw_object.substr(scratch.offset(), scratch.size());
+                        if (range.size() != scratch.size()) {
+                            return ebmgen::unexpect_error("LOAD_SELF_MEMBER range out of bounds");
+                        }
+                        MAYBE(field_decl, ctx.get_field<"field_decl">(instr.instr.member_id()));
+                        stack_push(Value{ObjectRef(field_decl.field_type, range)});
+                        break;
+                    }
+                    case ebm::OpCode::LOAD_MEMBER: {
                         if (stack.empty()) {
                             return ebmgen::unexpect_error("stack underflow on LOAD_MEMBER");
                         }
@@ -703,15 +712,7 @@ namespace ebm2rmw {
                         break;
                     }
                     case ebm::OpCode::LOAD_PARAM: {
-                        auto reg = instr.instr.reg();
-                        if (!reg) {
-                            return ebmgen::unexpect_error("missing register index in LOAD_PARAM");
-                        }
-                        auto found = params.find(reg->index.id.value());
-                        if (found == params.end()) {
-                            return ebmgen::unexpect_error("undefined parameter variable");
-                        }
-                        stack_push(Value{found->second});
+                        stack_push(Value{params[instr.scratch]});
                         break;
                     }
                     case ebm::OpCode::LOAD_FUNC: {
@@ -738,12 +739,11 @@ namespace ebm2rmw {
                         auto func = std::get<Function>(callee.value);
                         MAYBE(func_def, ctx.get(func.id));
                         MAYBE(decl, func_def.body.func_decl());
-                        std::map<std::uint64_t, Value> call_params;
+                        std::vector<Value> call_params;
                         for (int i = static_cast<int>(num_args->value()) - 1; i >= 0; i--) {
                             auto arg_val = stack_pop();
                             arg_val.unref();
-                            auto param_ref = decl.params.container[i];
-                            call_params[param_ref.id.value()] = std::move(arg_val);
+                            call_params.push_back(std::move(arg_val));
                         }
                         auto new_self = stack_pop();
                         new_self.unref();
@@ -794,20 +794,16 @@ namespace ebm2rmw {
                         continue;
                     }
                     case ebm::OpCode::NEW_STRUCT: {
-                        auto struct_id = instr.instr.struct_id();
-                        if (!struct_id) {
-                            return ebmgen::unexpect_error("missing struct id in NEW_STRUCT");
-                        }
-                        MAYBE(obj, new_object(ctx, *struct_id));
+                        MAYBE(obj, new_object(ctx, local_bytes_arena, instr.type_info, LayoutScratch{instr.scratch}));
                         stack_push(Value{obj});
                         break;
                     }
-                    case ebm::OpCode::PUSH_SUCCESS: {
-                        stack_push(Value{std::uint64_t(1)});
-                        break;
-                    }
                     case ebm::OpCode::RET: {
-                        if (!stack.empty()) {
+                        auto has_value = instr.instr.ret_value()->has_value();
+                        if (has_value) {
+                            if (stack.empty()) {
+                                return ebmgen::unexpect_error("stack underflow on RET with value");
+                            }
                             auto ret_val = stack_pop();
                             if (call_stack.size() > 1) {
                                 stack_push_with_stack(call_stack[call_stack.size() - 2]->stack, std::move(ret_val));
@@ -835,7 +831,7 @@ namespace ebm2rmw {
                             return ebmgen::unexpect_error("VECTOR_PUSH target is not an object");
                         }
                         auto vec_ptr = std::get<ObjectRef>(val.value);
-                        MAYBE(elem_place, vector_alloc_back(ctx, vec_ptr));
+                        MAYBE(elem_place, vector_alloc_back(ctx, vec_ptr, instr.scratch, instr.type_info));
                         if (std::holds_alternative<std::uint64_t>(elem_val.value)) {
                             auto int_val = std::get<std::uint64_t>(elem_val.value);
                             MAYBE_VOID(_, encode_uint64(elem_place, int_val, false));
