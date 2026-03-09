@@ -235,7 +235,11 @@ def dump_format(
             elif isinstance(member_name, dict) and "id" in member_name:
                 lines.append(f"    {sanitize_name(member_name['id'])} = {enum_value}")
     for instance_name, instance_data in instances.items():
-        lines.append(f"  fn {instance_name}() -> u64:")
+        type_info = instance_data.get("type", "u64")
+        type_info = (
+            kaitai_type_to_bgn_type(type_info) if isinstance(type_info, str) else "u64"
+        )
+        lines.append(f"  fn {instance_name}() -> {type_info}:")
         if "value" in instance_data:
             value_expr = kaitai_expr_to_bgn_expr(str(instance_data["value"]))
             lines.append(f"    return {value_expr}")
