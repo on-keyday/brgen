@@ -1406,6 +1406,15 @@ namespace ebm {
                 return false;
             }
         }
+        if (auto got = j.at("ret_value")) {
+            RetValue tmp;
+            if(!futils::json::convert_from_json(*got, tmp)) {
+                return false;
+            }
+            if(!obj.ret_value(std::move(tmp))) {
+                return false;
+            }
+        }
         if (auto got = j.at("set_endian")) {
             SetEndian tmp;
             if(!futils::json::convert_from_json(*got, tmp)) {
@@ -2072,6 +2081,32 @@ namespace ebm {
         }
         if (auto got = j.at("size")) {
             if(!futils::json::convert_from_json(*got, obj.size)) {
+                return false;
+            }
+        }
+        else {
+            return false;
+        }
+        return true;
+    }
+    
+    bool from_json(RetValue& obj, const futils::json::JSON& j) {
+        if (auto got = j.at("has_value")) {
+            bool tmp;
+            if(!futils::json::convert_from_json(*got, tmp)) {
+                return false;
+            }
+            obj.has_value(std::move(tmp));
+        }
+        else {
+            return false;
+        }
+        if (auto got = j.at("reserved")) {
+            std::uint8_t tmp;
+            if(!futils::json::convert_from_json(*got, tmp)) {
+                return false;
+            }
+            if(!obj.reserved(std::move(tmp))) {
                 return false;
             }
         }
@@ -4022,8 +4057,8 @@ namespace ebm {
                 obj = OpCode::NEW_STRUCT;
                 return true;
             }
-            if (s == "LOAD_MEMBER_REF") {
-                obj = OpCode::LOAD_MEMBER_REF;
+            if (s == "LOAD_SELF_MEMBER") {
+                obj = OpCode::LOAD_SELF_MEMBER;
                 return true;
             }
             if (s == "LOAD_MEMBER") {

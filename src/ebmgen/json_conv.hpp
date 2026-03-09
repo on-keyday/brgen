@@ -97,6 +97,8 @@ namespace ebm {
     
     bool from_json(ReserveData& obj, const futils::json::JSON& j);
     
+    bool from_json(RetValue& obj, const futils::json::JSON& j);
+    
     bool from_json(SetEndian& obj, const futils::json::JSON& j);
     
     bool from_json(Size& obj, const futils::json::JSON& j);

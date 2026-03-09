@@ -1025,7 +1025,7 @@ enum OpCode:
 
     # --- 0x90: Object & Structure ---
     NEW_STRUCT      = 0x90 
-    LOAD_MEMBER_REF  = 0x91 
+    LOAD_SELF_MEMBER  = 0x91 
     LOAD_MEMBER      = 0x92 
     NEW_ARRAY       = 0x93 
     ARRAY_SET       = 0x94 
@@ -1057,6 +1057,10 @@ format OptionalImmediateSize:
 format SetEndian:
     endian :Endian
     reserved :u5 # Endian is u3, padding to u8
+
+format RetValue:
+    has_value :u1 # 0 for void return, 1 for value return
+    reserved :u7 # Padding for byte alignment
 
 format Instruction:
     op :OpCode
@@ -1111,9 +1115,9 @@ format Instruction:
         # -- Object Operations --
         OpCode.NEW_STRUCT:
             struct_id :StatementRef
-        OpCode.LOAD_MEMBER:
+        OpCode.LOAD_SELF_MEMBER:
             member_id :StatementRef
-        OpCode.LOAD_MEMBER_REF:
+        OpCode.LOAD_MEMBER:
             member_id :StatementRef
         OpCode.LOAD_FUNC:
             func_id :StatementRef
@@ -1121,3 +1125,5 @@ format Instruction:
             func_id :StatementRef
         OpCode.NEW_BYTES:
             imm :OptionalImmediateSize
+        OpCode.RET:
+            ret_value :RetValue
