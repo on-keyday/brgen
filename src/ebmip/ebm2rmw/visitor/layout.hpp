@@ -109,6 +109,8 @@ namespace ebm2rmw {
         }
     };
 
+    constexpr size_t pointer_size = 4;  // we use 4 byte pointer in layout, which can save memory compared to 8 byte pointer, but it can be changed to 8 byte if needed
+
     inline expected<TypeLayout> analyze_layout(InitialContext& ctx, ebm::TypeRef type) {
         auto& context = *ctx.config().layout_context;
         MAYBE(type_stmt, ctx.get(type));
@@ -148,7 +150,9 @@ namespace ebm2rmw {
         }
         if (auto elem = type_stmt.body.element_type()) {  // vector
             MAYBE(element_layout, analyze_layout(ctx, *elem));
-            TypeLayout pointer_layout(type, sizeof(std::uint8_t*));
+            // we use pointer of 4 byte, which is mostly enough for our use case and can save memory compared
+            // to 8 byte pointer, but it can be changed to 8 byte if needed
+            TypeLayout pointer_layout(type, pointer_size);
             context.add_type_layout(type, pointer_layout);
             context.add_vector_layout(
                 type,

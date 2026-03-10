@@ -23,9 +23,12 @@ namespace ebm2rmw {
 
     using TmpCodeWriter = futils::code::CodeWriter<std::string>;
 
-    inline ebmgen::expected<std::uint64_t> decode_uint64(ObjectRef obj_ref, bool strict = true) {
-        if (obj_ref.raw_object.size() > 8 || (strict && obj_ref.raw_object.size() != 8)) {
-            return ebmgen::unexpect_error("invalid uint64 object size");
+    inline ebmgen::expected<std::uint64_t> decode_uint64(ObjectRef obj_ref, size_t strict_size = 0) {
+        if (obj_ref.raw_object.size() > 8 || (strict_size && obj_ref.raw_object.size() != strict_size)) [[unlikely]] {
+            if (strict_size) {
+                return ebmgen::unexpect_error("invalid uint64 object size: {}, expected {}", obj_ref.raw_object.size(), strict_size);
+            }
+            return ebmgen::unexpect_error("invalid uint64 object size: {}", obj_ref.raw_object.size());
         }
         std::uint64_t int_value = 0;
         for (size_t i = 0; i < obj_ref.raw_object.size(); i++) {
@@ -34,12 +37,12 @@ namespace ebm2rmw {
         return int_value;
     }
 
-    inline ebmgen::expected<void> encode_uint64(ObjectRef& obj_ref, std::uint64_t value, bool strict = true) {
-        if (obj_ref.raw_object.size() > 8 || (strict && obj_ref.raw_object.size() != 8)) {
+    inline ebmgen::expected<void> encode_uint64(ObjectRef& obj_ref, std::uint64_t value, size_t strict_size = 0) {
+        if (obj_ref.raw_object.size() > 8 || (strict_size && obj_ref.raw_object.size() != strict_size)) [[unlikely]] {
+            if (strict_size) {
+                return ebmgen::unexpect_error("invalid uint64 object size: {}, expected {}", obj_ref.raw_object.size(), strict_size);
+            }
             return ebmgen::unexpect_error("invalid uint64 object size");
-        }
-        if (value == 1346) {
-            ;
         }
         for (size_t i = 0; i < obj_ref.raw_object.size(); i++) {
             obj_ref.raw_object[i] = static_cast<std::uint8_t>((value >> (i * 8)) & 0xFF);
@@ -242,7 +245,7 @@ namespace ebm2rmw {
             if (index == 0) {
                 bytes_arena.emplace_back();
                 index = bytes_arena.size();  // 1-based index
-                MAYBE_VOID(_, encode_uint64(vec, index));
+                MAYBE_VOID(_, encode_uint64(vec, index, pointer_size));
             }
             size_t actual_index = index - 1;
             if (actual_index >= bytes_arena.size()) {
@@ -260,7 +263,7 @@ namespace ebm2rmw {
                 if (index == 0) {
                     bytes_arena.emplace_back();
                     index = bytes_arena.size();  // 1-based index
-                    MAYBE_VOID(_, encode_uint64(obj_ref, index));
+                    MAYBE_VOID(_, encode_uint64(obj_ref, index, pointer_size));
                 }
                 size_t actual_index = index - 1;
                 if (actual_index >= bytes_arena.size()) {

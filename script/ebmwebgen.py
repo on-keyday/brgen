@@ -10,9 +10,8 @@ from util import execute
 
 def get_tools():
     TOOL_DIR = "tool/"
-    OUTPUT_DIR = ["src/ebmcg/","src/ebmip"]
+    OUTPUT_DIR = ["src/ebmcg/", "src/ebmip"]
 
-    
     # search output dirs
     # 1. walk output dir
     LANG_NAME_LIST = []
@@ -117,7 +116,7 @@ const requestCallback = (e /*JobRequest*/, m /* MyEmscriptenModule */) => {
             if(bm instanceof Error) {
                 return bm;
             }
-            m.FS.writeFile("/editor.ebm",  bm);\n"""
+            m.FS.writeFile("/editor.ebm",  bm);"""
         + f"            return [\"{web_glue['worker_name']}\",\"-i\", \"/editor.ebm\"];"
         + """
         default:
@@ -161,7 +160,12 @@ const convert{upper_ui_lang_name}OptionToFlags = (opt) => {{
         flags.push("--{flag_name}", opt.{flag_var_name});
     }}
 """
-            
+        elif flag_type == "file":
+            code += f"""    if (opt.{flag_var_name} != null && opt.{flag_var_name}?.filename !== "" && opt.{flag_var_name}?.data !== null) {{
+        flags.push("--{flag_name}", opt.{flag_var_name});
+    }}
+"""
+
     code += f"""    return flags;
 }};
 
@@ -210,13 +214,20 @@ function set{upper_ui_lang_name}UIConfig(ui) {{
 """
         elif flag_type == "map<string,value>":
             arg_desc = str(flag["argdesc"])
-            arg_desc = arg_desc[1:len(arg_desc)-1]
+            arg_desc = arg_desc[1 : len(arg_desc) - 1]
             candidates = arg_desc.split(",")
             code += f"""        nest_setter("{flag_name}",{{
             type: "choice",
             value: {json.dumps(candidates[0])},
             help: "{escaped_help}",
             candidates: {json.dumps(candidates)}
+        }});
+"""
+        elif flag_type == "file":
+            code += f"""        nest_setter("{flag_name}",{{
+            type: "file",
+            value: {{filename: "", data: null}}, // Assuming empty file as default for UI
+            help: "{escaped_help}"
         }});
 """
 

@@ -19,7 +19,7 @@
     WEB_WORKER_NAME(worker_name)
     FILE_EXTENSIONS(file_ext...)
     CONFIG_MAP(config_name,flag_name)
-    WEB_TYPE_MAP(flag_name,web_type)
+    WEB_OPTION_HANDLE_TYPE(flag_name,web_type)
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 

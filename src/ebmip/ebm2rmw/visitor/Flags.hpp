@@ -19,13 +19,14 @@
     WEB_WORKER_NAME(worker_name)
     FILE_EXTENSIONS(file_ext...)
     CONFIG_MAP(config_name,flag_name)
-    WEB_TYPE_MAP(flag_name,web_type)
+    WEB_OPTION_HANDLE_TYPE(flag_name,web_type)
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 
 /*here to write the hook*/
 DEFINE_STRING_FLAG(entry_point, "", "entry-point", "entry point format to parse", "FORMAT");
 DEFINE_STRING_FLAG(binary_file, "", "binary-file", "input binary file", "FILE");
+WEB_OPTION_HANDLE_TYPE("binary-file", "file");
 FILE_EXTENSIONS(".txt", ".json", ".md");
 DEFINE_BOOL_FLAG(dump_ops, false, "dump-ops", "dump generated code");
 DEFINE_BOOL_FLAG(print_step, false, "print-step", "print each step of execution");
