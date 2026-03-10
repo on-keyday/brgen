@@ -154,8 +154,9 @@ namespace ebmgen {
             EBM_WHILE_LOOP(loop, condition, read);
             EBM_BINARY_OP(len, ebm::BinaryOp::sub, count_t, new_size, read_offset);
             auto data = make_io_data(io_ref, field, tmp_buffer, max_buffer_t, {}, *make_dynamic_size(len, ebm::SizeUnit::BYTE_DYNAMIC));
+            MAYBE(offset, make_dynamic_size(read_offset, ebm::SizeUnit::BYTE_DYNAMIC));
             data.attribute.has_offset(true);
-            data.offset(read_offset);
+            data.offset(offset);
             data.attribute.has_lowered_statement(true);
             data.lowered_statement(make_lowered_statement(ebm::LoweringIOType::ARRAY_FOR_EACH, loop));
             EBM_READ_DATA(read_data, std::move(data));
@@ -286,7 +287,7 @@ namespace ebmgen {
             }
             EBM_BLOCK(read, std::move(block));
             auto data = make_io_data(io_ref, field, tmp_buffer, max_buffer_t, {}, get_size((new_size - original_read_offset) * 8));
-            EBMU_INT_LITERAL(offset_lit, original_read_offset);
+            MAYBE(offset_lit, make_fixed_size(original_read_offset, ebm::SizeUnit::BYTE_FIXED));
             data.attribute.has_offset(true);
             data.offset(offset_lit);
             data.attribute.has_lowered_statement(true);

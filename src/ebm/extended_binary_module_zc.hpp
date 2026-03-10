@@ -1599,19 +1599,8 @@ namespace ebm::zc {
         GE = 0x35,
         EQ_IMM = 0x36,
         CAST = 0x40,
-        READ_U8 = 0x50,
-        READ_U16 = 0x51,
-        READ_U32 = 0x52,
-        READ_U64 = 0x53,
-        READ_I8 = 0x54,
-        READ_I16 = 0x55,
-        READ_I32 = 0x56,
-        READ_I64 = 0x57,
-        READ_F32 = 0x58,
-        READ_F64 = 0x59,
-        READ_BITS_U = 0x60,
-        READ_BITS_I = 0x61,
         READ_BYTES = 0x62,
+        READ_BYTE = 0x63,
         PEEK_U8 = 0x65,
         SEEK_REL = 0x66,
         SEEK_ABS = 0x67,
@@ -1688,19 +1677,8 @@ namespace ebm::zc {
             case OpCode::GE: return origin_form ? "GE":"greater_or_eq" ;
             case OpCode::EQ_IMM: return origin_form ? "EQ_IMM":"EQ_IMM" ;
             case OpCode::CAST: return origin_form ? "CAST":"CAST" ;
-            case OpCode::READ_U8: return origin_form ? "READ_U8":"READ_U8" ;
-            case OpCode::READ_U16: return origin_form ? "READ_U16":"READ_U16" ;
-            case OpCode::READ_U32: return origin_form ? "READ_U32":"READ_U32" ;
-            case OpCode::READ_U64: return origin_form ? "READ_U64":"READ_U64" ;
-            case OpCode::READ_I8: return origin_form ? "READ_I8":"READ_I8" ;
-            case OpCode::READ_I16: return origin_form ? "READ_I16":"READ_I16" ;
-            case OpCode::READ_I32: return origin_form ? "READ_I32":"READ_I32" ;
-            case OpCode::READ_I64: return origin_form ? "READ_I64":"READ_I64" ;
-            case OpCode::READ_F32: return origin_form ? "READ_F32":"READ_F32" ;
-            case OpCode::READ_F64: return origin_form ? "READ_F64":"READ_F64" ;
-            case OpCode::READ_BITS_U: return origin_form ? "READ_BITS_U":"READ_BITS_U" ;
-            case OpCode::READ_BITS_I: return origin_form ? "READ_BITS_I":"READ_BITS_I" ;
             case OpCode::READ_BYTES: return origin_form ? "READ_BYTES":"READ_BYTES" ;
+            case OpCode::READ_BYTE: return origin_form ? "READ_BYTE":"READ_BYTE" ;
             case OpCode::PEEK_U8: return origin_form ? "PEEK_U8":"PEEK_U8" ;
             case OpCode::SEEK_REL: return origin_form ? "SEEK_REL":"SEEK_REL" ;
             case OpCode::SEEK_ABS: return origin_form ? "SEEK_ABS":"SEEK_ABS" ;
@@ -1878,44 +1856,11 @@ namespace ebm::zc {
         if (str == "CAST") {
             return OpCode::CAST;
         }
-        if (str == "READ_U8") {
-            return OpCode::READ_U8;
-        }
-        if (str == "READ_U16") {
-            return OpCode::READ_U16;
-        }
-        if (str == "READ_U32") {
-            return OpCode::READ_U32;
-        }
-        if (str == "READ_U64") {
-            return OpCode::READ_U64;
-        }
-        if (str == "READ_I8") {
-            return OpCode::READ_I8;
-        }
-        if (str == "READ_I16") {
-            return OpCode::READ_I16;
-        }
-        if (str == "READ_I32") {
-            return OpCode::READ_I32;
-        }
-        if (str == "READ_I64") {
-            return OpCode::READ_I64;
-        }
-        if (str == "READ_F32") {
-            return OpCode::READ_F32;
-        }
-        if (str == "READ_F64") {
-            return OpCode::READ_F64;
-        }
-        if (str == "READ_BITS_U") {
-            return OpCode::READ_BITS_U;
-        }
-        if (str == "READ_BITS_I") {
-            return OpCode::READ_BITS_I;
-        }
         if (str == "READ_BYTES") {
             return OpCode::READ_BYTES;
+        }
+        if (str == "READ_BYTE") {
+            return OpCode::READ_BYTE;
         }
         if (str == "PEEK_U8") {
             return OpCode::PEEK_U8;
@@ -3572,13 +3517,13 @@ namespace ebm::zc {
         bool lowered_statement(LoweredIOStatement&& v);
         bool lowered_statement(const LoweredIOStatement& v);
         struct EBM_API union_struct_73{
-            ExpressionRef offset;
+            Size offset;
         };
         std::variant<std::monostate, union_struct_73> union_variant_72;
-        const ExpressionRef* offset() const;
-        ExpressionRef* offset();
-        bool offset(ExpressionRef&& v);
-        bool offset(const ExpressionRef& v);
+        const Size* offset() const;
+        Size* offset();
+        bool offset(Size&& v);
+        bool offset(const Size& v);
         ::futils::error::Error<> encode(::futils::binary::writer& w) const ;
         ::futils::error::Error<> decode(::futils::binary::reader& r);
         constexpr static const char* visitor_name = "IOData";
@@ -5332,49 +5277,46 @@ namespace ebm::zc {
         };
         struct EBM_API union_struct_195{
             OptionalImmediateSize imm;
-        };
-        struct EBM_API union_struct_196{
-            OptionalImmediateSize imm;
-        };
-        struct EBM_API union_struct_197{
-            OptionalImmediateSize imm;
             Varint offset;
         };
-        struct EBM_API union_struct_198{
+        struct EBM_API union_struct_196{
+            Varint offset;
+        };
+        struct EBM_API union_struct_197{
             SetEndian set_endian;
         };
-        struct EBM_API union_struct_199{
+        struct EBM_API union_struct_198{
             CastType cast_type{};
         };
-        struct EBM_API union_struct_200{
+        struct EBM_API union_struct_199{
             StatementRef struct_id;
+        };
+        struct EBM_API union_struct_200{
+            StatementRef member_id;
         };
         struct EBM_API union_struct_201{
             StatementRef member_id;
         };
         struct EBM_API union_struct_202{
-            StatementRef member_id;
+            StatementRef func_id;
         };
         struct EBM_API union_struct_203{
             StatementRef func_id;
+            Varint arg_num;
         };
         struct EBM_API union_struct_204{
             StatementRef func_id;
-            Varint arg_num;
         };
         struct EBM_API union_struct_205{
-            StatementRef func_id;
-        };
-        struct EBM_API union_struct_206{
             OptionalImmediateSize imm;
         };
-        struct EBM_API union_struct_207{
+        struct EBM_API union_struct_206{
             RetValue ret_value;
         };
-        struct EBM_API union_struct_208{
+        struct EBM_API union_struct_207{
             Varint index;
         };
-        std::variant<std::monostate, union_struct_181, union_struct_182, union_struct_183, union_struct_184, union_struct_185, union_struct_186, union_struct_187, union_struct_188, union_struct_189, union_struct_190, union_struct_191, union_struct_192, union_struct_193, union_struct_194, union_struct_195, union_struct_196, union_struct_197, union_struct_198, union_struct_199, union_struct_200, union_struct_201, union_struct_202, union_struct_203, union_struct_204, union_struct_205, union_struct_206, union_struct_207, union_struct_208> union_variant_180;
+        std::variant<std::monostate, union_struct_181, union_struct_182, union_struct_183, union_struct_184, union_struct_185, union_struct_186, union_struct_187, union_struct_188, union_struct_189, union_struct_190, union_struct_191, union_struct_192, union_struct_193, union_struct_194, union_struct_195, union_struct_196, union_struct_197, union_struct_198, union_struct_199, union_struct_200, union_struct_201, union_struct_202, union_struct_203, union_struct_204, union_struct_205, union_struct_206, union_struct_207> union_variant_180;
         const Varint* arg_num() const;
         Varint* arg_num();
         bool arg_num(Varint&& v);

@@ -54059,11 +54059,13 @@ namespace ebm2zig {
         }
         if (auto ptr_lowered_statement = type_ctx.read_data.lowered_statement()) {
         }
-        if (auto ptr = type_ctx.read_data.offset()) {
-            if (!is_nil((*ptr))) {
-                auto result_offset = visit_Object<Result>(std::forward<UserContext>(ctx),(*ptr));
-                if (!result_offset) {
-                    return unexpect_error(std::move(result_offset.error()));
+        if (auto ptr_offset = type_ctx.read_data.offset()) {
+            if (auto ptr = (*ptr_offset).ref()) {
+                if (!is_nil((*ptr))) {
+                    auto result_ref = visit_Object<Result>(std::forward<UserContext>(ctx),(*ptr));
+                    if (!result_ref) {
+                        return unexpect_error(std::move(result_ref.error()));
+                    }
                 }
             }
         }
@@ -54145,11 +54147,13 @@ namespace ebm2zig {
         }
         if (auto ptr_lowered_statement = type_ctx.write_data.lowered_statement()) {
         }
-        if (auto ptr = type_ctx.write_data.offset()) {
-            if (!is_nil((*ptr))) {
-                auto result_offset = visit_Object<Result>(std::forward<UserContext>(ctx),(*ptr));
-                if (!result_offset) {
-                    return unexpect_error(std::move(result_offset.error()));
+        if (auto ptr_offset = type_ctx.write_data.offset()) {
+            if (auto ptr = (*ptr_offset).ref()) {
+                if (!is_nil((*ptr))) {
+                    auto result_ref = visit_Object<Result>(std::forward<UserContext>(ctx),(*ptr));
+                    if (!result_ref) {
+                        return unexpect_error(std::move(result_ref.error()));
+                    }
                 }
             }
         }

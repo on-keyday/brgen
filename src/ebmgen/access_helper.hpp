@@ -8983,7 +8983,7 @@ namespace ebmcodegen {
                 return {.index = 31, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<19>("offset")) {
-                return {.index = 62, .is_array = false, .is_ptr = true};
+                return {.index = 46, .is_array = false, .is_ptr = true};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }

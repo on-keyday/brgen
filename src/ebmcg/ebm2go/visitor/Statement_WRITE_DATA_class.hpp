@@ -33,7 +33,10 @@
         lowered_statement: *LoweredIOStatement
           lowering_type: LoweringIOType
           io_statement: LoweredStatementRef
-        offset: *ExpressionRef
+        offset: *Size
+          unit: SizeUnit
+          ref: *ExpressionRef
+          size: *Varint
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 
@@ -90,8 +93,8 @@ DEFINE_VISITOR(Statement_WRITE_DATA) {
         auto io_ = wctx.identifier(wctx.write_data.io_ref);
         auto offset_val = CODE("0");
         if (auto offset = wctx.write_data.offset()) {
-            MAYBE(offset_str, wctx.visit(*offset));
-            offset_val = offset_str.to_writer();
+            MAYBE(offset_str, get_size_str(wctx, *offset));
+            offset_val = offset_str;
         }
         MAYBE(layer_str, get_identifier_layer_str(wctx, from_weak(wctx.write_data.field)));
         layer_str = "\\\"" + layer_str + "\\\"";

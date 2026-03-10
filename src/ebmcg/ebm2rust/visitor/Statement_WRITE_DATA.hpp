@@ -30,7 +30,10 @@
       lowered_statement: *LoweredIOStatement
         lowering_type: LoweringIOType
         io_statement: LoweredStatementRef
-      offset: *ExpressionRef
+      offset: *Size
+        unit: SizeUnit
+        ref: *ExpressionRef
+        size: *Varint
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 
@@ -67,7 +70,10 @@
       lowered_statement: *LoweredIOStatement
         lowering_type: LoweringIOType
         io_statement: LoweredStatementRef
-      offset: *ExpressionRef
+      offset: *Size
+        unit: SizeUnit
+        ref: *ExpressionRef
+        size: *Varint
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 

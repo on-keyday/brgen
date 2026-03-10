@@ -33,7 +33,10 @@
         lowered_statement: *LoweredIOStatement
           lowering_type: LoweringIOType
           io_statement: LoweredStatementRef
-        offset: *ExpressionRef
+        offset: *Size
+          unit: SizeUnit
+          ref: *ExpressionRef
+          size: *Varint
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 
@@ -46,6 +49,24 @@ DEFINE_VISITOR(Statement_READ_DATA) {
     if (auto lowered = ctx.read_data.lowered_statement();
         lowered && lowered->lowering_type == ebm::LoweringIOType::VECTORIZED_IO) {
         return ctx.visit(lowered->io_statement.id);
+    }
+    if (ctx.read_data.size.unit == ebm::SizeUnit::BYTE_FIXED &&
+        ctx.read_data.size.size()->value() == 1) {
+        auto current_lvalue = ctx.config().is_lvalue;
+        ctx.config().is_lvalue = true;
+        MAYBE(target, ctx.visit(ctx.read_data.target));
+        ctx.config().is_lvalue = current_lvalue;
+        ebm::Instruction instr;
+        instr.op = ebm::OpCode::READ_BYTE;
+        ebm::Varint offset;
+        if (auto offset_var = ctx.read_data.offset()) {
+            MAYBE(offset_expr, offset_var->size());
+            offset = offset_expr;
+        }
+        instr.offset(offset);
+        std::string str_repr = std::format("{} = read_byte()", target.str_repr);
+        ctx.config().env.add_instruction(instr, str_repr);
+        return Result{.str_repr = str_repr};
     }
     auto is_bytes = is_bytes_type(ctx, ctx.read_data.data_type);
     if (!is_bytes) {
@@ -73,7 +94,7 @@ DEFINE_VISITOR(Statement_READ_DATA) {
         }
         auto offset = ctx.read_data.attribute.has_offset() ? ctx.read_data.offset() : nullptr;
         if (offset) {
-            auto value = ctx.get_field<"int_value">(*offset);
+            auto value = offset->size();
             if (!value) {
                 return unexpect_error("Offset expression must be an integer literal");
             }

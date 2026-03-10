@@ -593,7 +593,7 @@ format IOData:
     if attribute.has_lowered_statement == 1:
         lowered_statement :LoweredIOStatement # Optional lowered statements for read/write operations
     if attribute.has_offset == 1:
-        offset :ExpressionRef # Optional offset expression for read/write operations
+        offset :Size 
 
 format Condition:
     cond :ExpressionRef
@@ -993,23 +993,24 @@ enum OpCode:
     CAST            = 0x40 
 
     # --- 0x50: Stream Input (Mapping) ---
-    READ_U8         = 0x50
-    READ_U16        = 0x51
-    READ_U32        = 0x52
-    READ_U64        = 0x53
-    READ_I8         = 0x54
-    READ_I16        = 0x55
-    READ_I32        = 0x56
-    READ_I64        = 0x57
-    READ_F32        = 0x58
-    READ_F64        = 0x59
+    #READ_U8         = 0x50
+    #READ_U16        = 0x51
+    #READ_U32        = 0x52
+    #READ_U64        = 0x53
+    #READ_I8         = 0x54
+    #READ_I16        = 0x55
+    #READ_I32        = 0x56
+    #READ_I64        = 0x57
+    #READ_F32        = 0x58
+    #READ_F64        = 0x59
 
     # Variable length / Bit manipulation
-    READ_BITS_U     = 0x60 
-    READ_BITS_I     = 0x61 
+    #READ_BITS_U     = 0x60 
+    #READ_BITS_I     = 0x61 
     
     # Byte Arrays
     READ_BYTES      = 0x62 
+    READ_BYTE       = 0x63
     
     # Stream Control
     PEEK_U8         = 0x65
@@ -1108,12 +1109,14 @@ format Instruction:
 
         # -- Stream Ops with Optimization Flags --
         # Align to byte boundary after boolean flag
-        OpCode.READ_BITS_U:
-            imm :OptionalImmediateSize
-        OpCode.READ_BITS_I:
-            imm :OptionalImmediateSize
+        #OpCode.READ_BITS_U:
+        #    imm :OptionalImmediateSize
+        #OpCode.READ_BITS_I:
+        #    imm :OptionalImmediateSize
         OpCode.READ_BYTES:
             imm :OptionalImmediateSize
+            offset :Varint
+        OpCode.READ_BYTE:
             offset :Varint
 
         OpCode.SET_ENDIAN:

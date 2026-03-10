@@ -33,12 +33,16 @@
         lowered_statement: *LoweredIOStatement
           lowering_type: LoweringIOType
           io_statement: LoweredStatementRef
-        offset: *ExpressionRef
+        offset: *Size
+          unit: SizeUnit
+          ref: *ExpressionRef
+          size: *Varint
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 
 #include "../codegen.hpp"
 #include "ebm/extended_binary_module.hpp"
+#include "ebmcodegen/stub/util.hpp"
 DEFINE_VISITOR(Statement_WRITE_DATA) {
     using namespace CODEGEN_NAMESPACE;
     if (auto low = ctx.write_data.lowered_statement()) {
@@ -58,8 +62,8 @@ DEFINE_VISITOR(Statement_WRITE_DATA) {
         auto io_ = ctx.identifier(ctx.write_data.io_ref);
         auto offset_val = CODE("0");
         if (auto offset = ctx.write_data.offset()) {
-            MAYBE(offset_str, ctx.visit(*offset));
-            offset_val = offset_str.to_writer();
+            MAYBE(offset_str, get_size_str(ctx, *offset));
+            offset_val = offset_str;
         }
         MAYBE(layer_str, get_identifier_layer_str(ctx, from_weak(ctx.write_data.field)));
         layer_str = "\"" + layer_str + "\"";

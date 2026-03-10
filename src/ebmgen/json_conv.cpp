@@ -1193,7 +1193,7 @@ namespace ebm {
             }
         }
         if (auto got = j.at("offset")) {
-            ExpressionRef tmp;
+            Size tmp;
             if(!futils::json::convert_from_json(*got, tmp)) {
                 return false;
             }
@@ -3974,56 +3974,12 @@ namespace ebm {
                 obj = OpCode::CAST;
                 return true;
             }
-            if (s == "READ_U8") {
-                obj = OpCode::READ_U8;
-                return true;
-            }
-            if (s == "READ_U16") {
-                obj = OpCode::READ_U16;
-                return true;
-            }
-            if (s == "READ_U32") {
-                obj = OpCode::READ_U32;
-                return true;
-            }
-            if (s == "READ_U64") {
-                obj = OpCode::READ_U64;
-                return true;
-            }
-            if (s == "READ_I8") {
-                obj = OpCode::READ_I8;
-                return true;
-            }
-            if (s == "READ_I16") {
-                obj = OpCode::READ_I16;
-                return true;
-            }
-            if (s == "READ_I32") {
-                obj = OpCode::READ_I32;
-                return true;
-            }
-            if (s == "READ_I64") {
-                obj = OpCode::READ_I64;
-                return true;
-            }
-            if (s == "READ_F32") {
-                obj = OpCode::READ_F32;
-                return true;
-            }
-            if (s == "READ_F64") {
-                obj = OpCode::READ_F64;
-                return true;
-            }
-            if (s == "READ_BITS_U") {
-                obj = OpCode::READ_BITS_U;
-                return true;
-            }
-            if (s == "READ_BITS_I") {
-                obj = OpCode::READ_BITS_I;
-                return true;
-            }
             if (s == "READ_BYTES") {
                 obj = OpCode::READ_BYTES;
+                return true;
+            }
+            if (s == "READ_BYTE") {
+                obj = OpCode::READ_BYTE;
                 return true;
             }
             if (s == "PEEK_U8") {

@@ -33,7 +33,10 @@
         lowered_statement: *LoweredIOStatement
           lowering_type: LoweringIOType
           io_statement: LoweredStatementRef
-        offset: *ExpressionRef
+        offset: *Size
+          unit: SizeUnit
+          ref: *ExpressionRef
+          size: *Varint
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 
@@ -103,8 +106,8 @@ DEFINE_VISITOR(Statement_READ_DATA) {
         auto io_ = rctx.identifier(rctx.read_data.io_ref);
         auto offset_val = CODE("0");
         if (auto offset = rctx.read_data.offset()) {
-            MAYBE(offset_str, rctx.visit(*offset));
-            offset_val = offset_str.to_writer();
+            MAYBE(offset_str, get_size_str(rctx, *offset));
+            offset_val = offset_str;
         }
         MAYBE(layer_str, get_identifier_layer_str(rctx, from_weak(rctx.read_data.field)));
         layer_str = "\\\"" + layer_str + "\\\"";

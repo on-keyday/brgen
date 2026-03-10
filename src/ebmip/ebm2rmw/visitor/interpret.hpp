@@ -360,9 +360,9 @@ namespace ebm2rmw {
                     w.writeln("Local Bytes Arena: size=", std::to_string(frame->local_bytes.size()), " bytes");
                     call_stack_depth++;
                 }
-                for (auto [op, count] : std::ranges::views::enumerate(stats_op_count)) {
-                    if (count > 0) {
-                        w.writeln("Op ", to_string(static_cast<ebm::OpCode>(op), true), ": ", std::to_string(count));
+                for (size_t op = 0; op < 256; op++) {
+                    if (stats_op_count[op] > 0) {
+                        w.writeln("Op ", to_string(static_cast<ebm::OpCode>(op), true), ": ", std::to_string(stats_op_count[op]));
                     }
                 }
                 auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end.point - start.point);
@@ -658,6 +658,24 @@ namespace ebm2rmw {
                             return ebmgen::unexpect_error("only byte arrays are supported in ARRAY_GET");
                         }
                         stack_push(Value{ObjectRef{instr.type_info, element}});
+                        break;
+                    }
+                    case ebm::OpCode::READ_BYTE: {
+                        if (stack.empty()) [[unlikely]] {
+                            return ebmgen::unexpect_error("stack underflow on READ_BYTE");
+                        }
+                        MAYBE(offset, instr.instr.offset());
+                        auto target = stack_pop();
+                        target.unref();
+                        if (!std::holds_alternative<ObjectRef>(target.value)) [[unlikely]] {
+                            return ebmgen::unexpect_error("READ_BYTE target is not an object");
+                        }
+                        auto& arr = std::get<ObjectRef>(target.value);
+                        if (arr.raw_object.size() < offset.value() + 1) [[unlikely]] {
+                            return ebmgen::unexpect_error("READ_BYTE target array is too small");
+                        }
+                        arr.raw_object[offset.value()] = input[input_pos];
+                        input_pos += 1;
                         break;
                     }
                     case ebm::OpCode::READ_BYTES: {
