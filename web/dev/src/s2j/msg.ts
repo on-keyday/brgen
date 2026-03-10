@@ -1,3 +1,4 @@
+import type { FileValue } from "../stores/configStore";
 
 
 export const RequestLanguage = {
@@ -208,7 +209,7 @@ export interface JobRequest {
     readonly traceID: TraceID
     readonly jobID :number
     readonly sourceCode :string
-    arguments? :string[]
+    arguments? :(string | FileValue)[]
 }
 
 

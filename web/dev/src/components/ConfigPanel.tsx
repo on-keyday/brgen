@@ -1,5 +1,5 @@
 import { useState } from "preact/hooks";
-import { useConfigStore, ConfigEntry } from "../stores/configStore";
+import { useConfigStore, ConfigEntry, FileValue, ConfigValue } from "../stores/configStore";
 import styles from "./App.module.css";
 
 export interface ConfigPanelProps {
@@ -32,7 +32,7 @@ export function ConfigPanel({ language, onConfigChange }: ConfigPanelProps) {
   const [selectedKey, setSelectedKey] = useState(keys[0]);
   const entry: ConfigEntry | undefined = langConfig[selectedKey];
 
-  const handleChange = (value: boolean | number | string) => {
+  const handleChange = (value: ConfigValue) => {
     setConfig(language as any, selectedKey, value);
     save();
     onConfigChange?.();
@@ -59,7 +59,7 @@ export function ConfigPanel({ language, onConfigChange }: ConfigPanelProps) {
 
 interface ConfigInputProps {
   entry: ConfigEntry;
-  onChange: (value: boolean | number | string) => void;
+  onChange: (value: boolean | number | string | FileValue) => void;
 }
 
 function ConfigInput({ entry, onChange }: ConfigInputProps) {
@@ -113,6 +113,84 @@ function ConfigInput({ entry, onChange }: ConfigInputProps) {
         ))}
       </select>
       )
+    case "file":
+      const fileData = entry.value as { fileName: string; data: ArrayBuffer } | null;
+      const hasFile = !!(fileData && fileData.fileName);
+
+      return (
+        <div
+          className={styles.configInput}
+          style={{
+            position: "relative",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            paddingRight: "8px" // ボタン用の余白
+          }}
+        >
+          {/* 1. 表示テキスト */}
+          <span style={{
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            "white-space": "nowrap",
+            flex: 1,
+            color: hasFile ? "inherit" : "#666" // 未選択時は薄く
+          }}>
+            {hasFile ? fileData.fileName : "(select file)"}
+          </span>
+
+          {/* 2. 解除ボタン (ファイルがある時のみ表示) */}
+          {hasFile && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation(); // 親のクリックイベント（ファイル選択）を発火させない
+                onChange({ fileName: "", data: null });     // 値をクリア
+              }}
+              style={{
+                background: "none",
+                border: "none",
+                color: "#ff6b6b",
+                cursor: "pointer",
+                fontSize: "16px",
+                lineHeight: 1,
+                zIndex: 2, // inputより上に配置
+                padding: "0 4px"
+              }}
+            >
+              ×
+            </button>
+          )}
+
+          {/* 3. 本物の input (透明) */}
+          <input
+            type="file"
+            // 値をクリアした時に同じファイルを再度選択できるように reset するための hack
+            value=""
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              opacity: 0,
+              cursor: "pointer",
+              zIndex: 1
+            }}
+            onChange={(e) => {
+              const file = e.currentTarget.files?.[0];
+              if (file) {
+                const reader = new FileReader();
+                reader.onload = () => {
+                  const data = reader.result as ArrayBuffer;
+                  onChange({ fileName: file.name, data });
+                };
+                reader.readAsArrayBuffer(file);
+              }
+            }}
+          />
+        </div>
+      );
     default:
       return null;
   }

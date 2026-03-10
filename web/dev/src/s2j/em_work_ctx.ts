@@ -3,6 +3,7 @@ import type { JobRequest, JobResult, TraceID } from "./msg.js";
 import {  traceIDCanceled, traceIDGetID } from "./msg.js";
 import { RequestQueue } from "./request_queue.js";
 import type { MyEmscriptenModule } from "./emscripten_mod.js";
+import type { FileValue } from "../stores/configStore.js";
 
 export class EmWorkContext  {
     readonly #msgQueue: RequestQueue;
@@ -79,7 +80,7 @@ export class EmWorkContext  {
         }
     }
 
-    async #callEmscriptenMain(traceID :TraceID, args: string[]): Promise<number> {
+    async #callEmscriptenMain(traceID :TraceID, args: string[],files :FileValue[]): Promise<number> {
         await this.#waitForPromise();
         let arg: string = "";
         for (let i = 0; i < args.length; i++) {
@@ -87,6 +88,9 @@ export class EmWorkContext  {
             arg += encodeURIComponent(args[i]);
         }
         try {
+            for(const f of files) {
+                this.#mod!.FS.writeFile("/"+f.fileName, new Uint8Array(f.data!));
+            }
             if(traceIDCanceled(traceID)) {
                 console.log(`canceled traceID before emscripten_main: ${traceIDGetID(traceID)} `);
                 return -1;
@@ -113,11 +117,18 @@ export class EmWorkContext  {
             this.#msgQueue.repostRequest(e);
             return;
         }
+        const files :FileValue[] = [];
         e.arguments?.forEach((v) => {
-            args.push(v);
+            if (typeof v === "string") {
+                args.push(v);
+            }
+            else {
+                args.push(v.fileName);
+                files.push(v);
+            }
         });
         this.#setCapture(id);
-        const code = await this.#callEmscriptenMain(e.traceID, args);
+        const code = await this.#callEmscriptenMain(e.traceID, args, files);
         const result: JobResult = {
             lang: e.lang,
             stdout: this.#textCapture.stdout,

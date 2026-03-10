@@ -7,11 +7,22 @@ import { coreOptionDefs } from "../common/option_defs";
 
 const STORAGE_KEY = "lang_specific_option";
 
+export interface FileValue {
+    fileName: string;
+    data: ArrayBuffer | null;
+}
+
+export type ConfigValue = boolean | number | string | FileValue;
+
+export const isFileValue = (value: any): value is FileValue => {
+    return value && typeof value === "object" && typeof value.fileName === "string" && (value.data === null || value.data instanceof ArrayBuffer);
+}
+
 /** Matches the existing InputListElement shape from ui.tsx */
 export interface ConfigEntry {
     name?: string;
-    readonly type: "checkbox" | "number" | "text" | "choice";
-    value: boolean | number | string;
+    readonly type: "checkbox" | "number" | "text" | "choice" | "file";
+    value: ConfigValue;
     candidates? :string[];
     help?: string;
     data?: any;
@@ -25,12 +36,13 @@ export interface ConfigEntry {
 export interface ConfigState {
     /** config[language][key] = ConfigEntry */
     config: Record<string, Record<string, ConfigEntry>>;
+    
 
     /** Get a config value for a language+key. Returns undefined if not found. */
     getConfig: (lang: Language, key: ConfigKey | string) => any;
 
     /** Set a config value for a language+key. */
-    setConfig: (lang: Language, key: string, value: boolean | number | string) => void;
+    setConfig: (lang: Language, key: string, value: ConfigValue) => void;
 
     /** Persist current config to localStorage. */
     save: () => void;
@@ -99,6 +111,9 @@ function loadSavedConfig(config: Record<string, Record<string, ConfigEntry>>): v
             if (!config[lang]) continue;
             for (const [key, saved] of Object.entries(entries)) {
                 if (!config[lang][key]) continue;
+                if(isFileValue(saved.value) && saved.value.data === null) {
+                    saved.value.fileName = "";
+                }
                 config[lang][key].value = saved.value;
                 if (saved.data !== undefined) {
                     config[lang][key].data = saved.data;
@@ -114,6 +129,7 @@ export const useConfigStore = create<ConfigState>()((set, get) => {
 
     return {
         config: defaultConfig,
+        // saveFilter contains lang and key that is not saved to localStorage
 
         getConfig: (lang: Language, key: ConfigKey | string) => {
             const langConfig = get().config[lang];
@@ -121,7 +137,7 @@ export const useConfigStore = create<ConfigState>()((set, get) => {
             return langConfig[key]?.value;
         },
 
-        setConfig: (lang: Language, key: string, value: boolean | number | string) => {
+        setConfig: (lang: Language, key: string, value: ConfigValue) => {
             set(state => {
                 const langConfig = state.config[lang];
                 if (!langConfig || !langConfig[key]) return state;
@@ -139,8 +155,15 @@ export const useConfigStore = create<ConfigState>()((set, get) => {
 
         save: () => {
             try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(get().config));
-            } catch { /* localStorage may be unavailable */ }
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(get().config,(key, value) => {
+                    if (value instanceof ArrayBuffer) {
+                        return null;
+                    }
+                    return value;
+                }));
+            } catch(e :any) { 
+                console.warn("cannot save config to localStorage:", e);
+            }
         },
     };
 });
