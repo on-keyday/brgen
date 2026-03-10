@@ -80,7 +80,8 @@ DEFINE_VISITOR(Statement_READ_DATA) {
             instr.offset(*value);
         }
         instr.imm(imm);
-        ctx.config().env.add_instruction(instr, str_repr);
+        size_t read_target = is_bytes == BytesType::array ? size_t(ebm::TypeKind::ARRAY) : size_t(ebm::TypeKind::VECTOR);
+        ctx.config().env.add_instruction(instr, str_repr, read_target);
         return Result{.str_repr = str_repr};
     }
     return ebmgen::unexpect_error("READ_DATA only supports byte array type in this implementation");

@@ -254,8 +254,8 @@ namespace ebm2rmw {
             return ObjectRef(element_type, elem_place);
         }
 
-        ebmgen::expected<futils::view::wvec> get_bytes(InitialContext& ctx, ObjectRef& obj_ref, size_t size) {
-            if (ctx.is(ebm::TypeKind::VECTOR, obj_ref.type)) {
+        ebmgen::expected<futils::view::wvec> get_bytes(ObjectRef& obj_ref, size_t size, ebm::TypeKind type_kind) {
+            if (type_kind == ebm::TypeKind::VECTOR) {
                 MAYBE(index, decode_uint64(obj_ref));
                 if (index == 0) {
                     bytes_arena.emplace_back();
@@ -271,7 +271,7 @@ namespace ebm2rmw {
                 bytes_arena_usage += size;
                 return futils::view::wvec(byte_array);
             }
-            if (ctx.is(ebm::TypeKind::ARRAY, obj_ref.type)) {
+            else if (type_kind == ebm::TypeKind::ARRAY) {
                 if (obj_ref.raw_object.size() < size) {
                     return ebmgen::unexpect_error("invalid array object size: expected {}, got {}", size, obj_ref.raw_object.size());
                 }
@@ -686,6 +686,7 @@ namespace ebm2rmw {
                             offset_value = offset->value();
                         }
                         auto target = stack_pop();
+                        auto kind = ebm::TypeKind(instr.scratch);
                         target.unref();
                         if (!std::holds_alternative<ObjectRef>(target.value)) [[unlikely]] {
                             return ebmgen::unexpect_error("READ_BYTES target is not an object");
@@ -697,7 +698,7 @@ namespace ebm2rmw {
                         auto& arr = std::get<ObjectRef>(target.value);
                         // currently, vector allocation point should be front of the call stack,
                         // so that we can assume the vector elements are alive until interpret() returns.
-                        MAYBE(byte_array, get_bytes(ctx, arr, offset_value + size));
+                        MAYBE(byte_array, get_bytes(arr, offset_value + size, kind));
                         if (offset_value + size > byte_array.size()) [[unlikely]] {
                             return ebmgen::unexpect_error("READ_BYTES out of bounds: offset {} + size {} exceeds array size {}", offset_value, size, byte_array.size());
                         }

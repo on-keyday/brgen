@@ -70,7 +70,10 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
                     LayoutScratch scratch{instr.scratch};
                     futils::wrap::cout_wrap() << " member offset: " << scratch.offset() << ", size: " << scratch.size();
                 }
-                if (instr.instr.op == ebm::OpCode::LOAD_LOCAL || instr.instr.op == ebm::OpCode::STORE_LOCAL || instr.instr.op == ebm::OpCode::LOAD_LOCAL_REF) {
+                if (instr.instr.op == ebm::OpCode::LOAD_LOCAL ||
+                    instr.instr.op == ebm::OpCode::STORE_LOCAL ||
+                    instr.instr.op == ebm::OpCode::STORE_LOCAL_IMM ||
+                    instr.instr.op == ebm::OpCode::LOAD_LOCAL_REF) {
                     auto offset = instr.scratch;
                     futils::wrap::cout_wrap() << " local offset: " << offset;
                 }

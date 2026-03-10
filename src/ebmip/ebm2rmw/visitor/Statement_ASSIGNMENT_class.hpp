@@ -30,6 +30,17 @@ DEFINE_VISITOR(Statement_ASSIGNMENT) {
     ctx.config().is_lvalue = true;
     MAYBE(ref, ctx.visit(ctx.target));
     ctx.config().is_lvalue = current_lvalue;
+    // if previous is LOAD_LOCAL_REF, we can optimize to STORE_LOCAL directly
+    auto& back = ctx.config().env.access_instructions().back();
+    if (back.instr.op == ebm::OpCode::LOAD_LOCAL_REF) {
+        ebm::Instruction instr;
+        instr.op = ebm::OpCode::STORE_LOCAL;
+        auto scratch = back.scratch;
+        instr.reg(*back.instr.reg());
+        ctx.config().env.access_instructions().pop_back();  // remove the LOAD_LOCAL_REF instruction
+        ctx.config().env.add_instruction(instr, std::format("{} = {}", ref.str_repr, val.str_repr), scratch);
+        return {};
+    }
     ctx.config().env.add_instruction({
                                          .op = ebm::OpCode::STORE_REF,
                                      },
