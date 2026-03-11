@@ -90,6 +90,7 @@ jobs:
           env | grep -E "CODEQL|LD_PRELOAD|CC|CXX"
           export FUTILS_CXX_COMPILER=$CXX
           export FUTILS_C_COMPILER=$CC
+          ldd $(which clang)
           . build.sh native
           ./tool/src2json --version
 
