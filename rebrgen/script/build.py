@@ -67,12 +67,7 @@ DLL_EXT = ".dll" if os.name == "nt" else ".so"
 
 os.environ["FUTILS_DIR"] = os.path.abspath(FUTILS_DIR)
 os.environ["BUILD_MODE"] = BUILD_MODE
-if os.path.exists(os.path.join(BRGEN_DIR, "tool", "libs2j" + DLL_EXT)):
-    os.environ["BRGEN_DIR"] = os.path.abspath(BRGEN_DIR)
-else:
-    print(f"BRGEN_DIR does not contain tool/libs2j{DLL_EXT}, unset BRGEN_DIR")
-    if "BRGEN_DIR" in os.environ:
-        del os.environ["BRGEN_DIR"]
+os.environ["BRGEN_DIR"] = os.path.abspath(BRGEN_DIR)
 os.environ["BUILD_OLD_BMGEN"] = "1" if BUILD_OLD_BMGEN else "0"
 
 

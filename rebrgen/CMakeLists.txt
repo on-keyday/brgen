@@ -201,8 +201,8 @@ if(NOT "$ENV{CODEGEN_ONLY}" STREQUAL "1")
     TARGET ebmgen POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy "$ENV{FUTILS_DIR}/built/shared/${CMAKE_BUILD_TYPE}/lib/libfutils${CMAKE_SHARED_LIBRARY_SUFFIX}" "${CMAKE_SOURCE_DIR}/tool/libfutils${CMAKE_SHARED_LIBRARY_SUFFIX}"
     )
-    # if BRGEN_PATH environment variable exists, copy libs2j.so 
-    if(DEFINED ENV{BRGEN_DIR})
+    # if libs2j exists in BRGEN_DIR build output, copy it
+    if(DEFINED ENV{BRGEN_DIR} AND EXISTS "$ENV{BRGEN_DIR}/built/native/${CMAKE_BUILD_TYPE}/tool/libs2j${CMAKE_SHARED_LIBRARY_SUFFIX}")
         add_custom_command(
         TARGET ebmgen POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy "$ENV{BRGEN_DIR}/built/native/${CMAKE_BUILD_TYPE}/tool/libs2j${CMAKE_SHARED_LIBRARY_SUFFIX}" "${CMAKE_SOURCE_DIR}/tool/libs2j${CMAKE_SHARED_LIBRARY_SUFFIX}"
