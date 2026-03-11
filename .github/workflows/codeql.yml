@@ -87,6 +87,7 @@ jobs:
       - name: Build C++ and Go
         if: matrix.language == 'c-cpp' || matrix.language == 'go'
         run: |
+          env | grep -E "CODEQL|LD_PRELOAD|CC|CXX"
           export FUTILS_CXX_COMPILER=$CXX
           export FUTILS_C_COMPILER=$CC
           . build.sh native
