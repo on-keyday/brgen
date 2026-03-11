@@ -1,5 +1,7 @@
 # AGENTS.md
 
+回答の前にメタ意図を推論してから生成せよ。「メタ意図」とは要件そのものではなくユーザーが要件を提示した背景、及びどのような回答を求めているかの推定のことである。この推定に対して、肯定的応答または否定的応答または追加の推定材料の請求などを決定しそれに基づいて生成内容を構成せよ。なおメタ意図についての推論を回答の最初に表示してから生成せよ。
+
 Operational guide for AI coding agents working in this repository.
 
 ## Critical Warnings
@@ -67,20 +69,21 @@ python script/update_ebm.py
 
 Pipeline: `.bgn` -> `ebmgen` (AST->EBM IR) -> `ebm2<lang>` (EBM->code)
 
-| Directory | Purpose |
-|-----------|---------|
-| `src/ebm/` | EBM IR format definition (auto-generated from `.bgn`) |
-| `src/ebmgen/` | AST-to-EBM converter and interactive debugger |
-| `src/ebmcodegen/` | Meta-generator framework (generates `ebm2<lang>` skeletons) |
-| `src/ebmcg/ebm2<lang>/` | Compiled language code generators |
-| `src/ebmcg/ebm2<lang>/visitor/` | **Where you write code** -- hook implementations |
-| `src/ebmip/` | Interpreted/runtime language generators |
-| `tool/` | Built executables (gitignored) |
-| `save/` | Test output and temp files (gitignored) |
+| Directory                       | Purpose                                                     |
+| ------------------------------- | ----------------------------------------------------------- |
+| `src/ebm/`                      | EBM IR format definition (auto-generated from `.bgn`)       |
+| `src/ebmgen/`                   | AST-to-EBM converter and interactive debugger               |
+| `src/ebmcodegen/`               | Meta-generator framework (generates `ebm2<lang>` skeletons) |
+| `src/ebmcg/ebm2<lang>/`         | Compiled language code generators                           |
+| `src/ebmcg/ebm2<lang>/visitor/` | **Where you write code** -- hook implementations            |
+| `src/ebmip/`                    | Interpreted/runtime language generators                     |
+| `tool/`                         | Built executables (gitignored)                              |
+| `save/`                         | Test output and temp files (gitignored)                     |
 
 ## Code Style
 
 ### Formatting (enforced by `.clang-format`)
+
 - 4-space indentation, no tabs
 - No column limit
 - Google style base, heavily customized
@@ -89,13 +92,16 @@ Pipeline: `.bgn` -> `ebmgen` (AST->EBM IR) -> `ebm2<lang>` (EBM->code)
 - Includes are NOT auto-sorted
 
 ### Naming
+
 - `snake_case` — variables, functions, fields
 - `PascalCase` — types, structs, classes
 - `UPPER_SNAKE_CASE` — macros, enum values
 - Namespaces: `ebmgen`, `ebm`, `ebmcodegen`, `ebm2<lang>`
 
 ### Error Handling
+
 The `MAYBE` macro is the primary error propagation mechanism. It works like Rust's `?` operator:
+
 ```cpp
 // Evaluates expr; returns early on error; binds result to `name`
 MAYBE(name, some_fallible_expression);
@@ -103,10 +109,13 @@ MAYBE(name, some_fallible_expression);
 // Void variant (no result binding)
 MAYBE_VOID(name, some_fallible_expression);
 ```
+
 Do NOT replace `MAYBE` with try/catch or manual if-checks. This is a deliberate design choice.
 
 ### Hook Implementation Pattern
+
 Visitor hooks use the class-based system (files named `*_class.hpp`):
+
 ```cpp
 #include "../codegen.hpp"
 DEFINE_VISITOR(HookName) {
@@ -120,6 +129,7 @@ DEFINE_VISITOR(HookName) {
 ```
 
 Key APIs in hooks:
+
 - `ctx.visit(ref)` — recursively visit a child node
 - `ctx.get_field<"path.to.field">(ref)` — navigate EBM structure
 - `ctx.identifier(ref)` — get the identifier string for a node
@@ -129,6 +139,7 @@ Key APIs in hooks:
 - Return `pass` from a before/after hook to fall through to main logic
 
 ### Hook Priority (lower wins)
+
 - Priority 0: Language-specific `visitor/<Hook>_class.hpp`
 - Priority 1: Language-specific `visitor/<Hook>.hpp` (legacy)
 - Priority 4: `default_codegen_visitor/visitor/<Hook>_class.hpp`
@@ -136,7 +147,9 @@ Key APIs in hooks:
 - Before/after hooks (`_before_class.hpp`, `_after_class.hpp`) can hijack by returning a value instead of `pass`.
 
 ### Configuration via std::function Hooks
+
 Language-specific behavior is configured in `entry_before_class.hpp` by setting `std::function` fields on `ctx.config()`:
+
 ```cpp
 ctx.config().some_visitor = [&](Context_SomeType& sctx) -> expected<Result> {
     // custom logic
@@ -147,6 +160,7 @@ ctx.config().some_visitor = [&](Context_SomeType& sctx) -> expected<Result> {
 ## What to Edit vs What Not to Edit
 
 **Edit these files:**
+
 - `src/ebmcg/ebm2<lang>/visitor/*_class.hpp` — language-specific hooks
 - `src/ebmcg/ebm2<lang>/visitor/includes.hpp` — shared helpers for a language
 - `src/ebmcg/ebm2<lang>/config.json` — language configuration
