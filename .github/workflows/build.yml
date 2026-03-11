@@ -148,6 +148,8 @@ jobs:
         with:
           name: rebrgen-wasm-web
           path: rebrgen/web
+      - name: Install libc++-dev and libc++abi-dev
+        run: sudo apt-get install libc++-dev libc++abi-dev -y
       - name: Generate Glue
         working-directory: rebrgen
         run: |
