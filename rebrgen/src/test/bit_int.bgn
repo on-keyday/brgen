@@ -1,0 +1,3 @@
+format MapBitInt:
+    len_bit :u8
+    value :[len_bit]u1(config.type=u32)

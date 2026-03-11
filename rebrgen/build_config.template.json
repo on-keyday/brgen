@@ -1,0 +1,24 @@
+{
+    "FUTILS_DIR": "./brgen/utils/",
+    "BRGEN_DIR": "./brgen/",
+    "DEFAULT_BUILD_TYPE_NATIVE": "Debug",
+    "DEFAULT_BUILD_TYPE_WEB": "RelWithDebInfo",
+    "DEFAULT_BUILD_MODE": "native",
+    "EMSDK_DIR": "./emsdk",
+    "BUILD_OLD_BMGEN": false,
+    "AUTO_SETUP_BRGEN": false,
+    "AUTO_SETUP_FUTILS": true,
+    "AUTO_SETUP_EMSDK": false,
+    "CODEGEN_TARGET_LANGUAGE": [
+        "python",
+        "rust",
+        "p4",
+        "c",
+        "go",
+        "zig"
+    ],
+    "INTERPRET_TARGET_LANGUAGE": [
+        "rmw",
+        "json"
+    ]
+}

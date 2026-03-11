@@ -1,0 +1,92 @@
+config.cpp.namespace = "bm2"
+enum HookFile:
+    sections = "sections" # sections (prior to file based hook)
+    keyword = "keywords" # escape keywords
+    outputs = "outputs" # outputs (bm2xx::Output definitions)
+    generator_top = "generator_top" # generator top
+    file_top = "file_top" # generated file top
+    file_bottom = "file_bottom" # generated file bottom
+
+    bm_context = "bm_context" # bm2xx::Context definitions
+    flags = "flags" # command line flags definitions
+    eval_result = "eval_result" # bm2xx::EvalResult definitions
+    escape_ident = "escape_ident" # escape identifier
+    entry = "entry" # entry point
+
+    cmptest_build = "cmptest_build" # cmptest build
+    cmptest_run = "cmptest_run" # cmptest run
+
+    js_ui = "js_ui" # javascript ui
+    js_worker = "js_worker" # javascript worker
+
+    each_inner_block = "each_inner_block" # each inner block
+    each_inner_function = "each_inner_function" # each inner function
+    inner_function_start = "inner_function_start" # inner function start
+    inner_function_each_code = "inner_function_each_code" # inner function each code
+    inner_block_start = "inner_block_start" # inner block start
+    inner_block_each_code = "inner_block_each_code" # inner block each code
+    param_start = "param_start" # param start
+    param_each_code = "param_each_code" # param each code
+    call_param_start = "call_param_start" # call param start
+    call_param_each_code = "call_param_each_code" # call param each code
+
+    first_scan = "first_scan" # first scan (followed by lower case AbstractOp name(see binary_module.bgn for detail))
+    tree_scan = "tree_scan" # tree scan (followed by lower case AbstractOp name(see binary_module.bgn for detail))
+    inner_function_op = "func" # inner function operation (followed by lower case AbstractOp name(see binary_module.bgn for detail))
+    inner_block_op = "block" # inner block operation (followed by lower case AbstractOp name)
+    eval_op = "eval" # eval operation (followed by lower case AbstractOp name)
+    type_op = "type" # type operation (followed by lower case StorageType name (see binary_module.bgn for detail))
+    param_op = "param" # param operation (followed by lower case AbstractOp name)
+    call_param_op = "call_param" # call param operation (followed by lower case AbstractOp name)
+    field_accessor_op = "field_accessor" # field accessor operation (followed by lower case AbstractOp name)
+    type_accessor_op = "type_accessor" # type accessor operation (followed by lower case AbstractOp name)
+
+
+# this is used with  HookFile
+# for example, AbstractOp::BINARY,
+# HookFile.eval_op + AbstractOp.BINARY + HookFileSub.op -> "eval_binary_op"
+enum HookFileSub:
+    main = "" # main hook
+    pre_main = "_pre_main" # pre main hook (after 'before' hook and common initialization, before 'main' hook)
+    op = "_op" # binary or unary operator modification hook
+    empty = "_empty" # empty case (e.g. return;)
+    value = "_value" # value case (e.g. return value;)
+    self = "_self" # self case (e.g. field available condition of self)
+    field = "_field" # field case (e.g. field available condition of field)
+    fallback = "_fallback" # fallback case (e.g. fallback condition)
+    no_fallback = "_no_fallback" # no fallback case (e.g. no fallback condition)
+    before = "_before" # before case (e.g. before AbstractOp)
+    after = "_after" # after case (e.g. after AbstractOp)
+    byte_length = "_byte_length" # byte length case (e.g. byte length of AbstractOp)
+    replacement = "_replacement" # replacement case (e.g. replacement of AbstractOp)
+    static_ = "_static" # static case (e.g. static of AbstractOp)
+    dynamic = "_dynamic" # dynamic case (e.g. dynamic of AbstractOp)
+    normal = "_normal" # normal case (e.g. normal of AbstractOp)
+    enum_member = "_enum_member" # enum member case (e.g. enum member of AbstractOp)
+    header = "_header" # header case (e.g. header of AbstractOp)
+    var_ = "_var" # variable case
+    bytes = "_bytes" # bytes case (e.g. bytes of AbstractOp)
+
+enum FuncName:
+    eval
+    inner_function 
+    inner_block
+    add_parameter
+    add_call_parameter
+    type_to_string
+    field_accessor
+    type_accessor
+
+enum GenerateMode:
+    generator = "generator"
+    config_ = "config"
+    cmake = "cmake"
+    header = "header"
+    main = "main"
+    js_worker = "js-worker"
+    js_ui = "js-ui"
+    js_ui_embed = "js-ui-embed"
+    docs_json = "docs-json"
+    docs_markdown = "docs-markdown"
+    cmptest_json = "cmptest-json"
+    cmptest_build = "cmptest-build"

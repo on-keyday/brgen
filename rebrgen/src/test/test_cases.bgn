@@ -1,0 +1,737 @@
+# recursive test 
+#script\gen_sample C:\workspace\shbrgen\rebrgen\src\test\test_cases.bgn
+config.cpp.namespace = "recursive"
+
+enum StorageType:
+    :u8
+    # terminal
+    INT   
+    UINT 
+    FLOAT 
+    STRUCT_REF
+    RECURSIVE_STRUCT_REF
+    BYTE_VECTOR # special case of vector
+
+    # qualifiers
+    ENUM
+    ARRAY
+    VECTOR
+    # for recursive type
+    PTR
+    # for union
+    VARIANT
+
+format Varint:
+    prefix :u2
+    match prefix:
+        0 => value :u6
+        1 => value :u14
+        2 => value :u30
+        3 => value :u62
+
+
+format Storage:
+    type :StorageType
+    match type:
+        StorageType.INT:
+            size :Varint
+        StorageType.UINT:
+            size :Varint
+        StorageType.FLOAT:
+            size :Varint
+        StorageType.STRUCT_REF:
+            ref :Varint
+        StorageType.RECURSIVE_STRUCT_REF:
+            ref :Varint
+        StorageType.BYTE_VECTOR:
+            ..
+        StorageType.ENUM:
+            ref :Varint
+            base :Storage
+        StorageType.ARRAY:
+            size :Varint
+            base :Storage
+        StorageType.VECTOR:
+            ref :Varint
+            base :Storage
+        StorageType.VARIANT:
+            ref :Varint 
+            size :Varint
+            variants :[size.value]Storage
+
+
+
+state M:
+    s :bool
+
+
+
+fn get(x :u1) -> u2:
+    return if x == 0:
+        0
+    else:
+        1
+
+fn mapToHiragana(code :u6) -> u16:
+    return match code:
+        0x0 => 'あ'
+        0x1 => 'い'
+        0x2 => 'う'
+        0x3 => 'え'
+        0x4 => 'お'
+        0x5 => 'か'
+        0x6 => 'き'
+        0x7 => 'く'
+        0x8 => 'け'
+        0x9 => 'こ'
+        0xa => 'さ'
+        0xb => 'し'
+        0xc => 'す'
+        0xd => 'せ'
+        0xe => 'そ'
+        0xf => 'た'
+        0x10 => 'ち'
+        0x11 => 'つ'
+        0x12 => 'て'
+        0x13 => 'と'
+        0x14 => 'な'
+        0x15 => 'に'
+        0x16 => 'ぬ'
+        0x17 => 'ね'
+        0x18 => 'の'
+        0x19 => 'は'
+        0x1a => 'ひ'
+        0x1b => 'ふ'
+        0x1c => 'へ'
+        0x1d => 'ほ'
+        0x1e => 'ま'
+        0x1f => 'み'
+        0x20 => 'む'
+        0x21 => 'め'
+        0x22 => 'も'
+        0x23 => 'や'
+        0x24 => 'ゆ'
+        0x25 => 'よ'
+        0x26 => 'ら'
+        0x27 => 'り'
+        0x28 => 'る'
+        0x29 => 'れ'
+        0x2a => 'ろ'
+        0x2b => 'わ'
+        0x2c => 'が'
+        0x2d => 'ぎ'
+        0x2e => 'ぐ'
+        0x2f => 'げ'
+        0x30 => 'ご'
+        0x31 => 'ざ'
+        0x32 => 'じ'
+        0x33 => 'ず'
+        0x34 => 'ぜ'
+        0x35 => 'ぞ'
+        0x36 => 'ば'
+        0x37 => 'び'
+        0x38 => 'ぶ'
+        0x39 => 'べ'
+        0x3a => 'ぼ'
+        0x3b => 'ぱ'
+        0x3c => 'ぴ'
+        0x3d => 'ぷ'
+        0x3e => 'ぺ'
+        0x3f => 'ぽ'
+
+
+
+
+
+
+format LEB128:
+  value :u64
+  fn encode():
+    data := value
+    # encode value to LEB128
+    for:
+      if data < 0x80:
+        output.put(u8(data))
+        break
+      else:
+        output.put(u8(data & 0x7f))
+        data = data >> 7
+
+  fn decode():
+    # decode LEB128 to value
+    i := 0
+    for value < 0x80:
+      byte := input.get()
+      value = value | u64(byte & 0x7f) << (i * 7)
+      i = i + 1
+
+  fn u64() -> u64:
+    return value
+
+
+
+format TCPHeader:
+    srcPort :u16
+    dstPort :u16
+    seqNum :u32
+    ackNum :u32
+    dataOffset :u4
+    reserved :u4
+    CWR :u1 ECE :u1 URG :u1 ACK :u1 PSH :u1 RST :u1 SYN :u1 FIN :u1
+    windowSize :u16
+    checksum :u16
+    urgentPointer :u16
+    options :[..]TCPOption(input = input.subrange(u8(dataOffset*4)-20))
+
+enum TCPOptionKind:
+    :u8
+    END_OF_OPTIONS_LIST = 0
+    NOP = 1
+    MAXIMUM_SEGMENT_SIZE = 2
+    WINDOW_SCALE = 3
+    SACK_PERMITTED = 4
+    SACK = 5
+    TIMESTAMP = 8
+
+format TCPOption:
+    kind :TCPOptionKind
+    match kind:
+        TCPOptionKind.END_OF_OPTIONS_LIST => ..
+        TCPOptionKind.NOP => ..
+        TCPOptionKind.MAXIMUM_SEGMENT_SIZE:
+            length :u8
+            length == 4
+            mss :u16    
+        TCPOptionKind.WINDOW_SCALE:
+            length :u8
+            length == 3
+            shiftCount :u8
+        TCPOptionKind.SACK_PERMITTED: 
+            length :u8
+            length == 2
+        TCPOptionKind.SACK:
+            length :u8
+            length >= 2
+            sack :Sack(input = input.subrange(length-2))  
+        TCPOptionKind.TIMESTAMP:
+            length :u8
+            length == 10
+            timestamp :Timestamp(input = input.subrange(length-2))  
+        ..:
+            length :u8
+            length >= 2
+            data :[length-2]u8
+
+format SackBlock:
+    left :u32
+    right :u32
+
+format Sack:
+    blocks :[..]SackBlock
+
+format Timestamp:
+    value :u32
+    echoReply :u32
+
+format RequestLine:
+    method :[..]u8
+    :" "
+    path :[..]u8
+    :" "
+    version :[..]u8
+    :"\r\n"
+
+format Label:
+    length :u8
+    if length & 0xc0 == 0xc0:
+        input.backward()
+        pointer :u16
+    else:
+        length <= 63
+        data :[length]u8
+
+format DomainName:
+    labels :[]Label
+    
+    fn decode():
+        for:
+           label ::= input.get(Label)
+           isEnd ::= label.length == 0 || available(label.pointer)
+           labels[labels.length] = label
+           if isEnd:
+              break
+    
+    fn encode():
+        for i in labels.length:
+            if labels[i].length == 0 || available(labels[i].pointer):
+                i == labels.length - 1
+            output.put(labels[i])
+
+
+enum OpCode:
+    :u4
+    ContinuationFrame = 0x0
+    TextFrame = 0x1
+    BinaryFrame = 0x2
+    ConnectionClose = 0x8
+    Ping = 0x9
+    Pong = 0xA
+
+format WsFrame:
+    FIN :u1
+    RSV1 :u1
+    RSV2 :u1
+    RSV3 :u1
+    Opcode :OpCode
+    Mask :u1
+    PayloadLength :u7
+    match PayloadLength:
+        126 => ExtendedPayloadLength :u16
+        127 => ExtendedPayloadLength :u64
+    
+    if Mask == 1:
+        MaskingKey :[4]u8
+
+    len ::= available(ExtendedPayloadLength) ?  # if ExtendedPayloadLength (u16 or u64) is available
+            ExtendedPayloadLength :  # use ExtendedPayloadLength
+            PayloadLength  # otherwise use PayloadLength
+    Payload :[len]u8(input.xor = MaskingKey)
+    
+
+
+
+config.go.package = "ether"
+
+DHCP_MAGIC ::= 0x63825363
+
+DHCP_SERVER_PORT ::= 67
+DHCP_CLIENT_PORT ::= 68
+
+enum DHCP_OP:
+    :u8
+    REQUEST = 1
+    REPLY = 2
+
+format DHCPMessage:
+    op :DHCP_OP
+    htype :u8
+    hlen :u8
+    hops :u8
+    xid :u32
+    secs :u16
+    broadcast :u1
+    reserved :u15(0)
+    client_addr :[4]u8
+    your_addr :[4]u8
+    server_addr :[4]u8
+    gateway_addr :[4]u8
+    client_hardware_addr :[16]u8
+    sname :[64]u8
+    file :[128]u8
+    magic :u32(DHCP_MAGIC)
+    options :[..]Option
+
+enum DHCP_OPTION:
+    :u8
+    PAD = 0
+    SUBNET_MASK = 1
+    ROUTER = 3
+    DNS_SERVER = 6
+    HOST_NAME = 12
+    DOMAIN_NAME = 15
+    REQUESTED_IP = 50
+    LEASE_TIME = 51
+    MESSAGE_TYPE = 53
+    SERVER_ID = 54
+    PARAMETER_REQUEST_LIST = 55
+    RENEWAL_TIME = 58
+    REBINDING_TIME = 59
+    END = 255
+
+enum DHCP_TYPE:
+    :u8
+    DISCOVER = 1
+    OFFER = 2
+    REQUEST = 3
+    DECLINE = 4
+    ACK = 5
+    NAK = 6
+    RELEASE = 7
+    INFORM = 8
+
+format Option:
+    code :DHCP_OPTION
+    match code:
+        DHCP_OPTION.PAD => ..
+        DHCP_OPTION.END => ..
+        DHCP_OPTION.SUBNET_MASK:
+            len :u8(4)
+            addr :[len]u8
+        DHCP_OPTION.MESSAGE_TYPE:
+            len :u8(1)
+            type :DHCP_TYPE
+        DHCP_OPTION.REQUESTED_IP:
+            len :u8(4)
+            addr :[len]u8
+        DHCP_OPTION.SERVER_ID:
+            len :u8(4)
+            addr :[len]u8
+        DHCP_OPTION.PARAMETER_REQUEST_LIST:
+            len :u8
+            list :[len]DHCP_OPTION
+        DHCP_OPTION.ROUTER:
+            len :u8
+            addr :[len]u8
+        DHCP_OPTION.DNS_SERVER:
+            len :u8
+            addr :[len]u8
+        DHCP_OPTION.LEASE_TIME:
+            len :u8(4)
+            time :u32
+        DHCP_OPTION.DOMAIN_NAME:
+            len :u8
+            name :[len]u8    
+        ..:
+            len :u8
+            data :[len]u8
+
+enum DNSOpCode:
+    :u4
+    QUERY = 0
+    IQUERY = 1
+    STATUS = 2
+    NOTIFY = 4
+    UPDATE = 5
+
+enum DNSReturnCode:
+    :u4
+    NOERROR = 0
+    FORMERR = 1
+    SERVFAIL = 2
+    NXDOMAIN = 3
+    NOTIMP = 4
+    REFUSED = 5
+    YXDOMAIN = 6
+    YXRRSET = 7
+    NXRRSET = 8
+    NOTAUTH = 9
+    NOTZONE = 10
+
+format DNSHeader:
+    id :u16
+    response :u1
+    opcode :DNSOpCode
+    authoritative :u1
+    truncated :u1
+    recursion_desired :u1
+    recursion_available :u1
+    z :u3
+    return_code :DNSReturnCode
+    query_count :u16
+    answer_count :u16
+    authority_count :u16
+    additional_count :u16
+
+format DNSMessage:
+    header :DNSHeader
+    questions :[header.query_count]DNSQuestion
+    answers :[header.answer_count]DNSResourceRecord
+    authorities :[header.authority_count]DNSResourceRecord
+    additionals :[header.additional_count]DNSResourceRecord
+
+format DNSQuestion:
+    name :DomainName
+    type :u16
+    class :u16
+
+format DNSResourceRecord:
+    name :DomainName
+    type :u16
+    class :u16
+    ttl :u32
+    data_length :u16
+    data :[data_length]u8
+
+
+
+format UDPHeader:
+    config.rfc = "https://datatracker.ietf.org/doc/html/rfc768"
+    src_port :u16
+    dst_port :u16
+    length  :u16
+    checksum :u16
+
+format UDPDatagram:
+    header :UDPHeader
+    data :[header.length-8]u8
+
+
+
+config.go.package = "ether"
+
+enum EtherType:
+    :u16
+    ipv4 = 0x0800
+    arp = 0x0806
+    vlan = 0x8100
+    ipv6 = 0x86DD
+    service_vlen = 0x88A8
+    pppoe_discovery = 0x8863
+    pppoe_session = 0x8864
+
+format OUI:
+    high: u6
+    local :u1
+    multicast :u1
+    low :[2]u8
+
+format MacAddress:
+    oui :OUI
+    nic :[3]u8
+
+format EthernetFrame:
+    dstMac :[6]u8
+    srcMac :[6]u8
+    ether_type :u16
+    if ether_type == u16(EtherType.vlan):
+        vlan_tag :u16
+        ether_type2 :u16
+    elif ether_type == u16(EtherType.service_vlen):
+        service_vlan_tag :u16
+        dummy_ether_type :u16(u16(EtherType.vlan))
+        vlan_tag :u16
+        ether_type2 :u16
+    len ::= available(ether_type2) ? ether_type2 : ether_type
+    if len >= 0x600:
+        data :[..]u8
+    else:
+        # peek :u16(input.peek = true)
+        data :[len]u8
+
+format PPPoE:
+    version :u4(1)
+    type :u4(1)
+    code :u8
+    session_id :u16
+    len :u16
+    data :[len]u8
+
+enum Endian:
+    :u8
+    LittleEndian = 1
+    BigEndian = 2
+
+enum CPUClass:
+    :u8
+    _32 = 1
+    _64 = 2
+
+estate :ELFState
+
+format ELFFileHeader:
+    magic :"\177ELF"
+    class :CPUClass
+    class == CPUClass._32 || class == CPUClass._64  
+    endian :Endian
+    endian == Endian.LittleEndian || endian == Endian.BigEndian
+    input.endian = endian == Endian.LittleEndian ? config.endian.little : config.endian.big
+    version :u8 
+    version == 1
+    osabi :u8
+    osabi == 0
+    abiversion :u8
+    abiversion == 0
+    padding :[7]u8
+    objtype :u16
+    machine :u16
+    version2 :u32
+    if class == CPUClass._32:
+        entry :u32
+        program_header_offset :u32
+        section_header_offset :u32
+    else:
+        entry :u64
+        program_header_offset :u64
+        section_header_offset :u64
+    flags :u32
+    header_size :u16
+    program_header_entry_size :u16
+    program_header_entry_count :u16
+    section_header_entry_size :u16
+    section_header_entry_count :u16
+    section_header_name_index :u16
+    estate.cpu = class
+    estate.endian = endian
+
+state ELFState:
+    cpu :CPUClass
+    endian :Endian
+
+enum H2Error:
+    none = 0x0
+    protocol = 0x1
+    internal = 0x2
+    flow_control = 0x3
+    settings_timeout = 0x4
+    stream_closed = 0x5
+    frame_size = 0x6
+    refused = 0x7
+    cancel = 0x8
+    compression = 0x9
+    connect = 0xa
+    enhance_your_clam = 0xb
+    inadequate_security = 0xc
+    http_1_1_required = 0xd
+    transport = 0x100
+
+enum H2Type:
+    :u8
+    DATA = 0x0
+    HEADERS = 0x1
+    PRIORITY = 0x2
+    RST_STREAM = 0x3
+    SETTINGS = 0x4
+    PUSH_PROMISE = 0x5
+    PING = 0x6
+    GOAWAY = 0x7
+    WINDOW_UPDATE = 0x8
+    CONTINUATION = 0x9
+
+
+format FrameHeader:
+    len :u24
+    type:H2Type
+    reserved_flag :u4(0)
+    padding :u1
+    end_headers :u1
+    unused :u1
+    end_stream_or_ack :u1 #TODO(on-keyday): rename? make it more clear
+    reserved :u1
+    stream_id:u31
+
+state FrameHeaderState:
+    header :FrameHeader
+
+header_state :FrameHeaderState
+
+format FrameBody:
+    match header_state.header.type:
+        H2Type.DATA => data :DataFrame
+        H2Type.HEADERS => headers :HeadersFrame
+        H2Type.PRIORITY => priority :PriorityFrame
+        H2Type.RST_STREAM => rst_stream :RstStreamFrame
+        H2Type.SETTINGS => settings :SettingsFrame
+        H2Type.PUSH_PROMISE => push_promise :PushPromiseFrame
+        H2Type.PING => ping :PingFrame
+        H2Type.GOAWAY => goaway :GoAwayFrame
+        H2Type.WINDOW_UPDATE => window_update :WindowUpdateFrame
+        H2Type.CONTINUATION => continuation :ContinuationFrame
+        .. => unknown :[header_state.header.len]u8
+
+format DataFrame:
+    if header_state.header.padding == 1:
+        padding_len :u8
+        u32(header_state.header.len) > u32(padding_len) + 1 # violate this is protocol error
+    len ::= header_state.header.padding == 1 ? header_state.header.len - 1 - u32(padding_len) : header_state.header.len
+    data :[len]u8
+    if header_state.header.padding == 1:
+        padding :[padding_len]u8
+
+format StreamWeight:
+    exclusive :u1
+    stream_id :u31
+    weight :u8
+
+
+format HeadersFrame:
+    priority :StreamWeight
+    if header_state.header.padding == 1:
+        padding_len :u8
+        u32(header_state.header.len) > u32(padding_len + 1) # violate this is protocol error
+    len ::= u32(header_state.header.len) - u32(available(padding_len)?padding_len:0)
+    header_block :[len]u8
+    if header_state.header.padding == 1:
+        padding :[padding_len]u8
+
+format PriorityFrame:
+    header_state.header.len == 5
+    priority :StreamWeight
+
+format RstStreamFrame:
+    header_state.header.len == 4
+    error_code :u32
+
+format Setting:
+    id :u16
+    value :u32
+
+format SettingsFrame:
+    header_state.header.len % 6 == 0
+    if header_state.header.end_stream_or_ack == 1:
+        header_state.header.len == 0
+        return
+    settings :[header_state.header.len / 6]Setting
+
+format PushPromiseFrame:
+    reserved :u1(0)
+    promised_stream_id :u31
+    header_block :[header_state.header.len - 4]u8
+
+format PingFrame:
+    header_state.header.len == 8
+    opaque_data :u64
+
+format GoAwayFrame:
+    reserved :u1(0)
+    last_stream_id :u31
+    error_code :u32
+    debug_data :[header_state.header.len - 8]u8
+
+format WindowUpdateFrame:
+    header_state.header.len == 4
+    reserved :u1(0)
+    window_size_increment :u31
+
+format ContinuationFrame:
+    header_block :[header_state.header.len]u8
+
+enum EdgeEnum:
+    :u1
+    NO_EDGE
+    EDGE 
+
+format Edge:
+    edge :EdgeEnum
+    reserved :u7    
+
+
+format NetLinkHeader:
+    len :u32
+    type :u16
+    flags :u16
+    seq :u32
+    pid :u32
+
+format NetLinkMessage:
+    hdr : NetLinkHeader
+    hdr.len >= 16
+    data :[hdr.len - 16]u8
+    align :[..]u8(input.align = 32) # Align to 32-bit boundary
+
+format LeBitField:
+    lsb :ul1
+    other :ul6
+    msb :ul1
+
+format BeBitField:
+    msb :ub1
+    other :ub6
+    lsb :ub1
+
+format NativeBitField:
+    input.endian = config.endian.native
+    msb_or_lsb :u1
+    other :u6
+    lsb_or_msb :u1
+
+CONSTANT ::= 0x12345678

@@ -1,0 +1,215 @@
+
+input.endian = config.endian.native
+config.url = "https://www.man7.org/linux/man-pages/man7/netlink.7.html"
+config.url = "https://www.man7.org/linux/man-pages/man7/rtnetlink.7.html"
+
+AF_NETLINK ::= u16(16)
+
+PF_BRIDGE ::= u16(7)
+
+ARPHRD_ETHER ::= u16(1)
+
+AF_INET ::= u16(2)
+AF_INET6 ::= u16(10)
+
+NLM_F_REQUEST ::= u16(1)
+NLM_F_CREATE ::= u16(0x400)
+NLM_F_EXCL ::= u16(0x200)
+NLM_F_ACK ::= u16(4)
+
+
+enum NetLinkType:
+    :u16
+    NLMSG_NOOP = 1
+    NLMSG_ERROR = 2
+    NLMSG_DONE = 3
+
+    RTM_NEWLINK = 16
+    RTM_DELLINK = 17
+    RTM_GETLINK = 18
+    RTM_SETLINK = 19
+
+    RTM_NEWADDR = 20
+    RTM_DELADDR = 21
+    RTM_GETADDR = 22
+
+    RTM_NEWNEIGH = 24
+    RTM_DELNEIGH = 25
+    RTM_GETNEIGH = 26
+
+    RTM_NEWROUTE = 32
+    RTM_DELROUTE = 33
+    RTM_GETROUTE = 34
+
+
+IFLA_INFO_KIND ::= 1
+IFLA_INFO_DATA ::= 2
+
+IFLA_ADDRESS ::= 1
+IFLA_IFNAME ::= 3
+IFLA_LINK ::= 5
+IFLA_LINKINFO ::= 18
+IFLA_MASTER ::= 10
+IFLA_NEW_IFINDEX ::= 49
+
+
+IFLA_MACVLAN_MODE ::= 1
+IFLA_MACVLAN_MACADDR ::= 4
+
+IFF_UP ::= u16(1)
+IFF_BROADCAST ::= u16(2)
+IFF_DEBUG ::= u16(4)
+IFF_LOOPBACK ::= u16(8)
+IFF_POINTOPOINT ::= u16(0x10)
+IFF_NOTRAILERS ::= u16(0x20)
+IFF_RUNNING ::= u16(0x40)
+IFF_NOARP ::= u16(0x80)
+IFF_PROMISC ::= u16(0x100)
+IFF_MULTICAST ::= u16(0x1000)
+
+
+# macvlan mode
+MACVLAN_MODE_PRIVATE ::= u32(1)
+MACVLAN_MODE_VEPA ::= u32(2)
+MACVLAN_MODE_BRIDGE ::= u32(4)
+MACVLAN_MODE_PASSTHRU ::= u32(8)
+MACVLAN_MODE_SOURCE ::= u32(16)
+
+format NetLinkHeader:
+    len :u32
+    type :NetLinkType
+    flags :u16
+    seq :u32
+    pid :u32
+
+format NetLinkMessage:
+    hdr : NetLinkHeader
+    hdr.len >= 16
+    match hdr.type:
+        NetLinkType.NLMSG_ERROR:
+            error :NetLinkError(input = input.subrange(hdr.len - 16))
+        NetLinkType.RTM_NEWLINK:
+            ifi :NetLinkIfInfoMessage(input = input.subrange(hdr.len - 16))
+        NetLinkType.RTM_GETLINK:
+            ifi :NetLinkIfInfoMessage(input = input.subrange(hdr.len - 16))
+        NetLinkType.RTM_SETLINK:
+            ifi :NetLinkIfInfoMessage(input = input.subrange(hdr.len - 16))
+        NetLinkType.RTM_DELLINK:
+            ifi :NetLinkIfInfoMessage(input = input.subrange(hdr.len - 16))
+        NetLinkType.RTM_NEWADDR:
+            ifa :NewLinkIfAddrMessage(input = input.subrange(hdr.len - 16)) 
+        NetLinkType.RTM_DELADDR:
+            ifa :NewLinkIfAddrMessage(input = input.subrange(hdr.len - 16)) 
+        NetLinkType.RTM_GETADDR:
+            ifa :NewLinkIfAddrMessage(input = input.subrange(hdr.len - 16))
+        NetLinkType.RTM_NEWROUTE:
+            route :NetLinkRouteMessage(input = input.subrange(hdr.len - 16))
+        NetLinkType.RTM_DELROUTE:
+            route :NetLinkRouteMessage(input = input.subrange(hdr.len - 16))
+        NetLinkType.RTM_GETROUTE:
+            route :NetLinkRouteMessage(input = input.subrange(hdr.len - 16))
+        NetLinkType.RTM_NEWNEIGH:
+            neigh :NetLinkNdMessage(input = input.subrange(hdr.len - 16))
+        NetLinkType.RTM_GETNEIGH:
+            neigh :NetLinkNdMessage(input = input.subrange(hdr.len - 16))
+        NetLinkType.RTM_DELNEIGH:
+            neigh :NetLinkNdMessage(input = input.subrange(hdr.len - 16))
+        .. => data :[hdr.len - 16]u8    
+    align :[..]u8(input.align = 32) # Align to 32-bit boundary
+
+format NetLinkError:
+    error :i32
+    hdr :NetLinkHeader
+    error_content :[..]u8
+
+format NetLinkRtAttrHeader:
+    len :u16
+    type :u16
+
+format NetLinkRtAttr:
+    hdr :NetLinkRtAttrHeader
+    hdr.len >= 4 # sizeof header
+    data :[hdr.len - 4]u8
+    align :[..]u8(input.align = 32) # Align to 32-bit boundary
+
+# struct ifinfomsg
+format NetLinkIfInfoMessageHeader:
+    ifi_family :u8
+    padding1 :u8
+    ifi_type :u16
+    ifi_ifindex :u32
+    ifi_flags :u32
+    ifi_change :u32
+
+format NetLinkIfInfoMessage:
+    hdr :NetLinkIfInfoMessageHeader
+    attrs :[..]NetLinkRtAttr
+
+# struct ifaddrmsg
+format NewLinkIfAddrMessageHeader:
+    ifa_family :u8
+    ifa_prefix_len :u8
+    ifa_flags :u8
+    ifa_scope :u8
+    ifa_index :u32
+
+format NewLinkIfAddrMessage:
+    hdr :NewLinkIfAddrMessageHeader
+    attrs :[..]NetLinkRtAttr
+
+# struct rtmsg 
+format NetLinkRouteMessageHeader:
+    rtm_family :u8
+    rtm_dst_len :u8
+    rtm_src_len :u8
+    rtm_tos :u8
+    rtm_table :u8
+    rtm_protocol :u8
+    rtm_scope :u8
+    rtm_type :u8
+    rtm_flags :u32
+
+format NetLinkRouteMessage:
+    hdr :NetLinkRouteMessageHeader
+    attrs :[..]NetLinkRtAttr
+
+# struct rtnexthop
+format RtNextHop:
+    rtnh_len :u16
+    rtnh_flags :u8
+    rtnh_hops :u8
+    rtnh_ifindex :u32
+
+# struct rtvia
+format RtVia:
+    family :u16
+    match family:
+        AF_INET:
+            addr4 :[4]u8
+        AF_INET6:
+            addr6 :[16]u8
+
+# sturct nd_msg
+format NetLinkNdMessage:
+    ndm_family :u8
+    padding :[3]u8
+    ndm_ifindex :u32
+    ndm_state :u16
+    ndm_flags :u8
+    ndm_type :u8
+
+# struct nda_cacheinfo
+format NdaCacheInfo:
+    ndm_confirmed :u32
+    ndm_used :u32
+    ndm_updated :u32
+    ndm_refcnt :u32
+
+# struct tcmsg
+format NetLinkTcMessage:
+    family :u8
+    padding :[3]u8
+    interface_index :u32
+    tcm_handle :u32
+    tcm_parent :u32
+    tcm_info :u32

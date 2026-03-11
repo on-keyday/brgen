@@ -1,0 +1,30 @@
+format DNSLabel:
+    prefix :u2
+    match prefix:
+        0b11 => pointer :u14
+        0b00:
+            len :u6
+            label :[len]u8
+        .. => error("unexpected label")
+
+format DNSLabelTest: 
+    labels :[]DNSLabel
+
+    fn encode():
+        for i in labels.length:
+            output.put(labels[i])
+            if available(labels[i].pointer) || u8(labels[i].len) == 0:
+                i + 1 == labels.length
+
+    fn decode():
+        for:
+            lab := input.get(DNSLabel)
+            if available(lab.pointer):
+                labels[labels.length] = lab
+                break
+            if u8(lab.len) == 0:
+                labels[labels.length] = lab
+                break
+            labels[labels.length] = lab
+            
+

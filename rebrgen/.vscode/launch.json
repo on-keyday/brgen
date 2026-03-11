@@ -1,0 +1,207 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug bmgen",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceRoot}/tool/bmgen",
+      "args": [
+        "-i",
+        "${workspaceRoot}/save/sample.json",
+        "-o",
+        "${workspaceRoot}/save/save.bin",
+        "-c",
+        "${workspaceRoot}/save/save.dot"
+      ],
+      "stopAtEntry": false,
+      "cwd": "${workspaceRoot}",
+      "environment": [],
+      "console": "integratedTerminal"
+      //"preLaunchTask": "build",
+      //"symbolSearchPath": "lib\\"
+    },
+    {
+      "name": "Debug bm2cpp",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceRoot}/tool/bm2cpp3",
+      "args": ["-i", "${workspaceRoot}/save/save.bin"],
+      "stopAtEntry": false,
+      "cwd": "${workspaceRoot}",
+      "environment": [],
+      "console": "integratedTerminal"
+      //"preLaunchTask": "build",
+      //"symbolSearchPath": "lib\\"
+    },
+    {
+      "name": "Debug bm2rust",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceRoot}/tool/bm2rust",
+      "args": ["-i", "${workspaceRoot}/save/save.bin"],
+      "stopAtEntry": false,
+      "cwd": "${workspaceRoot}",
+      "environment": [],
+      "console": "integratedTerminal"
+      //"preLaunchTask": "build",
+      //"symbolSearchPath": "lib\\"
+    },
+    {
+      "name": "Debug bm2c",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceRoot}/tool/bm2c",
+      "args": ["-i", "${workspaceRoot}/save/save.bin"],
+      "stopAtEntry": false,
+      "cwd": "${workspaceRoot}",
+      "environment": [],
+      "console": "integratedTerminal"
+      //"preLaunchTask": "build",
+      //"symbolSearchPath": "lib\\"
+    },
+    {
+      "name": "Debug bm2py",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceRoot}/tool/bm2python",
+      "args": ["-i", "${workspaceRoot}/save/save.bin"],
+      "stopAtEntry": true,
+      "cwd": "${workspaceRoot}",
+      "environment": [],
+      "console": "integratedTerminal"
+      //"preLaunchTask": "build",
+      //"symbolSearchPath": "lib\\"
+    },
+    {
+      "name": "Debug bm2hexmap",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceRoot}/tool/bm2hexmap",
+      "args": [
+        "-i",
+        "${workspaceRoot}/save/save.bin",
+        "--binary",
+        "${workspaceRoot}/save/ipv6.dat",
+        "--start-format",
+        "Test"
+      ],
+      "stopAtEntry": false,
+      "cwd": "${workspaceRoot}",
+      "environment": [],
+      "console": "integratedTerminal"
+      //"preLaunchTask": "build",
+      //"symbolSearchPath": "lib\\"
+    },
+    {
+      "name": "Debug gen_template",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceRoot}/tool/gen_template2",
+      "args": [
+        "--lang",
+        "test",
+        "--config-file",
+        "src/old/bm2python/config.json",
+        "--hook-dir",
+        "src/old/bm2python/hook"
+      ],
+      "stopAtEntry": false,
+      "cwd": "${workspaceRoot}",
+      "environment": [],
+      "console": "integratedTerminal"
+      //"preLaunchTask": "build",
+      //"symbolSearchPath": "lib\\"
+    },
+    {
+      "name": "Debug ebmgen",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceRoot}/tool/ebmgen",
+      "args": ["-i", "${workspaceRoot}/save/protobuf_conv.bgn", "-I"],
+      "stopAtEntry": false,
+      "cwd": "${workspaceRoot}",
+      "environment": [],
+      "console": "integratedTerminal"
+      //"preLaunchTask": "build",
+      //"symbolSearchPath": "lib\\"
+    },
+    {
+      "name": "Debug ebmcodegen",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceRoot}/tool/ebmcodegen",
+      "args": ["--mode", "codegen-class-source"],
+      "stopAtEntry": false,
+      "cwd": "${workspaceRoot}",
+      "environment": [],
+      "console": "integratedTerminal"
+      //"preLaunchTask": "build",
+      //"symbolSearchPath": "lib\\"
+    },
+    {
+      "name": "Debug ebm2c",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceRoot}/tool/ebm2zig",
+      "args": ["-i", "${workspaceRoot}/save/simple_case.ebm"],
+      "stopAtEntry": false,
+      "cwd": "${workspaceRoot}",
+      "environment": [],
+      "console": "integratedTerminal"
+      //"preLaunchTask": "build",
+      //"symbolSearchPath": "lib\\"
+    },
+    {
+      "name": "Debug ebm2rmw",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceRoot}/tool/ebm2rmw",
+      "args": [
+        "-i",
+        "${workspaceRoot}/save/ebm_schema.ebm",
+        "--entry-point",
+        "ExtendedBinaryModule",
+        "--debug-unimplemented",
+        "--dump-ops",
+        "--binary-file",
+        "${workspaceRoot}/save/ebm_schema.ebm"
+      ],
+      "stopAtEntry": false,
+      "cwd": "${workspaceRoot}",
+      "environment": [],
+      "console": "integratedTerminal"
+      //"preLaunchTask": "build",
+      //"symbolSearchPath": "lib\\"
+    },
+    {
+      "name": "Attach",
+      "type": "cppvsdbg",
+      "request": "attach",
+      "processId": "${command:pickProcess}"
+    },
+    {
+      "name": "Extension",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}/syntax/sections-txt"
+      ]
+    },
+    {
+      "type": "debugpy",
+      "request": "launch",
+      "cwd": "C:\\Users\\ukfco\\AppData\\Local\\Temp\\unictest\\tr-2da09739f7\\r-7a42cd3ee2\\t-b8835f8bd0",
+      "name": "Debug ebm2python unictest (Frame)",
+      "program": "C:\\Users\\ukfco\\AppData\\Local\\Temp\\unictest\\tr-2da09739f7\\r-7a42cd3ee2\\t-b8835f8bd0\\test_script.py",
+      "args": [
+        "C:/Users/ukfco/AppData/Local/Temp/unictest/tr-2da09739f7/r-7a42cd3ee2/t-b8835f8bd0/input.bin",
+        "C:/Users/ukfco/AppData/Local/Temp/unictest/tr-2da09739f7/r-7a42cd3ee2/t-b8835f8bd0/output.bin"
+      ],
+      "stopOnEntry": true
+    }
+  ]
+}

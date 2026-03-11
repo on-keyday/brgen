@@ -1,0 +1,1 @@
+run_command(["g++", "save/cpp/save.cpp", "-o", "save"])

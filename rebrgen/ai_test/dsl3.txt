@@ -1,0 +1,10 @@
+format MyMessage
+    header: uint8
+    if header == 1
+        length: uint16
+        payload: byte[length]
+    else if header == 2
+        value: uint32
+    else
+        value: uint16
+    checksum: uint32

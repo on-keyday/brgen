@@ -1,0 +1,4 @@
+format Tricky:
+    x :u2
+    l ::= input.get()
+    y :[l]u8

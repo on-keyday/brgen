@@ -1,0 +1,73 @@
+
+format Varint:
+    len :u8
+    value :u64
+
+    fn decode():
+        value = 0
+        len = 0
+        for:
+            v := input.get()
+            value |= u64(v & 0x7f) << (7 * len)
+            len += 1
+            if v < 0x80:
+                return
+      
+
+    fn encode():
+        value_copy := value
+        counter := 0
+        for:
+            v := u8(value_copy & 0x7f)
+            value_copy = value_copy >> 7
+            if value_copy == 0 && (len == 0 || counter + 1 >= len):
+                output.put(v)
+                return
+            output.put(v | 0x80)
+            counter += 1
+
+enum WireType:
+    Varint = 0
+    Fixed64 = 1
+    LengthDelimited = 2
+    StartGroup = 3
+    EndGroup = 4
+    Fixed32 = 5
+
+format Field:
+    id :Varint
+    fn type() -> WireType:
+        return WireType(id.value & 0x7)
+    fn number() -> u64:
+        return id.value >> 3
+    
+    match type():
+        WireType.Varint => value :Varint
+        WireType.Fixed64 => value :u64
+        WireType.LengthDelimited:
+            length :Varint
+            value :[length]u8
+        WireType.StartGroup => ..
+        WireType.EndGroup => ..
+        WireType.Fixed32 => value :u32
+
+format Leb128Test:
+    field_1 :Varint # 8-bit data
+    field_2 :Varint 
+    field_3 :Varint  
+    field_4 :Varint 
+
+    field_5 :Varint # 16-bit data
+    field_6 :Varint 
+    field_7 :Varint
+    field_8 :Varint
+
+    field_9 :Varint # 24-bit data
+    field_10 :Varint
+    field_11 :Varint
+
+    field_12 :Varint # 32-bit data
+
+    field_13 :Varint # 5 byte 32 bit max 
+
+    field_14 :Varint # 10 byte 64 bit max

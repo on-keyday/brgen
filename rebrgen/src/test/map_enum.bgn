@@ -1,0 +1,6 @@
+enum AbstractEnum:
+    abs
+    rel
+
+format MapEnum:
+    x :AbstractEnum(config.type=u8)

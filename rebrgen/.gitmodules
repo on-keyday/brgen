@@ -1,0 +1,3 @@
+[submodule "brgen"]
+	path = brgen
+	url = git@github.com:on-keyday/brgen.git

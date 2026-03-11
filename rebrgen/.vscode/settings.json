@@ -1,0 +1,150 @@
+{
+  "files.associations": {
+    "cstdint": "cpp",
+    "memory": "cpp",
+    "format": "cpp",
+    "algorithm": "cpp",
+    "cmath": "cpp",
+    "array": "cpp",
+    "atomic": "cpp",
+    "bit": "cpp",
+    "cctype": "cpp",
+    "charconv": "cpp",
+    "chrono": "cpp",
+    "clocale": "cpp",
+    "codecvt": "cpp",
+    "compare": "cpp",
+    "concepts": "cpp",
+    "condition_variable": "cpp",
+    "coroutine": "cpp",
+    "cstddef": "cpp",
+    "cstdio": "cpp",
+    "cstdlib": "cpp",
+    "cstring": "cpp",
+    "ctime": "cpp",
+    "cwchar": "cpp",
+    "deque": "cpp",
+    "exception": "cpp",
+    "forward_list": "cpp",
+    "list": "cpp",
+    "map": "cpp",
+    "resumable": "cpp",
+    "set": "cpp",
+    "string": "cpp",
+    "unordered_map": "cpp",
+    "vector": "cpp",
+    "filesystem": "cpp",
+    "fstream": "cpp",
+    "functional": "cpp",
+    "future": "cpp",
+    "initializer_list": "cpp",
+    "iomanip": "cpp",
+    "ios": "cpp",
+    "iosfwd": "cpp",
+    "istream": "cpp",
+    "iterator": "cpp",
+    "limits": "cpp",
+    "locale": "cpp",
+    "mutex": "cpp",
+    "new": "cpp",
+    "numeric": "cpp",
+    "optional": "cpp",
+    "ostream": "cpp",
+    "queue": "cpp",
+    "random": "cpp",
+    "ranges": "cpp",
+    "ratio": "cpp",
+    "span": "cpp",
+    "sstream": "cpp",
+    "stdexcept": "cpp",
+    "stdfloat": "cpp",
+    "stop_token": "cpp",
+    "streambuf": "cpp",
+    "system_error": "cpp",
+    "thread": "cpp",
+    "tuple": "cpp",
+    "type_traits": "cpp",
+    "typeinfo": "cpp",
+    "utility": "cpp",
+    "variant": "cpp",
+    "xfacet": "cpp",
+    "xhash": "cpp",
+    "xiosbase": "cpp",
+    "xlocale": "cpp",
+    "xlocbuf": "cpp",
+    "xlocinfo": "cpp",
+    "xlocmes": "cpp",
+    "xlocmon": "cpp",
+    "xlocnum": "cpp",
+    "xloctime": "cpp",
+    "xmemory": "cpp",
+    "xstring": "cpp",
+    "xtr1common": "cpp",
+    "xtree": "cpp",
+    "xutility": "cpp",
+    "cassert": "cpp",
+    "unordered_set": "cpp",
+    "regex": "cpp",
+    "iostream": "cpp",
+    "*.rh": "cpp",
+    "string_view": "cpp"
+  },
+  "editor.formatOnSave": true,
+  "C_Cpp.clang_format_style": "file",
+  "brgen-lsp.src2json": "C:/workspace/shbrgen/brgen/tool/src2json.exe",
+  "rust-analyzer.linkedProjects": [
+    "C:\\workspace\\shbrgen\\rebrgen\\save\\save\\Cargo.toml"
+  ],
+  "editor.tokenColorCustomizations": {
+    "[*Light*]": {
+      "textMateRules": [
+        {
+          "scope": "ref.matchtext",
+          "settings": {
+            "foreground": "#000"
+          }
+        }
+      ]
+    },
+    "[*Dark*]": {
+      "textMateRules": [
+        {
+          "scope": "ref.matchtext",
+          "settings": {
+            "foreground": "#fff"
+          }
+        },
+        {
+          "scope": "keyword.control.section",
+          "settings": {
+            "foreground": "#ee00ee"
+          }
+        },
+        {
+          "scope": "keyword.control.include",
+          "settings": {
+            "foreground": "#ffff00"
+          }
+        },
+        {
+          "scope": "keyword.control.end_section",
+          "settings": {
+            "foreground": "#ee00ee"
+          }
+        },
+        {
+          "scope": "keyword.control.section.include",
+          "settings": {
+            "foreground": "#00ee00"
+          }
+        }
+      ]
+    }
+  },
+  "clangd.arguments": [
+    "-compile-commands-dir=${workspaceFolder}/built/native/Debug",
+    "--fallback-style=none",
+    "-j=10"
+  ],
+  "C_Cpp.copilotHover": "enabled"
+}

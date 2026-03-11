@@ -1,0 +1,12 @@
+format MIDIData:
+    time_division_flag : ub1
+    match time_division_flag:
+        0 => time_division : ub15
+        1 => time_division : SMPTE
+    if available(time_division,SMPTE):
+        s :ub8
+        
+
+format SMPTE:
+    frames_per_second : ub7
+    ticks_per_frame : ub8

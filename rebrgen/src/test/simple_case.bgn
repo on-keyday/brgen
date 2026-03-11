@@ -1,0 +1,455 @@
+
+format Simple:
+    hello :u8
+    world :u16
+    data :[10]u8
+    len :u8
+    var_data :[len]u8
+    bit_field1 :u1
+    bit_field2 :u2
+    bit_field3 :u3
+    bit_field4: u2
+    if bit_field1 == 0:
+        var_field1 :[len]u8
+    else:
+        var_field2 :[len]u8
+    type :StorageType
+
+enum StorageType:
+    :u8
+    # terminal
+    INT   
+    UINT 
+    FLOAT 
+    STRUCT_REF
+    RECURSIVE_STRUCT_REF
+    BYTE_VECTOR # special case of vector
+
+    # qualifiers
+    ENUM
+    ARRAY
+    VECTOR
+    # for recursive type
+    PTR
+    # for union
+    VARIANT
+
+format Varint:
+    prefix :u2
+    match prefix:
+        0 => value :u6
+        1 => value :u14
+        2 => value :u30
+        3 => value :u62
+
+enum ProtocolNumber:
+    :u8
+    HOPOPT = 0
+    ICMP = 1
+    IGMP = 2
+    GGP = 3
+    IPV4 = 4
+    ST = 5
+    TCP = 6
+    CBT = 7
+    EGP = 8
+    IGP = 9
+    BBN_RCC_MON = 10
+    NVP_II = 11
+    PUP = 12
+    ARGUS = 13
+    EMCON = 14
+    XNET = 15
+    CHAOS = 16
+    UDP = 17
+    MUX = 18
+    DCN_MEAS = 19
+    HMP = 20
+    PRM = 21
+    XNS_IDP = 22
+    TRUNK_1 = 23
+    TRUNK_2 = 24
+    RoutingHeader = 43
+    ESP = 50
+    AH = 51
+    ICMPV6 = 58
+    OSPF = 89
+    Ethernet = 143
+enum EtherType:
+    :u16
+    IPv4 = 0x0800
+    ARP = 0x0806
+    IPv6 = 0x86DD
+
+format EthernetFrame:
+    dst_mac :[6]u8
+    src_mac :[6]u8
+    ether_type :EtherType
+
+format IPv6ExtHeader:
+    nextHeader :ProtocolNumber 
+    hdrExtLen :u8 
+format IPv6ExtCommon:
+    header :IPv6ExtHeader
+    data :[6 + header.hdrExtLen*8]u8
+format IPv6Header:
+    version :u4 
+    trafficClass :u8 flowLabel :u20
+    payloadLen :u16
+    nextHeader :ProtocolNumber
+    hopLimit :u8
+    srcAddr :[16]u8
+    dstAddr :[16]u8
+enum ICMPv6Type:
+    :u8
+    destination_unreachable = 1
+    packet_too_big = 2
+    time_exceeded = 3
+    parameter_problem = 4
+    echo_request = 128
+    echo_reply = 129
+    multicast_listener_query = 130
+    multicast_listener_report = 131
+    multicast_listener_done = 132
+    router_solicitation = 133
+    router_advertisement = 134
+    neighbor_solicitation = 135
+    neighbor_advertisement = 136
+    redirect_message = 137
+    router_renumbering = 138
+    node_information_query = 139
+    node_information_response = 140 
+    inverse_neighbor_discovery_solicitation = 141
+    inverse_neighbor_discovery_advertisement = 142
+    v2_multicast_listener_report = 143
+    home_agent_address_discovery_request = 144
+    home_agent_address_discovery_reply = 145
+    mobile_prefix_solicitation = 146
+    mobile_prefix_advertisement = 147
+    certification_path_solicitation = 148
+    certification_path_advertisement = 149
+    experimental_mobility_protocols = 253
+    experimental_mobility_protocols_2 = 254
+    reserved = 255
+
+format ICMPHeader:
+    type: ICMPv6Type   
+    code: u8
+    checksum: u16
+
+format NDPNeighborSolicitation:
+    reserved: u32
+    target_addr: [16]u8
+    options: [..]NDPOption
+enum NDPOptionType:
+    :u8
+    source_link_layer_address = 1
+    target_link_layer_address = 2
+    prefix_information = 3
+    redirect_header = 4
+    mtu = 5
+format NDPOption:
+    type: NDPOptionType
+    length: u8
+    length != 0
+    data: [length * 8 - 2]u8
+
+format TestPacket:
+   ether :EthernetFrame
+   ipv6 :IPv6Header
+   icmp :ICMPHeader
+   ndp :NDPNeighborSolicitation
+
+format Match:
+    matchs :u8
+    if matchs == 0:
+        value :u8
+    elif matchs == 1:
+        value :u16
+    elif matchs == 2:
+        value :u32
+    else:
+        value :u64
+
+enum NoBaseEnum:
+    A
+    B
+
+config.url = "https://www.rfc-editor.org/rfc/rfc8794.html#name-vint_width"
+
+state VarintConfig:
+    least_byte :u8
+
+varint_config :VarintConfig
+
+format Varint2:
+    value :u64
+
+    fn encode():
+        len := 0
+        varint_marker := u8(0)
+        if   value < 0x80 && varint_config.least_byte <= 1:
+            len = 1
+            varint_marker = 0x80
+        elif value < 0x4000  && varint_config.least_byte <= 2:
+            len = 2
+            varint_marker = 0x40
+        elif value < 0x200000 && varint_config.least_byte <= 3:
+            len = 3
+            varint_marker = 0x20
+        elif value < 0x10000000 && varint_config.least_byte <= 4:
+            len = 4
+            varint_marker = 0x10
+        elif value < 0x0800000000 && varint_config.least_byte <= 5:
+            len = 5
+            varint_marker = 0x08
+        elif value < 0x040000000000 && varint_config.least_byte <= 6:
+            len = 6
+            varint_marker = 0x04
+        elif value < 0x02000000000000 && varint_config.least_byte <= 7:
+            len = 7
+            varint_marker = 0x02
+        elif value < 0x0100000000000000 && varint_config.least_byte <= 8:
+            len = 8
+            varint_marker = 0x01
+        else:
+            error("Value too large for varint")
+        mask ::= varint_marker - 1 
+        first_byte ::= (u8((value >> ((len - 1) * 8)) & 0xff) & mask) | varint_marker
+        output.put(first_byte)
+        for i in len - 1:
+            output.put(u8((value >> ((len - 2 - i) * 8)) & 0xff))
+    
+    fn decode():
+        first_byte := input.get(u8)
+        len := 0
+        varint_marker := u8(0)
+        if first_byte & 0x80 == 0x80:
+            len = 1
+            varint_marker = 0x80
+        elif first_byte & 0xC0 == 0x40:
+            len = 2
+            varint_marker = 0x40
+        elif first_byte & 0xE0 == 0x20:
+            len = 3
+            varint_marker = 0x20
+        elif first_byte & 0xF0 == 0x10:
+            len = 4
+            varint_marker = 0x10
+        elif first_byte & 0xF8 == 0x08:
+            len = 5
+            varint_marker = 0x08
+        elif first_byte & 0xFC == 0x04:
+            len = 6
+            varint_marker = 0x04
+        elif first_byte & 0xFE == 0x02:
+            len = 7
+            varint_marker = 0x02
+        elif first_byte & 0xFF == 0x01:
+            len = 8
+            varint_marker = 0x01
+        else:
+            error("Invalid varint")
+        mask ::= varint_marker - 1
+        value = u64(first_byte & mask) << ((len - 1) * 8)
+        for i in len - 1:
+            next_byte ::= input.get(u8)
+            value |= u64(next_byte) << ((len - 2 - i) * 8)
+
+fn mapToHiragana(code :u6) -> u16:
+    return match code:
+        0x0 => 'あ'
+        0x1 => 'い'
+        0x2 => 'う'
+        0x3 => 'え'
+        0x4 => 'お'
+        0x5 => 'か'
+        0x6 => 'き'
+        0x7 => 'く'
+        0x8 => 'け'
+        0x9 => 'こ'
+        0xa => 'さ'
+        0xb => 'し'
+        0xc => 'す'
+        0xd => 'せ'
+        0xe => 'そ'
+        0xf => 'た'
+        0x10 => 'ち'
+        0x11 => 'つ'
+        0x12 => 'て'
+        0x13 => 'と'
+        0x14 => 'な'
+        0x15 => 'に'
+        0x16 => 'ぬ'
+        0x17 => 'ね'
+        0x18 => 'の'
+        0x19 => 'は'
+        0x1a => 'ひ'
+        0x1b => 'ふ'
+        0x1c => 'へ'
+        0x1d => 'ほ'
+        0x1e => 'ま'
+        0x1f => 'み'
+        0x20 => 'む'
+        0x21 => 'め'
+        0x22 => 'も'
+        0x23 => 'や'
+        0x24 => 'ゆ'
+        0x25 => 'よ'
+        0x26 => 'ら'
+        0x27 => 'り'
+        0x28 => 'る'
+        0x29 => 'れ'
+        0x2a => 'ろ'
+        0x2b => 'わ'
+        0x2c => 'が'
+        0x2d => 'ぎ'
+        0x2e => 'ぐ'
+        0x2f => 'げ'
+        0x30 => 'ご'
+        0x31 => 'ざ'
+        0x32 => 'じ'
+        0x33 => 'ず'
+        0x34 => 'ぜ'
+        0x35 => 'ぞ'
+        0x36 => 'ば'
+        0x37 => 'び'
+        0x38 => 'ぶ'
+        0x39 => 'べ'
+        0x3a => 'ぼ'
+        0x3b => 'ぱ'
+        0x3c => 'ぴ'
+        0x3d => 'ぷ'
+        0x3e => 'ぺ'
+        0x3f => 'ぽ'
+
+
+enum EAPCode:
+    :u8
+    request = 0x01
+    response = 0x02
+    success = 0x03
+    failure = 0x04
+
+format EAPPacket:
+    code :EAPCode
+    code.is_defined == true
+    id :u8
+    length :u16
+    length >= 4
+    match code:
+        EAPCode.request => auth_data :EAPPacketBodyData(input = input.subrange(length - 4))
+        EAPCode.response => auth_data :EAPPacketBodyData(input = input.subrange(length - 4))
+        .. => data :[length - 4]u8
+
+
+enum EAPAuthType:
+    :u8
+    identity = 0x01
+    notification = 0x02
+    nak = 0x03
+    md5_challenge = 0x04
+    one_time_password = 0x05
+    gtc = 0x06
+    tls = 0x0d
+    ttls = 0x12
+    peap = 0x13
+    eap_fast = 0x17
+
+format EAPPacketBodyData:
+    eap_type :EAPAuthType
+    type_specific_data :[..]u8 
+
+
+fn fizzbuzz():
+    for i in 1..=100:
+        if i % 3 == 0 && i % 5 == 0:
+            fizzbuzz := "FizzBuzz\n"
+            continue
+        elif i % 3 == 0:
+            fizzbuzz := "Fizz\n"
+            continue
+        elif i % 5 == 0:
+            fizzbuzz := "Buzz\n"
+            continue
+        fizzbuzz := i
+        if i == 34:
+            break
+    e := "fin"
+
+format DNSLabel:
+    prefix :u2
+    match prefix:
+        0b11 => pointer :u14
+        0b00:
+            len :u6
+            label :[len]u8
+        .. => error("unexpected label")
+
+format HighEdge:
+    prefix :u1
+    if prefix == 1:
+        has_data :u1
+        ok :u1
+    else:
+        container :u1
+        has_data :u1
+        ok :u1
+        reserved :u7
+    end :u5
+    
+
+
+fn break_test():
+    for:
+        return
+
+format TriCondInExpression:
+
+    fn encode():
+        val := 5
+        for (val != 0 ? 0 : 1) != 1:
+            output.put(u8(1))
+            val -= 1
+            
+
+    fn decode():
+        input.get(<[5]u8>)
+
+enum OpCode:
+    :u4
+    ContinuationFrame = 0x0
+    TextFrame = 0x1
+    BinaryFrame = 0x2
+    ConnectionClose = 0x8
+    Ping = 0x9
+    Pong = 0xA
+
+format WebSocketFrame:
+    FIN :u1
+    RSV1 :u1
+    RSV2 :u1
+    RSV3 :u1
+    Opcode :OpCode
+    Mask :u1
+    PayloadLength :u7
+    match PayloadLength:
+        126 => ExtendedPayloadLength :u16
+        127 => ExtendedPayloadLength :u64
+    
+    if Mask == 1:
+        MaskingKey :u32
+    
+    Payload :[available(ExtendedPayloadLength) ? ExtendedPayloadLength : PayloadLength]u8
+
+CONSTANT ::= 0x12345678
+
+format WebSocketAvailable:
+    ws :WebSocketFrame
+    available(ws.ExtendedPayloadLength) == true
+
+format X:
+    a :u8
+    if a != 0:
+        x :X
+

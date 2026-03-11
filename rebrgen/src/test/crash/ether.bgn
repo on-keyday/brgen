@@ -1,0 +1,27 @@
+enum EtherType:
+    :u16
+    ipv4 = 0x0800
+    arp = 0x0806
+    vlan = 0x8100
+    ipv6 = 0x86DD
+    service_vlen = 0x88A8
+    pppoe_discovery = 0x8863
+    pppoe_session = 0x8864
+
+format EthernetFrame:
+    dstMac :[6]u8
+    srcMac :[6]u8
+    ether_type :u16
+    if ether_type == u16(EtherType.vlan):
+        vlan_tag :u16
+        ether_type2 :u16
+    elif ether_type == u16(EtherType.service_vlen):
+        service_vlan_tag :u16
+        dummy_ether_type :u16(u16(EtherType.vlan))
+        vlan_tag :u16
+        ether_type2 :u16
+    len ::= available(ether_type2) ? ether_type2 : ether_type
+    if len >= 0x600:
+        data :[..]u8
+    else:
+        data :[len]u8

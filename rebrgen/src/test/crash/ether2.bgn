@@ -1,0 +1,19 @@
+enum EtherType:
+    :u16
+    IPv4 = 0x0800
+    ARP = 0x0806
+    IPv6 = 0x86DD
+    BRSTACK = 0xB0AC # Custom protocol
+
+format EthernetFrame:
+    dst_mac :[6]u8
+    src_mac :[6]u8
+    ether_type :EtherType
+    len ::= u16(ether_type)
+    len <= 0x5dc || len >= 0x600
+    if len >= 0x600:
+        data :[..]u8
+        data.length >= 46
+    else:
+        data :[len]u8
+        data.length >= 46

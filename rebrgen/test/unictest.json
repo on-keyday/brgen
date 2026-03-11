@@ -1,0 +1,34 @@
+{
+    "runners": [
+        {
+            "file": "$WORK_DIR/src/ebmcg/ebm2python/unictest_runner.json"
+        },
+        {
+            "file": "$WORK_DIR/src/ebmcg/ebm2rust/unictest_runner.json"
+        },
+        {
+            "file": "$WORK_DIR/src/ebmip/ebm2rmw/unictest_runner.json"
+        },
+        {
+            "file": "$WORK_DIR/src/ebmcg/ebm2p4/unictest_runner.json"
+        },
+        {
+            "file": "$WORK_DIR/src/ebmcg/ebm2c/unictest_runner.json"
+        },
+        {
+            "file": "$WORK_DIR/src/ebmcg/ebm2go/unictest_runner.json"
+        },
+        {
+            "file": "$WORK_DIR/src/ebmip/ebm2json/unictest_runner.json"
+        },
+        {
+            "file": "$WORK_DIR/src/ebmcg/ebm2z3/unictest_runner.json"
+        },
+        {
+            "file": "$WORK_DIR/src/ebmcg/ebm2zig/unictest_runner.json"
+        }
+    ],
+    "inputs": {
+        "file": "$WORK_DIR/test/inputs.json"
+    }
+}

@@ -1,0 +1,23 @@
+!@section cmptest_build.txt
+cargo_toml_path = os.path.join(TMPDIR, "Cargo.toml")
+src_path = os.path.join(TMPDIR, "src")
+os.makedirs(src_path, exist_ok=True)
+# move main.rs to src_path
+main_rs_path = os.path.join(src_path, "main.rs")
+move_file(MAIN, main_rs_path)
+write_file(cargo_toml_path, """[package]
+name = "save"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+""")
+copy_file(GENERATED, os.path.join(src_path,"save.rs"))
+run_command(["cargo", "build", "--manifest-path", cargo_toml_path, "--target-dir", TMPDIR])
+# copy compiled binary to EXEC
+suffix = ".exe" if os.name == "nt" else ""
+copy_file(os.path.join(TMPDIR, "debug", "save"+suffix), EXEC)
+!@section flags.txt 
+async|use_async|bool|false|use async operation
+copy-on-write|use_copy_on_write_vec|bool|false|use copy on write vector
+!@end_section

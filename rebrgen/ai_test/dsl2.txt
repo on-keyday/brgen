@@ -1,0 +1,14 @@
+format MyMessage {
+    uint8 header;
+    if header == 1 {
+        uint16 length;
+        byte[length] payload;
+    } else if header == 2 {
+        uint32 value;
+    } else {
+        if(header == 3) {
+            uint16 value;
+        }
+    }
+    uint64 checksum;
+}

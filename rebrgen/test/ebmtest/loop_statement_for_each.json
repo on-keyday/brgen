@@ -1,0 +1,30 @@
+{
+    "description": "A for-each loop.",
+    "query": "Statement { body.kind == \"LOOP_STATEMENT\" and body.loop.loop_type == \"FOR_EACH\" }",
+    "condition": "[.[].body.loop]",
+    "struct": "LoopStatement",
+    "rough": [
+        "body",
+        "lowered_statement",
+        "next_lowered_loop",
+        "collection"
+    ],
+    "case": {
+        "loop_type": "FOR_EACH",
+        "collection": null,
+        "item_var": {
+            "kind": "VARIABLE_DECL",
+            "var_decl": {
+                "name": null,
+                "var_type": null,
+                "initial_value": null,
+                "is_constant": true,
+                "is_reference": false,
+                "reserved": 0
+            }
+        },
+        "body": null,
+        "lowered_statement": null,
+        "next_lowered_loop": null
+    }
+}

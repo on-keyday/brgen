@@ -1,0 +1,1 @@
+run_command(["ghc", "save/haskell/save.hs", "-o", "save"])
