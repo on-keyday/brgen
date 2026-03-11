@@ -18,7 +18,7 @@ except FileNotFoundError:
     build_config = {}
 import os
 
-TOOL_PATH = os.path.join(build_config.get("BRGEN_DIR", "./brgen/"), "tool")
+TOOL_PATH = os.path.join(build_config.get("BRGEN_DIR", "../"), "tool")
 
 # Paths to the executables.
 # We assume .exe extension for Windows, which is where the original .ps1 ran.

@@ -33,7 +33,7 @@ add_link_options("/fuse-ld=lld")
 endif()
 endif()
 
-include_directories("brgen/src")
+include_directories("$ENV{BRGEN_DIR}/src")
 include_directories("$ENV{FUTILS_DIR}/src/include")
 if("$ENV{BUILD_MODE}" STREQUAL "native")
 link_directories("$ENV{FUTILS_DIR}/built/shared/${CMAKE_BUILD_TYPE}/lib")

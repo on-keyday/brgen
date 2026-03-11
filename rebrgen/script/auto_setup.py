@@ -11,11 +11,8 @@ if not os.path.exists("build_config.json"):
 with open("build_config.json", "r") as f:
     BUILD_CONFIG = json.load(f)
 
-# first, init submodules if not already done
-sp.check_call(["git", "submodule", "update", "--init", "--recursive"])
-
 # next build dependencies if not already built
-FUTILS_DIR = BUILD_CONFIG.get("FUTILS_DIR", "./brgen/utils/")
+FUTILS_DIR = BUILD_CONFIG.get("FUTILS_DIR", "../utils/")
 BUILD_TYPE = BUILD_CONFIG.get("DEFAULT_BUILD_TYPE", "Debug")
 if not os.path.exists(FUTILS_DIR) and BUILD_CONFIG.get("AUTO_SETUP_FUTILS", False):
     print("FUTILS_DIR does not exist, cloning...")
@@ -38,10 +35,10 @@ if not os.path.exists(FUTILS_DIR) and BUILD_CONFIG.get("AUTO_SETUP_FUTILS", Fals
     else:
         sp.check_call(["./build.sh", "shared", BUILD_TYPE, "futils"], cwd=FUTILS_DIR)
 
-BRGEN_DIR = BUILD_CONFIG.get("BRGEN_DIR", "./brgen/")
-if BRGEN_DIR == "./brgen/" and BUILD_CONFIG.get(
+BRGEN_DIR = BUILD_CONFIG.get("BRGEN_DIR", "../")
+if BRGEN_DIR == "../" and BUILD_CONFIG.get(
     "AUTO_SETUP_BRGEN", False
-):  # this is submodule path, so already cloned
+):  # brgen is the parent directory in monorepo
     print("Using brgen submodule.")
     os.chdir(BRGEN_DIR)
     # run build.bat or build.sh

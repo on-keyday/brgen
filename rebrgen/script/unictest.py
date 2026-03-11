@@ -12,7 +12,7 @@ except FileNotFoundError:
     print("build_config.json not found")
     exit(1)
 
-BRGEN_DIR = build_config.get("BRGEN_DIR", "./brgen/")
+BRGEN_DIR = build_config.get("BRGEN_DIR", "../")
 TOOL_PATH = pl.Path(BRGEN_DIR) / "tool"
 UNICTEST = TOOL_PATH / "unictest"
 if os.name == "nt":

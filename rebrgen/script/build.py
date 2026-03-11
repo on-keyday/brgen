@@ -36,9 +36,9 @@ INSTALL_PREFIX = os.getenv(
 )
 FUTILS_DIR = os.getenv(
     "FUTILS_DIR",
-    build_config.get("FUTILS_DIR", "./brgen/utils/"),
+    build_config.get("FUTILS_DIR", "../utils/"),
 )
-BRGEN_DIR = os.getenv("BRGEN_DIR", build_config.get("BRGEN_DIR", "./brgen/"))
+BRGEN_DIR = os.getenv("BRGEN_DIR", build_config.get("BRGEN_DIR", "../"))
 EMSDK_DIR = os.getenv("EMSDK_DIR", build_config.get("EMSDK_DIR", "./emsdk/"))
 BUILD_OLD_BMGEN = os.getenv(
     "BUILD_OLD_BMGEN", build_config.get("BUILD_OLD_BMGEN", False)
