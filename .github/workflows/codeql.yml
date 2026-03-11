@@ -87,6 +87,8 @@ jobs:
       - name: Build C++ and Go
         if: matrix.language == 'c-cpp' || matrix.language == 'go'
         run: |
+          export FUTILS_CXX_COMPILER=$CXX
+          export FUTILS_C_COMPILER=$CC
           . build.sh native
           ./tool/src2json --version
 
