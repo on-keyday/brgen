@@ -34,9 +34,6 @@ jobs:
               with:
                   name: brgen-linux-llvm
                   path: .
-            - name: Build
-              run: |
-                  . build.sh
             - name: Test
               run: |
                   cd rebrgen
