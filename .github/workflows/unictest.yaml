@@ -1,9 +1,11 @@
 name: unictest (e2e)
 run-name: unictest
 on:
-    - push
+  # Allows you to run this workflow manually from the Actions tab on GitHub.
+  workflow_dispatch:
+  workflow_call:
 jobs:
-    test-linux:
+    unictest-linux:
         runs-on: ubuntu-latest
         timeout-minutes: 15
         steps:
