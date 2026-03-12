@@ -1,0 +1,917 @@
+config.cpp.export_macro = "BM_API"
+config.cpp.hpp_name = "binary_module.hpp"
+config.cpp.namespace = "rebgn"
+config.cpp.bytes_type = "std::string"
+config.cpp.sys_include = "string"
+
+format Varint:
+    prefix :u2
+    match prefix:
+        0 => value :u6
+        1 => value :u14
+        2 => value :u30
+        3 => value :u62
+
+    fn u64() -> u64:
+        return value
+
+# from ast_enum.bgn
+enum BinaryOp:
+    :u8
+    mul = "*"
+    div = "/"
+    mod = "%"
+    left_arithmetic_shift = "<<<"
+    right_arithmetic_shift = ">>>"
+    left_logical_shift = "<<"
+    right_logical_shift = ">>"
+    bit_and = "&"
+    add = "+"
+    sub = "-"
+    bit_or = "|"
+    bit_xor = "^"
+    equal = "=="
+    not_equal = "!="
+    less = "<"
+    less_or_eq = "<="
+    grater = ">"
+    grater_or_eq = ">="
+
+    logical_and = "&&"
+
+    logical_or = "||"
+
+    cond_op1 = "?"
+    cond_op2 = ":"
+
+    range_exclusive = ".."
+    range_inclusive = "..="
+
+    assign = "="
+    define_assign = ":="
+    const_assign = "::="
+    add_assign = "+="
+    sub_assign = "-="
+    mul_assign = "*="
+    div_assign = "/="
+    mod_assign = "%="
+    left_logical_shift_assign = "<<="
+    right_logical_shift_assign = ">>="
+    left_arithmetic_shift_assign = "<<<="
+    right_arithmetic_shift_assign = ">>>="
+    bit_and_assign = "&="
+    bit_or_assign = "|="
+    bit_xor_assign = "^="
+
+    comma = ","
+    in_assign = "in"
+    append_assign = "append"
+
+enum UnaryOp:
+    :u8
+    logical_not = "!"
+    minus_sign = "-"
+    bit_not = "~" # this is for clarification; not in brgen ast node
+
+enum Endian:
+    :u3
+    unspec
+    big
+    little
+    dynamic # this is for clarification; not in brgen ast node
+    native # this is for clarification; not in brgen ast node
+
+enum BitOrder:
+    :u8
+    unspec
+    msb
+    lsb
+
+enum AbstractOp:
+    :u8
+
+    
+    METADATA
+    IMPORT
+    DYNAMIC_ENDIAN
+    RETURN_TYPE
+
+    DEFINE_PROGRAM
+    END_PROGRAM
+    DECLARE_PROGRAM
+
+    DEFINE_FORMAT
+    END_FORMAT
+    DECLARE_FORMAT
+
+    DEFINE_FIELD
+    CONDITIONAL_FIELD
+    CONDITIONAL_PROPERTY
+    MERGED_CONDITIONAL_FIELD
+
+    DEFINE_PROPERTY
+    END_PROPERTY
+    DECLARE_PROPERTY
+
+    DEFINE_PROPERTY_SETTER
+    DEFINE_PROPERTY_GETTER
+
+    DEFINE_PARAMETER
+    
+    DEFINE_FUNCTION
+    END_FUNCTION
+    DECLARE_FUNCTION
+    
+    DEFINE_ENUM
+    END_ENUM
+    DECLARE_ENUM
+    
+    DEFINE_ENUM_MEMBER
+    
+    DEFINE_UNION
+    END_UNION
+    DECLARE_UNION
+
+    DEFINE_UNION_MEMBER
+    END_UNION_MEMBER
+    DECLARE_UNION_MEMBER
+
+    DEFINE_STATE
+    END_STATE
+    DECLARE_STATE
+
+    DEFINE_BIT_FIELD
+    END_BIT_FIELD
+    DECLARE_BIT_FIELD
+
+    BEGIN_ENCODE_PACKED_OPERATION
+    END_ENCODE_PACKED_OPERATION
+    BEGIN_DECODE_PACKED_OPERATION
+    END_DECODE_PACKED_OPERATION
+    
+    DEFINE_ENCODER
+
+    DEFINE_DECODER
+    
+    ENCODE_INT
+    DECODE_INT
+    ENCODE_INT_VECTOR
+    ENCODE_INT_VECTOR_FIXED # must use length for fixed size (for example, alignment sub byte)
+    DECODE_INT_VECTOR
+    DECODE_INT_VECTOR_UNTIL_EOF
+    DECODE_INT_VECTOR_FIXED # must use length for fixed size (for example, alignment sub byte)
+    PEEK_INT_VECTOR
+    BACKWARD_INPUT
+    BACKWARD_OUTPUT
+    INPUT_BYTE_OFFSET
+    OUTPUT_BYTE_OFFSET
+    INPUT_BIT_OFFSET
+    OUTPUT_BIT_OFFSET
+    REMAIN_BYTES
+    CAN_READ
+    IS_LITTLE_ENDIAN # whether platform is little endian (for native endian support)
+    CALL_ENCODE
+    CALL_DECODE
+
+    CAST
+    CALL_CAST # for Cast with multi argument ast node
+
+    ADDRESS_OF
+    OPTIONAL_OF
+    EMPTY_PTR
+    EMPTY_OPTIONAL
+
+    LOOP_INFINITE
+    LOOP_CONDITION
+    CONTINUE
+    BREAK
+    END_LOOP
+
+    IF
+    ELIF
+    ELSE
+    END_IF
+
+    MATCH
+    EXHAUSTIVE_MATCH
+    CASE
+    END_CASE
+    DEFAULT_CASE
+    END_MATCH
+
+    DEFINE_VARIABLE
+    DEFINE_VARIABLE_REF
+    DEFINE_CONSTANT
+    DECLARE_VARIABLE
+    
+    BINARY
+    NOT_PREV_THEN
+    UNARY
+    ASSIGN
+    PROPERTY_ASSIGN
+
+    ASSERT
+    LENGTH_CHECK
+    EXPLICIT_ERROR
+
+    ACCESS
+
+    INDEX
+    APPEND
+    INC
+    CALL
+    RET
+    RET_SUCCESS
+    RET_PROPERTY_SETTER_OK
+    RET_PROPERTY_SETTER_FAIL
+
+    IMMEDIATE_TRUE
+    IMMEDIATE_FALSE
+    IMMEDIATE_INT
+    IMMEDIATE_INT64
+    IMMEDIATE_CHAR
+    IMMEDIATE_STRING
+    IMMEDIATE_TYPE
+    
+
+    NEW_OBJECT
+    INIT_RECURSIVE_STRUCT
+    CHECK_RECURSIVE_STRUCT
+
+
+    SWITCH_UNION
+    CHECK_UNION
+
+    ENCODER_PARAMETER
+    DECODER_PARAMETER
+
+    STATE_VARIABLE_PARAMETER
+
+    PROPERTY_INPUT_PARAMETER
+
+    EVAL_EXPR
+
+    ARRAY_SIZE
+    RESERVE_SIZE
+
+    BEGIN_ENCODE_SUB_RANGE
+    END_ENCODE_SUB_RANGE
+    BEGIN_DECODE_SUB_RANGE
+    END_DECODE_SUB_RANGE
+
+    SEEK_ENCODER
+    SEEK_DECODER
+
+    FIELD_AVAILABLE
+
+    PHI # for assignment analysis
+
+    PROPERTY_FUNCTION # marker for property function
+
+    DEFINE_FALLBACK
+    END_FALLBACK
+
+    BEGIN_COND_BLOCK # marker for conditional block
+    END_COND_BLOCK
+
+
+enum SubRangeType:
+    :u8
+    byte_len # ref specifies byte length
+    replacement # ref specifies replacement byte array
+
+
+enum CastType:
+    :u8
+    ENUM_TO_INT
+    INT_TO_ENUM
+    FLOAT_TO_INT_BIT
+    INT_TO_FLOAT_BIT
+    VECTOR_TO_ARRAY
+    ARRAY_TO_VECTOR
+    INT_TO_VECTOR
+    INT_TO_ARRAY
+    SMALL_INT_TO_LARGE_INT
+    LARGE_INT_TO_SMALL_INT
+    SIGNED_TO_UNSIGNED
+    UNSIGNED_TO_SIGNED
+    ONE_BIT_TO_INT
+    INT_TO_ONE_BIT
+    BOOL_TO_INT
+    INT_TO_BOOL
+    STRUCT_TO_RECURSIVE_STRUCT
+    RECURSIVE_STRUCT_TO_STRUCT
+    OTHER
+
+
+# context that is used on code generation
+state BMContext:
+    global_endian :Endian 
+    global_bit_order :BitOrder
+    has_dynamic_endian :bool
+    has_dynamic_bit_order :bool
+    inner_bit_operations :bool # inner BIT_FIELD or PACKED_OPERATION
+    bit_offset :u64
+
+format String:
+    length :Varint
+    data :[length.value]u8
+
+format StringRef:
+    code :Varint
+    string :String
+
+format IdentIndex:
+    ident :Varint
+    index :Varint
+
+
+enum StorageType:
+    :u8
+    # terminal
+    INT   
+    UINT 
+    FLOAT 
+    STRUCT_REF
+    RECURSIVE_STRUCT_REF
+    BOOL
+
+    # qualifiers
+    ENUM
+    ARRAY
+    VECTOR
+    # for union
+    VARIANT
+
+    # encoder/decoder return value
+    CODER_RETURN
+
+    # property setter return value
+    PROPERTY_SETTER_RETURN
+
+    # property
+    OPTIONAL
+    PTR
+
+
+enum MergeMode:
+    :u8
+    COMMON_TYPE
+    STRICT_TYPE
+    STRICT_COMMON_TYPE
+
+
+enum PackedOpType:
+    :u8
+    FIXED
+    VARIABLE
+
+enum UnionCheckAt:
+    :u8
+    PROPERTY_GETTER_PTR
+    PROPERTY_GETTER_OPTIONAL
+    ENCODER
+
+format DecodeParamFlags:
+    has_seek :u1
+    has_peek :u1
+    has_eof :u1
+    has_remain_bytes :u1
+    has_sub_range :u1
+    has_offset :u1
+    reserved :u2
+
+format EncodeParamFlags:
+    has_seek :u1
+    has_sub_range :u1
+    has_offset :u1
+    reserved :u5
+
+# TODO: be recursive
+format Storage:
+    type :StorageType
+    match type:
+        StorageType.INT => size :Varint
+        StorageType.UINT => size :Varint
+        StorageType.FLOAT => size :Varint
+        StorageType.STRUCT_REF:
+            size :Varint # size of struct + 1, 0 means null
+            ref :Varint
+        StorageType.RECURSIVE_STRUCT_REF:
+            ref :Varint
+        StorageType.ENUM:
+            ref :Varint
+        StorageType.ARRAY:
+            size :Varint
+        StorageType.VARIANT:
+            ref :Varint 
+            size :Varint
+
+format Storages:
+    length :Varint
+    storages :[length.value]Storage
+
+format Metadata:
+    name :Varint
+    len :Varint
+    refs :[len.value]Varint
+
+format Param:
+    len :Varint
+    refs :[len.value]Varint
+    
+format PhiParam:
+    condition :Varint
+    assign :Varint
+
+format PhiParams:
+    length :Varint
+    params :[length.value]PhiParam
+
+format EndianExpr:
+    endian :Endian
+    sign :u1 # 0 for unsigned, 1 for signed (for storage optimization)
+    reserved :u4
+    dynamic_ref :Varint # ref to dynamic endian or null
+enum FunctionType:
+    :u8
+    FREE
+    MEMBER
+    CAST
+    ENCODE
+    DECODE
+    BIT_GETTER
+    BIT_SETTER
+    UNION_GETTER
+    UNION_SETTER
+    VECTOR_SETTER # like [len]u8. set both vector itself and length
+
+enum ReserveType:
+    :u8
+    STATIC
+    DYNAMIC 
+
+format StorageRef:
+    ref :Varint
+
+format StorageRefMap:
+    code :Varint
+    storage :Storages
+
+format StorageRefMaps:
+    length :Varint
+    maps :[length.value]StorageRefMap
+
+# ident is unique identifier
+# ref, left_ref, right_ref is reference to other object identifier
+format Code:
+    op :AbstractOp
+    match op:
+        AbstractOp.METADATA:
+            metadata :Metadata
+        AbstractOp.DEFINE_PROGRAM:
+            ident :Varint
+        AbstractOp.IMPORT:
+            ident :Varint
+            ref :Varint # ref to program
+        AbstractOp.IMMEDIATE_CHAR:
+            ident :Varint
+            int_value :Varint  
+        AbstractOp.IMMEDIATE_INT:
+            ident :Varint
+            int_value :Varint
+        AbstractOp.IMMEDIATE_INT64:
+            ident :Varint
+            int_value64 :u64
+        AbstractOp.IMMEDIATE_STRING:
+            ident :Varint
+        AbstractOp.IMMEDIATE_TRUE:
+            ident :Varint
+        AbstractOp.IMMEDIATE_FALSE:
+            ident :Varint
+        AbstractOp.IMMEDIATE_TYPE:
+            ident :Varint
+            type :StorageRef
+        AbstractOp.DEFINE_FORMAT:
+            ident :Varint
+        AbstractOp.DEFINE_STATE:
+            ident :Varint
+        AbstractOp.DEFINE_FIELD:
+            ident :Varint
+            belong :Varint # belong to format or state or union or null
+            type :StorageRef
+        AbstractOp.DEFINE_PROPERTY:
+            ident :Varint
+            belong :Varint # belong to format or state or union or null
+        AbstractOp.DEFINE_ENUM:
+            ident :Varint
+            type :StorageRef # base type or null
+        AbstractOp.DEFINE_ENUM_MEMBER:
+            ident :Varint
+            left_ref :Varint # ref to init expr
+            right_ref :Varint # ref to string representation or null
+            belong :Varint # belong to enum
+        AbstractOp.DEFINE_FUNCTION:
+            ident :Varint
+            belong :Varint # belong to format or null
+            func_type :FunctionType
+        AbstractOp.DEFINE_ENCODER:
+            left_ref :Varint # ref to format
+            right_ref :Varint # ref to encoder
+        AbstractOp.DEFINE_DECODER:
+            left_ref :Varint # ref to format
+            right_ref :Varint # ref to decoder
+        AbstractOp.DEFINE_UNION:
+            ident :Varint
+            belong :Varint # ref to field
+        AbstractOp.DEFINE_VARIABLE:
+            ident :Varint
+            ref :Varint # ref to initial expr
+            type :StorageRef
+        AbstractOp.DEFINE_VARIABLE_REF:
+            ident :Varint
+            ref :Varint # ref to variable
+        AbstractOp.DEFINE_CONSTANT:
+            ident :Varint
+            ref :Varint # ref to initial expr
+            type :StorageRef
+        AbstractOp.DECLARE_VARIABLE:
+            ref :Varint # ref to variable
+        AbstractOp.DEFINE_PARAMETER:
+            ident: Varint
+            belong :Varint # belong to function
+            type :StorageRef
+        AbstractOp.DEFINE_UNION_MEMBER:
+            ident :Varint
+            int_value :Varint # index of union member (0-based, order in union)
+            belong :Varint # belong to union
+        AbstractOp.RETURN_TYPE:
+            type :StorageRef
+        AbstractOp.FIELD_AVAILABLE:
+            ident :Varint
+            left_ref :Varint # ref to base expr (field or member access)
+            right_ref :Varint # ref to condition (this need special handling when code generation)
+        AbstractOp.BINARY:
+            ident :Varint
+            bop :BinaryOp
+            left_ref :Varint
+            right_ref :Varint
+        AbstractOp.NOT_PREV_THEN:
+            ident :Varint
+            left_ref :Varint # ref to previous expr
+            right_ref :Varint # ref to then expr
+        AbstractOp.UNARY:
+            ident :Varint
+            uop :UnaryOp
+            ref :Varint
+        AbstractOp.LOOP_CONDITION:
+            ref :Varint # ref to expr
+        AbstractOp.ACCESS:
+            ident :Varint
+            left_ref :Varint # ref to base expr
+            right_ref :Varint # ref to member name
+        AbstractOp.INDEX:
+            ident :Varint
+            left_ref :Varint # ref to base expr
+            right_ref :Varint # ref to index expr
+        AbstractOp.ASSIGN:
+            ident :Varint # for assignment analysis
+            ref :Varint # ref to previous definition, assignment or phi
+            left_ref :Varint # ref to variable
+            right_ref :Varint # ref to expr
+        AbstractOp.PHI:
+            ident :Varint
+            ref :Varint # ref to original variable
+            phi_params :PhiParams # ref to previous definitions, assignments or phis
+        AbstractOp.PROPERTY_ASSIGN:
+            left_ref :Varint # ref to property setter
+            right_ref :Varint # ref to expr
+        AbstractOp.ADDRESS_OF:
+            ident :Varint
+            ref :Varint
+        AbstractOp.OPTIONAL_OF:
+            ident :Varint
+            ref :Varint
+            type :StorageRef
+        AbstractOp.EMPTY_PTR:
+            ident :Varint
+        AbstractOp.EMPTY_OPTIONAL:
+            ident :Varint
+        AbstractOp.BACKWARD_INPUT:
+            ref :Varint # bit count
+        AbstractOp.BACKWARD_OUTPUT:
+            ref :Varint # bit count
+        AbstractOp.DYNAMIC_ENDIAN:
+            ident :Varint
+            ref :Varint # ref to endian expr
+            fallback :Varint # ref to fallback block
+        AbstractOp.ENCODE_INT:
+            ref :Varint
+            endian :EndianExpr
+            bit_size :Varint
+            belong :Varint # related field or null_id(for output.put())
+            fallback :Varint # ref to fallback block
+        AbstractOp.ENCODE_INT_VECTOR:
+            left_ref :Varint # ref to vector
+            right_ref :Varint # ref to length
+            endian :EndianExpr
+            bit_size :Varint
+            belong :Varint # related field or null_id(for output.put())
+            fallback :Varint # ref to fallback block
+        AbstractOp.ENCODE_INT_VECTOR_FIXED:
+            left_ref :Varint # ref to vector
+            right_ref :Varint # ref to length (length may be less than array size)
+            endian :EndianExpr
+            bit_size :Varint
+            belong :Varint # related field or null_id(for output.put())
+            array_length :Varint # array length
+            fallback :Varint # ref to fallback block
+        AbstractOp.DECODE_INT_VECTOR:
+            left_ref :Varint # ref to vector
+            right_ref :Varint # ref to length 
+            endian :EndianExpr
+            bit_size :Varint
+            belong :Varint # related field or null_id(for input.get())
+            fallback :Varint # ref to fallback block
+        AbstractOp.DECODE_INT_VECTOR_FIXED:
+            left_ref :Varint # ref to vector
+            right_ref :Varint # ref to length (length may be less than array size)
+            endian :EndianExpr
+            bit_size :Varint
+            belong :Varint # related field or null_id(for input.get())
+            array_length :Varint # array length
+            fallback :Varint # ref to fallback block
+        AbstractOp.DECODE_INT_VECTOR_UNTIL_EOF:
+            ref :Varint # ref to vector
+            endian :EndianExpr
+            bit_size :Varint
+            belong :Varint # related field or null_id(for input.get())
+            fallback :Varint # ref to fallback block
+        AbstractOp.DECODE_INT:
+            ref :Varint
+            endian :EndianExpr
+            bit_size :Varint
+            belong :Varint # related field or null_id(for input.get())
+            fallback :Varint # ref to fallback block
+        AbstractOp.PEEK_INT_VECTOR:
+            left_ref :Varint # ref to vector
+            right_ref :Varint # ref to length
+            endian :EndianExpr
+            bit_size :Varint
+            belong :Varint # related field or null_id(for input.peek())
+            fallback :Varint # ref to fallback block (currently, not used)
+        AbstractOp.CAST:
+            ident: Varint
+            ref :Varint # ref to object
+            type :StorageRef
+            from_type :StorageRef
+            cast_type :CastType
+        AbstractOp.CALL_CAST:
+            ident: Varint
+            type :StorageRef
+            param :Param
+        AbstractOp.CALL_ENCODE:
+            left_ref :Varint # ref to encoder
+            right_ref :Varint # ref to object
+            bit_size_plus :Varint  # bit size plus 1 (0 means null)
+        AbstractOp.CALL_DECODE:
+            left_ref :Varint # ref to decoder
+            right_ref :Varint # ref to object
+            bit_size_plus :Varint  # bit size plus 1 (0 means null)
+        AbstractOp.INC:
+            ref :Varint
+        AbstractOp.EVAL_EXPR:
+            ref :Varint
+        AbstractOp.NEW_OBJECT:
+            ident :Varint
+            type :StorageRef
+        AbstractOp.INIT_RECURSIVE_STRUCT:
+            left_ref :Varint # ref to recursive struct(format)
+            right_ref :Varint # ref to object
+        AbstractOp.CHECK_RECURSIVE_STRUCT:
+            left_ref :Varint # ref to recursive struct(format)
+            right_ref :Varint # ref to object
+        AbstractOp.ASSERT:
+            ref :Varint # ref to condition expr
+            belong :Varint # belong to function
+        AbstractOp.LENGTH_CHECK: # for array or vector
+            left_ref :Varint # ref to vector 
+            right_ref :Varint # ref to length
+            belong :Varint # belong to function
+        AbstractOp.IF:
+            ref :Varint
+        AbstractOp.ELIF:
+            ref :Varint
+        AbstractOp.DECLARE_FORMAT:
+            ref :Varint
+        AbstractOp.DECLARE_STATE:
+            ref :Varint
+        AbstractOp.DECLARE_PROPERTY:
+            ref :Varint
+        AbstractOp.DECLARE_BIT_FIELD:
+            ref :Varint
+        AbstractOp.DECLARE_ENUM:
+            ref :Varint
+        AbstractOp.DECLARE_FUNCTION:
+            ref :Varint
+        AbstractOp.DECLARE_UNION:
+            ref :Varint
+        AbstractOp.DECLARE_UNION_MEMBER:
+            ref :Varint
+        AbstractOp.CONDITIONAL_FIELD:
+            ident :Varint
+            left_ref :Varint # ref to expr
+            right_ref :Varint # ref to field
+            belong :Varint # belong to union field
+        AbstractOp.CONDITIONAL_PROPERTY:
+            ident :Varint
+            left_ref :Varint # ref to expr
+            right_ref :Varint # ref to merged conditional field
+            belong :Varint # belong to union field
+        AbstractOp.MERGED_CONDITIONAL_FIELD:
+            ident :Varint
+            type :StorageRef
+            param :Param # ref to conditional fields
+            belong :Varint # belong to property
+            merge_mode :MergeMode
+        AbstractOp.CASE:
+            ref :Varint
+        AbstractOp.DECLARE_PROGRAM:
+            ref :Varint
+        AbstractOp.DEFINE_BIT_FIELD:
+            ident :Varint
+            belong :Varint # belong to format or state or union or null
+            type :StorageRef # bit field sum type
+        AbstractOp.APPEND:
+            left_ref :Varint # ref to vector
+            right_ref :Varint # ref to object
+        AbstractOp.BEGIN_ENCODE_PACKED_OPERATION:
+            ident :Varint
+            belong :Varint # ref to bit field
+            packed_op_type :PackedOpType
+            endian :EndianExpr
+            bit_size :Varint
+            fallback :Varint # ref to fallback block
+        AbstractOp.END_ENCODE_PACKED_OPERATION:
+            fallback :Varint # ref to fallback block
+        AbstractOp.BEGIN_DECODE_PACKED_OPERATION:
+            ident :Varint
+            belong :Varint # ref to bit field
+            packed_op_type :PackedOpType
+            endian :EndianExpr
+            bit_size :Varint
+            fallback :Varint # ref to fallback block
+        AbstractOp.END_DECODE_PACKED_OPERATION:
+            fallback :Varint # ref to fallback block
+        AbstractOp.SWITCH_UNION:
+            ref :Varint # ref to union_member
+        AbstractOp.CHECK_UNION:
+            ref :Varint # ref to union_member
+            check_at :UnionCheckAt
+        AbstractOp.RET:
+            belong :Varint # belong to function
+            ref :Varint # ref to expr (maybe null)
+        AbstractOp.RET_SUCCESS:
+            belong :Varint # belong to function
+        AbstractOp.RET_PROPERTY_SETTER_OK:
+            belong :Varint # belong to property setter
+        AbstractOp.RET_PROPERTY_SETTER_FAIL:
+            belong :Varint # belong to property setter
+        AbstractOp.MATCH:
+            ref :Varint # ref to expr
+        AbstractOp.EXHAUSTIVE_MATCH:
+            ref :Varint # ref to expr
+        AbstractOp.ENCODER_PARAMETER:
+            left_ref :Varint # ref to format
+            right_ref :Varint # ref to encoder function
+            encode_flags :EncodeParamFlags
+        AbstractOp.DECODER_PARAMETER:
+            left_ref :Varint # ref to format
+            right_ref :Varint # ref to decoder function
+            decode_flags :DecodeParamFlags
+        AbstractOp.PROPERTY_INPUT_PARAMETER:
+            ident :Varint
+            left_ref :Varint # ref to merged conditional field(for union) or field (for dynamic array or bit field)
+            right_ref :Varint # ref to function
+            type :StorageRef
+        AbstractOp.PROPERTY_FUNCTION:
+            ref :Varint # ref to merged conditional field
+        #    func_type :FunctionType
+        AbstractOp.DEFINE_PROPERTY_SETTER:
+            left_ref :Varint # ref to merged conditional field
+            right_ref :Varint # ref to function
+        AbstractOp.DEFINE_PROPERTY_GETTER:
+            left_ref :Varint # ref to merged conditional field
+            right_ref :Varint # ref to function
+        AbstractOp.STATE_VARIABLE_PARAMETER:
+            ref :Varint # ref to state
+        AbstractOp.EXPLICIT_ERROR:
+            param :Param # ref to error messages
+            belong :Varint # belong to function
+        AbstractOp.CALL:
+            ident :Varint
+            ref :Varint # ref to function
+            param :Param
+        AbstractOp.INPUT_BIT_OFFSET:
+            ident :Varint
+        AbstractOp.OUTPUT_BIT_OFFSET:
+            ident :Varint
+        AbstractOp.INPUT_BYTE_OFFSET:
+            ident :Varint
+        AbstractOp.OUTPUT_BYTE_OFFSET:
+            ident :Varint
+        AbstractOp.ARRAY_SIZE:
+            ident :Varint
+            ref :Varint # ref to array
+        AbstractOp.RESERVE_SIZE:
+            left_ref :Varint # ref to vector
+            right_ref :Varint # ref to size
+            reserve_type :ReserveType
+        AbstractOp.BEGIN_ENCODE_SUB_RANGE:
+            sub_range_type :SubRangeType
+            ref :Varint # length of sub range or vector
+            belong :Varint # related field
+        AbstractOp.BEGIN_DECODE_SUB_RANGE:
+            sub_range_type :SubRangeType
+            ref :Varint # length of sub range
+            belong :Varint # related field
+        AbstractOp.SEEK_ENCODER:
+            ref :Varint # ref to offset
+            belong :Varint # related field
+        AbstractOp.SEEK_DECODER:
+            ref :Varint # ref to offset
+            belong :Varint # related field            
+        AbstractOp.CAN_READ:
+            ident :Varint
+            belong :Varint # related field
+        AbstractOp.IS_LITTLE_ENDIAN:
+            ident :Varint
+            ref :Varint # ref to dynamic endian variable(dynamic) or null(platform)
+            fallback :Varint # ref to fallback boolean expr
+        AbstractOp.REMAIN_BYTES:
+            ident :Varint
+        AbstractOp.DEFINE_FALLBACK:
+            ident :Varint
+        AbstractOp.BEGIN_COND_BLOCK:
+            ident :Varint
+            ref :Varint # ref to condition expr
+
+
+format StringRefs:
+    refs_length :Varint
+    refs :[refs_length.value]StringRef
+
+format IdentIndexs:
+    refs_length :Varint
+    refs :[refs_length.value]IdentIndex
+
+format Range:
+    start :u64
+    end :u64
+
+format RangePacked:
+    start :Varint
+    end :Varint
+
+format Ranges:
+    length :Varint
+    ranges :[length.value]RangePacked
+
+format IdentRange:
+    ident :Varint
+    range :RangePacked
+
+format IdentRanges:
+    length :Varint
+    ranges :[length.value]IdentRange
+
+format Loc:
+    ident :Varint # ref to generated code
+    file_id :Varint # files index + 1
+    line :Varint # line number
+    column :Varint # column number
+    start :Varint # start index of source code
+    end :Varint # end index of source code
+
+format DebugInfo:
+    len_files :Varint
+    files :[len_files.value]String
+    len_locs :Varint
+    locs :[len_locs.value]Loc
+
+format BinaryModule:
+    magic: "RBGM"
+    max_id :Varint
+    metadata :StringRefs
+    strings :StringRefs
+    identifiers :StringRefs
+    ident_indexes :IdentIndexs
+    types :StorageRefMaps
+    programs :Ranges # root ranges
+    ident_ranges :IdentRanges
+    has_debug_info :u1
+    reserved :u7
+    if has_debug_info == 1:
+        debug_info :DebugInfo
+    code_length :Varint
+    code :[code_length.value]Code

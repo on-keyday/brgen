@@ -1,0 +1,4 @@
+00 00 00 00 00 00 00 00 # struct pointer
+01 00 00 00 00 00 00 00 # list pointer 
+02 00 00 00 00 00 00 00 # inner segment pointer
+03 00 00 00 00 00 00 00 # capability

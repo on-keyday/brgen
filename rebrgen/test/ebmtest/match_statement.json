@@ -1,0 +1,18 @@
+{
+    "description": "A simple match statement that is exhaustive.",
+    "query": "Statement { body.kind == \"MATCH_STATEMENT\" and body.match_statement.is_exhaustive == true }",
+    "condition": ".[0].body.match_statement",
+    "struct": "MatchStatement",
+    "rough": [
+        "target",
+        "branches",
+        "lowered_if_statement"
+    ],
+    "case": {
+        "target": null,
+        "is_exhaustive": true,
+        "reserved": 0,
+        "branches": null,
+        "lowered_if_statement": null
+    }
+}

@@ -1,0 +1,13 @@
+
+format Statement:
+    len :u8
+    vec : [len]Expression  
+
+format Expression:
+    op :u8
+    match op:
+        0 => child :Expression 
+        1 => children_3 :[3]Expression
+        2:
+           len :u8
+           children_vec : [len]Expression

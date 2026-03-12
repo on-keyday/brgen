@@ -1,0 +1,46 @@
+{
+  "statements": [
+    {
+      "id": 1,
+      "body": {
+        "kind": "STRUCT_DECL",
+        "struct_decl": {
+          "name": {
+            "length": 4,
+            "data": "Test"
+          },
+          "fields": [
+            {
+              "kind": "FIELD_DECL",
+              "field_decl": {
+                "name": {
+                  "length": 5,
+                  "data": "field"
+                },
+                "field_type": {
+                  "kind": "UINT",
+                  "size": 8
+                },
+                "parent_struct": {"id": 1},
+                "is_state_variable": false,
+                "inner_composite": false,
+                "reserved": 0
+              }
+            }
+          ],
+          "is_recursive": false,
+          "is_fixed_size": false,
+          "has_related_variant": false,
+          "has_encode_decode": false,
+          "has_functions": false,
+          "has_properties": false,
+          "reserved": 0
+        }
+      }
+    }
+  ],
+  "types": [],
+  "expressions": [],
+  "identifiers": [],
+  "strings": []
+}

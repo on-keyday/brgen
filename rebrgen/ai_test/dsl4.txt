@@ -1,0 +1,10 @@
+format MyMessage
+    header: u8
+    if header == 1
+        length: u16
+        payload: [length]byte
+    else if header == 2
+        value: u32
+    else
+        value: u16
+    checksum: u32

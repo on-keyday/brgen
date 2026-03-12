@@ -1,0 +1,287 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+**RE:brgen (rebrgen)** is a code generator construction framework for brgen, a binary format definition language and code generator suite. While the original brgen uses an AST-to-Code model, rebrgen implements an AST-to-IR-to-Code model using an Extended Binary Module (EBM) intermediate representation for improved flexibility and inter-language compatibility.
+
+- Repository: https://github.com/on-keyday/rebrgen
+- Parent project (brgen): https://github.com/on-keyday/brgen (included as submodule)
+- Phase: Early development - focus on functionality over code cleanliness
+
+## Build Commands
+
+### Initial Setup
+```bash
+# First-time setup (auto-copies build_config.template.json if needed)
+python script/auto_setup.py
+
+# Subsequent builds
+python script/build.py
+```
+
+### Build Configuration
+- Configuration file: `build_config.json` (copied from `build_config.template.json`)
+- Set `AUTO_SETUP_BRGEN` to `true` to auto-build brgen tools
+- Set `AUTO_SETUP_FUTILS` to `true` to auto-setup the futils dependency
+- Set `CODEGEN_TARGET_LANGUAGE` array to specify which language generators to build
+- Set `INTERPRET_TARGET_LANGUAGE` array to specify which interpreter generators to build
+
+### Testing Workflow
+```bash
+# Run automated tests for a specific language generator
+python script/unictest.py --target-runner ebm2<lang>
+
+# Run tests with verbose output for debugging
+python script/unictest.py --target-runner ebm2<lang> --print-stdout
+
+# Run tests for specific input
+python script/unictest.py --target-runner ebm2<lang> --target-input <input_name>
+```
+
+### Adding a New Language Generator
+```bash
+# 1. Ensure tool/ebmcodegen[.exe] is built first
+python script/ebmcodegen.py <lang_name>
+
+# 2. Rebuild to generate the new language generator
+python script/build.py
+
+# 3. Run tests to identify unimplemented visitor hooks
+python script/unictest.py --target-runner ebm2<lang_name>
+```
+
+### Working with EBM Files
+```bash
+# Convert .bgn directly to EBM (recommended, requires libs2j)
+./tool/ebmgen -i <file>.bgn -o <output>.ebm
+
+# Debug print EBM to human-readable text
+./tool/ebmgen -i <file>.ebm -d <debug>.txt
+
+# Generate code from EBM
+./tool/ebm2<lang> -i <file>.ebm
+```
+
+## Architecture: AST-to-IR-to-Code Pipeline
+
+### Workflow Overview
+```
+.bgn file → [src2json (brgen)] → brgen AST (JSON) → [ebmgen] → EBM → [ebm2<lang>] → Target Language Code
+                                                       ↑                      ↑
+                                  extended_binary_module.bgn                  |
+                                           ↓                                   |
+                                  [json2cpp2 (brgen)]                         |
+                                           ↓                                   |
+                              extended_binary_module.hpp/cpp                  |
+                                           ↓                                   |
+                                      [ebmcodegen] ←→ language-specific code  |
+                                           ↓                                   |
+                                  Generated C++ visitor code ← ← ← ← ← ← ← ← ←
+```
+
+### Core Components
+
+**Extended Binary Module (EBM) - src/ebm/**
+- `extended_binary_module.bgn` - The EBM IR format definition (in brgen DSL)
+- `extended_binary_module.cpp/hpp` - Generated C++ implementation
+- EBM is a graph-based IR with centralized tables for Statements, Expressions, Types, etc.
+- Objects are referenced by IDs (StatementRef, ExpressionRef, TypeRef) for compact representation
+- Preserves semantics like endianness, bit sizes, control flow structures
+
+**EBM Generator - src/ebmgen/**
+- Converts brgen AST (JSON) to EBM binary format
+- Key subdirectories:
+  - `convert/` - AST to EBM conversion (statements, expressions, types, encode/decode)
+  - `transform/` - IR optimization passes (CFG, bit manipulation, IO vectorization, unused code removal)
+  - `interactive/` - Interactive debugger and query engine
+- See `src/ebmgen/GEMINI.md` for detailed development guidelines
+
+**EBM Code Generator Framework - src/ebmcodegen/**
+- Meta-generator that creates language-specific code generators using visitor pattern
+- Generates skeleton C++ code for `ebm2<lang>` tools
+- `dsl/` - DSL for defining code generation templates
+- `default_codegen_visitor/` - Default visitor implementation that downstream generators can use
+- `class_based.cpp` - Generates the modern class-based hook system with full IDE support
+
+**Language Generators - src/ebmcg/ and src/ebmip/**
+- `src/ebmcg/ebm2<lang>/` - Compiled code generators (C, Python, Rust, P4)
+- `src/ebmip/ebm2<lang>/` - Interpreted/runtime generators (RMW)
+- Each directory contains:
+  - `main.cpp` - Entry point (auto-generated by ebmcodegen)
+  - `visitor/` - Language-specific hook implementations (developer writes these)
+  - `config.json` - Language configuration (optional)
+  - `codegen.hpp` - Common header for the language (optional)
+
+## Writing Code Generation Logic: The Class-Based Hook System
+
+The modern hook system provides type-safe context objects and full IDE support through a visitor pattern.
+
+### Creating a New Hook
+
+1. **Generate Template**:
+```bash
+# Creates src/ebmcg/ebm2<lang>/visitor/Statement_ENUM_DECL_class.hpp
+python script/ebmtemplate.py Statement_ENUM_DECL_class <lang>
+```
+
+2. **Implement the Hook**:
+```cpp
+#include "../codegen.hpp"
+
+/* Auto-generated comment lists all available ctx members */
+
+DEFINE_VISITOR(Statement_ENUM_DECL) {
+    // 'ctx' is a typed context object with all necessary fields
+    auto name = ctx.identifier();  // IDE provides autocompletion
+
+    // Recursively visit other nodes
+    MAYBE(base_type_res, ctx.visit(ctx.enum_decl.base_type));
+
+    CodeWriter w;
+    w.writeln("pub enum ", name, " {");
+    // ... implementation
+    return w;
+}
+```
+
+### Key Features
+
+- **Type-Safe Context**: Each hook receives a `ctx` object with all relevant EBM fields as members
+- **IDE Autocompletion**: The `ctx` type is explicitly defined, enabling full IDE support
+- **Layered Hooks**: Supports `_before_class.hpp` and `_after_class.hpp` for supplemental logic
+- **Hook Hijacking**: Before/after hooks can return early to override main hook behavior
+- **DEFINE_VISITOR Macro**: Reduces boilerplate for hook implementation
+
+### Finding What to Implement
+
+```bash
+# Run tests to discover unimplemented hooks
+python script/unictest.py --target-runner ebm2<lang>
+
+# The test output will show which visitor hooks need implementation
+```
+
+## Important Constraints
+
+**DO NOT edit auto-generated files:**
+- `src/ebmcg/ebm2<lang>/main.cpp` - Generated by ebmcodegen
+- `src/ebmcodegen/body_subset.cpp` - Generated by ebmcodegen
+- `src/ebmgen/json_conv.cpp/hpp` - Generated by ebmcodegen
+- `src/ebm/extended_binary_module.cpp/hpp` - Generated from .bgn file
+
+**DO edit:**
+- Hook files in `src/ebmcg/ebm2<lang>/visitor/*_class.hpp`
+- Configuration in `config.json` files (when needed)
+- Core framework in `src/ebmcodegen/`, `src/ebmgen/`, `src/ebm/`
+
+**When EBM structure changes:**
+```bash
+# Regenerate all EBM-related files
+python script/update_ebm.py
+```
+
+## File Organization
+
+| Path | Purpose |
+|------|---------|
+| `brgen/` | Brgen project (git submodule) - provides parser and AST format |
+| `src/ebm/` | EBM IR format definition |
+| `src/ebmgen/` | AST→EBM converter with interactive debugger |
+| `src/ebmcodegen/` | Meta-generator framework (generates ebm2<lang> skeletons) |
+| `src/ebmcg/` | Compiled language code generators |
+| `src/ebmip/` | Interpreted/runtime language generators |
+| `src/old/` | Legacy bmgen system (not actively developed) |
+| `src/test/` | Test .bgn files |
+| `script/` | Build, generation, and testing scripts |
+| `tool/` | Built executables (gitignored) |
+| `save/` | Test output and temporary files (gitignored) |
+| `docs/` | Project documentation (some AI-generated) |
+
+## Important Scripts and Tools
+
+| Tool/Script | Purpose |
+|-------------|---------|
+| `script/auto_setup.py` | First-time setup (initializes submodules, builds dependencies) |
+| `script/build.py` | Build the project (native or web mode) |
+| `script/ebmcodegen.py <lang>` | Create skeleton for new language generator |
+| `script/ebmtemplate.py <hook> <lang>` | Create new visitor hook template |
+| `script/unictest.py` | Automated testing framework |
+| `script/update_ebm.py` | Regenerate all EBM-related files after structure changes |
+| `tool/ebmgen` | Convert .bgn/JSON → EBM, debug print, interactive query |
+| `tool/ebmcodegen` | Generate code generator skeletons |
+| `tool/ebm2<lang>` | Generate target language code from EBM |
+
+## Development Workflow
+
+1. **Understand the task**: Identify which EBM nodes need code generation
+2. **Find or create hooks**: Use `script/ebmtemplate.py` to create new visitor hooks
+3. **Implement logic**: Write code generation in `visitor/*_class.hpp` files
+4. **Test**: Run `python script/unictest.py --target-runner ebm2<lang>`
+5. **Debug**: Use `--print-stdout` flag or examine generated code in `save/<lang>/`
+6. **Iterate**: Address unimplemented hooks or fix errors
+
+## Error Handling and Debugging
+
+### Understanding Compile Errors
+When you encounter errors like "undefined symbol" or "type mismatch":
+1. **Read the type definition** in `extended_binary_module.hpp`
+2. **Check the context object** - what fields are available in `ctx`?
+3. **Look at the error location** - is it accessing the right member?
+4. **Don't guess** - The definitions are authoritative
+
+Example: Error "called object type 'SizeUnit' is not a function"
+```cpp
+// WRONG: io_data.size.unit() - unit is not a function
+// RIGHT: io_data.size.unit - unit is a field
+```
+
+### Macro Usage
+The codebase uses macros extensively for error handling (like `MAYBE`). This is intentional:
+- Macros provide clean error propagation (similar to Rust's `?` operator)
+- They reduce visual noise and cognitive load
+- RAII is preserved - macros expand to normal C++ return statements
+- See `src/ebmgen/GEMINI.md` section 7 for detailed discussion
+
+### Interactive Query Engine
+```bash
+# Start interactive debugger
+./tool/ebmgen -i <file>.ebm --interactive
+
+# Execute query directly
+./tool/ebmgen -i <file>.ebm -q "Statement { body.kind == \"IF_STATEMENT\" }"
+
+# Query syntax: ObjectType { conditions }
+# Use -> to follow references: expr->body.kind
+# Use . for struct members: body.kind
+# Use [] for array access: fields[0]
+```
+
+## Current Development Status
+
+- **Focus**: Making the EBM code generator-generator work
+- **Priority**: Functionality over polish (naming, redundant code addressed later)
+- **Active languages**: Python, Rust, P4, C, Go (compiled), RMW (interpreted)
+- **Active development**: Go generator (`ebm2go`) is the current focus
+- **Legacy system**: `src/old/bmgen` and `src/old/bm2/` are not actively developed
+- **Testing**: Use `unictest.py` to identify unimplemented hooks
+- **Detailed status snapshot**: See `docs/en/current_status.md` for comprehensive analysis including per-generator maturity, known technical debt, and architecture notes
+
+## Documentation
+
+- `docs/en/current_status.md` - Project status snapshot with per-generator analysis (AI-oriented)
+- `src/ebmgen/GEMINI.md` - Comprehensive guide for ebmgen development (MUST READ)
+- `docs/en/` - English documentation
+- `docs/ja/` - Japanese documentation
+- `.clinerules/` - Legacy development notes (mostly superseded by docs/)
+- See section 15 in `src/ebmgen/GEMINI.md` for full documentation structure
+
+## Dependencies
+
+- **futils**: Utility library from brgen project (auto-setup available)
+- **brgen**: Parent project for parser and AST (optional, auto-setup available)
+- **CMake** >= 3.25
+- **Clang++** with C++23 support
+- **Ninja** build system
+- **Python** 3.x for build/test scripts

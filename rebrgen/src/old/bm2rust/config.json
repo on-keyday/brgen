@@ -1,0 +1,5 @@
+{
+    "lang": "rust",
+    "suffix": "rs",
+    "worker_request_name": "rust2"
+}

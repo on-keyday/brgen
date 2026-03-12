@@ -1,0 +1,47 @@
+{
+    "description": "Asserts that the size of an array is equal to a specific member variable; if not, reports an error.",
+    "query": "Any{ body.if_statement.then_block->body.kind == 'ERROR_REPORT' and body.if_statement.condition.cond->body.operand->body.left->body.kind == 'ARRAY_SIZE' }",
+    "condition": "[.[].body.if_statement]",
+    "struct": "IfStatement",
+    "rough": [
+        "type",
+        "length"
+    ],
+    "case": {
+        "condition": {
+            "cond": {
+                "kind": "UNARY_OP",
+                "type": {
+                    "kind": "BOOL"
+                },
+                "operand": {
+                    "kind": "BINARY_OP",
+                    "type": {
+                        "kind": "BOOL"
+                    },
+                    "bop": "equal",
+                    "left": {
+                        "kind": "ARRAY_SIZE",
+                        "type": {
+                            "kind": "UINT",
+                            "size": 64
+                        },
+                        "array_expr": null
+                    },
+                    "right": null
+                },
+                "uop": "logical_not"
+            }
+        },
+        "then_block": {
+            "kind": "ERROR_REPORT",
+            "error_report": {
+                "message": {
+                    "data": "Assertion failed"
+                },
+                "arguments": null
+            }
+        },
+        "else_block": 0
+    }
+}

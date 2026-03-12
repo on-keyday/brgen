@@ -1,0 +1,15 @@
+{
+    "description": "A simple assignment statement.",
+    "query": "Statement { id == 6938 }",
+    "condition": ".[0].body",
+    "struct": "StatementBody",
+    "rough": [
+        "assignment"
+    ],
+    "case": {
+        "kind": "ASSIGNMENT",
+        "target": null,
+        "value": null,
+        "previous_assignment": null
+    }
+}

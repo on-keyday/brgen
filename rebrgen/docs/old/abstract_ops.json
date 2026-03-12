@@ -1,0 +1,539 @@
+{
+    "METADATA": {
+        "metadata": "Metadata"
+    },
+    "IMPORT": {
+        "ident": "Varint",
+        "ref": "Varint"
+    },
+    "DYNAMIC_ENDIAN": {
+        "ident": "Varint",
+        "ref": "Varint",
+        "fallback": "Varint"
+    },
+    "RETURN_TYPE": {
+        "type": "StorageRef"
+    },
+    "DEFINE_PROGRAM": {
+        "ident": "Varint"
+    },
+    "END_PROGRAM": {},
+    "DECLARE_PROGRAM": {
+        "ref": "Varint"
+    },
+    "DEFINE_FORMAT": {
+        "ident": "Varint"
+    },
+    "END_FORMAT": {},
+    "DECLARE_FORMAT": {
+        "ref": "Varint"
+    },
+    "DEFINE_FIELD": {
+        "ident": "Varint",
+        "belong": "Varint",
+        "type": "StorageRef"
+    },
+    "CONDITIONAL_FIELD": {
+        "ident": "Varint",
+        "left_ref": "Varint",
+        "right_ref": "Varint",
+        "belong": "Varint"
+    },
+    "CONDITIONAL_PROPERTY": {
+        "ident": "Varint",
+        "left_ref": "Varint",
+        "right_ref": "Varint",
+        "belong": "Varint"
+    },
+    "MERGED_CONDITIONAL_FIELD": {
+        "ident": "Varint",
+        "type": "StorageRef",
+        "param": "Param",
+        "belong": "Varint",
+        "merge_mode": "MergeMode"
+    },
+    "DEFINE_PROPERTY": {
+        "ident": "Varint",
+        "belong": "Varint"
+    },
+    "END_PROPERTY": {},
+    "DECLARE_PROPERTY": {
+        "ref": "Varint"
+    },
+    "DEFINE_PROPERTY_SETTER": {
+        "left_ref": "Varint",
+        "right_ref": "Varint"
+    },
+    "DEFINE_PROPERTY_GETTER": {
+        "left_ref": "Varint",
+        "right_ref": "Varint"
+    },
+    "DEFINE_PARAMETER": {
+        "ident": "Varint",
+        "belong": "Varint",
+        "type": "StorageRef"
+    },
+    "DEFINE_FUNCTION": {
+        "ident": "Varint",
+        "belong": "Varint",
+        "func_type": "FunctionType"
+    },
+    "END_FUNCTION": {},
+    "DECLARE_FUNCTION": {
+        "ref": "Varint"
+    },
+    "DEFINE_ENUM": {
+        "ident": "Varint",
+        "type": "StorageRef"
+    },
+    "END_ENUM": {},
+    "DECLARE_ENUM": {
+        "ref": "Varint"
+    },
+    "DEFINE_ENUM_MEMBER": {
+        "ident": "Varint",
+        "left_ref": "Varint",
+        "right_ref": "Varint"
+    },
+    "DEFINE_UNION": {
+        "ident": "Varint",
+        "belong": "Varint"
+    },
+    "END_UNION": {},
+    "DECLARE_UNION": {
+        "ref": "Varint"
+    },
+    "DEFINE_UNION_MEMBER": {
+        "ident": "Varint",
+        "belong": "Varint"
+    },
+    "END_UNION_MEMBER": {},
+    "DECLARE_UNION_MEMBER": {
+        "ref": "Varint"
+    },
+    "DEFINE_STATE": {
+        "ident": "Varint"
+    },
+    "END_STATE": {},
+    "DECLARE_STATE": {
+        "ref": "Varint"
+    },
+    "DEFINE_BIT_FIELD": {
+        "ident": "Varint",
+        "belong": "Varint",
+        "type": "StorageRef"
+    },
+    "END_BIT_FIELD": {},
+    "DECLARE_BIT_FIELD": {
+        "ref": "Varint"
+    },
+    "BEGIN_ENCODE_PACKED_OPERATION": {
+        "ident": "Varint",
+        "belong": "Varint",
+        "packed_op_type": "PackedOpType",
+        "endian": "EndianExpr",
+        "bit_size": "Varint",
+        "fallback": "Varint"
+    },
+    "END_ENCODE_PACKED_OPERATION": {
+        "fallback": "Varint"
+    },
+    "BEGIN_DECODE_PACKED_OPERATION": {
+        "ident": "Varint",
+        "belong": "Varint",
+        "packed_op_type": "PackedOpType",
+        "endian": "EndianExpr",
+        "bit_size": "Varint",
+        "fallback": "Varint"
+    },
+    "END_DECODE_PACKED_OPERATION": {
+        "fallback": "Varint"
+    },
+    "DEFINE_ENCODER": {
+        "left_ref": "Varint",
+        "right_ref": "Varint"
+    },
+    "DEFINE_DECODER": {
+        "left_ref": "Varint",
+        "right_ref": "Varint"
+    },
+    "ENCODE_INT": {
+        "ref": "Varint",
+        "endian": "EndianExpr",
+        "bit_size": "Varint",
+        "belong": "Varint",
+        "fallback": "Varint"
+    },
+    "DECODE_INT": {
+        "ref": "Varint",
+        "endian": "EndianExpr",
+        "bit_size": "Varint",
+        "belong": "Varint",
+        "fallback": "Varint"
+    },
+    "ENCODE_INT_VECTOR": {
+        "left_ref": "Varint",
+        "right_ref": "Varint",
+        "endian": "EndianExpr",
+        "bit_size": "Varint",
+        "belong": "Varint",
+        "fallback": "Varint"
+    },
+    "ENCODE_INT_VECTOR_FIXED": {
+        "left_ref": "Varint",
+        "right_ref": "Varint",
+        "endian": "EndianExpr",
+        "bit_size": "Varint",
+        "belong": "Varint",
+        "array_length": "Varint",
+        "fallback": "Varint"
+    },
+    "DECODE_INT_VECTOR": {
+        "left_ref": "Varint",
+        "right_ref": "Varint",
+        "endian": "EndianExpr",
+        "bit_size": "Varint",
+        "belong": "Varint",
+        "fallback": "Varint"
+    },
+    "DECODE_INT_VECTOR_FIXED": {
+        "left_ref": "Varint",
+        "right_ref": "Varint",
+        "endian": "EndianExpr",
+        "bit_size": "Varint",
+        "belong": "Varint",
+        "array_length": "Varint",
+        "fallback": "Varint"
+    },
+    "DECODE_INT_VECTOR_UNTIL_EOF": {
+        "ref": "Varint",
+        "endian": "EndianExpr",
+        "bit_size": "Varint",
+        "belong": "Varint",
+        "fallback": "Varint"
+    },
+    "PEEK_INT_VECTOR": {
+        "left_ref": "Varint",
+        "right_ref": "Varint",
+        "endian": "EndianExpr",
+        "bit_size": "Varint",
+        "belong": "Varint"
+    },
+    "BACKWARD_INPUT": {
+        "ref": "Varint"
+    },
+    "BACKWARD_OUTPUT": {
+        "ref": "Varint"
+    },
+    "INPUT_BYTE_OFFSET": {
+        "ident": "Varint"
+    },
+    "OUTPUT_BYTE_OFFSET": {
+        "ident": "Varint"
+    },
+    "INPUT_BIT_OFFSET": {
+        "ident": "Varint"
+    },
+    "OUTPUT_BIT_OFFSET": {
+        "ident": "Varint"
+    },
+    "REMAIN_BYTES": {
+        "ident": "Varint"
+    },
+    "CAN_READ": {
+        "ident": "Varint",
+        "belong": "Varint"
+    },
+    "IS_LITTLE_ENDIAN": {
+        "ident": "Varint",
+        "ref": "Varint",
+        "fallback": "Varint"
+    },
+    "CALL_ENCODE": {
+        "left_ref": "Varint",
+        "right_ref": "Varint",
+        "bit_size_plus": "Varint"
+    },
+    "CALL_DECODE": {
+        "left_ref": "Varint",
+        "right_ref": "Varint",
+        "bit_size_plus": "Varint"
+    },
+    "CAST": {
+        "ident": "Varint",
+        "ref": "Varint",
+        "type": "StorageRef",
+        "from_type": "StorageRef",
+        "cast_type": "CastType"
+    },
+    "CALL_CAST": {
+        "ident": "Varint",
+        "type": "StorageRef",
+        "param": "Param"
+    },
+    "ADDRESS_OF": {
+        "ident": "Varint",
+        "ref": "Varint"
+    },
+    "OPTIONAL_OF": {
+        "ident": "Varint",
+        "ref": "Varint",
+        "type": "StorageRef"
+    },
+    "EMPTY_PTR": {
+        "ident": "Varint"
+    },
+    "EMPTY_OPTIONAL": {
+        "ident": "Varint"
+    },
+    "LOOP_INFINITE": {},
+    "LOOP_CONDITION": {
+        "ref": "Varint"
+    },
+    "CONTINUE": {},
+    "BREAK": {},
+    "END_LOOP": {},
+    "IF": {
+        "ref": "Varint"
+    },
+    "ELIF": {
+        "ref": "Varint"
+    },
+    "ELSE": {},
+    "END_IF": {},
+    "MATCH": {
+        "ref": "Varint"
+    },
+    "EXHAUSTIVE_MATCH": {
+        "ref": "Varint"
+    },
+    "CASE": {
+        "ref": "Varint"
+    },
+    "END_CASE": {},
+    "DEFAULT_CASE": {},
+    "END_MATCH": {},
+    "DEFINE_VARIABLE": {
+        "ident": "Varint",
+        "ref": "Varint",
+        "type": "StorageRef"
+    },
+    "DEFINE_VARIABLE_REF": {
+        "ident": "Varint",
+        "ref": "Varint"
+    },
+    "DEFINE_CONSTANT": {
+        "ident": "Varint",
+        "ref": "Varint",
+        "type": "StorageRef"
+    },
+    "DECLARE_VARIABLE": {
+        "ref": "Varint"
+    },
+    "BINARY": {
+        "ident": "Varint",
+        "bop": "BinaryOp",
+        "left_ref": "Varint",
+        "right_ref": "Varint"
+    },
+    "NOT_PREV_THEN": {
+        "ident": "Varint",
+        "left_ref": "Varint",
+        "right_ref": "Varint"
+    },
+    "UNARY": {
+        "ident": "Varint",
+        "uop": "UnaryOp",
+        "ref": "Varint"
+    },
+    "ASSIGN": {
+        "ident": "Varint",
+        "ref": "Varint",
+        "left_ref": "Varint",
+        "right_ref": "Varint"
+    },
+    "PROPERTY_ASSIGN": {
+        "left_ref": "Varint",
+        "right_ref": "Varint"
+    },
+    "ADDRESS_OF": {
+        "ident": "Varint",
+        "ref": "Varint"
+    },
+    "OPTIONAL_OF": {
+        "ident": "Varint",
+        "ref": "Varint",
+        "type": "StorageRef"
+    },
+    "EMPTY_PTR": {
+        "ident": "Varint"
+    },
+    "EMPTY_OPTIONAL": {
+        "ident": "Varint"
+    },
+    "ASSERT": {
+        "ref": "Varint",
+        "belong": "Varint"
+    },
+    "LENGTH_CHECK": {
+        "left_ref": "Varint",
+        "right_ref": "Varint",
+        "belong": "Varint"
+    },
+    "EXPLICIT_ERROR": {
+        "param": "Param",
+        "belong": "Varint"
+    },
+    "ACCESS": {
+        "ident": "Varint",
+        "left_ref": "Varint",
+        "right_ref": "Varint"
+    },
+    "INDEX": {
+        "ident": "Varint",
+        "left_ref": "Varint",
+        "right_ref": "Varint"
+    },
+    "APPEND": {
+        "left_ref": "Varint",
+        "right_ref": "Varint"
+    },
+    "INC": {
+        "ref": "Varint"
+    },
+    "CALL": {
+        "ident": "Varint",
+        "ref": "Varint",
+        "param": "Param"
+    },
+    "RET": {
+        "belong": "Varint",
+        "ref": "Varint"
+    },
+    "RET_SUCCESS": {
+        "belong": "Varint"
+    },
+    "RET_PROPERTY_SETTER_OK": {
+        "belong": "Varint"
+    },
+    "RET_PROPERTY_SETTER_FAIL": {
+        "belong": "Varint"
+    },
+    "IMMEDIATE_TRUE": {
+        "ident": "Varint"
+    },
+    "IMMEDIATE_FALSE": {
+        "ident": "Varint"
+    },
+    "IMMEDIATE_INT": {
+        "ident": "Varint",
+        "int_value": "Varint"
+    },
+    "IMMEDIATE_INT64": {
+        "ident": "Varint",
+        "int_value64": "u64"
+    },
+    "IMMEDIATE_CHAR": {
+        "ident": "Varint",
+        "int_value": "Varint"
+    },
+    "IMMEDIATE_STRING": {
+        "ident": "Varint"
+    },
+    "IMMEDIATE_TYPE": {
+        "ident": "Varint",
+        "type": "StorageRef"
+    },
+    "NEW_OBJECT": {
+        "ident": "Varint",
+        "type": "StorageRef"
+    },
+    "INIT_RECURSIVE_STRUCT": {
+        "left_ref": "Varint",
+        "right_ref": "Varint"
+    },
+    "CHECK_RECURSIVE_STRUCT": {
+        "left_ref": "Varint",
+        "right_ref": "Varint"
+    },
+    "SWITCH_UNION": {
+        "ref": "Varint"
+    },
+    "CHECK_UNION": {
+        "ref": "Varint",
+        "check_at": "UnionCheckAt"
+    },
+    "ENCODER_PARAMETER": {
+        "left_ref": "Varint",
+        "right_ref": "Varint",
+        "encode_flags": "EncodeParamFlags"
+    },
+    "DECODER_PARAMETER": {
+        "left_ref": "Varint",
+        "right_ref": "Varint",
+        "decode_flags": "DecodeParamFlags"
+    },
+    "STATE_VARIABLE_PARAMETER": {
+        "ref": "Varint"
+    },
+    "PROPERTY_INPUT_PARAMETER": {
+        "ident": "Varint",
+        "left_ref": "Varint",
+        "right_ref": "Varint",
+        "type": "StorageRef"
+    },
+    "PROPERTY_FUNCTION": {
+        "ref": "Varint"
+    },
+    "DEFINE_PROPERTY_SETTER": {
+        "left_ref": "Varint",
+        "right_ref": "Varint"
+    },
+    "DEFINE_PROPERTY_GETTER": {
+        "left_ref": "Varint",
+        "right_ref": "Varint"
+    },
+    "PHI": {
+        "ident": "Varint",
+        "ref": "Varint",
+        "phi_params": "PhiParams"
+    },
+    "EVAL_EXPR": {
+        "ref": "Varint"
+    },
+    "ARRAY_SIZE": {
+        "ident": "Varint",
+        "ref": "Varint"
+    },
+    "RESERVE_SIZE": {
+        "left_ref": "Varint",
+        "right_ref": "Varint"
+    },
+    "BEGIN_ENCODE_SUB_RANGE": {
+        "sub_range_type": "SubRangeType",
+        "ref": "Varint",
+        "belong": "Varint"
+    },
+    "BEGIN_DECODE_SUB_RANGE": {
+        "sub_range_type": "SubRangeType",
+        "ref": "Varint",
+        "belong": "Varint"
+    },
+    "SEEK_ENCODER": {
+        "ref": "Varint",
+        "belong": "Varint"
+    },
+    "SEEK_DECODER": {
+        "ref": "Varint",
+        "belong": "Varint"
+    },
+    "DEFINE_FALLBACK": {
+        "ident": "Varint"
+    },
+    "END_FALLBACK": {},
+    "BEGIN_COND_BLOCK": {
+        "ident": "Varint",
+        "ref": "Varint"
+    },
+    "END_COND_BLOCK": {}
+}

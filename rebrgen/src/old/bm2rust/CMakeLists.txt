@@ -1,0 +1,11 @@
+#license
+cmake_minimum_required(VERSION 3.25)
+project(bm2rust)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tool)
+add_executable(bm2rust main.cpp bm2rust.cpp)
+target_link_libraries(bm2rust futils bm)
+target_include_directories(bm2rust PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/..")
+install(TARGETS bm2rust DESTINATION tool)
+if ("$ENV{BUILD_MODE}" STREQUAL "web")
+  install(FILES "${CMAKE_BINARY_DIR}/tool/bm2rust.wasm" DESTINATION tool)
+endif()

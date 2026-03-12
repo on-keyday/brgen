@@ -1,0 +1,84 @@
+## 4. Code Generation Logic (Visitor Hooks)
+
+### 4.1 Visitor Hook Overview
+A visitor hook is the logic used to generate code for a specific EBM node (e.g., `Statement_WRITE_DATA`).
+In the modern **Class-Based Hook System**, logic is implemented as a method within a generated context class. This system provides full IDE support (autocompletion) and type safety.
+
+-   **Structure**: You use the `DEFINE_VISITOR(HookName)` macro to define the visitor logic.
+-   **Context**: All necessary data (EBM fields, helper functions, the visitor instance) is accessible via a single `ctx` object.
+-   **Return Type**: The hook must return an `expected<Result>`. The `Result` contains a `CodeWriter` object holding the generated code.
+
+*Note: A legacy "direct-inclusion" system exists where hooks are simple `.hpp` files included directly into the generator. This is supported for backward compatibility but is **deprecated** for new implementations.*
+
+### 4.2 Managing Visitor Hooks with `ebmtemplate.py`
+The `script/ebmtemplate.py` script is a wrapper around `ebmcodegen` that simplifies the lifecycle of visitor hooks.
+-   **`python script/ebmtemplate.py`**: Displays help.
+-   **`python script/ebmtemplate.py interactive`**: Start an interactive guide through the script features.
+-   **`python script/ebmtemplate.py <template_target>`**: Outputs a summary of the hook file to stdout.
+-   **`python script/ebmtemplate.py <template_target> <lang>`**: Generates a new hook file (`.hpp`) in `src/ebmcg/ebm2<lang>/visitor/`. **By default, this generates a class-based hook.**
+-   **`python script/ebmtemplate.py update <lang>`**: Updates the auto-generated comment blocks (listing available variables) in all existing hooks for a given language.
+-   **`python script/ebmtemplate.py test`**: Tests the generation of all available template targets.
+-   **`python script/ebmtemplate.py list <lang>`**: List all defined templates in the specified [lang] directory.
+
+### 4.3 Workflow for Implementing a Visitor Hook
+1.  **Find the Target**: Decide which EBM node you want to handle. Use `tool/ebmcodegen --mode hooklist` to list available hooks.
+2.  **Create the File**: Generate the hook file using `python script/ebmtemplate.py <template_target> <lang>`.
+    *   Example: `python script/ebmtemplate.py Statement_WRITE_DATA rust` creates `src/ebmcg/ebm2rust/visitor/Statement_WRITE_DATA_class.hpp`.
+3.  **Implement the Logic**: Open the newly created file. Replace the `/*here to write the hook*/` comment inside the `DEFINE_VISITOR` block with your implementation. Use the `ctx` object to access data.
+4.  **Build and Verify**: Run `python script/unictest.py` (or `python script/unictest.py --print-stdout` for debugging). This builds the project and runs tests. `unictest.py` helps identify unimplemented hooks by passing the `--debug-unimplemented` flag to the generator.
+
+### 4.4 Visitor Hook API Reference
+
+Visitor hooks are implemented inside the `DEFINE_VISITOR` macro.
+
+#### 4.4.1 Return Type and `Result` Struct
+
+All visitor hooks must return a value of type `expected<Result>`.
+
+-   **`expected<T>`**: Represents a result that might fail. Used with the `MAYBE` macro for error handling.
+-   **`Result` Struct**:
+    -   `CodeWriter value`: Holds the generated code string. The goal is to construct the target language code within this object.
+
+#### 4.4.2 Available Variables (`ctx`)
+
+In the class-based system, all variables are accessed through the **`ctx`** object.
+The available members of `ctx` are listed in the auto-generated comment block at the top of your hook file.
+
+-   **EBM Fields**: Access fields of the visited node directly (e.g., `ctx.io_data`, `ctx.endian`).
+-   **Helper Accessors**: e.g., `ctx.identifier()` to get the name associated with a statement.
+-   **Visitor Instance**: `ctx.visitor` provides access to the main visitor object (though usually you use `ctx.visit` wrappers).
+
+-   **Updating Variables**: If the EBM structure changes, run `python script/ebmtemplate.py update <lang>` to refresh the comment block.
+
+#### 4.4.3 Helper Functions and Macros
+
+-   **`MAYBE(var, expr)`**: Error handling macro. If `expr` returns an error, it propagates it and returns early. If success, the value is assigned to `var`.
+    -   **Usage**: `MAYBE(res, ctx.visit(ctx.some_expr));`
+-   **`ctx.visit(ref)`**: Recursively visits an EBM object (Statement, Expression, Type, etc.) referenced by `ref` and returns the generated code (`expected<Result>`).
+    -   **Usage**: `MAYBE(code, ctx.visit(ctx.stmt.body));`
+-   **`std::format`**: C++20 string formatting.
+-   **`to_string(enum_value)`**: Converts EBM enum values (e.g., `SizeUnit`, `Endian`) to strings.
+
+#### 4.4.4 Referring to `extended_binary_module.hpp`
+
+For precise definitions of EBM structs, enums, and reference types (`StatementRef`, `ExpressionRef`, `TypeRef`, etc.), please refer to the `src/ebm/extended_binary_module.hpp` file. This file is automatically generated from `extended_binary_module.bgn`.
+
+### 4.5 DSL (Domain Specific Language) for Visitor Hooks
+The `ebmcodegen` tool supports a Domain Specific Language (DSL) for writing visitor hooks, offering a more concise and readable way to define code generation logic. This DSL is processed by `ebmcodegen` when invoked with `--mode dsl` and `--dsl-file=FILE`.
+
+**DSL Syntax Overview:**
+The DSL mixes C++ code, EBM node processing, and control flow constructs using special markers:
+For practical examples of DSL usage, refer to `src/ebmcg/ebm2python/dsl_sample/`.
+-   **`{% C++_CODE %}`**: Embeds C++ literal code directly into the generated output. (e.g., `{% int a = 0; %}`)
+-   **`{{ C++_EXPRESSION }}`**: Embeds a C++ expression whose result is written to the output. (e.g., `{{ a }} += 1;`)
+-   **`{* EBM_NODE_EXPRESSION *}`**: Processes an EBM node (e.g., `ExpressionRef`, `StatementRef`) by calling `visit_Object` and writing its generated output. (e.g., `{* expr *}`)
+-   **`{& IDENTIFIER_EXPRESSION &}`**: Retrieves an identifier and writes it to the output. (e.g., `{& item_id &}`)
+-   **`{! SPECIAL_MARKER !}`**: Used for advanced control flow and variable definitions within the DSL itself. The content inside these markers is parsed by a nested DSL.
+    -   **`transfer_and_reset_writer`**: Generates C++ code to transfer the current `CodeWriter` content and reset it.
+    -   **`for IDENT in (range(BEGIN, END, STEP) | COLLECTION)`**: Generates C++ `for` loops. Supports both numeric ranges and iteration over collections.
+    -   **`endfor`**: Closes a `for` loop block.
+    -   **`if (CONDITION)` / `elif (CONDITION)` / `else`**: Generates C++ `if`/`else if`/`else` blocks.
+    -   **`endif`**: Closes an `if` block.
+    -   **`VARIABLE := VALUE`**: Defines a C++ variable within the generated code. (e.g., `my_var := 42`)
+
+Text outside these markers is treated as target language code and is escaped before being written to the output. The DSL also handles automatic indentation and dedentation based on the source formatting.

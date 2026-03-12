@@ -1,0 +1,145 @@
+
+config.cpp.namespace = "futils::fnet::http2"
+config.cpp.vector_type = "NoHeapVector"
+config.cpp.include = "no_heap_vector.h"
+config.url = "https://www.rfc-editor.org/rfc/rfc9113.html"
+
+enum H2Error:
+    none = 0x0
+    protocol = 0x1
+    internal = 0x2
+    flow_control = 0x3
+    settings_timeout = 0x4
+    stream_closed = 0x5
+    frame_size = 0x6
+    refused = 0x7
+    cancel = 0x8
+    compression = 0x9
+    connect = 0xa
+    enhance_your_clam = 0xb
+    inadequate_security = 0xc
+    http_1_1_required = 0xd
+    transport = 0x100
+
+enum H2Type:
+    :u8
+    DATA = 0x0
+    HEADERS = 0x1
+    PRIORITY = 0x2
+    RST_STREAM = 0x3
+    SETTINGS = 0x4
+    PUSH_PROMISE = 0x5
+    PING = 0x6
+    GOAWAY = 0x7
+    WINDOW_UPDATE = 0x8
+    CONTINUATION = 0x9
+
+format Flag:
+    reserved_flag :u4(0)
+    padding :u1
+    end_headers :u1
+    unused :u1
+    end_stream_or_ack :u1 #TODO(on-keyday): rename? make it more clear
+
+format FrameHeader:
+    len :u24
+    type:H2Type
+    flag :Flag
+    reserved :u1
+    stream_id:u31
+
+state FrameHeaderState:
+    header :FrameHeader
+
+header_state :FrameHeaderState
+
+format FrameBody:
+    match header_state.header.type:
+        H2Type.DATA => data :DataFrame
+        H2Type.HEADERS => headers :HeadersFrame
+        H2Type.PRIORITY => priority :PriorityFrame
+        H2Type.RST_STREAM => rst_stream :RstStreamFrame
+        H2Type.SETTINGS => settings :SettingsFrame
+        H2Type.PUSH_PROMISE => push_promise :PushPromiseFrame
+        H2Type.PING => ping :PingFrame
+        H2Type.GOAWAY => goaway :GoAwayFrame
+        H2Type.WINDOW_UPDATE => window_update :WindowUpdateFrame
+        H2Type.CONTINUATION => continuation :ContinuationFrame
+        .. => unknown :[header_state.header.len]u8
+
+format DataFrame:
+    if header_state.header.flag.padding == 1:
+        padding_len :u8
+        u32(header_state.header.len) > u32(padding_len + 1) # violate this is protocol error
+    len ::= header_state.header.flag.padding == 1 ? header_state.header.len - 1 - u32(padding_len) : header_state.header.len
+    data :[len]u8
+    if header_state.header.flag.padding == 1:
+        padding :[padding_len]u8
+
+format StreamWeight:
+    exclusive :u1
+    stream_id :u31
+    weight :u8
+
+
+format HeadersFrame:
+    priority :StreamWeight
+    if header_state.header.flag.padding == 1:
+        padding_len :u8
+        u32(header_state.header.len) > u32(padding_len + 1) # violate this is protocol error
+    len ::= u32(header_state.header.len) - u32(available(padding_len)?padding_len:0)
+    header_block :[len]u8
+    if header_state.header.flag.padding == 1:
+        padding :[padding_len]u8
+
+format PriorityFrame:
+    header_state.header.len == 5
+    priority :StreamWeight
+
+format RstStreamFrame:
+    header_state.header.len == 4
+    error_code :u32
+
+format Setting:
+    id :u16
+    value :u32
+
+format SettingsFrame:
+    header_state.header.len % 6 == 0
+    if header_state.header.flag.end_stream_or_ack == 1:
+        header_state.header.len == 0
+        return
+    settings :[header_state.header.len / 6]Setting
+
+format PushPromiseFrame:
+    reserved :u1(0)
+    promised_stream_id :u31
+    header_block :[header_state.header.len - 4]u8
+
+format PingFrame:
+    header_state.header.len == 8
+    opaque_data :u64
+
+format GoAwayFrame:
+    reserved :u1(0)
+    last_stream_id :u31
+    error_code :u32
+    debug_data :[header_state.header.len - 8]u8
+
+format WindowUpdateFrame:
+    header_state.header.len == 4
+    reserved :u1(0)
+    window_size_increment :u31
+
+format ContinuationFrame:
+    header_block :[header_state.header.len]u8
+
+    
+format Http2Frame:
+    header :FrameHeader
+    header_state.header = header # set the header in the state
+    body :FrameBody
+
+
+format HTTP2FrameTest:
+    frame :[..]Http2Frame

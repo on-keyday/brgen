@@ -40,7 +40,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: ["c-cpp", "go", "javascript-typescript"]
+        language: ["c-cpp", "go"]
         # CodeQL supports [ 'c-cpp', 'csharp', 'go', 'java-kotlin', 'javascript-typescript', 'python', 'ruby', 'swift' ]
         # Use only 'java-kotlin' to analyze code written in Java, Kotlin or both
         # Use only 'javascript-typescript' to analyze code written in JavaScript, TypeScript or both
@@ -51,16 +51,13 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       # Initializes the CodeQL tools for scanning.
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@89a39a4e59826350b863aa6b6252a07ad50cf83e # v4.32.4
-        with:
-          languages: ${{ matrix.language }}
-          # If you wish to specify custom queries, you can do so here or in a config file.
-          # By default, queries listed here will override any specified in a config file.
-          # Prefix the list here with "+" to use these queries and those in the config file.
 
-          # For more details on CodeQL's query packs, refer to: https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning#using-queries-in-ql-packs
-          # queries: security-extended,security-and-quality
+      # If you wish to specify custom queries, you can do so here or in a config file.
+      # By default, queries listed here will override any specified in a config file.
+      # Prefix the list here with "+" to use these queries and those in the config file.
+
+      # For more details on CodeQL's query packs, refer to: https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning#using-queries-in-ql-packs
+      # queries: security-extended,security-and-quality
 
       # Autobuild attempts to build any compiled languages (C/C++, C#, Go, Java, or Swift).
       # If this step fails, then you should remove it and run the build manually (see below)
@@ -77,42 +74,26 @@ jobs:
         uses: seanmiddleditch/gha-setup-ninja@7e868db0f3406270dd46e1dac26c65f621456723 # master
       - name: Set up Clang
         uses: egor-tensin/setup-clang@471a6f8ef1d449dba8e1a51780e7f943572a3f99 # v2.1
+        if: matrix.language == 'c-cpp'
         with:
           version: latest
           platform: x64
       - name: Install libc++-dev and libc++abi-dev
         run: sudo apt-get install libc++-dev libc++abi-dev -y
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@89a39a4e59826350b863aa6b6252a07ad50cf83e # v4.32.4
+        with:
+          languages: ${{ matrix.language }}
+          debug: true
       - name: Build C++ and Go
         if: matrix.language == 'c-cpp' || matrix.language == 'go'
         run: |
+          env | grep -E "CODEQL|LD_PRELOAD|CC|CXX"
+          export FUTILS_CXX_COMPILER=$CXX
+          export FUTILS_C_COMPILER=$CC
+          ldd $(which clang)
           . build.sh native
           ./tool/src2json --version
-      - name: Set up wasm-pack
-        if: matrix.language == 'javascript-typescript'
-        run: |
-          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-      - name: Setup Emscripten
-        uses: mymindstorm/setup-emsdk@6ab9eb1bda2574c4ddb79809fc9247783eaf9021 # v14
-        if: matrix.language == 'javascript-typescript'
-      - name: Fetch rebrgen artifacts
-        run: |
-          chmod +x ./script/fetch_rebrgen.sh
-          ./script/fetch_rebrgen.sh
-          ls -alR ./web/dev/src/lib
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        if: matrix.language == 'javascript-typescript'
-      - name: Build Wasm
-        if: matrix.language == 'javascript-typescript'
-        run: |
-          cd astlib/ast2ts
-          npm install
-          tsc
-          cd ../..
-          GOROOT=`go env GOROOT`
-          echo "GOROOT=$GOROOT"
-          export WASMEXEC_FILE="$GOROOT/misc/wasm/wasm_exec.js"
-          . build.sh wasm-em Debug
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@89a39a4e59826350b863aa6b6252a07ad50cf83e # v4.32.4

@@ -1,0 +1,98 @@
+!@section cmptest_build.txt
+file = read_file(MAIN)
+file = file.replace(GENERATED,pl.Path(GENERATED).absolute().as_posix())
+write_file(MAIN,file)
+FUTILS_DIR = get_env("FUTILS_DIR","C:/workspace/utils_backup") +"/src/include"
+run_command(["clang++", MAIN, "-o", EXEC, "-I", FUTILS_DIR, "-std=c++23"])
+!@section func_define_function.txt
+if(ret_type) {
+    w.write(*ret_type);
+}
+else {
+    w.write("void");
+}
+w.write(" ");
+if(belong_name) {
+    w.write(*belong_name,"::");
+}
+w.write(ident);
+w.write("(");
+add_parameter(ctx,w,inner_range);
+w.write(") ");
+w.writeln("{");
+!@section func_append_var_vector_eval_before.txt
+ctx.on_assign = true;
+!@copy_section func_assign_var_left_eval_before.txt
+!@section func_append_var_vector_eval_after.txt
+ctx.on_assign = false;
+!@copy_section func_assign_var_left_eval_after.txt
+!@section escape_ident.txt
+if(code.op == rebgn::AbstractOp::DEFINE_FUNCTION) {
+    if(code.func_type().value() == rebgn::FunctionType::VECTOR_SETTER) {
+        str = "set_" + str;
+    }
+}
+!@section field_accessor_define_field_pre_main.txt
+auto is_bit_field = find_belong_op(ctx,ctx.ref(belong),rebgn::AbstractOp::DEFINE_BIT_FIELD); //check if belong is a bit field
+if(is_bit_field) {
+     auto belong_eval = field_accessor(ctx.ref(ctx.ref(rebgn::Varint{*is_bit_field}).belong().value()), ctx); //belong eval
+     const char* brace="";
+     if(!ctx.on_assign) {
+        brace ="()";
+     }
+     result = make_eval_result(std::format("{}.{}{}", belong_eval.result, ident,brace));
+}
+else 
+!@section field_accessor_define_property.txt
+if(is_member) {
+    auto belong_eval = field_accessor(ctx.ref(belong), ctx); //belong eval
+    if(ctx.on_assign) {
+        result = make_eval_result(std::format("{}.{}", belong_eval.result, ident));
+    }
+    else {
+        result = make_eval_result(std::format("(*{}.{}())", belong_eval.result, ident));
+    }
+}
+else {
+    result = make_eval_result(ident);
+}
+!@section func_assert.txt
+w.writeln("if (!(",evaluated.result,")) {");
+w.writeln("  return false; // ",evaluated.result," is false");
+w.writeln("}");
+!@section func_length_check.txt
+w.writeln("if(",vector_eval.result,".size() != ",size_eval.result,") {");
+w.writeln("  return false; // ",vector_eval.result,".size() != ",size_eval.result);
+w.writeln("}");
+!@section func_encode_int_vector_bytes.txt
+w.writeln("if (!w.write(futils::view::rvec(",vector_value.result,").substr(0,",size_value.result,"))) {");
+w.writeln("  return false; // write ",vector_value.result," failed");
+w.writeln("}");
+!@copy_section func_encode_int_vector_fixed_bytes.txt
+!@section func_decode_int_vector_bytes.txt
+w.writeln("if (!r.read(",vector_value.result,",",size_value.result,")) {");
+w.writeln("  return false; // read ",vector_value.result," failed");
+w.writeln("}");
+!@section func_decode_int_vector_fixed_bytes.txt
+w.writeln("if (!r.read(futils::view::wvec(",vector_value.result,").substr(0,",size_value.result,"))) {");
+w.writeln("  return false; // read ",vector_value.result," failed");
+w.writeln("}");
+!@section field_accessor_define_union_member.txt
+result = make_eval_result(std::format("std::get<{}>({})",ident,union_field_eval.result));
+!@section func_assign.txt
+if(ctx.ref(left_eval_ref).op != rebgn::AbstractOp::DEFINE_BIT_FIELD&&
+  find_belong_op(ctx,ctx.ref(left_eval_ref),rebgn::AbstractOp::DEFINE_BIT_FIELD)) {
+    w.writeln(left_eval.result,"(",right_eval.result,");");
+}
+else {
+    w.writeln(left_eval.result, " = ", right_eval.result, ";");
+}
+!@section type_variant_pre_main.txt
+if(auto bf = find_belong_op(ctx,ctx.ref(ident_ref),rebgn::AbstractOp::DEFINE_BIT_FIELD)) {
+    return type_to_string(ctx,ctx.ref(rebgn::Varint{*bf}).type().value(),bit_size);
+}
+!@section func_check_union_pre_main.txt
+if(find_belong_op(ctx,ctx.ref(union_field_ref),rebgn::AbstractOp::DEFINE_BIT_FIELD)) {
+    continue; // skip bit field
+}
+!@copy_section func_switch_union_pre_main.txt

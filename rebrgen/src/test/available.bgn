@@ -1,0 +1,25 @@
+
+format Label:
+    length :u8
+    if length & 0xc0 == 0xc0:
+        input.backward()
+        pointer :u16
+    else:
+        length <= 63
+        data :[length]u8
+
+format DomainName:
+    labels :[]Label
+    
+    fn decode():
+        for:
+           label ::= input.get(Label)
+           labels[labels.length] = label
+           if label.length == 0 || available(label.pointer):
+              break
+    
+    fn encode():
+        for i in labels.length:
+            if labels[i].length == 0 || available(labels[i].pointer):
+                i == labels.length - 1
+            output.put(labels[i])

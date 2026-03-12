@@ -1,0 +1,906 @@
+# 1. Ethernet 
+config.url = "https://en.wikipedia.org/wiki/Ethernet_frame#Structure"
+
+enum EtherType:
+    :u16
+    ipv4 = 0x0800
+    arp = 0x0806
+    vlan = 0x8100
+    ipv6 = 0x86DD
+    service_vlen = 0x88A8
+    pppoe_discovery = 0x8863
+    pppoe_session = 0x8864
+
+format OUI:
+    high: u6
+    local :u1
+    multicast :u1
+    low :[2]u8
+
+format MacAddress:
+    oui :OUI
+    nic :[3]u8
+
+format EthernetFrame:
+    dstMac :[6]u8
+    srcMac :[6]u8
+    ether_type :u16
+    if ether_type == u16(EtherType.vlan):
+        vlan_tag :u16
+        ether_type2 :u16
+    elif ether_type == u16(EtherType.service_vlen):
+        service_vlan_tag :u16
+        dummy_ether_type :u16(u16(EtherType.vlan))
+        vlan_tag :u16
+        ether_type2 :u16
+    len ::= available(ether_type2) ? ether_type2 : ether_type
+    len <= 0x5dc || len >= 0x600
+    if len >= 0x600:
+        data :[..]u8
+    else:
+        data :[len]u8
+
+
+# 2. ARP
+config.url = "https://ja.wikipedia.org/wiki/Address_Resolution_Protocol"
+config.rfc = "https://datatracker.ietf.org/doc/html/rfc826"
+
+# ArpPacket 
+# arp packet is used to resolve ip address to mac address
+# -------------
+
+enum Operation:
+    :u16
+    Request = 1
+    Reply = 2
+
+format ArpPacket:
+    hardware_type :u16
+    protocol_type :u16
+    hardware_len :u8
+    protocol_len :u8
+    operation :Operation
+    operation == Operation.Request || operation == Operation.Reply
+    source_hardware_address :[hardware_len]u8
+    source_protocol_address :[protocol_len]u8
+    target_hardware_address :[hardware_len]u8
+    target_protocol_address :[protocol_len]u8
+
+
+
+
+# 3. IPv4
+config.url = "https://ja.wikipedia.org/wiki/IPv4"
+config.rfc = "https://datatracker.ietf.org/doc/html/rfc791"
+
+format IPv4Header:
+    version :u4 ihl :u4 dscp :u6 ecn :u2 len :u16
+    id :u16 reserved :u1 dont_fragment :u1 more_fragment :u1 fragOffset :u13
+    ttl :u8 proto :ProtocolNumber checksum :u16
+    srcAddr :[4]u8
+    dstAddr :[4]u8
+    options :[u8(ihl)*4-20]u8
+
+format IPv4Packet:
+    hdr :IPv4Header
+    hdr.len >= u16(hdr.ihl)*4
+    len ::= hdr.len - u16(hdr.ihl*4) 
+    data :[len]u8
+
+
+
+enum ProtocolNumber:
+    :u8
+    HOPOPT = 0
+    ICMP = 1
+    IGMP = 2
+    GGP = 3
+    IPV4 = 4
+    ST = 5
+    TCP = 6
+    CBT = 7
+    EGP = 8
+    IGP = 9
+    BBN_RCC_MON = 10
+    NVP_II = 11
+    PUP = 12
+    ARGUS = 13
+    EMCON = 14
+    XNET = 15
+    CHAOS = 16
+    UDP = 17
+    MUX = 18
+    DCN_MEAS = 19
+    HMP = 20
+    PRM = 21
+    XNS_IDP = 22
+    TRUNK_1 = 23
+    TRUNK_2 = 24
+    ICMPV6 = 58
+
+fn checkSum(data :[]u8) -> u16:
+    sum := u32(0)
+    for i in data.length / 2:
+        sum += u32(data[i*2]) << 8 | u32(data[i*2+1])
+    if data.length % 2 == 1:
+        sum += u32(data[data.length-1]) << 8
+    for sum > 0xffff:
+        sum = (sum & 0xffff) + (sum >> 16)
+    return u16(!sum)
+
+format IPv4PseudoHeader:
+    srcAddr :[4]u8
+    dstAddr :[4]u8
+    zero :u8
+    protocol :ProtocolNumber
+    length :u16
+
+# 4. IPv6
+config.url = "https://ja.wikipedia.org/wiki/IPv6"
+config.rfc = "https://datatracker.ietf.org/doc/html/rfc8200"
+
+format IPv6Header:
+    version :u4 
+    trafficClass :u8 flowLabel :u20
+    payloadLen :u16
+    nextHeader :ProtocolNumber
+    hopLimit :u8
+    srcAddr :[16]u8
+    dstAddr :[16]u8
+
+format HopByHopOptionHeader:
+    nextHeader :ProtocolNumber 
+    hdrExtLen :u8
+    options :[..]HopOption(input = input.subrange(hdrExtLen*8+6))
+
+enum HopOptionType:
+    :u8
+    PAD1 = 0
+    PADN = 1
+
+format HopOption:
+    type :HopOptionType
+    if type != HopOptionType.PAD1: 
+        len :u8 
+        data :[len]u8
+
+format Routing:
+    nextHeader :ProtocolNumber 
+    hdrExtLen :u8 
+    routingType :u8 
+    if routingType == 0:
+        type0 :Type0Routing(input = input.subrange(hdrExtLen*8+4))
+    else:
+        segmentsLeft :u8
+        data :[hdrExtLen*8+4]u8
+
+format Type0Routing:
+    segmentsLeft :u8
+    reserved :u32
+    address :[segmentsLeft][16]u8
+
+format IPv6ChecksumPseudoHeader:
+    srcAddr :[16]u8
+    dstAddr :[16]u8
+    upper_layer_length :u32
+    zero :u24
+    nextHeader :ProtocolNumber
+
+
+# 5. UDP 
+config.url = "https://ja.wikipedia.org/wiki/User_Datagram_Protocol"
+config.rfc = "https://datatracker.ietf.org/doc/html/rfc768"
+
+format UDPHeader:
+    src_port :u16
+    dst_port :u16
+    length  :u16
+    checksum :u16
+
+format UDPDatagram:
+    header :UDPHeader
+    data :[header.length-8]u8
+
+
+# 6. DHCPv4 
+config.url = "https://ja.wikipedia.org/wiki/Dynamic_Host_Configuration_Protocol"
+config.rfc = "https://datatracker.ietf.org/doc/html/rfc2131"
+
+DHCP_MAGIC ::= 0x63825363
+
+DHCP_SERVER_PORT ::= u16(67)
+DHCP_CLIENT_PORT ::= u16(68)
+
+enum DHCP_OP:
+    :u8
+    REQUEST = 1
+    REPLY = 2
+
+format DHCPMessage:
+    op :DHCP_OP
+    htype :u8
+    hlen :u8
+    hops :u8
+    xid :u32
+    secs :u16
+    broadcast :u1
+    reserved :u15(0)
+    client_addr :[4]u8
+    your_addr :[4]u8
+    server_addr :[4]u8
+    gateway_addr :[4]u8
+    client_hardware_addr :[16]u8
+    sname :[64]u8
+    file :[128]u8
+    magic :u32(DHCP_MAGIC)
+    options :[..]Option
+
+enum DHCP_OPTION:
+    :u8
+    PAD = 0
+    SUBNET_MASK = 1
+    ROUTER = 3
+    DNS_SERVER = 6
+    HOST_NAME = 12
+    DOMAIN_NAME = 15
+    REQUESTED_IP = 50
+    LEASE_TIME = 51
+    MESSAGE_TYPE = 53
+    SERVER_ID = 54
+    PARAMETER_REQUEST_LIST = 55
+    RENEWAL_TIME = 58
+    REBINDING_TIME = 59
+    END = 255
+
+enum DHCP_TYPE:
+    :u8
+    DISCOVER = 1
+    OFFER = 2
+    REQUEST = 3
+    DECLINE = 4
+    ACK = 5
+    NAK = 6
+    RELEASE = 7
+    INFORM = 8
+
+format Option:
+    code :DHCP_OPTION
+    match code:
+        DHCP_OPTION.PAD => ..
+        DHCP_OPTION.END => ..
+        DHCP_OPTION.SUBNET_MASK:
+            len :u8(4)
+            addr :[len]u8
+        DHCP_OPTION.MESSAGE_TYPE:
+            len :u8(1)
+            type :DHCP_TYPE
+        DHCP_OPTION.REQUESTED_IP:
+            len :u8(4)
+            addr :[len]u8
+        DHCP_OPTION.SERVER_ID:
+            len :u8(4)
+            addr :[len]u8
+        DHCP_OPTION.PARAMETER_REQUEST_LIST:
+            len :u8
+            list :[len]DHCP_OPTION
+        DHCP_OPTION.ROUTER:
+            len :u8
+            addr :[len]u8
+        DHCP_OPTION.DNS_SERVER:
+            len :u8
+            addr :[len]u8
+        DHCP_OPTION.LEASE_TIME:
+            len :u8(4)
+            time :u32
+        DHCP_OPTION.DOMAIN_NAME:
+            len :u8
+            name :[len]u8    
+        ..:
+            len :u8
+            data :[len]u8
+
+
+# 7. DNS 
+config.url = "https://ja.wikipedia.org/wiki/Domain_Name_System"
+config.rfc = "https://datatracker.ietf.org/doc/html/rfc1035"
+
+enum DNSOpCode:
+    :u4
+    QUERY = 0
+    IQUERY = 1
+    STATUS = 2
+    NOTIFY = 4
+    UPDATE = 5
+
+enum DNSReturnCode:
+    :u4
+    NOERROR = 0
+    FORMERR = 1
+    SERVFAIL = 2
+    NXDOMAIN = 3
+    NOTIMP = 4
+    REFUSED = 5
+    YXDOMAIN = 6
+    YXRRSET = 7
+    NXRRSET = 8
+    NOTAUTH = 9
+    NOTZONE = 10
+
+format PureLabel:
+    length :u8
+    length <= 63
+    data :[length]u8
+
+    
+
+format Label:
+    length :u8
+    if length & 0xc0 == 0xc0:
+        input.backward()
+        pointer :u16
+    else:
+        length <= 63
+        data :[length]u8
+
+format DomainName:
+    labels :[]Label
+    
+    fn decode():
+        for:
+           label ::= input.get(Label)
+           isEnd ::= label.length == 0 || available(label.pointer)
+           labels[labels.length] = label
+           if isEnd:
+              break
+    
+    fn encode():
+        for i in labels.length:
+            if labels[i].length == 0 || available(labels[i].pointer):
+                i == labels.length - 1
+            output.put(labels[i])
+    
+
+
+format DNSQuestion:
+    name :DomainName
+    type :u16
+    class :u16
+
+format DNSResourceRecord:
+    name :DomainName
+    type :u16
+    class :u16
+    ttl :u32
+    data_length :u16
+    data :[data_length]u8
+
+
+format DNSHeader:
+    id :u16
+    response :u1
+    opcode :DNSOpCode
+    authoritative :u1
+    truncated :u1
+    recursion_desired :u1
+    recursion_available :u1
+    z :u3
+    return_code :DNSReturnCode
+    query_count :u16
+    answer_count :u16
+    authority_count :u16
+    additional_count :u16
+
+format DNSMessage:
+    header :DNSHeader
+    questions :[header.query_count]DNSQuestion
+    answers :[header.answer_count]DNSResourceRecord
+    authorities :[header.authority_count]DNSResourceRecord
+    additionals :[header.additional_count]DNSResourceRecord
+
+
+# 8. ICMPv4&v6/9. NDP
+config.url = "https://ja.wikipedia.org/wiki/Internet_Control_Message_Protocol"
+config.rfc = "https://datatracker.ietf.org/doc/html/rfc792"
+config.rfc = "https://datatracker.ietf.org/doc/html/rfc4443"
+config.url = "https://en.wikipedia.org/wiki/Neighbor_Discovery_Protocol#Messages_formats"
+
+
+format ICMPHeader:
+    type: u8
+    code: u8
+    checksum: u16
+
+format ICMPTimeExceeded:
+    unused :u32
+    data: [..]u8
+
+format ICMPEcho:
+    id: u16
+    seq: u16
+    data: [..]u8
+
+
+format ICMPDestinationUnreachable:
+    unused: u16
+    next_hop_mtu: u16
+    data: [..]u8
+
+format ICMPPacketTooBig:
+    unused: u32
+    mtu: u32
+    data: [..]u8
+
+format ICMPRedirect:
+    gateway: [4]u8
+    data: [..]u8
+
+format ICMPTimestamp:
+    id: u16
+    seq: u16
+    originate: u32
+    receive: u32
+    transmit: u32
+
+format ICMPParameterProblem:
+    pointer: u8
+    unused: u24
+    data: [..]u8
+
+format ICMPv6ParameterProblem:
+    pointer: u32
+    data: [..]u8
+
+format NDPRouterSolicitation:
+    reserved: u32
+    options : [..]NDPOption
+
+format NDPRouterAdvertisement:
+    cur_hop_limit: u8
+    managed_addr_config :u1
+    other_stateful_config :u1
+    reserved: u6
+    router_lifetime: u16
+    reachable_time: u32
+    retrans_timer: u32
+    options: [..]NDPOption
+
+format NDPNeighborSolicitation:
+    reserved: u32
+    target_addr: [16]u8
+    options: [..]NDPOption
+
+format NDPNeighborAdvertisement:
+    router :u1
+    solicited :u1
+    override :u1
+    flags: u29
+    target_addr: [16]u8
+    options: [..]NDPOption
+
+format NDPRedirectMessage:
+    target_addr: [16]u8
+    dest_addr: [16]u8
+    options: [..]NDPOption
+
+format FloatMaximumResponseCode:
+    one :u1(1)
+    exp :u3
+    mant :u12
+
+format FloatQQIC:
+    one :u1(1)
+    exp :u3
+    mant :u4
+
+format MulticastListenerQuery:
+    max_resp_code :u16
+    reserved1: u16
+    mcast_addr: [16]u8
+    reserved2 :u4
+    suppress_router_processing :u1
+    queries_robustness_var :u3
+    querier_query_interval :u8
+    number_of_sources :u16
+    source_addr: [number_of_sources][16]u8
+
+format MulticastAddressRecord:
+    record_type: u8
+    aux_data_len: u8
+    number_of_sources: u16
+    multicast_addr: [16]u8
+    source_addr: [number_of_sources][16]u8
+    aux_data :[aux_data_len]u8
+
+format V2MulticastListernerReport:
+    reserved1: u16
+    number_of_records: u16
+    records: [number_of_records]MulticastAddressRecord
+
+
+format ICMPv4Packet:
+    header: ICMPHeader
+    match ICMPv4Type(header.type):
+        ICMPv4Type.echo:
+            echo: ICMPEcho
+        ICMPv4Type.echo_reply:
+            echo_reply: ICMPEcho
+        ICMPv4Type.time_exceeded:
+            time_exceeded: ICMPTimeExceeded
+        ICMPv4Type.dst_unreachable:
+            destination_unreachable: ICMPDestinationUnreachable
+        ICMPv4Type.redirect:
+            redirect: ICMPRedirect
+        ICMPv4Type.parameter_problem:
+            parameter_problem: ICMPParameterProblem
+        ICMPv4Type.timestamp:
+            timestamp: ICMPTimestamp
+        ..:
+            data: [..]u8
+
+format ICMPv6Packet:
+    header: ICMPHeader
+    match ICMPv6Type(header.type):
+        ICMPv6Type.echo_request:
+            echo_request: ICMPEcho
+        ICMPv6Type.echo_reply:
+            echo_reply: ICMPEcho
+        ICMPv6Type.time_exceeded:
+            time_exceeded: ICMPv6ParameterProblem
+        ICMPv6Type.packet_too_big:
+            packet_too_big: ICMPPacketTooBig
+        ICMPv6Type.parameter_problem:
+            parameter_problem: ICMPv6ParameterProblem
+        ICMPv6Type.destination_unreachable:
+            destination_unreachable: ICMPDestinationUnreachable
+        ICMPv6Type.router_solicitation:
+            router_solicitation: NDPRouterSolicitation
+        ICMPv6Type.router_advertisement:
+            router_advertisement: NDPRouterAdvertisement
+        ICMPv6Type.neighbor_solicitation:
+            neighbor_solicitation: NDPNeighborSolicitation
+        ICMPv6Type.neighbor_advertisement:
+            neighbor_advertisement: NDPNeighborAdvertisement
+        ICMPv6Type.redirect_message:
+            redirect_message: NDPRedirectMessage
+        ICMPv6Type.multicast_listener_query:
+            multicast_listener_query: MulticastListenerQuery
+        ICMPv6Type.v2_multicast_listener_report:
+            v2_multicast_listener_report: V2MulticastListernerReport
+        ..:
+            data: [..]u8
+
+
+enum NDPOptionType:
+    :u8
+    source_link_layer_address = 1
+    target_link_layer_address = 2
+    prefix_information = 3
+    redirect_header = 4
+    mtu = 5
+
+format NDPOption:
+    type: NDPOptionType
+    length: u8
+    length != 0
+    match NDPOptionType(type):
+        NDPOptionType.source_link_layer_address:
+            link_layer_address: [length*8 - 2]u8
+        NDPOptionType.target_link_layer_address:
+            link_layer_address: [length*8 - 2]u8
+        NDPOptionType.prefix_information:
+            prefix_information: PrefixInformation(input = input.subrange(length*8 - 2))
+        NDPOptionType.redirect_header:
+            redirect_header: RedirectHeader(input = input.subrange(length*8 - 2))
+        NDPOptionType.mtu:
+            mtu: MTU(input = input.subrange(length*8 - 2))
+        ..:
+            data: [length * 8 - 2]u8
+
+format PrefixInformation:
+    prefix_length: u8
+    on_link: u1
+    autoconfig: u1
+    reserved1: u6
+    valid_lifetime: u32
+    preferred_lifetime: u32
+    reserved2: u32
+    prefix: [16]u8
+
+format RedirectHeader:
+    reserved :[6]u8
+    hdr_and_data: [..]u8
+
+format MTU:
+    reserved: u16
+    mtu: u32
+
+enum ICMPv4Type:
+    :u8
+    echo_reply
+    reserved_1
+    reserved_2
+    dst_unreachable
+    src_quench
+    redirect
+    alt_host_address
+    reserved_3
+    echo
+    router_advertisement
+    router_solicitation
+    time_exceeded
+    parameter_problem
+    timestamp
+    timestamp_reply
+    information_request
+    information_reply
+    address_mask_request
+    address_mask_reply
+    reserved_for_security_1
+    reserved_for_robustness_experiment_1
+    reserved_for_robustness_experiment_2
+    reserved_for_robustness_experiment_3
+    reserved_for_robustness_experiment_4
+    reserved_for_robustness_experiment_5
+    reserved_for_robustness_experiment_6
+    reserved_for_robustness_experiment_7
+    reserved_for_robustness_experiment_8
+    reserved_for_robustness_experiment_9
+    reserved_for_robustness_experiment_10
+    traceroute
+    datagram_conversion_error
+    mobile_host_redirect
+    where_are_you
+    here_I_am
+    mobile_registration_request
+    mobile_registration_reply
+    domain_name_request
+    domain_name_reply
+    skip_discovery
+    security_failure
+    icmp_for_seamoby
+    experimental_1 = 253
+    experimental_2 = 255
+
+enum ICMPv4DstUnreachableCode:
+    :u8
+    net_unreachable
+    host_unreachable
+    protocol_unreachable
+    port_unreachable
+    fragmentation_needed
+    source_route_failed
+    network_unknown
+    host_unknown
+    network_prohibited
+    host_prohibited
+    TOS_network_unreachable
+    TOS_host_unreachable
+    communication_prohibited
+    host_precedence_violation
+    precedence_cutoff
+
+enum ICMPv4RedirectCode:
+    :u8
+    redirect_for_network
+    redirect_for_host
+    redirect_for_TOS_and_network
+    redirect_for_TOS_and_host
+
+enum ICMPv4TimeExceededCode:
+    :u8
+    ttl_exceeded_in_transit
+    frag_reassembly_time_exceeded
+
+enum ICMPv6Type:
+    :u8
+    destination_unreachable = 1
+    packet_too_big = 2
+    time_exceeded = 3
+    parameter_problem = 4
+    echo_request = 128
+    echo_reply = 129
+    multicast_listener_query = 130
+    multicast_listener_report = 131
+    multicast_listener_done = 132
+    router_solicitation = 133
+    router_advertisement = 134
+    neighbor_solicitation = 135
+    neighbor_advertisement = 136
+    redirect_message = 137
+    router_renumbering = 138
+    node_information_query = 139
+    node_information_response = 140 
+    inverse_neighbor_discovery_solicitation = 141
+    inverse_neighbor_discovery_advertisement = 142
+    v2_multicast_listener_report = 143
+    home_agent_address_discovery_request = 144
+    home_agent_address_discovery_reply = 145
+    mobile_prefix_solicitation = 146
+    mobile_prefix_advertisement = 147
+    certification_path_solicitation = 148
+    certification_path_advertisement = 149
+    experimental_mobility_protocols = 253
+    experimental_mobility_protocols_2 = 254
+    reserved = 255
+
+enum ICMPv6Code:
+    :u8
+    no_route_to_dst 
+    communication_with_dst_admin_prohibited
+    beyond_scope_of_src
+    address_unreachable
+    port_unreachable
+    src_addr_failed_ingress_egress_policy
+    reject_route_to_dst
+    error_in_src_routing_header
+
+enum ICMPv6TimeExceededCode:
+    :u8
+    hop_limit_exceeded
+    fragment_reassembly_time_exceeded
+
+enum ICMPv6ParameterProblemCode:
+    :u8
+    erroneous_header_field
+    unrecognized_next_header
+    unrecognized_ipv6_option
+
+# 10. TCP 
+config.url = "https://ja.wikipedia.org/wiki/Transmission_Control_Protocol"
+config.rfc = "https://datatracker.ietf.org/doc/html/rfc9293"
+
+format TCPHeader:
+    srcPort :u16
+    dstPort :u16
+    seqNum :u32
+    ackNum :u32
+    dataOffset :u4
+    reserved :u4
+    CWR :u1 ECE :u1 URG :u1 ACK :u1 PSH :u1 RST :u1 SYN :u1 FIN :u1
+    windowSize :u16
+    checksum :u16
+    urgentPointer :u16
+    options :[..]TCPOption(input = input.subrange(u8(dataOffset*4)-20))
+
+format TCPSegment:
+    hdr :TCPHeader
+    payload :[..]u8
+
+enum TCPState:
+    CLOSED
+    LISTEN
+    SYN_SENT
+    SYN_RCVD
+    ESTABLISHED
+    FIN_WAIT_1
+    FIN_WAIT_2
+    CLOSE_WAIT
+    CLOSING
+    LAST_ACK
+    TIME_WAIT
+
+enum TCPOptionKind:
+    :u8
+    END_OF_OPTIONS_LIST = 0
+    NOP = 1
+    MAXIMUM_SEGMENT_SIZE = 2
+    WINDOW_SCALE = 3
+    SACK_PERMITTED = 4
+    SACK = 5
+    TIMESTAMP = 8
+
+
+format TCPOption:
+    kind :TCPOptionKind
+    match kind:
+        TCPOptionKind.END_OF_OPTIONS_LIST => ..
+        TCPOptionKind.NOP => ..
+        TCPOptionKind.MAXIMUM_SEGMENT_SIZE:
+            length :u8
+            length == 4
+            mss :u16    
+        TCPOptionKind.WINDOW_SCALE:
+            length :u8
+            length == 3
+            shiftCount :u8
+        TCPOptionKind.SACK_PERMITTED: 
+            length :u8
+            length == 2
+        TCPOptionKind.SACK:
+            length :u8
+            length >= 2
+            sack :Sack(input = input.subrange(length-2))  
+        TCPOptionKind.TIMESTAMP:
+            length :u8
+            length == 10
+            timestamp :Timestamp(input = input.subrange(length-2))  
+        ..:
+            length :u8
+            length >= 2
+            data :[length-2]u8
+            
+
+format SackBlock:
+    left :u32
+    right :u32
+
+format Sack:
+    blocks :[..]SackBlock
+
+format Timestamp:
+    value :u32
+    echoReply :u32
+
+# 11. HTTP/1.1
+
+config.url = "https://ja.wikipedia.org/wiki/Hypertext_Transfer_Protocol"
+config.rfc = "https://datatracker.ietf.org/doc/html/rfc9112"
+
+format RequestLine:
+    method :[..]u8
+    :" "
+    path :[..]u8
+    :" "
+    version :[..]u8
+    :"\r\n"
+
+format ResponseLine:
+    version :[..]u8
+    :" "
+    status :[..]u8
+    :" "
+    reason :[..]u8
+    :"\r\n"
+
+format Field:
+    name :[..]u8
+    :": "
+    value :[..]u8
+    :"\r\n"
+
+format RequestHeader:
+    line :RequestLine
+    fields :[..]Field
+    :"\r\n"
+
+format ResponseHeader:
+    line :ResponseLine
+    fields :[..]Field
+    :"\r\n"
+
+# 12. WebSocket
+config.url = "https://ja.wikipedia.org/wiki/WebSocket"
+config.rfc = "https://datatracker.ietf.org/doc/html/rfc6455"
+
+enum WebSocketOpCode:
+    :u4
+    ContinuationFrame = 0x0
+    TextFrame = 0x1
+    BinaryFrame = 0x2
+    ConnectionClose = 0x8
+    Ping = 0x9
+    Pong = 0xA
+
+format WebSocketFrame:
+    FIN :u1
+    RSV1 :u1
+    RSV2 :u1
+    RSV3 :u1
+    Opcode :WebSocketOpCode
+    Mask :u1
+    PayloadLength :u7
+    match PayloadLength:
+        126 => ExtendedPayloadLength :u16
+        127 => ExtendedPayloadLength :u64
+    
+    if Mask == 1:
+        MaskingKey :[4]u8
+
+    len ::= available(ExtendedPayloadLength) ?  # if ExtendedPayloadLength (u16 or u64) is available
+            ExtendedPayloadLength :  # use ExtendedPayloadLength
+            PayloadLength  # otherwise use PayloadLength
+    Payload :[len]u8(input.xor = MaskingKey)
+    
+
+
+

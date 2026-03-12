@@ -2,14 +2,166 @@ name: brgen-build
 run-name: Build
 on:
   push:
-  repository_dispatch:
-    types: [rebrgen-build-success]
 
 concurrency:
   group: build-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:
+  build-rebrgen-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Timeline
+        uses: Kesin11/actions-timeline@e018cfefea60b4f44266998551211a35a58b8097 # v3.0.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up Ninja
+        uses: seanmiddleditch/gha-setup-ninja@7e868db0f3406270dd46e1dac26c65f621456723 # master
+      - name: Set up Clang
+        uses: egor-tensin/setup-clang@471a6f8ef1d449dba8e1a51780e7f943572a3f99 # v2.1
+        with:
+          version: latest
+          platform: x64
+      - name: Install libc++-dev and libc++abi-dev
+        run: sudo apt-get install libc++-dev libc++abi-dev -y
+      - name: Cache rebrgen native
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        if: (!startsWith(github.ref , 'refs/heads/renovate/')) && (!startsWith(github.ref , 'refs/heads/dependabot/'))
+        id: cache_rebrgen_native
+        env:
+          cache-name: cache-rebrgen-native-built
+        with:
+          path: |
+            ./rebrgen/built
+            ./rebrgen/utils
+          key: rebrgen-native-${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('rebrgen/script/build.py') }}
+      - name: Pull Utils
+        if: ${{ steps.cache_rebrgen_native.outputs.cache-hit }}
+        working-directory: rebrgen
+        run: |
+          cd utils
+          git pull
+          . build shared Release futils
+          cd ..
+      - name: Clone Utils
+        if: ${{ !(steps.cache_rebrgen_native.outputs.cache-hit) }}
+        working-directory: rebrgen
+        run: |
+          git clone https://github.com/on-keyday/utils.git
+          cd utils
+          . build shared Release futils
+          cd ..
+      - name: Build Native
+        working-directory: rebrgen
+        run: |
+          BUILD_OLD_BMGEN=1 FUTILS_DIR=$(pwd)/utils python script/build.py native Release
+      - name: Upload Artifact
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: rebrgen-native-tool
+          path: rebrgen/tool
+
+  build-rebrgen-wasm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Timeline
+        uses: Kesin11/actions-timeline@e018cfefea60b4f44266998551211a35a58b8097 # v3.0.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@6ab9eb1bda2574c4ddb79809fc9247783eaf9021 # v14
+      - name: Set up Ninja
+        uses: seanmiddleditch/gha-setup-ninja@7e868db0f3406270dd46e1dac26c65f621456723 # master
+      - name: Set up Clang
+        uses: egor-tensin/setup-clang@471a6f8ef1d449dba8e1a51780e7f943572a3f99 # v2.1
+        with:
+          version: latest
+          platform: x64
+      - name: Install libc++-dev and libc++abi-dev
+        run: sudo apt-get install libc++-dev libc++abi-dev -y
+      - name: Cache rebrgen wasm
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        if: (!startsWith(github.ref , 'refs/heads/renovate/')) && (!startsWith(github.ref , 'refs/heads/dependabot/'))
+        id: cache_rebrgen_wasm
+        env:
+          cache-name: cache-rebrgen-wasm-built
+        with:
+          path: |
+            ./rebrgen/built
+            ./rebrgen/utils
+          key: rebrgen-wasm-${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('rebrgen/script/build.py') }}
+      - name: Pull Utils
+        if: ${{ steps.cache_rebrgen_wasm.outputs.cache-hit }}
+        working-directory: rebrgen
+        run: |
+          cd utils
+          git pull
+          rm -rf ./built
+          . build wasm-em Release futils
+          cd ..
+      - name: Clone Utils
+        if: ${{ !(steps.cache_rebrgen_wasm.outputs.cache-hit) }}
+        working-directory: rebrgen
+        run: |
+          git clone https://github.com/on-keyday/utils.git
+          cd utils
+          rm -rf ./built
+          . build wasm-em Release futils
+          cd ..
+      - name: Build WASM
+        working-directory: rebrgen
+        run: |
+          rm -rf ./built/web
+          BUILD_OLD_BMGEN=1 EMSDK_DIR=$EMSDK/ FUTILS_DIR=./utils python script/build.py web Release
+          cp README.md web/ || true
+          cp LICENSE web/ || true
+      - name: Upload Artifact
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: rebrgen-wasm-web
+          path: rebrgen/web
+
+  build-rebrgen-glue:
+    needs: [build-rebrgen-native, build-rebrgen-wasm]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Timeline
+        uses: Kesin11/actions-timeline@e018cfefea60b4f44266998551211a35a58b8097 # v3.0.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Download native tool
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8.0.0
+        with:
+          name: rebrgen-native-tool
+          path: rebrgen/tool
+      - name: Download WASM web
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8.0.0
+        with:
+          name: rebrgen-wasm-web
+          path: rebrgen/web
+      - name: Install libc++-dev and libc++abi-dev
+        run: sudo apt-get install libc++-dev libc++abi-dev -y
+      - name: Generate Glue
+        working-directory: rebrgen
+        run: |
+          chmod -R +x ./tool
+          python script/bm/generate_web_glue.py
+          python script/ebmwebgen.py
+      - name: Upload Artifact
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: bmgen-web
+          path: rebrgen/web
+
   build-linux:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -398,6 +550,7 @@ jobs:
           path: ./license_cache
 
   build-pages:
+    needs: build-rebrgen-glue
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
@@ -456,13 +609,15 @@ jobs:
       - name: Set up wasm-pack
         run: |
           curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-      - name: Fetch rebrgen artifacts
+      - name: Download rebrgen WASM artifacts
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8.0.0
+        with:
+          name: bmgen-web
+          path: "./rebrgen-web"
+      - name: Install rebrgen artifacts
         run: |
-          chmod +x ./script/fetch_rebrgen.sh
-          ./script/fetch_rebrgen.sh
-          ls -alR ./web/dev/src/lib
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          chmod +x ./script/install_rebrgen_web.sh
+          ./script/install_rebrgen_web.sh ./rebrgen-web
       - name: Build Wasm
         run: |
           GOROOT=`go env GOROOT`
@@ -545,7 +700,7 @@ jobs:
 
   deploy:
     needs: puppeteer-test
-    if: (github.event_name == 'push' || github.event_name == 'repository_dispatch'  ) && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     uses: ./.github/workflows/deploy.yml
     permissions:
       contents: read

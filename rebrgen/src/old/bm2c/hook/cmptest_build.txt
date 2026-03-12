@@ -1,0 +1,1 @@
+run_command(["gcc", "save/c/save.c", "-o", "save"])

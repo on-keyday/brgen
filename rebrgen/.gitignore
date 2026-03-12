@@ -1,0 +1,12 @@
+built
+tool
+save/
+node_modules/
+*.vsix
+*.ast.json
+.venv/
+build_config.json
+__pycache__/
+unictest_latest.txt
+*.ebm
+.mypy_cache

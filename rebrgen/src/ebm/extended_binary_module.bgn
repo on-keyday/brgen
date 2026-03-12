@@ -1,0 +1,1148 @@
+config.cpp.export_macro = "EBM_API"
+config.cpp.hpp_name = "extended_binary_module.hpp"
+config.cpp.namespace = "ebm"
+config.cpp.bytes_type = "std::string"
+config.cpp.sys_include = "string"
+
+# TODO: use protobuf style varint instead of QUIC-style for more compact encoding
+format Varint:
+    prefix :u2
+    match prefix:
+        0 => value :u6
+        1 => value :u14
+        2 => value :u30
+        3 => value :u62
+
+    fn u64() -> u64:
+        return value
+
+enum GenerateType:
+    Normal
+    Encode
+    Decode
+    PropertyGetter
+    PropertySetter
+
+enum BinaryOp:
+    :u8
+    mul = "*"
+    div = "/"
+    mod = "%"
+    left_shift = "<<"
+    right_shift = ">>"
+    bit_and = "&"
+    add = "+"
+    sub = "-"
+    bit_or = "|"
+    bit_xor = "^"
+    equal = "=="
+    not_equal = "!="
+    less = "<"
+    less_or_eq = "<="
+    greater = ">"
+    greater_or_eq = ">="
+    logical_and = "&&"
+    logical_or = "||"
+
+enum BinaryOpKind:
+    :u8
+    ARITHMETIC
+    BITWISE
+    COMPARISON
+    LOGICAL
+
+enum UnaryOp:
+    :u8
+    logical_not = "!"
+    minus_sign = "-"
+    bit_not = "~"
+
+enum Endian:
+    :u3
+    unspec
+    big
+    little
+    dynamic
+    native
+
+format IOAttribute:
+    endian :Endian
+    sign :u1 # 0 for unsigned, 1 for signed 
+    is_peek :u1 # 0 for non-peek, 1 for peek 
+    has_lowered_statement :u1 # 0 for no lowered statement, 1 for has lowered statement
+    has_offset :u1 # 0 for no offset, 1 for has offset
+    reserved :u1
+    if endian == Endian.dynamic:
+        dynamic_ref :StatementRef # ref to dynamic endian or null
+
+format EndianVariable:
+    endian :Endian
+    reserved :u5
+    if endian == Endian.dynamic:
+        dynamic_expr :ExpressionRef # ref to dynamic endian or null
+
+format EndianConvertDesc:
+    endian :Endian
+    reserved :u5
+    target :ExpressionRef
+    source :ExpressionRef
+    lowered_statement :LoweredStatementRef
+
+format String:
+    length :Varint
+    data :[length.value]u8
+
+# References to various tables in the EBM
+# reference 0 means "null" or "not set"
+# the term "optional" in this document means "this reference maybe 0"
+
+format IdentifierRef:
+    id :Varint # Reference to an entry in the identifiers table
+
+
+format TypeRef:
+    id :Varint # Reference to an entry in the types table
+
+format ExpressionRef:
+    id :Varint # Reference to an entry in the expression table
+
+format StringRef:
+    id :Varint # Reference to an entry in the string table
+
+format StatementRef:
+    id :Varint # Reference to an entry in the statement table
+
+format LoweredStatementRef:
+    id :StatementRef
+
+format LoweredExpressionRef:
+    id :ExpressionRef
+
+format WeakStatementRef:
+    id :StatementRef
+
+
+enum ExpressionKind:
+    :u8
+    LITERAL_INT 
+    LITERAL_INT64
+    LITERAL_BOOL 
+    LITERAL_STRING 
+    LITERAL_TYPE 
+    LITERAL_CHAR
+    IDENTIFIER 
+    BINARY_OP 
+    UNARY_OP 
+    CALL 
+    INDEX_ACCESS 
+    MEMBER_ACCESS 
+    ENUM_MEMBER
+    TYPE_CAST
+    RANGE
+    DEFAULT_VALUE
+    IS_LITTLE_ENDIAN # Check if the system or current context is little-endian
+    GET_STREAM_OFFSET
+    GET_REMAINING_BYTES
+    CAN_READ_STREAM
+    ARRAY_SIZE # Get the size of an array or vector
+    ENUM_IS_DEFINED # Check if an enum value is defined
+    IS_ERROR # check if encoder/decoder value is error
+    MAX_VALUE # Get the maximum value of a type (e.g., u8, u16, u32, u64)
+    READ_DATA # this is for expression like `input.get(u8)`
+    WRITE_DATA # this is for expression like `output.put(x)`
+    CONDITIONAL_STATEMENT # if or match that is used as expression
+    CONDITIONAL # x ? y : z
+    AVAILABLE  # field availability check (for union) 
+    SIZEOF # TODO(on-keyday): add sizeof to ast first
+    SUB_RANGE_INIT # stub for sub range init
+    OR_COND # for match branch like `x,y => z`
+    ADDRESS_OF # for strict property getter
+    OPTIONAL_OF # for common/uncommon property getter
+    SETTER_STATUS # for property setter
+    SELF # self reference in method
+    AS_ARG # argument passing marker
+
+enum SetterStatus:
+    :u8
+    SUCCESS
+    FAILED
+
+
+format Expression:
+    id :ExpressionRef # Reference to this expression in the expression table
+    body :ExpressionBody # Body of the expression
+
+format CallDesc:
+    callee :ExpressionRef # Function or method to call
+    arguments :Expressions
+
+format TypeCastDesc:
+    source_expr :ExpressionRef # Expression to be casted
+    from_type :TypeRef
+    cast_kind :CastType
+    if cast_kind == CastType.FUNCTION_CAST:
+        cast_function :WeakStatementRef # Reference to the cast function
+
+format ExpressionBody:
+    type :TypeRef # Type of the expression
+    kind :ExpressionKind
+    match kind:
+        ExpressionKind.LITERAL_INT:
+            int_value :Varint
+        ExpressionKind.LITERAL_INT64:
+            int64_value :u64 # 64-bit integer value
+        ExpressionKind.LITERAL_BOOL:
+            bool_value :u8 # 0: false, 1: true other values are invalid
+            bool_value == 0 || bool_value == 1
+        ExpressionKind.LITERAL_STRING:
+            string_value :StringRef # Reference to string in string table
+        ExpressionKind.LITERAL_TYPE:
+            type_ref :TypeRef
+        ExpressionKind.LITERAL_CHAR:
+            char_value :Varint # Unicode code point
+        ExpressionKind.IDENTIFIER:
+            id :WeakStatementRef # reference to definition of the identifier 
+        ExpressionKind.BINARY_OP:
+            bop :BinaryOp
+            left :ExpressionRef
+            right :ExpressionRef
+        ExpressionKind.UNARY_OP:
+            uop :UnaryOp
+            operand :ExpressionRef
+        ExpressionKind.CALL:
+            call_desc :CallDesc # Call description
+        ExpressionKind.INDEX_ACCESS:
+            base :ExpressionRef
+            index :ExpressionRef
+        ExpressionKind.MEMBER_ACCESS:
+            base :ExpressionRef
+            member :ExpressionRef # Reference to the member identifier
+        ExpressionKind.ENUM_MEMBER:
+            enum_decl :StatementRef # Reference to the enum declaration
+            member :ExpressionRef # Reference to the enum member identifier
+        ExpressionKind.TYPE_CAST:
+            type_cast_desc :TypeCastDesc
+        ExpressionKind.RANGE:
+            start :ExpressionRef # Start of the range (maybe null)
+            end :ExpressionRef # End of the range (maybe null)
+        ExpressionKind.IS_LITTLE_ENDIAN:
+            endian_expr :StatementRef # Reference to the dynamic endian expression (maybe null)
+        ExpressionKind.GET_STREAM_OFFSET:
+            stream_type :StreamType
+            unit :SizeUnit # Size unit for the offset (e.g., BIT_FIXED, BYTE_FIXED, ELEMENT_FIXED)
+            unit == SizeUnit.BIT_FIXED || unit == SizeUnit.BYTE_FIXED
+            io_ref :StatementRef # Reference to the stream variable
+        ExpressionKind.GET_REMAINING_BYTES:
+            stream_type :StreamType
+            io_ref :StatementRef # Reference to the stream variable
+        ExpressionKind.CAN_READ_STREAM:
+            stream_type :StreamType
+            num_bytes :Size
+            io_ref :StatementRef # Reference to the stream variable
+        ExpressionKind.ARRAY_SIZE:
+            array_expr :ExpressionRef # Reference to the array or vector expression
+        ExpressionKind.IS_ERROR:
+            target_expr :ExpressionRef # Expression to check for error (ENCODER_RETURN or DECODER_RETURN type)
+        ExpressionKind.MAX_VALUE:
+            lowered_expr :LoweredExpressionRef # Optional lowered expression for the maximum value
+        ExpressionKind.READ_DATA:
+            target_stmt :StatementRef # reference to variable to read data into
+            io_statement :StatementRef # Reference to the IOData statement for reading data
+        ExpressionKind.WRITE_DATA:
+            target_expr :ExpressionRef # Expression to write data from
+            io_statement :StatementRef # Reference to the IOData statement for writing data
+        ExpressionKind.CONDITIONAL_STATEMENT:
+            target_stmt :StatementRef # Reference to the variable result is held into
+            conditional_stmt :StatementRef # Reference to the if or match statement used as expression
+        ExpressionKind.CONDITIONAL:
+            condition :ExpressionRef
+            then :ExpressionRef
+            else_ :ExpressionRef
+            lowered_expr :LoweredExpressionRef
+        ExpressionKind.AVAILABLE:
+            target_expr :ExpressionRef
+            lowered_expr :LoweredExpressionRef
+        ExpressionKind.ENUM_IS_DEFINED:
+            target_expr :ExpressionRef
+            lowered_expr :LoweredExpressionRef
+        ExpressionKind.SIZEOF:
+            target_expr :ExpressionRef
+            lowered_expr :LoweredExpressionRef
+        ExpressionKind.SUB_RANGE_INIT:
+            sub_range :WeakStatementRef
+        ExpressionKind.OR_COND:
+            or_cond :Expressions
+        ExpressionKind.ADDRESS_OF:
+            target_expr :ExpressionRef
+        ExpressionKind.OPTIONAL_OF:
+            target_expr :ExpressionRef
+        ExpressionKind.SETTER_STATUS:
+            setter_status :SetterStatus
+        ExpressionKind.AS_ARG:
+            target_expr :ExpressionRef
+
+enum LoopType:
+    :u8
+    INFINITE = 0
+    WHILE = 1
+    FOR_EACH = 2
+    FOR = 3 # C-like for loop (e.g., for (int i = 0; i < n; i++))
+
+format LoopStatement:
+    loop_type :LoopType # 0: infinite, 1: while, 2: for-each
+    match loop_type:
+        LoopType.INFINITE => .. # Infinite loop
+        LoopType.WHILE => condition :Condition # While loop condition
+        LoopType.FOR_EACH:
+           item_var :StatementRef
+           collection :ExpressionRef # For-each loop (e.g., for item in collection)
+        LoopType.FOR:
+            init :StatementRef # Initialization statement (e.g., int i = 0)
+            condition :Condition # Loop condition (e.g., i < n)
+            increment :StatementRef # Increment statement (e.g., i++)
+    body :StatementRef # Body of the loop
+    lowered_statement :LoweredStatementRef # Optional lowered statement for the loop (e.g., for C-like loops)
+    next_lowered_loop :LoweredStatementRef
+
+format IfStatement:
+    condition :Condition # Condition for the if statement
+    then_block :StatementRef # Block to execute if condition is true
+    else_block :StatementRef
+
+enum VariableDeclKind:
+    :u2
+    MUTABLE = 0 # Mutable variable
+    IMMUTABLE = 1 # Immutable variable
+    CONSTANT = 2 # Constant 
+
+
+format VariableDecl:
+    name :IdentifierRef # Variable name
+    var_type :TypeRef # Type of the variable
+    initial_value :ExpressionRef # Optional initial value
+    decl_kind :VariableDeclKind 
+    is_reference :u1 # 0: value, 1: reference
+    reserved :u5 # Reserved for future use
+
+format ParameterDecl:
+    name :IdentifierRef # Parameter name
+    param_type :TypeRef # Type of the parameter
+    is_state_variable :u1 # 0: regular parameter, 1: state variable
+    reserved :u7 # Reserved for future use
+
+    
+format MatchStatement:
+    target :ExpressionRef # Expression to match against
+    is_exhaustive :u1 # 0: non-exhaustive, 1: exhaustive
+    reserved :u7 # Reserved for future use
+    branches :Block # List of match branches
+    lowered_if_statement :LoweredStatementRef # Lowered representation converted to if-else style
+
+format FieldDecl:
+    name :IdentifierRef # Field name
+    field_type :TypeRef # Type of the field
+    parent_struct :WeakStatementRef # Reference to parent struct/format
+    is_state_variable :u1 # 0: regular, 1: state variable
+    inner_composite :u1 # 0: normal field, 1: part of composite field
+    has_metadata :u1
+    reserved :u5  # Reserved for future use    
+    if inner_composite == 1:
+        composite_field :WeakStatementRef # Reference to CompositeFieldDecl
+        composite_getter :LoweredStatementRef # Getter function for composite field
+        composite_setter :LoweredStatementRef # Setter function for composite field
+    if has_metadata == 1:
+        metadata :Block # Metadata
+
+format StructDecl:
+    name :IdentifierRef # Struct name
+    fields :Block # List of fields
+    is_recursive :u1 # 0: no, 1: yes (for recursive structs)
+    is_fixed_size :u1 # 0: no, 1: yes (if all fields are fixed size)
+    has_related_variant :u1 # 0: no, 1: yes (if this struct is related to a variant type)
+    has_encode_decode :u1 # 0: no, 1: yes (if encoder/decoder functions are generated)
+    has_functions :u1 # 0: no, 1: yes (if there are methods defined for this struct)
+    has_properties :u1 # 0: no, 1: yes (if there are properties defined for this struct)
+    has_parent :u1 # 0: no, 1: yes
+    has_nested_types :u1 # 0: no, 1: yes
+    if has_related_variant == 1:
+        related_variant :TypeRef # Reference to related variant type (maybe null)
+    if is_fixed_size == 1:
+        size :Size # Fixed size of the struct
+    if has_encode_decode == 1:
+        encode_fn :StatementRef
+        decode_fn :StatementRef
+    if has_functions == 1:
+        methods :Block # List of method FunctionDecl
+    if has_properties == 1:
+        properties :Block # List of PropertyDecl or FunctionDecl(for array setter)
+    if has_parent == 1:
+        parent_struct :WeakStatementRef
+    if has_nested_types == 1:
+        nested_types :Block # List of StructDecl or EnumDecl
+
+format PropertyMemberDecl:
+    setter_condition :ExpressionRef
+    getter_condition :ExpressionRef
+    field :StatementRef # FieldDecl or null
+
+enum CompositeFieldKind:
+    :u8
+    BULK_PRIMITIVE
+    BULK_COMPOSITE   
+    PREFIXED_UNION_PRIMITIVE
+    PREFIXED_UNION_COMPOSITE
+    SANDWICHED_UNION_PRIMITIVE
+    SANDWICHED_UNION_COMPOSITE
+
+format CompositeFieldDecl:
+    fields :Block # List of FieldDecl or CompositeFieldDecl
+    composite_type :TypeRef # Type of the composite field 
+    kind :CompositeFieldKind
+
+format PropertyDecl:
+    name :IdentifierRef # Property name
+    parent_format :WeakStatementRef # Reference to parent format (e.g., struct, union)
+    property_type :TypeRef # Type of the property
+    merge_mode :MergeMode # How union members are merged (e.g., common type, strict type)
+    setter_condition :ExpressionRef # maybe null
+    getter_condition :ExpressionRef # maybe null
+    members :Block # merged block contains (contains PropertyMemberDecl)
+    setter_function :LoweredStatementRef
+    getter_function :LoweredStatementRef
+    if merge_mode != MergeMode.STRICT_TYPE:
+        derived_from :Block # List of PropertyDecl (maybe null)
+
+
+enum FunctionKind:
+    :u8
+    NORMAL = 0 # Normal function
+    METHOD = 1 # Method (has self parameter)
+    ENCODE = 2 # Encoder function
+    DECODE = 3 # Decoder function
+    PROPERTY_GETTER = 4 # Property getter function
+    PROPERTY_SETTER = 5 # Property setter function
+    COMPOSITE_GETTER = 6 # Composite field getter function
+    COMPOSITE_SETTER = 7 # Composite field setter function
+    CAST = 8 # Type cast function (also a method)
+    VECTOR_SETTER = 9 # Setter function for vector fields that need length check and assignment
+
+format FunctionDecl:
+    name :IdentifierRef # Function name
+    return_type :TypeRef # Return type of the function
+    params: Block
+    parent_format :WeakStatementRef # Reference to parent format (maybe null) (e.g., struct, union)
+    kind :FunctionKind # Kind of the function
+    if kind == FunctionKind.PROPERTY_GETTER || kind == FunctionKind.PROPERTY_SETTER || kind == FunctionKind.VECTOR_SETTER:
+        property :WeakStatementRef # Reference to the associated PropertyDecl or FieldDecl 
+    body :StatementRef
+
+format EnumDecl:
+    name :IdentifierRef # Enum name
+    base_type :TypeRef # Optional base type (e.g., u8, u16)
+    members :Block # List of enum members
+
+format EnumMemberDecl:
+    name :IdentifierRef # Member name
+    enum_decl :WeakStatementRef # Reference to the parent enum declaration
+    value :ExpressionRef # Integer value (e.g., 0, 1, 2)
+    string_repr :StringRef # Optional string representation (e.g., "MemberName")
+
+
+enum SubByteRangeType:
+    :u8
+    bytes
+    seek_bytes
+    expression
+
+format SubByteRange:  
+    stream_type :StreamType
+    range_type :SubByteRangeType
+    match range_type:
+        SubByteRangeType.bytes:
+            length :ExpressionRef
+        SubByteRangeType.seek_bytes:
+            offset :ExpressionRef
+            length :ExpressionRef
+        SubByteRangeType.expression:
+            expression :ExpressionRef
+    io_ref :StatementRef
+    parent_io_ref :WeakStatementRef
+    io_statement :StatementRef
+
+
+format Metadata:
+    name :IdentifierRef # Metadata name (e.g., "author", "version")
+    values :Expressions
+
+enum LoweringIOType:
+    :u8
+    ENUM_UNDERLYING_TO_INT # Lower enum to its underlying integer type
+    ARRAY_FOR_EACH # Lower for-each loop over array or vector
+    STRING_FOR_EACH # Lower for-each loop over string
+    FLOAT_TO_BYTE_ARRAY # Lower float to byte array representation
+    INT_TO_BYTE_ARRAY # Lower integer to byte array representation
+    STRUCT_CALL # Lower struct encode/decode call
+    BIT_FIELD_TO_BIT_SHIFT # Lower bit field operations to bit shift and mask operations
+    MULTI_REPRESENTATION # Lower multi-representation field (statement is a LOWERED_IO_STATEMENTS that contains lowering candidates)
+    VECTORIZED_IO # Lower vectorized IO to multiple IO operations
+  
+format LoweredIOStatement:
+    lowering_type :LoweringIOType # Type of lowering
+    io_statement :LoweredStatementRef # Lowered statement
+
+format LoweredIOStatements:
+    len :Varint
+    container :[len.value]LoweredIOStatement
+
+enum StatementKind:
+    :u8
+    BLOCK # Block of statements
+    ASSIGNMENT
+    YIELD
+    APPEND # append to vector
+    RETURN
+    ERROR_RETURN # for encoder/decoder return value
+    ASSERT
+    READ_DATA
+    WRITE_DATA
+    RESERVE_DATA # reserve space in output stream
+    IF_STATEMENT
+    LOOP_STATEMENT
+    MATCH_STATEMENT
+    MATCH_BRANCH
+    BREAK
+    CONTINUE
+    FUNCTION_DECL
+    VARIABLE_DECL
+    PARAMETER_DECL
+    FIELD_DECL
+    COMPOSITE_FIELD_DECL
+    ENUM_DECL
+    ENUM_MEMBER_DECL
+    STRUCT_DECL
+    UNION_DECL
+    UNION_MEMBER_DECL
+    PROGRAM_DECL
+    PROPERTY_DECL
+    PROPERTY_MEMBER_DECL
+    METADATA
+    IMPORT_MODULE
+    EXPRESSION # expression statement
+    ERROR_REPORT # Explicit error reporting; initial raise of an error
+    LOWERED_IO_STATEMENTS # lowered io statements
+    SUB_BYTE_RANGE
+    INIT_CHECK # check the field is initialized for io operation (for example, check whether variant has correct member for this encoding)
+    ENDIAN_VARIABLE
+    ARRAY_TO_INT # for endian conversion on decode
+    INT_TO_ARRAY # for endian conversion on encode
+    LENGTH_CHECK # checking length context
+
+
+
+
+format Statement:
+    id :StatementRef
+    body :StatementBody # Body of the statement
+
+format LoopFlowControl:
+    related_statement :WeakStatementRef # Reference to the loop statement
+
+format ErrorReport:
+    message :StringRef # Reference to error message string
+    arguments : Expressions # Optional arguments for the error message
+
+format AssertDesc:
+    condition :Condition # Condition to assert
+    lowered_statement :LoweredStatementRef # Optional lowered statement for the assertion (by if statement and error report)
+
+enum StreamType:
+    :u8
+    INPUT = 0 # Input stream (e.g., reading data)
+    OUTPUT = 1 # Output stream (e.g., writing data)
+
+enum SizeUnit:
+    :u8
+    UNKNOWN
+    BIT_FIXED
+    BYTE_FIXED
+    ELEMENT_FIXED
+    BIT_DYNAMIC 
+    BYTE_DYNAMIC
+    ELEMENT_DYNAMIC
+    DYNAMIC # Dynamic size, used for variable-length formats
+
+
+format Size:
+    unit :SizeUnit # Size unit (e.g., BIT, BYTE)
+    match unit:
+        SizeUnit.UNKNOWN => .. # Unknown size, used for dynamic sizes
+        SizeUnit.BIT_FIXED => size :Varint # Fixed size in bits (e.g., 8, 16, 32, 64)
+        SizeUnit.BYTE_FIXED => size :Varint # Fixed size in bytes (e.g., 1, 2, 4, 8)
+        SizeUnit.ELEMENT_FIXED => size :Varint # Fixed size in elements (e.g., 1, 2, 4, 8)
+        SizeUnit.BIT_DYNAMIC => ref :ExpressionRef # Reference to dynamic size expression
+        SizeUnit.BYTE_DYNAMIC => ref :ExpressionRef # Reference to dynamic size expression
+        SizeUnit.ELEMENT_DYNAMIC => ref :ExpressionRef # Reference to dynamic size expression
+
+format IOData:
+    io_ref :StatementRef
+    field :WeakStatementRef # mapped FieldDecl 
+    target :ExpressionRef # Variable to store read/write data
+    data_type :TypeRef # Type of the data to read/write
+    attribute :IOAttribute # Endianness for write
+    size :Size # Size information for read/write
+    if attribute.has_lowered_statement == 1:
+        lowered_statement :LoweredIOStatement # Optional lowered statements for read/write operations
+    if attribute.has_offset == 1:
+        offset :Size 
+
+format Condition:
+    cond :ExpressionRef
+
+enum InitCheckType:
+    :u8
+    union_init_encode
+    union_init_decode
+    union_get
+    union_set
+    field_init_encode
+    field_init_decode
+
+format InitCheck:
+    init_check_type :InitCheckType
+    target_field :ExpressionRef
+    expect_value :ExpressionRef
+    related_function :WeakStatementRef # Reference to the related function declaration
+
+format ImportDecl:
+    name :IdentifierRef # Name of the imported module
+    path :StringRef # Path to the imported module
+    program :StatementRef # Reference to the imported program declaration
+
+format ReserveData:
+    write_data :WeakStatementRef # reference to WRITE_DATA
+    size :Size # size to reserve
+
+enum LengthCheckType:
+    :u8
+    ENCODE_VECTOR_LENGTH
+    SETTER_VECTOR_LENGTH
+
+format LengthCheck: # marker statement for length check context (e.g., vector length check, string length check)
+    target :ExpressionRef # Expression to check length of (e.g., vector or string)
+    expected_length :ExpressionRef # Expected length expression
+    related_function :WeakStatementRef # Reference to the related function declaration
+    lowered_statement :LoweredStatementRef # Optional lowered statement for the length check (e.g., for vector length check)
+    length_check_type :LengthCheckType # Type of length check
+
+format StatementBody:
+    kind :StatementKind
+    match kind:
+        StatementKind.BLOCK:
+            block :Block # List of statements
+        StatementKind.ASSIGNMENT:
+            target :ExpressionRef # Left-hand side (e.g., variable, member, index)
+            value :ExpressionRef # Right-hand side
+            previous_assignment :WeakStatementRef # Previous assignment or phi node (optional)
+        StatementKind.YIELD: # for match/if expression
+            target :ExpressionRef # Left-hand side (e.g., variable, member, index)
+            value :ExpressionRef # Right-hand side
+            previous_assignment :WeakStatementRef # Previous assignment or phi node (optional)
+        StatementKind.APPEND:
+            target :ExpressionRef # Target vector to append to
+            value :ExpressionRef # Value to append
+        StatementKind.RETURN:
+            related_function :WeakStatementRef # Reference to the function declaration
+            value :ExpressionRef # Return value (optional)
+        StatementKind.ERROR_RETURN:
+            related_field :WeakStatementRef # Reference to the field that causes the error (maybe null)
+            related_function :WeakStatementRef # Reference to the function declaration
+            value :ExpressionRef # Error return value (e.g., ENCODER_RETURN or DECODER_RETURN)
+        StatementKind.ASSERT:
+            assert_desc :AssertDesc # Assertion description
+        StatementKind.READ_DATA:
+            read_data :IOData # Descriptor for reading data
+        StatementKind.WRITE_DATA:
+            write_data :IOData # Descriptor for writing data
+        StatementKind.RESERVE_DATA:
+            reserve_data :ReserveData
+        StatementKind.IF_STATEMENT:
+            if_statement :IfStatement
+        StatementKind.LOOP_STATEMENT:
+            loop :LoopStatement
+        StatementKind.MATCH_STATEMENT:
+            match_statement :MatchStatement
+        StatementKind.MATCH_BRANCH:
+            match_branch :MatchBranch # Single branch of a match statement
+        StatementKind.BREAK:
+            break_ :LoopFlowControl
+        StatementKind.CONTINUE:
+            continue_ :LoopFlowControl
+        StatementKind.FUNCTION_DECL:
+            func_decl :FunctionDecl
+        StatementKind.VARIABLE_DECL:
+            var_decl :VariableDecl
+        StatementKind.PARAMETER_DECL:
+            param_decl :ParameterDecl
+        StatementKind.FIELD_DECL:
+            field_decl :FieldDecl
+        StatementKind.COMPOSITE_FIELD_DECL:
+            composite_field_decl :CompositeFieldDecl
+        StatementKind.ENUM_DECL:
+            enum_decl :EnumDecl
+        StatementKind.ENUM_MEMBER_DECL:
+            enum_member_decl :EnumMemberDecl
+        StatementKind.STRUCT_DECL:
+            struct_decl :StructDecl
+        StatementKind.PROGRAM_DECL:
+            block :Block
+        StatementKind.PROPERTY_DECL:
+            property_decl :PropertyDecl
+        StatementKind.PROPERTY_MEMBER_DECL:
+            property_member_decl :PropertyMemberDecl
+        StatementKind.METADATA:
+            metadata :Metadata
+        StatementKind.IMPORT_MODULE:
+            import_decl :ImportDecl
+        StatementKind.ERROR_REPORT:
+            error_report :ErrorReport
+        StatementKind.EXPRESSION:
+            expression :ExpressionRef # Expression statement
+        StatementKind.SUB_BYTE_RANGE:
+            sub_byte_range :SubByteRange
+        StatementKind.INIT_CHECK:
+            init_check :InitCheck
+        StatementKind.ENDIAN_VARIABLE:
+            endian_variable :EndianVariable
+        StatementKind.LOWERED_IO_STATEMENTS:
+            lowered_io_statements :LoweredIOStatements
+        StatementKind.ARRAY_TO_INT:
+            endian_convert :EndianConvertDesc
+        StatementKind.INT_TO_ARRAY:
+            endian_convert :EndianConvertDesc
+        StatementKind.LENGTH_CHECK:
+            length_check :LengthCheck
+
+format Expressions:
+    len :Varint
+    container :[len.value]ExpressionRef # List of expressions
+
+format Block: # A block of statements. Block does NOT mean {} or scope, just a list of statements. 
+    len :Varint 
+    container :[len.value]StatementRef
+
+
+format MatchBranch:
+    condition :Condition # Case condition (e.g., literal, range, default)
+    body :StatementRef # Body of the branch
+
+enum CastType:
+    :u8
+    ENUM_TO_INT
+    INT_TO_ENUM
+    USIZE_TO_INT
+    INT_TO_USIZE
+    FLOAT_TO_INT_BIT
+    INT_TO_FLOAT_BIT
+    VECTOR_TO_ARRAY
+    ARRAY_TO_VECTOR
+    INT_TO_VECTOR
+    INT_TO_ARRAY
+    SMALL_INT_TO_LARGE_INT
+    LARGE_INT_TO_SMALL_INT
+    SIGNED_TO_UNSIGNED
+    UNSIGNED_TO_SIGNED
+    BOOL_TO_INT
+    INT_TO_BOOL
+    STRUCT_TO_RECURSIVE_STRUCT
+    RECURSIVE_STRUCT_TO_STRUCT
+    FUNCTION_CAST # call source's cast function
+    OTHER
+
+enum MergeMode:
+    :u8
+    UNCOMMON_TYPE # all members are treated as distinct types
+    COMMON_TYPE # all members are converted to common type
+    STRICT_TYPE # all members must be same type
+
+enum TypeKind:
+    :u8
+    # terminal
+    INT   
+    UINT 
+    USIZE # special marker for platform dependent unsigned integer, derived from ARRAY_SIZE
+    FLOAT 
+    STRUCT
+    RECURSIVE_STRUCT
+    BOOL
+    VOID
+    META # like `Enum.member` syntax's Enum's type
+
+    # qualifiers
+    ENUM
+    ARRAY
+    VECTOR
+    # for union
+    VARIANT
+    RANGE
+
+    # encoder/decoder return value (these are language specific, e.g errno + int for C, Result<T, E> for Rust, error for Go)
+    ENCODER_RETURN
+    DECODER_RETURN
+
+    # encoder/decoder input value (these are language specific, e.g const char* + int for C, std::io::Read or Write or &[u8] for Rust, io.Reader or io.Writer for Go)
+    ENCODER_INPUT
+    DECODER_INPUT
+
+    # property setter return value
+    PROPERTY_SETTER_RETURN
+
+    # property
+    OPTIONAL
+    PTR
+
+    # function
+    FUNCTION
+
+
+format Type:
+    id :TypeRef # Reference to this type in the types table
+    body :TypeBody # Body of the type definition
+
+format Types:
+    len :Varint # Number of types
+    container :[len.value]TypeRef # List of type definitions
+
+enum FuncTypeAnnotation:
+    :u2
+    NORMAL = 0 # Normal function
+    METHOD = 1 # Method (has self parameter)
+    FUNC_PTR = 2 # Function pointer (maybe like std::function in C++, not pure C function pointer)
+
+format FuncTypeDesc:
+    return_type :TypeRef # Return type of the function
+    params :Types # List of parameter types
+    annotation :FuncTypeAnnotation # Function type annotation
+    reserved :u6 # Reserved for future use
+
+format VariantDesc:
+    common_type :TypeRef # Optional common type for all union members
+    members :Types # List of variant member types
+    related_field :WeakStatementRef # Reference to the field that holds this variant (maybe null)
+
+enum ArrayAnnotation:
+    :u8
+    none
+    read_temporary
+    write_temporary
+
+format TypeBody:
+    kind :TypeKind
+    match kind:
+        TypeKind.INT => size :Varint # Size in bits (e.g., 8, 16, 32, 64)
+        TypeKind.UINT => size :Varint # Size in bits (e.g., 8, 16, 32, 64)
+        TypeKind.FLOAT => size :Varint # Size in bits (e.g., 32, 64)
+        TypeKind.BOOL => .. # Boolean type
+        TypeKind.ARRAY:
+            element_type :TypeRef
+            length :Varint # Fixed length of the array
+            array_annotation :ArrayAnnotation
+        TypeKind.VECTOR:
+            element_type :TypeRef
+        TypeKind.STRUCT:
+            id :WeakStatementRef # Reference to struct name
+        TypeKind.RECURSIVE_STRUCT:
+            id :WeakStatementRef # Reference to recursive struct name
+        TypeKind.ENUM:
+            id :WeakStatementRef # Reference to enum name
+            base_type :TypeRef # Optional base type (e.g., u8, u16)
+        TypeKind.VARIANT:
+            variant_desc :VariantDesc # Variant type description
+        TypeKind.OPTIONAL:
+            inner_type :TypeRef # Optional inner type
+        TypeKind.PTR:
+            pointee_type :TypeRef # Pointer to another type
+        TypeKind.RANGE:
+            base_type :TypeRef # Base type of the range (e.g., u8, u16) (maybe null)
+        TypeKind.FUNCTION:
+            func_desc :FuncTypeDesc # Function type description
+
+format AnyRef:
+    id :Varint # Reference to an entry in the identifiers, types, or expressions table
+
+format Loc:
+    ident :AnyRef # Reference to an identifier, type, or expression
+    file_id :Varint # files index + 1 (0 means not related to any file)
+    line :Varint # line number
+    column :Varint # column number
+    start :Varint # start index of source code
+    end :Varint # end index of source code
+
+format DebugInfo:
+    len_files :Varint
+    files :[len_files.value]StringRef
+    len_locs :Varint
+    locs :[len_locs.value]Loc
+
+format Identifier:
+    id :IdentifierRef
+    body :String # Identifier name
+
+format StringLiteral:
+    id :StringRef # Reference to this string in the string table
+    body :String # String value
+
+enum AliasHint:
+    :u8
+    IDENTIFIER = 0 # Alias for an identifier
+    STRING = 1 # Alias for a string literal
+    TYPE = 2 # Alias for a type
+    EXPRESSION = 3 # Alias for an expression
+    STATEMENT = 4 # Alias for a statement
+    ALIAS = 5 # Alias for a generic alias
+
+format RefAlias:
+    hint :AliasHint # Type of alias
+    from :AnyRef # Reference to the original identifier, type, or expression
+    to :AnyRef # Reference to the alias identifier, type, or expression
+
+format ExtendedBinaryModule:
+    magic: "EBMG" # Magic number for EBM format
+    version :u8
+    max_id :AnyRef # Maximum identifier used in the module (for concatenation)
+    identifiers_len :Varint
+    identifiers :[identifiers_len.value]Identifier # Centralized identifier table
+    strings_len :Varint
+    strings :[strings_len.value]StringLiteral # Centralized string literal table
+    types_len :Varint
+    types :[types_len.value]Type # Centralized type definitions
+    statements_len :Varint # Number of statements
+    statements :[statements_len.value]Statement # Centralized statement table
+    expressions_len :Varint # Number of expressions
+    expressions :[expressions_len.value]Expression # Centralized expression table
+    aliases_len :Varint # Number of aliases
+    aliases :[aliases_len.value]RefAlias # Centralized alias table
+    debug_info :DebugInfo # Debugging information
+
+
+
+
+# for stack based Interpreter (below is not a part of ExtendedBinaryModule itself, just temporary located here now)
+
+enum OpCode:
+    :u8
+    # --- 0x00: System & Flow Control ---
+    NOP             = 0x00
+    HALT            = 0x01
+    JUMP            = 0x02 
+    JUMP_IF_TRUE    = 0x03 
+    JUMP_IF_FALSE   = 0x04 
+    CALL            = 0x05 
+    RET             = 0x06 
+    ERROR           = 0x07 
+    ASSERT          = 0x08 
+    IS_ERROR        = 0x09
+    CALL_DIRECT     = 0x0A
+
+    # --- 0x10: Stack & Memory ---
+    POP             = 0x10
+    DUP             = 0x11
+    SWAP            = 0x12
+    PUSH_NULL       = 0x13 
+    PUSH_IMM_INT    = 0x14 
+    PUSH_IMM_STR    = 0x15 
+    LOAD_LOCAL      = 0x16 
+    STORE_LOCAL     = 0x17 
+    LOAD_PARAM      = 0x18
+    LOAD_SELF       = 0x19
+    STORE_REF       = 0x1A
+    PUSH_SUCCESS    = 0x1B
+    LOAD_LOCAL_REF = 0x1C
+    STORE_LOCAL_IMM = 0x1D
+    
+    # --- 0x20: Arithmetic & Logic ---
+    # name mapping with BinaryOp enum
+    ADD             = 0x20, "add"
+    SUB             = 0x21, "sub"
+    MUL             = 0x22, "mul"
+    DIV             = 0x23, "div"
+    MOD             = 0x24, "mod" 
+    NEG             = 0x25, "minus_sign" 
+    
+    BIT_AND         = 0x26, "bit_and"
+    BIT_OR          = 0x27, "bit_or"
+    BIT_XOR         = 0x28, "bit_xor"
+    BIT_NOT         = 0x29, "bit_not"
+    LSHIFT          = 0x2A, "left_shift"
+    RSHIFT          = 0x2B, "right_shift"
+    
+    LOGICAL_AND     = 0x2C, "logical_and"
+    LOGICAL_OR      = 0x2D, "logical_or"
+    LOGICAL_NOT     = 0x2E, "logical_not"
+
+    # --- 0x30: Comparison ---
+    EQ              = 0x30, "equal"
+    NEQ             = 0x31, "not_equal"
+    LT              = 0x32, "less"
+    LE              = 0x33, "less_or_eq"
+    GT              = 0x34, "greater"
+    GE              = 0x35, "greater_or_eq"
+
+    EQ_IMM          = 0x36
+
+    # --- 0x40: Type Casting ---
+    CAST            = 0x40 
+
+    # --- 0x50: Stream Input (Mapping) ---
+    #READ_U8         = 0x50
+    #READ_U16        = 0x51
+    #READ_U32        = 0x52
+    #READ_U64        = 0x53
+    #READ_I8         = 0x54
+    #READ_I16        = 0x55
+    #READ_I32        = 0x56
+    #READ_I64        = 0x57
+    #READ_F32        = 0x58
+    #READ_F64        = 0x59
+
+    # Variable length / Bit manipulation
+    #READ_BITS_U     = 0x60 
+    #READ_BITS_I     = 0x61 
+    
+    # Byte Arrays
+    READ_BYTES      = 0x62 
+    READ_BYTE       = 0x63
+    
+    # Stream Control
+    PEEK_U8         = 0x65
+    SEEK_REL        = 0x66 
+    SEEK_ABS        = 0x67 
+    AVAILABLE       = 0x68 
+    GET_OFFSET      = 0x69 
+    SET_ENDIAN      = 0x6A 
+
+    # --- 0x70: Stream Output ---
+    WRITE_U8        = 0x70
+    WRITE_U16       = 0x71
+    WRITE_U32       = 0x72
+    WRITE_U64       = 0x73
+    WRITE_BYTES     = 0x74
+    WRITE_BITS      = 0x75 
+
+    # --- 0x90: Object & Structure ---
+    NEW_STRUCT      = 0x90 
+    LOAD_SELF_MEMBER  = 0x91 
+    LOAD_MEMBER      = 0x92 
+    NEW_ARRAY       = 0x93 
+    ARRAY_SET       = 0x94 
+    ARRAY_GET       = 0x95 
+    ARRAY_LEN       = 0x96 
+    NEW_BYTES       = 0x97
+    VECTOR_PUSH     = 0x98
+    LOAD_FUNC       = 0x99
+    CALL_GETTER     = 0x9A
+    ARRAY_GET_IMM   = 0x9B
+
+    MAX_OPCODE      = 0xFF
+
+# ------------------------------------------
+
+format JumpOffset:
+    backward :u1 # 0 for forward jump, 1 for backward jump
+    reserved :u7 # Padding for byte alignment
+    offset :Varint 
+
+format RegisterIndex:
+    index :StatementRef
+
+format OptionalImmediateSize:
+    is_immediate :u1
+    reserved :u7 # Padding for byte alignment
+    if is_immediate == 1:
+        size :Varint
+
+format SetEndian:
+    endian :Endian
+    reserved :u5 # Endian is u3, padding to u8
+
+format RetValue:
+    has_value :u1 # 0 for void return, 1 for value return
+    reserved :u7 # Padding for byte alignment
+
+format Instruction:
+    op :OpCode
+    match op:
+        # -- Flow Control Arguments --
+        OpCode.JUMP:
+            target :JumpOffset
+        OpCode.JUMP_IF_TRUE:
+            target :JumpOffset
+        OpCode.JUMP_IF_FALSE:
+            target :JumpOffset
+        OpCode.CALL:
+            arg_num :Varint
+        OpCode.ERROR:
+            msg_id :StringRef 
+        OpCode.ASSERT:
+            msg_id :StringRef 
+
+        # -- Immediate Values --
+        OpCode.PUSH_IMM_INT:
+            value :Varint 
+        OpCode.PUSH_IMM_STR:
+            str_id :StringRef
+
+        # -- Variable Access --
+        OpCode.LOAD_LOCAL:
+            reg :RegisterIndex
+        OpCode.LOAD_LOCAL_REF:
+            reg :RegisterIndex
+        OpCode.STORE_LOCAL:
+            reg :RegisterIndex
+        OpCode.STORE_LOCAL_IMM:
+            reg :RegisterIndex
+            value :Varint
+        OpCode.LOAD_PARAM:
+            reg :RegisterIndex
+
+        OpCode.EQ_IMM:
+            value :Varint
+
+        # -- Stream Ops with Optimization Flags --
+        # Align to byte boundary after boolean flag
+        #OpCode.READ_BITS_U:
+        #    imm :OptionalImmediateSize
+        #OpCode.READ_BITS_I:
+        #    imm :OptionalImmediateSize
+        OpCode.READ_BYTES:
+            imm :OptionalImmediateSize
+            offset :Varint
+        OpCode.READ_BYTE:
+            offset :Varint
+
+        OpCode.SET_ENDIAN:
+            set_endian :SetEndian
+    
+        # -- Type Casting --
+        OpCode.CAST:
+            cast_type :CastType
+
+        # -- Object Operations --
+        OpCode.NEW_STRUCT:
+            struct_id :StatementRef
+        OpCode.LOAD_SELF_MEMBER:
+            member_id :StatementRef
+        OpCode.LOAD_MEMBER:
+            member_id :StatementRef
+        OpCode.LOAD_FUNC:
+            func_id :StatementRef
+        OpCode.CALL_DIRECT:
+            func_id :StatementRef
+            arg_num :Varint
+        OpCode.CALL_GETTER:
+            func_id :StatementRef
+        OpCode.NEW_BYTES:
+            imm :OptionalImmediateSize
+        OpCode.RET:
+            ret_value :RetValue
+        OpCode.ARRAY_GET_IMM:
+            index :Varint

@@ -1,0 +1,6 @@
+format MyMessage {
+    uint8 header;
+    uint16 length;
+    byte[length] payload;
+    uint32 checksum;
+}

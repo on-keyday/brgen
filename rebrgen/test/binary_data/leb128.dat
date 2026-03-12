@@ -1,0 +1,26 @@
+# LEB128 Varint (Unsigned)
+# 1-byte encoding (value <= 127)
+00
+01
+40
+7F
+
+# 2-byte encoding (128 <= value <= 16383)
+80 01        # 128
+FF 01        # 255
+80 02        # 256
+FF 7F        # 16383
+
+# 3-byte encoding (16384 <= value <= 2097151)
+80 80 01     # 16384
+E5 8E 26     # 624485
+FF FF 7F     # 2097151
+
+# 4-byte encoding
+80 80 80 01  # 2097152
+
+# 5-byte encoding (32-bit unsigned max)
+FF FF FF FF 0F # 4294967295 (2^32 - 1)
+
+# 10-byte encoding (64-bit unsigned max)
+FF FF FF FF FF FF FF FF FF 01 # 2^64 - 1

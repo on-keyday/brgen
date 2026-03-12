@@ -1,0 +1,48 @@
+!@section block_define_format.txt
+w.writeln(ident,":");
+auto scope = w.indent_scope();
+w.writeln("seq:");
+defer.push_back(futils::helper::defer_ex([scope = std::move(scope) ,s =w.indent_scope()](){}));
+!@section block_define_state.txt
+!@include block_define_format.txt
+!@section block_define_union_member.txt
+!@include block_define_format.txt
+
+!@section block_declare_format.txt
+TmpCodeWriter ib;
+inner_block(ctx,ib,inner_range);
+ctx.struct_writer.write_unformatted(ib.out());
+!@section block_declare_state.txt
+!@include block_declare_format.txt
+!@section block_declare_union_member.txt
+!@include block_declare_format.txt
+
+!@section block_define_enum.txt
+w.writeln(ident,":");
+defer.push_back(w.indent_scope_ex());
+!@section block_define_enum_member.txt
+w.writeln(evaluated.result,": '",ident,"'");
+!@section escape_ident.txt
+for(auto& s:str) {
+    s = std::tolower(s);
+}
+if(str[0] < 'a' || str[0] > 'z') {
+    str = "x" + str;
+}
+!@section block_define_field.txt
+w.writeln("- id: ",ident);
+w.writeln("  type: ",type);
+!@section bm_context.txt
+TmpCodeWriter struct_writer;
+TmpCodeWriter enum_writer;
+!@section block_declare_enum.txt
+inner_block(ctx,ctx.enum_writer,inner_range);
+!@section file_bottom_before.txt
+ctx.cw.writeln("types:");
+auto struct_w = ctx.cw.indent_scope();
+ctx.cw.write_unformatted(ctx.struct_writer.out());
+struct_w.execute();
+ctx.cw.writeln("enums:");
+auto enum_w = ctx.cw.indent_scope();
+ctx.cw.write_unformatted(ctx.enum_writer.out()); 
+enum_w.execute();
