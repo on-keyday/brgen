@@ -36,6 +36,8 @@ jobs:
                   path: .
             - name: Test
               run: |
+                  chmod -R +x tool/
                   cd rebrgen
+                  chmod -R +x tool/
                   cp build_config.template.json build_config.json
                   python script/unictest.py --print-stdout
