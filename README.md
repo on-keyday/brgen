@@ -262,4 +262,4 @@ It is also possible to provide the AST operation library itself.
 See the source code in the src/gen directory for details. TODO(on-keyday): Write how to make it.
 If you are able to create and provide a library for AST operation, please add it to the src/tool/gen directory and submit a Pull Request.
 
-If you want an easier way to add generators, see https://github.com/on-keyday/rebrgen.
+If you want an easier way to add generators, see rebrgen/.
