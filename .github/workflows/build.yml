@@ -706,3 +706,7 @@ jobs:
       contents: read
       pages: write
       id-token: write
+
+  unictest:
+    needs: [build-linux,build-rebrgen-native]
+    uses: ./.github/workflows/unictest.yaml

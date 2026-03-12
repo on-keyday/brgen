@@ -1,0 +1,41 @@
+name: unictest (e2e)
+run-name: unictest
+on:
+    - push
+jobs:
+    test-linux:
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        steps:
+            - name: Timeline
+              uses: Kesin11/actions-timeline@e018cfefea60b4f44266998551211a35a58b8097 # v3.0.0
+              with:
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+            - name: Checkout repository
+              uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+            - name: Set up Ninja
+              uses: seanmiddleditch/gha-setup-ninja@7e868db0f3406270dd46e1dac26c65f621456723 # master
+            - name: Set up Clang
+              uses: egor-tensin/setup-clang@471a6f8ef1d449dba8e1a51780e7f943572a3f99 # v2.1
+              with:
+                  version: latest
+                  platform: x64
+            - name: Install libc++-dev and libc++abi-dev
+              run: sudo apt-get install libc++-dev libc++abi-dev -y
+            - name: Download rebrgen tool
+              uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8.0.0
+              with:
+                  name: rebrgen-native-tool
+                  path: rebrgen/tool
+            - name: Download brgen tool
+              uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8.0.0
+              with:
+                  name: build-linux-llvm
+                  path: .
+            - name: Build
+              run: |
+                  . build.sh
+            - name: Test
+              run: |
+                  cd rebrgen
+                  python script/unictest.py
