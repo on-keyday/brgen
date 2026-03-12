@@ -40,4 +40,5 @@ jobs:
             - name: Test
               run: |
                   cd rebrgen
+                  cp build_config.template.json build_config.json
                   python script/unictest.py
