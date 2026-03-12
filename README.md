@@ -229,7 +229,7 @@ see SECURITY.md
 もし、お好みの言語がないのであれば自分でジェネレーターを書いていただくことも可能です。
 現在、AST 操作用のライブラリを C++、Go、TypeScript、Rust、Python で提供しております。TODO(on-keyday): 各種パッケージ管理システムに公開する、操作ライブラリのドキュメントを書く
 
-- C++: src/core/ast/ast.h と src/core/ast/traverse.h をから利用できます。その他、src/core/ast/tool ディレクトリに各種ツールがあります。
+- C++: src/core/ast/ast.h と src/core/ast/traverse.h を利用できます。その他、src/core/ast/tool ディレクトリに各種ツールがあります。
 - Go: ast2go にあります。
 - TypeScript: ast2ts にあります。
 - Rust: ast2rust にあります。
@@ -243,7 +243,7 @@ see SECURITY.md
 詳しくは src/gen ディレクトリのソースコードを参照してください。 TODO(on-keyday): 作り方を書く。
 もし、AST 操作用ライブラリを作成できて、提供して頂ける場合は src/tool/gen ディレクトリに追加して Pull Request してください。
 
-なお、より簡単にジェネレーターを追加したい場合は https://github.com/on-keyday/rebrgen を参照してください。
+なお、より簡単にジェネレーターを追加したい場合は rebrgen/ ディレクトリを参照してください。
 
 If you don't have a language you like, you can write your own generator.
 We currently provide libraries for AST manipulation in C++, Go, TypeScript, Rust, and Python. TODO(on-keyday): Publish to various package management systems, write document for AST manipulation libraries
