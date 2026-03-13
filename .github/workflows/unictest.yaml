@@ -37,6 +37,7 @@ jobs:
             - name: Test
               run: |
                   export LD_LIBRARY_PATH=$(pwd)/tool:$(pwd)/rebrgen/tool:$LD_LIBRARY_PATH
+                  cp ./tool/libs2j.so ./rebrgen/tool/libs2j.so
                   chmod -R +x tool/
                   cd rebrgen
                   chmod -R +x tool/
