@@ -1,9 +1,9 @@
-use clap::{arg, Parser};
+use clap::Parser;
 use colored::Colorize;
 use futures::{self, future};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::{
-    any, fs,
+    fs,
     path::{Path, PathBuf},
 };
 use tokio::task::JoinHandle;
@@ -43,6 +43,9 @@ struct Args {
 
     #[arg(long, help("target input"),action = clap::ArgAction::Append)]
     target_input: Vec<String>,
+
+    #[arg(long,help("test output json file path, if specified, test results will be saved in this file in JSON format"))]
+    output_json: Option<String>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -276,6 +279,7 @@ impl InputBinaryCache {
     }
 }
 
+#[derive(Clone)]
 struct PrepareInfo {
     runner: String,
     source: String,
@@ -292,6 +296,30 @@ struct ResultInfo {
     input_name: String,
     output: Option<std::process::Output>,
     failure_case: bool,
+}
+
+#[derive(Serialize, Clone, Debug)]
+struct TestCaseResult {
+    runner: String,
+    source: String,
+    format_name: String,
+    input_name: String,
+    success: bool,
+    failure_case: bool,
+    output_stdout: String,
+    output_stderr: String,
+    output_status: i32,
+    status_interpretation: String,
+    error_message: Option<String>,
+}
+
+#[derive(Serialize, Clone, Debug)]
+struct TestResults {
+    success_count: usize,
+    fail_count: usize,
+    setup_fail_count: usize,
+    setup_failures: Vec<SetupFailureInfo>,
+    results: Vec<TestCaseResult>,
 }
 
 const CONFIRMED_DECODER_FAILURE_EXIT_CODE: i32 = 10;
@@ -358,7 +386,10 @@ async fn run_source_setup(
     binary_cache: &mut InputBinaryCache,
     current_dir: &String,
     parsed: &Args,
-) -> anyhow::Result<(usize, std::collections::HashMap<String, String>)> {
+) -> anyhow::Result<(
+    Vec<SetupFailureInfo>,
+    std::collections::HashMap<String, String>,
+)> {
     let replaced_setup_command: Vec<String> = common_setup_commands
         .iter()
         .map(|s| s.replace("$WORK_DIR", &current_dir))
@@ -395,7 +426,7 @@ async fn run_source_setup(
         common_setup_handles.push(h);
     }
     drop(source_send);
-    let mut scheduling_fail_count = 0;
+    let mut setup_failures = Vec::new();
     while let Some((output, source_name)) = source_recv.recv().await {
         println!("Common source setup completed: source={}", source_name);
         print_output(&output, parsed.print_stdout);
@@ -403,7 +434,12 @@ async fn run_source_setup(
             println!("Common source setup failed for source={}", source_name);
             // remove all entries with this source from source_runner_matrix
             source_runner_matrix.retain(|(_, s), _| s != &source_name);
-            scheduling_fail_count += 1;
+            setup_failures.push(SetupFailureInfo::CommandFailure {
+                source: source_name.clone(),
+                runner: "common_source_setup".to_string(),
+                output_stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
+                output_stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
+            });
         }
         println!("----------------------------------------");
     }
@@ -412,11 +448,26 @@ async fn run_source_setup(
     for res in result {
         if let Err(e) = res {
             println!("Error during common source setup: {}", e);
-            scheduling_fail_count += 1;
+            setup_failures.push(SetupFailureInfo::OrchestrationError {
+                error_message: format!("orchestration error during common source setup: {}", e),
+            });
         }
     }
 
-    Ok((scheduling_fail_count, source_dir_map))
+    Ok((setup_failures, source_dir_map))
+}
+
+#[derive(Serialize, Clone, Debug)]
+enum SetupFailureInfo {
+    CommandFailure {
+        source: String,
+        runner: String,
+        output_stdout: String,
+        output_stderr: String,
+    },
+    OrchestrationError {
+        error_message: String,
+    },
 }
 
 async fn run_setup(
@@ -425,7 +476,7 @@ async fn run_setup(
     binary_cache: &mut InputBinaryCache,
     current_dir: &String,
     parsed: &Args,
-) -> anyhow::Result<(Vec<PrepareInfo>, usize)> {
+) -> anyhow::Result<(Vec<PrepareInfo>, Vec<SetupFailureInfo>)> {
     let mut handles: Vec<_> = Vec::new();
     let verbose = parsed.verbose;
 
@@ -498,7 +549,7 @@ async fn run_setup(
     }
     drop(send);
     let mut setup_infos = Vec::new();
-    let mut scheduling_fail_count = 0;
+    let mut setup_failures = Vec::new();
     while let Some((output, prepare_info)) = recv.recv().await {
         println!(
             "Test setup completed: runner name={}, source={}",
@@ -507,7 +558,12 @@ async fn run_setup(
         print_output(&output, parsed.print_stdout);
         if !output.status.success() {
             println!("Test setup failed, skipping tests for this setup.");
-            scheduling_fail_count += 1;
+            setup_failures.push(SetupFailureInfo::CommandFailure {
+                source: prepare_info.source,
+                runner: prepare_info.runner,
+                output_stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
+                output_stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
+            });
         } else {
             setup_infos.push(prepare_info);
         }
@@ -518,19 +574,21 @@ async fn run_setup(
     for res in all_errors {
         if let Err(e) = res {
             println!("Error during setup: {}", e);
-            scheduling_fail_count += 1;
+            setup_failures.push(SetupFailureInfo::OrchestrationError {
+                error_message: format!("orchestration error during setup: {}", e),
+            });
         }
     }
-    Ok((setup_infos, scheduling_fail_count))
+    Ok((setup_infos, setup_failures))
 }
 
 async fn run_tests(
     parsed: &Args,
-    setup_infos: Vec<PrepareInfo>,
+    setup_infos: &Vec<PrepareInfo>,
     inputs: Vec<TestInput>,
     binary_cache: &mut InputBinaryCache,
     current_dir: &String,
-) -> anyhow::Result<Vec<bool>> {
+) -> anyhow::Result<Vec<TestCaseResult>> {
     let mut test_handles = Vec::new();
     let verbose = parsed.verbose;
 
@@ -664,7 +722,19 @@ async fn run_tests(
                     e
                 );
                 println!("----------------------------------------");
-                test_results.push(false);
+                test_results.push(TestCaseResult {
+                    runner: result.runner,
+                    source: result.source,
+                    format_name: result.format_name,
+                    input_name: result.input_name,
+                    success: false,
+                    failure_case: result.failure_case,
+                    output_stdout: String::new(),
+                    output_stderr: String::new(),
+                    output_status: 0,
+                    status_interpretation: "test execution error".to_string(),
+                    error_message: Some(format!("test execution error: {}", e)),
+                });
                 continue;
             }
         };
@@ -672,7 +742,7 @@ async fn run_tests(
         let is_passed = (output.status.success() && !result.failure_case)
             || (output.status.code() == Some(CONFIRMED_DECODER_FAILURE_EXIT_CODE)
                 && result.failure_case);
-        test_results.push(is_passed);
+
         println!(
             "{}: Test completed runner name={}, source={}, format={}, input={}",
             if is_passed {
@@ -686,24 +756,38 @@ async fn run_tests(
             result.input_name
         );
         print_output(output, parsed.print_stdout);
-        if output.status.success() && result.failure_case {
-            println!("expected failure, but succeeded");
+        let message = if output.status.success() && result.failure_case {
+            "expected failure, but succeeded"
         } else if output.status.code() == Some(CONFIRMED_DECODER_FAILURE_EXIT_CODE)
             && !result.failure_case
         {
-            println!("expected success, but failed");
+            "expected success, but failed"
         } else if output.status.code() == Some(CONFIRMED_DECODER_FAILURE_EXIT_CODE)
             && result.failure_case
         {
-            println!("decode error as expected");
+            "decode error as expected"
         } else if output.status.code() == Some(UNEXPECTED_ENCODER_FAILURE_EXIT_CODE) {
-            println!("unexpected encode error");
+            "unexpected encode error"
         } else if !output.status.success() {
-            println!("test internal error");
+            "test internal error"
         } else {
-            println!("test succeeded as expected");
-        }
+            "test succeeded as expected"
+        };
+        println!("Test result: {}", message);
         println!("----------------------------------------");
+        test_results.push(TestCaseResult {
+            runner: result.runner.clone(),
+            source: result.source.clone(),
+            format_name: result.format_name.clone(),
+            input_name: result.input_name.clone(),
+            success: is_passed,
+            failure_case: result.failure_case,
+            output_stdout: String::from_utf8_lossy(&output.stdout).to_string(),
+            output_stderr: String::from_utf8_lossy(&output.stderr).to_string(),
+            output_status: output.status.code().unwrap_or(-1),
+            status_interpretation: message.to_string(),
+            error_message: None,
+        });
     }
 
     futures::future::try_join_all(test_handles).await?;
@@ -784,9 +868,9 @@ async fn main() -> anyhow::Result<()> {
         make_runner_input_matrix(&test_runner, &inputs);
     let scheduling_count = runner_source_map.len();
 
-    let mut scheduling_fail_count = 0;
-
     let mut source_dir_map = None;
+
+    let mut setup_failures = Vec::new();
 
     if let Some(common_setup_commands) = &test_config.common_source_setup {
         let (fail_count, source_dir_map_) = run_source_setup(
@@ -798,7 +882,7 @@ async fn main() -> anyhow::Result<()> {
             &parsed,
         )
         .await?;
-        scheduling_fail_count += fail_count;
+        setup_failures.extend(fail_count);
         source_dir_map = Some(source_dir_map_);
         println!("Common source setup completed in {:?}", timer.elapsed());
         println!("----------------------------------------");
@@ -812,21 +896,22 @@ async fn main() -> anyhow::Result<()> {
         &parsed,
     )
     .await?;
-    scheduling_fail_count += fail_count2;
+    setup_failures.extend(fail_count2);
 
     println!("Setup all tests in {:?}", timer.elapsed());
     println!("----------------------------------------");
 
     let test_results = run_tests(
         &parsed,
-        setup_infos,
+        &setup_infos,
         inputs,
         &mut binary_cache,
         &current_dir,
     )
     .await?;
 
-    let failed_count = test_results.iter().filter(|&&x| !x).count();
+    let failed_count = test_results.iter().filter(|&x| !x.success).count();
+    let has_scheduling_failures = !setup_failures.is_empty();
     println!("All tests completed in {:?}", timer.elapsed());
     println!(
         "Total: {}, {}: {}, {}: {}",
@@ -836,13 +921,27 @@ async fn main() -> anyhow::Result<()> {
         "FAIL".red(),
         failed_count
     );
-    if scheduling_fail_count > 0 {
+    if !setup_failures.is_empty() {
         println!(
             "{}: {} source file setups failed due to setup errors (total {} source files)",
             "FAIL".red(),
-            scheduling_fail_count,
+            setup_failures.len(),
             scheduling_count
         );
+    }
+    if let Some(output_json) = &parsed.output_json {
+        let test_results_summary = TestResults {
+            success_count: test_results.len() - failed_count,
+            fail_count: failed_count,
+            setup_fail_count: setup_failures.len(),
+            setup_failures,
+            results: test_results,
+        };
+        fs::write(
+            output_json,
+            serde_json::to_string_pretty(&test_results_summary)?,
+        )?;
+        println!("Test results saved to {}", output_json);
     }
 
     if parsed.save_tmp_dir {
@@ -870,7 +969,7 @@ async fn main() -> anyhow::Result<()> {
             }
         }
     }
-    if failed_count > 0 || scheduling_fail_count > 0 {
+    if failed_count > 0 || has_scheduling_failures {
         std::process::exit(1);
     }
     Ok(())

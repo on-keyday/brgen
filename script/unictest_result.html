@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>unictest Result viewer (poc)</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f8fafc; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .matrix-table th:first-child, .matrix-table td:first-child {
+            position: sticky; left: 0; background-color: white; z-index: 10;
+            box-shadow: 2px 0 5px -2px rgba(0,0,0,0.1);
+        }
+        .matrix-table thead th { position: sticky; top: 0; background-color: #f8fafc; z-index: 20; }
+        .matrix-table thead th:first-child { z-index: 30; }
+        
+        .modal-enter-active, .modal-leave-active { transition: opacity 0.2s ease; }
+        .modal-enter-from, .modal-leave-to { opacity: 0; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans antialiased h-screen overflow-hidden flex flex-col">
+    <div id="app" class="flex-1 flex flex-col overflow-hidden max-w-[1600px] mx-auto w-full p-4 md:p-6 min-h-0">
+        
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-100 flex-shrink-0 gap-4">
+            <div>
+                <h1 class="text-xl md:text-2xl font-bold text-gray-900">Telemetry Dashboard</h1>
+                <p class="text-xs md:text-sm text-gray-500 mt-1">Unified metrics and dynamic execution matrix.</p>
+            </div>
+            
+            <div class="flex items-center space-x-4 w-full md:w-auto justify-between md:justify-end">
+                <div v-if="testData" class="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+                    <button @click="activeTab = 'overview'" :class="['px-4 py-1.5 text-sm font-medium rounded-md transition-colors', activeTab === 'overview' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700']">Overview</button>
+                    <button @click="activeTab = 'matrix'" :class="['px-4 py-1.5 text-sm font-medium rounded-md transition-colors', activeTab === 'matrix' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700']">Matrix</button>
+                </div>
+                <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 shadow-sm whitespace-nowrap">
+                    Import JSON
+                    <input type="file" accept=".json" class="hidden" @change="handleFileUpload">
+                </label>
+            </div>
+        </div>
+
+        <div v-if="error" class="bg-red-50 text-red-700 p-4 rounded-lg mb-6 border border-red-200 flex-shrink-0">{{ error }}</div>
+
+        <div v-if="testData" class="flex-1 flex flex-col min-h-0 relative">
+            
+            <div v-show="activeTab === 'overview'" class="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar pr-2 pb-6">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 flex-shrink-0">
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-blue-500">
+                        <div class="text-xs text-gray-500 font-medium uppercase tracking-wider">Total Tests</div>
+                        <div class="text-2xl font-bold mt-1">{{ testData.results.length }}</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-green-500">
+                        <div class="text-xs text-gray-500 font-medium uppercase tracking-wider">Success</div>
+                        <div class="text-2xl font-bold mt-1 text-green-600">{{ testData.success_count }}</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-red-500">
+                        <div class="text-xs text-gray-500 font-medium uppercase tracking-wider">Failures</div>
+                        <div class="text-2xl font-bold mt-1 text-red-600">{{ testData.fail_count }}</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-amber-500">
+                        <div class="text-xs text-gray-500 font-medium uppercase tracking-wider">Setup Failures</div>
+                        <div class="text-2xl font-bold mt-1 text-amber-600">{{ testData.setup_fail_count }}</div>
+                    </div>
+                </div>
+
+                <div v-if="testData.setup_failures && testData.setup_failures.length > 0" class="mb-6 flex-shrink-0">
+                    <h2 class="text-sm font-bold mb-3 text-gray-700 uppercase tracking-wider">Setup Failures</h2>
+                    <div class="bg-amber-50 rounded-xl border border-amber-200 overflow-hidden">
+                        <div v-for="(sf, index) in testData.setup_failures" :key="index" class="p-4 border-b border-amber-200 last:border-0">
+                            <div v-if="sf.CommandFailure">
+                                <span class="font-bold text-amber-800 text-sm">Command Failure</span>
+                                <span class="text-xs ml-2 text-amber-700 bg-amber-100 px-2 py-0.5 rounded">Runner: {{ sf.CommandFailure.runner }}</span>
+                                <pre class="mt-2 text-xs bg-white p-3 rounded border border-amber-100 custom-scrollbar overflow-x-auto text-amber-900">{{ sf.CommandFailure.output_stderr }}</pre>
+                            </div>
+                            <div v-if="sf.OrchestrationError">
+                                <span class="font-bold text-amber-800 text-sm">Orchestration Error</span>
+                                <p class="mt-1 text-sm text-amber-700">{{ sf.OrchestrationError.error_message }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-4 flex-shrink-0">
+                    <div class="flex flex-wrap items-center gap-4">
+                        <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Group By Axis:</span>
+                        <label v-for="opt in ['composite', 'runner', 'source', 'format_name']" :key="opt" class="flex items-center space-x-1.5 cursor-pointer">
+                            <input type="radio" :value="opt" v-model="groupBy" class="text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+                            <span class="text-sm text-gray-700 font-medium capitalize">{{ opt.replace('_', ' ') }}</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 flex-shrink-0">
+                    <div class="overflow-x-auto custom-scrollbar">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Aggregation Key</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-24">Total</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-48">Success Rate</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <tr v-for="(group, key) in groupedResults" :key="key" class="hover:bg-gray-50 transition-colors">
+                                    <td class="px-6 py-3 text-sm font-mono text-slate-700 break-all">{{ key }}</td>
+                                    <td class="px-6 py-3 text-sm text-gray-600 font-medium">{{ group.items.length }}</td>
+                                    <td class="px-6 py-3">
+                                        <div class="flex items-center">
+                                            <div class="w-full bg-gray-200 rounded-full h-2 mr-2">
+                                                <div :class="['h-2 rounded-full', group.successRate === 100 ? 'bg-green-500' : (group.successRate > 50 ? 'bg-amber-400' : 'bg-red-500')]" :style="{ width: group.successRate + '%' }"></div>
+                                            </div>
+                                            <span class="text-xs text-gray-600 font-mono w-10 text-right">{{ group.successRate.toFixed(1) }}%</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div v-show="activeTab === 'matrix'" class="flex-1 flex flex-col min-h-0 bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="p-3 border-b border-gray-100 bg-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 flex-shrink-0">
+                    
+                    <div class="flex items-center space-x-3 w-full sm:w-auto">
+                        <div class="relative w-full sm:w-64">
+                            <input type="text" v-model="searchQuery" placeholder="Search input_name..." class="block w-full px-3 py-1.5 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+                        <select v-model="statusFilter" class="block w-full sm:w-auto pl-3 pr-8 py-1.5 text-base border-gray-300 border focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-white">
+                            <option value="all">All Status</option>
+                            <option value="failed">Failures Only</option>
+                            <option value="success">Success Only</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <div class="flex items-center bg-gray-50 px-3 py-1.5 rounded border border-gray-200">
+                            <span class="text-xs font-bold text-gray-500 mr-3 uppercase">Column Axis:</span>
+                            <div class="flex space-x-3">
+                                <label v-for="opt in ['runner', 'format_name', 'composite']" :key="opt" class="flex items-center space-x-1 cursor-pointer">
+                                    <input type="radio" :value="opt" v-model="matrixColumnAxis" class="text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5">
+                                    <span class="text-xs text-gray-700 font-medium capitalize">{{ opt.split('_')[0] }}</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="overflow-auto custom-scrollbar flex-1 relative matrix-table">
+                    <table class="min-w-full divide-y divide-gray-200 border-collapse">
+                        <thead>
+                            <tr>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200 bg-gray-50 min-w-[200px]">
+                                    input_name
+                                </th>
+                                <th v-for="col in matrixData.columns" :key="col" scope="col" class="px-3 py-2 text-center border-r border-gray-200 min-w-[120px] bg-gray-50">
+                                    <div v-if="matrixColumnAxis === 'composite'" class="flex flex-col space-y-1 items-center">
+                                        <span class="text-xs font-bold text-slate-700 truncate w-full" :title="col.split('|')[0].trim()">{{ col.split('|')[0].trim() }}</span>
+                                        <span class="text-[10px] text-slate-500 bg-slate-100 rounded px-1.5 py-0.5 truncate w-full" :title="col.split('|')[1].trim()">{{ col.split('|')[1].trim() }}</span>
+                                        <span class="text-[10px] text-indigo-600 border border-indigo-100 bg-indigo-50 rounded px-1.5 py-0.5 truncate w-full" :title="col.split('|')[2].trim()">{{ col.split('|')[2].trim() }}</span>
+                                    </div>
+                                    <div v-else class="text-sm font-bold text-slate-700 truncate" :title="col">{{ col }}</div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-100">
+                            <tr v-if="filteredMatrixRows.length === 0">
+                                <td :colspan="matrixData.columns.length + 1" class="px-4 py-8 text-center text-sm text-gray-500 bg-gray-50">No cases match the filters.</td>
+                            </tr>
+                            <tr v-for="row in filteredMatrixRows" :key="row.inputName" class="hover:bg-slate-50 transition-colors group">
+                                <td class="px-4 py-2 text-xs font-mono text-slate-800 border-r border-gray-200 whitespace-nowrap group-hover:bg-slate-50">
+                                    {{ row.inputName }}
+                                </td>
+                                <td v-for="col in matrixData.columns" :key="col" class="p-0 border-r border-gray-100 transition-colors h-full relative">
+                                    <template v-if="row.results[col] && row.results[col].length > 0">
+                                        <div @click="inspectTestCases(row.results[col])" 
+                                             class="w-full h-full min-h-[40px] flex flex-col items-center justify-center cursor-pointer hover:bg-slate-100 transition-colors p-1"
+                                             :title="row.results[col].every(tc => tc.success) ? 'All Passed' : 'Failures Detected'">
+                                            
+                                            <svg v-if="row.results[col].every(tc => tc.success)" class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                                            <template v-else>
+                                                <svg class="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>
+                                                <span class="text-[9px] text-red-600 mt-0.5 font-mono font-bold">{{ row.results[col].find(tc => !tc.success)?.output_status }}</span>
+                                            </template>
+                                            
+                                            <div v-if="row.results[col].length > 1" class="absolute top-0 right-0 bg-indigo-100 text-indigo-800 text-[9px] font-bold px-1 rounded-bl border-b border-l border-indigo-200">
+                                                {{ row.results[col].length }}
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <template v-else>
+                                        <div class="w-full h-full min-h-[40px] flex justify-center items-center text-gray-200">
+                                            <span class="text-xs font-bold">-</span>
+                                        </div>
+                                    </template>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div v-else class="flex-1 flex items-center justify-center bg-white rounded-xl shadow-sm border border-gray-100 border-dashed border-2 mt-6 min-h-0">
+            <div class="text-center"><p class="mt-1 text-sm text-slate-500">Upload JSON artifact to populate.</p></div>
+        </div>
+
+        <transition name="modal">
+            <div v-if="selectedTestCases && selectedTestCases.length > 0" class="fixed inset-0 z-50 flex items-center justify-center overflow-x-hidden overflow-y-auto outline-none focus:outline-none" @click.self="closeModal">
+                <div class="fixed inset-0 bg-slate-900 bg-opacity-50 transition-opacity" @click="closeModal"></div>
+                
+                <div class="relative w-full max-w-5xl mx-auto my-6 flex flex-col bg-white rounded-xl shadow-2xl border border-gray-200 max-h-[90vh] z-50">
+                    <div class="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50 rounded-t">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900 font-mono">
+                                {{ selectedTestCases[0].input_name }} 
+                                <span class="text-sm font-normal text-gray-500 ml-2">({{ selectedTestCases.length }} execution(s) in this cell)</span>
+                            </h3>
+                        </div>
+                        <button @click="closeModal" class="text-gray-400 hover:text-gray-900 text-2xl font-semibold leading-none outline-none focus:outline-none transition-colors">&times;</button>
+                    </div>
+
+                    <div class="relative p-6 flex-auto overflow-y-auto custom-scrollbar bg-white">
+                        <div v-for="(tc, idx) in selectedTestCases" :key="idx" class="mb-8 border-b-2 border-dashed border-gray-200 pb-8 last:border-0 last:mb-0 last:pb-0">
+                            
+                            <div class="flex items-center space-x-3 mb-4">
+                                <span :class="['px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wider', tc.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800']">
+                                    {{ tc.success ? 'Success' : 'Failed' }}
+                                </span>
+                                <div class="text-xs text-gray-500 flex flex-wrap gap-4">
+                                    <span><strong class="text-gray-700">Runner:</strong> {{ tc.runner }}</span>
+                                    <span><strong class="text-gray-700">Format:</strong> {{ tc.format_name }}</span>
+                                </div>
+                            </div>
+
+                            <div class="text-xs text-gray-500 mb-4 bg-gray-50 p-2 rounded font-mono break-all border border-gray-100">
+                                <strong>Source:</strong> {{ tc.source }}
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                    <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Exit Status</div>
+                                    <div class="font-mono text-sm font-bold text-slate-800">{{ tc.output_status }}</div>
+                                </div>
+                                <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                    <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Interpretation</div>
+                                    <div class="font-mono text-sm text-slate-800">{{ tc.status_interpretation || 'N/A' }}</div>
+                                </div>
+                            </div>
+
+                            <div v-if="tc.error_message" class="mb-4">
+                                <div class="text-[10px] font-bold text-red-600 uppercase tracking-wider mb-1">Error Message</div>
+                                <div class="bg-red-50 border border-red-200 p-3 rounded-lg text-xs font-mono text-red-800 whitespace-pre-wrap break-words">{{ tc.error_message }}</div>
+                            </div>
+
+                            <div class="mb-4">
+                                <div class="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">Standard Error (stderr)</div>
+                                <div class="bg-slate-900 rounded-lg overflow-hidden border border-slate-700">
+                                    <pre class="p-3 text-xs font-mono text-red-400 overflow-x-auto max-h-[25vh] custom-scrollbar whitespace-pre-wrap break-words">{{ tc.output_stderr || '(No standard error)' }}</pre>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div class="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">Standard Output (stdout)</div>
+                                <div class="bg-slate-900 rounded-lg overflow-hidden border border-slate-700">
+                                    <pre class="p-3 text-xs font-mono text-slate-300 overflow-x-auto max-h-[15vh] custom-scrollbar whitespace-pre-wrap break-words">{{ tc.output_stdout || '(No standard output)' }}</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
+    </div>
+
+    <script>
+        const { createApp, ref, computed } = Vue;
+
+        createApp({
+            setup() {
+                const testData = ref(null);
+                const error = ref(null);
+                const activeTab = ref('matrix');
+                const groupBy = ref('runner');
+                const matrixColumnAxis = ref('runner'); // デフォルトをrunnerに変更
+                
+                const searchQuery = ref('');
+                const statusFilter = ref('all');
+                const selectedTestCases = ref(null); // Arrayとして保持するよう変更
+
+                const handleFileUpload = (event) => {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const json = JSON.parse(e.target.result);
+                            if (!json.results || !Array.isArray(json.results)) throw new Error("Schema violation.");
+                            testData.value = json;
+                            error.value = null;
+                        } catch (err) {
+                            error.value = "JSON Error: " + err.message;
+                            testData.value = null;
+                        }
+                    };
+                    reader.readAsText(file);
+                };
+
+                const groupedResults = computed(() => {
+                    if (!testData.value) return {};
+                    const groups = {};
+                    testData.value.results.forEach(tc => {
+                        let key = groupBy.value === 'composite' ? `${tc.runner} | ${tc.source} | ${tc.format_name}` : tc[groupBy.value] || 'Unknown';
+                        if (!groups[key]) groups[key] = { items: [], successCount: 0, failCount: 0 };
+                        groups[key].items.push(tc);
+                        if (tc.success) groups[key].successCount++; else groups[key].failCount++;
+                    });
+                    for (const key in groups) {
+                        const total = groups[key].items.length;
+                        groups[key].successRate = total > 0 ? (groups[key].successCount / total) * 100 : 0;
+                    }
+                    return groups;
+                });
+
+                const matrixData = computed(() => {
+                    if (!testData.value) return { columns: [], rows: [] };
+                    const columnsSet = new Set();
+                    const rowsMap = new Map();
+
+                    testData.value.results.forEach(tc => {
+                        let colKey = matrixColumnAxis.value === 'composite' 
+                            ? `${tc.runner} | ${tc.source} | ${tc.format_name}` 
+                            : tc[matrixColumnAxis.value] || 'Unknown';
+                        
+                        const rowKey = tc.input_name;
+                        columnsSet.add(colKey);
+                        
+                        if (!rowsMap.has(rowKey)) {
+                            rowsMap.set(rowKey, { inputName: rowKey, results: {}, hasFailure: false, hasSuccess: false });
+                        }
+                        const rowObj = rowsMap.get(rowKey);
+                        
+                        // 衝突回避のため配列として初期化・追加
+                        if (!rowObj.results[colKey]) rowObj.results[colKey] = [];
+                        rowObj.results[colKey].push(tc);
+                        
+                        if (tc.success) rowObj.hasSuccess = true;
+                        else rowObj.hasFailure = true;
+                    });
+
+                    const columns = Array.from(columnsSet).sort();
+                    const rows = Array.from(rowsMap.values()).sort((a, b) => a.inputName.localeCompare(b.inputName));
+                    return { columns, rows };
+                });
+
+                const filteredMatrixRows = computed(() => {
+                    let rows = matrixData.value.rows;
+                    const query = searchQuery.value.trim().toLowerCase();
+                    if (query) rows = rows.filter(row => row.inputName.toLowerCase().includes(query));
+                    if (statusFilter.value === 'failed') rows = rows.filter(row => row.hasFailure);
+                    else if (statusFilter.value === 'success') rows = rows.filter(row => row.hasSuccess && !row.hasFailure);
+                    return rows;
+                });
+
+                const inspectTestCases = (testCasesArray) => {
+                    selectedTestCases.value = testCasesArray;
+                    document.body.style.overflow = 'hidden';
+                };
+
+                const closeModal = () => {
+                    selectedTestCases.value = null;
+                    document.body.style.overflow = '';
+                };
+
+                return {
+                    testData, error, activeTab, groupBy, matrixColumnAxis,
+                    searchQuery, statusFilter, selectedTestCases,
+                    handleFileUpload, groupedResults, matrixData, filteredMatrixRows,
+                    inspectTestCases, closeModal
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
