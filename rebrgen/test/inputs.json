@@ -1,17 +1,17 @@
 [
     {
         "name": "websocket_frame_valid",
-        "binary": "$WORK_DIR/brgen/example/wire_data/websocket.dat",
+        "binary": "$WORK_DIR/../brgen/example/wire_data/websocket.dat",
         "format_name": "Frame",
-        "source": "$WORK_DIR/brgen/example/websocket.bgn",
+        "source": "$WORK_DIR/../brgen/example/websocket.bgn",
         "failure_case": false,
         "hex": true
     },
     {
         "name": "websocket_frame_invalid",
-        "binary": "$WORK_DIR/brgen/example/wire_data/websocket.dat",
+        "binary": "$WORK_DIR/../brgen/example/wire_data/websocket.dat",
         "format_name": "Frame",
-        "source": "$WORK_DIR/brgen/example/websocket.bgn",
+        "source": "$WORK_DIR/../brgen/example/websocket.bgn",
         "failure_case": true,
         "hex": false
     },
@@ -19,7 +19,7 @@
         "name": "varint_invalid_short_1",
         "binary": "$WORK_DIR/test/binary_data/varint/invalid_short_1.dat",
         "format_name": "VarInt",
-        "source": "$WORK_DIR/brgen/example/quic_varint.bgn",
+        "source": "$WORK_DIR/../brgen/example/quic_varint.bgn",
         "failure_case": true,
         "hex": true
     },
@@ -27,7 +27,7 @@
         "name": "varint_invalid_short_2",
         "binary": "$WORK_DIR/test/binary_data/varint/invalid_short_2.dat",
         "format_name": "VarInt",
-        "source": "$WORK_DIR/brgen/example/quic_varint.bgn",
+        "source": "$WORK_DIR/../brgen/example/quic_varint.bgn",
         "failure_case": true,
         "hex": true
     },
@@ -35,15 +35,15 @@
         "name": "varint_invalid_short_3",
         "binary": "$WORK_DIR/test/binary_data/varint/invalid_short_3.dat",
         "format_name": "VarInt",
-        "source": "$WORK_DIR/brgen/example/quic_varint.bgn",
+        "source": "$WORK_DIR/../brgen/example/quic_varint.bgn",
         "failure_case": true,
         "hex": true
     },
     {
         "name": "varint_test",
-        "binary": "$WORK_DIR/brgen/example/wire_data/varint.dat",
+        "binary": "$WORK_DIR/../brgen/example/wire_data/varint.dat",
         "format_name": "TestVarint",
-        "source": "$WORK_DIR/brgen/example/feature_test/varint_test.bgn",
+        "source": "$WORK_DIR/../brgen/example/feature_test/varint_test.bgn",
         "failure_case": false,
         "hex": true
     },
@@ -57,9 +57,9 @@
     },
     {
         "name": "tcp_test",
-        "binary": "$WORK_DIR/brgen/example/wire_data/tcp.dat",
+        "binary": "$WORK_DIR/../brgen/example/wire_data/tcp.dat",
         "format_name": "TCPSegment",
-        "source": "$WORK_DIR/brgen/example/tcp_segment.bgn",
+        "source": "$WORK_DIR/../brgen/example/tcp_segment.bgn",
         "failure_case": false,
         "hex": true
     },
