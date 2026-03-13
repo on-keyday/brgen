@@ -550,7 +550,6 @@ async fn run_setup(
     drop(send);
     let mut setup_infos = Vec::new();
     let mut setup_failures = Vec::new();
-    let mut scheduling_fail_count = 0;
     while let Some((output, prepare_info)) = recv.recv().await {
         println!(
             "Test setup completed: runner name={}, source={}",
