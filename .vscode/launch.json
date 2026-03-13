@@ -128,6 +128,18 @@
       "request": "attach",
       "port": 9229,
       "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "type": "cppvsdbg",
+      "request": "launch",
+      "cwd": "C:\\Users\\ukfco\\AppData\\Local\\Temp\\unictest\\tr-10e49746ae\\r-5090963746\\t-0165332a4a",
+      "name": "Debug ebm2c unictest (CapnProtoTest)",
+      "program": "C:/Users/ukfco/AppData/Local/Temp/unictest/tr-10e49746ae/r-5090963746/t-0165332a4a/c_proj/build/test_runner.exe",
+      "args": [
+        "C:/Users/ukfco/AppData/Local/Temp/unictest/tr-10e49746ae/r-5090963746/t-0165332a4a/input.bin",
+        "C:/Users/ukfco/AppData/Local/Temp/unictest/tr-10e49746ae/r-5090963746/t-0165332a4a/output.bin"
+      ],
+      "stopAtEntry": true
     }
   ]
 }

@@ -155,8 +155,5 @@
   },
   "liveServer.settings.port": 5501,
   "shellcheck.exclude": ["1017"],
-  "clangd.arguments": [
-    "-compile-commands-dir=${workspaceFolder}/built/native/Debug",
-    "--fallback-style=none"
-  ]
+  "clangd.arguments": ["--fallback-style=none"]
 }

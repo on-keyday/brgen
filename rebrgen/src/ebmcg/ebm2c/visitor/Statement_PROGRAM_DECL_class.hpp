@@ -79,7 +79,7 @@ DEFINE_VISITOR_CLASS(Statement_PROGRAM_DECL) {
     #ifndef EBM_RESERVE_VECTOR
     #define EBM_RESERVE_VECTOR(vector, size) do { \
         if (input->reserve) {\
-            int res = input->reserve(input, (VECTOR_OF(void)*)(void*)&(vector), (size), sizeof((vector)[0])); \
+            int res = input->reserve(input, (VECTOR_OF(void)*)(void*)&(vector), (size), sizeof((vector).data[0])); \
             if (res != 0) { \
                 return res; \
             } \
@@ -153,7 +153,7 @@ DEFINE_VISITOR_CLASS(Statement_PROGRAM_DECL) {
     void write_encoder_macros(CodeWriter & w) {
         w.write_unformatted(R"a(
     #define EBM_RESERVE_DATA(io,target, size_value, field_str) do { \
-        if ((size_t)((io)->data + (io)->offset + (size_value)) <= (size_t)(io)->data_end) { \
+        if ((size_t)((io)->data + (io)->offset + (size_value)) > (size_t)(io)->data_end) { \
             EBM_EMIT_ERROR(field_str ": Not enough space to reserve data"); \
             return -1; \
         } \
@@ -390,6 +390,12 @@ DEFINE_VISITOR_CLASS(Statement_PROGRAM_DECL) {
         #endif
         )"[1]);
 
+            write_encoder_macros(w);
+            write_decoder_macros(w);
+            if (c_ctx.has_recursive_struct) {
+                write_allocate_macros(w);
+            }
+
             w.writeln("typedef struct EncoderInput {");
             {
                 auto scope = w.indent_scope();
@@ -404,7 +410,6 @@ DEFINE_VISITOR_CLASS(Statement_PROGRAM_DECL) {
             w.writeln("} EncoderInput;");
             w.writeln("");
 
-            write_encoder_macros(w);
             w.writeln("typedef struct DecoderInput {");
             {
                 auto scope = w.indent_scope();
@@ -434,11 +439,6 @@ DEFINE_VISITOR_CLASS(Statement_PROGRAM_DECL) {
                 w.writeln("LAST_ERROR_HANDLER;");
             }
             w.writeln("} FreeFunctionInput;");
-
-            write_decoder_macros(w);
-            if (c_ctx.has_recursive_struct) {
-                write_allocate_macros(w);
-            }
 
             w.writeln("");
 
