@@ -44,7 +44,7 @@ jobs:
           cp build_config.template.json build_config.json
           python script/unictest.py --print-stdout --output-json test_results.json || true
       - name: Upload test results
-        uses: actions/upload-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v8.0.0
         with:
           name: unictest-results
           path: rebrgen/test_results.json
