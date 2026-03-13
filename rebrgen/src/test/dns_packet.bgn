@@ -1,5 +1,5 @@
 
-dns ::= config.import("../../brgen/example/dns.bgn")
+dns ::= config.import("../../../example/dns.bgn")
 
 format DNSPacketTest:
     packets :[..]dns.DNSMessage
