@@ -1,0 +1,12 @@
+
+If:
+  PathMatch: rebrgen/src/.*
+CompileFlags:
+  CompilationDatabase: rebrgen/built/native/Debug
+
+---
+
+If:
+  PathMatch: src/.*
+CompileFlags:
+  CompilationDatabase: built/native/Debug
