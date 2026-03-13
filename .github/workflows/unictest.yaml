@@ -36,7 +36,7 @@ jobs:
                   path: .
             - name: Test
               run: |
-                  export LD_LIBRARY_PATH=$(pwd)/tool:$LD_LIBRARY_PATH
+                  export LD_LIBRARY_PATH=$(pwd)/tool:$(pwd)/rebrgen/tool:$LD_LIBRARY_PATH
                   chmod -R +x tool/
                   cd rebrgen
                   chmod -R +x tool/
