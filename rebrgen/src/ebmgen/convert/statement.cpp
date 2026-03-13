@@ -314,7 +314,9 @@ namespace ebmgen {
         body.related_function(to_weak(ctx.state().get_current_function_id()));
         if (node->expr) {
             EBMA_CONVERT_EXPRESSION(expr_ref, node->expr);
-            body.value(expr_ref);
+            MAYBE(expr, ctx.repository().get_expression(expr_ref));
+            EBM_CAST(casted, ctx.state().get_current_function_return_type(), expr.body.type, expr_ref);
+            body.value(casted);
         }
         else if (ctx.state().get_current_generate_type() != ebm::GenerateType::Normal) {
             MAYBE(coder_return, get_coder_return(ctx, ctx.state().get_current_generate_type() == ebm::GenerateType::Encode));
@@ -736,7 +738,7 @@ namespace ebmgen {
                 for (auto& st : state_vars) {
                     append(derived_fn.params, typ == GenerateType::Encode ? st.enc_var_def : st.dec_var_def);
                 }
-                const auto _func = ctx.state().set_current_function_id(fn_ref);
+                const auto _func = ctx.state().set_current_function_id(fn_ref, coder_return);
                 EBMA_CONVERT_STATEMENT(body, node->body);
                 ebm::Block fn_body_block;
                 fn_body_block.container.reserve(2);
@@ -831,7 +833,7 @@ namespace ebmgen {
             }
         }
         const auto _mode = ctx.state().set_current_generate_type(typ);
-        const auto _func = ctx.state().set_current_function_id(func_id);
+        const auto _func = ctx.state().set_current_function_id(func_id, func_decl.return_type);
         for (auto& param : node->parameters) {
             EBMA_ADD_IDENTIFIER(param_name_ref, param->ident->ident);
             EBMA_CONVERT_TYPE(param_type_ref, param->field_type);

@@ -257,6 +257,7 @@ namespace ebmgen {
         std::unordered_map<std::uint64_t, ebm::TypeRef> struct_variant_map;
         bool on_available_check = false;
         ebm::StatementRef current_function_id;
+        ebm::TypeRef current_function_return_type;
 
         void debug_visited(const char* action, const std::shared_ptr<ast::Node>& node, ebm::StatementRef ref, GenerateType typ) const;
 
@@ -300,11 +301,18 @@ namespace ebmgen {
             return current_function_id;
         }
 
-        [[nodiscard]] auto set_current_function_id(ebm::StatementRef id) {
+        ebm::TypeRef get_current_function_return_type() const {
+            return current_function_return_type;
+        }
+
+        [[nodiscard]] auto set_current_function_id(ebm::StatementRef id, ebm::TypeRef return_type) {
             auto old = current_function_id;
+            auto old_return_type = current_function_return_type;
             current_function_id = id;
-            return futils::helper::defer([this, old]() {
+            current_function_return_type = return_type;
+            return futils::helper::defer([this, old, old_return_type]() {
                 current_function_id = old;
+                current_function_return_type = old_return_type;
             });
         }
 

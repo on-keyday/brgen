@@ -26,6 +26,9 @@
         },
         {
             "file": "$WORK_DIR/src/ebmcg/ebm2zig/unictest_runner.json"
+        },
+        {
+            "file": "$WORK_DIR/src/ebmcg/ebm2llvm/unictest_runner.json"
         }
     ],
     "inputs": {

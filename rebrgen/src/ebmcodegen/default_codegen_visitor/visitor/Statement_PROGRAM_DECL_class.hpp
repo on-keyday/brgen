@@ -21,6 +21,9 @@
 #include "../codegen.hpp"
 DEFINE_VISITOR(Statement_PROGRAM_DECL) {
     using namespace CODEGEN_NAMESPACE;
+    if (ctx.config().program_decl_custom) {
+        CALL_OR_PASS(custom_result, ctx.config().program_decl_custom(ctx));
+    }
     CodeWriter w;
     if (ctx.config().program_decl_start_wrapper) {
         MAYBE(result, ctx.config().program_decl_start_wrapper(ctx));
