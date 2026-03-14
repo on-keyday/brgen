@@ -24,13 +24,16 @@
 #include "../codegen.hpp"
 DEFINE_VISITOR(Expression_BINARY_OP) {
     using namespace CODEGEN_NAMESPACE;
+    if (ctx.config().binary_op_custom) {
+        CALL_OR_PASS(custom_result, ctx.config().binary_op_custom(ctx));
+    }
 
     CodeWriter w;
 
     MAYBE(left_str, ctx.visit(ctx.left));
     MAYBE(right_str, ctx.visit(ctx.right));
-    if (ctx.config().binary_op_custom) {
-        CALL_OR_PASS(custom_result, ctx.config().binary_op_custom(ctx, left_str, right_str));
+    if (ctx.config().binary_op_wrapper) {
+        CALL_OR_PASS(custom_result, ctx.config().binary_op_wrapper(ctx, left_str, right_str));
     }
     auto it = ctx.config().alt_binary_op.find(ctx.bop);
     if (it != ctx.config().alt_binary_op.end()) {

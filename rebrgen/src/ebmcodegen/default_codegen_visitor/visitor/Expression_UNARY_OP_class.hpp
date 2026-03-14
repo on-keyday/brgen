@@ -20,10 +20,13 @@
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 #include "../codegen.hpp"
 DEFINE_VISITOR(Expression_UNARY_OP) {
+    if (ctx.config().unary_op_custom) {
+        CALL_OR_PASS(custom_result, ctx.config().unary_op_custom(ctx));
+    }
     CodeWriter w;
     MAYBE(right_str, ctx.visit(ctx.operand));
-    if (ctx.config().unary_op_custom) {
-        CALL_OR_PASS(custom_result, ctx.config().unary_op_custom(ctx, right_str));
+    if (ctx.config().unary_op_wrapper) {
+        CALL_OR_PASS(custom_result, ctx.config().unary_op_wrapper(ctx, right_str));
     }
     auto it = ctx.config().alt_unary_op.find(ctx.uop);
     if (it != ctx.config().alt_unary_op.end()) {

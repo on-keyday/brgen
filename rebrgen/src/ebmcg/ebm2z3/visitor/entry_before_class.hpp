@@ -54,7 +54,7 @@ DEFINE_VISITOR(entry_before) {
     ctx.config().param_visitor = [](Context_Statement_PARAMETER_DECL& ctx, Result) -> expected<Result> {
         return init_variable(ctx, ctx.config().current_ident(ctx, ctx.item_id), ctx.param_decl.param_type);
     };
-    ctx.config().binary_op_custom = [](Context_Expression_BINARY_OP& ctx, Result& left_str, Result& right_str) -> expected<Result> {
+    ctx.config().binary_op_wrapper = [](Context_Expression_BINARY_OP& ctx, Result& left_str, Result& right_str) -> expected<Result> {
         CodeWriter w;
         switch (ctx.bop) {
             case ebm::BinaryOp::right_shift:
@@ -82,7 +82,7 @@ DEFINE_VISITOR(entry_before) {
                 return pass;
         }
     };
-    ctx.config().unary_op_custom = [](Context_Expression_UNARY_OP& ctx, Result& operand_str) -> expected<Result> {
+    ctx.config().unary_op_wrapper = [](Context_Expression_UNARY_OP& ctx, Result& operand_str) -> expected<Result> {
         CodeWriter w;
         switch (ctx.uop) {
             case ebm::UnaryOp::minus_sign:

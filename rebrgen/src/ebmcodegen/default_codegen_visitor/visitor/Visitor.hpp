@@ -55,6 +55,7 @@ std::function<expected<Result>(Context_Statement_APPEND& ctx)> append_visitor;
 std::string infinity_loop_keyword = "";
 std::string conditional_loop_keyword = "while";
 bool field_name_prior_to_type = false;
+bool parameter_name_prior_to_type = false;
 bool variable_name_prior_to_type = true;
 std::string usize_type_name = "usize";
 bool byte_aligned_int = true;
@@ -133,8 +134,10 @@ std::function<expected<Result>(Context_Statement_INT_TO_ARRAY& ctx)> int_to_arra
 std::function<expected<Result>(Context_Statement_ARRAY_TO_INT& ctx)> array_to_int_custom;
 
 std::function<expected<Result>(Context_Expression_IDENTIFIER& ctx)> identifier_custom;
-std::function<expected<Result>(Context_Expression_BINARY_OP& ctx, Result& left, Result& right)> binary_op_custom;
-std::function<expected<Result>(Context_Expression_UNARY_OP& ctx, Result& operand)> unary_op_custom;
+std::function<expected<Result>(Context_Expression_BINARY_OP& ctx)> binary_op_custom;
+std::function<expected<Result>(Context_Expression_BINARY_OP& ctx, Result& left, Result& right)> binary_op_wrapper;
+std::function<expected<Result>(Context_Expression_UNARY_OP& ctx)> unary_op_custom;
+std::function<expected<Result>(Context_Expression_UNARY_OP& ctx, Result& operand)> unary_op_wrapper;
 
 std::function<expected<Result>(Context_Expression_TYPE_CAST& ctx)> type_cast_custom;
 

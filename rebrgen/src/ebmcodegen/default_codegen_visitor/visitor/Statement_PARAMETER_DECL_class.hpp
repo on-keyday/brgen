@@ -34,7 +34,7 @@ DEFINE_VISITOR(Statement_PARAMETER_DECL) {
         return ctx.config().param_visitor(ctx, std::move(type));
     }
     auto name = ctx.identifier();
-    if (ctx.config().field_name_prior_to_type) {
+    if (ctx.config().parameter_name_prior_to_type) {
         return CODE(name, ctx.config().param_type_separator, type.to_writer());
     }
     else {
