@@ -16,28 +16,56 @@
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 #include "../codegen.hpp"
 #include "ebm/extended_binary_module.hpp"
+#include "ebmcodegen/stub/code_writer.hpp"
+#include "ebmcodegen/stub/util.hpp"
 namespace ebm2llvm {
-    std::string to_llvm_op(Context_Expression_BINARY_OP& ctx) {
+    expected<std::pair<std::string, std::string>> to_llvm_op(Context_Expression_BINARY_OP& ctx) {
+        switch (ctx.bop) {
+            case ebm::BinaryOp::equal:
+            case ebm::BinaryOp::not_equal:
+            case ebm::BinaryOp::less:
+            case ebm::BinaryOp::greater: {
+                MAYBE(left_ty, ctx.get_field<"type">(ctx.left));
+                MAYBE(type_str, ctx.visit(left_ty));
+                auto kind = ctx.get_kind(left_ty);
+                bool is_float = kind == ebm::TypeKind::FLOAT;
+                bool is_signed = kind == ebm::TypeKind::INT;
+                auto cmp = std::string(is_float ? "fcmp" : "icmp");
+                switch (ctx.bop) {
+                    case ebm::BinaryOp::equal:
+                        return std::make_pair(cmp + " eq", type_str.to_string());
+                    case ebm::BinaryOp::not_equal:
+                        return std::make_pair(cmp + " ne", type_str.to_string());
+                    case ebm::BinaryOp::less:
+                        return std::make_pair(cmp + (is_float ? " olt" : (is_signed ? " slt" : " ult")), type_str.to_string());
+                    case ebm::BinaryOp::greater:
+                        return std::make_pair(cmp + (is_float ? " ogt" : (is_signed ? " sgt" : " ugt")), type_str.to_string());
+                    default:
+                        return std::make_pair("unknown_cmp", type_str.to_string());
+                }
+            }
+            default:
+                break;
+        }
         auto kind = ctx.get_kind(ctx.type);
         bool is_float = kind == ebm::TypeKind::FLOAT;
         bool is_signed = kind == ebm::TypeKind::INT;
-
+        MAYBE(llvm_type, ctx.visit(ctx.type));
         switch (ctx.bop) {
             case ebm::BinaryOp::add:
-                return is_float ? "fadd" : "add";
+                return std::make_pair(is_float ? "fadd" : "add", llvm_type.to_string());
             case ebm::BinaryOp::sub:
-                return is_float ? "fsub" : "sub";
+                return std::make_pair(is_float ? "fsub" : "sub", llvm_type.to_string());
             case ebm::BinaryOp::mul:
-                return is_float ? "fmul" : "mul";
+                return std::make_pair(is_float ? "fmul" : "mul", llvm_type.to_string());
             case ebm::BinaryOp::div:
-                if (is_float) return "fdiv";
-                return is_signed ? "sdiv" : "udiv";
+                if (is_float) return std::make_pair("fdiv", llvm_type.to_string());
+                return std::make_pair(is_signed ? "sdiv" : "udiv", llvm_type.to_string());
             case ebm::BinaryOp::mod:
-                if (is_float) return "frem";
-                return is_signed ? "srem" : "urem";
-            // 比較演算（<, == 等）は icmp / fcmp を使うため別ロジックが望ましい
+                if (is_float) return std::make_pair("frem", llvm_type.to_string());
+                return std::make_pair(is_signed ? "srem" : "urem", llvm_type.to_string());
             default:
-                return "unknown";
+                return std::make_pair("unknown", llvm_type.to_string());
         }
     }
 }  // namespace ebm2llvm
@@ -48,12 +76,77 @@ DEFINE_VISITOR(entry_before) {
     ctx.config().bool_type = "i1";
     ctx.config().int_prefix = "i";
     ctx.config().uint_prefix = "i";
+    ctx.config().usize_type_name = "i64";
+
+    ctx.config().loop_statement_custom = [](Context_Statement_LOOP_STATEMENT& ctx) -> expected<Result> {
+        if (!is_nil(ctx.loop.lowered_statement.id)) {
+            return ctx.visit(ctx.loop.lowered_statement.id);
+        }
+        CodeWriter w;
+        if (auto init = ctx.loop.init()) {
+            MAYBE(init_str, ctx.visit(*init));
+            w.write(std::move(init_str.to_writer()));
+        }
+        auto start_label = std::format(".L.start.{}", ctx.config().next_reg());
+        auto cond_label = std::format(".L.cond.{}", ctx.config().next_reg());
+        auto body_label = std::format(".L.body.{}", ctx.config().next_reg());
+        auto end_label = std::format(".L.end.{}", ctx.config().next_reg());
+        w.writeln("br label %", start_label);
+        w.writeln_noindent(start_label, ":");
+        if (auto cond = ctx.loop.condition()) {
+            auto added = ctx.add_writer();
+            MAYBE(cond_str, ctx.visit(cond->cond));
+            w.write(std::move(ctx.get_writer()->get()));
+            w.writeln("br i1 ", cond_str.to_writer(), ", label %", body_label, ", label %", end_label);
+            w.writeln_noindent(body_label, ":");
+        }
+        MAYBE(body_str, ctx.visit(ctx.loop.body));
+        w.write(std::move(body_str.to_writer()));
+        if (auto step = ctx.loop.increment()) {
+            MAYBE(step_str, ctx.visit(*step));
+            w.write(std::move(step_str.to_writer()));
+        }
+        w.writeln("br label %", start_label);
+        w.writeln_noindent(end_label, ":");
+        return w;
+    };
+
+    ctx.config().if_statement_custom = [](Context_Statement_IF_STATEMENT& ctx) -> expected<Result> {
+        MAYBE(if_thens, flatten_if_then(ctx, ctx.item_id));
+        auto final_label = std::format(".L.{}", ctx.config().next_reg());
+        CodeWriter output;
+        std::string next_label = std::format(".L.{}", ctx.config().next_reg());
+        for (size_t i = 0; i < if_thens.size(); i++) {
+            const auto& if_then = if_thens[i];
+            if (if_then.condition) {
+                auto then_label = next_label;
+                auto else_label = i != if_thens.size() - 1 ? std::format(".L.{}", ctx.config().next_reg()) : final_label;
+                auto added = ctx.add_writer();
+                MAYBE(cond_str, ctx.visit(*if_then.condition));
+                output.write(std::move(ctx.get_writer()->get()));
+                output.writeln("br i1 ", cond_str.to_writer(), ", label %", then_label, ", label %", else_label);
+                output.writeln_noindent(then_label, ":");
+                MAYBE(then_str, ctx.visit(if_then.then_branch));
+                output.write(std::move(then_str.to_writer()));
+                output.writeln("br label %", final_label);
+                next_label = else_label;
+            }
+            else {
+                auto added = ctx.add_writer();
+                MAYBE(else_str, ctx.visit(if_then.then_branch));
+                output.write(std::move(else_str.to_writer()));
+                output.writeln("br label %", final_label);
+            }
+        }
+        output.writeln_noindent(final_label, ":");
+        return output;
+    };
 
     ctx.config().variable_decl_custom = [](Context_Statement_VARIABLE_DECL& ctx) -> expected<Result> {
         CodeWriter output;
         auto var_name = "%" + ctx.identifier();
         MAYBE(llvm_type, ctx.visit(ctx.var_decl.var_type));
-        output.writeln(var_name, " = alloca ", llvm_type.to_writer());
+        ctx.config().function_local_variables.writeln(var_name, " = alloca ", llvm_type.to_writer());
         if (!is_nil(ctx.var_decl.initial_value)) {
             auto added = ctx.add_writer();
             MAYBE(init_val, ctx.visit(ctx.var_decl.initial_value));
@@ -64,6 +157,9 @@ DEFINE_VISITOR(entry_before) {
     };
 
     ctx.config().identifier_custom = [](Context_Expression_IDENTIFIER& ctx) -> expected<Result> {
+        if (ctx.is(ebm::StatementKind::PARAMETER_DECL, ctx.id)) {
+            return "%" + ctx.identifier(ctx.id);
+        }
         // load
         MAYBE(got, ctx.get_writer());
         auto var_name = "%" + ctx.identifier(ctx.id);
@@ -73,16 +169,35 @@ DEFINE_VISITOR(entry_before) {
         return tmp;
     };
 
+    ctx.config().param_visitor = [](Context_Statement_PARAMETER_DECL& ctx, Result type) -> expected<Result> {
+        auto param_name = "%" + ctx.identifier();
+        return CODE(type.to_writer(), " ", param_name);
+    };
+
+    ctx.config().assignment_custom = [](Context_Statement_ASSIGNMENT& ctx) -> expected<Result> {
+        CodeWriter w;
+        MAYBE(target, ctx.get(ctx.target));
+        if (target.body.kind == ebm::ExpressionKind::IDENTIFIER) {
+            auto var_name = "%" + ctx.identifier(*target.body.id());
+            auto added = ctx.add_writer();
+            MAYBE(value_str, ctx.visit(ctx.value));
+            w.write(std::move(ctx.get_writer()->get()));
+            MAYBE(type, ctx.get_field<"type">(ctx.target));
+            MAYBE(llvm_type, ctx.visit(type));
+            w.writeln("store ", llvm_type.to_writer(), " ", value_str.to_writer(), ", ptr ", var_name);
+            return w;
+        }
+        return unexpect_error("unsupported assignment target: {}", to_string(target.body.kind));
+    };
+
     ctx.config().function_decl_custom = [](Context_Statement_FUNCTION_DECL& ctx) -> expected<Result> {
         CodeWriter output;
         auto func_name = "@" + ctx.identifier(ctx.item_id);
         MAYBE(return_type, ctx.visit(ctx.func_decl.return_type));
         output.write("define ", return_type.to_writer(), " ", func_name, "(");
         for (size_t i = 0; i < ctx.func_decl.params.container.size(); i++) {
-            auto& param_id = ctx.func_decl.params.container[i];
-            MAYBE(param_decl, ctx.get_field<"param_decl">(param_id));
-            MAYBE(param_type, ctx.visit(param_decl.param_type));
-            output.write(param_type.to_writer());
+            MAYBE(param, ctx.visit(ctx.func_decl.params.container[i]));
+            output.write(std::move(param.to_writer()));
             if (i != ctx.func_decl.params.container.size() - 1) {
                 output.write(", ");
             }
@@ -92,6 +207,7 @@ DEFINE_VISITOR(entry_before) {
         {
             auto scope = output.indent_scope();
             MAYBE(body, ctx.visit(ctx.func_decl.body));
+            output.write(std::move(ctx.config().function_local_variables));
             output.write(std::move(body.to_writer()));
         }
         output.writeln("}");
@@ -115,6 +231,23 @@ DEFINE_VISITOR(entry_before) {
             got.get().writeln(tmp, " = ", is_signed ? "sext" : "zext", " ", from_type.to_writer(), " ", value_str.to_writer(), " to ", to_type.to_writer());
             return tmp;
         }
+        else if (ctx.type_cast_desc.cast_kind == ebm::CastType::USIZE_TO_INT) {  // usize is i64 so ext or trunc
+            MAYBE(to_type_info, ctx.get(ctx.type));
+            MAYBE(size, to_type_info.body.size());
+            if (size.value() < 64) {
+                auto tmp = std::format("%t{}", ctx.config().next_reg());
+                got.get().writeln(tmp, " = trunc ", from_type.to_writer(), " ", value_str.to_writer(), " to ", to_type.to_writer());
+                return tmp;
+            }
+            if (size.value() > 64) {
+                auto tmp = std::format("%t{}", ctx.config().next_reg());
+                bool is_signed = type_info.body.kind == ebm::TypeKind::INT;
+                got.get().writeln(tmp, " = ", is_signed ? "sext" : "zext", " ", from_type.to_writer(), " ", value_str.to_writer(), " to ", to_type.to_writer());
+                return tmp;
+            }
+            // size == 64, so no cast needed
+            return value_str;
+        }
         return value_str;  // TODO: support other
     };
 
@@ -134,7 +267,7 @@ DEFINE_VISITOR(entry_before) {
         return output;
     };
 
-    ctx.config().binary_op_custom = [](Context_Expression_BINARY_OP& ctx, Result& left, Result& right) -> expected<Result> {
+    ctx.config().binary_op_custom = [](Context_Expression_BINARY_OP& ctx) -> expected<Result> {
         // 1. 親の Writer（出力先）を確保
         MAYBE(output, ctx.get_writer());
 
@@ -148,14 +281,15 @@ DEFINE_VISITOR(entry_before) {
         std::string result_reg = std::format("%t{}", ctx.config().next_reg());
 
         // 4. 型情報の取得（ソース言語の i32 -> LLVM の "i32"）
-        MAYBE(llvm_type, ctx.visit(ctx.type));
 
         // 5. 命令の選択（+ -> add, - -> sub など）
-        std::string llvm_op = to_llvm_op(ctx);
+        MAYBE(llvm_op, to_llvm_op(ctx));
+        auto& llvm_op_str = llvm_op.first;
+        auto& llvm_type_str = llvm_op.second;
 
         // 6. LLVM IR 命令の書き出し
         // フォーマット: "%res = op type lhs, rhs"
-        output.get().writeln(result_reg, " = ", llvm_op, " ", llvm_type.to_writer(), " ",
+        output.get().writeln(result_reg, " = ", llvm_op_str, " ", llvm_type_str, " ",
                              left_val.to_writer(), ", ", right_val.to_writer());
 
         // 7. 親ノードには「結果が入っているレジスタ名」を返す

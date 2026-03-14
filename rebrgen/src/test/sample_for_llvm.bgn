@@ -1,4 +1,8 @@
-fn main() -> i32:
-    x ::= 1 + 43
+fn main(argc :u32) -> i32:
+    x := argc + 43
     y ::= 2 * 3
+    if x > 50:
+        x = x - 10 
+    for i in 0..5:
+        x += u32(i)
     return x + y

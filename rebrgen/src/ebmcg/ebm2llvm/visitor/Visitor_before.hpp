@@ -13,3 +13,5 @@ size_t global_reg_count = 0;
 size_t next_reg() {
     return global_reg_count++;
 }
+
+CodeWriter function_local_variables;
