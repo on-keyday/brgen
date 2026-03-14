@@ -550,7 +550,7 @@ jobs:
           path: ./license_cache
 
   build-pages:
-    needs: build-rebrgen-glue
+    needs: [unictest, build-rebrgen-glue]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
