@@ -148,7 +148,8 @@ namespace ebmgen {
                     EBMU_BOOL_TYPE(bool_type);
                     EBM_BINARY_OP(cond, l->op == ast::BinaryOp::range_inclusive ? ebm::BinaryOp::less_or_eq : ebm::BinaryOp::less, bool_type, iter, end_casted);
 
-                    EBM_DEFINE_VARIABLE(identifier, ident_ref, counter_type, iter, ebm::VariableDeclKind::IMMUTABLE, false);
+                    EBM_CAST(iter_casted, base_type, counter_type, iter);
+                    EBM_DEFINE_VARIABLE(identifier, ident_ref, base_type, iter_casted, ebm::VariableDeclKind::IMMUTABLE, false);
                     make_init_visited(identifier_def);
                     EBMA_CONVERT_STATEMENT(inner_body, node->body);
                     ebm::Block body;
@@ -1189,6 +1190,10 @@ namespace ebmgen {
             body.kind = ebm::StatementKind::ASSIGNMENT;
             EBMA_CONVERT_EXPRESSION(calc, ast::cast_to<ast::Expr>(node));
             EBMA_CONVERT_EXPRESSION(target_ref, node->left);
+            // adjust result type
+            MAYBE(got, ctx.repository().get_expression(calc));
+            MAYBE(left_body, ctx.repository().get_expression(target_ref));
+            got.body.type = left_body.body.type;
             body.target(target_ref);
             body.value(calc);
         }
