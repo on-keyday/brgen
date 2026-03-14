@@ -13,8 +13,6 @@
         module_: ebmgen::MappingTable
       item_id: ebm::StatementRef
       kind: const ebm::StatementKind&
-      previous_assignment: const ebm::WeakStatementRef&
-        id: StatementRef
       target: const ebm::ExpressionRef&
       value: const ebm::ExpressionRef&
 */

@@ -642,11 +642,9 @@ format StatementBody:
         StatementKind.ASSIGNMENT:
             target :ExpressionRef # Left-hand side (e.g., variable, member, index)
             value :ExpressionRef # Right-hand side
-            previous_assignment :WeakStatementRef # Previous assignment or phi node (optional)
         StatementKind.YIELD: # for match/if expression
             target :ExpressionRef # Left-hand side (e.g., variable, member, index)
             value :ExpressionRef # Right-hand side
-            previous_assignment :WeakStatementRef # Previous assignment or phi node (optional)
         StatementKind.APPEND:
             target :ExpressionRef # Target vector to append to
             value :ExpressionRef # Value to append

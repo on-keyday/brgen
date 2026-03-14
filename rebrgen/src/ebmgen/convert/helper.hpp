@@ -141,10 +141,10 @@ namespace ebmgen {
 #define EBM_UNARY_OP(ref_name, uop__, typ, operand__) \
     EBM_AST_EXPRESSION(ref_name, make_unary_op, uop__, typ, operand__)
 
-    ebm::StatementBody make_assignment(ebm::ExpressionRef target, ebm::ExpressionRef value, ebm::StatementRef previous_assignment);
+    ebm::StatementBody make_assignment(ebm::ExpressionRef target, ebm::ExpressionRef value);
 
 #define EBM_ASSIGNMENT(ref_name, target__, value__) \
-    EBM_AST_STATEMENT(ref_name, make_assignment, target__, value__, {})
+    EBM_AST_STATEMENT(ref_name, make_assignment, target__, value__)
 
     ebm::ExpressionBody make_index(ebm::TypeRef type, ebm::ExpressionRef base, ebm::ExpressionRef index);
 

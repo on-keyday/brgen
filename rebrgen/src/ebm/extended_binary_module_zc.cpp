@@ -12995,67 +12995,6 @@ namespace ebm::zc {
         }
         return false;
     }
-    const WeakStatementRef* StatementBody::previous_assignment() const {
-        if (StatementKind::BLOCK==(*this).kind) {
-        return nullptr;
-        }
-        if (StatementKind::ASSIGNMENT==(*this).kind) {
-        if(!std::holds_alternative<union_struct_125>(union_variant_123)) {
-            return nullptr;
-        }
-        return std::addressof(std::get<2>((*this).union_variant_123).previous_assignment);
-        }
-        if (StatementKind::YIELD==(*this).kind) {
-        if(!std::holds_alternative<union_struct_126>(union_variant_123)) {
-            return nullptr;
-        }
-        return std::addressof(std::get<3>((*this).union_variant_123).previous_assignment);
-        }
-        return nullptr;
-    }
-    WeakStatementRef* StatementBody::previous_assignment() {
-        return const_cast<WeakStatementRef*>(std::as_const(*this).previous_assignment());
-    }
-    bool StatementBody::previous_assignment(const WeakStatementRef& v) {
-        if (StatementKind::BLOCK==(*this).kind) {
-            return false;
-        }
-        if (StatementKind::ASSIGNMENT==(*this).kind) {
-            if(!std::holds_alternative<union_struct_125>(union_variant_123)) {
-                union_variant_123 = union_struct_125();
-            }
-            std::get<2>((*this).union_variant_123).previous_assignment = v;
-            return true;
-        }
-        if (StatementKind::YIELD==(*this).kind) {
-            if(!std::holds_alternative<union_struct_126>(union_variant_123)) {
-                union_variant_123 = union_struct_126();
-            }
-            std::get<3>((*this).union_variant_123).previous_assignment = v;
-            return true;
-        }
-        return false;
-    }
-    bool StatementBody::previous_assignment(WeakStatementRef&& v) {
-        if (StatementKind::BLOCK==(*this).kind) {
-            return false;
-        }
-        if (StatementKind::ASSIGNMENT==(*this).kind) {
-            if(!std::holds_alternative<union_struct_125>(union_variant_123)) {
-                union_variant_123 = union_struct_125();
-            }
-            std::get<2>((*this).union_variant_123).previous_assignment = std::move(v);
-            return true;
-        }
-        if (StatementKind::YIELD==(*this).kind) {
-            if(!std::holds_alternative<union_struct_126>(union_variant_123)) {
-                union_variant_123 = union_struct_126();
-            }
-            std::get<3>((*this).union_variant_123).previous_assignment = std::move(v);
-            return true;
-        }
-        return false;
-    }
     const PropertyDecl* StatementBody::property_decl() const {
         if (StatementKind::BLOCK==(*this).kind) {
         return nullptr;
@@ -21464,9 +21403,6 @@ namespace ebm::zc {
             if (auto err = std::get<2>((*this).union_variant_123).value.encode(w)) {
                 return err;
             }
-            if (auto err = std::get<2>((*this).union_variant_123).previous_assignment.encode(w)) {
-                return err;
-            }
         }
         else if (StatementKind::YIELD==(*this).kind) {
             if(!std::holds_alternative<union_struct_126>(union_variant_123)) {
@@ -21476,9 +21412,6 @@ namespace ebm::zc {
                 return err;
             }
             if (auto err = std::get<3>((*this).union_variant_123).value.encode(w)) {
-                return err;
-            }
-            if (auto err = std::get<3>((*this).union_variant_123).previous_assignment.encode(w)) {
                 return err;
             }
         }
@@ -21800,9 +21733,6 @@ namespace ebm::zc {
             if (auto err = std::get<2>((*this).union_variant_123).value.decode(r)) {
                 return err;
             }
-            if (auto err = std::get<2>((*this).union_variant_123).previous_assignment.decode(r)) {
-                return err;
-            }
         }
         else if (StatementKind::YIELD==(*this).kind) {
             if(!std::holds_alternative<union_struct_126>(union_variant_123)) {
@@ -21812,9 +21742,6 @@ namespace ebm::zc {
                 return err;
             }
             if (auto err = std::get<3>((*this).union_variant_123).value.decode(r)) {
-                return err;
-            }
-            if (auto err = std::get<3>((*this).union_variant_123).previous_assignment.decode(r)) {
                 return err;
             }
         }

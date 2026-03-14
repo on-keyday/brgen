@@ -2419,15 +2419,6 @@ namespace ebm {
                 return false;
             }
         }
-        if (auto got = j.at("previous_assignment")) {
-            WeakStatementRef tmp;
-            if(!futils::json::convert_from_json(*got, tmp)) {
-                return false;
-            }
-            if(!obj.previous_assignment(std::move(tmp))) {
-                return false;
-            }
-        }
         if (auto got = j.at("property_decl")) {
             PropertyDecl tmp;
             if(!futils::json::convert_from_json(*got, tmp)) {

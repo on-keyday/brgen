@@ -1529,21 +1529,19 @@ namespace ebm2zig {
         BaseVisitor& visitor;
         ebm::StatementRef item_id;
         const ebm::StatementKind& kind;
-        const ebm::WeakStatementRef& previous_assignment;
         const ebm::ExpressionRef& target;
         const ebm::ExpressionRef& value;
     };
     struct VisitorTag_Statement_ASSIGNMENT {};
     // Deconstruct context fields
     #define EBM2ZIG_DECONSTRUCT_STATEMENT_ASSIGNMENT(instance_name) \
-    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& previous_assignment = instance_name.previous_assignment;auto& target = instance_name.target;auto& value = instance_name.value;
+    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& target = instance_name.target;auto& value = instance_name.value;
     template <typename Result>
     struct Context_Statement_ASSIGNMENT_before : ebmcodegen::util::ContextBase<Context_Statement_ASSIGNMENT_before<Result>> {
         constexpr static std::string_view context_name = "Statement_ASSIGNMENT_before";
         BaseVisitor& visitor;
         ebm::StatementRef item_id;
         const ebm::StatementKind& kind;
-        const ebm::WeakStatementRef& previous_assignment;
         const ebm::ExpressionRef& target;
         const ebm::ExpressionRef& value;
         ebmcodegen::util::MainLogicWrapper<Result> main_logic;
@@ -1551,14 +1549,13 @@ namespace ebm2zig {
     struct VisitorTag_Statement_ASSIGNMENT_before {};
     // Deconstruct context fields
     #define EBM2ZIG_DECONSTRUCT_STATEMENT_ASSIGNMENT_BEFORE(instance_name) \
-    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& previous_assignment = instance_name.previous_assignment;auto& target = instance_name.target;auto& value = instance_name.value;auto& main_logic = instance_name.main_logic;
+    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& target = instance_name.target;auto& value = instance_name.value;auto& main_logic = instance_name.main_logic;
     template <typename Result>
     struct Context_Statement_ASSIGNMENT_after : ebmcodegen::util::ContextBase<Context_Statement_ASSIGNMENT_after<Result>> {
         constexpr static std::string_view context_name = "Statement_ASSIGNMENT_after";
         BaseVisitor& visitor;
         ebm::StatementRef item_id;
         const ebm::StatementKind& kind;
-        const ebm::WeakStatementRef& previous_assignment;
         const ebm::ExpressionRef& target;
         const ebm::ExpressionRef& value;
         ebmcodegen::util::MainLogicWrapper<Result> main_logic;
@@ -1567,27 +1564,25 @@ namespace ebm2zig {
     struct VisitorTag_Statement_ASSIGNMENT_after {};
     // Deconstruct context fields
     #define EBM2ZIG_DECONSTRUCT_STATEMENT_ASSIGNMENT_AFTER(instance_name) \
-    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& previous_assignment = instance_name.previous_assignment;auto& target = instance_name.target;auto& value = instance_name.value;auto& main_logic = instance_name.main_logic;auto& result = instance_name.result;
+    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& target = instance_name.target;auto& value = instance_name.value;auto& main_logic = instance_name.main_logic;auto& result = instance_name.result;
     struct Context_Statement_YIELD : ebmcodegen::util::ContextBase<Context_Statement_YIELD> {
         constexpr static std::string_view context_name = "Statement_YIELD";
         BaseVisitor& visitor;
         ebm::StatementRef item_id;
         const ebm::StatementKind& kind;
-        const ebm::WeakStatementRef& previous_assignment;
         const ebm::ExpressionRef& target;
         const ebm::ExpressionRef& value;
     };
     struct VisitorTag_Statement_YIELD {};
     // Deconstruct context fields
     #define EBM2ZIG_DECONSTRUCT_STATEMENT_YIELD(instance_name) \
-    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& previous_assignment = instance_name.previous_assignment;auto& target = instance_name.target;auto& value = instance_name.value;
+    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& target = instance_name.target;auto& value = instance_name.value;
     template <typename Result>
     struct Context_Statement_YIELD_before : ebmcodegen::util::ContextBase<Context_Statement_YIELD_before<Result>> {
         constexpr static std::string_view context_name = "Statement_YIELD_before";
         BaseVisitor& visitor;
         ebm::StatementRef item_id;
         const ebm::StatementKind& kind;
-        const ebm::WeakStatementRef& previous_assignment;
         const ebm::ExpressionRef& target;
         const ebm::ExpressionRef& value;
         ebmcodegen::util::MainLogicWrapper<Result> main_logic;
@@ -1595,14 +1590,13 @@ namespace ebm2zig {
     struct VisitorTag_Statement_YIELD_before {};
     // Deconstruct context fields
     #define EBM2ZIG_DECONSTRUCT_STATEMENT_YIELD_BEFORE(instance_name) \
-    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& previous_assignment = instance_name.previous_assignment;auto& target = instance_name.target;auto& value = instance_name.value;auto& main_logic = instance_name.main_logic;
+    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& target = instance_name.target;auto& value = instance_name.value;auto& main_logic = instance_name.main_logic;
     template <typename Result>
     struct Context_Statement_YIELD_after : ebmcodegen::util::ContextBase<Context_Statement_YIELD_after<Result>> {
         constexpr static std::string_view context_name = "Statement_YIELD_after";
         BaseVisitor& visitor;
         ebm::StatementRef item_id;
         const ebm::StatementKind& kind;
-        const ebm::WeakStatementRef& previous_assignment;
         const ebm::ExpressionRef& target;
         const ebm::ExpressionRef& value;
         ebmcodegen::util::MainLogicWrapper<Result> main_logic;
@@ -1611,7 +1605,7 @@ namespace ebm2zig {
     struct VisitorTag_Statement_YIELD_after {};
     // Deconstruct context fields
     #define EBM2ZIG_DECONSTRUCT_STATEMENT_YIELD_AFTER(instance_name) \
-    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& previous_assignment = instance_name.previous_assignment;auto& target = instance_name.target;auto& value = instance_name.value;auto& main_logic = instance_name.main_logic;auto& result = instance_name.result;
+    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& target = instance_name.target;auto& value = instance_name.value;auto& main_logic = instance_name.main_logic;auto& result = instance_name.result;
     struct Context_Statement_APPEND : ebmcodegen::util::ContextBase<Context_Statement_APPEND> {
         constexpr static std::string_view context_name = "Statement_APPEND";
         BaseVisitor& visitor;

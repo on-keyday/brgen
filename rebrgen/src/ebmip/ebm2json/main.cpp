@@ -53624,10 +53624,6 @@ namespace ebm2json {
     template<typename Result,typename Context>
     expected<Result> dispatch_Statement_ASSIGNMENT(Context&& ctx,const ebm::Statement& in,ebm::StatementRef alias_ref){
         auto& kind = in.body.kind;
-        if (!in.body.previous_assignment()) {
-            return unexpect_error("Unexpected null pointer for StatementBody::previous_assignment");
-        }
-        auto& previous_assignment = *in.body.previous_assignment();
         if (!in.body.target()) {
             return unexpect_error("Unexpected null pointer for StatementBody::target");
         }
@@ -53641,7 +53637,6 @@ namespace ebm2json {
                 .visitor = get_visitor_arg_from_context(ctx),
                 .item_id = is_nil(alias_ref) ? in.id : alias_ref,
                 .kind = kind,
-                .previous_assignment = previous_assignment,
                 .target = target,
                 .value = value,
             };
@@ -53651,7 +53646,6 @@ namespace ebm2json {
             .visitor = get_visitor_arg_from_context(ctx),
             .item_id = is_nil(alias_ref) ? in.id : alias_ref,
             .kind = kind,
-            .previous_assignment = previous_assignment,
             .target = target,
             .value = value,
             .main_logic = main_logic,
@@ -53663,7 +53657,6 @@ namespace ebm2json {
             .visitor = get_visitor_arg_from_context(ctx),
             .item_id = is_nil(alias_ref) ? in.id : alias_ref,
             .kind = kind,
-            .previous_assignment = previous_assignment,
             .target = target,
             .value = value,
             .main_logic = main_logic,
@@ -53692,10 +53685,6 @@ namespace ebm2json {
     template<typename Result,typename Context>
     expected<Result> dispatch_Statement_YIELD(Context&& ctx,const ebm::Statement& in,ebm::StatementRef alias_ref){
         auto& kind = in.body.kind;
-        if (!in.body.previous_assignment()) {
-            return unexpect_error("Unexpected null pointer for StatementBody::previous_assignment");
-        }
-        auto& previous_assignment = *in.body.previous_assignment();
         if (!in.body.target()) {
             return unexpect_error("Unexpected null pointer for StatementBody::target");
         }
@@ -53709,7 +53698,6 @@ namespace ebm2json {
                 .visitor = get_visitor_arg_from_context(ctx),
                 .item_id = is_nil(alias_ref) ? in.id : alias_ref,
                 .kind = kind,
-                .previous_assignment = previous_assignment,
                 .target = target,
                 .value = value,
             };
@@ -53719,7 +53707,6 @@ namespace ebm2json {
             .visitor = get_visitor_arg_from_context(ctx),
             .item_id = is_nil(alias_ref) ? in.id : alias_ref,
             .kind = kind,
-            .previous_assignment = previous_assignment,
             .target = target,
             .value = value,
             .main_logic = main_logic,
@@ -53731,7 +53718,6 @@ namespace ebm2json {
             .visitor = get_visitor_arg_from_context(ctx),
             .item_id = is_nil(alias_ref) ? in.id : alias_ref,
             .kind = kind,
-            .previous_assignment = previous_assignment,
             .target = target,
             .value = value,
             .main_logic = main_logic,

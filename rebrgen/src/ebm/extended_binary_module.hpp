@@ -4420,12 +4420,10 @@ namespace ebm {
         struct EBM_API union_struct_125{
             ExpressionRef target;
             ExpressionRef value;
-            WeakStatementRef previous_assignment;
         };
         struct EBM_API union_struct_126{
             ExpressionRef target;
             ExpressionRef value;
-            WeakStatementRef previous_assignment;
         };
         struct EBM_API union_struct_127{
             ExpressionRef target;
@@ -4629,10 +4627,6 @@ namespace ebm {
         ParameterDecl* param_decl();
         bool param_decl(ParameterDecl&& v);
         bool param_decl(const ParameterDecl& v);
-        const WeakStatementRef* previous_assignment() const;
-        WeakStatementRef* previous_assignment();
-        bool previous_assignment(WeakStatementRef&& v);
-        bool previous_assignment(const WeakStatementRef& v);
         const PropertyDecl* property_decl() const;
         PropertyDecl* property_decl();
         bool property_decl(PropertyDecl&& v);
@@ -4711,7 +4705,6 @@ namespace ebm {
             v(v, "match_statement",(*this).match_statement());
             v(v, "metadata",(*this).metadata());
             v(v, "param_decl",(*this).param_decl());
-            v(v, "previous_assignment",(*this).previous_assignment());
             v(v, "property_decl",(*this).property_decl());
             v(v, "property_member_decl",(*this).property_member_decl());
             v(v, "read_data",(*this).read_data());
@@ -4751,7 +4744,6 @@ namespace ebm {
             v(v, "match_statement",(*this).match_statement());
             v(v, "metadata",(*this).metadata());
             v(v, "param_decl",(*this).param_decl());
-            v(v, "previous_assignment",(*this).previous_assignment());
             v(v, "property_decl",(*this).property_decl());
             v(v, "property_member_decl",(*this).property_member_decl());
             v(v, "read_data",(*this).read_data());
@@ -4796,7 +4788,6 @@ namespace ebm {
             v(v, "match_statement",visitor_tag<decltype(std::declval<StatementBody>().match_statement()),false>{});
             v(v, "metadata",visitor_tag<decltype(std::declval<StatementBody>().metadata()),false>{});
             v(v, "param_decl",visitor_tag<decltype(std::declval<StatementBody>().param_decl()),false>{});
-            v(v, "previous_assignment",visitor_tag<decltype(std::declval<StatementBody>().previous_assignment()),false>{});
             v(v, "property_decl",visitor_tag<decltype(std::declval<StatementBody>().property_decl()),false>{});
             v(v, "property_member_decl",visitor_tag<decltype(std::declval<StatementBody>().property_member_decl()),false>{});
             v(v, "read_data",visitor_tag<decltype(std::declval<StatementBody>().read_data()),false>{});

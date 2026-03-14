@@ -1054,7 +1054,6 @@ namespace ebmgen::visitor {
         BaseVisitor& visitor;
         ebm::StatementRef item_id;
         const ebm::StatementKind& kind;
-        const ebm::WeakStatementRef& previous_assignment;
         const ebm::ExpressionRef& target;
         const ebm::ExpressionRef& value;
     };
@@ -1064,7 +1063,6 @@ namespace ebmgen::visitor {
         BaseVisitor& visitor;
         ebm::StatementRef item_id;
         const ebm::StatementKind& kind;
-        const ebm::WeakStatementRef& previous_assignment;
         const ebm::ExpressionRef& target;
         const ebm::ExpressionRef& value;
         ebmcodegen::util::MainLogicWrapper<Result> main_logic;
@@ -1075,7 +1073,6 @@ namespace ebmgen::visitor {
         BaseVisitor& visitor;
         ebm::StatementRef item_id;
         const ebm::StatementKind& kind;
-        const ebm::WeakStatementRef& previous_assignment;
         const ebm::ExpressionRef& target;
         const ebm::ExpressionRef& value;
         ebmcodegen::util::MainLogicWrapper<Result> main_logic;
@@ -1086,7 +1083,6 @@ namespace ebmgen::visitor {
         BaseVisitor& visitor;
         ebm::StatementRef item_id;
         const ebm::StatementKind& kind;
-        const ebm::WeakStatementRef& previous_assignment;
         const ebm::ExpressionRef& target;
         const ebm::ExpressionRef& value;
     };
@@ -1096,7 +1092,6 @@ namespace ebmgen::visitor {
         BaseVisitor& visitor;
         ebm::StatementRef item_id;
         const ebm::StatementKind& kind;
-        const ebm::WeakStatementRef& previous_assignment;
         const ebm::ExpressionRef& target;
         const ebm::ExpressionRef& value;
         ebmcodegen::util::MainLogicWrapper<Result> main_logic;
@@ -1107,7 +1102,6 @@ namespace ebmgen::visitor {
         BaseVisitor& visitor;
         ebm::StatementRef item_id;
         const ebm::StatementKind& kind;
-        const ebm::WeakStatementRef& previous_assignment;
         const ebm::ExpressionRef& target;
         const ebm::ExpressionRef& value;
         ebmcodegen::util::MainLogicWrapper<Result> main_logic;
@@ -4037,10 +4031,6 @@ namespace ebmgen::visitor {
     template<typename Result,typename Context>
     expected<Result> dispatch_Statement_ASSIGNMENT(Context&& ctx,const ebm::Statement& in,ebm::StatementRef alias_ref){
         auto& kind = in.body.kind;
-        if (!in.body.previous_assignment()) {
-            return unexpect_error("Unexpected null pointer for StatementBody::previous_assignment");
-        }
-        auto& previous_assignment = *in.body.previous_assignment();
         if (!in.body.target()) {
             return unexpect_error("Unexpected null pointer for StatementBody::target");
         }
@@ -4054,7 +4044,6 @@ namespace ebmgen::visitor {
                 .visitor = get_visitor_arg_from_context(ctx),
                 .item_id = is_nil(alias_ref) ? in.id : alias_ref,
                 .kind = kind,
-                .previous_assignment = previous_assignment,
                 .target = target,
                 .value = value,
             };
@@ -4064,7 +4053,6 @@ namespace ebmgen::visitor {
             .visitor = get_visitor_arg_from_context(ctx),
             .item_id = is_nil(alias_ref) ? in.id : alias_ref,
             .kind = kind,
-            .previous_assignment = previous_assignment,
             .target = target,
             .value = value,
             .main_logic = main_logic,
@@ -4076,7 +4064,6 @@ namespace ebmgen::visitor {
             .visitor = get_visitor_arg_from_context(ctx),
             .item_id = is_nil(alias_ref) ? in.id : alias_ref,
             .kind = kind,
-            .previous_assignment = previous_assignment,
             .target = target,
             .value = value,
             .main_logic = main_logic,
@@ -4105,10 +4092,6 @@ namespace ebmgen::visitor {
     template<typename Result,typename Context>
     expected<Result> dispatch_Statement_YIELD(Context&& ctx,const ebm::Statement& in,ebm::StatementRef alias_ref){
         auto& kind = in.body.kind;
-        if (!in.body.previous_assignment()) {
-            return unexpect_error("Unexpected null pointer for StatementBody::previous_assignment");
-        }
-        auto& previous_assignment = *in.body.previous_assignment();
         if (!in.body.target()) {
             return unexpect_error("Unexpected null pointer for StatementBody::target");
         }
@@ -4122,7 +4105,6 @@ namespace ebmgen::visitor {
                 .visitor = get_visitor_arg_from_context(ctx),
                 .item_id = is_nil(alias_ref) ? in.id : alias_ref,
                 .kind = kind,
-                .previous_assignment = previous_assignment,
                 .target = target,
                 .value = value,
             };
@@ -4132,7 +4114,6 @@ namespace ebmgen::visitor {
             .visitor = get_visitor_arg_from_context(ctx),
             .item_id = is_nil(alias_ref) ? in.id : alias_ref,
             .kind = kind,
-            .previous_assignment = previous_assignment,
             .target = target,
             .value = value,
             .main_logic = main_logic,
@@ -4144,7 +4125,6 @@ namespace ebmgen::visitor {
             .visitor = get_visitor_arg_from_context(ctx),
             .item_id = is_nil(alias_ref) ? in.id : alias_ref,
             .kind = kind,
-            .previous_assignment = previous_assignment,
             .target = target,
             .value = value,
             .main_logic = main_logic,

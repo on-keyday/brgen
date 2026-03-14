@@ -32,7 +32,6 @@ namespace ebmcodegen {
             body.match_statement({});
             body.metadata({});
             body.param_decl({});
-            body.previous_assignment({});
             body.property_decl({});
             body.property_member_decl({});
             body.read_data({});

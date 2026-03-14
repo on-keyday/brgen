@@ -73,12 +73,11 @@ namespace ebmgen {
         return body;
     }
 
-    ebm::StatementBody make_assignment(ebm::ExpressionRef target, ebm::ExpressionRef value, ebm::StatementRef previous_assignment) {
+    ebm::StatementBody make_assignment(ebm::ExpressionRef target, ebm::ExpressionRef value) {
         ebm::StatementBody body;
         body.kind = ebm::StatementKind::ASSIGNMENT;
         body.target(target);
         body.value(value);
-        body.previous_assignment(to_weak(previous_assignment));
         return body;
     }
 
