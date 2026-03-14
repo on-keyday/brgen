@@ -4,388 +4,920 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>unictest Result viewer (poc)</title>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #f8fafc; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        /* ==========================================================================
+           CSS Variables (Tailwind Color Palette Mapping)
+           ========================================================================== */
+        :root {
+            /* Gray */
+            --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
+            --gray-300: #d1d5db; --gray-400: #9ca3af; --gray-500: #6b7280;
+            --gray-600: #4b5563; --gray-700: #374151; --gray-800: #1f2937; --gray-900: #111827;
+            /* Slate */
+            --slate-50: #f8fafc; --slate-100: #f1f5f9; --slate-200: #e2e8f0;
+            --slate-300: #cbd5e1; --slate-400: #94a3b8; --slate-500: #64748b;
+            --slate-600: #475569; --slate-700: #334155; --slate-800: #1e293b; --slate-900: #0f172a;
+            /* Indigo */
+            --indigo-50: #eef2ff; --indigo-100: #e0e7ff; --indigo-200: #c7d2fe;
+            --indigo-500: #6366f1; --indigo-600: #4f46e5; --indigo-800: #3730a3;
+            /* Green */
+            --green-100: #dcfce3; --green-500: #22c55e; --green-600: #16a34a; --green-800: #166534;
+            /* Red */
+            --red-50: #fef2f2; --red-100: #fee2e2; --red-200: #fecaca;
+            --red-400: #f87171; --red-500: #ef4444; --red-600: #dc2626;
+            --red-700: #b91c1c; --red-800: #991b1b;
+            /* Amber */
+            --amber-50: #fffbeb; --amber-100: #fef3c7; --amber-200: #fde68a;
+            --amber-400: #fbbf24; --amber-500: #f59e0b; --amber-600: #d97706;
+            --amber-700: #b45309; --amber-800: #92400e; --amber-900: #78350f;
+            
+            /* Shadows */
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        /* ==========================================================================
+           Reset & Base Setup
+           ========================================================================== */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--gray-50);
+            color: var(--gray-800);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.5;
+        }
+        input, select, button { font-family: inherit; font-size: 100%; border: none; outline: none; background: none; }
+        button, label { cursor: pointer; }
+        a { color: inherit; text-decoration: none; }
+        .hidden { display: none !important; }
+
+        /* ==========================================================================
+           Layout Components
+           ========================================================================== */
+        .app-container {
+            flex: 1; display: flex; flex-direction: column; overflow: hidden;
+            max-width: 1600px; margin: 0 auto; width: 100%; padding: 1rem;
+            min-height: 0;
+        }
+        @media (min-width: 768px) { .app-container { padding: 1.5rem; } }
+
+        .header-panel {
+            display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start;
+            margin-bottom: 1.5rem; background-color: #fff; padding: 1rem;
+            border-radius: 0.75rem; box-shadow: var(--shadow-sm); border: 1px solid var(--gray-100);
+            flex-shrink: 0; gap: 1rem;
+        }
+        @media (min-width: 768px) {
+            .header-panel { flex-direction: row; align-items: center; padding: 1.5rem; }
+        }
+
+        .header-title-wrapper h1 { font-size: 1.25rem; font-weight: 700; color: var(--gray-900); line-height: 1.2; }
+        .header-title-wrapper p { font-size: 0.75rem; color: var(--gray-500); margin-top: 0.25rem; }
+        @media (min-width: 768px) {
+            .header-title-wrapper h1 { font-size: 1.5rem; }
+            .header-title-wrapper p { font-size: 0.875rem; }
+        }
+
+        .header-actions {
+            display: flex; align-items: center; justify-content: space-between;
+            width: 100%; gap: 1rem;
+        }
+        @media (min-width: 768px) {
+            .header-actions { width: auto; justify-content: flex-end; }
+        }
+
+        .main-content-wrapper { flex: 1; display: flex; flex-direction: column; min-height: 0; position: relative; }
+
+        /* ==========================================================================
+           UI Components
+           ========================================================================== */
+        /* Tab Controls */
+        .tab-controls { display: flex; gap: 0.25rem; background-color: var(--gray-100); padding: 0.25rem; border-radius: 0.5rem; }
+        .tab-btn {
+            padding: 0.375rem 1rem; font-size: 0.875rem; font-weight: 500; border-radius: 0.375rem;
+            transition: background-color 0.2s, color 0.2s, box-shadow 0.2s;
+        }
+        .tab-btn.active { background-color: #fff; color: var(--gray-900); box-shadow: var(--shadow-sm); }
+        .tab-btn.inactive { color: var(--gray-500); }
+        .tab-btn.inactive:hover { color: var(--gray-700); }
+
+        /* Primary Button (Import JSON) */
+        .btn-primary {
+            background-color: var(--slate-800); color: #fff; padding: 0.5rem 1rem;
+            border-radius: 0.5rem; font-size: 0.875rem; font-weight: 500;
+            transition: background-color 0.2s; box-shadow: var(--shadow-sm); white-space: nowrap;
+        }
+        .btn-primary:hover { background-color: var(--slate-700); }
+
+        /* Alerts & Messages */
+        .alert-error {
+            background-color: var(--red-50); color: var(--red-700); padding: 1rem;
+            border-radius: 0.5rem; margin-bottom: 1.5rem; border: 1px solid var(--red-200); flex-shrink: 0;
+        }
+        .empty-state {
+            flex: 1; display: flex; align-items: center; justify-content: center;
+            background-color: #fff; border-radius: 0.75rem; border: 2px dashed var(--gray-200);
+            margin-top: 1.5rem; min-height: 0; box-shadow: var(--shadow-sm);
+        }
+        .empty-state p { font-size: 0.875rem; color: var(--slate-500); }
+
+        /* View Panels */
+        .view-panel { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+        .view-overview { overflow-y: auto; padding-right: 0.5rem; padding-bottom: 1.5rem; }
+        .view-matrix { background-color: #fff; border-radius: 0.75rem; border: 1px solid var(--gray-100); box-shadow: var(--shadow-sm); }
+
+        /* Stats Grid */
+        .stats-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1.5rem; flex-shrink: 0; }
+        @media (min-width: 768px) { .stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+        
+        .stat-card {
+            background-color: #fff; padding: 1rem; border-radius: 0.75rem;
+            border: 1px solid var(--gray-100); border-left-width: 4px; box-shadow: var(--shadow-sm);
+        }
+        .stat-card-title { font-size: 0.75rem; color: var(--gray-500); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+        .stat-card-value { font-size: 1.5rem; font-weight: 700; margin-top: 0.25rem; }
+        .border-l-blue { border-left-color: #3b82f6; }
+        .border-l-green { border-left-color: var(--green-500); }
+        .border-l-red { border-left-color: var(--red-500); }
+        .border-l-amber { border-left-color: var(--amber-500); }
+        .text-green { color: var(--green-600); }
+        .text-red { color: var(--red-600); }
+        .text-amber { color: var(--amber-600); }
+
+        /* Setup Failures Section */
+        .section-title { font-size: 0.875rem; font-weight: 700; margin-bottom: 0.75rem; color: var(--gray-700); text-transform: uppercase; letter-spacing: 0.05em; }
+        .setup-failure-box { background-color: var(--amber-50); border-radius: 0.75rem; border: 1px solid var(--amber-200); overflow: hidden; margin-bottom: 1.5rem; flex-shrink: 0;}
+        .setup-failure-item { padding: 1rem; border-bottom: 1px solid var(--amber-200); }
+        .setup-failure-item:last-child { border-bottom: none; }
+        .sf-title { font-weight: 700; color: var(--amber-800); font-size: 0.875rem; }
+        .sf-badge { font-size: 0.75rem; margin-left: 0.5rem; color: var(--amber-700); background-color: var(--amber-100); padding: 0.125rem 0.5rem; border-radius: 0.25rem; }
+        .sf-pre { margin-top: 0.5rem; font-size: 0.75rem; background-color: #fff; padding: 0.75rem; border-radius: 0.25rem; border: 1px solid var(--amber-100); overflow-x: auto; color: var(--amber-900); font-family: monospace; white-space: pre-wrap; }
+        .sf-msg { margin-top: 0.25rem; font-size: 0.875rem; color: var(--amber-700); }
+
+        /* Control Bars */
+        .control-bar {
+            background-color: #fff; padding: 1rem; border-radius: 0.75rem;
+            border: 1px solid var(--gray-100); margin-bottom: 1rem; box-shadow: var(--shadow-sm); flex-shrink: 0;
+            display: flex; flex-wrap: wrap; align-items: center; gap: 1rem;
+        }
+        .control-label { font-size: 0.75rem; font-weight: 700; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.05em; }
+        .radio-group { display: flex; flex-wrap: wrap; gap: 1rem; }
+        .radio-item { display: flex; align-items: center; gap: 0.375rem; cursor: pointer; }
+        .radio-input { width: 1rem; height: 1rem; accent-color: var(--indigo-600); cursor: pointer; }
+        .radio-text { font-size: 0.875rem; color: var(--gray-700); font-weight: 500; text-transform: capitalize; }
+
+        .matrix-toolbar {
+            padding: 0.75rem; border-bottom: 1px solid var(--gray-100); background-color: #fff;
+            display: flex; flex-direction: column; gap: 0.75rem; flex-shrink: 0;
+        }
+        @media (min-width: 640px) {
+            .matrix-toolbar { flex-direction: row; justify-content: space-between; align-items: center; }
+        }
+        .matrix-toolbar-left { display: flex; align-items: center; gap: 0.75rem; width: 100%; }
+        @media (min-width: 640px) { .matrix-toolbar-left { width: auto; } }
+        
+        .search-input {
+            width: 100%; padding: 0.375rem 0.75rem; border: 1px solid var(--gray-300); border-radius: 0.375rem;
+            font-size: 0.875rem; line-height: 1.25rem; color: var(--gray-900); background-color: #fff;
+        }
+        .search-input:focus { outline: none; border-color: var(--indigo-500); box-shadow: 0 0 0 1px var(--indigo-500); }
+        @media (min-width: 640px) { .search-input { width: 16rem; } }
+
+        .status-select {
+            width: 100%; padding: 0.375rem 2rem 0.375rem 0.75rem; border: 1px solid var(--gray-300); border-radius: 0.375rem;
+            font-size: 0.875rem; line-height: 1.25rem; color: var(--gray-900); background-color: #fff;
+            appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em;
+        }
+        .status-select:focus { outline: none; border-color: var(--indigo-500); box-shadow: 0 0 0 1px var(--indigo-500); }
+        @media (min-width: 640px) { .status-select { width: auto; } }
+
+        .axis-selector {
+            display: flex; align-items: center; background-color: var(--gray-50); padding: 0.375rem 0.75rem;
+            border-radius: 0.25rem; border: 1px solid var(--gray-200); gap: 0.75rem;
+        }
+        .axis-selector .radio-text { font-size: 0.75rem; }
+        .axis-selector .radio-input { width: 0.875rem; height: 0.875rem; }
+
+        /* Tables */
+        .table-container { background-color: #fff; border-radius: 0.75rem; border: 1px solid var(--gray-100); box-shadow: var(--shadow-sm); flex-shrink: 0; overflow-x: auto; }
+        .data-table { width: 100%; min-width: 100%; border-collapse: collapse; text-align: left; }
+        .data-table thead { background-color: var(--gray-50); border-bottom: 1px solid var(--gray-200); }
+        .data-table th { padding: 0.75rem 1.5rem; font-size: 0.75rem; font-weight: 700; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.05em; }
+        .data-table tbody tr { border-bottom: 1px solid var(--gray-200); transition: background-color 0.15s; }
+        .data-table tbody tr:hover { background-color: var(--gray-50); }
+        .data-table td { padding: 0.75rem 1.5rem; }
+
+        /* Overview Table Specifics */
+        .td-key { font-size: 0.875rem; font-family: monospace; color: var(--slate-700); word-break: break-all; }
+        .td-total { font-size: 0.875rem; color: var(--gray-600); font-weight: 500; }
+        .progress-wrapper { display: flex; align-items: center; }
+        .progress-track { width: 100%; background-color: var(--gray-200); border-radius: 9999px; height: 0.5rem; margin-right: 0.5rem; overflow: hidden; }
+        .progress-fill { height: 100%; border-radius: 9999px; }
+        .progress-green { background-color: var(--green-500); }
+        .progress-amber { background-color: var(--amber-400); }
+        .progress-red { background-color: var(--red-500); }
+        .progress-text { font-size: 0.75rem; color: var(--gray-600); font-family: monospace; width: 2.5rem; text-align: right; }
+
+        /* Matrix Table Specifics */
+        .matrix-table-container { flex: 1; overflow: auto; position: relative; }
+        .matrix-table { width: 100%; min-width: 100%; border-collapse: separate; border-spacing: 0; }
+        .matrix-table th, .matrix-table td { border-right: 1px solid var(--gray-200); border-bottom: 1px solid var(--gray-100); }
         
         .matrix-table th:first-child, .matrix-table td:first-child {
-            position: sticky; left: 0; background-color: white; z-index: 10;
+            position: sticky; left: 0; background-color: #fff; z-index: 10;
             box-shadow: 2px 0 5px -2px rgba(0,0,0,0.1);
         }
-        .matrix-table thead th { position: sticky; top: 0; background-color: #f8fafc; z-index: 20; }
+        .matrix-table thead th { position: sticky; top: 0; background-color: var(--gray-50); z-index: 20; border-bottom: 1px solid var(--gray-200); }
         .matrix-table thead th:first-child { z-index: 30; }
+
+        .matrix-th-row { padding: 0.75rem 1rem; font-size: 0.75rem; font-weight: 700; color: var(--gray-700); text-transform: uppercase; letter-spacing: 0.05em; text-align: left; min-width: 200px; }
+        .matrix-th-col { padding: 0.5rem 0.75rem; text-align: center; min-width: 120px; }
         
-        .modal-enter-active, .modal-leave-active { transition: opacity 0.2s ease; }
-        .modal-enter-from, .modal-leave-to { opacity: 0; }
+        .col-header-composite { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
+        .col-header-p1 { font-size: 0.75rem; font-weight: 700; color: var(--slate-700); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; max-width: 100px;}
+        .col-header-p2 { font-size: 0.625rem; color: var(--slate-500); background-color: var(--slate-100); padding: 0.125rem 0.375rem; border-radius: 0.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; max-width: 100px; }
+        .col-header-p3 { font-size: 0.625rem; color: var(--indigo-600); background-color: var(--indigo-50); border: 1px solid var(--indigo-100); padding: 0.125rem 0.375rem; border-radius: 0.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; max-width: 100px; }
+        .col-header-simple { font-size: 0.875rem; font-weight: 700; color: var(--slate-700); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; margin: 0 auto; }
+
+        .matrix-tbody tr { transition: background-color 0.15s; }
+        .matrix-tbody tr:hover, .matrix-tbody tr:hover td:first-child { background-color: var(--slate-50); }
+        .matrix-td-rowname { padding: 0.5rem 1rem; font-size: 0.75rem; font-family: monospace; color: var(--slate-800); white-space: nowrap; }
+        .matrix-td-cell { padding: 0; height: 100%; position: relative; }
+        
+        .cell-content {
+            width: 100%; height: 100%; min-height: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer; transition: background-color 0.15s; padding: 0.25rem;
+        }
+        .cell-content:hover { background-color: var(--slate-100); }
+        .cell-empty { width: 100%; height: 100%; min-height: 40px; display: flex; justify-content: center; align-items: center; color: var(--gray-200); }
+        .cell-empty span { font-size: 0.75rem; font-weight: 700; }
+        
+        .icon-success { width: 1rem; height: 1rem; color: var(--green-500); }
+        .icon-fail { width: 1rem; height: 1rem; color: var(--red-500); }
+        .fail-status-text { font-size: 0.5625rem; color: var(--red-600); margin-top: 0.125rem; font-family: monospace; font-weight: 700; }
+        .multi-badge { position: absolute; top: 0; right: 0; background-color: var(--indigo-100); color: var(--indigo-800); font-size: 0.5625rem; font-weight: 700; padding: 0 0.25rem; border-bottom-left-radius: 0.25rem; border-bottom: 1px solid var(--indigo-200); border-left: 1px solid var(--indigo-200); }
+
+        .empty-matrix-msg { padding: 2rem 1rem; text-align: center; font-size: 0.875rem; color: var(--gray-500); background-color: var(--gray-50); }
+
+        /* Modal */
+        .modal-wrapper { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .modal-backdrop { position: absolute; inset: 0; background-color: rgba(15, 23, 42, 0.5); transition: opacity 0.2s ease; }
+        .modal-dialog {
+            position: relative; width: 100%; max-width: 64rem; margin: 1.5rem auto; display: flex; flex-direction: column;
+            background-color: #fff; border-radius: 0.75rem; box-shadow: var(--shadow-2xl); border: 1px solid var(--gray-200);
+            max-height: 90vh; z-index: 50;
+        }
+        .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem; border-bottom: 1px solid var(--gray-200); background-color: var(--gray-50); border-top-left-radius: 0.75rem; border-top-right-radius: 0.75rem; }
+        .modal-title-text { font-size: 1.125rem; font-weight: 700; color: var(--gray-900); font-family: monospace; }
+        .modal-title-sub { font-size: 0.875rem; font-weight: 400; color: var(--gray-500); margin-left: 0.5rem; font-family: sans-serif; }
+        .modal-close { color: var(--gray-400); font-size: 1.5rem; font-weight: 600; line-height: 1; transition: color 0.15s; padding: 0 0.5rem; }
+        .modal-close:hover { color: var(--gray-900); }
+        .modal-body { position: relative; padding: 1.5rem; flex: 1 1 auto; overflow-y: auto; background-color: #fff; border-bottom-left-radius: 0.75rem; border-bottom-right-radius: 0.75rem; }
+        
+        .tc-block { margin-bottom: 2rem; padding-bottom: 2rem; border-bottom: 2px dashed var(--gray-200); }
+        .tc-block:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+        
+        .tc-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+        .badge { padding: 0.25rem 0.625rem; border-radius: 0.25rem; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+        .badge-success { background-color: var(--green-100); color: var(--green-800); }
+        .badge-fail { background-color: var(--red-100); color: var(--red-800); }
+        .tc-meta { font-size: 0.75rem; color: var(--gray-500); display: flex; flex-wrap: wrap; gap: 1rem; }
+        .tc-meta strong { color: var(--gray-700); }
+        
+        .tc-source { font-size: 0.75rem; color: var(--gray-500); margin-bottom: 1rem; background-color: var(--gray-50); padding: 0.5rem; border-radius: 0.25rem; font-family: monospace; word-break: break-all; border: 1px solid var(--gray-100); }
+        
+        .tc-status-grid { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+        @media (min-width: 768px) { .tc-status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        .tc-status-box { background-color: var(--slate-50); padding: 0.75rem; border-radius: 0.5rem; border: 1px solid var(--slate-200); }
+        .tc-status-label { font-size: 0.625rem; font-weight: 700; color: var(--slate-500); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+        .tc-status-val1 { font-family: monospace; font-size: 0.875rem; font-weight: 700; color: var(--slate-800); }
+        .tc-status-val2 { font-family: monospace; font-size: 0.875rem; color: var(--slate-800); }
+
+        .tc-error { margin-bottom: 1rem; }
+        .tc-error-label { font-size: 0.625rem; font-weight: 700; color: var(--red-600); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+        .tc-error-msg { background-color: var(--red-50); border: 1px solid var(--red-200); padding: 0.75rem; border-radius: 0.5rem; font-size: 0.75rem; font-family: monospace; color: var(--red-800); white-space: pre-wrap; word-break: break-word; }
+
+        .tc-output { margin-bottom: 1rem; }
+        .tc-output-label { font-size: 0.625rem; font-weight: 700; color: var(--slate-600); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+        .tc-output-box { background-color: var(--slate-900); border-radius: 0.5rem; overflow: hidden; border: 1px solid var(--slate-700); }
+        .tc-output-pre { padding: 0.75rem; font-size: 0.75rem; font-family: monospace; overflow-x: auto; white-space: pre-wrap; word-break: break-word; }
+        .tc-output-stderr { color: var(--red-400); max-height: 25vh; }
+        .tc-output-stdout { color: var(--slate-300); max-height: 15vh; }
+
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: var(--slate-50); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--slate-300); border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--slate-400); }
+        
+        /* Transition utility classes */
+        .fade-enter { opacity: 0; }
+        .fade-enter-active { transition: opacity 0.2s ease; opacity: 1; }
+        .fade-leave { opacity: 1; }
+        .fade-leave-active { transition: opacity 0.2s ease; opacity: 0; }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans antialiased h-screen overflow-hidden flex flex-col">
-    <div id="app" class="flex-1 flex flex-col overflow-hidden max-w-[1600px] mx-auto w-full p-4 md:p-6 min-h-0">
+<body>
+    <div id="app" class="app-container">
         
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-100 flex-shrink-0 gap-4">
-            <div>
-                <h1 class="text-xl md:text-2xl font-bold text-gray-900">Telemetry Dashboard</h1>
-                <p class="text-xs md:text-sm text-gray-500 mt-1">Unified metrics and dynamic execution matrix.</p>
+        <div class="header-panel">
+            <div class="header-title-wrapper">
+                <h1>Unictest Result Dashboard </h1>
+                <p>Unified metrics and dynamic execution matrix.</p>
+                <p>This view is generated by LLM. No third party script is running. No warranties implied.</p>
             </div>
             
-            <div class="flex items-center space-x-4 w-full md:w-auto justify-between md:justify-end">
-                <div v-if="testData" class="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-                    <button @click="activeTab = 'overview'" :class="['px-4 py-1.5 text-sm font-medium rounded-md transition-colors', activeTab === 'overview' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700']">Overview</button>
-                    <button @click="activeTab = 'matrix'" :class="['px-4 py-1.5 text-sm font-medium rounded-md transition-colors', activeTab === 'matrix' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700']">Matrix</button>
+            <div class="header-actions">
+                <div id="tab-controls" class="tab-controls hidden">
+                    <button data-tab="overview" id="tab-btn-overview" class="tab-btn inactive">Overview</button>
+                    <button data-tab="matrix" id="tab-btn-matrix" class="tab-btn inactive">Matrix</button>
                 </div>
-                <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 shadow-sm whitespace-nowrap">
+                <label class="btn-primary">
                     Import JSON
-                    <input type="file" accept=".json" class="hidden" @change="handleFileUpload">
+                    <input type="file" id="file-upload" accept=".json" class="hidden">
                 </label>
             </div>
         </div>
 
-        <div v-if="error" class="bg-red-50 text-red-700 p-4 rounded-lg mb-6 border border-red-200 flex-shrink-0">{{ error }}</div>
+        <div id="error-message" class="alert-error hidden"></div>
 
-        <div v-if="testData" class="flex-1 flex flex-col min-h-0 relative">
+        <div id="empty-state" class="empty-state">
+            <div><p>Upload JSON artifact to populate.</p></div>
+        </div>
+
+        <div id="main-content" class="main-content-wrapper hidden">
             
-            <div v-show="activeTab === 'overview'" class="flex-1 flex flex-col min-h-0 overflow-y-auto custom-scrollbar pr-2 pb-6">
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 flex-shrink-0">
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-blue-500">
-                        <div class="text-xs text-gray-500 font-medium uppercase tracking-wider">Total Tests</div>
-                        <div class="text-2xl font-bold mt-1">{{ testData.results.length }}</div>
+            <div id="view-overview" class="view-panel view-overview custom-scrollbar hidden">
+                <div class="stats-grid">
+                    <div class="stat-card border-l-blue">
+                        <div class="stat-card-title">Total Tests</div>
+                        <div id="stat-total" class="stat-card-value">0</div>
                     </div>
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-green-500">
-                        <div class="text-xs text-gray-500 font-medium uppercase tracking-wider">Success</div>
-                        <div class="text-2xl font-bold mt-1 text-green-600">{{ testData.success_count }}</div>
+                    <div class="stat-card border-l-green">
+                        <div class="stat-card-title">Success</div>
+                        <div id="stat-success" class="stat-card-value text-green">0</div>
                     </div>
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-red-500">
-                        <div class="text-xs text-gray-500 font-medium uppercase tracking-wider">Failures</div>
-                        <div class="text-2xl font-bold mt-1 text-red-600">{{ testData.fail_count }}</div>
+                    <div class="stat-card border-l-red">
+                        <div class="stat-card-title">Failures</div>
+                        <div id="stat-fail" class="stat-card-value text-red">0</div>
                     </div>
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 border-l-4 border-l-amber-500">
-                        <div class="text-xs text-gray-500 font-medium uppercase tracking-wider">Setup Failures</div>
-                        <div class="text-2xl font-bold mt-1 text-amber-600">{{ testData.setup_fail_count }}</div>
+                    <div class="stat-card border-l-amber">
+                        <div class="stat-card-title">Setup Failures</div>
+                        <div id="stat-setup" class="stat-card-value text-amber">0</div>
                     </div>
                 </div>
 
-                <div v-if="testData.setup_failures && testData.setup_failures.length > 0" class="mb-6 flex-shrink-0">
-                    <h2 class="text-sm font-bold mb-3 text-gray-700 uppercase tracking-wider">Setup Failures</h2>
-                    <div class="bg-amber-50 rounded-xl border border-amber-200 overflow-hidden">
-                        <div v-for="(sf, index) in testData.setup_failures" :key="index" class="p-4 border-b border-amber-200 last:border-0">
-                            <div v-if="sf.CommandFailure">
-                                <span class="font-bold text-amber-800 text-sm">Command Failure</span>
-                                <span class="text-xs ml-2 text-amber-700 bg-amber-100 px-2 py-0.5 rounded">Runner: {{ sf.CommandFailure.runner }}</span>
-                                <pre class="mt-2 text-xs bg-white p-3 rounded border border-amber-100 custom-scrollbar overflow-x-auto text-amber-900">{{ sf.CommandFailure.output_stderr }}</pre>
-                            </div>
-                            <div v-if="sf.OrchestrationError">
-                                <span class="font-bold text-amber-800 text-sm">Orchestration Error</span>
-                                <p class="mt-1 text-sm text-amber-700">{{ sf.OrchestrationError.error_message }}</p>
-                            </div>
+                <div id="setup-failures-section" class="hidden" style="margin-bottom: 1.5rem; flex-shrink: 0;">
+                    <h2 class="section-title">Setup Failures</h2>
+                    <div id="setup-failures-list" class="setup-failure-box">
                         </div>
-                    </div>
                 </div>
 
-                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-4 flex-shrink-0">
-                    <div class="flex flex-wrap items-center gap-4">
-                        <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Group By Axis:</span>
-                        <label v-for="opt in ['composite', 'runner', 'source', 'format_name']" :key="opt" class="flex items-center space-x-1.5 cursor-pointer">
-                            <input type="radio" :value="opt" v-model="groupBy" class="text-indigo-600 focus:ring-indigo-500 w-4 h-4">
-                            <span class="text-sm text-gray-700 font-medium capitalize">{{ opt.replace('_', ' ') }}</span>
-                        </label>
-                    </div>
+                <div class="control-bar">
+                    <span class="control-label">Group By Axis:</span>
+                    <div id="group-by-radios" class="radio-group">
+                        </div>
                 </div>
 
-                <div class="bg-white rounded-xl shadow-sm border border-gray-100 flex-shrink-0">
-                    <div class="overflow-x-auto custom-scrollbar">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Aggregation Key</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-24">Total</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-48">Success Rate</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                <tr v-for="(group, key) in groupedResults" :key="key" class="hover:bg-gray-50 transition-colors">
-                                    <td class="px-6 py-3 text-sm font-mono text-slate-700 break-all">{{ key }}</td>
-                                    <td class="px-6 py-3 text-sm text-gray-600 font-medium">{{ group.items.length }}</td>
-                                    <td class="px-6 py-3">
-                                        <div class="flex items-center">
-                                            <div class="w-full bg-gray-200 rounded-full h-2 mr-2">
-                                                <div :class="['h-2 rounded-full', group.successRate === 100 ? 'bg-green-500' : (group.successRate > 50 ? 'bg-amber-400' : 'bg-red-500')]" :style="{ width: group.successRate + '%' }"></div>
-                                            </div>
-                                            <span class="text-xs text-gray-600 font-mono w-10 text-right">{{ group.successRate.toFixed(1) }}%</span>
-                                        </div>
-                                    </td>
-                                </tr>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Aggregation Key</th>
+                                <th style="width: 6rem;">Total</th>
+                                <th style="width: 12rem;">Success Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody id="overview-tbody">
                             </tbody>
-                        </table>
-                    </div>
+                    </table>
                 </div>
             </div>
 
-            <div v-show="activeTab === 'matrix'" class="flex-1 flex flex-col min-h-0 bg-white rounded-xl shadow-sm border border-gray-100">
-                <div class="p-3 border-b border-gray-100 bg-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 flex-shrink-0">
-                    
-                    <div class="flex items-center space-x-3 w-full sm:w-auto">
-                        <div class="relative w-full sm:w-64">
-                            <input type="text" v-model="searchQuery" placeholder="Search input_name..." class="block w-full px-3 py-1.5 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                        </div>
-                        <select v-model="statusFilter" class="block w-full sm:w-auto pl-3 pr-8 py-1.5 text-base border-gray-300 border focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-white">
+            <div id="view-matrix" class="view-panel view-matrix hidden">
+                <div class="matrix-toolbar">
+                    <div class="matrix-toolbar-left">
+                        <input type="text" id="search-input" placeholder="Search input_name..." class="search-input">
+                        <select id="status-filter" class="status-select">
                             <option value="all">All Status</option>
                             <option value="failed">Failures Only</option>
                             <option value="success">Success Only</option>
                         </select>
                     </div>
                     
-                    <div class="flex items-center space-x-4">
-                        <div class="flex items-center bg-gray-50 px-3 py-1.5 rounded border border-gray-200">
-                            <span class="text-xs font-bold text-gray-500 mr-3 uppercase">Column Axis:</span>
-                            <div class="flex space-x-3">
-                                <label v-for="opt in ['runner', 'format_name', 'composite']" :key="opt" class="flex items-center space-x-1 cursor-pointer">
-                                    <input type="radio" :value="opt" v-model="matrixColumnAxis" class="text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5">
-                                    <span class="text-xs text-gray-700 font-medium capitalize">{{ opt.split('_')[0] }}</span>
-                                </label>
+                    <div class="axis-selector">
+                        <span class="control-label">Column Axis:</span>
+                        <div id="column-axis-radios" class="radio-group" style="gap: 0.75rem;">
                             </div>
-                        </div>
                     </div>
                 </div>
                 
-                <div class="overflow-auto custom-scrollbar flex-1 relative matrix-table">
-                    <table class="min-w-full divide-y divide-gray-200 border-collapse">
-                        <thead>
-                            <tr>
-                                <th scope="col" class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200 bg-gray-50 min-w-[200px]">
-                                    input_name
-                                </th>
-                                <th v-for="col in matrixData.columns" :key="col" scope="col" class="px-3 py-2 text-center border-r border-gray-200 min-w-[120px] bg-gray-50">
-                                    <div v-if="matrixColumnAxis === 'composite'" class="flex flex-col space-y-1 items-center">
-                                        <span class="text-xs font-bold text-slate-700 truncate w-full" :title="col.split('|')[0].trim()">{{ col.split('|')[0].trim() }}</span>
-                                        <span class="text-[10px] text-slate-500 bg-slate-100 rounded px-1.5 py-0.5 truncate w-full" :title="col.split('|')[1].trim()">{{ col.split('|')[1].trim() }}</span>
-                                        <span class="text-[10px] text-indigo-600 border border-indigo-100 bg-indigo-50 rounded px-1.5 py-0.5 truncate w-full" :title="col.split('|')[2].trim()">{{ col.split('|')[2].trim() }}</span>
-                                    </div>
-                                    <div v-else class="text-sm font-bold text-slate-700 truncate" :title="col">{{ col }}</div>
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-100">
-                            <tr v-if="filteredMatrixRows.length === 0">
-                                <td :colspan="matrixData.columns.length + 1" class="px-4 py-8 text-center text-sm text-gray-500 bg-gray-50">No cases match the filters.</td>
-                            </tr>
-                            <tr v-for="row in filteredMatrixRows" :key="row.inputName" class="hover:bg-slate-50 transition-colors group">
-                                <td class="px-4 py-2 text-xs font-mono text-slate-800 border-r border-gray-200 whitespace-nowrap group-hover:bg-slate-50">
-                                    {{ row.inputName }}
-                                </td>
-                                <td v-for="col in matrixData.columns" :key="col" class="p-0 border-r border-gray-100 transition-colors h-full relative">
-                                    <template v-if="row.results[col] && row.results[col].length > 0">
-                                        <div @click="inspectTestCases(row.results[col])" 
-                                             class="w-full h-full min-h-[40px] flex flex-col items-center justify-center cursor-pointer hover:bg-slate-100 transition-colors p-1"
-                                             :title="row.results[col].every(tc => tc.success) ? 'All Passed' : 'Failures Detected'">
-                                            
-                                            <svg v-if="row.results[col].every(tc => tc.success)" class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
-                                            <template v-else>
-                                                <svg class="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>
-                                                <span class="text-[9px] text-red-600 mt-0.5 font-mono font-bold">{{ row.results[col].find(tc => !tc.success)?.output_status }}</span>
-                                            </template>
-                                            
-                                            <div v-if="row.results[col].length > 1" class="absolute top-0 right-0 bg-indigo-100 text-indigo-800 text-[9px] font-bold px-1 rounded-bl border-b border-l border-indigo-200">
-                                                {{ row.results[col].length }}
-                                            </div>
-                                        </div>
-                                    </template>
-                                    <template v-else>
-                                        <div class="w-full h-full min-h-[40px] flex justify-center items-center text-gray-200">
-                                            <span class="text-xs font-bold">-</span>
-                                        </div>
-                                    </template>
-                                </td>
-                            </tr>
-                        </tbody>
+                <div class="matrix-table-container custom-scrollbar">
+                    <table class="matrix-table">
+                        <thead id="matrix-thead">
+                            </thead>
+                        <tbody id="matrix-tbody" class="matrix-tbody">
+                            </tbody>
                     </table>
                 </div>
             </div>
         </div>
 
-        <div v-else class="flex-1 flex items-center justify-center bg-white rounded-xl shadow-sm border border-gray-100 border-dashed border-2 mt-6 min-h-0">
-            <div class="text-center"><p class="mt-1 text-sm text-slate-500">Upload JSON artifact to populate.</p></div>
-        </div>
-
-        <transition name="modal">
-            <div v-if="selectedTestCases && selectedTestCases.length > 0" class="fixed inset-0 z-50 flex items-center justify-center overflow-x-hidden overflow-y-auto outline-none focus:outline-none" @click.self="closeModal">
-                <div class="fixed inset-0 bg-slate-900 bg-opacity-50 transition-opacity" @click="closeModal"></div>
-                
-                <div class="relative w-full max-w-5xl mx-auto my-6 flex flex-col bg-white rounded-xl shadow-2xl border border-gray-200 max-h-[90vh] z-50">
-                    <div class="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50 rounded-t">
-                        <div>
-                            <h3 class="text-lg font-bold text-gray-900 font-mono">
-                                {{ selectedTestCases[0].input_name }} 
-                                <span class="text-sm font-normal text-gray-500 ml-2">({{ selectedTestCases.length }} execution(s) in this cell)</span>
-                            </h3>
-                        </div>
-                        <button @click="closeModal" class="text-gray-400 hover:text-gray-900 text-2xl font-semibold leading-none outline-none focus:outline-none transition-colors">&times;</button>
+        <div id="modal-overlay" class="modal-wrapper hidden fade-enter">
+            <div id="modal-backdrop" class="modal-backdrop"></div>
+            <div class="modal-dialog">
+                <div class="modal-header">
+                    <div>
+                        <span id="modal-title" class="modal-title-text"></span>
+                        <span id="modal-title-sub" class="modal-title-sub"></span>
                     </div>
-
-                    <div class="relative p-6 flex-auto overflow-y-auto custom-scrollbar bg-white">
-                        <div v-for="(tc, idx) in selectedTestCases" :key="idx" class="mb-8 border-b-2 border-dashed border-gray-200 pb-8 last:border-0 last:mb-0 last:pb-0">
-                            
-                            <div class="flex items-center space-x-3 mb-4">
-                                <span :class="['px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wider', tc.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800']">
-                                    {{ tc.success ? 'Success' : 'Failed' }}
-                                </span>
-                                <div class="text-xs text-gray-500 flex flex-wrap gap-4">
-                                    <span><strong class="text-gray-700">Runner:</strong> {{ tc.runner }}</span>
-                                    <span><strong class="text-gray-700">Format:</strong> {{ tc.format_name }}</span>
-                                </div>
-                            </div>
-
-                            <div class="text-xs text-gray-500 mb-4 bg-gray-50 p-2 rounded font-mono break-all border border-gray-100">
-                                <strong>Source:</strong> {{ tc.source }}
-                            </div>
-
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
-                                    <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Exit Status</div>
-                                    <div class="font-mono text-sm font-bold text-slate-800">{{ tc.output_status }}</div>
-                                </div>
-                                <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
-                                    <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Interpretation</div>
-                                    <div class="font-mono text-sm text-slate-800">{{ tc.status_interpretation || 'N/A' }}</div>
-                                </div>
-                            </div>
-
-                            <div v-if="tc.error_message" class="mb-4">
-                                <div class="text-[10px] font-bold text-red-600 uppercase tracking-wider mb-1">Error Message</div>
-                                <div class="bg-red-50 border border-red-200 p-3 rounded-lg text-xs font-mono text-red-800 whitespace-pre-wrap break-words">{{ tc.error_message }}</div>
-                            </div>
-
-                            <div class="mb-4">
-                                <div class="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">Standard Error (stderr)</div>
-                                <div class="bg-slate-900 rounded-lg overflow-hidden border border-slate-700">
-                                    <pre class="p-3 text-xs font-mono text-red-400 overflow-x-auto max-h-[25vh] custom-scrollbar whitespace-pre-wrap break-words">{{ tc.output_stderr || '(No standard error)' }}</pre>
-                                </div>
-                            </div>
-                            
-                            <div>
-                                <div class="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">Standard Output (stdout)</div>
-                                <div class="bg-slate-900 rounded-lg overflow-hidden border border-slate-700">
-                                    <pre class="p-3 text-xs font-mono text-slate-300 overflow-x-auto max-h-[15vh] custom-scrollbar whitespace-pre-wrap break-words">{{ tc.output_stdout || '(No standard output)' }}</pre>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <button id="modal-close-btn" class="modal-close">&times;</button>
                 </div>
+                <div id="modal-body" class="modal-body custom-scrollbar">
+                    </div>
             </div>
-        </transition>
+        </div>
 
     </div>
 
+    <div id="test-result" class="hidden">
+        {%TEST_RESULTS%}
+    </div>
+
     <script>
-        const { createApp, ref, computed } = Vue;
+        const App = {
+            state: {
+                testData: null,
+                error: null,
+                activeTab: 'matrix',
+                groupBy: 'runner',
+                matrixColumnAxis: 'runner',
+                searchQuery: '',
+                statusFilter: 'all',
+                selectedTestCases: null
+            },
 
-        createApp({
-            setup() {
-                const testData = ref(null);
-                const error = ref(null);
-                const activeTab = ref('matrix');
-                const groupBy = ref('runner');
-                const matrixColumnAxis = ref('runner'); // デフォルトをrunnerに変更
-                
-                const searchQuery = ref('');
-                const statusFilter = ref('all');
-                const selectedTestCases = ref(null); // Arrayとして保持するよう変更
+            init() {
+                this.cacheDOM();
+                this.bindEvents();
+                this.renderStaticControls();
+                this.mayLoadTestData();
+                this.updateView();
+            },
 
-                const handleFileUpload = (event) => {
-                    const file = event.target.files[0];
-                    if (!file) return;
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        try {
-                            const json = JSON.parse(e.target.result);
-                            if (!json.results || !Array.isArray(json.results)) throw new Error("Schema violation.");
-                            testData.value = json;
-                            error.value = null;
-                        } catch (err) {
-                            error.value = "JSON Error: " + err.message;
-                            testData.value = null;
+            mayLoadTestData() {
+                const testDataEl = document.getElementById('test-result');
+                if (testDataEl && testDataEl.textContent.trim()) {
+                    try {
+                        const json = JSON.parse(testDataEl.textContent);
+                        if (json.results && Array.isArray(json.results)) {
+                            this.state.testData = json;
                         }
-                    };
-                    reader.readAsText(file);
-                };
-
-                const groupedResults = computed(() => {
-                    if (!testData.value) return {};
-                    const groups = {};
-                    testData.value.results.forEach(tc => {
-                        let key = groupBy.value === 'composite' ? `${tc.runner} | ${tc.source} | ${tc.format_name}` : tc[groupBy.value] || 'Unknown';
-                        if (!groups[key]) groups[key] = { items: [], successCount: 0, failCount: 0 };
-                        groups[key].items.push(tc);
-                        if (tc.success) groups[key].successCount++; else groups[key].failCount++;
-                    });
-                    for (const key in groups) {
-                        const total = groups[key].items.length;
-                        groups[key].successRate = total > 0 ? (groups[key].successCount / total) * 100 : 0;
+                    } catch (err) {
+                        console.error("Failed to parse embedded test data:", err);
                     }
-                    return groups;
+                }
+            },
+
+            cacheDOM() {
+                this.el = {
+                    fileUpload: document.getElementById('file-upload'),
+                    errorMsg: document.getElementById('error-message'),
+                    emptyState: document.getElementById('empty-state'),
+                    mainContent: document.getElementById('main-content'),
+                    tabControls: document.getElementById('tab-controls'),
+                    btnOverview: document.getElementById('tab-btn-overview'),
+                    btnMatrix: document.getElementById('tab-btn-matrix'),
+                    viewOverview: document.getElementById('view-overview'),
+                    viewMatrix: document.getElementById('view-matrix'),
+                    searchInput: document.getElementById('search-input'),
+                    statusFilter: document.getElementById('status-filter'),
+                    modalOverlay: document.getElementById('modal-overlay'),
+                    modalBackdrop: document.getElementById('modal-backdrop'),
+                    modalCloseBtn: document.getElementById('modal-close-btn'),
+                    modalTitle: document.getElementById('modal-title'),
+                    modalTitleSub: document.getElementById('modal-title-sub'),
+                    modalBody: document.getElementById('modal-body'),
+                    groupByRadios: document.getElementById('group-by-radios'),
+                    columnAxisRadios: document.getElementById('column-axis-radios'),
+                    matrixThead: document.getElementById('matrix-thead'),
+                    matrixTbody: document.getElementById('matrix-tbody'),
+                    overviewTbody: document.getElementById('overview-tbody'),
+                    setupFailuresSection: document.getElementById('setup-failures-section'),
+                    setupFailuresList: document.getElementById('setup-failures-list')
+                };
+            },
+
+            escapeHTML(str) {
+                if (str === null || str === undefined) return '';
+                return String(str).replace(/[&<>'"]/g, tag => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    "'": '&#39;',
+                    '"': '&quot;'
+                }[tag]));
+            },
+
+            bindEvents() {
+                this.el.fileUpload.addEventListener('change', (e) => this.handleFileUpload(e));
+                
+                document.body.addEventListener('click', (e) => {
+                    const tabBtn = e.target.closest('[data-tab]');
+                    if (tabBtn) {
+                        this.state.activeTab = tabBtn.dataset.tab;
+                        this.updateView();
+                        return;
+                    }
+
+                    const cell = e.target.closest('[data-cell-data]');
+                    if (cell) {
+                        const rawData = decodeURIComponent(cell.getAttribute('data-cell-data'));
+                        this.state.selectedTestCases = JSON.parse(rawData);
+                        this.openModal();
+                        return;
+                    }
                 });
 
-                const matrixData = computed(() => {
-                    if (!testData.value) return { columns: [], rows: [] };
-                    const columnsSet = new Set();
-                    const rowsMap = new Map();
+                this.el.modalBackdrop.addEventListener('click', () => this.closeModal());
+                this.el.modalCloseBtn.addEventListener('click', () => this.closeModal());
 
-                    testData.value.results.forEach(tc => {
-                        let colKey = matrixColumnAxis.value === 'composite' 
-                            ? `${tc.runner} | ${tc.source} | ${tc.format_name}` 
-                            : tc[matrixColumnAxis.value] || 'Unknown';
-                        
-                        const rowKey = tc.input_name;
-                        columnsSet.add(colKey);
-                        
-                        if (!rowsMap.has(rowKey)) {
-                            rowsMap.set(rowKey, { inputName: rowKey, results: {}, hasFailure: false, hasSuccess: false });
+                this.el.searchInput.addEventListener('input', (e) => {
+                    this.state.searchQuery = e.target.value;
+                    this.renderMatrixTable();
+                });
+
+                this.el.statusFilter.addEventListener('change', (e) => {
+                    this.state.statusFilter = e.target.value;
+                    this.renderMatrixTable();
+                });
+
+                this.el.groupByRadios.addEventListener('change', (e) => {
+                    if (e.target.name === 'groupBy') {
+                        this.state.groupBy = e.target.value;
+                        this.renderOverviewContent();
+                    }
+                });
+
+                this.el.columnAxisRadios.addEventListener('change', (e) => {
+                    if (e.target.name === 'matrixColumnAxis') {
+                        this.state.matrixColumnAxis = e.target.value;
+                        this.renderMatrixTable();
+                    }
+                });
+            },
+
+            handleFileUpload(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const json = JSON.parse(e.target.result);
+                        if (!json.results || !Array.isArray(json.results)) {
+                            throw new Error("Schema violation.");
                         }
-                        const rowObj = rowsMap.get(rowKey);
+                        this.state.testData = json;
+                        this.state.error = null;
+                    } catch (err) {
+                        this.state.error = "JSON Error: " + err.message;
+                        this.state.testData = null;
+                    }
+                    event.target.value = '';
+                    this.updateView();
+                };
+                reader.readAsText(file);
+            },
+
+            renderStaticControls() {
+                const groupOptions = ['composite', 'runner', 'source', 'format_name'];
+                this.el.groupByRadios.innerHTML = groupOptions.map(opt => `
+                    <label class="radio-item">
+                        <input type="radio" name="groupBy" value="${opt}" class="radio-input">
+                        <span class="radio-text">${opt.replace('_', ' ')}</span>
+                    </label>
+                `).join('');
+
+                const axisOptions = ['runner', 'format_name', 'composite'];
+                this.el.columnAxisRadios.innerHTML = axisOptions.map(opt => `
+                    <label class="radio-item">
+                        <input type="radio" name="matrixColumnAxis" value="${opt}" class="radio-input">
+                        <span class="radio-text">${opt.split('_')[0]}</span>
+                    </label>
+                `).join('');
+            },
+
+            updateView() {
+                if (this.state.error) {
+                    this.el.errorMsg.textContent = this.state.error;
+                    this.el.errorMsg.classList.remove('hidden');
+                } else {
+                    this.el.errorMsg.classList.add('hidden');
+                }
+
+                if (this.state.testData) {
+                    this.el.emptyState.classList.add('hidden');
+                    this.el.mainContent.classList.remove('hidden');
+                    this.el.tabControls.classList.remove('hidden');
+
+                    const isOverview = this.state.activeTab === 'overview';
+                    
+                    this.el.btnOverview.className = `tab-btn ${isOverview ? 'active' : 'inactive'}`;
+                    this.el.btnMatrix.className = `tab-btn ${!isOverview ? 'active' : 'inactive'}`;
+
+                    if (isOverview) {
+                        this.el.viewOverview.classList.remove('hidden');
+                        this.el.viewMatrix.classList.add('hidden');
+                        this.renderOverviewContent();
+                    } else {
+                        this.el.viewOverview.classList.add('hidden');
+                        this.el.viewMatrix.classList.remove('hidden');
+                        this.renderMatrixTable();
+                    }
+                } else {
+                    this.el.emptyState.classList.remove('hidden');
+                    this.el.mainContent.classList.add('hidden');
+                    this.el.tabControls.classList.add('hidden');
+                }
+            },
+
+            getGroupedResults() {
+                if (!this.state.testData) return {};
+                const groups = {};
+                this.state.testData.results.forEach(tc => {
+                    const key = this.state.groupBy === 'composite' 
+                        ? `${tc.runner} | ${tc.source} | ${tc.format_name}` 
+                        : (tc[this.state.groupBy] || 'Unknown');
+                    
+                    if (!groups[key]) groups[key] = { items: [], successCount: 0, failCount: 0 };
+                    groups[key].items.push(tc);
+                    if (tc.success) groups[key].successCount++; 
+                    else groups[key].failCount++;
+                });
+                for (const key in groups) {
+                    const total = groups[key].items.length;
+                    groups[key].successRate = total > 0 ? (groups[key].successCount / total) * 100 : 0;
+                }
+                return groups;
+            },
+
+            getMatrixData() {
+                if (!this.state.testData) return { columns: [], rows: [] };
+                const columnsSet = new Set();
+                const rowsMap = new Map();
+
+                this.state.testData.results.forEach(tc => {
+                    const colKey = this.state.matrixColumnAxis === 'composite' 
+                        ? `${tc.runner} | ${tc.source} | ${tc.format_name}` 
+                        : (tc[this.state.matrixColumnAxis] || 'Unknown');
+                    
+                    const rowKey = tc.input_name;
+                    columnsSet.add(colKey);
+                    
+                    if (!rowsMap.has(rowKey)) {
+                        rowsMap.set(rowKey, { inputName: rowKey, results: {}, hasFailure: false, hasSuccess: false });
+                    }
+                    const rowObj = rowsMap.get(rowKey);
+                    
+                    if (!rowObj.results[colKey]) rowObj.results[colKey] = [];
+                    rowObj.results[colKey].push(tc);
+                    
+                    if (tc.success) rowObj.hasSuccess = true;
+                    else rowObj.hasFailure = true;
+                });
+
+                const columns = Array.from(columnsSet).sort();
+                const rows = Array.from(rowsMap.values()).sort((a, b) => a.inputName.localeCompare(b.inputName));
+                return { columns, rows };
+            },
+
+            getFilteredMatrixRows(rows) {
+                let filtered = rows;
+                const query = this.state.searchQuery.trim().toLowerCase();
+                if (query) {
+                    filtered = filtered.filter(row => row.inputName.toLowerCase().includes(query));
+                }
+                if (this.state.statusFilter === 'failed') {
+                    filtered = filtered.filter(row => row.hasFailure);
+                } else if (this.state.statusFilter === 'success') {
+                    filtered = filtered.filter(row => row.hasSuccess && !row.hasFailure);
+                }
+                return filtered;
+            },
+
+            renderOverviewContent() {
+                document.getElementById('stat-total').textContent = this.state.testData.results.length;
+                document.getElementById('stat-success').textContent = this.state.testData.success_count;
+                document.getElementById('stat-fail').textContent = this.state.testData.fail_count;
+                document.getElementById('stat-setup').textContent = this.state.testData.setup_fail_count;
+
+                const setupFailures = this.state.testData.setup_failures || [];
+                if (setupFailures.length > 0) {
+                    this.el.setupFailuresSection.classList.remove('hidden');
+                    this.el.setupFailuresList.innerHTML = setupFailures.map(sf => {
+                        let html = `<div class="setup-failure-item">`;
+                        if (sf.CommandFailure) {
+                            html += `
+                                <span class="sf-title">Command Failure</span>
+                                <span class="sf-badge">Runner: ${this.escapeHTML(sf.CommandFailure.runner)}</span>
+                                <pre class="sf-pre custom-scrollbar">${this.escapeHTML(sf.CommandFailure.output_stderr)}</pre>
+                            `;
+                        }
+                        if (sf.OrchestrationError) {
+                            html += `
+                                <span class="sf-title">Orchestration Error</span>
+                                <p class="sf-msg">${this.escapeHTML(sf.OrchestrationError.error_message)}</p>
+                            `;
+                        }
+                        html += `</div>`;
+                        return html;
+                    }).join('');
+                } else {
+                    this.el.setupFailuresSection.classList.add('hidden');
+                }
+
+                const radios = this.el.groupByRadios.querySelectorAll('input[type="radio"]');
+                radios.forEach(r => r.checked = (r.value === this.state.groupBy));
+
+                const groups = this.getGroupedResults();
+                let tableHtml = '';
+                for (const key in groups) {
+                    const group = groups[key];
+                    const barColorClass = group.successRate === 100 ? 'progress-green' : (group.successRate > 50 ? 'progress-amber' : 'progress-red');
+                    tableHtml += `
+                        <tr>
+                            <td class="td-key">${this.escapeHTML(key)}</td>
+                            <td class="td-total">${group.items.length}</td>
+                            <td>
+                                <div class="progress-wrapper">
+                                    <div class="progress-track">
+                                        <div class="progress-fill ${barColorClass}" style="width: ${group.successRate}%"></div>
+                                    </div>
+                                    <span class="progress-text">${group.successRate.toFixed(1)}%</span>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }
+                this.el.overviewTbody.innerHTML = tableHtml;
+            },
+
+            renderMatrixTable() {
+                const radios = this.el.columnAxisRadios.querySelectorAll('input[type="radio"]');
+                radios.forEach(r => r.checked = (r.value === this.state.matrixColumnAxis));
+
+                const { columns, rows } = this.getMatrixData();
+                const filteredRows = this.getFilteredMatrixRows(rows);
+
+                let theadHtml = `<tr><th class="matrix-th-row">input_name</th>`;
+                columns.forEach(col => {
+                    theadHtml += `<th class="matrix-th-col">`;
+                    if (this.state.matrixColumnAxis === 'composite') {
+                        const parts = col.split('|').map(s => s.trim());
+                        theadHtml += `
+                            <div class="col-header-composite">
+                                <span class="col-header-p1" title="${this.escapeHTML(parts[0])}">${this.escapeHTML(parts[0])}</span>
+                                <span class="col-header-p2" title="${this.escapeHTML(parts[1])}">${this.escapeHTML(parts[1])}</span>
+                                <span class="col-header-p3" title="${this.escapeHTML(parts[2])}">${this.escapeHTML(parts[2])}</span>
+                            </div>
+                        `;
+                    } else {
+                        theadHtml += `<div class="col-header-simple" title="${this.escapeHTML(col)}">${this.escapeHTML(col)}</div>`;
+                    }
+                    theadHtml += `</th>`;
+                });
+                theadHtml += `</tr>`;
+                this.el.matrixThead.innerHTML = theadHtml;
+
+                let tbodyHtml = '';
+                if (filteredRows.length === 0) {
+                    tbodyHtml = `<tr><td colspan="${columns.length + 1}" class="empty-matrix-msg">No cases match the filters.</td></tr>`;
+                } else {
+                    filteredRows.forEach(row => {
+                        tbodyHtml += `<tr>
+                            <td class="matrix-td-rowname">${this.escapeHTML(row.inputName)}</td>`;
                         
-                        // 衝突回避のため配列として初期化・追加
-                        if (!rowObj.results[colKey]) rowObj.results[colKey] = [];
-                        rowObj.results[colKey].push(tc);
-                        
-                        if (tc.success) rowObj.hasSuccess = true;
-                        else rowObj.hasFailure = true;
+                        columns.forEach(col => {
+                            const results = row.results[col];
+                            tbodyHtml += `<td class="matrix-td-cell">`;
+                            
+                            if (results && results.length > 0) {
+                                const allSuccess = results.every(tc => tc.success);
+                                const title = allSuccess ? 'All Passed' : 'Failures Detected';
+                                const dataAttr = encodeURIComponent(JSON.stringify(results));
+                                
+                                tbodyHtml += `<div data-cell-data="${dataAttr}" class="cell-content" title="${title}">`;
+                                
+                                if (allSuccess) {
+                                    tbodyHtml += `<svg class="icon-success" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>`;
+                                } else {
+                                    const firstFail = results.find(tc => !tc.success);
+                                    tbodyHtml += `
+                                        <svg class="icon-fail" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>
+                                        <span class="fail-status-text">${this.escapeHTML(firstFail?.output_status)}</span>
+                                    `;
+                                }
+                                
+                                if (results.length > 1) {
+                                    tbodyHtml += `<div class="multi-badge">${results.length}</div>`;
+                                }
+                                tbodyHtml += `</div>`;
+                            } else {
+                                tbodyHtml += `<div class="cell-empty"><span>-</span></div>`;
+                            }
+                            tbodyHtml += `</td>`;
+                        });
+                        tbodyHtml += `</tr>`;
                     });
+                }
+                this.el.matrixTbody.innerHTML = tbodyHtml;
+            },
 
-                    const columns = Array.from(columnsSet).sort();
-                    const rows = Array.from(rowsMap.values()).sort((a, b) => a.inputName.localeCompare(b.inputName));
-                    return { columns, rows };
-                });
+            openModal() {
+                const testCases = this.state.selectedTestCases;
+                if (!testCases || testCases.length === 0) return;
 
-                const filteredMatrixRows = computed(() => {
-                    let rows = matrixData.value.rows;
-                    const query = searchQuery.value.trim().toLowerCase();
-                    if (query) rows = rows.filter(row => row.inputName.toLowerCase().includes(query));
-                    if (statusFilter.value === 'failed') rows = rows.filter(row => row.hasFailure);
-                    else if (statusFilter.value === 'success') rows = rows.filter(row => row.hasSuccess && !row.hasFailure);
-                    return rows;
-                });
+                document.body.style.overflow = 'hidden';
+                
+                this.el.modalTitle.textContent = testCases[0].input_name;
+                this.el.modalTitleSub.textContent = `(${testCases.length} execution(s) in this cell)`;
 
-                const inspectTestCases = (testCasesArray) => {
-                    selectedTestCases.value = testCasesArray;
-                    document.body.style.overflow = 'hidden';
-                };
+                this.el.modalBody.innerHTML = testCases.map(tc => `
+                    <div class="tc-block">
+                        <div class="tc-header">
+                            <span class="badge ${tc.success ? 'badge-success' : 'badge-fail'}">
+                                ${tc.success ? 'Success' : 'Failed'}
+                            </span>
+                            <div class="tc-meta">
+                                <span><strong>Runner:</strong> ${this.escapeHTML(tc.runner)}</span>
+                                <span><strong>Format:</strong> ${this.escapeHTML(tc.format_name)}</span>
+                            </div>
+                        </div>
+                        <div class="tc-source">
+                            <strong>Source:</strong> ${this.escapeHTML(tc.source)}
+                        </div>
+                        <div class="tc-status-grid">
+                            <div class="tc-status-box">
+                                <div class="tc-status-label">Exit Status</div>
+                                <div class="tc-status-val1">${this.escapeHTML(tc.output_status)}</div>
+                            </div>
+                            <div class="tc-status-box">
+                                <div class="tc-status-label">Interpretation</div>
+                                <div class="tc-status-val2">${this.escapeHTML(tc.status_interpretation || 'N/A')}</div>
+                            </div>
+                        </div>
+                        ${tc.error_message ? `
+                        <div class="tc-error">
+                            <div class="tc-error-label">Error Message</div>
+                            <div class="tc-error-msg">${this.escapeHTML(tc.error_message)}</div>
+                        </div>` : ''}
+                        <div class="tc-output">
+                            <div class="tc-output-label">Standard Error (stderr)</div>
+                            <div class="tc-output-box">
+                                <pre class="tc-output-pre custom-scrollbar tc-output-stderr">${this.escapeHTML(tc.output_stderr || '(No standard error)')}</pre>
+                            </div>
+                        </div>
+                        <div class="tc-output">
+                            <div class="tc-output-label">Standard Output (stdout)</div>
+                            <div class="tc-output-box">
+                                <pre class="tc-output-pre custom-scrollbar tc-output-stdout">${this.escapeHTML(tc.output_stdout || '(No standard output)')}</pre>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
 
-                const closeModal = () => {
-                    selectedTestCases.value = null;
+                this.el.modalOverlay.classList.remove('hidden');
+                // Force reflow
+                void this.el.modalOverlay.offsetWidth;
+                this.el.modalOverlay.classList.remove('fade-enter');
+                this.el.modalOverlay.classList.add('fade-enter-active');
+            },
+
+            closeModal() {
+                this.el.modalOverlay.classList.remove('fade-enter-active');
+                this.el.modalOverlay.classList.add('fade-leave-active');
+                
+                setTimeout(() => {
+                    this.el.modalOverlay.classList.add('hidden');
+                    this.el.modalOverlay.classList.remove('fade-leave-active');
+                    this.el.modalOverlay.classList.add('fade-enter');
+                    
+                    this.state.selectedTestCases = null;
                     document.body.style.overflow = '';
-                };
-
-                return {
-                    testData, error, activeTab, groupBy, matrixColumnAxis,
-                    searchQuery, statusFilter, selectedTestCases,
-                    handleFileUpload, groupedResults, matrixData, filteredMatrixRows,
-                    inspectTestCases, closeModal
-                };
+                }, 200);
             }
-        }).mount('#app');
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            App.init();
+        });
     </script>
 </body>
 </html>
