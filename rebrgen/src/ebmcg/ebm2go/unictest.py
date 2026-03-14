@@ -121,16 +121,15 @@ func main() {{
     print(
         json.dumps(
             {
-                "type": "cppvsdbg" if os.name == "nt" else "cppdbg",
+                "type": "go",
                 "request": "launch",
                 "cwd": os.getcwd(),
                 "name": f"Debug ebm2go unictest ({TEST_TARGET_FORMAT})",
-                "program": executable_path.as_posix(),
+                "program": proj_dir.as_posix(),
                 "args": [
                     INPUT_FILE,
                     OUTPUT_FILE,
                 ],
-                "stopAtEntry": True,
             },
             indent=4,
         )

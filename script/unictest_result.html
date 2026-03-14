@@ -452,6 +452,7 @@
         const App = {
             state: {
                 testData: null,
+                dataLoading: false,
                 error: null,
                 activeTab: 'matrix',
                 groupBy: 'runner',
@@ -471,13 +472,23 @@
 
             async mayLoadTestData() {
                 try {
+                    this.state.dataLoading = true;
                     const json = await fetch("test_results.json").then(res => res.json());
                     if (json.results && Array.isArray(json.results)) {
                         this.state.testData = json;
                         this.updateView();
                     }
+                    else {
+                        console.warn("Embedded test data schema violation. 'results' array not found.");
+                        this.state.error = "Failed to load embedded test data.";
+                        this.updateView();
+                    }
                 } catch (err) {
                     console.error("Failed to parse embedded test data:", err);
+                    this.state.error = "Failed to load embedded test data.";
+                    this.updateView();
+                } finally {
+                    this.state.dataLoading = false;
                 }
             },
 
@@ -636,6 +647,11 @@
                         this.el.viewMatrix.classList.remove('hidden');
                         this.renderMatrixTable();
                     }
+                } else if (this.state.dataLoading) {
+                    this.el.emptyState.classList.remove('hidden');
+                    this.el.emptyState.innerHTML = `<div><p>Loading data...</p></div>`;
+                    this.el.mainContent.classList.add('hidden');
+                    this.el.tabControls.classList.add('hidden');
                 } else {
                     this.el.emptyState.classList.remove('hidden');
                     this.el.mainContent.classList.add('hidden');
