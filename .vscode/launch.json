@@ -140,6 +140,19 @@
         "C:/Users/ukfco/AppData/Local/Temp/unictest/tr-10e49746ae/r-5090963746/t-0165332a4a/output.bin"
       ],
       "stopAtEntry": true
+    },
+    {
+      "name": "Debug ebm2c",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceRoot}/rebrgen/tool/ebm2llvm",
+      "args": ["-i", "${workspaceRoot}/rebrgen/save/llvm_case.ebm"],
+      "stopAtEntry": false,
+      "cwd": "${workspaceRoot}",
+      "environment": [],
+      "console": "integratedTerminal"
+      //"preLaunchTask": "build",
+      //"symbolSearchPath": "lib\\"
     }
   ]
 }
