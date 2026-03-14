@@ -24,7 +24,7 @@
     "typescript": "^5.7.0",
     "typescript-eslint": "^8.56.1",
     "vite": "^7.0.0",
-    "vite-node": "^5.3.0",
+    "vite-node": "^6.0.0",
     "vite-plugin-static-copy": "^3.2.0",
     "vitest": "^3.0.0"
   },
