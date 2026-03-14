@@ -116,7 +116,7 @@ DEFINE_VISITOR(Statement_WRITE_DATA) {
             }
             else if (cand == BytesType::array) {
                 // In io.Writer mode, all arrays are fixed-size, use [:] to get a slice
-                w.writeln("if _, err := ", io_, ".Write(", target.to_writer(), "[:]); err != nil {");
+                w.writeln("if _, err := ", io_, ".Write(", target.to_writer(), "[:", size_str, "]); err != nil {");
                 w.indent_writeln("return err");
                 w.writeln("}");
             }

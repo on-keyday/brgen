@@ -132,13 +132,14 @@
     {
       "type": "go",
       "request": "launch",
-      "cwd": "C:\\Users\\ukfco\\AppData\\Local\\Temp\\unictest\\tr-6bab0fc714\\r-5bf4a40c0a\\t-748eddd7b4",
+      "cwd": "C:\\Users\\ukfco\\AppData\\Local\\Temp\\unictest\\tr-e8ed8d8573\\r-aa0f885cbf\\t-d19137569f",
       "name": "Debug ebm2go unictest (DNSPacketTest)",
-      "program": "C:/Users/ukfco/AppData/Local/Temp/unictest/tr-6bab0fc714/r-5bf4a40c0a/t-748eddd7b4/go_proj/test_runner.exe",
+      "program": "C:/Users/ukfco/AppData/Local/Temp/unictest/tr-e8ed8d8573/r-aa0f885cbf/t-d19137569f/go_proj",
       "args": [
-        "C:/Users/ukfco/AppData/Local/Temp/unictest/tr-6bab0fc714/r-5bf4a40c0a/t-748eddd7b4/input.bin",
-        "C:/Users/ukfco/AppData/Local/Temp/unictest/tr-6bab0fc714/r-5bf4a40c0a/t-748eddd7b4/output.bin"
-      ]
+        "C:/Users/ukfco/AppData/Local/Temp/unictest/tr-e8ed8d8573/r-aa0f885cbf/t-d19137569f/input.bin",
+        "C:/Users/ukfco/AppData/Local/Temp/unictest/tr-e8ed8d8573/r-aa0f885cbf/t-d19137569f/output.bin"
+      ],
+      "stopOnEntry": true
     },
     {
       "name": "Debug ebm2c",

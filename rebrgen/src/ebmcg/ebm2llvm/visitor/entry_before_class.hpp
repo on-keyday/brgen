@@ -18,6 +18,7 @@
 #include "ebm/extended_binary_module.hpp"
 #include "ebmcodegen/stub/code_writer.hpp"
 #include "ebmcodegen/stub/util.hpp"
+#include "ebmgen/mapping.hpp"
 namespace ebm2llvm {
     expected<std::pair<std::string, std::string>> to_llvm_op(Context_Expression_BINARY_OP& ctx) {
         switch (ctx.bop) {
@@ -68,6 +69,42 @@ namespace ebm2llvm {
                 return std::make_pair("unknown", llvm_type.to_string());
         }
     }
+
+    struct DebugInfoManager {
+        ebmgen::MappingTable& mod;
+        // LLVMのメタデータIDとスコープを管理する最小単位
+        struct DebugContext {
+            int unit_id = 0;        // DICompileUnit
+            int file_id = 1;        // DIFile
+            int subprogram_id = 2;  // DISubprogram
+        } ctx;
+
+        // キャッシュキーを line << 16 | col に詰め込んで map の負荷を減らす（簡易版）
+        std::unordered_map<std::uint32_t, int> loc_cache;
+        int next_id = 3;  // 0, 1, 2 は基本構造で使用済み
+
+       public:
+        // 命令生成時のロケーション付与
+        template <ebmgen::AnyRef T>
+        std::string get_dbg(T node) {
+            auto loc = mod.get_debug_loc(to_any_ref(node));
+            if (!loc) return "";  // デバッグ情報なし
+            uint32_t key = (static_cast<std::uint32_t>(loc->line.value()) << 16) | (loc->column.value() & 0xFFFF);
+            if (loc_cache.find(key) == loc_cache.end()) {
+                int id = next_id++;
+                // スコープは常に現在の関数 (!2) を指す
+                loc_cache[key] = id;
+                append_metadata(id, *loc);
+            }
+            return " !dbg !" + std::to_string(loc_cache[key]);
+        }
+
+       private:
+        CodeWriter metadata_buffer;
+        void append_metadata(int id, const ebm::Loc& loc) {
+            metadata_buffer.writeln("!", std::to_string(id), " = !DILocation(line: ", std::to_string(loc.line.value()), ", column: ", std::to_string(loc.column.value()), ", scope: !", std::to_string(ctx.subprogram_id), ")");
+        }
+    };
 }  // namespace ebm2llvm
 
 DEFINE_VISITOR(entry_before) {

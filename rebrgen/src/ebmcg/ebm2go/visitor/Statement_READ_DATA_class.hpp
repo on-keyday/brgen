@@ -81,8 +81,8 @@ DEFINE_VISITOR(Statement_READ_DATA) {
             auto scope = w.indent_scope();
             w.writeln("var err error");
             w.writeln("var n int");
-            w.writeln("buf := []byte{0}");
-            w.writeln("if n, err = io.ReadFull(", io_, ", buf); err != nil {");
+            w.writeln("buf := [1]byte{0}");
+            w.writeln("if n, err = io.ReadFull(", io_, ", buf[:]); err != nil {");
             if (ctx.config().on_until_eof_loop) {
                 auto scope = w.indent_scope();
                 w.writeln("if err == io.EOF {");
@@ -135,7 +135,7 @@ DEFINE_VISITOR(Statement_READ_DATA) {
                 }
                 else {
                     auto normal_read_full = [&] {
-                        direct_allocate.writeln("if _, err := io.ReadFull(", io_, ",", target.to_writer(), "[:]); err != nil {");
+                        direct_allocate.writeln("if _, err := io.ReadFull(", io_, ",", target.to_writer(), "[", offset_val, ":", offset_val, "+", size_str, "]); err != nil {");
                         if (ctx.config().on_until_eof_loop) {
                             auto scope = direct_allocate.indent_scope();
                             direct_allocate.writeln("if err == io.EOF {");
