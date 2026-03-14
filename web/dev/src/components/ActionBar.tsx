@@ -28,6 +28,14 @@ export function ActionBar() {
       >
         docs
       </a>
+      <a
+        class={styles.linkButton}
+        href="./unictest-results/"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        CI Status
+      </a>
       <PrivacyLink />
     </>
   );

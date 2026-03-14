@@ -46,7 +46,7 @@ jobs:
           cd ..
           mkdir -p test_results
           mv rebrgen/test_results.json test_results/
-          python script/copy_unictest_result.py
+          cp script/unictest_result.html test_results/index.html
 
       - name: Upload test results
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v8.0.0

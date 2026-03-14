@@ -447,9 +447,6 @@
 
     </div>
 
-    <div id="test-result" class="hidden">
-        {%TEST_RESULTS%}
-    </div>
 
     <script>
         const App = {
@@ -472,17 +469,15 @@
                 this.updateView();
             },
 
-            mayLoadTestData() {
-                const testDataEl = document.getElementById('test-result');
-                if (testDataEl && testDataEl.textContent.trim()) {
-                    try {
-                        const json = JSON.parse(testDataEl.textContent);
-                        if (json.results && Array.isArray(json.results)) {
-                            this.state.testData = json;
-                        }
-                    } catch (err) {
-                        console.error("Failed to parse embedded test data:", err);
+            async mayLoadTestData() {
+                try {
+                    const json = await fetch("test_results.json").then(res => res.json());
+                    if (json.results && Array.isArray(json.results)) {
+                        this.state.testData = json;
+                        this.updateView();
                     }
+                } catch (err) {
+                    console.error("Failed to parse embedded test data:", err);
                 }
             },
 
