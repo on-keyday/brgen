@@ -253,6 +253,8 @@ namespace brgen::middle {
                 if (base_ident) {
                     (void)r.error(base_ident->loc, "ident ", ident, " is defined here");
                 }
+                (void)r.error(b->left->loc, "left type is ", ast::tool::type_to_string(b->left->expr_type));
+                (void)r.error(b->left->loc, "right type is ", ast::tool::type_to_string(b->right->expr_type));
                 r.report();
             };
             if (!check_right_typed()) {
