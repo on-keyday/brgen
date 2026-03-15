@@ -11,5 +11,22 @@
         "$WORK_DIR/script/unictest_setup.py",
         "test",
         "ebm2go"
+    ],
+    "option_sets": [
+        {
+            "name": "std-io",
+            "setup_options": [],
+            "run_options": []
+        },
+        {
+            "name": "slice-io",
+            "setup_options": [],
+            "run_options": []
+        },
+        {
+            "name": "append-io",
+            "setup_options": [],
+            "run_options": []
+        }
     ]
 }

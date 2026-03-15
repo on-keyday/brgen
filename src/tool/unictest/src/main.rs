@@ -49,6 +49,13 @@ struct Args {
 }
 
 #[derive(Deserialize, Clone, Debug)]
+pub struct OptionSet {
+    pub name: String,
+    pub setup_options: Vec<String>,
+    pub run_options: Vec<String>,
+}
+
+#[derive(Deserialize, Clone, Debug)]
 pub struct TestRunner {
     // test runner name
     pub name: String,
@@ -56,6 +63,9 @@ pub struct TestRunner {
     pub source_setup_command: Vec<String>,
     // command to run test
     pub run_command: Vec<String>,
+
+    // additional option sets for this runner
+    pub option_sets: Option<Vec<OptionSet>>,
 
     #[serde(skip_deserializing)]
     pub file: Option<String>,
@@ -282,6 +292,7 @@ impl InputBinaryCache {
 #[derive(Clone)]
 struct PrepareInfo {
     runner: String,
+    option_set: OptionSet,
     source: String,
     candidate_formats: Vec<String>,
     runner_dir: PathBuf,
@@ -291,6 +302,7 @@ struct PrepareInfo {
 #[derive(Clone)]
 struct ResultInfo {
     runner: String,
+    option_set: String,
     source: String,
     format_name: String,
     input_name: String,
@@ -301,6 +313,7 @@ struct ResultInfo {
 #[derive(Serialize, Clone, Debug)]
 struct TestCaseResult {
     runner: String,
+    option_set: String,
     source: String,
     format_name: String,
     input_name: String,
@@ -339,8 +352,21 @@ pub fn print_output(output: &std::process::Output, print_stdout: bool) {
     println!("status: {}", output.status);
 }
 
-type RunnerInputMatrix =
-    std::collections::HashMap<(String, String), (Vec<String>, Vec<String>, Vec<String>)>;
+struct MatrixEntry {
+    setup_command: Vec<String>,
+    run_command: Vec<String>,
+    candidate_formats: Vec<String>,
+    option_set: OptionSet,
+}
+
+#[derive(Hash, Eq, PartialEq, Clone, Debug)]
+struct RunnerInputKey {
+    runner_name: String,
+    option_set_name: String,
+    source_name: String,
+}
+
+type RunnerInputMatrix = std::collections::HashMap<RunnerInputKey, MatrixEntry>;
 
 type SourceCodeFormatMap = std::collections::HashMap<String, Vec<String>>;
 
@@ -358,22 +384,27 @@ fn make_runner_input_matrix(
             entry.push(input.format_name.clone());
         }
         for runner in runners {
-            let key = (runner.name.clone(), input.source.clone());
-            let entry = runner_source_map.entry(key);
-            entry
-                .and_modify(|x: &mut (Vec<String>, Vec<String>, Vec<String>)| {
-                    if x.2.contains(&input.format_name) {
-                        return;
-                    }
-                    x.2.push(input.format_name.clone());
-                })
-                .or_insert_with(|| {
-                    (
-                        runner.source_setup_command.clone(),
-                        runner.run_command.clone(),
-                        vec![input.format_name.clone()],
-                    )
-                });
+            for option_set in runner.option_sets.as_ref().unwrap() {
+                let key = RunnerInputKey {
+                    runner_name: runner.name.clone(),
+                    option_set_name: option_set.name.clone(),
+                    source_name: input.source.clone(),
+                };
+                let entry = runner_source_map.entry(key);
+                entry
+                    .and_modify(|x: &mut MatrixEntry| {
+                        if x.candidate_formats.contains(&input.format_name) {
+                            return;
+                        }
+                        x.candidate_formats.push(input.format_name.clone());
+                    })
+                    .or_insert_with(|| MatrixEntry {
+                        setup_command: runner.source_setup_command.clone(),
+                        run_command: runner.run_command.clone(),
+                        option_set: option_set.clone(),
+                        candidate_formats: vec![input.format_name.clone()],
+                    });
+            }
         }
     }
     (runner_source_map, source_format_map)
@@ -433,7 +464,7 @@ async fn run_source_setup(
         if !output.status.success() {
             println!("Common source setup failed for source={}", source_name);
             // remove all entries with this source from source_runner_matrix
-            source_runner_matrix.retain(|(_, s), _| s != &source_name);
+            source_runner_matrix.retain(|key, _| key.source_name != source_name);
             setup_failures.push(SetupFailureInfo::CommandFailure {
                 source: source_name.clone(),
                 runner: "common_source_setup".to_string(),
@@ -481,21 +512,19 @@ async fn run_setup(
     let verbose = parsed.verbose;
 
     let (send, mut recv) = tokio::sync::mpsc::channel(100);
-    for ((runner_name, source_name), (setup_command, run_command, candidate_formats)) in
-        runner_source_map.into_iter()
-    {
+    for (key, matrix) in runner_source_map.into_iter() {
         // for each runner, allocate runner dir
         let runner_dir = binary_cache.runner_dir()?;
         let send = send.clone();
         println!(
-            "Running test setup: runner name={}, source={}",
-            runner_name, source_name
+            "Running test setup: runner={}, option_set={}, source={}",
+            key.runner_name, key.option_set_name, key.source_name
         );
         println!("-----------------------------------------");
         let current_dir = current_dir.clone();
 
         let source_dir = if let Some(map) = &source_dir_map {
-            if let Some(dir) = map.get(&source_name) {
+            if let Some(dir) = map.get(&key.source_name) {
                 dir.clone()
             } else {
                 String::new()
@@ -505,18 +534,19 @@ async fn run_setup(
         };
 
         let h: JoinHandle<anyhow::Result<()>> = tokio::spawn(async move {
-            if setup_command.is_empty() {
+            if matrix.setup_command.is_empty() {
                 return Err(std::io::Error::new(
                     std::io::ErrorKind::Other,
                     format!(
                         "runner.source_setup_command is empty: runner name={}",
-                        runner_name
+                        key.runner_name
                     ),
                 )
                 .into());
             }
             // replace $WORK_DIR to current working dir
-            let replaced_setup_command: Vec<String> = setup_command
+            let replaced_setup_command: Vec<String> = matrix
+                .setup_command
                 .iter()
                 .map(|s| s.replace("$WORK_DIR", &current_dir))
                 .collect();
@@ -525,21 +555,30 @@ async fn run_setup(
                 .current_dir(&runner_dir)
                 .env("UNICTEST_VERBOSE", if verbose { "1" } else { "0" })
                 .env("UNICTEST_ORIGINAL_WORK_DIR", &current_dir)
-                .env("UNICTEST_SOURCE_FILE", &source_name)
+                .env("UNICTEST_SOURCE_FILE", &key.source_name)
                 .env("UNICTEST_RUNNER_DIR", &runner_dir)
-                .env("UNICTEST_RUNNER_NAME", &runner_name)
-                .env("UNICTEST_CANDIDATE_FORMATS", &candidate_formats.join(","))
+                .env("UNICTEST_RUNNER_NAME", &key.runner_name)
+                .env(
+                    "UNICTEST_CANDIDATE_FORMATS",
+                    &matrix.candidate_formats.join(","),
+                )
                 .env("UNICTEST_SOURCE_SETUP_DIR", &source_dir)
+                .env("UNICTEST_OPTION_SET_NAME", &key.option_set_name)
+                .env(
+                    "UNICTEST_OPTION_SET_SETUP_OPTIONS",
+                    &matrix.option_set.setup_options.join(","),
+                )
                 .output()
                 .await?;
             send.send((
                 spawned,
                 PrepareInfo {
-                    runner: runner_name,
-                    source: source_name,
-                    candidate_formats,
+                    runner: key.runner_name,
+                    option_set: matrix.option_set,
+                    source: key.source_name,
+                    candidate_formats: matrix.candidate_formats,
                     runner_dir,
-                    run_command,
+                    run_command: matrix.run_command,
                 },
             ))
             .await?;
@@ -615,9 +654,10 @@ async fn run_tests(
             let runner_dir = p.runner_dir.clone();
             let runner = p.runner.clone();
             let send2 = send2.clone();
+            let option_set = p.option_set.clone();
             println!(
-                "Running test: runner={}, input={} source={}, format={}, binary={} hex={}",
-                runner, input.name, source, input.format_name, input.binary, input.hex
+                "Running test: runner={}, option_set={}, input={} source={}, format={}, binary={} hex={}",
+                runner, option_set.name, input.name, source, input.format_name, input.binary, input.hex
             );
             println!("----------------------------------------");
             let current_dir = current_dir.clone();
@@ -627,6 +667,7 @@ async fn run_tests(
                 let result_info = ResultInfo {
                     runner: runner.clone(),
                     source: source.clone(),
+                    option_set: option_set.name.clone(),
                     format_name: input.format_name.clone(),
                     input_name: input.name.clone(),
                     output: None,
@@ -677,6 +718,15 @@ async fn run_tests(
                             "UNICTEST_FAILURE_CASE",
                             if input.failure_case { "1" } else { "0" },
                         )
+                        .env("UNICTEST_OPTION_SET_NAME", &option_set.name)
+                        .env(
+                            "UNICTEST_OPTION_SET_SETUP_OPTIONS",
+                            &option_set.setup_options.join(","),
+                        )
+                        .env(
+                            "UNICTEST_OPTION_SET_RUN_OPTIONS",
+                            &option_set.run_options.join(","),
+                        )
                         .output()
                         .await?;
                     result_info2.output = Some(output);
@@ -713,9 +763,10 @@ async fn run_tests(
             Ok(x) => x,
             Err((e, result)) => {
                 println!(
-                    "{}: Error during test execution: runner name={}, source={}, format={}, input={}: {}",
+                    "{}: Error during test execution: runner={}, option_set={}, source={}, format={}, input={}: {}",
                     "FAIL".red(),
                     result.runner,
+                    result.option_set,
                     result.source,
                     result.format_name,
                     result.input_name,
@@ -724,6 +775,7 @@ async fn run_tests(
                 println!("----------------------------------------");
                 test_results.push(TestCaseResult {
                     runner: result.runner,
+                    option_set: result.option_set,
                     source: result.source,
                     format_name: result.format_name,
                     input_name: result.input_name,
@@ -777,6 +829,7 @@ async fn run_tests(
         println!("----------------------------------------");
         test_results.push(TestCaseResult {
             runner: result.runner.clone(),
+            option_set: result.option_set.clone(),
             source: result.source.clone(),
             format_name: result.format_name.clone(),
             input_name: result.input_name.clone(),
@@ -809,8 +862,8 @@ async fn main() -> anyhow::Result<()> {
         .runners
         .into_iter()
         .map(|runner| -> Result<TestRunner, anyhow::Error> {
-            match runner {
-                RunnerConfig::TestRunner(runner) => Ok(runner),
+            let mut runner = match runner {
+                RunnerConfig::TestRunner(runner) => runner,
                 RunnerConfig::File(runner_file) => {
                     // replace $WORK_DIR in file path
                     let runner_file = runner_file.file.replace("$WORK_DIR", &current_dir);
@@ -819,9 +872,25 @@ async fn main() -> anyhow::Result<()> {
                     let mut actual_runner: TestRunner = TestRunner::deserialize(&mut d2)?;
                     println!("Loaded runner config from file {}", runner_file);
                     actual_runner.file = Some(runner_file.clone());
-                    Ok(actual_runner)
+                    actual_runner
                 }
+            };
+            if runner.option_sets.is_none() {
+                runner.option_sets = Some(vec![]);
             }
+            if runner.option_sets.as_ref().unwrap().is_empty() {
+                // add default empty option set if option_sets is empty
+                println!(
+                    "Runner {} has no option set, adding default empty option set",
+                    runner.name
+                );
+                runner.option_sets.as_mut().unwrap().push(OptionSet {
+                    name: "default".into(),
+                    setup_options: vec![],
+                    run_options: vec![],
+                });
+            }
+            Ok(runner)
         })
         .filter(|r| {
             if parsed.target_runner.is_empty() {

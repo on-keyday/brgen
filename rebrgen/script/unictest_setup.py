@@ -64,6 +64,8 @@ if mode == "setup":
     print(f"\nRunning command: {' '.join(cmd)}")
     sp.check_call(cmd, timeout=60)
 
+    additional_args = unictest_env_vars["UNICTEST_OPTION_SET_SETUP_OPTIONS"].split(",")
+
     test_info_file = pl.Path(runner_dir) / "test_info.json"
     cmd = [
         ebm2target,
@@ -73,6 +75,7 @@ if mode == "setup":
         "--test-info",
         test_info_file.as_posix(),
     ]
+    cmd.extend(additional_args)
     print(f"\nRunning command: {' '.join(cmd)}")
     output = sp.check_output(cmd, timeout=60)
 
@@ -92,16 +95,21 @@ elif mode == "test":
         pl.Path(original_workdir) / f"src/ebmcg/{target_command}/unictest.py"
     )
     print(f"\nRunning test script: {test_script_file.as_posix()}", flush=True)
+    additional_args = unictest_env_vars["UNICTEST_OPTION_SET_RUN_OPTIONS"].split(",")
+    optionset_name = unictest_env_vars["UNICTEST_OPTION_SET_NAME"]
+    cmds = [
+        sys.executable,
+        test_script_file.as_posix(),
+        setup_target_file.as_posix(),
+        input_file.as_posix(),
+        output_file.as_posix(),
+        test_format_name,
+        optionset_name,
+    ]
+    cmds.extend(additional_args)
     try:
         sp.check_call(
-            [
-                sys.executable,
-                test_script_file.as_posix(),
-                setup_target_file.as_posix(),
-                input_file.as_posix(),
-                output_file.as_posix(),
-                test_format_name,
-            ],
+            cmds,
             stdout=sys.stdout,
             stderr=sys.stderr,
         )

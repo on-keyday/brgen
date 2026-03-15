@@ -159,6 +159,10 @@ def do_setup(lang_name: str, mode: str, file_extension: str):
             f.write("    INPUT_FILE = sys.argv[2]\n")
             f.write("    OUTPUT_FILE = sys.argv[3]\n")
             f.write("    TEST_TARGET_FORMAT = sys.argv[4]\n")
+            f.write("    OPTION_SET_NAME = sys.argv[5]\n")
+            f.write(
+                "    ADDITIONAL_ARGS = sys.argv[6:] if len(sys.argv) > 6 else []\n\n"
+            )
             f.write("    # Test logic goes here\n")
             f.write(
                 "    print(f'Testing {TEST_TARGET_FILE} with {INPUT_FILE} and {OUTPUT_FILE}')\n"
@@ -238,6 +242,13 @@ def do_setup(lang_name: str, mode: str, file_extension: str):
                 "$WORK_DIR/script/unictest_setup.py",
                 "test",
                 PROGRAM_NAME,
+            ],
+            "options": [
+                {
+                    "name": "default",
+                    "setup_options": [],
+                    "run_options": [],
+                }
             ],
         }
         with open(actual_new_runner_path, "w") as f:

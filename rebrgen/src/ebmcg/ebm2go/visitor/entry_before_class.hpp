@@ -559,8 +559,11 @@ DEFINE_VISITOR(entry_before) {
             return "";
         }
         else if (ctx.config().append_io) {
-            w.writeln(rctx.identifier(), " := len(", io_ref, ")");
-            w.writeln(io_ref, " = append(", io_ref, ", make([]byte,", size_str, ")...)");
+            // on BIT_IO_TO_BIT_SHIFT lowering
+            // other RESERVE_DATA already reserve space in the IO buffer,
+            // so we can should append only new space
+            w.writeln(rctx.identifier(), " := len(", io_ref, ") - len(", target.to_writer(), ")");
+            w.writeln(io_ref, " = append(", io_ref, ", make([]byte,", size_str, "- len(", target.to_writer(), "))...)");
             w.writeln(target.to_writer(), " = ", io_ref, "[", rctx.identifier(), ":]");
         }
         else {

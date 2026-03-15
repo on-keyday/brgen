@@ -12,6 +12,12 @@ def main():
     INPUT_FILE = sys.argv[2]
     OUTPUT_FILE = sys.argv[3]
     TEST_TARGET_FORMAT = sys.argv[4]  # The struct name (CamelCase)
+    OPTION_SET_NAME = sys.argv[5]
+    assert (
+        OPTION_SET_NAME == "std-io"
+        or OPTION_SET_NAME == "slice-io"
+        or OPTION_SET_NAME == "append-io"
+    ), "Expected OPTION_SET_NAME to be 'std-io' or 'slice-io' or 'append-io'"
 
     print(f"Testing {TEST_TARGET_FILE} with {INPUT_FILE} and {OUTPUT_FILE}")
 
@@ -36,12 +42,27 @@ def main():
     #
     # Decode: wraps input data in bytes.NewReader.
     # Encode: writes to bytes.Buffer, then extracts bytes.
+    io_pattern = {
+        "std-io": {
+            "decode": "reader := bytes.NewReader(inputData)\nerr = target.Read(reader)",
+            "encode": "var buf bytes.Buffer\nerr = target.Write(&buf)\noutputData = buf.Bytes()",
+        },
+        "slice-io": {
+            "decode": "_, err = target.Decode(inputData)",
+            "encode": "outputData,err := target.Encode(make([]byte, len(inputData)))",
+        },
+        "append-io": {
+            "decode": "_, err = target.Decode(inputData)",
+            "encode": "outputData, err := target.Append(make([]byte, 0, len(inputData)))",
+        },
+    }
+
     with open(proj_dir / "main.go", "w") as f:
         f.write(
             f"""package main
 
 import (
-	"bytes"
+	{"\"bytes\"" if OPTION_SET_NAME == "std-io" else ""}
 	"fmt"
 	"os"
 )
@@ -64,23 +85,21 @@ func main() {{
 
 	// Decode
 	var target {TEST_TARGET_FORMAT}
-	reader := bytes.NewReader(inputData)
-	err = target.Read(reader)
+	{io_pattern[OPTION_SET_NAME]["decode"]}
 	if err != nil {{
 		fmt.Fprintf(os.Stderr, "Decode error: %v\\n", err)
 		os.Exit(10)
 	}}
 
 	// Encode
-	var buf bytes.Buffer
-	err = target.Write(&buf)
+	{io_pattern[OPTION_SET_NAME]["encode"]}
 	if err != nil {{
 		fmt.Fprintf(os.Stderr, "Encode error: %v\\n", err)
 		os.Exit(20)
 	}}
 
 	// Write output file
-	err = os.WriteFile(outputPath, buf.Bytes(), 0644)
+	err = os.WriteFile(outputPath, outputData, 0644)
 	if err != nil {{
 		fmt.Fprintf(os.Stderr, "Failed to write output file '%s': %v\\n", outputPath, err)
 		os.Exit(1)
