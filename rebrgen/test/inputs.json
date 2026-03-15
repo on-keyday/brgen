@@ -110,5 +110,13 @@
         "source": "$WORK_DIR/src/test/http2_frame_test.bgn",
         "failure_case": false,
         "hex": true
+    },
+    {
+        "name": "native_endian_test",
+        "binary": "$WORK_DIR/test/binary_data/native_endian.dat",
+        "format_name": "NetlinkTest",
+        "source": "$WORK_DIR/src/test/native_endian_test.bgn",
+        "failure_case": false,
+        "hex": true
     }
 ]

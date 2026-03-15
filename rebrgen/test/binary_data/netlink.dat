@@ -1,0 +1,20 @@
+# --- Netlink Message Header (struct nlmsghdr) ---
+24 00 00 00   # nlmsg_len: 36 bytes (Total length)
+10 00         # nlmsg_type: RTM_NEWLINK (16)
+01 00         # nlmsg_flags: NLM_F_REQUEST (1)
+00 00 00 00   # nlmsg_seq: 0
+00 00 00 00   # nlmsg_pid: 0 (Port ID)
+
+# --- Family Header (struct ifinfomsg) ---
+00            # ifi_family: AF_UNSPEC (0)
+00            # __ifi_pad
+00 00         # ifi_type: 0
+00 00 00 00   # ifi_index: 0
+00 00 00 00   # ifi_flags: 0
+00 00 00 00   # ifi_change: 0
+
+# --- Attribute 1 (struct nlattr: IFLA_IFNAME) ---
+09 00         # nla_len: 9 bytes (4 byte header + 5 byte data "eth0\0")
+03 00         # nla_type: IFLA_IFNAME (3)
+65 74 68 30 00 # Data: "eth0" + \0 (5 bytes)
+00 00 00      # [Padding]: Padding to align to 4-byte boundary (12 bytes total for attr)

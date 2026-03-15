@@ -1,0 +1,4 @@
+netlink ::= config.import("native_endian.bgn")
+
+format NetlinkTest:
+    link :netlink.NetLinkMessage
