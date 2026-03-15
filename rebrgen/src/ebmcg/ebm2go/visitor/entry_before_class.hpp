@@ -50,7 +50,7 @@ DEFINE_VISITOR(entry_before) {
     ctx.config().io_mode.bytes_io = ctx.flags().bytes_io;
     ctx.config().array_type_wrapper = [&](Context_Type_ARRAY& ctx) -> expected<Result> {
         MAYBE(elem_type, ctx.visit(ctx.element_type));
-        if (!ctx.config().use_io_reader_writer && ctx.array_annotation != ebm::ArrayAnnotation::none) {
+        if (!ctx.config().use_io_reader_writer && !ctx.config().append_io && ctx.array_annotation != ebm::ArrayAnnotation::none) {
             // In *[]byte mode, annotated arrays are slices (they borrow from the IO buffer)
             return CODE("[]", elem_type.to_writer());
         }
@@ -562,9 +562,10 @@ DEFINE_VISITOR(entry_before) {
             // on BIT_IO_TO_BIT_SHIFT lowering
             // other RESERVE_DATA already reserve space in the IO buffer,
             // so we can should append only new space
-            w.writeln(rctx.identifier(), " := len(", io_ref, ") - len(", target.to_writer(), ")");
-            w.writeln(io_ref, " = append(", io_ref, ", make([]byte,", size_str, "- len(", target.to_writer(), "))...)");
-            w.writeln(target.to_writer(), " = ", io_ref, "[", rctx.identifier(), ":]");
+            // w.writeln(rctx.identifier(), " := len(", io_ref, ") - len(", target.to_writer(), ")");
+            // w.writeln(io_ref, " = append(", io_ref, ", make([]byte,", size_str, "- len(", target.to_writer(), "))...)");
+            // w.writeln(target.to_writer(), " = ", io_ref, "[", rctx.identifier(), ":]");
+            // w.writeln("_ = ", target.to_writer(), "[", size_str, "- 1]");
         }
         else {
             rctx.config().imports.insert("errors");

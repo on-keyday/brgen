@@ -166,6 +166,9 @@ DEFINE_VISITOR(Statement_WRITE_DATA) {
                 //  w.writeln("*", io_, " = (*", io_, ")[", offset_val, " + ", size_str, ":]");
                 //}
                 // nothing to do
+                if (ctx.config().append_io) {
+                    w.writeln(io_, " = append(", io_, ",", target.to_writer(), "[:", size_str, "]...)");
+                }
             }
             else {
                 if (ctx.config().append_io) {
