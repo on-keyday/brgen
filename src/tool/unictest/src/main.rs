@@ -468,6 +468,7 @@ async fn run_source_setup(
             setup_failures.push(SetupFailureInfo::CommandFailure {
                 source: source_name.clone(),
                 runner: "common_source_setup".to_string(),
+                option_set: "".to_string(),
                 output_stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
                 output_stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
             });
@@ -492,6 +493,7 @@ async fn run_source_setup(
 enum SetupFailureInfo {
     CommandFailure {
         source: String,
+        option_set: String,
         runner: String,
         output_stdout: String,
         output_stderr: String,
@@ -600,6 +602,7 @@ async fn run_setup(
             setup_failures.push(SetupFailureInfo::CommandFailure {
                 source: prepare_info.source,
                 runner: prepare_info.runner,
+                option_set: prepare_info.option_set.name,
                 output_stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
                 output_stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
             });
