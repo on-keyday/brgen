@@ -15,17 +15,23 @@
     "option_sets": [
         {
             "name": "std-io",
-            "setup_options": [],
+            "setup_options": [
+                "--package=main"
+            ],
             "run_options": []
         },
         {
             "name": "slice-io",
-            "setup_options": [],
+            "setup_options": [
+                "--package=main"
+            ],
             "run_options": []
         },
         {
             "name": "append-io",
-            "setup_options": [],
+            "setup_options": [
+                "--package=main"
+            ],
             "run_options": []
         }
     ]

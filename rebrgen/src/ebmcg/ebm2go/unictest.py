@@ -45,7 +45,7 @@ def main():
     io_pattern = {
         "std-io": {
             "decode": "reader := bytes.NewReader(inputData)\nerr = target.Read(reader)",
-            "encode": "var buf bytes.Buffer\nerr = target.Write(&buf)\noutputData = buf.Bytes()",
+            "encode": "var buf bytes.Buffer\nerr = target.Write(&buf)\noutputData := buf.Bytes()",
         },
         "slice-io": {
             "decode": "_, err = target.Decode(inputData)",
