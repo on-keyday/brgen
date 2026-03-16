@@ -7,15 +7,11 @@ export default mergeConfig(
     test: {
       environment: "node",
       pool: "forks",
-      poolOptions: {
-        forks: {
-            execArgv: [
-            '--experimental-strip-types',
-            '--experimental-transform-types',
-            '--import', './src/server/register-loader.mjs'
-            ]
-        },
-      },
+      execArgv: [
+      '--experimental-strip-types',
+      '--experimental-transform-types',
+      '--import', './src/server/register-loader.mjs'
+      ],
       testTimeout: 60_000,
       // deps.optimizer.web.include ではなく、server.deps.inline を使用して
       // シンボリックリンク先の CJS ファイルを Vite/Vitest の変換対象に含める
