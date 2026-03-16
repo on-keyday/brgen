@@ -11,7 +11,7 @@ weight: 7
 
 ## 開発フェーズ
 
-コアパイプライン (AST → EBM IR → ターゲットコード) は稼働中です。現在はコードの美しさより機能優先で開発を進めており、言語ジェネレーターのカバレッジ拡大とデフォルトビジターの共通化が主な作業です。
+コアパイプライン (AST → EBM IR → ターゲットコード) は稼働中です。命名・冗長コードの整理は後回しにして機能を優先しており、言語ジェネレーターのカバレッジ拡大とデフォルトビジターへの処理集約が現在の主な作業です。
 
 ## 言語ジェネレーターの構成
 
@@ -50,13 +50,13 @@ weight: 7
 ### EBM IR (`src/ebm/`)
 
 - グラフ構造の IR。5つの集中テーブル (Identifier, String, Type, Statement, Expression)
-- Varint エンコードの参照とエイリアス/重複排除システム
+- 参照は QUIC スタイルの Varint でエンコード。エイリアステーブル (`aliases`/`RefAlias`) で識別子・型・式の別名を管理
 - 段階的な IO 低レベル化をサポート
 - union 型・複合フィールド・デバッグソース位置のプロパティシステム
 
 ### ebmgen — AST → EBM 変換 (`src/ebmgen/`)
 
-- 動作中のパイプライン: convert → add_files → 7つのトランスフォームパス → finalize
+- 動作中のパイプライン: convert → add_files → トランスフォームパス (詳細は [Overview]({{< relref "overview" >}}) 参照) → finalize
 - インタラクティブデバッガーと XPath 風クエリエンジンが稼働中
 - 既知の未実装部分:
   - `expression.cpp`: 複雑な型変換 (ARRAY, VECTOR, STRUCT, RECURSIVE_STRUCT)

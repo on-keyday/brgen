@@ -13,13 +13,13 @@ weight: 8
 
 ## 全体の役割
 
-新しい言語ジェネレーターを作る際に必要な定型コードのほとんどを自動生成します:
+新しい言語ジェネレーター (`ebm2<lang>`) を作る際に必要な定型コードを自動生成します:
 
-- ビジターのディスパッチ基盤 (concepts、dispatch 関数、context クラス)
-- フックのインクルードシステム (多段フォールバック、クラスベース生成)
-- 型付きコンテキスト (クラスベースフックでの IDE オートコンプリート用)
-- CLI スキャフォールディング (`Flags`、`Output`、エントリーポイント)
-- EBM 構造のリフレクション (フィールド可用性、JSON 変換、アクセス API)
+- `codegen.hpp` — EBM の各 Kind に対応する C++ concepts・dispatch 関数・context クラスを含むヘッダー (`codegen-class-header` モード)
+- `main.cpp` — CLI エントリーポイント (`codegen` / `interpret` モード)
+- `body_subset.cpp` — Kind ごとのフィールド可用性テーブル (`subset` モード)
+- `json_conv.hpp/cpp` — EBM JSON デシリアライズ関数 (`json-conv-header/source` モード)
+- Magic Access Path 基盤 — `ctx.get_field<"path">()` の constexpr 実装 (`accessor` モード)
 
 ## ソースファイル構成
 
@@ -110,20 +110,64 @@ struct ContextClass {
 
 #### フックのフォールバックチェーン
 
-生成されるコードは `__has_include` による多段フォールバックを使います:
+生成された `main.cpp` は各フックについて独立した `#if __has_include` ブロックを7つ並べます (`#elif` でまとめる構造ではありません)。各ブロックが `CODEGEN_EXPECTED_PRIORITY_<HOOK>` マクロをその段階の番号で定義し、最初に定義されたものが有効になります。`Statement_BLOCK` を例にすると:
 
 ```cpp
-// 1. 言語固有オーバーライド
+// 優先度 0: 言語固有 class-based
 #if __has_include("visitor/Statement_BLOCK_class.hpp")
 #include "visitor/Statement_BLOCK_class.hpp"
-// 2. DSL 生成オーバーライド
-#elif __has_include("visitor/dsl/Statement_BLOCK_dsl.hpp")
-#include "visitor/dsl/Statement_BLOCK_dsl.hpp"
-// 3. デフォルトフォールバック
-#elif __has_include("default/Statement_BLOCK_class.hpp")
-#include "default/Statement_BLOCK_class.hpp"
+#if !defined(CODEGEN_EXPECTED_PRIORITY_STATEMENT_BLOCK)
+#define CODEGEN_EXPECTED_PRIORITY_STATEMENT_BLOCK 0
 #endif
+#else
+template <> struct Visitor<UserHook<VisitorTag_Statement_BLOCK>> {}; // Unimplemented
+#endif
+
+// 優先度 1: 言語固有 旧形式 (generate_inlined_hook() でラップして取り込み)
+#if __has_include("visitor/Statement_BLOCK.hpp")
+// ... ラッパーコード ...
+#if !defined(CODEGEN_EXPECTED_PRIORITY_STATEMENT_BLOCK)
+#define CODEGEN_EXPECTED_PRIORITY_STATEMENT_BLOCK 1
+#endif
+#endif
+
+// 優先度 2: DSL class-based
+#if __has_include("visitor/dsl/Statement_BLOCK_dsl_class.hpp")
+// ...
+#define CODEGEN_EXPECTED_PRIORITY_STATEMENT_BLOCK 2
+#endif
+
+// 優先度 3: DSL 旧形式
+#if __has_include("visitor/dsl/Statement_BLOCK_dsl.hpp")
+// ...
+#define CODEGEN_EXPECTED_PRIORITY_STATEMENT_BLOCK 3
+#endif
+
+// 優先度 4: デフォルト class-based
+#if __has_include("ebmcodegen/default_codegen_visitor/visitor/Statement_BLOCK_class.hpp")
+// ...
+#define CODEGEN_EXPECTED_PRIORITY_STATEMENT_BLOCK 4
+#endif
+
+// 優先度 5: デフォルト 旧形式
+#if __has_include("ebmcodegen/default_codegen_visitor/visitor/Statement_BLOCK.hpp")
+// ...
+#define CODEGEN_EXPECTED_PRIORITY_STATEMENT_BLOCK 5
+#endif
+
+// 優先度 6: インライン組み込みデフォルト (上記すべて未発見の場合)
+#if !defined(CODEGEN_EXPECTED_PRIORITY_STATEMENT_BLOCK)
+#define CODEGEN_EXPECTED_PRIORITY_STATEMENT_BLOCK 6
+#endif
+template <> struct Visitor<GeneratorDefaultHook<VisitorTag_Statement_BLOCK>> {
+    template<typename Context>
+    auto visit(Context&& ctx) {
+        return visit_unimplemented(..., "Statement_BLOCK", ...);
+    }
+};
 ```
+
+`_before` / `_after` フックも同じ構造を持ち、それぞれ独立した `CODEGEN_EXPECTED_PRIORITY_STATEMENT_BLOCK_BEFORE/AFTER` マクロを持ちます。before/after の優先度 6 インラインデフォルトは `return pass` (何もせず通過) です。
 
 #### 旧形式との互換 (`entry_before.hpp`)
 

@@ -102,12 +102,12 @@ python script/unictest.py --target-runner ebm2<lang_name>
 | `spec-json` | EBM スキーマを JSON 形式で出力 |
 | `json-conv-header` | `json_conv.hpp` (JSON デシリアライズヘッダー) を生成 |
 | `json-conv-source` | `json_conv.cpp` (JSON デシリアライズ実装) を生成 |
-| `accessor` | アクセサーコードを生成 |
-| `ebmgen-visitor` | ebmgen ビジターコードを生成 |
-| `codegen-class-header` | クラスベースコードジェネレーター用ヘッダーを生成 |
-| `codegen-class-source` | クラスベースコードジェネレーター用ソースを生成 |
-| `interpret-class-header` | クラスベースインタープリター用ヘッダーを生成 |
-| `interpret-class-source` | クラスベースインタープリター用ソースを生成 |
+| `accessor` | Magic Access Path 用の constexpr フィールドアクセス基盤を生成 (`generate_constexpr_access`) |
+| `ebmgen-visitor` | `ebmgen` 自身のビジターコードを生成 (言語ジェネレーター用ではなく、ebmgen 内部用。エントリーポイントを生成しない) |
+| `codegen-class-header` | 言語コードジェネレーター用の `codegen.hpp` ヘッダーを生成 |
+| `codegen-class-source` | 言語コードジェネレーター用のソース (`.cpp`) を生成 |
+| `interpret-class-header` | インタープリター用の `codegen.hpp` ヘッダーを生成 |
+| `interpret-class-source` | インタープリター用のソース (`.cpp`) を生成 |
 
 ---
 

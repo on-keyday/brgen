@@ -13,13 +13,23 @@ weight: 3
 
 ## フックの解決順序
 
-フックは以下の優先順位で解決されます (`__has_include` ベース):
+各フックは生成された `main.cpp` 内の `__has_include` チェーンで7段階に解決されます。`CODEGEN_EXPECTED_PRIORITY_<HOOK>` マクロが最初にマッチした段階の番号 (0–6) を記録します。
 
-1. **言語固有オーバーライド**: `src/ebmcg/ebm2<lang>/visitor/<Hook>_class.hpp`
-2. **DSL 生成オーバーライド**: `visitor/dsl/<Hook>_dsl.hpp` (実験的)
-3. **デフォルトフォールバック**: `src/ebmcodegen/default_codegen_visitor/visitor/<Hook>.hpp`
+| 優先度 | パス | 説明 |
+|--------|------|------|
+| 0 | `visitor/<Hook>_class.hpp` | 言語固有・クラスベース |
+| 1 | `visitor/<Hook>.hpp` | 言語固有・旧形式 (後方互換ラッパーで取り込み) |
+| 2 | `visitor/dsl/<Hook>_dsl_class.hpp` | DSL 生成・クラスベース |
+| 3 | `visitor/dsl/<Hook>_dsl.hpp` | DSL 生成・旧形式 |
+| 4 | `ebmcodegen/default_codegen_visitor/visitor/<Hook>_class.hpp` | デフォルト・クラスベース |
+| 5 | `ebmcodegen/default_codegen_visitor/visitor/<Hook>.hpp` | デフォルト・旧形式 |
+| 6 | インライン組み込みデフォルト | `visit_unimplemented(...)` を呼び出す (未実装報告) |
 
-デフォルトフォールバックには多数のフック実装が含まれており、後述の設定機構で挙動をカスタマイズできます。新しい言語ジェネレーターは必要な部分だけオーバーライドすればよく、残りはデフォルトが処理します。
+**典型的な開発フロー**: 言語ジェネレーターの実装量が少ない段階では、`entry_before_class.hpp` の `std::function` コールバックでデフォルトの挙動を上書きするのが手軽です。コード量が増えてきたタイミングで個別の `<Hook>_class.hpp` (優先度 0) に分割します。
+
+{{< hint info >}}
+`default_codegen_visitor/` のカバレッジは現在も拡張中です。対応フックを追加するコントリビューションも歓迎しています。
+{{< /hint >}}
 
 ## クラスベースフックシステム
 
@@ -34,7 +44,7 @@ DEFINE_VISITOR(Statement_WRITE_DATA) {
     // ctx オブジェクトで EBM フィールドに型安全にアクセス
     auto name = ctx.identifier();
 
-    // 他のノードを再帰的に処理
+    // 子ノードを visit してコード文字列を取得
     MAYBE(body_res, ctx.visit(ctx.write_data.body));
 
     CodeWriter w;
@@ -71,7 +81,7 @@ python script/ebmtemplate.py Statement_WRITE_DATA <lang>
 |-------------|------|
 | `ctx.<node_field>` | 訪問中の EBM ノードのフィールド |
 | `ctx.identifier()` | 識別子名 (文字列) |
-| `ctx.visit(ref)` | 別の EBM ノードを再帰的に処理 |
+| `ctx.visit(ref)` | 別の EBM ノードを訪問してコードを生成 (`expected<Result>` を返す) |
 | `ctx.config()` | `Visitor` 設定オブジェクト |
 | `ctx.visitor` | メインビジターオブジェクト |
 
