@@ -113,7 +113,7 @@
     },
     {
         "name": "native_endian_test",
-        "binary": "$WORK_DIR/test/binary_data/native_endian.dat",
+        "binary": "$WORK_DIR/test/binary_data/netlink.dat",
         "format_name": "NetlinkTest",
         "source": "$WORK_DIR/src/test/native_endian_test.bgn",
         "failure_case": false,
