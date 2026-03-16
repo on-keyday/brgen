@@ -183,12 +183,12 @@ namespace ebmgen {
             // if (value.length > max_length) {
             //    return error("Array length exceeds maximum");
             // }
+            // length_field = (cast)value.length;  // before array_field = value to avoid move-before-use (e.g. Rust)
             // array_field = value
-            // length_field = (cast)value.length;
             ebm::Block new_body;
             append(new_body, length_check);
-            append(new_body, assign_ref);
             append(new_body, length_assign);
+            append(new_body, assign_ref);
             EBM_BLOCK(new_block_ref, std::move(new_body));
             return new_block_ref;
         };
