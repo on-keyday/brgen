@@ -17,20 +17,20 @@ The `tool/brgen` Go binary orchestrates this pipeline driven by `brgen.json`.
 Requires: CMake ≥ 3.26, Ninja, Clang (C++20). The `futils` dependency is auto-cloned into `utils/` by `script/clone_utils.sh`.
 
 ```bash
-# Linux: configure + build (Debug by default)
-. build.sh native Debug
+# Linux/macOS: configure + build (Debug by default)
+python build.py native Debug
 
-# macOS/Linux Release
-. build.sh native Release
+# Release
+python build.py native Release
 
 # WASM (Emscripten) build
-. build.sh wasm-em Release
+python build.py web Release
 
 # Build only (after configure)
 ninja -C built/native/Debug install
 ```
 
-Build output installs to `tool/` (native) or `web/dev/src/lib/` (wasm-em). CMake build files go to `built/<mode>/<type>/`.
+Build output installs to `tool/` (native) or `web/dev/src/lib/` (web). CMake build files go to `built/<mode>/<type>/`.
 
 ### Go (json2go, brgen driver, json2kaitai, json2mermaid, gen_ast2*)
 
@@ -56,7 +56,7 @@ cargo test --manifest-path src/tool/json2rust/Cargo.toml
 ```bash
 cd web/dev
 npm install
-npm run dev      # Vite dev server (requires WASM files from wasm-em build)
+npm run dev      # Vite dev server (requires WASM files from web build)
 npm run build    # Build to web/public/
 npm run serve    # API server mode (Hono + Node.js via tsx)
 ```

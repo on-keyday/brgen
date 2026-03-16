@@ -19,11 +19,8 @@ cloned automatically by `script/clone_utils.sh` or `script/clone_utils.bat`.
 ### C++ (core parser + C++/C/TS/VM generators) -- CMake + Ninja + Clang
 
 ```bash
-# Linux: configure + build (defaults to Debug)
-. build.sh native Debug
-
-# Windows: configure + build
-build.bat native Debug C:\path\to\futils
+# Linux/macOS/Windows: configure + build (defaults to Debug)
+python build.py native Debug
 
 # Build only (after configure)
 ninja -C built/native/Debug
