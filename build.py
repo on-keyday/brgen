@@ -100,50 +100,16 @@ def clone_utils():
 
 
 def source_emsdk():
-    """Source the emsdk environment and merge it into the current process environment."""
-    if os.name == "posix":
-        emsdk_env = os.path.join(EMSDK_DIR, "emsdk_env.sh")
-    elif os.name == "nt":
-        emsdk_env = os.path.join(EMSDK_DIR, "emsdk_env.ps1")
-    else:
-        print("Unsupported OS for emsdk sourcing")
-        sys.exit(1)
-
-    emsdk_env = os.path.abspath(emsdk_env)
+    """Source the emsdk environment and merge it into the current process environment.
+    Used on POSIX only. On Windows, emsdk is sourced inline per-command via cmd_run()."""
+    emsdk_env = os.path.abspath(os.path.join(EMSDK_DIR, "emsdk_env.sh"))
     copy_env = os.environ.copy()
     copy_env["EMSDK_QUIET"] = "1"
-
-    if os.name == "posix":
-        ENV = subprocess.check_output(
-            ["bash", "-c", f". '{emsdk_env}' > /dev/null ; env"],
-            env=copy_env,
-            stderr=sys.stderr,
-        )
-    elif os.name == "nt":
-        ENV = subprocess.check_output(
-            [
-                "powershell",
-                "$PSDefaultParameterValues['*:Encoding'] = 'utf8'",
-                ";",
-                "$global:OutputEncoding = [System.Text.Encoding]::UTF8",
-                ";",
-                "[console]::OutputEncoding = [System.Text.Encoding]::UTF8",
-                ";",
-                ".",
-                emsdk_env,
-                "|",
-                "Out-Null",
-                ";",
-                "Get-ChildItem Env:",
-                "|",
-                "ForEach-Object",
-                "{",
-                "$_.Name + '=' + $_.Value}",
-            ],
-            env=copy_env,
-            stderr=sys.stderr,
-        )
-
+    ENV = subprocess.check_output(
+        ["bash", "-c", f". '{emsdk_env}' > /dev/null ; env"],
+        env=copy_env,
+        stderr=sys.stderr,
+    )
     for line in ENV.splitlines():
         try:
             line = line.decode()
@@ -153,6 +119,59 @@ def source_emsdk():
         if "=" in line:
             key, value = line.split("=", 1)
             os.environ[key] = value
+
+
+def _msys_to_win(p):
+    """Convert /c/foo/bar -> C:\\foo\\bar (MSYS path to Windows path)."""
+    import re
+    m = re.match(r"^/([a-zA-Z])(/.*)$", p)
+    if m:
+        return f"{m.group(1).upper()}:{m.group(2).replace('/', chr(92))}"
+    return p
+
+
+def _win_path_env():
+    """Return PATH with all MSYS-style entries converted to Windows style.
+    Needed so emsdk_env.bat detects a Windows environment, not MSYS.
+    Handles both colon-separated MSYS PATH and Windows drive letter colons."""
+    raw = os.environ.get("PATH", "")
+    # Split on ":" but preserve drive letters (single letter before ":")
+    segments = raw.split(":")
+    parts = []
+    i = 0
+    while i < len(segments):
+        s = segments[i]
+        if len(s) == 1 and s.isalpha() and i + 1 < len(segments):
+            # Windows drive letter split across ":", rejoin as "C:/..."
+            parts.append(s + ":" + segments[i + 1])
+            i += 2
+        else:
+            if s:
+                parts.append(s)
+            i += 1
+    seen = []
+    for p in parts:
+        w = _msys_to_win(p.strip())
+        if w not in seen:
+            seen.append(w)
+    return ";".join(seen)
+
+
+def cmd_run(cmd_str, **kwargs):
+    """Run a cmd.exe command chain on Windows with emsdk pre-sourced via call.
+    Strips MSYS markers so emsdk_env.bat detects a Windows environment."""
+    emsdk_bat = os.path.abspath(os.path.join(EMSDK_DIR, "emsdk_env.bat"))
+    env = os.environ.copy()
+    env["PATH"] = _win_path_env()
+    # Remove MSYS/Cygwin markers that would make emsdk_env.bat emit bash-style output
+    for key in ("MSYSTEM", "MSYS", "MSYS2_PATH_TYPE", "CYGWIN", "SHELL"):
+        env.pop(key, None)
+    return subprocess.run(
+        f'call "{emsdk_bat}" && {cmd_str}',
+        shell=True,
+        env=env,
+        **kwargs,
+    )
 
 
 def build_native():
@@ -187,46 +206,56 @@ def build_native():
 def build_wasm():
     """Emscripten cmake+ninja build and copy WASM artifacts into web/dev/src."""
     BUILD_DIR = f"./built/web/{BUILD_TYPE}"
-    source_emsdk()
     os.environ["GOOS"] = "js"
     os.environ["GOARCH"] = "wasm"
     try:
-        subprocess.run(
-            [
-                "emcmake", "cmake",
-                "-G", "Ninja",
-                f"-DCMAKE_BUILD_TYPE={BUILD_TYPE}",
-                f"-DCMAKE_INSTALL_PREFIX={INSTALL_PREFIX}/web/dev/src",
-                "-S", ".",
-                "-B", BUILD_DIR,
-            ],
-            shell=(os.name == "nt"),
-            check=True,
-            stdout=sys.stdout,
-            stderr=sys.stderr,
-        )
-        ninja_cmd = ["ninja", "-C", BUILD_DIR]
-        if PARALLEL_BUILD:
-            ninja_cmd += ["-j", str(PARALLEL_BUILD)]
-        subprocess.run(ninja_cmd, check=True, stdout=sys.stdout, stderr=sys.stderr)
-        subprocess.run(
-            ["ninja", "-C", BUILD_DIR, "install"],
-            check=True,
-            stdout=sys.stdout,
-            stderr=sys.stderr,
-        )
+        if os.name == "nt":
+            # Windows: source emsdk inline via PowerShell for each command
+            parallel = f" -j {PARALLEL_BUILD}" if PARALLEL_BUILD else ""
+            cmd_run(
+                f'emcmake cmake -G Ninja "-DCMAKE_BUILD_TYPE={BUILD_TYPE}"'
+                f' "-DCMAKE_INSTALL_PREFIX={INSTALL_PREFIX}/web/dev/src" -S . -B {BUILD_DIR}',
+                check=True, stdout=sys.stdout, stderr=sys.stderr,
+            )
+            cmd_run(
+                f"ninja -C {BUILD_DIR}{parallel}",
+                check=True, stdout=sys.stdout, stderr=sys.stderr,
+            )
+            cmd_run(
+                f"ninja -C {BUILD_DIR} install",
+                check=True, stdout=sys.stdout, stderr=sys.stderr,
+            )
+        else:
+            # POSIX (Linux/macOS): source emsdk into current env, then run normally
+            source_emsdk()
+            subprocess.run(
+                [
+                    "emcmake", "cmake",
+                    "-G", "Ninja",
+                    f"-DCMAKE_BUILD_TYPE={BUILD_TYPE}",
+                    f"-DCMAKE_INSTALL_PREFIX={INSTALL_PREFIX}/web/dev/src",
+                    "-S", ".",
+                    "-B", BUILD_DIR,
+                ],
+                check=True, stdout=sys.stdout, stderr=sys.stderr,
+            )
+            ninja_cmd = ["ninja", "-C", BUILD_DIR]
+            if PARALLEL_BUILD:
+                ninja_cmd += ["-j", str(PARALLEL_BUILD)]
+            subprocess.run(ninja_cmd, check=True, stdout=sys.stdout, stderr=sys.stderr)
+            subprocess.run(
+                ["ninja", "-C", BUILD_DIR, "install"],
+                check=True, stdout=sys.stdout, stderr=sys.stderr,
+            )
+
         if os.name == "posix":
             subprocess.run(
                 ["python", "script/dirty_patch.py"],
-                check=True,
-                stdout=sys.stdout,
-                stderr=sys.stderr,
+                check=True, stdout=sys.stdout, stderr=sys.stderr,
             )
         subprocess.run(
             ["python", "script/copy_bmgen_stub.py"],
-            check=True,
-            stdout=sys.stdout,
-            stderr=sys.stderr,
+            check=True, stdout=sys.stdout, stderr=sys.stderr,
         )
     finally:
         del os.environ["GOOS"]
@@ -239,6 +268,7 @@ def build_npm():
         ["npm", "install"],
         check=True,
         cwd=os.path.join("web", "dev"),
+        shell=(os.name == "nt"),
         stdout=sys.stdout,
         stderr=sys.stderr,
     )
@@ -246,6 +276,7 @@ def build_npm():
         ["npm", "run", "build"],
         check=True,
         cwd=os.path.join("web", "dev"),
+        shell=(os.name == "nt"),
         stdout=sys.stdout,
         stderr=sys.stderr,
     )
