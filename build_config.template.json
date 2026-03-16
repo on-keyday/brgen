@@ -1,0 +1,9 @@
+{
+    "FUTILS_DIR": "./utils/",
+    "EMSDK_DIR": "./emsdk/",
+    "INSTALL_PREFIX": ".",
+    "DEFAULT_BUILD_TYPE_NATIVE": "Debug",
+    "DEFAULT_BUILD_TYPE_WEB": "Release",
+    "DEFAULT_BUILD_MODE": "native",
+    "PARALLEL_BUILD": ""
+}
