@@ -336,7 +336,7 @@ def install_lsp():
 
 
 # For wasm builds on POSIX, source emsdk before building futils
-if BUILD_MODE in ("wasm", "web", "all") and os.name != "nt":
+if BUILD_MODE in ("wasm", "web") and os.name != "nt":
     source_emsdk()
 
 # Ensure futils is available
