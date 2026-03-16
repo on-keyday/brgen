@@ -189,7 +189,9 @@ namespace ebmgen {
         ebm::StatementRef ref;
         const auto is_native_or_dynamic = endian.endian() == ebm::Endian::native || endian.endian() == ebm::Endian::dynamic;
         if (is_native_or_dynamic) {
+            EBMU_BOOL_TYPE(bool_type);
             ebm::ExpressionBody is_little;
+            is_little.type = bool_type;
             is_little.kind = ebm::ExpressionKind::IS_LITTLE_ENDIAN;
             auto endian_expr = endian.dynamic_ref();
             is_little.endian_expr(endian_expr ? *endian_expr : ebm::StatementRef{});  // if native, this will be empty
