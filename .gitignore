@@ -40,3 +40,4 @@ wasmCopy.js
 /web/dev/dist/
 .claude/
 *.tar.gz
+build_config.json

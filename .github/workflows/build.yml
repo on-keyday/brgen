@@ -196,7 +196,7 @@ jobs:
           path: |
             ./built
             ./utils
-          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.sh') }}-${{ matrix.env }}
+          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.py') }}-${{ matrix.env }}
       - name: Pull Utils
         if: ${{ steps.cache_linux.outputs.cache-hit }}
         run: |
@@ -216,7 +216,7 @@ jobs:
             export FUTILS_CXX_COMPILER=g++
             export FUTILS_C_COMPILER=gcc
           fi
-          . build.sh native Release
+          FUTILS_DIR=./utils python build.py native Release
           ./tool/src2json --version
       - name: Pack artifacts
         run: |
@@ -275,7 +275,7 @@ jobs:
           path: |
             ./built
             ./utils
-          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.sh') }}
+          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.py') }}
       - name: Pull Utils
         if: ${{ steps.cache_macos.outputs.cache-hit }}
         run: |
@@ -293,7 +293,7 @@ jobs:
           export FUTILS_CXX_COMPILER=$PREFIX/bin/clang++
           export FUTILS_C_COMPILER=$PREFIX/bin/clang
           export LDFLAGS="-L$PREFIX/lib/c++ -L$PREFIX/lib/unwind -lunwind -Wl,-rpath,$PREFIX/lib/c++"
-          . build.sh native Release
+          FUTILS_DIR=./utils python build.py native Release
           ./tool/src2json --version
       - name: Pack artifacts
         run: |
@@ -341,19 +341,20 @@ jobs:
           path: |
             ./built
             ./utils
-          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.bat') }}
+          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.py') }}
       - name: Pull Utils
         if: ${{ steps.cache_windows.outputs.cache-hit }}
         shell: cmd
         run: |
           cd utils
           git pull
-          build shared Release futils
+          call build.bat shared Release futils
           cd ..
       - name: Build
-        shell: cmd
+        shell: pwsh
         run: |
-          call .\build.bat native Release %CD%\utils
+          $env:FUTILS_DIR = "$pwd\utils"
+          python build.py native Release
           .\tool\src2json.exe --version
       - name: Pack artifacts
         shell: cmd
@@ -424,6 +425,26 @@ jobs:
       - name: Install Cross Compiler
         run: |
           sudo apt-get update && sudo apt-get install -y g++-aarch64-linux-gnu
+      - name: Cache
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        if: (!startsWith(github.ref , 'refs/heads/renovate/')) && (!startsWith(github.ref , 'refs/heads/dependabot/'))
+        id: cache_arm_linux
+        env:
+          cache-name: cache-arm-linux-built
+        with:
+          path: |
+            ./built
+            ./utils
+          key: ${{ runner.os }}-arm-${{ env.cache-name }}-${{ hashFiles('build.py') }}
+      - name: Pull Utils
+        if: ${{ steps.cache_arm_linux.outputs.cache-hit }}
+        run: |
+          cd utils
+          git pull
+          export FUTILS_CXX_COMPILER=aarch64-linux-gnu-g++
+          export FUTILS_C_COMPILER=aarch64-linux-gnu-gcc
+          . build shared Release futils
+          cd ..
       - name: Build
         run: |
           go version
@@ -431,7 +452,7 @@ jobs:
           export FUTILS_CXX_COMPILER=aarch64-linux-gnu-g++
           export FUTILS_C_COMPILER=aarch64-linux-gnu-gcc
           export CC=$FUTILS_C_COMPILER
-          . build.sh native Release
+          FUTILS_DIR=./utils python build.py native Release
       - name: Pack artifacts
         run: |
           mkdir -p artifacts
@@ -466,6 +487,27 @@ jobs:
         uses: nttld/setup-ndk@ed92fe6cadad69be94a966a7ee3271275e62f779 # v1.6.0
         with:
           ndk-version: r26b
+      - name: Cache
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        if: (!startsWith(github.ref , 'refs/heads/renovate/')) && (!startsWith(github.ref , 'refs/heads/dependabot/'))
+        id: cache_android
+        env:
+          cache-name: cache-android-built
+        with:
+          path: |
+            ./built
+            ./utils
+          key: ${{ runner.os }}-android-${{ env.cache-name }}-${{ hashFiles('build.py') }}
+      - name: Pull Utils
+        if: ${{ steps.cache_android.outputs.cache-hit }}
+        run: |
+          BASE_PATH=/opt/hostedtoolcache/ndk/r26b/x64/toolchains/llvm/prebuilt/linux-x86_64
+          cd utils
+          git pull
+          export FUTILS_CXX_COMPILER=$BASE_PATH/bin/aarch64-linux-android21-clang++
+          export FUTILS_C_COMPILER=$BASE_PATH/bin/aarch64-linux-android21-clang
+          . build shared Release futils
+          cd ..
       - name: Build
         run: |
           BASE_PATH=/opt/hostedtoolcache/ndk/r26b/x64/toolchains/llvm/prebuilt/linux-x86_64
@@ -474,8 +516,8 @@ jobs:
           export FUTILS_CXX_COMPILER=$BASE_PATH/bin/aarch64-linux-android21-clang++
           export FUTILS_C_COMPILER=$BASE_PATH/bin/aarch64-linux-android21-clang
           export CC=$FUTILS_C_COMPILER
-          . build.sh native Release
-          LIBCPP_SHARED=$BASE_PATH/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so 
+          FUTILS_DIR=./utils python build.py native Release
+          LIBCPP_SHARED=$BASE_PATH/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so
           cp $LIBCPP_SHARED ./tool
       - name: Pack artifacts
         run: |
@@ -549,10 +591,9 @@ jobs:
           name: brgen-licenses
           path: ./license_cache
 
-  build-pages:
-    needs: [unictest, build-rebrgen-glue]
+  build-wasm:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
     strategy:
       matrix:
         env: ["development", "production"]
@@ -565,8 +606,6 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Setup Emscripten
         uses: mymindstorm/setup-emsdk@6ab9eb1bda2574c4ddb79809fc9247783eaf9021 # v14
-        #with:
-        #  actions-cache-folder: emsdk
       - name: Set up Ninja
         uses: seanmiddleditch/gha-setup-ninja@7e868db0f3406270dd46e1dac26c65f621456723 # master
       - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
@@ -574,41 +613,79 @@ jobs:
           go-version: "1.26"
       - name: Cache
         uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
-        # prevent renovate from updating this
         if: (!startsWith(github.ref , 'refs/heads/renovate/')) && (!startsWith(github.ref , 'refs/heads/dependabot/'))
-        id: cache_web
+        id: cache_wasm
         env:
-          cache-name: cache-web-built
+          cache-name: cache-wasm-built-${{ matrix.env }}
         with:
           path: |
             ./built
             ./utils
-            ./astlib/ast2ts/node_modules
-            ./web/dev/node_modules
-          # ./emsdk
-          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.sh') }}
+          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.py') }}
       - name: Pull Utils
-        if: ${{ steps.cache_web.outputs.cache-hit }}
+        if: ${{ steps.cache_wasm.outputs.cache-hit }}
         run: |
+          . $EMSDK/emsdk_env.sh
           cd utils
           git pull
           rm -rf built
           if [ "${{ matrix.env }}" = "production" ]; then
-          MODE=Release
+            MODE=Release
           else
-          MODE=Debug
+            MODE=Debug
           fi
           . build wasm-em $MODE futils
           cd ..
+      - name: Set up wasm-pack
+        run: |
+          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+      - name: Build Wasm
+        run: |
+          export WEB_PRODUCTION=${{ matrix.env }}
+          rm -rf built
+          if [ "${{ matrix.env }}" = "production" ]; then
+            MODE=Release
+          else
+            MODE=Debug
+          fi
+          EMSDK_DIR=$EMSDK/ FUTILS_DIR=./utils python build.py wasm $MODE
+      - name: Upload WASM lib
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: brgen-wasm-lib-${{ matrix.env }}
+          path: |
+            ./web/dev/src/lib
+            ./src/tool/json2rust/pkg
+
+  build-pages:
+    needs: [unictest, build-wasm, build-rebrgen-glue]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        env: ["development", "production"]
+    steps:
+      - name: Timeline
+        uses: Kesin11/actions-timeline@e018cfefea60b4f44266998551211a35a58b8097 # v3.0.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f
+        with:
+          node-version: "23.11"
       - name: Set up ast2ts
         run: |
           cd astlib/ast2ts
           npm install
           tsc
           cd ../..
-      - name: Set up wasm-pack
-        run: |
-          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+      - name: Download brgen WASM lib
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: brgen-wasm-lib-${{ matrix.env }}
+          path: .
       - name: Download rebrgen WASM artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -618,34 +695,14 @@ jobs:
         run: |
           chmod +x ./script/install_rebrgen_web.sh
           ./script/install_rebrgen_web.sh ./rebrgen-web
-      - name: Build Wasm
+      - name: Build npm
         run: |
-          GOROOT=`go env GOROOT`
-          echo "GOROOT=$GOROOT"
-          export WASMEXEC_FILE="$GOROOT/lib/wasm/wasm_exec.js"
-          if [ ! -e "$WASMEXEC_FILE" ]; then
-            echo "$WASMEXEC_FILE not found"
-            exit 1
-          fi
           export WEB_PRODUCTION=${{ matrix.env }}
-          echo "WEB_PRODUCTION=$WEB_PRODUCTION"
-          rm -rf built
-          if [ "${{ matrix.env }}" = "production" ]; then
-            MODE=Release
-          else
-            MODE=Debug
-          fi
-          . build.sh wasm-em $MODE
-      - name: Set up Node.js
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f
-        if: matrix.env == 'development'
-        with:
-          node-version: "23.11"
+          python build.py npm
       - name: Run API server tests
         if: matrix.env == 'development'
         run: |
           cd web/dev
-          npm install
           npm test
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@75d2e84710de30f6ff7268e08f310b60ef14033f # v3.0.0
@@ -672,7 +729,6 @@ jobs:
           ./script/pack_server_kit.sh
           cp script/api_server.sh web/public/
           chmod +x web/public/api_server.sh
-
       - name: Upload artifact
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:

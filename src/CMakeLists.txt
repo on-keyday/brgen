@@ -46,7 +46,7 @@ target_link_libraries(json2ts futils)
 # Setting Go targets
 if(WIN32)
 set(SUFFIX ".exe")
-elseif("$ENV{BUILD_MODE}" STREQUAL "wasm-em")
+elseif("$ENV{BUILD_MODE}" STREQUAL "web")
 set(SUFFIX ".wasm")
 endif()
 
@@ -60,7 +60,7 @@ add_custom_target(json2mermaid ALL COMMAND "${GO_COMPILER}" "build" "${CMAKE_GO_
 
 # Setting Wasm
 
-if("$ENV{BUILD_MODE}" STREQUAL "wasm-em")
+if("$ENV{BUILD_MODE}" STREQUAL "web")
 # Setting C++ to Wasm targets
 install(TARGETS src2json DESTINATION "lib" OPTIONAL)
 install(FILES "${CMAKE_BINARY_DIR}/tool/src2json.wasm" DESTINATION "lib" OPTIONAL)

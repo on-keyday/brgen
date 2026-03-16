@@ -8,6 +8,7 @@ services:
     stdin_open: true
     volumes:
       - ./src:/workspace/src:cached
+      - ./build.py:/workspace/build.py:cached
       - ./build.sh:/workspace/build.sh:cached
       - ./CMakeLists.txt:/workspace/CMakeLists.txt:cached
       - ./docker_vscode:/workspace/.vscode:cached

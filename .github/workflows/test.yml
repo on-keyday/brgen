@@ -24,7 +24,7 @@ jobs:
         run: sudo apt-get install libc++-dev libc++abi-dev -y
       - name: Build
         run: |
-          . build.sh
+          FUTILS_DIR=./utils python build.py native
       - name: Test
         run: |
           CTEST_OUTPUT_ON_FAILURE=1 BASE_PATH=${{ github.workspace }} ninja -C built/native/Debug test
