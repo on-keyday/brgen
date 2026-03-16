@@ -42,8 +42,8 @@ INSTALL_PREFIX = os.getenv(
 )
 PARALLEL_BUILD = os.getenv("PARALLEL_BUILD", build_config.get("PARALLEL_BUILD", ""))
 
-CXX_COMPILER = os.getenv("FUTILS_CXX_COMPILER", "clang++")
-C_COMPILER = os.getenv("FUTILS_C_COMPILER", "clang")
+CXX_COMPILER = os.getenv("FUTILS_CXX_COMPILER") or "clang++"
+C_COMPILER = os.getenv("FUTILS_C_COMPILER") or "clang"
 
 IS_MACOS = platform.system() == "Darwin"
 S2J_LIB = "0" if IS_MACOS else "1"
