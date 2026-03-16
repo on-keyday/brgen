@@ -871,5 +871,19 @@ DEFINE_VISITOR(entry_before) {
         }
         return pass;
     };
+    // Native endian: binary.NativeEndian.Uint16(append(make([]byte,0,2),1,0)) == 1.
+    // Using append+make avoids composite literal syntax that triggers Go parse ambiguity
+    // in if-conditions.  Import "encoding/binary" is added lazily per call site.
+    ctx.config().is_little_endian_visitor = [&](Context_Expression_IS_LITTLE_ENDIAN& le_ctx) -> expected<Result> {
+        le_ctx.config().imports.insert("encoding/binary");
+        if (is_nil(le_ctx.endian_expr)) {
+            return CODE("binary.NativeEndian.Uint16(append(make([]byte, 0, 2), 1, 0)) == 1");
+        }
+        // Dynamic endian variable holds an integer (1 = little, 0 = big).
+        auto var_name = le_ctx.identifier(le_ctx.endian_expr);
+        CodeWriter w;
+        w.write(var_name, " == 1");
+        return w;
+    };
     return pass;
 }

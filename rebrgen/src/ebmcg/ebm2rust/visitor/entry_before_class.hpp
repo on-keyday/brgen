@@ -34,5 +34,7 @@ DEFINE_VISITOR(entry_before) {
     config.default_value_option.pointer_init = "None";
     config.default_value_option.optional_init = "None";
     config.infinity_loop_keyword = "loop";
+    // Native endian: cfg! macro evaluates to a bool at compile-time.
+    config.native_endian_check = "cfg!(target_endian = \"little\")";
     return pass;
 }

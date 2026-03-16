@@ -119,6 +119,15 @@ std::function<expected<Result>(Context_Expression_IS_ERROR& ctx)> is_error_visit
 std::function<expected<Result>(Context_Statement_ERROR_RETURN& ctx)> error_return_visitor;
 std::function<expected<Result>(Context_Statement_ERROR_REPORT& ctx)> error_report_visitor;
 
+// Runtime check for native (system) endianness: should evaluate to true when running on little-endian.
+// Set to a language-specific boolean expression string (e.g. Python: "sys.byteorder == 'little'").
+// If empty, IS_LITTLE_ENDIAN with nil endian_expr falls through to GeneratorDefaultHook.
+std::string native_endian_check = "";
+// Value representing little-endian in a dynamic endian variable (integer: 0=big, 1=little, 2=native).
+std::string little_endian_value = "1";
+// Override the entire IS_LITTLE_ENDIAN expression generation.
+std::function<expected<Result>(Context_Expression_IS_LITTLE_ENDIAN& ctx)> is_little_endian_visitor;
+
 std::function<expected<Result>(Context_Expression_CALL& ctx)> call_custom;
 std::function<expected<Result>(Context_Expression_AS_ARG& ctx)> as_arg_visitor;
 
