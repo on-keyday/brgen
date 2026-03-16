@@ -6,8 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **RE:brgen (rebrgen)** is a code generator construction framework for brgen, a binary format definition language and code generator suite. While the original brgen uses an AST-to-Code model, rebrgen implements an AST-to-IR-to-Code model using an Extended Binary Module (EBM) intermediate representation for improved flexibility and inter-language compatibility.
 
-- Repository: https://github.com/on-keyday/rebrgen (CURRENTLY, merged into https://github.com/on-keyday/brgen)
-- Parent project (brgen): https://github.com/on-keyday/brgen
+- Repository: https://github.com/on-keyday/brgen (integrated into `rebrgen/` subdirectory)
 - Phase: MVP to Actual Product. unictest based proving.
 
 ## Build Commands
@@ -321,9 +320,10 @@ The codebase uses macros extensively for error handling (like `MAYBE`). This is 
 
 ## Documentation
 
-- `docs/en/current_status.md` - Project status snapshot with per-generator analysis (AI-oriented)
+- `../web/doc/content/docs/rebrgen/` - Hugo-based public documentation (integrated into brgen's web/doc site)
 - `src/ebmgen/GEMINI.md` - Comprehensive guide for ebmgen development (MUST READ)
-- `docs/en/` - English documentation
+- `docs/en/current_status.md` - Project status snapshot with per-generator analysis (AI-oriented, may be stale)
+- `docs/en/` - English documentation (may be stale; prefer web/doc for up-to-date reference)
 - `docs/ja/` - Japanese documentation
 - `.clinerules/` - Legacy development notes (mostly superseded by docs/)
 - See section 15 in `src/ebmgen/GEMINI.md` for full documentation structure
