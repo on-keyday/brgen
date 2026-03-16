@@ -134,25 +134,33 @@ template <> struct Visitor<UserHook<VisitorTag_Statement_BLOCK>> {}; // Unimplem
 // 優先度 2: DSL class-based
 #if __has_include("visitor/dsl/Statement_BLOCK_dsl_class.hpp")
 // ...
+#if !defined(CODEGEN_EXPECTED_PRIORITY_STATEMENT_BLOCK)
 #define CODEGEN_EXPECTED_PRIORITY_STATEMENT_BLOCK 2
+#endif
 #endif
 
 // 優先度 3: DSL 旧形式
 #if __has_include("visitor/dsl/Statement_BLOCK_dsl.hpp")
 // ...
+#if !defined(CODEGEN_EXPECTED_PRIORITY_STATEMENT_BLOCK)
 #define CODEGEN_EXPECTED_PRIORITY_STATEMENT_BLOCK 3
+#endif
 #endif
 
 // 優先度 4: デフォルト class-based
 #if __has_include("ebmcodegen/default_codegen_visitor/visitor/Statement_BLOCK_class.hpp")
 // ...
+#if !defined(CODEGEN_EXPECTED_PRIORITY_STATEMENT_BLOCK)
 #define CODEGEN_EXPECTED_PRIORITY_STATEMENT_BLOCK 4
+#endif
 #endif
 
 // 優先度 5: デフォルト 旧形式
 #if __has_include("ebmcodegen/default_codegen_visitor/visitor/Statement_BLOCK.hpp")
 // ...
+#if !defined(CODEGEN_EXPECTED_PRIORITY_STATEMENT_BLOCK)
 #define CODEGEN_EXPECTED_PRIORITY_STATEMENT_BLOCK 5
+#endif
 #endif
 
 // 優先度 6: インライン組み込みデフォルト (上記すべて未発見の場合)
@@ -197,7 +205,7 @@ body_subset_StatementBody() {
 }
 ```
 
-`class_based.cpp` がこれを使ってコンテキストクラスのフィールドを決定するため、**このファイルを手動で編集してはならない。**
+`class_based.cpp` がこれを使ってコンテキストクラスのフィールドを決定するため、**このファイルを手動で編集しないでください。**
 
 ---
 

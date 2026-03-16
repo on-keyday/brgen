@@ -64,7 +64,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
         ctx.VarString<true>(&default_visitor_impl_dir, "default-visitor-impl-dir", "directory for default visitor implementation", "DIR");
         ctx.VarString<true>(&template_target, "template-target", "template target name. see --mode hooklist", "target_name");
         ctx.VarString<true>(&dsl_file, "dsl-file", "DSL source file for --mode dsl", "FILE");
-        ctx.VarMap(&mode, "mode", "generate mode (default: codegen)", "{subset,codegen,interpret,hooklist,hookkind,template,spec-json,dsl,accessor,ebmgen-visitor,codegen-class-header,codegen-class-source,interpret-class-header,interpret-class-source,json-conv-header,json-conv-source}",
+        ctx.VarMap(&mode, "mode", "generate mode (default: codegen)", "{subset,codegen,interpret,hooklist,hookkind,template,spec-json,dsl,accessor,ebmgen-visitor,codegen-class-header,codegen-class-source,interpret-class-header,interpret-class-source,json-conv-header,json-conv-source,cmake}",
                    std::map<std::string, GenerateMode>{
                        {"template", GenerateMode::Template},
                        {"subset", GenerateMode::BodySubset},

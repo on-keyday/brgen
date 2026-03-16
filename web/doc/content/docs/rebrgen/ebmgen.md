@@ -108,6 +108,7 @@ python script/unictest.py --target-runner ebm2<lang_name>
 | `codegen-class-source` | 言語コードジェネレーター用のソース (`.cpp`) を生成 |
 | `interpret-class-header` | インタープリター用の `codegen.hpp` ヘッダーを生成 |
 | `interpret-class-source` | インタープリター用のソース (`.cpp`) を生成 |
+| `cmake` | `CMakeLists.txt` を生成 (スケルトン作成時の内部利用) |
 
 ---
 
@@ -128,7 +129,7 @@ python script/update_ebm.py
 5. 変更があった場合は再ビルド
 6. `extended_binary_module.bgn` を hex テストデータに変換
 
-**注意**: `ebmcodegen` 自体が更新対象のファイルに依存しているため、EBM 構造の変更が `ebmcodegen` をビルド不能にした場合は:
+**注意**: `ebmcodegen` 自体が更新対象のファイルに依存しているため、EBM 構造の変更が `ebmcodegen` をビルド不能にした場合は次を実行してください:
 
 ```bash
 export CODEGEN_ONLY=1

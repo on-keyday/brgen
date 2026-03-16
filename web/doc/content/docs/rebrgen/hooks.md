@@ -97,7 +97,7 @@ MAYBE(result, ctx.visit(ctx.some_expr));
 
 `MAYBE(var, expr)` は Rust の `?` 演算子に相当します。`expected<T>` が失敗値の場合は早期リターンし、成功値は `var` に束縛します。RAII は保持されます。
 
-型定義に不明点があるときは推測せず、必ず `src/ebm/extended_binary_module.hpp` の定義を参照してください。
+型定義に不明点があるときは推測せず、必ず `src/ebm/extended_binary_module.hpp` の定義を参照します。
 
 ## デフォルトビジターのカスタマイズ
 
