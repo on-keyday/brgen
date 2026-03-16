@@ -108,21 +108,21 @@ std::string encode_fn_name;
 
 ```cpp
 DEFINE_VISITOR(entry_before) {
-    // 基本構文設定
     ctx.config().function_define_keyword = "func";
     ctx.config().begin_block = " {";
 
-    // std::function コールバックでデフォルト処理をカスタマイズ
     ctx.config().enum_decl_visitor = [&](Context_Statement_ENUM_DECL& ectx) -> expected<Result> {
-        // カスタム enum 生成ロジック
-        CodeWriter w;
         // ...
         return w;
     };
 
-    return pass; // デフォルト処理に続ける
+    return pass;
 }
 ```
+
+{{< hint info >}}
+一部の既存ジェネレーター (Python など) では `entry_before.hpp` という旧形式のファイルが残っています。これはマイグレーションコストの都合で `ebmcodegen/class_based.cpp` 内で互換維持されているもので、新規実装では使用しないでください。既存の旧形式は順次クラスベース形式 (`entry_before_class.hpp`) への切り替えが推奨されます。
+{{< /hint >}}
 
 ### `std::function` コールバックの命名規則
 

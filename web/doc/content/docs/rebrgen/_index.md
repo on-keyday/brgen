@@ -34,4 +34,5 @@ EBM (Extended Binary Module) はグラフベースの中間表現 (IR) で、ス
 | [Testing]({{< relref "testing" >}}) | unictest による自動テスト |
 | [Script Reference]({{< relref "scripts" >}}) | ビルド・生成スクリプト一覧 |
 | [EBM API Reference]({{< relref "ebm_api" >}}) | EBM Magic Access Path リファレンス |
+| [ebmcodegen 内部アーキテクチャ]({{< relref "ebmcodegen_internals" >}}) | ebmcodegen のソースコード構造と生成メカニズム |
 | [Current Status]({{< relref "status" >}}) | 開発状況・各言語ジェネレーターの成熟度 |

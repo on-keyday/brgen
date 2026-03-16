@@ -100,6 +100,14 @@ python script/unictest.py --target-runner ebm2<lang_name>
 | `subset` | `body_subset.cpp` を生成 |
 | `dsl` | DSL ファイルを C++ フックに変換 |
 | `spec-json` | EBM スキーマを JSON 形式で出力 |
+| `json-conv-header` | `json_conv.hpp` (JSON デシリアライズヘッダー) を生成 |
+| `json-conv-source` | `json_conv.cpp` (JSON デシリアライズ実装) を生成 |
+| `accessor` | アクセサーコードを生成 |
+| `ebmgen-visitor` | ebmgen ビジターコードを生成 |
+| `codegen-class-header` | クラスベースコードジェネレーター用ヘッダーを生成 |
+| `codegen-class-source` | クラスベースコードジェネレーター用ソースを生成 |
+| `interpret-class-header` | クラスベースインタープリター用ヘッダーを生成 |
+| `interpret-class-source` | クラスベースインタープリター用ソースを生成 |
 
 ---
 
@@ -116,7 +124,7 @@ python script/update_ebm.py
 1. `src/ebm/ebm.py` で `extended_binary_module.hpp/cpp` を再生成
 2. `script/build.py` でビルド
 3. `ebmcodegen --mode subset` で `body_subset.cpp` を生成
-4. `ebmcodegen --mode json-conv-header/source` で `json_conv.hpp/cpp` を生成
+4. `ebmcodegen --mode json-conv-header` で `json_conv.hpp` を生成、`--mode json-conv-source` で `json_conv.cpp` を生成
 5. 変更があった場合は再ビルド
 6. `extended_binary_module.bgn` を hex テストデータに変換
 
