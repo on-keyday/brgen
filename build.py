@@ -205,9 +205,11 @@ def build_native():
 
 def build_wasm():
     """Emscripten cmake+ninja build and copy WASM artifacts into web/dev/src."""
+    set_wasmexec()
     BUILD_DIR = f"./built/web/{BUILD_TYPE}"
     os.environ["GOOS"] = "js"
     os.environ["GOARCH"] = "wasm"
+    os.environ["BUILD_MODE"] = "web" # Tell CMakeLists.txt to set Wasm-specific flags and install targets
     try:
         if os.name == "nt":
             # Windows: source emsdk inline via PowerShell for each command
@@ -363,7 +365,6 @@ elif BUILD_MODE == "lsp":
     install_lsp()
 elif BUILD_MODE == "all":
     build_native()
-    set_wasmexec()
     build_wasm()
     build_npm()
     generate_ast_libs()
@@ -372,7 +373,4 @@ else:
     print(f"Invalid build mode: {BUILD_MODE}")
     sys.exit(1)
 
-del os.environ["FUTILS_DIR"]
-del os.environ["BUILD_MODE"]
-del os.environ["S2J_LIB"]
-del os.environ["BRGEN_RUST_ENABLED"]
+
