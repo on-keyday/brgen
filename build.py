@@ -63,6 +63,22 @@ os.environ["FUTILS_DIR"] = os.path.abspath(FUTILS_DIR)
 os.environ["BUILD_MODE"] = BUILD_MODE
 
 
+def _utils_run(args, **kwargs):
+    """Run a build command inside the utils directory.
+    On Windows, uses 'call build.bat'; on POSIX, uses 'bash build'."""
+    if os.name == "nt":
+        # args[0] is the target (e.g. "shared"), args[1] is type, args[2] is lib
+        subprocess.run(
+            ["cmd", "/c", "call build.bat " + " ".join(args)],
+            check=True, stdout=sys.stdout, stderr=sys.stderr, **kwargs,
+        )
+    else:
+        subprocess.run(
+            ["bash", "build"] + args,
+            check=True, stdout=sys.stdout, stderr=sys.stderr, **kwargs,
+        )
+
+
 def clone_utils():
     """Clone and build futils if utils/ directory does not exist."""
     print("Cloning utils...")
@@ -75,26 +91,11 @@ def clone_utils():
     orig_dir = os.getcwd()
     os.chdir("utils")
     try:
-        build_target = "wasm-em" if BUILD_MODE == "web" else "shared"
-        subprocess.run(
-            ["bash", "build", build_target, BUILD_TYPE, "futils"],
-            check=True,
-            stdout=sys.stdout,
-            stderr=sys.stderr,
-        )
-        if os.getenv("S2J_USE_NETWORK") == "1" and BUILD_MODE != "web":
-            subprocess.run(
-                ["bash", "build", "shared", BUILD_TYPE, "fnet"],
-                check=True,
-                stdout=sys.stdout,
-                stderr=sys.stderr,
-            )
-            subprocess.run(
-                ["bash", "build", "shared", BUILD_TYPE, "fnetserv"],
-                check=True,
-                stdout=sys.stdout,
-                stderr=sys.stderr,
-            )
+        build_target = "wasm-em" if BUILD_MODE in ("web", "wasm") else "shared"
+        _utils_run([build_target, BUILD_TYPE, "futils"])
+        if os.getenv("S2J_USE_NETWORK") == "1" and BUILD_MODE not in ("web", "wasm"):
+            _utils_run(["shared", BUILD_TYPE, "fnet"])
+            _utils_run(["shared", BUILD_TYPE, "fnetserv"])
     finally:
         os.chdir(orig_dir)
 
@@ -333,6 +334,10 @@ def install_lsp():
         stderr=sys.stderr,
     )
 
+
+# For wasm builds on POSIX, source emsdk before building futils
+if BUILD_MODE in ("wasm", "web", "all") and os.name != "nt":
+    source_emsdk()
 
 # Ensure futils is available
 if BUILD_MODE not in ("npm", "generate", "lsp"):

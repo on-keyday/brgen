@@ -348,7 +348,7 @@ jobs:
         run: |
           cd utils
           git pull
-          bash build shared Release futils
+          call build.bat shared Release futils
           cd ..
       - name: Build
         shell: pwsh
@@ -625,6 +625,7 @@ jobs:
       - name: Pull Utils
         if: ${{ steps.cache_wasm.outputs.cache-hit }}
         run: |
+          . $EMSDK/emsdk_env.sh
           cd utils
           git pull
           rm -rf built
