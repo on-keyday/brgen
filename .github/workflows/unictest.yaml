@@ -55,6 +55,8 @@ jobs:
           path: test_results/
 
   update-readme:
+    permissions:
+      contents: write
     needs: unictest-linux
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
