@@ -82,7 +82,12 @@ DEFINE_VISITOR(Statement_WRITE_DATA) {
             lw->lowering_type != ebm::LoweringIOType::ARRAY_FOR_EACH) {
             return CODELINE("// WRITE_DATA skipped in free function generation");
         }
-        return ctx.visit(lw->io_statement.id);
+        MAYBE(vec_elem_free, ctx.visit(lw->io_statement.id));
+        if (ctx.config().on_destructor_generation && lw->lowering_type == ebm::LoweringIOType::ARRAY_FOR_EACH) {
+            MAYBE(target, ctx.visit(ctx.write_data.target));
+            vec_elem_free.to_writer().writeln("EBM_FREE_VECTOR(", target.to_writer(), ", sizeof(", target.to_writer(), ".data[0])", ");");
+        }
+        return vec_elem_free;
     }
     return CODELINE("// WRITE_DATA not implemented in ebm2c");
 }
