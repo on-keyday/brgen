@@ -7,6 +7,9 @@ concurrency:
   group: build-${{ github.ref_name }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   build-rebrgen-native:
     runs-on: ubuntu-latest
