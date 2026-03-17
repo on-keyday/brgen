@@ -777,6 +777,4 @@ jobs:
 
   unictest:
     needs: [build-linux, build-rebrgen-native]
-    permissions:
-      contents: write
     uses: ./.github/workflows/unictest.yaml
