@@ -114,7 +114,7 @@ DEFINE_VISITOR(entry_before) {
         return CODELINE("int hardlimit_", std::to_string(get_id(ctx.item_id)), " = 0;");
     };
     ctx.config().before_loop_body_wrapper = [&](Context_Statement_LOOP_STATEMENT& ctx) -> expected<Result> {
-        return CODE("EBM_LOOP_HARDLIMIT(hardlimit_", std::to_string(get_id(ctx.item_id)), ");");
+        return CODELINE("EBM_LOOP_HARDLIMIT(hardlimit_", std::to_string(get_id(ctx.item_id)), ");");
     };
     // Native endian: use a compile-time preprocessor constant (GCC/Clang).
     ctx.config().native_endian_check = "(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)";
