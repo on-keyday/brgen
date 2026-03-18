@@ -6,8 +6,9 @@ config.generator = "Gemini Flash 2.5(preview)"
 # size: メッセージ全体のバイト長 (ヘッダを含む)
 # tag: クライアントがメッセージを識別するために使用するタグ
 format P9PMessageHeader:
-    size :u32
+    size :u32 
     tag :u16
+  
 
 # NOTAG は特別なタグで、Tversion メッセージでタグマッチングを無効にするために使用されます。
 NOTAG ::= u16(0xFFFF) # 0xFFFF は (ushort)~0 と同じ意味です。
@@ -18,11 +19,16 @@ format StringValue:
     len :u16
     string_data :[len]u8
 
+ 
+    
+
 # Qid はファイルの一意な識別子です。
 format Qid:
     type :u8
     version :u32
     path :u64
+    
+
 
 # Stat はファイルのメタデータを表します。
 format Stat:
@@ -62,6 +68,7 @@ format Tauth:
     afid :u32 # 認証用のfid
     uname :StringValue # ユーザー名
     aname :StringValue # 認証メカニズム名または認証ドメイン名
+    
 
 format Rauth:
     header :P9PMessageHeader
@@ -180,4 +187,4 @@ format Twstat:
 
 format Rwstat:
     header :P9PMessageHeader
-    
+

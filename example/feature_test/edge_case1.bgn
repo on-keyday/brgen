@@ -1,6 +1,6 @@
 
 format A:
     a :u8 b :u8
-    b
-    a
-b
+    b # this
+    a # and this is a part of A
+b # this is not a part of A
