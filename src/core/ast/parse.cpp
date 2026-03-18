@@ -1,9 +1,12 @@
 /*license*/
+#include "core/lexer/token.h"
+#include "node/ast_enum.h"
 #include "stream.h"
 #include "node/scope.h"
 #include "strutil/append.h"
 #include "parse.h"
 #include <fnet/util/base64.h>
+#include <memory>
 
 namespace brgen::ast {
 
@@ -117,16 +120,23 @@ namespace brgen::ast {
             prog->struct_type->base = prog;
             auto st = state.enter_struct(prog->struct_type);
             s.skip_line();
+            std::shared_ptr<Node> comment;
             auto collect_comments = [&] {
                 // get comments and add to scope
-                auto comment = s.get_comments();
-                if (comment) {
-                    prog->elements.push_back(std::move(comment));
-                }
+                comment = s.get_comments();
             };
             while (!s.eos()) {
                 collect_comments();
                 auto expr = parse_statement();
+                if (auto member = ast::as<Member>(expr)) {
+                    member->comment = std::move(comment);
+                }
+                else {
+                    // if top level statement is not member, add comment to program
+                    if (comment) {
+                        prog->elements.push_back(std::move(comment));
+                    }
+                }
                 prog->elements.push_back(std::move(expr));
                 s.shrink();
                 s.skip_white();
@@ -184,16 +194,21 @@ namespace brgen::ast {
         }
 
         // :\\r\\n
-        void must_consume_indent_sign(std::string_view hint) {
+        std::shared_ptr<Node> must_consume_indent_sign(std::string_view hint) {
             s.skip_white();
+            /*
             if (state.error_tolerant) {
                 consume_ident_sign_with_error_tolerant();
                 return;
             }
+            */
             s.must_consume_token(":", futils::strutil::concat<std::string>(hint, ", only `:` is needed"));
             s.skip_space();
+            s.consume_token(lexer::Tag::comment);  // optional comment after ':'
+            auto follow_comment = s.get_comments();
             s.must_consume_token(lexer::Tag::line, "line expected after ':'");
             s.skip_line();
+            return follow_comment;
         }
 
         /*
@@ -201,7 +216,7 @@ namespace brgen::ast {
         */
         std::shared_ptr<IndentBlock> parse_indent_block(const std::shared_ptr<Node>& scope_owner, std::string_view hint, std::vector<std::shared_ptr<Ident>>* ident = nullptr) {
             // Consume the initial indent sign
-            must_consume_indent_sign(hint);
+            auto follow_comment = must_consume_indent_sign(hint);
 
             // Get the base indent token
             auto base = s.must_consume_token(lexer::Tag::indent, "indent expected after ':'");
@@ -209,6 +224,7 @@ namespace brgen::ast {
             // Create a shared pointer for the IndentBlock
             auto block = std::make_shared<IndentBlock>(base.loc);
 
+            block->follow_comment = std::move(follow_comment);
             block->struct_type = std::make_shared<StructType>(base.loc);
 
             assert(scope_owner != nullptr);
@@ -227,19 +243,26 @@ namespace brgen::ast {
                 }
             }
 
+            std::shared_ptr<Node> comment;
             auto collect_comments = [&] {
                 // get comments and add to scope
-                auto comment = s.get_comments();
-                if (comment) {
-                    block->elements.push_back(std::move(comment));
-                }
+                comment = s.get_comments();
             };
 
             auto parse_a_line = [&] {
                 collect_comments();
                 bool line_skipped = false;
                 while (!line_skipped) {
-                    block->elements.push_back(parse_statement(&line_skipped));
+                    auto expr = parse_statement(&line_skipped);
+                    if (auto member = ast::as<Member>(expr)) {
+                        member->comment = std::move(comment);
+                    }
+                    else {
+                        if (comment) {
+                            block->elements.push_back(std::move(comment));
+                        }
+                    }
+                    block->elements.push_back(std::move(expr));
                     if (s.peek_token(lexer::Tag::indent) || s.eos()) {
                         break;
                     }
@@ -539,6 +562,18 @@ namespace brgen::ast {
         }
 
         std::shared_ptr<Ident> parse_ident_no_scope(std::string_view hint) {
+            if (state.error_tolerant) {
+                auto f = s.consume_token(lexer::Tag::ident);
+                if (!f) {
+                    auto errs = s.token_error(lexer::Tag::ident, hint);
+                    state.errors.locations.insert(state.errors.locations.end(), errs.locations.begin(), errs.locations.end());
+                    s.recover_to_prev_skip();
+                    auto ident = std::make_shared<Ident>(s.loc(), "$dummy");  // error tolerant mode; return dummy ident
+                    ident->usage = IdentUsage::bad_ident;
+                    return ident;
+                }
+                return std::make_shared<Ident>(f->loc, std::move(f->token));
+            }
             auto token = s.must_consume_token(lexer::Tag::ident, hint);
             return std::make_shared<Ident>(token.loc, std::move(token.token));
         }
@@ -1200,7 +1235,28 @@ namespace brgen::ast {
                 return fmt->body->struct_type;
             }
 
-            auto ident = s.must_consume_token(lexer::Tag::ident, "to specify type name, types are like `T`, `[]T`, `[x][10]T`, `fn(p :T,:U) -> T`, `\"magic_number\"`, `/regex/`, `imported.T`");
+            lexer::Token ident;
+
+            constexpr auto type_hint = "to specify type name, types are like `T`, `[]T`, `[x][10]T`, `fn(p :T,:U) -> T`, `\"magic_number\"`, `/regex/`, `imported.T`";
+
+            if (state.error_tolerant) {
+                auto f = s.consume_token(lexer::Tag::ident);
+                if (!f) {
+                    auto errs = s.token_error(lexer::Tag::ident, type_hint);
+                    state.errors.locations.insert(state.errors.locations.end(), errs.locations.begin(), errs.locations.end());
+                    s.recover_to_prev_skip();
+                    ident = lexer::Token{
+                        .token = "$dummy",
+                        .loc = s.loc(),
+                    };
+                }
+                else {
+                    ident = std::move(*f);
+                }
+            }
+            else {
+                ident = s.must_consume_token(lexer::Tag::ident, type_hint);
+            }
 
             if (auto desc = is_int_type(ident.token)) {
                 return std::make_shared<IntType>(ident.loc, desc->bit_size, desc->endian, desc->is_signed, true);
@@ -1298,6 +1354,12 @@ namespace brgen::ast {
                 state.add_to_struct(field);
             }
 
+            s.skip_space();
+            s.consume_token(lexer::Tag::comment);  // enforce parser to recognize comment after field definition
+
+            if (auto comment = s.get_comments()) {
+                field->follow_comment = std::move(comment);
+            }
             return field;
         }
 
@@ -1615,7 +1677,7 @@ namespace brgen::ast {
                 }
             };
             auto skip_last = [&] {
-                s.skip_space();
+                s.skip_space_comment();
 
                 if (!s.eos() && s.expect_token(lexer::Tag::line)) {
                     s.must_consume_token(lexer::Tag::line, must_success);

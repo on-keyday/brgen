@@ -88,11 +88,17 @@ namespace brgen::ast {
         // Tag::space, Tag::comment
         void skip_space();
 
+        // Tag::space, Tag::comment
+        void skip_space_comment();
+
         // Tag::space, Tag::line, Tag::comment
         void skip_line();
 
         // Tag::space, Tag::line, Tag::indent, Tag::comment
         void skip_white();
+
+        // back to last skip position if exists
+        void recover_to_prev_skip();
 
         std::shared_ptr<Node> get_comments();
 

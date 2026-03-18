@@ -194,8 +194,12 @@ namespace brgen::ast {
         last_skip = (last != cur) ? std::optional{last} : std::nullopt;
     }
 
-    // Tag::space, Tag::comment
+    // Tag::space
     void Stream::skip_space() {
+        skip_tag(lexer::Tag::space);
+    }
+
+    void Stream::skip_space_comment() {
         skip_tag(lexer::Tag::space, lexer::Tag::comment);
     }
 
@@ -207,6 +211,13 @@ namespace brgen::ast {
     // Tag::space, Tag::line, Tag::indent, Tag::comment
     void Stream::skip_white() {
         skip_tag(lexer::Tag::space, lexer::Tag::line, lexer::Tag::indent, lexer::Tag::comment);
+    }
+
+    void Stream::recover_to_prev_skip() {
+        if (last_skip) {
+            cur = *last_skip;
+            last_skip.reset();
+        }
     }
 
     std::shared_ptr<Node> Stream::get_comments() {

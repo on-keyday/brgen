@@ -1114,13 +1114,15 @@ namespace brgen::middle {
             else if (auto type = lookup_struct(selector->target->expr_type)) {
                 stmt = type->lookup(selector->member->ident);
                 if (!stmt) {
-                    auto res = error(selector->member->loc, "member ", selector->member->ident, " is not defined");
+                    warnings.warning(selector->member->loc, "member ", selector->member->ident, " is not defined");
                     if (auto f = ast::as<ast::Member>(type->base.lock())) {
-                        (void)res.error(f->ident->loc, "type ", f->ident->ident, " is defined here");
+                        warnings.warning(f->ident->loc, "type ", f->ident->ident, " is defined here");
                     }
-                    res.report();
+                    return;
                 }
-                typing_object(stmt);
+                else {
+                    typing_object(stmt);
+                }
             }
             else {
                 typing_builtin_member_access(selector);

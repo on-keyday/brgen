@@ -503,8 +503,10 @@ int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& f
             if (!flags.omit_json_warning) {
                 json_out_err.locations.insert(json_out_err.locations.end(), warns.locations.begin(), warns.locations.end());
             }
-            auto src_err = brgen::to_source_error(files)(std::move(warns));
-            print_errors(src_err);
+            else {
+                auto src_err = brgen::to_source_error(files)(std::move(warns));
+                print_errors(src_err);
+            }
         }
         may_cancel_task();
     }
