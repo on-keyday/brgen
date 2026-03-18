@@ -273,6 +273,7 @@ public interface Type : Node {
 public interface Literal : Expr {
 }
 public interface Member : Stmt {
+	public Node? Comment {get; set;}
 	public Member? Belong {get; set;}
 	public StructType? BelongStruct {get; set;}
 	public Ident? Ident {get; set;}
@@ -762,6 +763,7 @@ public class SpecialLiteral : Literal{
 }
 public class Field : Member{
 	public Loc Loc{get;set;}
+	public Node? Comment{get;set;}
 	public Member? Belong{get;set;}
 	public StructType? BelongStruct{get;set;}
 	public Ident? Ident{get;set;}
@@ -769,6 +771,7 @@ public class Field : Member{
 	public bool IsStateVariable{get;set;}
 	public Type? FieldType{get;set;}
 	public FieldArgument? Arguments{get;set;}
+	public Node? FollowComment{get;set;}
 	public ulong? OffsetBit{get;set;}
 	public ulong OffsetRecent{get;set;}
 	public ulong? TailOffsetBit{get;set;}
@@ -781,6 +784,7 @@ public class Field : Member{
 }
 public class Format : Member{
 	public Loc Loc{get;set;}
+	public Node? Comment{get;set;}
 	public Member? Belong{get;set;}
 	public StructType? BelongStruct{get;set;}
 	public Ident? Ident{get;set;}
@@ -793,6 +797,7 @@ public class Format : Member{
 }
 public class State : Member{
 	public Loc Loc{get;set;}
+	public Node? Comment{get;set;}
 	public Member? Belong{get;set;}
 	public StructType? BelongStruct{get;set;}
 	public Ident? Ident{get;set;}
@@ -800,6 +805,7 @@ public class State : Member{
 }
 public class Enum : Member{
 	public Loc Loc{get;set;}
+	public Node? Comment{get;set;}
 	public Member? Belong{get;set;}
 	public StructType? BelongStruct{get;set;}
 	public Ident? Ident{get;set;}
@@ -811,6 +817,7 @@ public class Enum : Member{
 }
 public class EnumMember : Member{
 	public Loc Loc{get;set;}
+	public Node? Comment{get;set;}
 	public Member? Belong{get;set;}
 	public StructType? BelongStruct{get;set;}
 	public Ident? Ident{get;set;}
@@ -820,6 +827,7 @@ public class EnumMember : Member{
 }
 public class Function : Member{
 	public Loc Loc{get;set;}
+	public Node? Comment{get;set;}
 	public Member? Belong{get;set;}
 	public StructType? BelongStruct{get;set;}
 	public Ident? Ident{get;set;}
@@ -1608,6 +1616,7 @@ public static class Ast {
            case NodeType.Field:
                var node = nodes[i] as Field;
                node.Loc = ast.Node[i].Body[loc];
+               node.Comment = ast.Node[i].Body[comment];
                node.Belong = ast.Node[i].Body[belong];
                node.BelongStruct = ast.Node[i].Body[belong_struct];
                node.Ident = ast.Node[i].Body[ident];
@@ -1615,6 +1624,7 @@ public static class Ast {
                node.IsStateVariable = ast.Node[i].Body[is_state_variable];
                node.FieldType = ast.Node[i].Body[field_type];
                node.Arguments = ast.Node[i].Body[arguments];
+               node.FollowComment = ast.Node[i].Body[follow_comment];
                node.OffsetBit = ast.Node[i].Body[offset_bit];
                node.OffsetRecent = ast.Node[i].Body[offset_recent];
                node.TailOffsetBit = ast.Node[i].Body[tail_offset_bit];
@@ -1627,6 +1637,7 @@ public static class Ast {
            case NodeType.Format:
                var node = nodes[i] as Format;
                node.Loc = ast.Node[i].Body[loc];
+               node.Comment = ast.Node[i].Body[comment];
                node.Belong = ast.Node[i].Body[belong];
                node.BelongStruct = ast.Node[i].Body[belong_struct];
                node.Ident = ast.Node[i].Body[ident];
@@ -1639,6 +1650,7 @@ public static class Ast {
            case NodeType.State:
                var node = nodes[i] as State;
                node.Loc = ast.Node[i].Body[loc];
+               node.Comment = ast.Node[i].Body[comment];
                node.Belong = ast.Node[i].Body[belong];
                node.BelongStruct = ast.Node[i].Body[belong_struct];
                node.Ident = ast.Node[i].Body[ident];
@@ -1646,6 +1658,7 @@ public static class Ast {
            case NodeType.Enum:
                var node = nodes[i] as Enum;
                node.Loc = ast.Node[i].Body[loc];
+               node.Comment = ast.Node[i].Body[comment];
                node.Belong = ast.Node[i].Body[belong];
                node.BelongStruct = ast.Node[i].Body[belong_struct];
                node.Ident = ast.Node[i].Body[ident];
@@ -1657,6 +1670,7 @@ public static class Ast {
            case NodeType.EnumMember:
                var node = nodes[i] as EnumMember;
                node.Loc = ast.Node[i].Body[loc];
+               node.Comment = ast.Node[i].Body[comment];
                node.Belong = ast.Node[i].Body[belong];
                node.BelongStruct = ast.Node[i].Body[belong_struct];
                node.Ident = ast.Node[i].Body[ident];
@@ -1666,6 +1680,7 @@ public static class Ast {
            case NodeType.Function:
                var node = nodes[i] as Function;
                node.Loc = ast.Node[i].Body[loc];
+               node.Comment = ast.Node[i].Body[comment];
                node.Belong = ast.Node[i].Body[belong];
                node.BelongStruct = ast.Node[i].Body[belong_struct];
                node.Ident = ast.Node[i].Body[ident];

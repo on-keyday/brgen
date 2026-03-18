@@ -3,6 +3,7 @@
 #include "node_type.h"
 #include <core/common/debug.h>
 #include <core/lexer/token.h>
+#include <memory>
 #include <vector>
 #include <optional>
 #include "ast_enum.h"
@@ -100,12 +101,14 @@ namespace brgen::ast {
 
     struct Member : Stmt {
         define_node_type(NodeType::member);
+        std::shared_ptr<Node> comment;
         std::weak_ptr<Member> belong;
         std::weak_ptr<StructType> belong_struct;
         std::shared_ptr<Ident> ident;
 
         void dump(auto&& field_) {
             Stmt::dump(field_);
+            sdebugf(comment);
             sdebugf(belong);
             sdebugf(belong_struct);
             sdebugf(ident);
@@ -184,6 +187,9 @@ namespace brgen::ast {
         node_list elements;
         scope_ptr scope;
         std::shared_ptr<StructType> struct_type;
+        // at start of
+        // format X: # this is follow comment of format X
+        std::shared_ptr<Node> follow_comment;
 
         std::vector<std::weak_ptr<Metadata>> metadata;
 

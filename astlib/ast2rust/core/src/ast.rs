@@ -3366,6 +3366,16 @@ impl Member {
             Member::Function(node)=>node.borrow().loc.clone(),
         }
     }
+    pub fn get_comment(&self)-> Option<Node> {
+        match self {
+            Member::Field(node)=>node.borrow().comment.clone(),
+            Member::Format(node)=>node.borrow().comment.clone(),
+            Member::State(node)=>node.borrow().comment.clone(),
+            Member::Enum(node)=>node.borrow().comment.clone(),
+            Member::EnumMember(node)=>node.borrow().comment.clone(),
+            Member::Function(node)=>node.borrow().comment.clone(),
+        }
+    }
     pub fn get_belong(&self)-> Option<MemberWeak> {
         match self {
             Member::Field(node)=>node.borrow().belong.clone(),
@@ -8650,6 +8660,7 @@ impl From<Rc<RefCell<SpecialLiteral>>> for Node {
 #[derive(Debug,Clone)]
 pub struct Field {
 	pub loc: Loc,
+	pub comment: Option<Node>,
 	pub belong: Option<MemberWeak>,
 	pub belong_struct: Option<Weak<RefCell<StructType>>>,
 	pub ident: Option<Rc<RefCell<Ident>>>,
@@ -8657,6 +8668,7 @@ pub struct Field {
 	pub is_state_variable: bool,
 	pub field_type: Option<Type>,
 	pub arguments: Option<Rc<RefCell<FieldArgument>>>,
+	pub follow_comment: Option<Node>,
 	pub offset_bit: Option<u64>,
 	pub offset_recent: u64,
 	pub tail_offset_bit: Option<u64>,
@@ -8770,6 +8782,7 @@ impl From<Rc<RefCell<Field>>> for Node {
 #[derive(Debug,Clone)]
 pub struct Format {
 	pub loc: Loc,
+	pub comment: Option<Node>,
 	pub belong: Option<MemberWeak>,
 	pub belong_struct: Option<Weak<RefCell<StructType>>>,
 	pub ident: Option<Rc<RefCell<Ident>>>,
@@ -8883,6 +8896,7 @@ impl From<Rc<RefCell<Format>>> for Node {
 #[derive(Debug,Clone)]
 pub struct State {
 	pub loc: Loc,
+	pub comment: Option<Node>,
 	pub belong: Option<MemberWeak>,
 	pub belong_struct: Option<Weak<RefCell<StructType>>>,
 	pub ident: Option<Rc<RefCell<Ident>>>,
@@ -8991,6 +9005,7 @@ impl From<Rc<RefCell<State>>> for Node {
 #[derive(Debug,Clone)]
 pub struct Enum {
 	pub loc: Loc,
+	pub comment: Option<Node>,
 	pub belong: Option<MemberWeak>,
 	pub belong_struct: Option<Weak<RefCell<StructType>>>,
 	pub ident: Option<Rc<RefCell<Ident>>>,
@@ -9103,6 +9118,7 @@ impl From<Rc<RefCell<Enum>>> for Node {
 #[derive(Debug,Clone)]
 pub struct EnumMember {
 	pub loc: Loc,
+	pub comment: Option<Node>,
 	pub belong: Option<MemberWeak>,
 	pub belong_struct: Option<Weak<RefCell<StructType>>>,
 	pub ident: Option<Rc<RefCell<Ident>>>,
@@ -9213,6 +9229,7 @@ impl From<Rc<RefCell<EnumMember>>> for Node {
 #[derive(Debug,Clone)]
 pub struct Function {
 	pub loc: Loc,
+	pub comment: Option<Node>,
 	pub belong: Option<MemberWeak>,
 	pub belong_struct: Option<Weak<RefCell<StructType>>>,
 	pub ident: Option<Rc<RefCell<Ident>>>,
@@ -10037,6 +10054,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 			NodeType::Field => {
 				Node::Field(Rc::new(RefCell::new(Field {
 				loc: raw_node.loc.clone(),
+				comment: None,
 				belong: None,
 				belong_struct: None,
 				ident: None,
@@ -10044,6 +10062,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				is_state_variable: false,
 				field_type: None,
 				arguments: None,
+				follow_comment: None,
 				offset_bit: None,
 				offset_recent: 0,
 				tail_offset_bit: None,
@@ -10058,6 +10077,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 			NodeType::Format => {
 				Node::Format(Rc::new(RefCell::new(Format {
 				loc: raw_node.loc.clone(),
+				comment: None,
 				belong: None,
 				belong_struct: None,
 				ident: None,
@@ -10072,6 +10092,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 			NodeType::State => {
 				Node::State(Rc::new(RefCell::new(State {
 				loc: raw_node.loc.clone(),
+				comment: None,
 				belong: None,
 				belong_struct: None,
 				ident: None,
@@ -10081,6 +10102,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 			NodeType::Enum => {
 				Node::Enum(Rc::new(RefCell::new(Enum {
 				loc: raw_node.loc.clone(),
+				comment: None,
 				belong: None,
 				belong_struct: None,
 				ident: None,
@@ -10094,6 +10116,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 			NodeType::EnumMember => {
 				Node::EnumMember(Rc::new(RefCell::new(EnumMember {
 				loc: raw_node.loc.clone(),
+				comment: None,
 				belong: None,
 				belong_struct: None,
 				ident: None,
@@ -10105,6 +10128,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 			NodeType::Function => {
 				Node::Function(Rc::new(RefCell::new(Function {
 				loc: raw_node.loc.clone(),
+				comment: None,
 				belong: None,
 				belong_struct: None,
 				ident: None,
@@ -14520,6 +14544,21 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Node::Field(node)=>node,
 					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
+				let comment_body = match raw_node.body.get("comment") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"comment")),
+				};
+ 				if !comment_body.is_null() {
+					let comment_body = match comment_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(comment_body.into(),JSONType::Number)),
+					};
+					let comment_body = match nodes.get(comment_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(comment_body as usize)),
+					};
+					node.borrow_mut().comment = Some(comment_body.clone());
+				}
 				let belong_body = match raw_node.body.get("belong") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"belong")),
@@ -14622,6 +14661,21 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						x =>return Err(Error::MismatchNodeType(x.into(),arguments_body.into())),
 					};
 					node.borrow_mut().arguments = Some(arguments_body.clone());
+				}
+				let follow_comment_body = match raw_node.body.get("follow_comment") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"follow_comment")),
+				};
+ 				if !follow_comment_body.is_null() {
+					let follow_comment_body = match follow_comment_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(follow_comment_body.into(),JSONType::Number)),
+					};
+					let follow_comment_body = match nodes.get(follow_comment_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(follow_comment_body as usize)),
+					};
+					node.borrow_mut().follow_comment = Some(follow_comment_body.clone());
 				}
 				let offset_bit_body = match raw_node.body.get("offset_bit") {
 					Some(v)=>v,
@@ -14731,6 +14785,21 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Node::Format(node)=>node,
 					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
+				let comment_body = match raw_node.body.get("comment") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"comment")),
+				};
+ 				if !comment_body.is_null() {
+					let comment_body = match comment_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(comment_body.into(),JSONType::Number)),
+					};
+					let comment_body = match nodes.get(comment_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(comment_body as usize)),
+					};
+					node.borrow_mut().comment = Some(comment_body.clone());
+				}
 				let belong_body = match raw_node.body.get("belong") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"belong")),
@@ -14917,6 +14986,21 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Node::State(node)=>node,
 					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
+				let comment_body = match raw_node.body.get("comment") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"comment")),
+				};
+ 				if !comment_body.is_null() {
+					let comment_body = match comment_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(comment_body.into(),JSONType::Number)),
+					};
+					let comment_body = match nodes.get(comment_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(comment_body as usize)),
+					};
+					node.borrow_mut().comment = Some(comment_body.clone());
+				}
 				let belong_body = match raw_node.body.get("belong") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"belong")),
@@ -14996,6 +15080,21 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Node::Enum(node)=>node,
 					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
+				let comment_body = match raw_node.body.get("comment") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"comment")),
+				};
+ 				if !comment_body.is_null() {
+					let comment_body = match comment_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(comment_body.into(),JSONType::Number)),
+					};
+					let comment_body = match nodes.get(comment_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(comment_body as usize)),
+					};
+					node.borrow_mut().comment = Some(comment_body.clone());
+				}
 				let belong_body = match raw_node.body.get("belong") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"belong")),
@@ -15136,6 +15235,21 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Node::EnumMember(node)=>node,
 					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
+				let comment_body = match raw_node.body.get("comment") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"comment")),
+				};
+ 				if !comment_body.is_null() {
+					let comment_body = match comment_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(comment_body.into(),JSONType::Number)),
+					};
+					let comment_body = match nodes.get(comment_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(comment_body as usize)),
+					};
+					node.borrow_mut().comment = Some(comment_body.clone());
+				}
 				let belong_body = match raw_node.body.get("belong") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"belong")),
@@ -15245,6 +15359,21 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					Node::Function(node)=>node,
 					_=>return Err(Error::MismatchNodeType(node_type,node.into())),
 				};
+				let comment_body = match raw_node.body.get("comment") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"comment")),
+				};
+ 				if !comment_body.is_null() {
+					let comment_body = match comment_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(comment_body.into(),JSONType::Number)),
+					};
+					let comment_body = match nodes.get(comment_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(comment_body as usize)),
+					};
+					node.borrow_mut().comment = Some(comment_body.clone());
+				}
 				let belong_body = match raw_node.body.get("belong") {
 					Some(v)=>v,
 					None=>return Err(Error::MissingField(node_type,"belong")),
@@ -16151,6 +16280,11 @@ where
 			}
 		},
 		Node::Field(node)=>{
+			if let Some(node) = &node.borrow().comment{
+				if !f.visit(node) {
+					return;
+				}
+			}
 			if let Some(node) = &node.borrow().ident{
 				if !f.visit(&node.into()){
 					return;
@@ -16166,8 +16300,18 @@ where
 					return;
 				}
 			}
+			if let Some(node) = &node.borrow().follow_comment{
+				if !f.visit(node) {
+					return;
+				}
+			}
 		},
 		Node::Format(node)=>{
+			if let Some(node) = &node.borrow().comment{
+				if !f.visit(node) {
+					return;
+				}
+			}
 			if let Some(node) = &node.borrow().ident{
 				if !f.visit(&node.into()){
 					return;
@@ -16180,6 +16324,11 @@ where
 			}
 		},
 		Node::State(node)=>{
+			if let Some(node) = &node.borrow().comment{
+				if !f.visit(node) {
+					return;
+				}
+			}
 			if let Some(node) = &node.borrow().ident{
 				if !f.visit(&node.into()){
 					return;
@@ -16192,6 +16341,11 @@ where
 			}
 		},
 		Node::Enum(node)=>{
+			if let Some(node) = &node.borrow().comment{
+				if !f.visit(node) {
+					return;
+				}
+			}
 			if let Some(node) = &node.borrow().ident{
 				if !f.visit(&node.into()){
 					return;
@@ -16214,6 +16368,11 @@ where
 			}
 		},
 		Node::EnumMember(node)=>{
+			if let Some(node) = &node.borrow().comment{
+				if !f.visit(node) {
+					return;
+				}
+			}
 			if let Some(node) = &node.borrow().ident{
 				if !f.visit(&node.into()){
 					return;
@@ -16236,6 +16395,11 @@ where
 			}
 		},
 		Node::Function(node)=>{
+			if let Some(node) = &node.borrow().comment{
+				if !f.visit(node) {
+					return;
+				}
+			}
 			if let Some(node) = &node.borrow().ident{
 				if !f.visit(&node.into()){
 					return;

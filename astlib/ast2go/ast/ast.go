@@ -1812,6 +1812,7 @@ type Literal interface {
 type Member interface {
 	isMember()
 	Stmt
+	GetComment() Node
 	GetBelong() Member
 	GetBelongStruct() *StructType
 	GetIdent() *Ident
@@ -3386,6 +3387,7 @@ func (n *SpecialLiteral) GetLoc() Loc {
 
 type Field struct {
 	Loc                  Loc
+	Comment              Node
 	Belong               Member
 	BelongStruct         *StructType
 	Ident                *Ident
@@ -3393,6 +3395,7 @@ type Field struct {
 	IsStateVariable      bool
 	FieldType            Type
 	Arguments            *FieldArgument
+	FollowComment        Node
 	OffsetBit            *uint64
 	OffsetRecent         uint64
 	TailOffsetBit        *uint64
@@ -3405,6 +3408,10 @@ type Field struct {
 }
 
 func (n *Field) isMember() {}
+
+func (n *Field) GetComment() Node {
+	return n.Comment
+}
 
 func (n *Field) GetBelong() Member {
 	return n.Belong
@@ -3428,6 +3435,7 @@ func (n *Field) GetLoc() Loc {
 
 type Format struct {
 	Loc            Loc
+	Comment        Node
 	Belong         Member
 	BelongStruct   *StructType
 	Ident          *Ident
@@ -3440,6 +3448,10 @@ type Format struct {
 }
 
 func (n *Format) isMember() {}
+
+func (n *Format) GetComment() Node {
+	return n.Comment
+}
 
 func (n *Format) GetBelong() Member {
 	return n.Belong
@@ -3463,6 +3475,7 @@ func (n *Format) GetLoc() Loc {
 
 type State struct {
 	Loc          Loc
+	Comment      Node
 	Belong       Member
 	BelongStruct *StructType
 	Ident        *Ident
@@ -3470,6 +3483,10 @@ type State struct {
 }
 
 func (n *State) isMember() {}
+
+func (n *State) GetComment() Node {
+	return n.Comment
+}
 
 func (n *State) GetBelong() Member {
 	return n.Belong
@@ -3493,6 +3510,7 @@ func (n *State) GetLoc() Loc {
 
 type Enum struct {
 	Loc          Loc
+	Comment      Node
 	Belong       Member
 	BelongStruct *StructType
 	Ident        *Ident
@@ -3504,6 +3522,10 @@ type Enum struct {
 }
 
 func (n *Enum) isMember() {}
+
+func (n *Enum) GetComment() Node {
+	return n.Comment
+}
 
 func (n *Enum) GetBelong() Member {
 	return n.Belong
@@ -3527,6 +3549,7 @@ func (n *Enum) GetLoc() Loc {
 
 type EnumMember struct {
 	Loc          Loc
+	Comment      Node
 	Belong       Member
 	BelongStruct *StructType
 	Ident        *Ident
@@ -3536,6 +3559,10 @@ type EnumMember struct {
 }
 
 func (n *EnumMember) isMember() {}
+
+func (n *EnumMember) GetComment() Node {
+	return n.Comment
+}
 
 func (n *EnumMember) GetBelong() Member {
 	return n.Belong
@@ -3559,6 +3586,7 @@ func (n *EnumMember) GetLoc() Loc {
 
 type Function struct {
 	Loc          Loc
+	Comment      Node
 	Belong       Member
 	BelongStruct *StructType
 	Ident        *Ident
@@ -3570,6 +3598,10 @@ type Function struct {
 }
 
 func (n *Function) isMember() {}
+
+func (n *Function) GetComment() Node {
+	return n.Comment
+}
 
 func (n *Function) GetBelong() Member {
 	return n.Belong
@@ -5184,6 +5216,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeField:
 			v := n.node[i].(*Field)
 			var tmp struct {
+				Comment              *uintptr     `json:"comment"`
 				Belong               *uintptr     `json:"belong"`
 				BelongStruct         *uintptr     `json:"belong_struct"`
 				Ident                *uintptr     `json:"ident"`
@@ -5191,6 +5224,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				IsStateVariable      bool         `json:"is_state_variable"`
 				FieldType            *uintptr     `json:"field_type"`
 				Arguments            *uintptr     `json:"arguments"`
+				FollowComment        *uintptr     `json:"follow_comment"`
 				OffsetBit            *uint64      `json:"offset_bit"`
 				OffsetRecent         uint64       `json:"offset_recent"`
 				TailOffsetBit        *uint64      `json:"tail_offset_bit"`
@@ -5203,6 +5237,9 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
+			}
+			if tmp.Comment != nil {
+				v.Comment = n.node[*tmp.Comment].(Node)
 			}
 			if tmp.Belong != nil {
 				v.Belong = n.node[*tmp.Belong].(Member)
@@ -5221,6 +5258,9 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.Arguments != nil {
 				v.Arguments = n.node[*tmp.Arguments].(*FieldArgument)
 			}
+			if tmp.FollowComment != nil {
+				v.FollowComment = n.node[*tmp.FollowComment].(Node)
+			}
 			v.OffsetBit = tmp.OffsetBit
 			v.OffsetRecent = tmp.OffsetRecent
 			v.TailOffsetBit = tmp.TailOffsetBit
@@ -5235,6 +5275,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeFormat:
 			v := n.node[i].(*Format)
 			var tmp struct {
+				Comment        *uintptr  `json:"comment"`
 				Belong         *uintptr  `json:"belong"`
 				BelongStruct   *uintptr  `json:"belong_struct"`
 				Ident          *uintptr  `json:"ident"`
@@ -5247,6 +5288,9 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
+			}
+			if tmp.Comment != nil {
+				v.Comment = n.node[*tmp.Comment].(Node)
 			}
 			if tmp.Belong != nil {
 				v.Belong = n.node[*tmp.Belong].(Member)
@@ -5281,6 +5325,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeState:
 			v := n.node[i].(*State)
 			var tmp struct {
+				Comment      *uintptr `json:"comment"`
 				Belong       *uintptr `json:"belong"`
 				BelongStruct *uintptr `json:"belong_struct"`
 				Ident        *uintptr `json:"ident"`
@@ -5288,6 +5333,9 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
+			}
+			if tmp.Comment != nil {
+				v.Comment = n.node[*tmp.Comment].(Node)
 			}
 			if tmp.Belong != nil {
 				v.Belong = n.node[*tmp.Belong].(Member)
@@ -5304,6 +5352,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeEnum:
 			v := n.node[i].(*Enum)
 			var tmp struct {
+				Comment      *uintptr  `json:"comment"`
 				Belong       *uintptr  `json:"belong"`
 				BelongStruct *uintptr  `json:"belong_struct"`
 				Ident        *uintptr  `json:"ident"`
@@ -5315,6 +5364,9 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
+			}
+			if tmp.Comment != nil {
+				v.Comment = n.node[*tmp.Comment].(Node)
 			}
 			if tmp.Belong != nil {
 				v.Belong = n.node[*tmp.Belong].(Member)
@@ -5342,6 +5394,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeEnumMember:
 			v := n.node[i].(*EnumMember)
 			var tmp struct {
+				Comment      *uintptr `json:"comment"`
 				Belong       *uintptr `json:"belong"`
 				BelongStruct *uintptr `json:"belong_struct"`
 				Ident        *uintptr `json:"ident"`
@@ -5351,6 +5404,9 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
+			}
+			if tmp.Comment != nil {
+				v.Comment = n.node[*tmp.Comment].(Node)
 			}
 			if tmp.Belong != nil {
 				v.Belong = n.node[*tmp.Belong].(Member)
@@ -5373,6 +5429,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeFunction:
 			v := n.node[i].(*Function)
 			var tmp struct {
+				Comment      *uintptr  `json:"comment"`
 				Belong       *uintptr  `json:"belong"`
 				BelongStruct *uintptr  `json:"belong_struct"`
 				Ident        *uintptr  `json:"ident"`
@@ -5384,6 +5441,9 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
+			}
+			if tmp.Comment != nil {
+				v.Comment = n.node[*tmp.Comment].(Node)
 			}
 			if tmp.Belong != nil {
 				v.Belong = n.node[*tmp.Belong].(Member)
@@ -6094,6 +6154,11 @@ func Walk(n Node, f Visitor) {
 			}
 		}
 	case *Field:
+		if v.Comment != nil {
+			if !f.Visit(f, v.Comment) {
+				return
+			}
+		}
 		if v.Ident != nil {
 			if !f.Visit(f, v.Ident) {
 				return
@@ -6109,7 +6174,17 @@ func Walk(n Node, f Visitor) {
 				return
 			}
 		}
+		if v.FollowComment != nil {
+			if !f.Visit(f, v.FollowComment) {
+				return
+			}
+		}
 	case *Format:
+		if v.Comment != nil {
+			if !f.Visit(f, v.Comment) {
+				return
+			}
+		}
 		if v.Ident != nil {
 			if !f.Visit(f, v.Ident) {
 				return
@@ -6121,6 +6196,11 @@ func Walk(n Node, f Visitor) {
 			}
 		}
 	case *State:
+		if v.Comment != nil {
+			if !f.Visit(f, v.Comment) {
+				return
+			}
+		}
 		if v.Ident != nil {
 			if !f.Visit(f, v.Ident) {
 				return
@@ -6132,6 +6212,11 @@ func Walk(n Node, f Visitor) {
 			}
 		}
 	case *Enum:
+		if v.Comment != nil {
+			if !f.Visit(f, v.Comment) {
+				return
+			}
+		}
 		if v.Ident != nil {
 			if !f.Visit(f, v.Ident) {
 				return
@@ -6153,6 +6238,11 @@ func Walk(n Node, f Visitor) {
 			}
 		}
 	case *EnumMember:
+		if v.Comment != nil {
+			if !f.Visit(f, v.Comment) {
+				return
+			}
+		}
 		if v.Ident != nil {
 			if !f.Visit(f, v.Ident) {
 				return
@@ -6174,6 +6264,11 @@ func Walk(n Node, f Visitor) {
 			}
 		}
 	case *Function:
+		if v.Comment != nil {
+			if !f.Visit(f, v.Comment) {
+				return
+			}
+		}
 		if v.Ident != nil {
 			if !f.Visit(f, v.Ident) {
 				return

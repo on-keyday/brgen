@@ -295,6 +295,7 @@ class Literal(Expr):
 
 
 class Member(Stmt):
+    comment: Optional[Node]
     belong: Optional[Member]
     belong_struct: Optional[StructType]
     ident: Optional[Ident]
@@ -661,6 +662,7 @@ class Field(Member):
     is_state_variable: bool
     field_type: Optional[Type]
     arguments: Optional[FieldArgument]
+    follow_comment: Optional[Node]
     offset_bit: Optional[int]
     offset_recent: int
     tail_offset_bit: Optional[int]
@@ -2069,6 +2071,11 @@ def ast2node(ast :JsonAst) -> Program:
                 node[i].constant_level = ConstantLevel(ast.node[i].body["constant_level"])
                 node[i].kind = SpecialLiteralKind(ast.node[i].body["kind"])
             case NodeType.FIELD:
+                if ast.node[i].body["comment"] is not None:
+                    x = node[ast.node[i].body["comment"]]
+                    node[i].comment = x if isinstance(x,Node) else raiseError(TypeError('type mismatch at Field::comment'))
+                else:
+                    node[i].comment = None
                 if ast.node[i].body["belong"] is not None:
                     x = node[ast.node[i].body["belong"]]
                     node[i].belong = x if isinstance(x,Member) else raiseError(TypeError('type mismatch at Field::belong'))
@@ -2097,6 +2104,11 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].arguments = x if isinstance(x,FieldArgument) else raiseError(TypeError('type mismatch at Field::arguments'))
                 else:
                     node[i].arguments = None
+                if ast.node[i].body["follow_comment"] is not None:
+                    x = node[ast.node[i].body["follow_comment"]]
+                    node[i].follow_comment = x if isinstance(x,Node) else raiseError(TypeError('type mismatch at Field::follow_comment'))
+                else:
+                    node[i].follow_comment = None
                 x = ast.node[i].body["offset_bit"]
                 if x is not None:
                     node[i].offset_bit = x if isinstance(x,int) else raiseError(TypeError('type mismatch at Field::offset_bit'))
@@ -2121,6 +2133,11 @@ def ast2node(ast :JsonAst) -> Program:
                 else:
                     node[i].next = None
             case NodeType.FORMAT:
+                if ast.node[i].body["comment"] is not None:
+                    x = node[ast.node[i].body["comment"]]
+                    node[i].comment = x if isinstance(x,Node) else raiseError(TypeError('type mismatch at Format::comment'))
+                else:
+                    node[i].comment = None
                 if ast.node[i].body["belong"] is not None:
                     x = node[ast.node[i].body["belong"]]
                     node[i].belong = x if isinstance(x,Member) else raiseError(TypeError('type mismatch at Format::belong'))
@@ -2155,6 +2172,11 @@ def ast2node(ast :JsonAst) -> Program:
                 node[i].depends = [(node[x] if isinstance(node[x],IdentType) else raiseError(TypeError('type mismatch at Format::depends'))) for x in ast.node[i].body["depends"]]
                 node[i].state_variables = [(node[x] if isinstance(node[x],Field) else raiseError(TypeError('type mismatch at Format::state_variables'))) for x in ast.node[i].body["state_variables"]]
             case NodeType.STATE:
+                if ast.node[i].body["comment"] is not None:
+                    x = node[ast.node[i].body["comment"]]
+                    node[i].comment = x if isinstance(x,Node) else raiseError(TypeError('type mismatch at State::comment'))
+                else:
+                    node[i].comment = None
                 if ast.node[i].body["belong"] is not None:
                     x = node[ast.node[i].body["belong"]]
                     node[i].belong = x if isinstance(x,Member) else raiseError(TypeError('type mismatch at State::belong'))
@@ -2176,6 +2198,11 @@ def ast2node(ast :JsonAst) -> Program:
                 else:
                     node[i].body = None
             case NodeType.ENUM:
+                if ast.node[i].body["comment"] is not None:
+                    x = node[ast.node[i].body["comment"]]
+                    node[i].comment = x if isinstance(x,Node) else raiseError(TypeError('type mismatch at Enum::comment'))
+                else:
+                    node[i].comment = None
                 if ast.node[i].body["belong"] is not None:
                     x = node[ast.node[i].body["belong"]]
                     node[i].belong = x if isinstance(x,Member) else raiseError(TypeError('type mismatch at Enum::belong'))
@@ -2208,6 +2235,11 @@ def ast2node(ast :JsonAst) -> Program:
                 else:
                     node[i].enum_type = None
             case NodeType.ENUM_MEMBER:
+                if ast.node[i].body["comment"] is not None:
+                    x = node[ast.node[i].body["comment"]]
+                    node[i].comment = x if isinstance(x,Node) else raiseError(TypeError('type mismatch at EnumMember::comment'))
+                else:
+                    node[i].comment = None
                 if ast.node[i].body["belong"] is not None:
                     x = node[ast.node[i].body["belong"]]
                     node[i].belong = x if isinstance(x,Member) else raiseError(TypeError('type mismatch at EnumMember::belong'))
@@ -2239,6 +2271,11 @@ def ast2node(ast :JsonAst) -> Program:
                 else:
                     node[i].str_literal = None
             case NodeType.FUNCTION:
+                if ast.node[i].body["comment"] is not None:
+                    x = node[ast.node[i].body["comment"]]
+                    node[i].comment = x if isinstance(x,Node) else raiseError(TypeError('type mismatch at Function::comment'))
+                else:
+                    node[i].comment = None
                 if ast.node[i].body["belong"] is not None:
                     x = node[ast.node[i].body["belong"]]
                     node[i].belong = x if isinstance(x,Member) else raiseError(TypeError('type mismatch at Function::belong'))
@@ -2715,6 +2752,9 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
               if f(f,x.expr_type) == False:
                   return
         case x if isinstance(x,Field):
+          if x.comment is not None:
+              if f(f,x.comment) == False:
+                  return
           if x.ident is not None:
               if f(f,x.ident) == False:
                   return
@@ -2724,7 +2764,13 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
           if x.arguments is not None:
               if f(f,x.arguments) == False:
                   return
+          if x.follow_comment is not None:
+              if f(f,x.follow_comment) == False:
+                  return
         case x if isinstance(x,Format):
+          if x.comment is not None:
+              if f(f,x.comment) == False:
+                  return
           if x.ident is not None:
               if f(f,x.ident) == False:
                   return
@@ -2732,6 +2778,9 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
               if f(f,x.body) == False:
                   return
         case x if isinstance(x,State):
+          if x.comment is not None:
+              if f(f,x.comment) == False:
+                  return
           if x.ident is not None:
               if f(f,x.ident) == False:
                   return
@@ -2739,6 +2788,9 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
               if f(f,x.body) == False:
                   return
         case x if isinstance(x,Enum):
+          if x.comment is not None:
+              if f(f,x.comment) == False:
+                  return
           if x.ident is not None:
               if f(f,x.ident) == False:
                   return
@@ -2752,6 +2804,9 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
               if f(f,x.enum_type) == False:
                   return
         case x if isinstance(x,EnumMember):
+          if x.comment is not None:
+              if f(f,x.comment) == False:
+                  return
           if x.ident is not None:
               if f(f,x.ident) == False:
                   return
@@ -2765,6 +2820,9 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
               if f(f,x.str_literal) == False:
                   return
         case x if isinstance(x,Function):
+          if x.comment is not None:
+              if f(f,x.comment) == False:
+                  return
           if x.ident is not None:
               if f(f,x.ident) == False:
                   return

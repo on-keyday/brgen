@@ -236,7 +236,7 @@ namespace brgen::ast {
         };
     }  // namespace internal
 
-    constexpr auto scope_type_list = R"({"prev": "weak_ptr<scope>","next": "shared_ptr<scope>","branch": "shared_ptr<scope>","ident": "array<std::weak_ptr<ident>>","owner": "weak_ptr<node>", "branch_root": "bool"})";
+    constexpr auto scope_type_list = R"({"prev": "weak_ptr<scope>","next": "shared_ptr<scope>","branch": "shared_ptr<scope>","ident": "array<weak_ptr<ident>>","owner": "weak_ptr<node>", "branch_root": "bool"})";
     constexpr auto raw_scope_type = R"({"prev": "optional<uintptr>","next": "optional<uintptr>","branch": "optional<uintptr>","ident": "array<uintptr>", "owner": "optional<uintptr>","branch_root": "bool"})";
 
     constexpr auto loc_type = R"({"pos": "pos","file": "uint","line": "uint","col": "uint"})";

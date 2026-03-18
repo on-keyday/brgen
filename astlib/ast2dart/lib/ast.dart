@@ -494,6 +494,7 @@ abstract class Type extends Node {
 abstract class Literal extends Expr {
 }
 abstract class Member extends Stmt {
+    Node? comment;
     Member? belong;
     StructType? belongStruct;
     Ident? ident;
@@ -919,6 +920,7 @@ class Field extends Member {
     bool isStateVariable = false;
     Type? fieldType;
     FieldArgument? arguments;
+    Node? followComment;
     int? offsetBit;
     int offsetRecent = 0;
     int? tailOffsetBit;

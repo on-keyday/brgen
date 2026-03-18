@@ -502,6 +502,7 @@ export function isLiteral(obj: any): obj is Literal {
 }
 
 export interface Member extends Stmt {
+	comment: Node|null;
 	belong: Member|null;
 	belong_struct: StructType|null;
 	ident: Ident|null;
@@ -1123,6 +1124,7 @@ export interface Field extends Member {
 	is_state_variable: boolean;
 	field_type: Type|null;
 	arguments: FieldArgument|null;
+	follow_comment: Node|null;
 	offset_bit: number|null;
 	offset_recent: number;
 	tail_offset_bit: number|null;
@@ -2157,6 +2159,7 @@ export function parseAST(obj: JsonAst): ParseResult {
 			const n :Field = {
 				node_type: "field",
 				loc: on.loc,
+				comment: null,
 				belong: null,
 				belong_struct: null,
 				ident: null,
@@ -2164,6 +2167,7 @@ export function parseAST(obj: JsonAst): ParseResult {
 				is_state_variable: false,
 				field_type: null,
 				arguments: null,
+				follow_comment: null,
 				offset_bit: null,
 				offset_recent: 0,
 				tail_offset_bit: null,
@@ -2181,6 +2185,7 @@ export function parseAST(obj: JsonAst): ParseResult {
 			const n :Format = {
 				node_type: "format",
 				loc: on.loc,
+				comment: null,
 				belong: null,
 				belong_struct: null,
 				ident: null,
@@ -2198,6 +2203,7 @@ export function parseAST(obj: JsonAst): ParseResult {
 			const n :State = {
 				node_type: "state",
 				loc: on.loc,
+				comment: null,
 				belong: null,
 				belong_struct: null,
 				ident: null,
@@ -2210,6 +2216,7 @@ export function parseAST(obj: JsonAst): ParseResult {
 			const n :Enum = {
 				node_type: "enum",
 				loc: on.loc,
+				comment: null,
 				belong: null,
 				belong_struct: null,
 				ident: null,
@@ -2226,6 +2233,7 @@ export function parseAST(obj: JsonAst): ParseResult {
 			const n :EnumMember = {
 				node_type: "enum_member",
 				loc: on.loc,
+				comment: null,
 				belong: null,
 				belong_struct: null,
 				ident: null,
@@ -2240,6 +2248,7 @@ export function parseAST(obj: JsonAst): ParseResult {
 			const n :Function = {
 				node_type: "function",
 				loc: on.loc,
+				comment: null,
 				belong: null,
 				belong_struct: null,
 				ident: null,
@@ -4488,6 +4497,14 @@ export function parseAST(obj: JsonAst): ParseResult {
 		}
 		case "field": {
 			const n :Field = cnode as Field;
+			if (on.body?.comment !== null && typeof on.body?.comment !== 'number') {
+				throw new Error('invalid node list at Field::comment');
+			}
+			const tmpcomment = on.body.comment === null ? null : c.node[on.body.comment];
+			if (!(tmpcomment === null || isNode(tmpcomment))) {
+				throw new Error('invalid node list at Field::comment');
+			}
+			n.comment = tmpcomment;
 			if (on.body?.belong !== null && typeof on.body?.belong !== 'number') {
 				throw new Error('invalid node list at Field::belong');
 			}
@@ -4538,6 +4555,14 @@ export function parseAST(obj: JsonAst): ParseResult {
 				throw new Error('invalid node list at Field::arguments');
 			}
 			n.arguments = tmparguments;
+			if (on.body?.follow_comment !== null && typeof on.body?.follow_comment !== 'number') {
+				throw new Error('invalid node list at Field::follow_comment');
+			}
+			const tmpfollow_comment = on.body.follow_comment === null ? null : c.node[on.body.follow_comment];
+			if (!(tmpfollow_comment === null || isNode(tmpfollow_comment))) {
+				throw new Error('invalid node list at Field::follow_comment');
+			}
+			n.follow_comment = tmpfollow_comment;
 			const tmpoffset_bit = on.body?.offset_bit;
 			if (tmpoffset_bit !== null && typeof tmpoffset_bit !== "number") {
 				throw new Error('invalid node list at Field::offset_bit');
@@ -4590,6 +4615,14 @@ export function parseAST(obj: JsonAst): ParseResult {
 		}
 		case "format": {
 			const n :Format = cnode as Format;
+			if (on.body?.comment !== null && typeof on.body?.comment !== 'number') {
+				throw new Error('invalid node list at Format::comment');
+			}
+			const tmpcomment = on.body.comment === null ? null : c.node[on.body.comment];
+			if (!(tmpcomment === null || isNode(tmpcomment))) {
+				throw new Error('invalid node list at Format::comment');
+			}
+			n.comment = tmpcomment;
 			if (on.body?.belong !== null && typeof on.body?.belong !== 'number') {
 				throw new Error('invalid node list at Format::belong');
 			}
@@ -4672,6 +4705,14 @@ export function parseAST(obj: JsonAst): ParseResult {
 		}
 		case "state": {
 			const n :State = cnode as State;
+			if (on.body?.comment !== null && typeof on.body?.comment !== 'number') {
+				throw new Error('invalid node list at State::comment');
+			}
+			const tmpcomment = on.body.comment === null ? null : c.node[on.body.comment];
+			if (!(tmpcomment === null || isNode(tmpcomment))) {
+				throw new Error('invalid node list at State::comment');
+			}
+			n.comment = tmpcomment;
 			if (on.body?.belong !== null && typeof on.body?.belong !== 'number') {
 				throw new Error('invalid node list at State::belong');
 			}
@@ -4708,6 +4749,14 @@ export function parseAST(obj: JsonAst): ParseResult {
 		}
 		case "enum": {
 			const n :Enum = cnode as Enum;
+			if (on.body?.comment !== null && typeof on.body?.comment !== 'number') {
+				throw new Error('invalid node list at Enum::comment');
+			}
+			const tmpcomment = on.body.comment === null ? null : c.node[on.body.comment];
+			if (!(tmpcomment === null || isNode(tmpcomment))) {
+				throw new Error('invalid node list at Enum::comment');
+			}
+			n.comment = tmpcomment;
 			if (on.body?.belong !== null && typeof on.body?.belong !== 'number') {
 				throw new Error('invalid node list at Enum::belong');
 			}
@@ -4775,6 +4824,14 @@ export function parseAST(obj: JsonAst): ParseResult {
 		}
 		case "enum_member": {
 			const n :EnumMember = cnode as EnumMember;
+			if (on.body?.comment !== null && typeof on.body?.comment !== 'number') {
+				throw new Error('invalid node list at EnumMember::comment');
+			}
+			const tmpcomment = on.body.comment === null ? null : c.node[on.body.comment];
+			if (!(tmpcomment === null || isNode(tmpcomment))) {
+				throw new Error('invalid node list at EnumMember::comment');
+			}
+			n.comment = tmpcomment;
 			if (on.body?.belong !== null && typeof on.body?.belong !== 'number') {
 				throw new Error('invalid node list at EnumMember::belong');
 			}
@@ -4827,6 +4884,14 @@ export function parseAST(obj: JsonAst): ParseResult {
 		}
 		case "function": {
 			const n :Function = cnode as Function;
+			if (on.body?.comment !== null && typeof on.body?.comment !== 'number') {
+				throw new Error('invalid node list at Function::comment');
+			}
+			const tmpcomment = on.body.comment === null ? null : c.node[on.body.comment];
+			if (!(tmpcomment === null || isNode(tmpcomment))) {
+				throw new Error('invalid node list at Function::comment');
+			}
+			n.comment = tmpcomment;
 			if (on.body?.belong !== null && typeof on.body?.belong !== 'number') {
 				throw new Error('invalid node list at Function::belong');
 			}
@@ -4931,6 +4996,14 @@ export function parseAST(obj: JsonAst): ParseResult {
 			}
 			cscope.ident.push(tmpident);
 		}
+		if (os.owner !== null && typeof os.owner !== 'number') {
+			throw new Error('invalid node list at Scope::owner');
+		}
+		const tmpowner = os.owner === null ? null : c.node[os.owner];
+		if (tmpowner !== null && !isNode(tmpowner)) {
+			throw new Error('invalid node list at Scope::owner');
+		}
+		cscope.owner = tmpowner;
 		cscope.branch_root = os.branch_root;
 	}
 	const root = c.node[0];
@@ -5382,42 +5455,42 @@ export function getChildCount(node: Node): number {
 	    return 0;
      }
      const n :Field = node as Field;
-		return  + (n.ident === null ? 0 : 1) + (n.field_type === null ? 0 : 1) + (n.arguments === null ? 0 : 1);
+		return  + (n.comment === null ? 0 : 1) + (n.ident === null ? 0 : 1) + (n.field_type === null ? 0 : 1) + (n.arguments === null ? 0 : 1) + (n.follow_comment === null ? 0 : 1);
 	}
 	case "format": {
      if (!isFormat(node)) {
 	    return 0;
      }
      const n :Format = node as Format;
-		return  + (n.ident === null ? 0 : 1) + (n.body === null ? 0 : 1);
+		return  + (n.comment === null ? 0 : 1) + (n.ident === null ? 0 : 1) + (n.body === null ? 0 : 1);
 	}
 	case "state": {
      if (!isState(node)) {
 	    return 0;
      }
      const n :State = node as State;
-		return  + (n.ident === null ? 0 : 1) + (n.body === null ? 0 : 1);
+		return  + (n.comment === null ? 0 : 1) + (n.ident === null ? 0 : 1) + (n.body === null ? 0 : 1);
 	}
 	case "enum": {
      if (!isEnum(node)) {
 	    return 0;
      }
      const n :Enum = node as Enum;
-		return  + (n.ident === null ? 0 : 1) + (n.base_type === null ? 0 : 1) + n.members.length + (n.enum_type === null ? 0 : 1);
+		return  + (n.comment === null ? 0 : 1) + (n.ident === null ? 0 : 1) + (n.base_type === null ? 0 : 1) + n.members.length + (n.enum_type === null ? 0 : 1);
 	}
 	case "enum_member": {
      if (!isEnumMember(node)) {
 	    return 0;
      }
      const n :EnumMember = node as EnumMember;
-		return  + (n.ident === null ? 0 : 1) + (n.raw_expr === null ? 0 : 1) + (n.value === null ? 0 : 1) + (n.str_literal === null ? 0 : 1);
+		return  + (n.comment === null ? 0 : 1) + (n.ident === null ? 0 : 1) + (n.raw_expr === null ? 0 : 1) + (n.value === null ? 0 : 1) + (n.str_literal === null ? 0 : 1);
 	}
 	case "function": {
      if (!isFunction(node)) {
 	    return 0;
      }
      const n :Function = node as Function;
-		return  + (n.ident === null ? 0 : 1) + n.parameters.length + (n.return_type === null ? 0 : 1) + (n.body === null ? 0 : 1) + (n.func_type === null ? 0 : 1);
+		return  + (n.comment === null ? 0 : 1) + (n.ident === null ? 0 : 1) + n.parameters.length + (n.return_type === null ? 0 : 1) + (n.body === null ? 0 : 1) + (n.func_type === null ? 0 : 1);
 	}
 	}
 	return 0;
@@ -6569,6 +6642,12 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 				break;
 			}
 			const n :Field = node as Field;
+			if (n.comment !== null) {
+				const result = fn(fn, n.comment);
+				if (result === false) {
+					return;
+				}
+			}
 			if (n.ident !== null) {
 				const result = fn(fn, n.ident);
 				if (result === false) {
@@ -6587,6 +6666,12 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 					return;
 				}
 			}
+			if (n.follow_comment !== null) {
+				const result = fn(fn, n.follow_comment);
+				if (result === false) {
+					return;
+				}
+			}
 			break;
 		}
 		case "format": {
@@ -6594,6 +6679,12 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 				break;
 			}
 			const n :Format = node as Format;
+			if (n.comment !== null) {
+				const result = fn(fn, n.comment);
+				if (result === false) {
+					return;
+				}
+			}
 			if (n.ident !== null) {
 				const result = fn(fn, n.ident);
 				if (result === false) {
@@ -6613,6 +6704,12 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 				break;
 			}
 			const n :State = node as State;
+			if (n.comment !== null) {
+				const result = fn(fn, n.comment);
+				if (result === false) {
+					return;
+				}
+			}
 			if (n.ident !== null) {
 				const result = fn(fn, n.ident);
 				if (result === false) {
@@ -6632,6 +6729,12 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 				break;
 			}
 			const n :Enum = node as Enum;
+			if (n.comment !== null) {
+				const result = fn(fn, n.comment);
+				if (result === false) {
+					return;
+				}
+			}
 			if (n.ident !== null) {
 				const result = fn(fn, n.ident);
 				if (result === false) {
@@ -6663,6 +6766,12 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 				break;
 			}
 			const n :EnumMember = node as EnumMember;
+			if (n.comment !== null) {
+				const result = fn(fn, n.comment);
+				if (result === false) {
+					return;
+				}
+			}
 			if (n.ident !== null) {
 				const result = fn(fn, n.ident);
 				if (result === false) {
@@ -6694,6 +6803,12 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 				break;
 			}
 			const n :Function = node as Function;
+			if (n.comment !== null) {
+				const result = fn(fn, n.comment);
+				if (result === false) {
+					return;
+				}
+			}
 			if (n.ident !== null) {
 				const result = fn(fn, n.ident);
 				if (result === false) {
@@ -7875,6 +7990,12 @@ export async function walkAsync(node: Node, fn: VisitFnAsync<Node>) {
 				break;
 			}
 			const n :Field = node as Field;
+			if (n.comment !== null) {
+				const result = await fn(fn, n.comment);
+				if (result === false) {
+					return;
+				}
+			}
 			if (n.ident !== null) {
 				const result = await fn(fn, n.ident);
 				if (result === false) {
@@ -7893,6 +8014,12 @@ export async function walkAsync(node: Node, fn: VisitFnAsync<Node>) {
 					return;
 				}
 			}
+			if (n.follow_comment !== null) {
+				const result = await fn(fn, n.follow_comment);
+				if (result === false) {
+					return;
+				}
+			}
 			break;
 		}
 		case "format": {
@@ -7900,6 +8027,12 @@ export async function walkAsync(node: Node, fn: VisitFnAsync<Node>) {
 				break;
 			}
 			const n :Format = node as Format;
+			if (n.comment !== null) {
+				const result = await fn(fn, n.comment);
+				if (result === false) {
+					return;
+				}
+			}
 			if (n.ident !== null) {
 				const result = await fn(fn, n.ident);
 				if (result === false) {
@@ -7919,6 +8052,12 @@ export async function walkAsync(node: Node, fn: VisitFnAsync<Node>) {
 				break;
 			}
 			const n :State = node as State;
+			if (n.comment !== null) {
+				const result = await fn(fn, n.comment);
+				if (result === false) {
+					return;
+				}
+			}
 			if (n.ident !== null) {
 				const result = await fn(fn, n.ident);
 				if (result === false) {
@@ -7938,6 +8077,12 @@ export async function walkAsync(node: Node, fn: VisitFnAsync<Node>) {
 				break;
 			}
 			const n :Enum = node as Enum;
+			if (n.comment !== null) {
+				const result = await fn(fn, n.comment);
+				if (result === false) {
+					return;
+				}
+			}
 			if (n.ident !== null) {
 				const result = await fn(fn, n.ident);
 				if (result === false) {
@@ -7969,6 +8114,12 @@ export async function walkAsync(node: Node, fn: VisitFnAsync<Node>) {
 				break;
 			}
 			const n :EnumMember = node as EnumMember;
+			if (n.comment !== null) {
+				const result = await fn(fn, n.comment);
+				if (result === false) {
+					return;
+				}
+			}
 			if (n.ident !== null) {
 				const result = await fn(fn, n.ident);
 				if (result === false) {
@@ -8000,6 +8151,12 @@ export async function walkAsync(node: Node, fn: VisitFnAsync<Node>) {
 				break;
 			}
 			const n :Function = node as Function;
+			if (n.comment !== null) {
+				const result = await fn(fn, n.comment);
+				if (result === false) {
+					return;
+				}
+			}
 			if (n.ident !== null) {
 				const result = await fn(fn, n.ident);
 				if (result === false) {

@@ -112,7 +112,7 @@ func generate(rw io.Writer, defs *gen.Defs) {
 					}
 				}
 				w.Printf("} as const;\n\n")
-				w.Printf("export type %[1]s = (typeof %[1]s)[keyof typeof %[1]s];\n\n",d.Name)
+				w.Printf("export type %[1]s = (typeof %[1]s)[keyof typeof %[1]s];\n\n", d.Name)
 			}
 			w.Printf("export function is%s(obj: any): obj is %s {\n", d.Name, d.Name)
 			if d.IsBitField {
@@ -346,6 +346,15 @@ func generate(rw io.Writer, defs *gen.Defs) {
 			w.Printf("		cscope.%s = tmp%s;\n", field.Name, field.Name)
 		} else if field.Type.Name == "number" || field.Type.Name == "string" || field.Type.Name == "boolean" {
 			w.Printf("		cscope.%s = os.%s;\n", field.Name, field.Name)
+		} else if field.Name == "owner" {
+			w.Printf("		if (os.%s !== null && typeof os.%s !== 'number') {\n", field.Name, field.Name)
+			w.Printf("			throw new Error('invalid node list at Scope::%s');\n", field.Name)
+			w.Printf("		}\n")
+			w.Printf("		const tmp%s = os.%s === null ? null : c.node[os.%s];\n", field.Name, field.Name, field.Name)
+			w.Printf("		if (tmp%s !== null && !isNode(tmp%s)) {\n", field.Name, field.Name)
+			w.Printf("			throw new Error('invalid node list at Scope::%s');\n", field.Name)
+			w.Printf("		}\n")
+			w.Printf("		cscope.%s = tmp%s;\n", field.Name, field.Name)
 		}
 	}
 	w.Printf("	}\n")

@@ -2,6 +2,7 @@
 #pragma once
 #include "base.h"
 #include "expr.h"
+#include <memory>
 #include <vector>
 #include "ast_enum.h"
 
@@ -175,6 +176,11 @@ namespace brgen::ast {
         bool is_state_variable = false;
         std::shared_ptr<Type> field_type;
         std::shared_ptr<FieldArgument> arguments;
+        // comments located after field (on the same line)
+        // like below:
+        // a :u8 # this is follow comment of a
+        // b :u8 # this is follow comment of b
+        std::shared_ptr<Node> follow_comment;
         // offset from the beginning of struct
         // if offset is not decidable, offset_bit is std::nullopt
         std::optional<size_t> offset_bit;
@@ -237,6 +243,7 @@ namespace brgen::ast {
             sdebugf(is_state_variable);
             sdebugf(field_type);
             sdebugf(arguments);
+            sdebugf(follow_comment);
             sdebugf(offset_bit);
             sdebugf(offset_recent);
             sdebugf(tail_offset_bit);
