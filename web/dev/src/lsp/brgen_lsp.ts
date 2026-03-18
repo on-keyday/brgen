@@ -13,6 +13,7 @@ import * as caller from "../s2j/caller.js";
 import {ast2ts,analyze} from "ast2ts"
 import { UpdateTracer } from "../s2j/update.js";
 import { JobResult, TraceID } from "../s2j/msg.js";
+import { de } from "zod/locales";
 
 export const initLSP = (factory :caller.IWorkerFactory) => {
 
@@ -44,6 +45,7 @@ export const initLSP = (factory :caller.IWorkerFactory) => {
     const context = {
         prevSemTokens : null as analyze.SemTokensStub|null,
         prevNode : null as ast2ts.ParseResult|null,
+        prevFile : null as ast2ts.AstFile|null,
         traceID : null as TraceID|null,
     };
 
@@ -84,11 +86,12 @@ export const initLSP = (factory :caller.IWorkerFactory) => {
                 if(ast.ast!==null) {
                     const prog =ast2ts.parseAST(ast.ast);
                     context.prevNode = prog;
+                    context.prevFile = ast;
                     return {file:ast,ast:prog};
                 }
                 return {file:ast,ast:null};
             };
-            return await caller.getAST(factory, result.traceID,model.getValue(),{interpret_as_utf16:true}).
+            return await caller.getAST(factory, result.traceID,model.getValue(),{filename: "editor.bgn",interpret_as_utf16:true,error_tolerant:true,collect_comments:true}).
             then(cb,cb);
         },(pos)=>{
             const posStub = model.getPositionAt(pos);
@@ -148,6 +151,103 @@ export const initLSP = (factory :caller.IWorkerFactory) => {
                 return r;
             },
         }));
+        disposeables.push(monaco.languages.registerDocumentSymbolProvider(BRGEN_ID,{
+            provideDocumentSymbols:async(model, token)=>{
+                if(context.prevNode === null){
+                    return [];
+                }
+                const symbols = await analyze.analyzeSymbols(context.prevNode.root.global_scope!);
+                return symbols.map((s)=>{
+                    const x :monaco.languages.DocumentSymbol = {
+                        name: s.name,
+                        kind: s.kind as monaco.languages.SymbolKind,
+                        range: {    
+                            startLineNumber: s.range.start.line+1,
+                            startColumn: s.range.start.character+1,
+                            endLineNumber: s.range.end.line+1,
+                            endColumn: s.range.end.character+1,
+                        },
+                        selectionRange: {
+                            startLineNumber: s.selectionRange.start.line+1,
+                            startColumn: s.selectionRange.start.character+1,
+                            endLineNumber: s.selectionRange.end.line+1,
+                            endColumn: s.selectionRange.end.character+1,
+                        },
+                        detail: "",
+                        tags: []
+                    };
+                    return x;
+                }
+                );
+            }
+        }));
+        disposeables.push(monaco.languages.registerDefinitionProvider(BRGEN_ID,{
+            provideDefinition:async(model, position, token)=>{
+                if(context.prevNode === null || context.prevFile === null){
+                    return null;
+                }
+                const offset = model.getOffsetAt(position);
+                const definition = await analyze.analyzeDefinition(context.prevFile,context.prevNode, offset,false);
+                if (definition === null) {
+                    return null;
+                }
+                if(definition.uri !== "editor.bgn"){
+                    // this is not correctly handled
+                    return {
+                        uri: monaco.Uri.parse(definition.uri),
+                        range: {
+                            startLineNumber: definition.range.start.line+1,
+                            startColumn: definition.range.start.character+1,
+                            endLineNumber: definition.range.end.line+1,
+                            endColumn: definition.range.end.character+1,
+                        }
+                    };
+                }
+                return {
+                    uri: model.uri,
+                    range: {
+                        startLineNumber: definition.range.start.line+1,
+                        startColumn: definition.range.start.character+1,
+                        endLineNumber: definition.range.end.line+1,
+                        endColumn: definition.range.end.character+1,
+                    }
+                };
+            }
+        }));
+        disposeables.push(monaco.languages.registerTypeDefinitionProvider(BRGEN_ID,{
+            provideTypeDefinition:async(model, position, token)=>{
+                if(context.prevNode === null || context.prevFile === null){
+                    return null;
+                }
+                const offset = model.getOffsetAt(position);
+                const definition = await analyze.analyzeDefinition(context.prevFile,context.prevNode, offset,true);
+                if (definition === null) {
+                    return null;
+                }
+                if(definition.uri !== "editor.bgn"){
+                    // this is not correctly handled
+                    return {
+                        uri: monaco.Uri.parse(definition.uri),
+                        range: {
+                            startLineNumber: definition.range.start.line+1,
+                            startColumn: definition.range.start.character+1,
+                            endLineNumber: definition.range.end.line+1,
+                            endColumn: definition.range.end.character+1,
+                        }
+                    };
+                }
+                return {
+                    uri: model.uri,
+                    range: {
+                        startLineNumber: definition.range.start.line+1,
+                        startColumn: definition.range.start.character+1,
+                        endLineNumber: definition.range.end.line+1,
+                        endColumn: definition.range.end.character+1,
+                    }
+                };
+            }
+        }));
+
     })
 
 }

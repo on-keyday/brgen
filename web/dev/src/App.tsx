@@ -54,7 +54,7 @@ export function App() {
           contextMenuOrder: 1,
           // Ctrl+Shift+O to open file picker (avoids conflict with Ctrl+P used by other tools)
           keybindings: [
-            monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyO,
+            monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyF,
           ],
           run: () => {
             setFilePickerOpen(true);

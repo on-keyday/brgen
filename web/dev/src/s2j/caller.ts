@@ -24,6 +24,12 @@ const argConverter = Object.freeze({
         if(opt.interpret_as_utf16) {
             args.push("--interpret-mode","utf16");
         }
+        if(opt.error_tolerant) {
+            args.push("--error-tolerant");
+        }
+        if(opt.collect_comments) {
+            args.push("--collect-comments");
+        }
         return args;
     },
     [RequestLanguage.JSON_DEBUG_AST] : (opt :CallOption) => {

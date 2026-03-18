@@ -3,6 +3,12 @@
   // 既存の属性の説明をホバーして表示します。
   // 詳細情報は次を確認してください: https://go.microsoft.com/fwlink/?linkid=830387
   "version": "0.2.0",
+  "compounds": [
+    {
+      "name": "LSP Client + Server",
+      "configurations": ["Launch LSP Client", "Attach to LSP Server"]
+    }
+  ],
   "configurations": [
     {
       "name": "Debug brgen",
@@ -97,8 +103,8 @@
       "name": "Launch LSP Client",
       "runtimeExecutable": "${execPath}",
       "args": ["--extensionDevelopmentPath=${workspaceRoot}/lsp"],
-      "outFiles": ["${workspaceRoot}/lsp/client/out/**/*.js"],
-      "preLaunchTask": "npm_build_and_watch"
+      "preLaunchTask": "npm_build_and_watch",
+      "sourceMaps": true
     },
     {
       "type": "node",
@@ -106,8 +112,11 @@
       "name": "Attach to LSP Server",
       "port": 6009,
       "restart": true,
-      "outFiles": ["${workspaceRoot}/lsp/server/out/**/*.js"]
+      "sourceMaps": true,
+      "localRoot": "${workspaceFolder}/lsp/server",
+      "remoteRoot": "${workspaceFolder}/lsp/server"
     },
+
     {
       "type": "cppvsdbg",
       "request": "launch",

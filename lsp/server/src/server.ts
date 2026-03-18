@@ -85,7 +85,8 @@ connection.onInitialize((params: InitializeParams) => {
             },
             hoverProvider: true,
             definitionProvider: true,
-            //documentSymbolProvider: true,
+            typeDefinitionProvider: true,
+            documentSymbolProvider: true,
         }
     };
     if (hasWorkspaceFolderCapability) {
@@ -159,7 +160,7 @@ function execSrc2JSON<T>(exe_path :string,command :Array<string>,text :string,is
 }
 
 const lexerCommand=(path :string) => ["--stdin","--stdin-name",path, "--lexer", "--no-color", "--print-on-error","--print-json","--interpret-mode","utf16","--detected-stdio-type"];
-const parserCommand = (path :string) => ["--stdin","--stdin-name",path, "--no-color", "--print-on-error","--print-json","--interpret-mode","utf16","--detected-stdio-type"];
+const parserCommand = (path :string) => ["--error-tolerant","--collect-comments","--stdin","--stdin-name",path, "--no-color", "--print-on-error","--print-json","--interpret-mode","utf16","--detected-stdio-type"];
 
 
 class DocumentInfo {
@@ -280,7 +281,29 @@ const definitionHandler = async (params :DefinitionParams) => {
         console.log("prevNode is null");
         return null;
     }
-    const def= await analyze.analyzeDefinition(docInfo.prevFile!,docInfo.prevNode,pos)
+    const def= await analyze.analyzeDefinition(docInfo.prevFile!,docInfo.prevNode,pos,false)
+    if(def===null){
+        console.log("def is null");
+        return null;
+    }
+    def.uri = url.pathToFileURL(def.uri).toString();
+    return def;
+}
+
+const typeDefinitionHandler = async (params :DefinitionParams) => {
+    console.log(`textDocument/typeDefinition: ${JSON.stringify(params)}`);
+    const doc = documents.get(params?.textDocument?.uri);
+    if(doc===undefined){
+        console.log(`document ${params?.textDocument?.uri} is not found`);
+        return null; 
+    }
+    const pos =  doc.offsetAt(params.position);
+    const docInfo = getOrCreateDocumentInfo(doc);
+    if(docInfo.prevNode===null) {
+        console.log("prevNode is null");
+        return null;
+    }
+    const def= await analyze.analyzeDefinition(docInfo.prevFile!,docInfo.prevNode,pos,true)
     if(def===null){
         console.log("def is null");
         return null;
@@ -290,6 +313,7 @@ const definitionHandler = async (params :DefinitionParams) => {
 }
 
 connection.onDefinition(definitionHandler);
+connection.onTypeDefinition(typeDefinitionHandler);
 
 connection.onDocumentSymbol(async (params) =>{
     console.log(`textDocument/documentSymbol: ${JSON.stringify(params)}`);

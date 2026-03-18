@@ -75,6 +75,8 @@ export interface CallOption {
 }
 
 export interface AstOption extends CallOption {
+    error_tolerant? :boolean
+    collect_comments? :boolean
 }
 
 export interface CppOption extends CallOption {

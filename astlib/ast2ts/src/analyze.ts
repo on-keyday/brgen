@@ -16,11 +16,11 @@ export const bitSize = (bit :number|null|undefined) => {
     return `${bit} bit`;
 }
 
-const makeHover = (ident :string,role :string) => {
+const makeHover = (ident :string,role :string,comments :string[] = []) => {
     return {
         contents: {
             kind: "markdown",
-            value: `### ${ident}\n\n${role}`,
+            value: `### ${ident}\n\n${role}\n\n${comments.join("\n")}`,
         } ,
     } as const;
 }
@@ -110,6 +110,28 @@ export const typeToString = (type :ast2ts.Type|null|undefined) :string => {
     }
    
     return typ;
+}
+
+const collectComments = (node :ast2ts.Node) :string[] => {
+    const comments :string[] = [];
+    const addCommentNode = (commentNode :ast2ts.Node) => {
+        if(ast2ts.isComment(commentNode)) {
+            comments.push(commentNode.comment);
+        }
+        if(ast2ts.isCommentGroup(commentNode)) {
+            commentNode.comments.forEach((c)=>{
+                comments.push(c.comment);
+            })
+        }
+    }
+    if(ast2ts.isMember(node) && node.comment) {
+        addCommentNode(node.comment);
+    }
+    if(ast2ts.isField(node) && node.follow_comment) {
+        addCommentNode(node.follow_comment);
+    }
+    // remove `#` from the beginning of comment if exists
+    return comments.map((c)=>c.startsWith("#")?c.substring(1).trim():c.trim());
 }
 
 export const analyzeHover = async (prevNode :ast2ts.ParseResult, pos :number) =>{
@@ -242,7 +264,7 @@ export const analyzeHover = async (prevNode :ast2ts.ParseResult, pos :number) =>
     + type align: ${sizeAlignTarget?.bit_alignment||"unknown"}
     + follow: ${ident.base.follow}
     + eventual_follow: ${ident.base.eventual_follow}
-    ${ident.base.is_state_variable?"+ state variable\n":""}`);
+    ${ident.base.is_state_variable?"+ state variable\n":""}`, collectComments(ident.base));
                     }
                     return makeHover(ident.ident,"field");
                 case ast2ts.IdentUsage.define_enum_member:
@@ -278,7 +300,7 @@ export const analyzeHover = async (prevNode :ast2ts.ParseResult, pos :number) =>
     ${(ident.base.body?.metadata.length??0) > 0 ?`+ metadata: ${ident.base.body?.metadata.map((x)=>x.name).join(", ")}\n`:""}
     ${(ident.base.cast_fns.length || 0) > 0 ?`+ cast functions: ${ident.base.cast_fns.map((x)=> typeToString(x.return_type) ).join(", ")}\n`:""}
     + block trait: ${ident.base.body?.block_traits && ast2ts.BlockTraitToString(ident.base.body?.block_traits) || "none"}
-`);
+`, collectComments(ident.base));
                     }
                     return makeHover(ident.ident,"format"); 
                 case ast2ts.IdentUsage.define_enum:
@@ -353,7 +375,7 @@ export const analyzeHover = async (prevNode :ast2ts.ParseResult, pos :number) =>
     return null;
 }
 
-export const analyzeDefinition = async (prevFile :ast2ts.AstFile, prevNode :ast2ts.ParseResult,pos :number) => {
+export const analyzeDefinition = async (prevFile :ast2ts.AstFile, prevNode :ast2ts.ParseResult,pos :number,typeDef :boolean) => {
     let found :any;
     const len = prevNode.node.length;
     for(let i = 0;i<len;i++){
@@ -386,6 +408,22 @@ export const analyzeDefinition = async (prevFile :ast2ts.AstFile, prevNode :ast2
     }
     if(ast2ts.isIdent(found)){
         let ident = found;
+        if(typeDef){
+            if(!ident.expr_type){
+                return null;
+            }
+            if(ast2ts.isIdentType(ident.expr_type)){
+                if(ident.expr_type.ident !== null){
+                    ident = ident.expr_type.ident;
+                }
+                else{
+                    return null;
+                }
+            }
+            else{
+                return null;
+            }
+        }
         for(;;){
             switch (ident.usage) {
                 case ast2ts.IdentUsage.unknown:
@@ -770,9 +808,39 @@ export interface RangeStub {
 }
 
 export const SymbolKindStub = {
+    Class: 5,
+    Method: 6,
+    Function: 12,
     Variable: 13,
+    Constant: 14,
 } as const;
 export type SymbolKindStub = (typeof SymbolKindStub)[keyof typeof SymbolKindStub];
+
+const identToSymbolKind = (node :ast2ts.Ident) :SymbolKindStub => {
+    switch (node.usage) {
+        case ast2ts.IdentUsage.define_variable:
+        case ast2ts.IdentUsage.define_arg:
+        case ast2ts.IdentUsage.define_field:
+            return SymbolKindStub.Variable;
+        case ast2ts.IdentUsage.define_const:
+        case ast2ts.IdentUsage.define_enum_member:
+            return SymbolKindStub.Constant;
+        case ast2ts.IdentUsage.define_fn:
+        case ast2ts.IdentUsage.define_cast_fn:
+            if(ast2ts.isFunction(node.base)){
+                if(node.base.belong == null) {
+                    return SymbolKindStub.Function;
+                } 
+            }
+            return SymbolKindStub.Method;
+        case ast2ts.IdentUsage.define_format:
+        case ast2ts.IdentUsage.define_enum:
+        case ast2ts.IdentUsage.define_state:
+                return SymbolKindStub.Class;
+        default:
+            return SymbolKindStub.Variable;
+    }
+}
 
 export interface DocumentSymbolStub {
     name: string;
@@ -782,14 +850,20 @@ export interface DocumentSymbolStub {
     children? :DocumentSymbolStub[];
 }
 
-export const analyzeSymbols = (scope :ast2ts.Scope) :DocumentSymbolStub[] => {
+export const analyzeSymbols = (scope :ast2ts.Scope,depth :number = 0) :DocumentSymbolStub[] => {
     var symbols :DocumentSymbolStub[] = [];
     let preSym :DocumentSymbolStub | null = null;
-    for(let sc=scope as ast2ts.Scope | null;sc != null;sc = scope.next) {
-        for(const s of scope.ident) {
+    for(let sc=scope as ast2ts.Scope | null;sc != null;sc = sc.next) {
+        for(const s of sc.ident) {
+            if(s.usage === ast2ts.IdentUsage.reference || s.usage == ast2ts.IdentUsage.reference_member || s.usage == ast2ts.IdentUsage.reference_member_type ||
+                s.usage === ast2ts.IdentUsage.reference_type || s.usage === ast2ts.IdentUsage.reference_builtin_fn ||
+                s.usage === ast2ts.IdentUsage.unknown
+            ) {
+                continue; // skip references
+            }
             let sym : DocumentSymbolStub = {
                 name: s.ident,
-                kind: SymbolKindStub.Variable,
+                kind: identToSymbolKind(s),
                 range: {
                     start: {line: s.loc.line-1, character: s.loc.col-1},
                     end: {line: s.loc.line-1, character: s.loc.col-1},
@@ -802,12 +876,12 @@ export const analyzeSymbols = (scope :ast2ts.Scope) :DocumentSymbolStub[] => {
             symbols.push(sym);
             preSym = sym;
         }  
-        if(sc.branch !== null) {
-            if(preSym !== null) {
-                preSym.children = analyzeSymbols(sc.branch);
+        if(sc.branch != null) {
+            if(preSym != null) {
+                preSym.children = analyzeSymbols(sc.branch,depth+1);
             }
             else {
-                symbols = symbols.concat(analyzeSymbols(sc.branch));
+                symbols = symbols.concat(analyzeSymbols(sc.branch,depth+1));
             }
         }
     }
