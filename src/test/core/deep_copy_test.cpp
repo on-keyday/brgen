@@ -39,7 +39,8 @@ auto load_paths() {
                 if (it->path().extension() != ".bgn") {
                     continue;
                 }
-                if (it->path().filename() == "fn_test.bgn") {
+                if (it->path().filename() == "fn_test.bgn" ||
+                    it->path().filename() == "error_tolerant.bgn") {
                     continue;  // Skip test files
                 }
                 paths.push_back(it->path());

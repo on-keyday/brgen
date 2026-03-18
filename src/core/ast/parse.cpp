@@ -147,62 +147,21 @@ namespace brgen::ast {
        private:
         friend struct ParserTest;
 
-        void consume_ident_sign_with_error_tolerant() {
-            auto ok = s.consume_token(":");
-            if (!ok) {
-                if (auto p = s.prev_token(); p && p->tag == lexer::Tag::indent) {
-                    s.backward();
-                }
-                if (auto p = s.prev_token(); p && p->tag == lexer::Tag::line) {
-                    s.backward();  // for error report correctly
-                    state.errors.locations.push_back(s.token_error(":", "line expected after ':'").locations[0]);
-                    s.must_consume_token(lexer::Tag::line, must_success);
-                }
-                else {
-                    state.errors.locations.push_back(s.token_error(":", "line expected after ':'").locations[0]);
-                }
-                return;  // error tolerant mode; ignore error
-            }
-            s.skip_space();
-            ok = s.consume_token(lexer::Tag::line);
-            if (!ok) {
-                while (true) {  // first, rollback to previous ":"
-                    if (auto p = s.prev_token(); p && p->token == ":") {
-                        s.backward();
-                        break;
-                    }
-                    else if (!p) {
-                        s.report_error(s.loc(), "unexpected state on error recover; parser bug!!");
-                    }
-                    s.backward();
-                }
-                if (auto indent = s.prev_token(); indent && indent->tag == lexer::Tag::indent) {
-                    s.backward();
-                }
-                if (auto line = s.prev_token(); line && line->tag == lexer::Tag::line) {
-                    s.backward();  // for error report correctly
-                    state.errors.locations.push_back(s.token_error(":", "line expected after ':'").locations[0]);
-                    s.must_consume_token(lexer::Tag::line, must_success);
-                }
-                else {
-                    state.errors.locations.push_back(s.token_error(":", "line expected after ':'").locations[0]);
-                }
-                return;  // error tolerant mode; ignore error
-            }
-            s.skip_line();
-            return;
-        }
-
         // :\\r\\n
         std::shared_ptr<Node> must_consume_indent_sign(std::string_view hint) {
             s.skip_white();
-            /*
+            auto msg = futils::strutil::concat<std::string>(hint, ", only `:` is needed");
             if (state.error_tolerant) {
-                consume_ident_sign_with_error_tolerant();
-                return;
+                auto indent = s.consume_token(":");
+                if (!indent) {
+                    auto token = s.token_error(":", msg);
+                    state.errors.locations.insert(state.errors.locations.end(), token.locations.begin(), token.locations.end());
+                    s.recover_to_prev_skip();
+                }
             }
-            */
-            s.must_consume_token(":", futils::strutil::concat<std::string>(hint, ", only `:` is needed"));
+            else {
+                s.must_consume_token(":", msg);
+            }
             s.skip_space();
             s.consume_token(lexer::Tag::comment);  // optional comment after ':'
             auto follow_comment = s.get_comments();
@@ -1245,11 +1204,11 @@ namespace brgen::ast {
                 if (!f) {
                     auto errs = s.token_error(lexer::Tag::ident, type_hint);
                     state.errors.locations.insert(state.errors.locations.end(), errs.locations.begin(), errs.locations.end());
-                    s.recover_to_prev_skip();
                     ident = lexer::Token{
                         .token = "$dummy",
                         .loc = s.loc(),
                     };
+                    s.recover_to_prev_skip();
                 }
                 else {
                     ident = std::move(*f);

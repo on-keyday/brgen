@@ -1,9 +1,27 @@
-format X: 
+# error tolerant parsing test
+
+format : 
     x :u8 
 
+{}
 
 format Y:
-    len :u8 
+    len :
+    x :u8
 
-format Q:
+format Z # its me
     vo :u8
+
+1 = 32
+
+o : 0
+
+enum V:
+    le  
+    gl = 1
+
+$dummy 
+
+format W:
+    len : 
+
