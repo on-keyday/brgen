@@ -326,7 +326,7 @@ def install_lsp():
         stderr=sys.stderr,
     )
     subprocess.run(
-        ["code", "--install-extension", "./brgen-lsp-0.0.1.vsix"],
+        ["code.cmd" if os.name == "nt" else "code", "--install-extension", "./brgen-lsp-0.0.1.vsix"],
         check=True,
         cwd="lsp",
         shell=(os.name == "nt"),
