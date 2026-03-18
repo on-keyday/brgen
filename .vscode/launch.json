@@ -26,9 +26,10 @@
       "request": "launch",
       "program": "${workspaceRoot}/tool/src2json",
       "args": [
-        "${workspaceRoot}//save/bgn_formats/asn1_der.bgn",
+        "${workspaceRoot}/example/feature_test/error_tolerant.bgn",
         "--print-json",
-        "--print-on-error"
+        "--print-on-error",
+        "--error-tolerant"
       ],
       "stopAtEntry": false,
       "cwd": "${workspaceRoot}",

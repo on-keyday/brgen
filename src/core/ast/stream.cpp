@@ -43,8 +43,7 @@ namespace brgen::ast {
     }
 
     void Stream::shrink() {
-        tokens.erase(tokens.begin(), cur);
-        cur = tokens.begin();
+        tokens.erase(tokens.begin(), prev_skip_pos ? *prev_skip_pos : cur);
     }
 
     std::list<lexer::Token> Stream::take() {
@@ -218,6 +217,15 @@ namespace brgen::ast {
             cur = *last_skip;
             last_skip.reset();
         }
+        maybe_parse();
+        if (cur == prev_skip_pos) {
+            if (!eos() && cur->tag == lexer::Tag::punct) {
+                consume();
+                return;
+            }
+            report_error("cannot recover parsing");
+        }
+        prev_skip_pos = cur;
     }
 
     std::shared_ptr<Node> Stream::get_comments() {

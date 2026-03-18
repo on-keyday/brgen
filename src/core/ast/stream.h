@@ -27,6 +27,7 @@ namespace brgen::ast {
         std::vector<std::shared_ptr<Comment>> comments;
         bool collect_comments = false;
         lexer::Option lex_option;
+        std::optional<iterator> prev_skip_pos;
 
         Stream() = default;
         friend struct Context;

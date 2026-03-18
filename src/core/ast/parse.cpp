@@ -719,8 +719,9 @@ namespace brgen::ast {
                 }
             }
             else if (state.error_tolerant) {  // not found ident
+                s.recover_to_prev_skip();
                 auto err = s.token_error(lexer::Tag::ident, "field, variable, type name for type literal or function name expected");
-                state.errors.locations.push_back(err.locations[0]);
+                state.errors.locations.insert(state.errors.locations.end(), err.locations.begin(), err.locations.end());
                 return std::make_shared<BadExpr>(s.loc(), brgen::concat(state.errors.locations.back().msg));
             }
             return parse_ident("field, variable, type name for type literal or function name expected");
