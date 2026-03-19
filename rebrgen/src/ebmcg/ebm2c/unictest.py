@@ -110,8 +110,22 @@ def main():
         vector->size++;
         return 0;
     }}
+
+    void default_free(FreeFunctionInput* self, VECTOR_OF(void)* vector_void, size_t elem_size) {{
+        if(elem_size == 1) {{
+            return;
+        }}
+        (void)self;
+        GenericVector* vector = (GenericVector*)vector_void;
+        if (vector->data) {{
+            free(vector->data);
+        }}
+        memset(vector, 0, sizeof(GenericVector));
+    }}
     #endif
     #endif
+
+
 
     int main(int argc, char *argv[]) {{
 
@@ -324,15 +338,14 @@ def main():
 
         free(output_buffer);
 
-        
+        #ifdef VECTOR_OF
+        FreeFunctionInput free_input;
+        memset(&free_input, 0, sizeof(free_input));
+        free_input.free = default_free;
 
-        /* TODO: We might need a way to free 'target_obj' if it contains allocated memory (vectors/arrays) 
+        {TEST_TARGET_FORMAT}_free(&target_obj, &free_input); /* Free any allocated memory in struct */
 
-           but currently there is no standard free function in the generated code I saw. 
-
-           This will leak memory in the test runner but OS cleans up on exit. */
-
-
+        #endif
         return 0;
     }}
     """
