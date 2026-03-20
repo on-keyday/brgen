@@ -24,7 +24,9 @@
         property: *WeakStatementRef
         attribute: FunctionAttribute
           is_user_defined: bool
+          has_wrapper: bool
           reserved: std::uint8_t
+        wrapper_function: *StatementRef
         body: StatementRef
       main_logic: ebmcodegen::util::MainLogicWrapper<Result>
       result: expected<Result>&

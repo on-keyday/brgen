@@ -14,7 +14,10 @@
       item_id: ebm::ExpressionRef
       type: const ebm::TypeRef&
       kind: const ebm::ExpressionKind&
-      target_expr: const ebm::ExpressionRef&
+      as_arg: const ebm::AsArgDesc&
+        target_expr: ExpressionRef
+        is_inout: bool
+        reserved: std::uint8_t
       main_logic: ebmcodegen::util::MainLogicWrapper<Result>
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/

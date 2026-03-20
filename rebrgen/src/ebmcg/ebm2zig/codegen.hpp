@@ -4624,12 +4624,12 @@ namespace ebm2zig {
         ebm::ExpressionRef item_id;
         const ebm::TypeRef& type;
         const ebm::ExpressionKind& kind;
-        const ebm::ExpressionRef& target_expr;
+        const ebm::AsArgDesc& as_arg;
     };
     struct VisitorTag_Expression_AS_ARG {};
     // Deconstruct context fields
     #define EBM2ZIG_DECONSTRUCT_EXPRESSION_AS_ARG(instance_name) \
-    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& type = instance_name.type;auto& kind = instance_name.kind;auto& target_expr = instance_name.target_expr;
+    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& type = instance_name.type;auto& kind = instance_name.kind;auto& as_arg = instance_name.as_arg;
     template <typename Result>
     struct Context_Expression_AS_ARG_before : ebmcodegen::util::ContextBase<Context_Expression_AS_ARG_before<Result>> {
         constexpr static std::string_view context_name = "Expression_AS_ARG_before";
@@ -4637,13 +4637,13 @@ namespace ebm2zig {
         ebm::ExpressionRef item_id;
         const ebm::TypeRef& type;
         const ebm::ExpressionKind& kind;
-        const ebm::ExpressionRef& target_expr;
+        const ebm::AsArgDesc& as_arg;
         ebmcodegen::util::MainLogicWrapper<Result> main_logic;
     };
     struct VisitorTag_Expression_AS_ARG_before {};
     // Deconstruct context fields
     #define EBM2ZIG_DECONSTRUCT_EXPRESSION_AS_ARG_BEFORE(instance_name) \
-    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& type = instance_name.type;auto& kind = instance_name.kind;auto& target_expr = instance_name.target_expr;auto& main_logic = instance_name.main_logic;
+    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& type = instance_name.type;auto& kind = instance_name.kind;auto& as_arg = instance_name.as_arg;auto& main_logic = instance_name.main_logic;
     template <typename Result>
     struct Context_Expression_AS_ARG_after : ebmcodegen::util::ContextBase<Context_Expression_AS_ARG_after<Result>> {
         constexpr static std::string_view context_name = "Expression_AS_ARG_after";
@@ -4651,14 +4651,14 @@ namespace ebm2zig {
         ebm::ExpressionRef item_id;
         const ebm::TypeRef& type;
         const ebm::ExpressionKind& kind;
-        const ebm::ExpressionRef& target_expr;
+        const ebm::AsArgDesc& as_arg;
         ebmcodegen::util::MainLogicWrapper<Result> main_logic;
         expected<Result>& result;
     };
     struct VisitorTag_Expression_AS_ARG_after {};
     // Deconstruct context fields
     #define EBM2ZIG_DECONSTRUCT_EXPRESSION_AS_ARG_AFTER(instance_name) \
-    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& type = instance_name.type;auto& kind = instance_name.kind;auto& target_expr = instance_name.target_expr;auto& main_logic = instance_name.main_logic;auto& result = instance_name.result;
+    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& type = instance_name.type;auto& kind = instance_name.kind;auto& as_arg = instance_name.as_arg;auto& main_logic = instance_name.main_logic;auto& result = instance_name.result;
     struct Context_Expression : ebmcodegen::util::ContextBase<Context_Expression> {
         constexpr static std::string_view context_name = "Expression";
         BaseVisitor& visitor;

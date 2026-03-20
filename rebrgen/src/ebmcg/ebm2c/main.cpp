@@ -54583,6 +54583,14 @@ namespace ebm2c {
         if (!result_params) {
             return unexpect_error(std::move(result_params.error()));
         }
+        if (auto ptr = type_ctx.func_decl.wrapper_function()) {
+            if (!is_nil((*ptr))) {
+                auto result_wrapper_function = visit_Object<Result>(std::forward<UserContext>(ctx),(*ptr));
+                if (!result_wrapper_function) {
+                    return unexpect_error(std::move(result_wrapper_function.error()));
+                }
+            }
+        }
         if (!is_nil(type_ctx.func_decl.body)) {
             auto result_body = visit_Object<Result>(std::forward<UserContext>(ctx),type_ctx.func_decl.body);
             if (!result_body) {
@@ -58125,17 +58133,17 @@ namespace ebm2c {
     expected<Result> dispatch_Expression_AS_ARG(Context&& ctx,const ebm::Expression& in,ebm::ExpressionRef alias_ref){
         auto& type = in.body.type;
         auto& kind = in.body.kind;
-        if (!in.body.target_expr()) {
-            return unexpect_error("Unexpected null pointer for ExpressionBody::target_expr");
+        if (!in.body.as_arg()) {
+            return unexpect_error("Unexpected null pointer for ExpressionBody::as_arg");
         }
-        auto& target_expr = *in.body.target_expr();
+        auto& as_arg = *in.body.as_arg();
         auto main_logic = [&]() -> expected<Result>{
             Context_Expression_AS_ARG new_ctx{
                 .visitor = get_visitor_arg_from_context(ctx),
                 .item_id = is_nil(alias_ref) ? in.id : alias_ref,
                 .type = type,
                 .kind = kind,
-                .target_expr = target_expr,
+                .as_arg = as_arg,
             };
             return get_visitor_from_context<Result>(ctx,new_ctx).visit(new_ctx);
         };
@@ -58144,7 +58152,7 @@ namespace ebm2c {
             .item_id = is_nil(alias_ref) ? in.id : alias_ref,
             .type = type,
             .kind = kind,
-            .target_expr = target_expr,
+            .as_arg = as_arg,
             .main_logic = main_logic,
         };
         expected<Result> before_result = get_visitor_from_context<Result>(ctx,before_ctx).visit(before_ctx);
@@ -58155,7 +58163,7 @@ namespace ebm2c {
             .item_id = is_nil(alias_ref) ? in.id : alias_ref,
             .type = type,
             .kind = kind,
-            .target_expr = target_expr,
+            .as_arg = as_arg,
             .main_logic = main_logic,
             .result = main_result,
         };
@@ -58171,8 +58179,8 @@ namespace ebm2c {
                 return unexpect_error(std::move(result_type.error()));
             }
         }
-        if (!is_nil(type_ctx.target_expr)) {
-            auto result_target_expr = visit_Object<Result>(std::forward<UserContext>(ctx),type_ctx.target_expr);
+        if (!is_nil(type_ctx.as_arg.target_expr)) {
+            auto result_target_expr = visit_Object<Result>(std::forward<UserContext>(ctx),type_ctx.as_arg.target_expr);
             if (!result_target_expr) {
                 return unexpect_error(std::move(result_target_expr.error()));
             }

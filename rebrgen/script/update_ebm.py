@@ -3,6 +3,10 @@ import os
 import subprocess as sp
 import sys
 
+EXE = ".exe" if os.name == "nt" else ""
+EBMCODEGEN = os.path.abspath(f"tool/ebmcodegen{EXE}")
+EBMGEN = os.path.abspath(f"tool/ebmgen{EXE}")
+
 sp.check_call(["python", "src/ebm/ebm.py"], stdout=sys.stdout, stderr=sys.stderr)
 
 # then run script/build.py to build the tools
@@ -32,21 +36,21 @@ def rewrite_if_needed(file_path: str, new_content: str):
 
 
 # then run tool/ebmcodegen --mode subset > src/ebmcodegen/body_subset.cpp
-subset = sp.check_output(["tool/ebmcodegen", "--mode", "subset"], stderr=sys.stderr)
+subset = sp.check_output([EBMCODEGEN, "--mode", "subset"], stderr=sys.stderr)
 
 if rewrite_if_needed("src/ebmcodegen/body_subset.cpp", subset.decode("utf-8")):
     something_changed = True
 
 # run tool/ebmcodegen --mode json-conv-header > src/ebmgen/json_conv.hpp
 json_header = sp.check_output(
-    ["tool/ebmcodegen", "--mode", "json-conv-header"], stderr=sys.stderr
+    [EBMCODEGEN, "--mode", "json-conv-header"], stderr=sys.stderr
 )
 if rewrite_if_needed("src/ebmgen/json_conv.hpp", json_header.decode("utf-8")):
     something_changed = True
 
 # run tool/ebmcodegen --mode json-conv-source > src/ebmgen/json_conv.cpp
 json_source = sp.check_output(
-    ["tool/ebmcodegen", "--mode", "json-conv-source"], stderr=sys.stderr
+    [EBMCODEGEN, "--mode", "json-conv-source"], stderr=sys.stderr
 )
 if rewrite_if_needed("src/ebmgen/json_conv.cpp", json_source.decode("utf-8")):
     something_changed = True
@@ -62,7 +66,7 @@ if rewrite_if_needed(
 ):
     something_changed = True
 
-accessor = sp.check_output(["tool/ebmcodegen", "--mode", "accessor"], stderr=sys.stderr)
+accessor = sp.check_output([EBMCODEGEN, "--mode", "accessor"], stderr=sys.stderr)
 if rewrite_if_needed(
     "src/ebmgen/access_helper.hpp",
     accessor.decode("utf-8"),
@@ -92,7 +96,7 @@ if something_changed:
 
 hex_test_data = sp.check_output(
     [
-        "tool/ebmgen",
+        EBMGEN,
         "-i",
         "./src/ebm/extended_binary_module.bgn",
         "-o",

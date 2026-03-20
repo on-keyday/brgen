@@ -65,6 +65,7 @@ namespace ebmcodegen {
             ebm::ExpressionBody body;
             body.kind = ebm::ExpressionKind(i);
             body.array_expr({});
+            body.as_arg({});
             body.base({});
             body.bool_value({});
             body.bop({});
