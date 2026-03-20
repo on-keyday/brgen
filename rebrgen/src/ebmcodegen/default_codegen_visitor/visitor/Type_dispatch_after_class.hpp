@@ -22,6 +22,9 @@
 DEFINE_VISITOR(Type_dispatch_after) {
     using namespace CODEGEN_NAMESPACE;
     /*here to write the hook*/
+    if (!ctx.result.has_value()) {
+        return pass;
+    }
     ctx.config().type_memoization_config.try_memoize(get_id(ctx.in.id), ctx.in.body.kind, ctx.result->to_writer());
     return pass;
 }
