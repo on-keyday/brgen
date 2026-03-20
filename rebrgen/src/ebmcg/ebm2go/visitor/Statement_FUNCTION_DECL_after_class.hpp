@@ -22,6 +22,9 @@
         parent_format: WeakStatementRef
         kind: FunctionKind
         property: *WeakStatementRef
+        attribute: FunctionAttribute
+          is_user_defined: bool
+          reserved: std::uint8_t
         body: StatementRef
       main_logic: ebmcodegen::util::MainLogicWrapper<Result>
       result: expected<Result>&

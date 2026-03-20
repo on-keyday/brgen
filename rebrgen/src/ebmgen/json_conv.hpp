@@ -41,6 +41,8 @@ namespace ebm {
     
     bool from_json(FuncTypeDesc& obj, const futils::json::JSON& j);
     
+    bool from_json(FunctionAttribute& obj, const futils::json::JSON& j);
+    
     bool from_json(FunctionDecl& obj, const futils::json::JSON& j);
     
     bool from_json(IOAttribute& obj, const futils::json::JSON& j);

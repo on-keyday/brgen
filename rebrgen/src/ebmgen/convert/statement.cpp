@@ -609,6 +609,7 @@ namespace ebmgen {
                     }
                     MAYBE(func_id, ctx.repository().new_statement_id());
                     MAYBE(func_decl, ctx.get_statement_converter().convert_function_decl(func_id, ast::cast_to<ast::Function>(element), GenerateType::Normal, ebm::StatementRef{}));
+                    func_decl.attribute.is_user_defined(true);
                     ebm::StatementBody func_decl_body;
                     func_decl_body.kind = ebm::StatementKind::FUNCTION_DECL;
                     func_decl_body.func_decl(std::move(func_decl));
@@ -727,6 +728,7 @@ namespace ebmgen {
                 for (auto& st : state_vars) {
                     append(decl.params, typ == GenerateType::Encode ? st.enc_var_def : st.dec_var_def);
                 }
+                decl.attribute.is_user_defined(true);
                 derived_fn = std::move(decl);
             }
             else {
@@ -868,6 +870,7 @@ namespace ebmgen {
             ctx.state().set_self_ref_for_id(id, self_fn_access);
         }
         MAYBE(decl, convert_function_decl(id, node, GenerateType::Normal, {}));
+        decl.attribute.is_user_defined(true);
         body.func_decl(std::move(decl));
         return {};
     }

@@ -998,6 +998,32 @@ namespace ebm {
         return true;
     }
     
+    bool from_json(FunctionAttribute& obj, const futils::json::JSON& j) {
+        if (auto got = j.at("is_user_defined")) {
+            bool tmp;
+            if(!futils::json::convert_from_json(*got, tmp)) {
+                return false;
+            }
+            obj.is_user_defined(std::move(tmp));
+        }
+        else {
+            return false;
+        }
+        if (auto got = j.at("reserved")) {
+            std::uint8_t tmp;
+            if(!futils::json::convert_from_json(*got, tmp)) {
+                return false;
+            }
+            if(!obj.reserved(std::move(tmp))) {
+                return false;
+            }
+        }
+        else {
+            return false;
+        }
+        return true;
+    }
+    
     bool from_json(FunctionDecl& obj, const futils::json::JSON& j) {
         if (auto got = j.at("name")) {
             if(!futils::json::convert_from_json(*got, obj.name)) {
@@ -1047,6 +1073,14 @@ namespace ebm {
             if(!obj.property(std::move(tmp))) {
                 return false;
             }
+        }
+        if (auto got = j.at("attribute")) {
+            if(!futils::json::convert_from_json(*got, obj.attribute)) {
+                return false;
+            }
+        }
+        else {
+            return false;
         }
         if (auto got = j.at("body")) {
             if(!futils::json::convert_from_json(*got, obj.body)) {
