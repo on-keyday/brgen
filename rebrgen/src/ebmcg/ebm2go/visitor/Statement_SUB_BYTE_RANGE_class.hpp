@@ -114,8 +114,8 @@ DEFINE_VISITOR(Statement_SUB_BYTE_RANGE) {
             else {
                 // After encoding: verify length and copy to parent
                 ctx.config().imports.insert("fmt");
-                w.writeln("if ", offset_ref(io_), " - ", offset_var(io_), "Base != int(", length_str.to_writer(), ") {");
-                w.indent_writeln("return fmt.Errorf(\"subrange length mismatch: expected %d, got %d\", int(", length_str.to_writer(), "), len(", io_, "))");
+                w.writeln("if ", offset_ref(io_), " != int(", length_str.to_writer(), ") {");
+                w.indent_writeln("return fmt.Errorf(\"subrange length mismatch: expected %d, got %d\", int(", length_str.to_writer(), "), ", offset_ref(io_), ")");
                 w.writeln("}");
                 w.writeln(offset_ref(parent_io_), "+= int(", length_str.to_writer(), ")");
             }
