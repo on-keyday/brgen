@@ -15,8 +15,6 @@
       type: const ebm::TypeRef&
       kind: const ebm::ExpressionKind&
       endian_expr: const ebm::StatementRef&
-        (nil when checking native/system endianness;
-         non-nil points to an ENDIAN_VARIABLE stmt for dynamic endian)
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 

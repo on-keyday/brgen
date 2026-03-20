@@ -33,7 +33,7 @@ DEFINE_VISITOR(Expression_CALL_before) {
         MAYBE(ident, ctx.identifier(*member));
         MAYBE(base_type_name, ctx.identifier(base_type.id));
         MAYBE(base_str, ctx.visit(base));
-        if (ctx.config().on_destructor_generation && ident == "encode") {
+        if (ctx.config().on_destructor_generation() && ident == "encode") {
             ident = "free";
         }
         auto func_name = std::format("{}_{}", base_type_name, ident);

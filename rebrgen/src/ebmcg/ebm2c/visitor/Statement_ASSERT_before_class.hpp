@@ -24,7 +24,7 @@
 #include "../codegen.hpp"
 DEFINE_VISITOR(Statement_ASSERT_before) {
     using namespace CODEGEN_NAMESPACE;
-    if (ctx.config().on_destructor_generation) {
+    if (ctx.config().on_destructor_generation()) {
         return CODELINE("// ASSERT skipped in free function generation");
     }
     /*here to write the hook*/

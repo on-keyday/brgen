@@ -9,7 +9,7 @@
 
 /*here to write the hook*/
 bool forward_decl = false;
-bool on_destructor_generation = false;
+futils::helper::Scoped<bool> on_destructor_generation = false;
 bool is_on_encode_decode = false;
 bool ptr_to_optional = false;
 std::unordered_set<std::uint64_t> ptr_to_optional_targets;

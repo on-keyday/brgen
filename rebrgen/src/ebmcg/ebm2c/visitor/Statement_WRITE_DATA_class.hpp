@@ -52,7 +52,7 @@ DEFINE_VISITOR(Statement_WRITE_DATA) {
     }
     if (auto cand = is_bytes_type(ctx, ctx.write_data.data_type)) {
         MAYBE(target, ctx.visit(ctx.write_data.target));
-        if (ctx.config().on_destructor_generation) {
+        if (ctx.config().on_destructor_generation()) {
             if (cand == BytesType::vector) {
                 return CODELINE("EBM_FREE_VECTOR(", target.to_writer(), ",1);");
             }
@@ -77,13 +77,13 @@ DEFINE_VISITOR(Statement_WRITE_DATA) {
         return CODELINE("EBM_WRITE_ARRAY_BYTES(", io_, ", ", target.to_writer(), ", ", size_str, ", ", offset_val, ", ", layer_str, ");");
     }
     if (auto lw = ctx.write_data.lowered_statement()) {
-        if (ctx.config().on_destructor_generation &&
+        if (ctx.config().on_destructor_generation() &&
             lw->lowering_type != ebm::LoweringIOType::STRUCT_CALL &&
             lw->lowering_type != ebm::LoweringIOType::ARRAY_FOR_EACH) {
             return CODELINE("// WRITE_DATA skipped in free function generation");
         }
         MAYBE(vec_elem_free, ctx.visit(lw->io_statement.id));
-        if (ctx.config().on_destructor_generation && lw->lowering_type == ebm::LoweringIOType::ARRAY_FOR_EACH) {
+        if (ctx.config().on_destructor_generation() && lw->lowering_type == ebm::LoweringIOType::ARRAY_FOR_EACH) {
             MAYBE(target, ctx.visit(ctx.write_data.target));
             vec_elem_free.to_writer().writeln("EBM_FREE_VECTOR(", target.to_writer(), ", sizeof(", target.to_writer(), ".data[0])", ");");
         }

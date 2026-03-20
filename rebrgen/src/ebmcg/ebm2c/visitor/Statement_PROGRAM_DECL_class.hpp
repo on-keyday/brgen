@@ -24,8 +24,10 @@
 #include "ebm/extended_binary_module.hpp"
 #include "ebmcg/ebm2c/codegen.hpp"
 #include "ebmcodegen/stub/dependency.hpp"
+#include "ebmcodegen/stub/make_visitor.hpp"
 #include "ebmcodegen/stub/util.hpp"
 #include "ebmgen/common.hpp"
+#include "helper/scoped.h"
 #include "includes.hpp"
 
 namespace ebm2c {
@@ -597,12 +599,72 @@ DEFINE_VISITOR_CLASS(Statement_PROGRAM_DECL) {
                     MAYBE(func, ctx.visit(*s.encode_function));
                     w.writeln(func.to_writer());
                     if (!ctx.flags().omit_destructor) {
-                        ctx.config().on_destructor_generation = true;
-                        ctx.config().encoder_input_type = "FreeFunctionInput*";
-                        MAYBE(free_func, ctx.visit(*s.encode_function));
-                        w.writeln(free_func.to_writer());
-                        ctx.config().on_destructor_generation = false;
-                        ctx.config().encoder_input_type = "EncoderInput*";
+                        auto is_user_defined = ctx.get_field<"func_decl.attribute.is_user_defined">(*s.encode_function);
+                        const auto _set = ctx.config().on_destructor_generation.set(true);
+                        futils::helper::Scoped<std::string&> input_type{ctx.config().encoder_input_type};
+                        const auto _input = input_type.set("FreeFunctionInput*");
+                        if (is_user_defined == true) {
+                            auto struct_name = ctx.identifier(s.id);
+                            w.write("int ", struct_name, "_free(", struct_name, "* self,", ctx.config().encoder_input_type, " input)");
+                            if (ctx.config().forward_decl) {
+                                w.writeln(";");
+                                continue;
+                            }
+                            w.writeln(" {");
+                            for (auto& field : s.fields) {
+                                auto typ = ctx.get_field<"field_decl.field_type">(field.id);
+                                if (!typ) {
+                                    continue;
+                                }
+                                CodeWriter user_free_func;
+                                std::vector<std::string> field_names;
+                                auto field_access_root = std::format("{}.{}", ctx.config().self_value, ctx.identifier(field.id));
+                                field_names.push_back(field_access_root);
+                                auto do_free =
+                                    make_visitor<void>(ctx.visitor)
+                                        .not_before_or_after()
+                                        .not_context("Statement")
+                                        .not_context("Expression")
+                                        .on([&](auto&& self, Context_Type_VECTOR& ctx) -> expected<void> {
+                                            auto elem_var = std::format("i_{}", get_id(ctx.item_id));
+                                            auto elem_access = std::format("{}.data[{}]", field_names.back(), elem_var);
+                                            auto sizeof_zero = std::format("{}.data[0]", field_names.back());
+                                            user_free_func.writeln("for (size_t ", elem_var, " = 0; ", elem_var, " < ", field_names.back(), ".size; ", elem_var, "++) {");
+                                            {
+                                                auto scope = user_free_func.indent_scope();
+                                                field_names.push_back(elem_access);
+                                                MAYBE_VOID(typ, ctx.visit(self, ctx.element_type));
+                                            }
+                                            user_free_func.writeln("}");
+                                            user_free_func.writeln("EBM_FREE_VECTOR(", field_access_root, ", sizeof(", sizeof_zero, "));");
+                                            return {};
+                                        })
+                                        .on([&](auto&& self, Context_Type_STRUCT& ctx) -> expected<void> {
+                                            auto struct_ident = ctx.identifier(ctx.id);
+                                            user_free_func.writeln(struct_ident, "_free(&", field_names.back(), ",input);");
+                                            return {};
+                                        })
+                                        .on([&](auto&& self, Context_Type_RECURSIVE_STRUCT& ctx) -> expected<void> {
+                                            auto struct_ident = ctx.identifier(ctx.id);
+                                            user_free_func.writeln(struct_ident, "_free(", field_names.back(), ",input);");
+                                            // TODO: need to also free the pointer itself if it's an optionalized pointer
+                                            return {};
+                                        })
+                                        .on_default_traverse_children()
+                                        .build();
+                                MAYBE_VOID(ok, ctx.visit(do_free, *typ));
+                                {
+                                    auto scope = w.indent_scope();
+                                    w.write(user_free_func);
+                                    w.writeln("return 0;");
+                                }
+                                w.writeln("}");
+                            }
+                        }
+                        else {
+                            MAYBE(free_func, ctx.visit(*s.encode_function));
+                            w.writeln(free_func.to_writer());
+                        }
                     }
                 }
                 if (s.decode_function) {

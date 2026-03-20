@@ -39,7 +39,7 @@ DEFINE_VISITOR(Statement_SUB_BYTE_RANGE) {
     }
 
     CodeWriter w;
-    if (ctx.config().on_destructor_generation) {
+    if (ctx.config().on_destructor_generation()) {
         // simply point to parent io
         w.writeln(type_name, "* ", io_name, " = ", parent_io_name, ";");
         MAYBE(io_stmt, ctx.visit(ctx.sub_byte_range.io_statement));
