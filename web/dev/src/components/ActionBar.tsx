@@ -30,6 +30,14 @@ export function ActionBar() {
       </a>
       <a
         class={styles.linkButton}
+        href="./api_server.sh"
+        download
+        rel="noopener noreferrer"
+      >
+        Local API/MCP Server
+      </a>
+      <a
+        class={styles.linkButton}
         href="./unictest-results/"
         target="_blank"
         rel="noopener noreferrer"
