@@ -17,4 +17,5 @@ namespace ebmgen {
     expected<void> flatten_io_expression(TransformContext& tctx);
     expected<void> add_cast_func(TransformContext& tctx);
     expected<void> derive_array_setter(TransformContext& tctx);
+    expected<void> derive_encode_decode_wrapper(TransformContext& tctx);
 }  // namespace ebmgen

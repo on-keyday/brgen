@@ -22,5 +22,5 @@
 DEFINE_VISITOR(Expression_AS_ARG) {
     using namespace CODEGEN_NAMESPACE;
     /*here to write the hook*/
-    return ctx.visit(ctx.target_expr);
+    return ctx.visit(ctx.as_arg.target_expr);
 }

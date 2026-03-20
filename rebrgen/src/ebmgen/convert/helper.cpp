@@ -213,11 +213,14 @@ namespace ebmgen {
         return body;
     }
 
-    ebm::ExpressionBody make_as_arg(ebm::TypeRef type, ebm::ExpressionRef target_expr) {
+    ebm::ExpressionBody make_as_arg(ebm::TypeRef type, ebm::ExpressionRef target_expr, bool is_inout) {
         ebm::ExpressionBody body;
         body.type = type;
         body.kind = ebm::ExpressionKind::AS_ARG;
-        body.target_expr(target_expr);
+        ebm::AsArgDesc desc;
+        desc.target_expr = target_expr;
+        desc.is_inout(is_inout);
+        body.as_arg(std::move(desc));
         return body;
     }
 

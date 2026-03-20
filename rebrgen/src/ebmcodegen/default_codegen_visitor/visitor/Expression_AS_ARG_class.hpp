@@ -27,5 +27,5 @@ DEFINE_VISITOR(Expression_AS_ARG) {
     if (ctx.config().as_arg_visitor) {
         return ctx.config().as_arg_visitor(ctx);
     }
-    return ctx.visit(ctx.target_expr);
+    return ctx.visit(ctx.as_arg.target_expr);
 }

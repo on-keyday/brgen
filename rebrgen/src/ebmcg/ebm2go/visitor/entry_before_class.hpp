@@ -178,7 +178,10 @@ DEFINE_VISITOR(entry_before) {
         return CODE(ctx.identifier(), " ", type.to_writer());
     };
     ctx.config().as_arg_visitor = [](Context_Expression_AS_ARG& ctx) -> expected<Result> {
-        MAYBE(target, ctx.visit(ctx.target_expr));
+        MAYBE(target, ctx.visit(ctx.as_arg.target_expr));
+        if (ctx.as_arg.is_inout()) {
+            return CODE("&", target.to_writer());
+        }
         auto kind = ctx.get_kind(ctx.type);
         if (!ctx.config().use_io_reader_writer &&
             !ctx.config().append_io &&

@@ -68,6 +68,13 @@ DEFINE_VISITOR(entry_before) {
         }
         return typ;
     };
+    ctx.config().as_arg_visitor = [](Context_Expression_AS_ARG& ctx) -> expected<Result> {
+        MAYBE(target, ctx.visit(ctx.as_arg.target_expr));
+        if (ctx.as_arg.is_inout()) {
+            return CODE("&", target.to_writer());
+        }
+        return target;
+    };
     // TODO: use floatN_t types if available
     ctx.config().make_float_type = [&](size_t bit_size) -> expected<Result> {
         if (bit_size <= 32) {
