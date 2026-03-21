@@ -41,6 +41,271 @@ namespace CODEGEN_NAMESPACE {
         return {};
     }
 
+    struct StructIOHelper {
+        Context_Statement_STRUCT_DECL& sctx;
+        CodeWriter def, use;
+        bool has_wrapper;
+        std::string name;
+        CodeWriter empty_cw;
+
+        // When has_wrapper=true, convenience functions delegate to the auto-generated
+        // wrapper (no state vars exposed). When false, state vars are threaded through.
+        CodeWriter& conv_def() { return has_wrapper ? empty_cw : def; }
+        CodeWriter& conv_use() { return has_wrapper ? empty_cw : use; }
+
+        // Emit Must*[_impl]: panics on error, calls inner_fn[_impl]
+        void write_must_wrapper(CodeWriter& w, std::string_view must_fn, std::string_view inner_fn,
+                                std::string_view input_name, std::string_view input_type) {
+            if (has_wrapper) {
+                w.writeln("func (s *", name, ") ", must_fn, "_impl(", input_name, " ", input_type, def, ") ", input_type, " {");
+                {
+                    auto scope = w.indent_scope();
+                    w.writeln("buf,err := s.", inner_fn, "_impl(", input_name, use, ")");
+                    w.writeln("if err != nil {");
+                    w.indent_writeln("panic(err)");
+                    w.writeln("}");
+                    w.writeln("return buf");
+                }
+                w.writeln("}");
+            }
+            w.writeln("func (s *", name, ") ", must_fn, "(", input_name, " ", input_type, conv_def(), ") ", input_type, " {");
+            {
+                auto scope = w.indent_scope();
+                w.writeln("buf,err := s.", inner_fn, "(", input_name, conv_use(), ")");
+                w.writeln("if err != nil {");
+                w.indent_writeln("panic(err)");
+                w.writeln("}");
+                w.writeln("return buf");
+            }
+            w.writeln("}");
+        }
+
+        // Emit MustAppend[_impl]: assignment form since buf is input and output
+        void write_must_append_wrapper(CodeWriter& w, std::string_view inner_fn) {
+            if (has_wrapper) {
+                w.writeln("func (s *", name, ") MustAppend_impl(buf []byte", def, ") []byte {");
+                {
+                    auto scope = w.indent_scope();
+                    w.writeln("var err error");
+                    w.writeln("buf,err = s.", inner_fn, "_impl(buf", use, ")");
+                    w.writeln("if err != nil {");
+                    w.indent_writeln("panic(err)");
+                    w.writeln("}");
+                    w.writeln("return buf");
+                }
+                w.writeln("}");
+            }
+            w.writeln("func (s *", name, ") MustAppend(buf []byte", conv_def(), ") []byte {");
+            {
+                auto scope = w.indent_scope();
+                w.writeln("var err error");
+                w.writeln("buf,err = s.", inner_fn, "(buf", conv_use(), ")");
+                w.writeln("if err != nil {");
+                w.indent_writeln("panic(err)");
+                w.writeln("}");
+                w.writeln("return buf");
+            }
+            w.writeln("}");
+        }
+
+        // Emit DecodeExact*[_impl]: checks for remaining bytes
+        void write_decode_exact_wrapper(CodeWriter& w, std::string_view exact_fn, std::string_view inner_fn) {
+            if (has_wrapper) {
+                auto impl_inner = std::string(inner_fn) + "_impl";
+                auto impl_exact = std::string(exact_fn) + "_impl";
+                w.writeln("func (s *", name, ") ", impl_exact, "(buf []byte", def, ") error {");
+                {
+                    auto scope = w.indent_scope();
+                    w.writeln("remain,err := s.", impl_inner, "(buf", use, ")");
+                    w.writeln("if err != nil {"); w.indent_writeln("return err"); w.writeln("}");
+                    w.writeln("if len(remain) != 0 {");
+                    sctx.config().imports.insert("fmt");
+                    w.indent_writeln("return fmt.Errorf(\"expect no remaining bytes but got %d bytes\",len(remain))");
+                    w.writeln("}");
+                    w.writeln("return nil");
+                }
+                w.writeln("}");
+            }
+            w.writeln("func (s *", name, ") ", exact_fn, "(buf []byte", conv_def(), ") error {");
+            {
+                auto scope = w.indent_scope();
+                w.writeln("remain,err := s.", inner_fn, "(buf", conv_use(), ")");
+                w.writeln("if err != nil {"); w.indent_writeln("return err"); w.writeln("}");
+                w.writeln("if len(remain) != 0 {");
+                sctx.config().imports.insert("fmt");
+                w.indent_writeln("return fmt.Errorf(\"expect no remaining bytes but got %d bytes\",len(remain))");
+                w.writeln("}");
+                w.writeln("return nil");
+            }
+            w.writeln("}");
+        }
+
+        // Generates EncodeBuffer[_impl] + MustEncodeBuffer[_impl] (bytes.Buffer IO)
+        void write_bytes_io_encode(CodeWriter& w, std::string_view inner_base) {
+            if (has_wrapper) {
+                w.writeln("func (s *", name, ") EncodeBuffer_impl(reserved []byte", def, ") ([]byte,error) {");
+                {
+                    auto scope = w.indent_scope();
+                    sctx.config().imports.insert("bytes");
+                    w.writeln("buf := bytes.NewBuffer(reserved)");
+                    w.writeln("err := s.", inner_base, "_impl(buf", use, ")");
+                    w.writeln("if err != nil {"); w.indent_writeln("return nil,err"); w.writeln("}");
+                    w.writeln("return buf.Bytes(), nil");
+                }
+                w.writeln("}");
+            }
+            w.writeln("func (s *", name, ") EncodeBuffer(reserved []byte", conv_def(), ") ([]byte,error) {");
+            {
+                auto scope = w.indent_scope();
+                sctx.config().imports.insert("bytes");
+                w.writeln("buf := bytes.NewBuffer(reserved)");
+                w.writeln("err := s.", inner_base, "(buf", conv_use(), ")");
+                w.writeln("if err != nil {"); w.indent_writeln("return nil,err"); w.writeln("}");
+                w.writeln("return buf.Bytes(), nil");
+            }
+            w.writeln("}");
+            write_must_wrapper(w, "MustEncodeBuffer", "EncodeBuffer", "reserved", "[]byte");
+        }
+
+        // Generates EncodeCopy[_impl] + MustEncodeCopy[_impl] (io.Writer IO)
+        void write_std_io_encode(CodeWriter& w, std::string_view inner_base) {
+            if (has_wrapper) {
+                w.writeln("func (s *", name, ") EncodeCopy_impl(reserved []byte", def, ") ([]byte,error) {");
+                {
+                    auto scope = w.indent_scope();
+                    sctx.config().imports.insert("bytes");
+                    w.writeln("buf := bytes.NewBuffer(reserved)");
+                    w.writeln("err := s.", inner_base, "_impl(buf", use, ")");
+                    w.writeln("if err != nil {"); w.indent_writeln("return nil,err"); w.writeln("}");
+                    w.writeln("return buf.Bytes(), nil");
+                }
+                w.writeln("}");
+            }
+            w.writeln("func (s *", name, ") EncodeCopy(reserved []byte", conv_def(), ") ([]byte,error) {");
+            {
+                auto scope = w.indent_scope();
+                sctx.config().imports.insert("bytes");
+                w.writeln("buf := bytes.NewBuffer(reserved)");
+                w.writeln("err := s.", inner_base, "(buf", conv_use(), ")");
+                w.writeln("if err != nil {"); w.indent_writeln("return nil,err"); w.writeln("}");
+                w.writeln("return buf.Bytes(), nil");
+            }
+            w.writeln("}");
+            write_must_wrapper(w, "MustEncodeCopy", "EncodeCopy", "reserved", "[]byte");
+        }
+
+        // Generates Encode[_impl] + MustEncode[_impl] (slice IO)
+        void write_slice_io_encode(CodeWriter& w, std::string_view inner_base) {
+            if (has_wrapper) {
+                w.writeln("func (s *", name, ") Encode_impl(buf []byte", def, ") ([]byte,error) {");
+                {
+                    auto scope = w.indent_scope();
+                    w.writeln("var offset int");
+                    w.writeln("err := s.", inner_base, "_impl(buf,&offset", use, ")");
+                    w.writeln("if err != nil {"); w.indent_writeln("return nil,err"); w.writeln("}");
+                    w.writeln("return buf[:offset], nil");
+                }
+                w.writeln("}");
+            }
+            w.writeln("func (s *", name, ") Encode(buf []byte", conv_def(), ") ([]byte,error) {");
+            {
+                auto scope = w.indent_scope();
+                w.writeln("var offset int");
+                w.writeln("err := s.", inner_base, "(buf,&offset", conv_use(), ")");
+                w.writeln("if err != nil {"); w.indent_writeln("return nil,err"); w.writeln("}");
+                w.writeln("return buf[:offset], nil");
+            }
+            w.writeln("}");
+            write_must_wrapper(w, "MustEncode", "Encode", "reserved", "[]byte");
+        }
+
+        // Generates DecodeBuffer[_impl] + DecodeExactBuffer[_impl] (bytes.Reader IO)
+        void write_bytes_io_decode(CodeWriter& w, std::string_view inner_base) {
+            if (has_wrapper) {
+                w.writeln("func (s *", name, ") DecodeBuffer_impl(buf []byte", def, ") ([]byte,error) {");
+                {
+                    auto scope = w.indent_scope();
+                    sctx.config().imports.insert("bytes");
+                    w.writeln("r := bytes.NewReader(buf)");
+                    w.writeln("err := s.", inner_base, "_impl(r", use, ")");
+                    w.writeln("if err != nil {"); w.indent_writeln("return nil,err"); w.writeln("}");
+                    w.writeln("return buf[int(r.Size()) - r.Len():], nil");
+                }
+                w.writeln("}");
+            }
+            w.writeln("func (s *", name, ") DecodeBuffer(buf []byte", conv_def(), ") ([]byte,error) {");
+            {
+                auto scope = w.indent_scope();
+                sctx.config().imports.insert("bytes");
+                w.writeln("r := bytes.NewReader(buf)");
+                w.writeln("err := s.", inner_base, "(r", conv_use(), ")");
+                w.writeln("if err != nil {"); w.indent_writeln("return nil,err"); w.writeln("}");
+                w.writeln("return buf[int(r.Size()) - r.Len():], nil");
+            }
+            w.writeln("}");
+            write_decode_exact_wrapper(w, "DecodeExactBuffer", "DecodeBuffer");
+        }
+
+        // Generates DecodeCopy[_impl] + DecodeExactCopy[_impl] (io.Reader IO)
+        void write_std_io_decode(CodeWriter& w, std::string_view inner_base) {
+            if (has_wrapper) {
+                w.writeln("func (s *", name, ") DecodeCopy_impl(buf []byte", def, ") ([]byte,error) {");
+                {
+                    auto scope = w.indent_scope();
+                    sctx.config().imports.insert("bytes");
+                    w.writeln("r := bytes.NewReader(buf)");
+                    w.writeln("err := s.", inner_base, "_impl(r", use, ")");
+                    w.writeln("if err != nil {"); w.indent_writeln("return nil,err"); w.writeln("}");
+                    w.writeln("return buf[int(r.Size()) - r.Len():], nil");
+                }
+                w.writeln("}");
+            }
+            w.writeln("func (s *", name, ") DecodeCopy(buf []byte", conv_def(), ") ([]byte,error) {");
+            {
+                auto scope = w.indent_scope();
+                sctx.config().imports.insert("bytes");
+                w.writeln("r := bytes.NewReader(buf)");
+                w.writeln("err := s.", inner_base, "(r", conv_use(), ")");
+                w.writeln("if err != nil {"); w.indent_writeln("return nil,err"); w.writeln("}");
+                w.writeln("return buf[int(r.Size()) - r.Len():], nil");
+            }
+            w.writeln("}");
+            write_decode_exact_wrapper(w, "DecodeExactCopy", "DecodeCopy");
+        }
+
+        // Generates Decode[_impl] + DecodeExact[_impl] (slice IO)
+        void write_slice_io_decode(CodeWriter& w, std::string_view inner_base) {
+            if (has_wrapper) {
+                w.writeln("func (s *", name, ") Decode_impl(buf []byte", def, ") ([]byte,error) {");
+                {
+                    auto scope = w.indent_scope();
+                    w.writeln("var offset int");
+                    w.writeln("err := s.", inner_base, "_impl(buf,&offset", use, ")");
+                    w.writeln("if err != nil {"); w.indent_writeln("return nil,err"); w.writeln("}");
+                    w.writeln("return buf[offset:], nil");
+                }
+                w.writeln("}");
+            }
+            w.writeln("func (s *", name, ") Decode(buf []byte", conv_def(), ") ([]byte,error) {");
+            {
+                auto scope = w.indent_scope();
+                w.writeln("var offset int");
+                w.writeln("err := s.", inner_base, "(buf,&offset", conv_use(), ")");
+                w.writeln("if err != nil {"); w.indent_writeln("return nil,err"); w.writeln("}");
+                w.writeln("return buf[offset:], nil");
+            }
+            w.writeln("}");
+            write_decode_exact_wrapper(w, "DecodeExact", "Decode");
+        }
+    };
+
+    inline expected<StructIOHelper> make_struct_io_helper(Context_Statement_STRUCT_DECL& sctx, ebm::StatementRef func) {
+        MAYBE(def_use, get_additional_parameters(sctx, func));
+        MAYBE(fd, sctx.get_field<"func_decl">(func));
+        return StructIOHelper{sctx, std::move(def_use.first), std::move(def_use.second),
+                              fd.attribute.has_wrapper(), std::string(sctx.identifier())};
+    }
+
 }  // namespace CODEGEN_NAMESPACE
 
 DEFINE_VISITOR(entry_before) {
@@ -193,9 +458,7 @@ DEFINE_VISITOR(entry_before) {
     };
     ctx.config().struct_encode_start_wrapper = [](Context_Statement_STRUCT_DECL& sctx, ebm::StatementRef encode_fn) -> expected<Result> {
         CodeWriter w;
-        MAYBE(def_use, get_additional_parameters(sctx, encode_fn));
-        auto& def = def_use.first;
-        auto& use = def_use.second;
+        MAYBE(h, make_struct_io_helper(sctx, encode_fn));
         if (sctx.config().io_mode.bytes_io) {
             sctx.config().encoder_input_type = "*bytes.Buffer";
             sctx.config().imports.insert("bytes");
@@ -203,29 +466,7 @@ DEFINE_VISITOR(entry_before) {
             sctx.config().use_io_reader_writer = true;
             MAYBE(enc, sctx.visit(encode_fn));
             w.write(std::move(enc.to_writer()));
-            auto name = sctx.identifier();
-            w.writeln("func (s *", name, ") EncodeBuffer(reserved []byte", def, ") ([]byte,error) {");
-            {
-                auto scope = w.indent_scope();
-                sctx.config().imports.insert("bytes");
-                w.writeln("buf := bytes.NewBuffer(reserved)");
-                w.writeln("err := s.WriteBuffer(buf", use, ")");
-                w.writeln("if err != nil {");
-                w.indent_writeln("return nil,err");
-                w.writeln("}");
-                w.writeln("return buf.Bytes(), nil");
-            }
-            w.writeln("}");
-            w.writeln("func (s *", name, ") MustEncodeBuffer(reserved []byte", def, ") []byte {");
-            {
-                auto scope = w.indent_scope();
-                w.writeln("buf,err := s.EncodeBuffer(reserved", use, ")");
-                w.writeln("if err != nil {");
-                w.indent_writeln("panic(err)");
-                w.writeln("}");
-                w.writeln("return buf");
-            }
-            w.writeln("}");
+            h.write_bytes_io_encode(w, "WriteBuffer");
         }
         if (sctx.config().io_mode.std_io) {
             sctx.config().encoder_input_type = "io.Writer";
@@ -234,29 +475,7 @@ DEFINE_VISITOR(entry_before) {
             sctx.config().use_io_reader_writer = true;
             MAYBE(enc, sctx.visit(encode_fn));
             w.write(std::move(enc.to_writer()));
-            auto name = sctx.identifier();
-            w.writeln("func (s *", name, ") EncodeCopy(reserved []byte", def, ") ([]byte,error) {");
-            {
-                auto scope = w.indent_scope();
-                sctx.config().imports.insert("bytes");
-                w.writeln("buf := bytes.NewBuffer(reserved)");
-                w.writeln("err := s.Write(buf", use, ")");
-                w.writeln("if err != nil {");
-                w.indent_writeln("return nil,err");
-                w.writeln("}");
-                w.writeln("return buf.Bytes(), nil");
-            }
-            w.writeln("}");
-            w.writeln("func (s *", name, ") MustEncodeCopy(reserved []byte", def, ") []byte {");
-            {
-                auto scope = w.indent_scope();
-                w.writeln("buf,err := s.EncodeCopy(reserved", use, ")");
-                w.writeln("if err != nil {");
-                w.indent_writeln("panic(err)");
-                w.writeln("}");
-                w.writeln("return buf");
-            }
-            w.writeln("}");
+            h.write_std_io_encode(w, "Write");
         }
         if (sctx.config().io_mode.slice_io) {
             sctx.config().encoder_input_type = "[]byte";
@@ -265,28 +484,7 @@ DEFINE_VISITOR(entry_before) {
             sctx.config().append_io = false;
             MAYBE(enc, sctx.visit(encode_fn));
             w.write(std::move(enc.to_writer()));
-            auto name = sctx.identifier();
-            w.writeln("func (s *", name, ") Encode(buf []byte", def, ") ([]byte,error) {");
-            {
-                auto scope = w.indent_scope();
-                w.writeln("var offset int");
-                w.writeln("err := s.EncodeSlice(buf,&offset", use, ")");
-                w.writeln("if err != nil {");
-                w.indent_writeln("return nil,err");
-                w.writeln("}");
-                w.writeln("return buf[:offset], nil");
-            }
-            w.writeln("}");
-            w.writeln("func (s *", name, ") MustEncode(reserved []byte", def, ") []byte {");
-            {
-                auto scope = w.indent_scope();
-                w.writeln("buf,err := s.Encode(reserved", use, ")");
-                w.writeln("if err != nil {");
-                w.indent_writeln("panic(err)");
-                w.writeln("}");
-                w.writeln("return buf");
-            }
-            w.writeln("}");
+            h.write_slice_io_encode(w, "EncodeSlice");
             sctx.config().encoder_input_type = "[]byte";
             sctx.config().encoder_return_type = "([]byte,error)";
             sctx.config().encode_fn_name = "Append";
@@ -296,130 +494,39 @@ DEFINE_VISITOR(entry_before) {
             w.write(std::move(enc2.to_writer()));
             sctx.config().encoder_return_type = "error";
             sctx.config().append_io = false;
-            w.writeln("func (s *", name, ") MustAppend(buf []byte", def, ") []byte {");
-            {
-                auto scope = w.indent_scope();
-                w.writeln("var err error");
-                w.writeln("buf,err = s.Append(buf", use, ")");
-                w.writeln("if err != nil {");
-                w.indent_writeln("panic(err)");
-                w.writeln("}");
-                w.writeln("return buf");
-            }
-            w.writeln("}");
+            h.write_must_append_wrapper(w, "Append");
         }
         return w;
     };
 
     ctx.config().struct_decode_start_wrapper = [](Context_Statement_STRUCT_DECL& sctx, ebm::StatementRef decode_fn) -> expected<Result> {
         CodeWriter w;
-        MAYBE(func, sctx.get_field<"func_decl.params">(decode_fn));
-        MAYBE(def_use, get_additional_parameters(sctx, decode_fn));
-        auto& def = def_use.first;
-        auto& use = def_use.second;
-
+        MAYBE(h, make_struct_io_helper(sctx, decode_fn));
         if (sctx.config().io_mode.bytes_io) {
             sctx.config().decoder_input_type = "*bytes.Reader";
             sctx.config().imports.insert("bytes");
             sctx.config().decode_fn_name = "ReadBuffer";
             sctx.config().use_io_reader_writer = true;
-            MAYBE(enc, sctx.visit(decode_fn));
-            w.write(std::move(enc.to_writer()));
-            auto name = sctx.identifier();
-            w.writeln("func (s *", name, ") DecodeBuffer(buf []byte", def, ") ([]byte,error) {");
-            {
-                auto scope = w.indent_scope();
-                sctx.config().imports.insert("bytes");
-                w.writeln("r := bytes.NewReader(buf)");
-                w.writeln("err := s.ReadBuffer(r", use, ")");
-                w.writeln("if err != nil {");
-                w.indent_writeln("return nil,err");
-                w.writeln("}");
-                w.writeln("return buf[int(r.Size()) - r.Len():], nil");
-            }
-            w.writeln("}");
-            w.writeln("func (s *", name, ") DecodeExactBuffer(buf []byte", def, ") error {");
-            {
-                auto scope = w.indent_scope();
-                w.writeln("remain,err := s.DecodeBuffer(buf", use, ")");
-                w.writeln("if err != nil {");
-                w.indent_writeln("return err");
-                w.writeln("}");
-                w.writeln("if len(remain) != 0 {");
-                sctx.config().imports.insert("fmt");
-                w.indent_writeln("return fmt.Errorf(\"expect no remaining bytes but got %d bytes\",len(remain))");
-                w.writeln("}");
-                w.writeln("return nil");
-            }
-            w.writeln("}");
+            MAYBE(dec, sctx.visit(decode_fn));
+            w.write(std::move(dec.to_writer()));
+            h.write_bytes_io_decode(w, "ReadBuffer");
         }
         if (sctx.config().io_mode.std_io) {
             sctx.config().decoder_input_type = "io.Reader";
             sctx.config().imports.insert("io");
             sctx.config().decode_fn_name = "Read";
             sctx.config().use_io_reader_writer = true;
-            MAYBE(enc, sctx.visit(decode_fn));
-            w.write(std::move(enc.to_writer()));
-            auto name = sctx.identifier();
-            w.writeln("func (s *", name, ") DecodeCopy(buf []byte", def, ") ([]byte,error) {");
-            {
-                auto scope = w.indent_scope();
-                sctx.config().imports.insert("bytes");
-                w.writeln("r := bytes.NewReader(buf)");
-                w.writeln("err := s.Read(r", use, ")");
-                w.writeln("if err != nil {");
-                w.indent_writeln("return nil,err");
-                w.writeln("}");
-                w.writeln("return buf[int(r.Size()) - r.Len():], nil");
-            }
-            w.writeln("}");
-            w.writeln("func (s *", name, ") DecodeExactCopy(buf []byte", def, ") error {");
-            {
-                auto scope = w.indent_scope();
-                w.writeln("remain,err := s.DecodeCopy(buf", use, ")");
-                w.writeln("if err != nil {");
-                w.indent_writeln("return err");
-                w.writeln("}");
-                w.writeln("if len(remain) != 0 {");
-                sctx.config().imports.insert("fmt");
-                w.indent_writeln("return fmt.Errorf(\"expect no remaining bytes but got %d bytes\",len(remain))");
-                w.writeln("}");
-                w.writeln("return nil");
-            }
-            w.writeln("}");
+            MAYBE(dec, sctx.visit(decode_fn));
+            w.write(std::move(dec.to_writer()));
+            h.write_std_io_decode(w, "Read");
         }
         if (sctx.config().io_mode.slice_io) {
             sctx.config().decoder_input_type = "[]byte";
             sctx.config().decode_fn_name = "DecodeSlice";
             sctx.config().use_io_reader_writer = false;
-            MAYBE(enc, sctx.visit(decode_fn));
-            w.write(std::move(enc.to_writer()));
-            auto name = sctx.identifier();
-            w.writeln("func (s *", name, ") Decode(buf []byte", def, ") ([]byte,error) {");
-            {
-                auto scope = w.indent_scope();
-                w.writeln("var offset int");
-                w.writeln("err := s.DecodeSlice(buf,&offset", use, ")");
-                w.writeln("if err != nil {");
-                w.indent_writeln("return nil,err");
-                w.writeln("}");
-                w.writeln("return buf[offset:], nil");
-            }
-            w.writeln("}");
-            w.writeln("func (s *", name, ") DecodeExact(buf []byte", def, ") error {");
-            {
-                auto scope = w.indent_scope();
-                w.writeln("remain,err := s.Decode(buf", use, ")");
-                w.writeln("if err != nil {");
-                w.indent_writeln("return err");
-                w.writeln("}");
-                w.writeln("if len(remain) != 0 {");
-                sctx.config().imports.insert("fmt");
-                w.indent_writeln("return fmt.Errorf(\"expect no remaining bytes but got %d bytes\",len(remain))");
-                w.writeln("}");
-                w.writeln("return nil");
-            }
-            w.writeln("}");
+            MAYBE(dec, sctx.visit(decode_fn));
+            w.write(std::move(dec.to_writer()));
+            h.write_slice_io_decode(w, "DecodeSlice");
         }
         return w;
     };
@@ -495,9 +602,17 @@ DEFINE_VISITOR(entry_before) {
         }
         if (fctx.func_decl.kind == ebm::FunctionKind::ENCODE) {
             name = fctx.config().encode_fn_name;
+            if (fctx.func_decl.attribute.has_wrapper()) {
+                tmp_buffer = std::string(name) + "_impl";
+                name = tmp_buffer;
+            }
         }
         else if (fctx.func_decl.kind == ebm::FunctionKind::DECODE) {
             name = fctx.config().decode_fn_name;
+            if (fctx.func_decl.attribute.has_wrapper()) {
+                tmp_buffer = std::string(name) + "_impl";
+                name = tmp_buffer;
+            }
         }
         if (!is_nil(fctx.func_decl.parent_format)) {
             auto struct_name = ctx.identifier(fctx.func_decl.parent_format);
@@ -514,6 +629,7 @@ DEFINE_VISITOR(entry_before) {
             auto original = ctx.identifier(param0);
             auto ident = byte_io_ref(original);
             w.writeln(ident, ", _ := ", original, ".(io.ByteReader)");
+            w.writeln("_ = ", ident);
         }
         if (fctx.func_decl.kind == ebm::FunctionKind::ENCODE && ctx.config().has_byte_io && ctx.config().encoder_input_type == "io.Writer") {
             auto scope = w.indent_scope();
@@ -522,6 +638,7 @@ DEFINE_VISITOR(entry_before) {
             auto original = ctx.identifier(param0);
             auto ident = byte_io_ref(original);
             w.writeln(ident, ", _ := ", original, ".(io.ByteWriter)");
+            w.writeln("_ = ", ident);
         }
         return w;
     };

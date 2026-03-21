@@ -29,19 +29,25 @@ DEFINE_VISITOR(Expression_CALL_before) {
     /*here to write the hook*/
     MAYBE(callee, ctx.get_field<"call_desc.callee.instance">());
     if (auto member = callee.body.member()) {
-        MAYBE(base, callee.body.base());
-        MAYBE(base_type, ctx.get_field<"type.instance">(base))
-        MAYBE(ident, ctx.identifier(*member));
-        if (ident != "Encode" && ident != "Decode") {
+        auto func_decl_res = ctx.get_field<"body.id.func_decl">(*member);
+        if (!func_decl_res) {
             return pass;
         }
-        if (ident == "Encode") {
+        auto& func_decl = *func_decl_res;
+        std::string ident;
+        if (func_decl.kind == ebm::FunctionKind::ENCODE) {
             ident = ctx.config().encode_fn_name;
         }
-        else {
+        else if (func_decl.kind == ebm::FunctionKind::DECODE) {
             ident = ctx.config().decode_fn_name;
         }
-        MAYBE(base_type_name, ctx.identifier(base_type.id));
+        else {
+            return pass;
+        }
+        if (func_decl.attribute.has_wrapper()) {
+            ident += "_impl";
+        }
+        MAYBE(base, callee.body.base());
         MAYBE(base_str, ctx.visit(base));
         CodeWriter w;
         w.write(base_str.to_writer(), ".", ident, "(");

@@ -21,10 +21,14 @@
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 
 #include "../codegen.hpp"
+#include "ebm/extended_binary_module.hpp"
 DEFINE_VISITOR(Statement_RETURN_before) {
     using namespace CODEGEN_NAMESPACE;
     /*here to write the hook*/
     if (ctx.config().append_io) {
+        if (ctx.is(ebm::ExpressionKind::CALL, ctx.value)) {
+            return pass;
+        }
         MAYBE(enc, ctx.get_field<"func_decl.params.container.0">(ctx.related_function));
         return CODELINE("return ", ctx.identifier(enc), ", nil");
     }
