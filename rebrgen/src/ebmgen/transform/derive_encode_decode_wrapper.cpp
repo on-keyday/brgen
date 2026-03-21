@@ -29,10 +29,9 @@ namespace ebmgen {
 
             bool has_state_vars = false;
             for (auto& param_ref : func->params.container) {
-                auto param_stmt = ctx.repository().get_statement(param_ref);
-                if (!param_stmt) continue;
-                auto param_decl = param_stmt->body.param_decl();
-                if (param_decl && param_decl->is_state_variable()) {
+                MAYBE(param_stmt, ctx.repository().get_statement(param_ref));
+                MAYBE(param_decl, param_stmt.body.param_decl());
+                if (param_decl.is_state_variable()) {
                     has_state_vars = true;
                     break;
                 }
@@ -43,28 +42,24 @@ namespace ebmgen {
 
         // Second pass: create wrapper for each target
         for (auto& target : targets) {
-            auto func_stmt = ctx.repository().get_statement(target.stmt_id);
-            if (!func_stmt) continue;
-            auto func = func_stmt->body.func_decl();
-            if (!func) continue;
+            MAYBE(func_stmt, ctx.repository().get_statement(target.stmt_id));
+            MAYBE(func, func_stmt.body.func_decl());
             bool is_encode = target.kind == ebm::FunctionKind::ENCODE;
-            auto encdec = ctx.state().get_format_encode_decode(from_weak(target.parent_format));
-            if (!encdec) continue;
+            MAYBE(encdec, ctx.state().get_format_encode_decode(from_weak(target.parent_format)));
 
             // Copy needed data before potential reallocation
-            auto orig_name = func->name;
-            auto return_type = func->return_type;
-            auto parent_format = func->parent_format;
-            auto state_vars_copy = encdec->state_variables;
-            auto impl_expr = is_encode ? encdec->encode : encdec->decode;
-            auto impl_type = is_encode ? encdec->encode_type : encdec->decode_type;
-            auto stream_input = is_encode ? encdec->encoder_input : encdec->decoder_input;
-            auto stream_param = is_encode ? encdec->encoder_input_def : encdec->decoder_input_def;
+            auto orig_name = func.name;
+            auto return_type = func.return_type;
+            auto parent_format = func.parent_format;
+            auto state_vars_copy = encdec.state_variables;
+            auto impl_expr = is_encode ? encdec.encode : encdec.decode;
+            auto impl_type = is_encode ? encdec.encode_type : encdec.decode_type;
+            auto stream_input = is_encode ? encdec.encoder_input : encdec.decoder_input;
+            auto stream_param = is_encode ? encdec.encoder_input_def : encdec.decoder_input_def;
 
             // Create impl name: "encode" -> "encode_impl"
-            auto orig_ident = tctx.identifier_repository().get(orig_name);
-            if (!orig_ident) continue;
-            auto impl_name_str = orig_ident->body.data + "_impl";
+            MAYBE(orig_ident, tctx.identifier_repository().get(orig_name));
+            auto impl_name_str = orig_ident.body.data + "_impl";
             MAYBE(impl_name_id, ctx.repository().add_identifier(impl_name_str));
 
             // Rename impl function
@@ -79,12 +74,10 @@ namespace ebmgen {
 
             for (auto& sv : state_vars_copy) {
                 auto var_def = is_encode ? sv.enc_var_def : sv.dec_var_def;
-                auto param_stmt_ptr = ctx.repository().get_statement(var_def);
-                if (!param_stmt_ptr) continue;
-                auto param_decl = param_stmt_ptr->body.param_decl();
-                if (!param_decl) continue;
-                auto var_type = param_decl->param_type;
-                auto param_name = param_decl->name;
+                MAYBE(param_stmt_ptr, ctx.repository().get_statement(var_def));
+                MAYBE(param_decl, param_stmt_ptr.body.param_decl());
+                auto var_type = param_decl.param_type;
+                auto param_name = param_decl.name;
 
                 EBM_DEFAULT_VALUE(init_expr, var_type);
                 EBM_DEFINE_VARIABLE(local_var, param_name, var_type, init_expr, ebm::VariableDeclKind::MUTABLE, false);
@@ -134,10 +127,9 @@ namespace ebmgen {
 
             // Update impl: set has_wrapper and wrapper_function
             MAYBE(impl_stmt_ptr, tctx.statement_repository().get(target.stmt_id));
-            auto impl_func_ptr = impl_stmt_ptr.body.func_decl();
-            if (!impl_func_ptr) continue;
-            impl_func_ptr->attribute.has_wrapper(true);
-            impl_func_ptr->wrapper_function(wrapper_stmt);
+            MAYBE(impl_func_ptr, impl_stmt_ptr.body.func_decl());
+            impl_func_ptr.attribute.has_wrapper(true);
+            impl_func_ptr.wrapper_function(wrapper_stmt);
         }
 
         return {};
