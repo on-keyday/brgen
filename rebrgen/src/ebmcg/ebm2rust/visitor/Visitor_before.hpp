@@ -12,3 +12,6 @@ std::vector<CodeWriter> custom_types;
 std::map<std::uint64_t, FunctionFlags> function_markers;
 ebm::StatementRef current_function;
 std::set<std::string> use_statements;
+std::unordered_set<size_t> can_move_exprs;
+size_t parent_format_stmt_id = 0;
+size_t loop_limit_counter = 0;

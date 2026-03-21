@@ -292,9 +292,10 @@ enum LoopType:
     WHILE = 1
     FOR_EACH = 2
     FOR = 3 # C-like for loop (e.g., for (int i = 0; i < n; i++))
+    COUNTED = 4 # Internal counter loop lowered from integer FOR_EACH (counter 0..N)
 
 format LoopStatement:
-    loop_type :LoopType # 0: infinite, 1: while, 2: for-each
+    loop_type :LoopType # 0: infinite, 1: while, 2: for-each, 3: for, 4: counted
     match loop_type:
         LoopType.INFINITE => .. # Infinite loop
         LoopType.WHILE => condition :Condition # While loop condition
@@ -305,6 +306,9 @@ format LoopStatement:
             init :StatementRef # Initialization statement (e.g., int i = 0)
             condition :Condition # Loop condition (e.g., i < n)
             increment :StatementRef # Increment statement (e.g., i++)
+        LoopType.COUNTED:
+            item_var :StatementRef  # anonymous counter variable (starts at 0)
+            collection :ExpressionRef # upper bound (integer limit)
     body :StatementRef # Body of the loop
     lowered_statement :LoweredStatementRef # Optional lowered statement for the loop (e.g., for C-like loops)
     next_lowered_loop :LoweredStatementRef

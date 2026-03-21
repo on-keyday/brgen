@@ -3797,6 +3797,10 @@ namespace ebm {
                 obj = LoopType::FOR;
                 return true;
             }
+            if (s == "COUNTED") {
+                obj = LoopType::COUNTED;
+                return true;
+            }
             return false;
         }
         return false;

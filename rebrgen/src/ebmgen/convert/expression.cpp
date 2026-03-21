@@ -222,7 +222,16 @@ namespace ebmgen {
             return unexpect_error(std::move(result.error()));
         }
 
-        EBMA_ADD_EXPR(ref, std::move(body));
+        ebm::ExpressionRef ref;
+        if (body.kind == ebm::ExpressionKind::IDENTIFIER) {
+            MAYBE(new_id, ctx.repository().new_expression_id());
+            EBMA_ADD_EXPR(ref_inner, new_id, std::move(body));
+            ref = ref_inner;
+        }
+        else {
+            EBMA_ADD_EXPR(ref_inner, std::move(body));
+            ref = ref_inner;
+        }
         ctx.repository().add_debug_loc(node->loc, ref);
         return ref;
     }

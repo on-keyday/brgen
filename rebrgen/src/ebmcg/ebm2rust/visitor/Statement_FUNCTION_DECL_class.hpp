@@ -34,9 +34,54 @@
 /*here to write the hook*/
 
 #include "../codegen.hpp"
+#include "ebm/extended_binary_module.hpp"
+
+namespace CODEGEN_NAMESPACE {
+    struct DefUseCollector {
+        TRAVERSAL_VISITOR_BASE_WITHOUT_FUNC(DefUseCollector, BaseVisitor);
+        std::unordered_map<size_t, std::vector<size_t>> def_to_uses;  // def_stmt_id → [use_expr_ids] in traversal order
+
+        expected<void> visit(Context_Expression_IDENTIFIER& ctx) {
+            auto def_id = get_id(ctx.id.id);
+            def_to_uses[def_id].push_back(get_id(ctx.item_id));
+            return {};
+        }
+
+        template <typename Ctx>
+        expected<void> visit(Ctx&& ctx) {
+            if (ctx.is_before_or_after()) return pass;
+            if (ctx.context_name.contains("Type")) return {};
+            return traverse_children<void>(*this, std::forward<Ctx>(ctx));
+        }
+
+        std::unordered_set<size_t> compute_last_uses() {
+            std::unordered_set<size_t> result;
+            for (auto& [def_id, uses] : def_to_uses) {
+                if (!uses.empty()) {
+                    result.insert(uses.back());
+                }
+            }
+            return result;
+        }
+    };
+}  // namespace CODEGEN_NAMESPACE
+
 DEFINE_VISITOR(Statement_FUNCTION_DECL) {
+    using namespace CODEGEN_NAMESPACE;
     auto name = ctx.identifier();
     MAYBE(return_type_str, ctx.visit(ctx.func_decl.return_type));
+
+    // collect def-use info before visiting body
+    DefUseCollector collector{ctx.visitor};
+    MAYBE_VOID(ok, ctx.visit(collector, ctx.func_decl.body));
+    auto prev_can_move = ctx.config().can_move_exprs;
+    auto prev_parent_fmt = ctx.config().parent_format_stmt_id;
+    ctx.config().can_move_exprs = collector.compute_last_uses();
+    ctx.config().parent_format_stmt_id = get_id(ctx.func_decl.parent_format.id);
+    const auto restore_def_use = futils::helper::defer([&]() {
+        ctx.config().can_move_exprs = std::move(prev_can_move);
+        ctx.config().parent_format_stmt_id = prev_parent_fmt;
+    });
 
     // first, traverse body to determine parameter types
     auto prev = ctx.config().current_function;

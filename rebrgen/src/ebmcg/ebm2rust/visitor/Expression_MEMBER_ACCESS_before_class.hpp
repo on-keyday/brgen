@@ -33,10 +33,19 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
     if (auto stmt = ctx.get(id); stmt && stmt->body.kind == ebm::StatementKind::PROPERTY_DECL) {
         MAYBE(main, ctx.main_logic());
         MAYBE(prop_decl, stmt->body.property_decl());
-        if (prop_decl.merge_mode == ebm::MergeMode::STRICT_TYPE) {
-            return CODE("*", main.to_writer(), "().unwrap()");
+        MAYBE(getter_decl, ctx.get_field<"func_decl">(prop_decl.getter_function.id));
+        std::string args;
+        for (auto& param : getter_decl.params.container) {
+            auto param_name = ctx.identifier(param);
+            if (!args.empty()) {
+                args += ", ";
+            }
+            args += param_name;
         }
-        return CODE(main.to_writer(), "().unwrap()");
+        if (prop_decl.merge_mode == ebm::MergeMode::STRICT_TYPE) {
+            return CODE("*", main.to_writer(), "(", args, ").unwrap()");
+        }
+        return CODE(main.to_writer(), "(", args, ").unwrap()");
     }
     return pass;
 }
