@@ -1,0 +1,41 @@
+name: 'Setup Emscripten SDK'
+description: 'Install EMSDK to a fixed path with version-based caching'
+outputs:
+  version:
+    description: 'Installed EMSDK version'
+    value: ${{ steps.get-version.outputs.version }}
+runs:
+  using: composite
+  steps:
+    - name: Get latest EMSDK version
+      id: get-version
+      shell: bash
+      run: |
+        VERSION=$(curl -s https://api.github.com/repos/emscripten-core/emsdk/releases/latest | jq -r '.tag_name')
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+    - name: Cache EMSDK
+      id: cache-emsdk
+      uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+      with:
+        path: /home/runner/emsdk
+        key: emsdk-${{ runner.os }}-${{ steps.get-version.outputs.version }}
+
+    - name: Install EMSDK
+      if: steps.cache-emsdk.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        git clone https://github.com/emscripten-core/emsdk.git /home/runner/emsdk
+        /home/runner/emsdk/emsdk install latest
+        /home/runner/emsdk/emsdk activate latest
+
+    - name: Activate EMSDK
+      shell: bash
+      run: |
+        source /home/runner/emsdk/emsdk_env.sh
+        echo "EMSDK=/home/runner/emsdk" >> $GITHUB_ENV
+        echo "/home/runner/emsdk" >> $GITHUB_PATH
+        echo "/home/runner/emsdk/upstream/emscripten" >> $GITHUB_PATH
+        NODE_BIN=$(ls -d /home/runner/emsdk/node/*/bin 2>/dev/null | head -1)
+        [ -n "$NODE_BIN" ] && echo "$NODE_BIN" >> $GITHUB_PATH
+        echo "EM_CONFIG=/home/runner/emsdk/.emscripten" >> $GITHUB_ENV
