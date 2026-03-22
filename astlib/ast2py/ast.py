@@ -98,6 +98,7 @@ class TokenTag(PyEnum):
     PARTIAL_STR_LITERAL = "partial_str_literal"
     PARTIAL_CHAR_LITERAL = "partial_char_literal"
     PARTIAL_REGEX_LITERAL = "partial_regex_literal"
+    PARTIAL_INT_LITERAL = "partial_int_literal"
 
 
 class UnaryOp(PyEnum):

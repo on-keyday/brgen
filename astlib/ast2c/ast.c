@@ -405,6 +405,7 @@ const char* ast2c_TokenTag_to_string(ast2c_TokenTag val) {
 	case AST2C_TOKENTAG_PARTIAL_STR_LITERAL: return "partial_str_literal";
 	case AST2C_TOKENTAG_PARTIAL_CHAR_LITERAL: return "partial_char_literal";
 	case AST2C_TOKENTAG_PARTIAL_REGEX_LITERAL: return "partial_regex_literal";
+	case AST2C_TOKENTAG_PARTIAL_INT_LITERAL: return "partial_int_literal";
 	default: return NULL;
 	}
 }
@@ -478,6 +479,10 @@ int ast2c_TokenTag_from_string(const char* str, ast2c_TokenTag* out) {
 	}
 	if (strcmp(str, "partial_regex_literal") == 0) {
 		*out = AST2C_TOKENTAG_PARTIAL_REGEX_LITERAL;
+		return 1;
+	}
+	if (strcmp(str, "partial_int_literal") == 0) {
+		*out = AST2C_TOKENTAG_PARTIAL_INT_LITERAL;
 		return 1;
 	}
 	return 0;

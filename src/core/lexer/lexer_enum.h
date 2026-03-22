@@ -41,6 +41,7 @@ enum class Tag {
     partial_str_literal = 14,
     partial_char_literal = 15,
     partial_regex_literal = 16,
+    partial_int_literal = 17,
 };
 constexpr const char* to_string(Tag e) {
     switch(e) {
@@ -61,6 +62,7 @@ constexpr const char* to_string(Tag e) {
     case Tag::partial_str_literal: return "partial_str_literal";
     case Tag::partial_char_literal: return "partial_char_literal";
     case Tag::partial_regex_literal: return "partial_regex_literal";
+    case Tag::partial_int_literal: return "partial_int_literal";
     default: return nullptr;
     }
 }
@@ -83,12 +85,13 @@ template<>constexpr std::optional<Tag> from_string<Tag>(std::string_view str) {
     if(str == "partial_str_literal") return Tag::partial_str_literal;
     if(str == "partial_char_literal") return Tag::partial_char_literal;
     if(str == "partial_regex_literal") return Tag::partial_regex_literal;
+    if(str == "partial_int_literal") return Tag::partial_int_literal;
     return std::nullopt;
 }
 template<>constexpr size_t enum_elem_count<Tag>() {
-    return 17;
+    return 18;
 }
-template<>constexpr std::array<std::pair<Tag,std::string_view>,17> make_enum_array<Tag>() {
+template<>constexpr std::array<std::pair<Tag,std::string_view>,18> make_enum_array<Tag>() {
     return {
         std::pair{Tag::indent,"indent"},
         std::pair{Tag::space,"space"},
@@ -107,9 +110,10 @@ template<>constexpr std::array<std::pair<Tag,std::string_view>,17> make_enum_arr
         std::pair{Tag::partial_str_literal,"partial_str_literal"},
         std::pair{Tag::partial_char_literal,"partial_char_literal"},
         std::pair{Tag::partial_regex_literal,"partial_regex_literal"},
+        std::pair{Tag::partial_int_literal,"partial_int_literal"},
     };
 }
-template<>constexpr std::array<std::pair<Tag,std::string_view>,17> make_enum_name_array<Tag>() {
+template<>constexpr std::array<std::pair<Tag,std::string_view>,18> make_enum_name_array<Tag>() {
     return {
         std::pair{Tag::indent,"indent"},
         std::pair{Tag::space,"space"},
@@ -128,6 +132,7 @@ template<>constexpr std::array<std::pair<Tag,std::string_view>,17> make_enum_nam
         std::pair{Tag::partial_str_literal,"partial_str_literal"},
         std::pair{Tag::partial_char_literal,"partial_char_literal"},
         std::pair{Tag::partial_regex_literal,"partial_regex_literal"},
+        std::pair{Tag::partial_int_literal,"partial_int_literal"},
     };
 }
 constexpr void as_json(Tag e,auto&& d) {

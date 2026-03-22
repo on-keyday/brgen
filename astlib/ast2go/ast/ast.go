@@ -688,6 +688,7 @@ const (
 	TokenTagPartialStrLiteral   TokenTag = 14
 	TokenTagPartialCharLiteral  TokenTag = 15
 	TokenTagPartialRegexLiteral TokenTag = 16
+	TokenTagPartialIntLiteral   TokenTag = 17
 )
 
 func (n TokenTag) String() string {
@@ -726,6 +727,8 @@ func (n TokenTag) String() string {
 		return "partial_char_literal"
 	case TokenTagPartialRegexLiteral:
 		return "partial_regex_literal"
+	case TokenTagPartialIntLiteral:
+		return "partial_int_literal"
 	default:
 		return fmt.Sprintf("TokenTag(%d)", n)
 	}
@@ -771,6 +774,8 @@ func (n *TokenTag) UnmarshalJSON(data []byte) error {
 		*n = TokenTagPartialCharLiteral
 	case "partial_regex_literal":
 		*n = TokenTagPartialRegexLiteral
+	case "partial_int_literal":
+		*n = TokenTagPartialIntLiteral
 	default:
 		return fmt.Errorf("unknown TokenTag: %q", tmp)
 	}

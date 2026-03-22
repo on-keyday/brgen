@@ -96,6 +96,7 @@ Unknown,
 PartialStrLiteral,
 PartialCharLiteral,
 PartialRegexLiteral,
+PartialIntLiteral,
 }
 public enum UnaryOp {
 Not,

@@ -26,12 +26,13 @@ export const TokenTag = {
 	partial_str_literal: "partial_str_literal",
 	partial_char_literal: "partial_char_literal",
 	partial_regex_literal: "partial_regex_literal",
+	partial_int_literal: "partial_int_literal",
 } as const;
 
 export type TokenTag = (typeof TokenTag)[keyof typeof TokenTag];
 
 export function isTokenTag(obj: any): obj is TokenTag {
-	return obj && typeof obj === 'string' && (obj === "indent" || obj === "space" || obj === "line" || obj === "punct" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "regex_literal" || obj === "char_literal" || obj === "keyword" || obj === "ident" || obj === "comment" || obj === "error" || obj === "unknown" || obj === "partial_str_literal" || obj === "partial_char_literal" || obj === "partial_regex_literal")
+	return obj && typeof obj === 'string' && (obj === "indent" || obj === "space" || obj === "line" || obj === "punct" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "regex_literal" || obj === "char_literal" || obj === "keyword" || obj === "ident" || obj === "comment" || obj === "error" || obj === "unknown" || obj === "partial_str_literal" || obj === "partial_char_literal" || obj === "partial_regex_literal" || obj === "partial_int_literal")
 }
 
 export const UnaryOp = {

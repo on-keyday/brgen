@@ -19,4 +19,5 @@ enum Tag:
     partial_str_literal
     partial_char_literal
     partial_regex_literal
+    partial_int_literal
 

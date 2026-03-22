@@ -183,6 +183,8 @@ PartialStrLiteral,
 PartialCharLiteral,
 @JsonValue('partial_regex_literal')
 PartialRegexLiteral,
+@JsonValue('partial_int_literal')
+PartialIntLiteral,
 }
 enum UnaryOp {
 @JsonValue('!')

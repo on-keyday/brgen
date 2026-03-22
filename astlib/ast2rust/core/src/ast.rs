@@ -476,6 +476,7 @@ pub enum TokenTag {
 	PartialStrLiteral,
 	PartialCharLiteral,
 	PartialRegexLiteral,
+	PartialIntLiteral,
 }
 impl TryFrom<&str> for TokenTag {
 	type Error = ();
@@ -498,6 +499,7 @@ impl TryFrom<&str> for TokenTag {
 			"partial_str_literal" =>Ok(Self::PartialStrLiteral),
 			"partial_char_literal" =>Ok(Self::PartialCharLiteral),
 			"partial_regex_literal" =>Ok(Self::PartialRegexLiteral),
+			"partial_int_literal" =>Ok(Self::PartialIntLiteral),
 			_=> Err(()),
 		}
 	}
@@ -523,6 +525,7 @@ impl TokenTag {
 			Self::PartialStrLiteral => "partial_str_literal",
 			Self::PartialCharLiteral => "partial_char_literal",
 			Self::PartialRegexLiteral => "partial_regex_literal",
+			Self::PartialIntLiteral => "partial_int_literal",
 		}
 	}
 }

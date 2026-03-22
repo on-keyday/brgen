@@ -23,7 +23,8 @@ namespace brgen::lexer {
 
         constexpr auto space_or_punct = space | line | method_proxy(punct) | eos;
         constexpr auto filter_keyword = peek(space_or_punct);
-        constexpr auto int_literal = str(Tag::int_literal, (cps::hex_integer | cps::oct_integer | cps::bin_integer | cps::dec_integer) & +filter_keyword);
+        constexpr auto int_literal = str(Tag::int_literal, (cps::hex_integer_weak | cps::oct_integer_weak | cps::bin_integer_weak | cps::dec_integer) & filter_keyword);
+        constexpr auto partial_int_literal = str(Tag::partial_int_literal, (cps::hex_integer_weak | cps::oct_integer_weak | cps::bin_integer_weak | cps::dec_integer) & method_proxy(ident));
         constexpr auto str_literal = str(Tag::str_literal, cps::c_str_weak);
         constexpr auto partial_str_literal = str(Tag::partial_str_literal, cps::c_str_partial);
         constexpr auto char_literal = str(Tag::char_literal, cps::char_str_weak);
@@ -40,8 +41,8 @@ namespace brgen::lexer {
             return str(Tag::keyword, (... | lit(args)) & filter_keyword);
         }
 
-        constexpr auto ident = str(Tag::ident, ~(not_(space_or_punct) &
-                                                 uany));
+        constexpr auto ident_ = str(Tag::ident, ~(not_(space_or_punct) &
+                                                  uany));
 
         constexpr auto keywords = keyword(
             "format", "if", "elif", "else", "match", "fn", "for", "enum",
@@ -62,11 +63,13 @@ namespace brgen::lexer {
 
         struct Option {
             decltype(punct_) punct{punct_};
+            decltype(ident_) ident{ident_};
             bool regex_mode = false;
         };
 
         constexpr auto one_token_lexer() {
             auto p = method_proxy(punct);
+            auto ident = method_proxy(ident);
             auto regex = conditional_method(regex_mode, futils::comb2::Status::not_match, regex_literal);
             auto partial_regex = conditional_method(regex_mode, futils::comb2::Status::not_match, partial_regex_literal);
             auto lex = indent |
@@ -74,6 +77,7 @@ namespace brgen::lexer {
                        line |
                        comment |
                        int_literal |
+                       partial_int_literal |
                        str_literal |
                        partial_str_literal |
                        regex |

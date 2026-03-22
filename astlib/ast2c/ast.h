@@ -231,6 +231,7 @@ enum ast2c_TokenTag {
 	AST2C_TOKENTAG_PARTIAL_STR_LITERAL = 14,
 	AST2C_TOKENTAG_PARTIAL_CHAR_LITERAL = 15,
 	AST2C_TOKENTAG_PARTIAL_REGEX_LITERAL = 16,
+	AST2C_TOKENTAG_PARTIAL_INT_LITERAL = 17,
 };
 const char* ast2c_TokenTag_to_string(ast2c_TokenTag);
 int ast2c_TokenTag_from_string(const char*,ast2c_TokenTag*);
