@@ -11,7 +11,7 @@ runs:
       id: get-version
       shell: bash
       run: |
-        VERSION=$(curl -s https://api.github.com/repos/emscripten-core/emsdk/releases/latest | jq -r '.tag_name')
+        VERSION=$(curl -s https://api.github.com/repos/emscripten-core/emsdk/tags | jq -r '.[0].name')
         echo "version=$VERSION" >> $GITHUB_OUTPUT
 
     - name: Cache EMSDK
