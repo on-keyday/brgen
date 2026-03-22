@@ -83,6 +83,7 @@ bool use_base_type_of_enum = false;
 std::function<expected<Result>(Context_Type_ARRAY& ctx)> array_type_wrapper;
 std::function<expected<Result>(Context_Statement_PROGRAM_DECL&)> program_decl_start_wrapper;
 std::function<expected<Result>(Context_Statement_PROGRAM_DECL&)> program_decl_custom;
+std::function<expected<Result>(Context_Statement_PROGRAM_DECL& ctx, CodeWriter& result)> program_decl_end_wrapper;
 std::function<expected<Result>(Context_Type_VECTOR& ctx)> vector_type_wrapper;
 std::function<expected<Result>(Context_Statement_PARAMETER_DECL& ctx, Result typ)> param_type_wrapper;
 std::function<expected<Result>(Context_Statement_PARAMETER_DECL& ctx, Result typ)> param_visitor;

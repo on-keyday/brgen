@@ -173,6 +173,19 @@ DEFINE_VISITOR(entry_before) {
         w.write(base_str.to_writer(), "[", index_str.to_writer(), " as usize]");
         return w;
     };
+    config.program_decl_end_wrapper = [](Context_Statement_PROGRAM_DECL& ctx, CodeWriter& result) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        if (ctx.config().use_statements.empty()) {
+            return Result(std::move(result));
+        }
+        CodeWriter use_w;
+        for (auto& use_stmt : ctx.config().use_statements) {
+            use_w.writeln(use_stmt);
+        }
+        use_w.writeln();
+        use_w.write(std::move(result));
+        return Result(std::move(use_w));
+    };
     config.write_data_visitor = [](Context_Statement_WRITE_DATA& ctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
         if (auto lw = ctx.write_data.lowered_statement()) {

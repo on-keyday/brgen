@@ -41,7 +41,7 @@ DEFINE_VISITOR(Statement_FIELD_DECL) {
 
     if (struct_members.size() > 0) {
         for (auto& member : struct_members) {
-            ctx.config().custom_types.push_back(member.second.to_writer());
+            ctx.config().decl_toplevel.push_back(member.second.to_writer());
         }
         auto enum_name = "Variant" + std::format("{}", get_id(ctx.field_decl.field_type));
 
@@ -89,8 +89,8 @@ DEFINE_VISITOR(Statement_FIELD_DECL) {
             }
         }
         impl_w.writeln("}");
-        ctx.config().custom_types.push_back(std::move(w));
-        ctx.config().custom_types.push_back(std::move(impl_w));
+        ctx.config().decl_toplevel.push_back(std::move(w));
+        ctx.config().decl_toplevel.push_back(std::move(impl_w));
     }
     auto name = ctx.identifier();
 

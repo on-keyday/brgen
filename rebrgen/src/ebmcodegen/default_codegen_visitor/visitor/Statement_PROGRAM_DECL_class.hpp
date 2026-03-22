@@ -37,5 +37,8 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
         ctx.config().decl_toplevel.clear();
         w.write(stmt_code.to_writer());
     }
+    if (ctx.config().program_decl_end_wrapper) {
+        return ctx.config().program_decl_end_wrapper(ctx, w);
+    }
     return w;
 }
