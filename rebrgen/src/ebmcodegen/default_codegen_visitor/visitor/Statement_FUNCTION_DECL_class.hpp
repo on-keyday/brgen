@@ -24,7 +24,9 @@
         property: *WeakStatementRef
         attribute: FunctionAttribute
           is_user_defined: bool
+          has_wrapper: bool
           reserved: std::uint8_t
+        wrapper_function: *StatementRef
         body: StatementRef
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
@@ -63,5 +65,10 @@ DEFINE_VISITOR(Statement_FUNCTION_DECL) {
         w.write(body.to_writer());
     }
     w.writeln(ctx.config().end_block);
+    if (auto wrapper_ref = ctx.func_decl.wrapper_function()) {
+        w.writeln();
+        MAYBE(wrapper, ctx.visit(*wrapper_ref));
+        w.write(wrapper.to_writer());
+    }
     return w;
 }

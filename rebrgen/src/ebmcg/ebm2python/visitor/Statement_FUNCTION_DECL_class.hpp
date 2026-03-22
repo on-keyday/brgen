@@ -24,7 +24,9 @@
         property: *WeakStatementRef
         attribute: FunctionAttribute
           is_user_defined: bool
+          has_wrapper: bool
           reserved: std::uint8_t
+        wrapper_function: *StatementRef
         body: StatementRef
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
@@ -83,23 +85,31 @@ DEFINE_VISITOR(Statement_FUNCTION_DECL) {
         }
     }
     w.writeln("def ", func_name, "(", params_str, ") -> \"", return_type_str.to_writer(), "\":");
-    auto scope = w.indent_scope();
+    {
+        auto scope = w.indent_scope();
 
-    for (auto& param_stmt_ref : state_params) {
-        auto state_name = ctx.identifier(param_stmt_ref);
-        MAYBE(param_stmt, ctx.get(param_stmt_ref));
-        MAYBE(param_decl, param_stmt.body.param_decl());
-        MAYBE(type_res, ctx.visit(param_decl.param_type));
-        w.writeln("if ", state_name, " is None:");
-        w.indent_writeln(state_name, " = ", type_res.to_writer(), "()");
+        for (auto& param_stmt_ref : state_params) {
+            auto state_name = ctx.identifier(param_stmt_ref);
+            MAYBE(param_stmt, ctx.get(param_stmt_ref));
+            MAYBE(param_decl, param_stmt.body.param_decl());
+            MAYBE(type_res, ctx.visit(param_decl.param_type));
+            w.writeln("if ", state_name, " is None:");
+            w.indent_writeln(state_name, " = ", type_res.to_writer(), "()");
+        }
+
+        MAYBE(res, ctx.visit(ctx.func_decl.body));
+        if (res.to_writer().empty()) {
+            w.writeln("pass");
+        }
+        else {
+            w.write(res.to_writer());
+        }
     }
 
-    MAYBE(res, ctx.visit(ctx.func_decl.body));
-    if (res.to_writer().empty()) {
-        w.writeln("pass");
-    }
-    else {
-        w.write(res.to_writer());
+    if (auto wrapper_ref = ctx.func_decl.wrapper_function()) {
+        w.writeln();
+        MAYBE(wrapper, ctx.visit(*wrapper_ref));
+        w.write(wrapper.to_writer());
     }
 
     return w;

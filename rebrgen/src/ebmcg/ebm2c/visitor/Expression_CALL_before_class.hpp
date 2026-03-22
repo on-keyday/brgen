@@ -33,8 +33,9 @@ DEFINE_VISITOR(Expression_CALL_before) {
         MAYBE(ident, ctx.identifier(*member));
         MAYBE(base_type_name, ctx.identifier(base_type.id));
         MAYBE(base_str, ctx.visit(base));
-        if (ctx.config().on_destructor_generation() && ident == "encode") {
-            ident = "free";
+        auto func_decl_res = ctx.get_field<"body.id.func_decl">(*member);
+        if (ctx.config().on_destructor_generation() && func_decl_res && func_decl_res->kind == ebm::FunctionKind::ENCODE) {
+            ident = func_decl_res->attribute.has_wrapper() ? "free_impl" : "free";
         }
         auto func_name = std::format("{}_{}", base_type_name, ident);
         CodeWriter w;

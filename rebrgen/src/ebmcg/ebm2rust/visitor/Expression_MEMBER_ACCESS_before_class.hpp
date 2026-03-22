@@ -26,17 +26,35 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
     MAYBE(member, ctx.get(ctx.member));
     MAYBE(id, member.body.id());
     if (auto type_ref = get_variant_member_from_field(ctx, from_weak(id))) {
-        auto variant_hold = std::format("variant_hold_{}", get_id(*type_ref));
-        MAYBE(member, ctx.visit(member));
-        return CODE(variant_hold, ".", member.to_writer());
+        MAYBE(base_expr, ctx.get(ctx.base));
+        MAYBE(variant_index, get_variant_index(ctx, base_expr.body.type, *type_ref));
+        auto arm_lower = std::string("v") + std::to_string(variant_index);
+        bool is_mutable = false;
+        if (auto mut_it = ctx.config().variant_mutable_contexts.find(get_id(*type_ref));
+            mut_it != ctx.config().variant_mutable_contexts.end()) {
+            is_mutable = mut_it->second;
+        }
+        auto accessor = is_mutable ? ("get_mut_" + arm_lower) : ("get_" + arm_lower);
+        MAYBE(base, ctx.visit(ctx.base));
+        MAYBE(member_code, ctx.visit(ctx.member));
+        return CODE(base.to_writer(), ".", accessor, "()", ".", member_code.to_writer());
     }
     if (auto stmt = ctx.get(id); stmt && stmt->body.kind == ebm::StatementKind::PROPERTY_DECL) {
         MAYBE(main, ctx.main_logic());
         MAYBE(prop_decl, stmt->body.property_decl());
-        if (prop_decl.merge_mode == ebm::MergeMode::STRICT_TYPE) {
-            return CODE("*", main.to_writer(), "().unwrap()");
+        MAYBE(getter_decl, ctx.get_field<"func_decl">(prop_decl.getter_function.id));
+        std::string args;
+        for (auto& param : getter_decl.params.container) {
+            auto param_name = ctx.identifier(param);
+            if (!args.empty()) {
+                args += ", ";
+            }
+            args += param_name;
         }
-        return CODE(main.to_writer(), "().unwrap()");
+        if (prop_decl.merge_mode == ebm::MergeMode::STRICT_TYPE) {
+            return CODE("*", main.to_writer(), "(", args, ").unwrap()");
+        }
+        return CODE(main.to_writer(), "(", args, ").unwrap()");
     }
     return pass;
 }

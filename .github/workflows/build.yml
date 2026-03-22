@@ -2,6 +2,7 @@ name: brgen-build
 run-name: Build
 on:
   push:
+  workflow_dispatch:
 
 concurrency:
   group: build-${{ github.ref_name }}

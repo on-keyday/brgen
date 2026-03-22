@@ -37,6 +37,12 @@ namespace ebmgen {
                                 [&](auto&& obj) -> void {
                                     using T = std::decay_t<decltype(obj)>;
                                     if constexpr (std::is_pointer_v<T>) {
+                                        // if val is an alias, also mark the canonical ID reachable
+                                        auto canonical_id = get_id(obj->id);
+                                        if (canonical_id != get_id(val)) {
+                                            reachable.insert(canonical_id);
+                                            inverse_refs[canonical_id].push_back(to_any_ref(item.id));
+                                        }
                                         search(search, *obj);
                                     }
                                 },
@@ -138,6 +144,11 @@ namespace ebmgen {
                 if (auto it = old_to_new.find(get_id(item.id)); it != old_to_new.end()) {
                     item.id.id = it->second.id;
                 }
+                else {
+                    if (ebmgen::verbose_error) {
+                        print_if_verbose("Warning: item with id ", get_id(item.id), " is not reachable but still present. This may cause issues.\n");
+                    }
+                }
                 id_sort.push_back({to_any_ref(item.id), index});
                 index++;
                 item.body.visit([&](auto&& visitor, const char* name, auto&& val, std::optional<size_t> index = std::nullopt) -> void {
@@ -182,8 +193,18 @@ namespace ebmgen {
             if (auto it = old_to_new.find(get_id(alias.from)); it != old_to_new.end()) {
                 alias.from.id = it->second.id;
             }
+            else {
+                if (ebmgen::verbose_error) {
+                    print_if_verbose("Warning: alias with from id ", get_id(alias.from), " is not reachable but still present. This may cause issues.\n");
+                }
+            }
             if (auto it = old_to_new.find(get_id(alias.to)); it != old_to_new.end()) {
                 alias.to.id = it->second.id;
+            }
+            else {
+                if (ebmgen::verbose_error) {
+                    print_if_verbose("Warning: alias with to id ", get_id(alias.to), " is not reachable but still present. This may cause issues.\n");
+                }
             }
         }
         print_if_verbose("Remap ", ctx.alias_vector().size(), " items in ", t.delta<std::chrono::microseconds>(), "\n");

@@ -60,7 +60,37 @@ DEFINE_VISITOR(Statement_FIELD_DECL) {
         }
         scope.execute();
         w.writeln("}");
+
+        // Generate impl with #[inline(always)] accessors to avoid long-lived &mut borrows
+        CodeWriter impl_w;
+        impl_w.writeln("impl ", enum_name, " {");
+        {
+            auto impl_scope = impl_w.indent_scope();
+            int j = 0;
+            for (auto& member_type_ref : members.members.container) {
+                MAYBE(type, ctx.visit(member_type_ref));
+                auto arm = std::string("V") + std::to_string(j);
+                auto arm_lower = std::string("v") + std::to_string(j);
+                impl_w.writeln("#[inline(always)]");
+                impl_w.writeln("fn get_", arm_lower, "(&self) -> &", type.to_writer(), " {");
+                {
+                    auto s = impl_w.indent_scope();
+                    impl_w.writeln("if let Self::", arm, "(x) = self { x } else { unreachable!() }");
+                }
+                impl_w.writeln("}");
+                impl_w.writeln("#[inline(always)]");
+                impl_w.writeln("fn get_mut_", arm_lower, "(&mut self) -> &mut ", type.to_writer(), " {");
+                {
+                    auto s = impl_w.indent_scope();
+                    impl_w.writeln("if let Self::", arm, "(x) = self { x } else { unreachable!() }");
+                }
+                impl_w.writeln("}");
+                j++;
+            }
+        }
+        impl_w.writeln("}");
         ctx.config().custom_types.push_back(std::move(w));
+        ctx.config().custom_types.push_back(std::move(impl_w));
     }
     auto name = ctx.identifier();
 

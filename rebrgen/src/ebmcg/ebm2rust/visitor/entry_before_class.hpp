@@ -20,6 +20,44 @@
 #include "ebm/extended_binary_module.hpp"
 DEFINE_VISITOR(entry_before) {
     auto& config = ctx.config();
+    config.assignment_custom = [](Context_Statement_ASSIGNMENT& ctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        // only struct/recursive_struct types are non-Copy and need clone consideration
+        MAYBE(val_type, ctx.get_field<"type.instance">(ctx.value));
+        auto type_kind = val_type.body.kind;
+        bool is_non_copy = type_kind == ebm::TypeKind::STRUCT ||
+                           type_kind == ebm::TypeKind::RECURSIVE_STRUCT;
+        if (!is_non_copy) return pass;
+
+        MAYBE(val_expr, ctx.get(ctx.value));
+        bool needs_clone = false;
+        if (val_expr.body.kind == ebm::ExpressionKind::MEMBER_ACCESS) {
+            // self.field: base is SELF kind → always needs clone (&self)
+            if (auto base_ref = val_expr.body.base()) {
+                MAYBE(base_expr, ctx.get(*base_ref));
+                if (base_expr.body.kind == ebm::ExpressionKind::SELF) {
+                    needs_clone = true;
+                }
+            }
+        }
+        else if (val_expr.body.kind == ebm::ExpressionKind::IDENTIFIER) {
+            // local variable: needs clone unless this is the last use
+            if (!ctx.config().can_move_exprs.contains(get_id(ctx.value))) {
+                needs_clone = true;
+            }
+        }
+
+        if (!needs_clone) return pass;
+
+        CodeWriter w;
+        MAYBE(result_target, ctx.visit(ctx.target));
+        auto add = ctx.add_writer();
+        MAYBE(result_value, ctx.visit(ctx.value));
+        MAYBE(got, ctx.get_writer());
+        w.write(std::move(got.get()));
+        w.writeln(result_target.to_writer(), " = ", tidy_condition_brace(result_value.to_string()), ".clone()", ctx.config().endof_statement);
+        return w;
+    };
     config.variable_define_keyword = "let mut";
     config.immutable_variable_define_keyword = "let";
     config.constant_define_keyword = "const";

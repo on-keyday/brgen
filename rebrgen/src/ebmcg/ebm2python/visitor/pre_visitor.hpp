@@ -36,6 +36,7 @@ ebm2python::modify_keyword_identifier(
              "yield",
              "raise",
              "del",
+             "property",
          },
     [](auto&& kw) {
         return kw + "_ebm";

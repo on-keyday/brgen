@@ -215,7 +215,10 @@ DEFINE_VISITOR(entry_before) {
     };
 
     config.as_arg_visitor = [](Context_Expression_AS_ARG& ctx) -> expected<Result> {
-        MAYBE(target, ctx.visit(ctx.target_expr));
+        MAYBE(target, ctx.visit(ctx.as_arg.target_expr));
+        if (ctx.as_arg.is_inout()) {
+            return CODE("&", target.to_writer());
+        }
         auto kind = ctx.get_kind(ctx.type);
         if (kind == ebm::TypeKind::DECODER_INPUT && ctx.config().current_argument_needs_allocation) {
             // For decoder input types, we pass the allocator as well

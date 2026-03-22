@@ -598,8 +598,14 @@ DEFINE_VISITOR_CLASS(Statement_PROGRAM_DECL) {
                 if (s.encode_function) {
                     MAYBE(func, ctx.visit(*s.encode_function));
                     w.writeln(func.to_writer());
+                    // if encode_impl has a wrapper, also emit the plain encode function
+                    if (auto wrapper_fn = ctx.get_field<"func_decl.wrapper_function">(*s.encode_function)) {
+                        MAYBE(wrapper_func, ctx.visit(*wrapper_fn));
+                        w.writeln(wrapper_func.to_writer());
+                    }
                     if (!ctx.flags().omit_destructor) {
                         auto is_user_defined = ctx.get_field<"func_decl.attribute.is_user_defined">(*s.encode_function);
+                        auto has_wrapper_flag = ctx.get_field<"func_decl.attribute.has_wrapper">(*s.encode_function);
                         const auto _set = ctx.config().on_destructor_generation.set(true);
                         futils::helper::Scoped<std::string&> input_type{ctx.config().encoder_input_type};
                         const auto _input = input_type.set("FreeFunctionInput*");
@@ -611,6 +617,7 @@ DEFINE_VISITOR_CLASS(Statement_PROGRAM_DECL) {
                                 continue;
                             }
                             w.writeln(" {");
+                            CodeWriter all_free_code;
                             for (auto& field : s.fields) {
                                 auto typ = ctx.get_field<"field_decl.field_type">(field.id);
                                 if (!typ) {
@@ -653,23 +660,37 @@ DEFINE_VISITOR_CLASS(Statement_PROGRAM_DECL) {
                                         .on_default_traverse_children()
                                         .build();
                                 MAYBE_VOID(ok, ctx.visit(do_free, *typ));
-                                {
-                                    auto scope = w.indent_scope();
-                                    w.write(user_free_func);
-                                    w.writeln("return 0;");
-                                }
-                                w.writeln("}");
+                                all_free_code.write(user_free_func);
                             }
+                            {
+                                auto scope = w.indent_scope();
+                                w.write(all_free_code);
+                                w.writeln("return 0;");
+                            }
+                            w.writeln("}");
                         }
                         else {
                             MAYBE(free_func, ctx.visit(*s.encode_function));
                             w.writeln(free_func.to_writer());
+                            // if has_wrapper, visit the wrapper function in destructor mode to generate plain free
+                            if (has_wrapper_flag == true) {
+                                auto wrapper_ref = ctx.get_field<"func_decl.wrapper_function">(*s.encode_function);
+                                if (wrapper_ref) {
+                                    MAYBE(free_wrapper, ctx.visit(*wrapper_ref));
+                                    w.writeln(free_wrapper.to_writer());
+                                }
+                            }
                         }
                     }
                 }
                 if (s.decode_function) {
                     MAYBE(func, ctx.visit(*s.decode_function));
                     w.writeln(func.to_writer());
+                    // if decode_impl has a wrapper, also emit the plain decode function
+                    if (auto wrapper_fn = ctx.get_field<"func_decl.wrapper_function">(*s.decode_function)) {
+                        MAYBE(wrapper_func, ctx.visit(*wrapper_fn));
+                        w.writeln(wrapper_func.to_writer());
+                    }
                 }
             }
             return {};

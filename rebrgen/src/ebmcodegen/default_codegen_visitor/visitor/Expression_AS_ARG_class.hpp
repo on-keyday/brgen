@@ -14,7 +14,10 @@
       item_id: ebm::ExpressionRef
       type: const ebm::TypeRef&
       kind: const ebm::ExpressionKind&
-      target_expr: const ebm::ExpressionRef&
+      as_arg: const ebm::AsArgDesc&
+        target_expr: ExpressionRef
+        is_inout: bool
+        reserved: std::uint8_t
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 
@@ -24,5 +27,5 @@ DEFINE_VISITOR(Expression_AS_ARG) {
     if (ctx.config().as_arg_visitor) {
         return ctx.config().as_arg_visitor(ctx);
     }
-    return ctx.visit(ctx.target_expr);
+    return ctx.visit(ctx.as_arg.target_expr);
 }

@@ -13,6 +13,40 @@ namespace ebm {
         return true;
     }
     
+    bool from_json(AsArgDesc& obj, const futils::json::JSON& j) {
+        if (auto got = j.at("target_expr")) {
+            if(!futils::json::convert_from_json(*got, obj.target_expr)) {
+                return false;
+            }
+        }
+        else {
+            return false;
+        }
+        if (auto got = j.at("is_inout")) {
+            bool tmp;
+            if(!futils::json::convert_from_json(*got, tmp)) {
+                return false;
+            }
+            obj.is_inout(std::move(tmp));
+        }
+        else {
+            return false;
+        }
+        if (auto got = j.at("reserved")) {
+            std::uint8_t tmp;
+            if(!futils::json::convert_from_json(*got, tmp)) {
+                return false;
+            }
+            if(!obj.reserved(std::move(tmp))) {
+                return false;
+            }
+        }
+        else {
+            return false;
+        }
+        return true;
+    }
+    
     bool from_json(AssertDesc& obj, const futils::json::JSON& j) {
         if (auto got = j.at("condition")) {
             if(!futils::json::convert_from_json(*got, obj.condition)) {
@@ -365,6 +399,15 @@ namespace ebm {
                 return false;
             }
             if(!obj.array_expr(std::move(tmp))) {
+                return false;
+            }
+        }
+        if (auto got = j.at("as_arg")) {
+            AsArgDesc tmp;
+            if(!futils::json::convert_from_json(*got, tmp)) {
+                return false;
+            }
+            if(!obj.as_arg(std::move(tmp))) {
                 return false;
             }
         }
@@ -1009,6 +1052,16 @@ namespace ebm {
         else {
             return false;
         }
+        if (auto got = j.at("has_wrapper")) {
+            bool tmp;
+            if(!futils::json::convert_from_json(*got, tmp)) {
+                return false;
+            }
+            obj.has_wrapper(std::move(tmp));
+        }
+        else {
+            return false;
+        }
         if (auto got = j.at("reserved")) {
             std::uint8_t tmp;
             if(!futils::json::convert_from_json(*got, tmp)) {
@@ -1081,6 +1134,15 @@ namespace ebm {
         }
         else {
             return false;
+        }
+        if (auto got = j.at("wrapper_function")) {
+            StatementRef tmp;
+            if(!futils::json::convert_from_json(*got, tmp)) {
+                return false;
+            }
+            if(!obj.wrapper_function(std::move(tmp))) {
+                return false;
+            }
         }
         if (auto got = j.at("body")) {
             if(!futils::json::convert_from_json(*got, obj.body)) {
@@ -3733,6 +3795,22 @@ namespace ebm {
             }
             if (s == "FOR") {
                 obj = LoopType::FOR;
+                return true;
+            }
+            if (s == "COUNTED") {
+                obj = LoopType::COUNTED;
+                return true;
+            }
+            if (s == "FOR_INT") {
+                obj = LoopType::FOR_INT;
+                return true;
+            }
+            if (s == "FOR_RANGE") {
+                obj = LoopType::FOR_RANGE;
+                return true;
+            }
+            if (s == "FOR_STR") {
+                obj = LoopType::FOR_STR;
                 return true;
             }
             return false;

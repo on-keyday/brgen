@@ -38,60 +38,35 @@ MAYBE(target_type_rust, visit_Type(*this, target_expr.body.type));
 
 auto alt = CODE(target_type_rust.to_writer(), "::V", std::to_string(variant_index));
 auto default_ = CODE(alt, "(Default::default())");
-auto matches = CODE("matches!(", target.to_writer(), ", ", alt, "(_))");
-auto variant_hold = std::format("variant_hold_{}", get_id(expect_expr.body.type));
+
+bool is_mutable = (init_check.init_check_type == ebm::InitCheckType::union_init_decode ||
+                   init_check.init_check_type == ebm::InitCheckType::union_set);
+visitor.variant_mutable_contexts[get_id(expect_expr.body.type)] = is_mutable;
 
 CodeWriter w;
 if (init_check.init_check_type == ebm::InitCheckType::union_init_encode) {
-    w.writeln("let ", variant_hold, " = if let ", alt, "(x) = &", target.to_writer(), " {");
-    {
-        auto scope = w.indent_scope();
-        w.writeln("x");
-    }
-    w.writeln("}");
-    w.writeln("else {");
+    w.writeln("if !matches!(", target.to_writer(), ", ", alt, "(_)) {");
     {
         auto scope = w.indent_scope();
         w.writeln("return Err(anyhow::anyhow!(\"unexpected value\"));");
     }
-    w.writeln("};");
+    w.writeln("}");
 }
 else if (init_check.init_check_type == ebm::InitCheckType::union_init_decode || init_check.init_check_type == ebm::InitCheckType::union_set) {
-    w.writeln("let ", variant_hold, " = if let ", alt, "(x) = &mut ", target.to_writer(), " {");
-    {
-        auto scope = w.indent_scope();
-        w.writeln("x");
-    }
-    w.writeln("}");
-    w.writeln("else {");
+    w.writeln("if !matches!(", target.to_writer(), ", ", alt, "(_)) {");
     {
         auto scope = w.indent_scope();
         w.writeln(target.to_writer(), " = ", default_, ";");
-        w.writeln("if let ", alt, "(x) = &mut ", target.to_writer(), " {");
-        {
-            auto inner_scope = w.indent_scope();
-            w.writeln("x");
-        }
-        w.writeln("}");
-        w.writeln("else {");
-        w.indent_writeln("return Err(anyhow::anyhow!(\"unexpected variant after init\"));");
-        w.writeln("}");
-    }
-    w.writeln("};");
-}
-else if (init_check.init_check_type == ebm::InitCheckType::union_get) {
-    w.writeln("let ", variant_hold, " = if let ", alt, "(x) = &", target.to_writer(), " {");
-    {
-        auto scope = w.indent_scope();
-        w.writeln("x");
     }
     w.writeln("}");
-    w.writeln("else {");
+}
+else if (init_check.init_check_type == ebm::InitCheckType::union_get) {
+    w.writeln("if !matches!(", target.to_writer(), ", ", alt, "(_)) {");
     {
         auto scope = w.indent_scope();
         w.writeln("return None;");
     }
-    w.writeln("};");
+    w.writeln("}");
 }
 else {
     return unexpect_error("not supported init_check_type: {}", to_string(init_check.init_check_type));

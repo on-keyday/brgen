@@ -14,7 +14,10 @@
       item_id: ebm::ExpressionRef
       type: const ebm::TypeRef&
       kind: const ebm::ExpressionKind&
-      target_expr: const ebm::ExpressionRef&
+      as_arg: const ebm::AsArgDesc&
+        target_expr: ExpressionRef
+        is_inout: bool
+        reserved: std::uint8_t
       main_logic: ebmcodegen::util::MainLogicWrapper<Result>
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
@@ -23,7 +26,11 @@
 #include "../codegen.hpp"
 DEFINE_VISITOR(Expression_AS_ARG_before) {
     auto typ = ctx.get_kind(ctx.type);
-    MAYBE(expr, ctx.get(ctx.target_expr));
+    MAYBE(expr, ctx.get(ctx.as_arg.target_expr));
+    if (ctx.as_arg.is_inout()) {
+        MAYBE(var, ctx.main_logic())
+        return CODE("&mut ", var.to_writer());
+    }
     if (typ == ebm::TypeKind::ENCODER_INPUT ||
         typ == ebm::TypeKind::DECODER_INPUT) {
         if (auto id = expr.body.id(); id && ctx.get_kind(*id) == ebm::StatementKind::VARIABLE_DECL) {

@@ -24,7 +24,9 @@
         property: *WeakStatementRef
         attribute: FunctionAttribute
           is_user_defined: bool
+          has_wrapper: bool
           reserved: std::uint8_t
+        wrapper_function: *StatementRef
         body: StatementRef
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
@@ -67,8 +69,8 @@ DEFINE_VISITOR(Statement_FUNCTION_DECL) {
     using namespace CODEGEN_NAMESPACE;
     /*here to write the hook*/
     auto name = ctx.identifier();
-    if (ctx.config().on_destructor_generation() && name == "encode") {
-        name = "free";
+    if (ctx.config().on_destructor_generation() && ctx.func_decl.kind == ebm::FunctionKind::ENCODE) {
+        name = ctx.func_decl.attribute.has_wrapper() ? "free_impl" : "free";
     }
     CodeWriter params;
     std::string func_prefix;

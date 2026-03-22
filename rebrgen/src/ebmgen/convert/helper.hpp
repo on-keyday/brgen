@@ -89,8 +89,13 @@ namespace ebmgen {
 
     ebm::ExpressionBody make_identifier_expr(ebm::StatementRef id, ebm::TypeRef type);
 
-#define EBM_IDENTIFIER(ref_name, id, typ) \
-    EBM_AST_EXPRESSION(ref_name, make_identifier_expr, id, typ)
+#define EBM_IDENTIFIER(ref_name, id, typ)                                              \
+    ebm::ExpressionRef ref_name;                                                       \
+    {                                                                                  \
+        MAYBE(unique_id__, ctx.repository().new_expression_id());                      \
+        EBMA_ADD_EXPR(ref_name##_inner__, unique_id__, make_identifier_expr(id, typ)); \
+        ref_name = ref_name##_inner__;                                                 \
+    }
 
 #define EBM_DEFINE_VARIABLE(ref_name, id, typ, initial_ref, decl_kind, is_reference)                                    \
     EBM_AST_VARIABLE_REF(ref_name) {                                                                                    \
@@ -190,6 +195,8 @@ namespace ebmgen {
 
     ebm::StatementBody make_for_loop(ebm::StatementRef init, ebm::ExpressionRef condition, ebm::StatementRef step, ebm::StatementRef body);
 
+    ebm::StatementBody make_iteration_loop(ebm::StatementRef item_var, ebm::ExpressionRef collection, ebm::StatementRef body, ebm::StatementRef lowered_loop);
+
 #define EBM_WHILE_LOOP(ref_name, condition__, body__) \
     EBM_AST_STATEMENT(ref_name, make_while_loop, condition__, body__)
 
@@ -221,6 +228,8 @@ namespace ebmgen {
         EBM_BINARY_OP(cmp, ebm::BinaryOp::less, bool_type, counter_name, limit_expr__);        \
         EBM_INCREMENT(inc, counter_name, counter_type);                                        \
         loop_stmt = make_for_loop(counter_name##_def, cmp, inc, body__);                       \
+        EBMA_ADD_STATEMENT(lowered, std::move(loop_stmt));                                     \
+        loop_stmt = make_iteration_loop(counter_name##_def, limit_expr__, body__, lowered);    \
     }
 
 #define EBM_COUNTER_LOOP_END_CUSTOM(loop_stmt, counter_name, counter_type, limit_expr__, body__) \
@@ -273,10 +282,12 @@ namespace ebmgen {
 #define EBM_MEMBER_ACCESS(ref_name, type, base__, member__) \
     EBM_AST_EXPRESSION(ref_name, make_member_access, type, base__, member__)
 
-    ebm::ExpressionBody make_as_arg(ebm::TypeRef type, ebm::ExpressionRef target_expr);
+    ebm::ExpressionBody make_as_arg(ebm::TypeRef type, ebm::ExpressionRef target_expr, bool is_inout = false);
 
 #define EBM_AS_ARG(ref_name, type, target_expr__) \
-    EBM_AST_EXPRESSION(ref_name, make_as_arg, type, target_expr__)
+    EBM_AST_EXPRESSION(ref_name, make_as_arg, type, target_expr__, false)
+#define EBM_AS_INOUT_ARG(ref_name, type, target_expr__) \
+    EBM_AST_EXPRESSION(ref_name, make_as_arg, type, target_expr__, true)
 
     ebm::ExpressionBody make_enum_member(ebm::TypeRef type, ebm::StatementRef enum_decl, ebm::ExpressionRef member);
 #define EBM_ENUM_MEMBER(ref_name, type, enum_decl__, member__) \

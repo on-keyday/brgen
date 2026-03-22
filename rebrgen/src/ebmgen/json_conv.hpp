@@ -5,6 +5,8 @@
 namespace ebm {
     bool from_json(AnyRef& obj, const futils::json::JSON& j);
     
+    bool from_json(AsArgDesc& obj, const futils::json::JSON& j);
+    
     bool from_json(AssertDesc& obj, const futils::json::JSON& j);
     
     bool from_json(Block& obj, const futils::json::JSON& j);

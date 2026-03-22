@@ -136,6 +136,17 @@ namespace ebmgen {
         return make_loop(std::move(loop_stmt));
     }
 
+    ebm::StatementBody make_iteration_loop(ebm::StatementRef item_var, ebm::ExpressionRef collection, ebm::StatementRef body, ebm::StatementRef lowered_loop) {
+        ebm::LoopStatement loop_stmt;
+        loop_stmt.loop_type = ebm::LoopType::COUNTED;
+        loop_stmt.item_var(item_var);
+        loop_stmt.collection(collection);
+        loop_stmt.body = body;
+        loop_stmt.lowered_statement = ebm::LoweredStatementRef{lowered_loop};
+        loop_stmt.next_lowered_loop = ebm::LoweredStatementRef{lowered_loop};
+        return make_loop(std::move(loop_stmt));
+    }
+
     ebm::ExpressionBody make_array_size(ebm::TypeRef type, ebm::ExpressionRef array_expr) {
         ebm::ExpressionBody body;
         body.kind = ebm::ExpressionKind::ARRAY_SIZE;
@@ -213,11 +224,14 @@ namespace ebmgen {
         return body;
     }
 
-    ebm::ExpressionBody make_as_arg(ebm::TypeRef type, ebm::ExpressionRef target_expr) {
+    ebm::ExpressionBody make_as_arg(ebm::TypeRef type, ebm::ExpressionRef target_expr, bool is_inout) {
         ebm::ExpressionBody body;
         body.type = type;
         body.kind = ebm::ExpressionKind::AS_ARG;
-        body.target_expr(target_expr);
+        ebm::AsArgDesc desc;
+        desc.target_expr = target_expr;
+        desc.is_inout(is_inout);
+        body.as_arg(std::move(desc));
         return body;
     }
 

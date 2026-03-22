@@ -53,6 +53,10 @@ namespace ebmgen {
         if (timer) {
             timer("derive array setter");
         }
+        MAYBE_VOID(encode_decode_wrapper, derive_encode_decode_wrapper(ctx));
+        if (timer) {
+            timer("derive encode/decode wrapper");
+        }
         if (!debug) {
             MAYBE_VOID(remove_unused, remove_unused_object(ctx, timer));
             ctx.recalculate_id_index_map();

@@ -92,7 +92,6 @@ namespace ebmgen {
             };
             if (auto bop = ast::as<ast::Binary>(node->init);
                 bop && bop->op == ast::BinaryOp::in_assign) {  // `for x in y`
-                result_loop_stmt.loop_type = ebm::LoopType::FOR_EACH;
                 auto ident = ast::as<ast::Ident>(bop->left);
                 if (!ident) {
                     return unexpect_error("Invalid loop init target :{}", node_type_to_string(bop->left->node_type));
@@ -101,6 +100,7 @@ namespace ebmgen {
                 EBMA_ADD_IDENTIFIER(ident_ref, ident->ident);
                 result_loop_stmt.collection(target);
                 if (ast::as<ast::IntType>(bop->right->expr_type)) {
+                    result_loop_stmt.loop_type = ebm::LoopType::FOR_INT;
                     EBMA_CONVERT_TYPE(expr_type, bop->left->expr_type);
                     EBM_COUNTER_LOOP_START_CUSTOM(i, expr_type);
                     EBM_DEFINE_VARIABLE(identifier, ident_ref, expr_type, i, ebm::VariableDeclKind::IMMUTABLE, false);
@@ -119,6 +119,7 @@ namespace ebmgen {
                     result_loop_stmt.next_lowered_loop = ebm::LoweredStatementRef{lowered_loop};
                 }
                 else if (auto range = ast::as<ast::RangeType>(bop->right->expr_type)) {
+                    result_loop_stmt.loop_type = ebm::LoopType::FOR_RANGE;
                     auto l = range->range.lock();
                     ebm::ExpressionRef start, end;
                     EBMA_CONVERT_TYPE(base_type, range->base_type);
@@ -168,6 +169,7 @@ namespace ebmgen {
                     result_loop_stmt.next_lowered_loop = ebm::LoweredStatementRef{loop_stmt};
                 }
                 else if (ast::as<ast::ArrayType>(bop->right->expr_type)) {
+                    result_loop_stmt.loop_type = ebm::LoopType::FOR_EACH;
                     EBM_ARRAY_SIZE(array_size, target);
                     EBMA_CONVERT_TYPE(element_type, bop->left->expr_type);
                     EBM_COUNTER_LOOP_START(i);
@@ -189,6 +191,7 @@ namespace ebmgen {
                     result_loop_stmt.next_lowered_loop = ebm::LoweredStatementRef{loop_stmt};
                 }
                 else if (auto lit = ast::as<ast::StrLiteral>(bop->right)) {
+                    result_loop_stmt.loop_type = ebm::LoopType::FOR_STR;
                     // note: representation of string is encoded as base64 in bop->right->binary_value because
                     //       src2json generates AST as json
                     MAYBE(candidate, decode_base64(ast::cast_to<ast::StrLiteral>(bop->right)));
