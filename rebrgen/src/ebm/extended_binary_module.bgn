@@ -290,18 +290,21 @@ enum LoopType:
     :u8
     INFINITE = 0
     WHILE = 1
-    FOR_EACH = 2
-    FOR = 3 # C-like for loop (e.g., for (int i = 0; i < n; i++))
-    COUNTED = 4 # Internal counter loop lowered from integer FOR_EACH (counter 0..N)
+    FOR_EACH = 2   # for x in array/vector (element iteration, item_var is mutable reference)
+    FOR = 3        # C-like for loop (init; condition; increment)
+    COUNTED = 4    # Counter loop 0..N (lowered from FOR_INT or array FOR_EACH)
+    FOR_INT = 5    # for x in n where n is integer (x iterates 0..n-1)
+    FOR_RANGE = 6  # for x in a..b where a..b is a range type
+    FOR_STR = 7    # for x in "str" (iterate over bytes of a string literal)
 
 format LoopStatement:
-    loop_type :LoopType # 0: infinite, 1: while, 2: for-each, 3: for, 4: counted
+    loop_type :LoopType
     match loop_type:
         LoopType.INFINITE => .. # Infinite loop
         LoopType.WHILE => condition :Condition # While loop condition
         LoopType.FOR_EACH:
-           item_var :StatementRef
-           collection :ExpressionRef # For-each loop (e.g., for item in collection)
+            item_var :StatementRef   # named mutable element variable (is_reference=true)
+            collection :ExpressionRef # array or vector expression
         LoopType.FOR:
             init :StatementRef # Initialization statement (e.g., int i = 0)
             condition :Condition # Loop condition (e.g., i < n)
@@ -309,6 +312,15 @@ format LoopStatement:
         LoopType.COUNTED:
             item_var :StatementRef  # anonymous counter variable (starts at 0)
             collection :ExpressionRef # upper bound (integer limit)
+        LoopType.FOR_INT:
+            item_var :StatementRef   # named immutable variable receiving counter value
+            collection :ExpressionRef # integer upper bound (iterates 0..collection-1)
+        LoopType.FOR_RANGE:
+            item_var :StatementRef   # named immutable variable (cast from counter)
+            collection :ExpressionRef # range expression (RangeType)
+        LoopType.FOR_STR:
+            item_var :StatementRef   # named mutable u8 element variable
+            collection :ExpressionRef # string literal expression
     body :StatementRef # Body of the loop
     lowered_statement :LoweredStatementRef # Optional lowered statement for the loop (e.g., for C-like loops)
     next_lowered_loop :LoweredStatementRef

@@ -137,5 +137,13 @@ DEFINE_VISITOR(Statement_FUNCTION_DECL) {
     }
     w.writeln("}");
 
+    // If this is an _impl function with a wrapper, also generate the wrapper
+    if (auto wrapper_ref = ctx.func_decl.wrapper_function()) {
+        // Propagate FunctionFlags (e.g. HasFillBuf) from impl to wrapper so stream type matches
+        ctx.config().function_markers[get_id(*wrapper_ref)] = ctx.config().function_markers[get_id(ctx.item_id)];
+        MAYBE(wrapper_code, ctx.visit(*wrapper_ref));
+        w.write(wrapper_code.to_writer());
+    }
+
     return w;
 }

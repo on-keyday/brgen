@@ -3801,6 +3801,18 @@ namespace ebm {
                 obj = LoopType::COUNTED;
                 return true;
             }
+            if (s == "FOR_INT") {
+                obj = LoopType::FOR_INT;
+                return true;
+            }
+            if (s == "FOR_RANGE") {
+                obj = LoopType::FOR_RANGE;
+                return true;
+            }
+            if (s == "FOR_STR") {
+                obj = LoopType::FOR_STR;
+                return true;
+            }
             return false;
         }
         return false;
