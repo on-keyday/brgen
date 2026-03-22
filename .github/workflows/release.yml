@@ -65,6 +65,16 @@ jobs:
         with:
           name: brgen-web-production
           path: ./artifacts/web
+      - name: Download rebrgen native tool artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: rebrgen-native-tool
+          path: ./artifacts/rebrgen-native
+      - name: Download rebrgen WASM artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: bmgen-web
+          path: ./artifacts/rebrgen-web
       - name: Download Licenses
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -96,6 +106,10 @@ jobs:
           cp artifacts/brgen-licenses.zip artifacts/linux-arm
           cp artifacts/brgen-licenses.zip artifacts/android
           cp artifacts/brgen-licenses.tar.gz artifacts/web
+          cp artifacts/brgen-licenses.tar.gz artifacts/rebrgen-native
+          cp artifacts/brgen-licenses.tar.gz artifacts/rebrgen-web
+          cp artifacts/brgen-licenses.zip artifacts/rebrgen-native
+          cp artifacts/brgen-licenses.zip artifacts/rebrgen-web
       - name: Make Archive
         run: |
           tar -czf artifacts/brgen-linux-llvm.tar.gz -C artifacts/linux-llvm .
@@ -105,7 +119,12 @@ jobs:
           tar -czf artifacts/brgen-android.tar.gz -C artifacts/android .
           tar -czf artifacts/brgen-vscode-extension.tar.gz -C artifacts/vscode-extension .
           tar -czf artifacts/brgen-web.tar.gz -C artifacts/web .
-          cd artifacts/windows
+          tar -czf artifacts/rebrgen-native.tar.gz -C artifacts/rebrgen-native .
+          tar -czf artifacts/rebrgen-web.tar.gz -C artifacts/rebrgen-web .
+          cd artifacts/rebrgen-web
+          zip -r rebrgen-web.zip ./**
+          mv rebrgen-web.zip ../
+          cd ../windows
           zip -r brgen-windows.zip ./**
           mv brgen-windows.zip ../
           cd ../vscode-extension
@@ -127,6 +146,9 @@ jobs:
           sha256sum brgen-vscode-extension.zip >> brgen-checksum.txt
           sha256sum brgen-web.tar.gz >> brgen-checksum.txt
           sha256sum brgen-web.zip >> brgen-checksum.txt
+          sha256sum rebrgen-native.tar.gz >> brgen-checksum.txt
+          sha256sum rebrgen-web.tar.gz >> brgen-checksum.txt
+          sha256sum rebrgen-web.zip >> brgen-checksum.txt
           cd ..
       - name: Bundle Artifacts .zip and .tar.gz
         run: |
@@ -142,6 +164,9 @@ jobs:
           mv artifacts/brgen-vscode-extension.zip bundle
           mv artifacts/brgen-web.tar.gz bundle
           mv artifacts/brgen-web.zip bundle
+          mv artifacts/rebrgen-native.tar.gz bundle
+          mv artifacts/rebrgen-web.tar.gz bundle
+          mv artifacts/rebrgen-web.zip bundle
           tar -czf artifacts.tar.gz -C bundle .
       - name: Upload Artifacts
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
@@ -184,4 +209,7 @@ jobs:
             ./artifacts/brgen-vscode-extension.zip
             ./artifacts/brgen-web.tar.gz
             ./artifacts/brgen-web.zip
+            ./artifacts/rebrgen-native.tar.gz
+            ./artifacts/rebrgen-web.tar.gz
+            ./artifacts/rebrgen-web.zip
           fail_on_unmatched_files: true
