@@ -21,10 +21,9 @@ DEFINE_VISITOR(Type_dispatch) {
     using namespace CODEGEN_NAMESPACE;
     /*here to write the hook*/
     const auto& type = ctx.in;
-    auto& visitor = ctx;
 
     auto type_to_python_str = [&](ebm::TypeRef type_ref) -> expected<std::string> {
-        MAYBE(res, visit_Type(visitor, type_ref));
+        MAYBE(res, ctx.visit(type_ref));
         return res.to_string();
     };
 
@@ -39,7 +38,7 @@ DEFINE_VISITOR(Type_dispatch) {
         case ebm::TypeKind::STRUCT:
         case ebm::TypeKind::RECURSIVE_STRUCT: {  // Handle RECURSIVE_STRUCT here as well
             // For structs, get the name of the struct
-            MAYBE(layers, get_identifier_layer(visitor, from_weak(*type.body.id())));
+            MAYBE(layers, get_identifier_layer(ctx, from_weak(*type.body.id())));
             return join(".", layers | std::views::values);
         }
         case ebm::TypeKind::VOID:

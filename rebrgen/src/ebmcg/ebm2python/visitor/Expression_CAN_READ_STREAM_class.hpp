@@ -26,8 +26,7 @@
 
 DEFINE_VISITOR(Expression_CAN_READ_STREAM) {
     using namespace CODEGEN_NAMESPACE;
-    auto& v = ctx.visitor;
-    auto io_val = v.module_.get_associated_identifier(ctx.io_ref);
+    auto io_val = ctx.identifier(ctx.io_ref);
 
     MAYBE(size_str, get_size_str(ctx, ctx.num_bytes));
 
@@ -60,7 +59,7 @@ DEFINE_VISITOR(Expression_CAN_READ_STREAM) {
         auto scope = w.indent_scope();
         w.writeln("raise ValueError(\"Unsupported stream type for CAN_READ_STREAM\")");
     }
-    MAYBE(got_writer, v.wm.get_writer());
+    MAYBE(got_writer, ctx.get_writer());
     got_writer.get().write(std::move(w));
 
     return CODE("bool(", result, " >= ", size_str, ")");

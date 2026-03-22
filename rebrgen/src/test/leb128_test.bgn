@@ -12,7 +12,7 @@ format Varint:
             len += 1
             if v < 0x80:
                 return
-      
+
 
     fn encode():
         value_copy := value
@@ -25,31 +25,6 @@ format Varint:
                 return
             output.put(v | 0x80)
             counter += 1
-
-enum WireType:
-    Varint = 0
-    Fixed64 = 1
-    LengthDelimited = 2
-    StartGroup = 3
-    EndGroup = 4
-    Fixed32 = 5
-
-format Field:
-    id :Varint
-    fn type() -> WireType:
-        return WireType(id.value & 0x7)
-    fn number() -> u64:
-        return id.value >> 3
-    
-    match type():
-        WireType.Varint => value :Varint
-        WireType.Fixed64 => value :u64
-        WireType.LengthDelimited:
-            length :Varint
-            value :[length]u8
-        WireType.StartGroup => ..
-        WireType.EndGroup => ..
-        WireType.Fixed32 => value :u32
 
 format Leb128Test:
     field_1 :Varint # 8-bit data
