@@ -16,3 +16,15 @@ format X:
 
 0x 
 
+/abc/g
+
+>>=
+
+   # comment
+
+0b102
+
+
+format_output
+
+/xregex # partial regex literal

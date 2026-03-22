@@ -29,7 +29,7 @@ namespace brgen::lexer {
         constexpr auto partial_str_literal = str(Tag::partial_str_literal, cps::c_str_partial);
         constexpr auto char_literal = str(Tag::char_literal, cps::char_str_weak);
         constexpr auto partial_char_literal = str(Tag::partial_char_literal, cps::char_str_partial);
-        constexpr auto regex_literal = str(Tag::regex_literal, cps::js_regex_str_weak & -(~oneof("dgimsuy") & +filter_keyword));
+        constexpr auto regex_literal = str(Tag::regex_literal, cps::js_regex_str_weak & -(~oneof("dgimsuy") & filter_keyword));
         constexpr auto partial_regex_literal = str(Tag::partial_regex_literal, cps::js_regex_str_partial);
         constexpr auto bool_literal = str(Tag::bool_literal, (lit("true") | lit("false")) & filter_keyword);
 

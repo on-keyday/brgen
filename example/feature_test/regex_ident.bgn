@@ -1,0 +1,7 @@
+
+
+/xregex/g # single regex literal
+
+/xregex/ga # regex literal and identifier
+
+
