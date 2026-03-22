@@ -28,5 +28,8 @@ DEFINE_VISITOR(Type_ENUM) {
         return base_type_str;
     }
     auto name = ctx.identifier(ctx.id);
+    if (ctx.config().enum_type_name_wrapper) {
+        return ctx.config().enum_type_name_wrapper(Result(name));
+    }
     return name;
 }

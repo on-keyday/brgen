@@ -53,6 +53,61 @@ DEFINE_VISITOR(entry_before) {
     config.bool_true = "True";
     config.bool_false = "False";
 
+    // Type mappings
+    config.make_int_type = [](size_t) -> expected<Result> { return Result("int"); };
+    config.make_uint_type = [](size_t) -> expected<Result> { return Result("int"); };
+    config.make_float_type = [](size_t) -> expected<Result> { return Result("float"); };
+    config.void_type = "None";
+    config.usize_type_name = "int";
+    config.encoder_return_type = "None";
+    config.decoder_return_type = "None";
+    config.encoder_input_type = "BinaryIO";
+    config.decoder_input_type = "BinaryIO";
+    config.property_setter_return_type = "bool";
+    config.meta_type_name = "Any";
+    config.optional_type_wrapper = [](Result elem) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        return CODE("Optional[", elem.to_writer(), "]");
+    };
+    config.pointer_type_wrapper = [](Result elem) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        return CODE("Optional[", elem.to_writer(), "]");
+    };
+    config.enum_type_name_wrapper = [](Result name) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        return CODE("Union[", name.to_writer(), ",int]");
+    };
+    config.array_type_wrapper = [](Context_Type_ARRAY& ctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        MAYBE(element_type_obj, ctx.get(ctx.element_type));
+        if ((element_type_obj.body.kind == ebm::TypeKind::UINT || element_type_obj.body.kind == ebm::TypeKind::INT) &&
+            element_type_obj.body.size() && element_type_obj.body.size()->value() == 8) {
+            return Result("bytearray");
+        }
+        MAYBE(elem_str, ctx.visit(ctx.element_type));
+        return CODE("list[", elem_str.to_writer(), "]");
+    };
+    config.vector_type_wrapper = [](Context_Type_VECTOR& ctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        MAYBE(element_type_obj, ctx.get(ctx.element_type));
+        if ((element_type_obj.body.kind == ebm::TypeKind::UINT || element_type_obj.body.kind == ebm::TypeKind::INT) &&
+            element_type_obj.body.size() && element_type_obj.body.size()->value() == 8) {
+            return Result("bytearray");
+        }
+        MAYBE(elem_str, ctx.visit(ctx.element_type));
+        return CODE("list[", elem_str.to_writer(), "]");
+    };
+    config.variant_type_custom = [](Context_Type_VARIANT& ctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        std::string members_str;
+        for (auto& member_type_ref : ctx.variant_desc.members.container) {
+            MAYBE(member_str, ctx.visit(member_type_ref));
+            if (!members_str.empty()) members_str += ", ";
+            members_str += member_str.to_string();
+        }
+        return Result("Union[" + members_str + "]");
+    };
+
     config.default_value_custom = [](Context_Expression_DEFAULT_VALUE& ctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
         MAYBE(type_body, ctx.get(ctx.type));
@@ -158,6 +213,16 @@ DEFINE_VISITOR(entry_before) {
         return pass;
     };
 
+    config.struct_type_custom = [](Context_Type_STRUCT& ctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        MAYBE(name, get_identifier_layer_str(ctx, from_weak(ctx.id), "."));
+        return Result(name);
+    };
+    config.recursive_struct_type_custom = [](Context_Type_RECURSIVE_STRUCT& ctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        MAYBE(name, get_identifier_layer_str(ctx, from_weak(ctx.id), "."));
+        return Result(name);
+    };
     config.sub_byte_range_visitor = [](Context_Statement_SUB_BYTE_RANGE& ctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
         auto io_ = ctx.identifier(ctx.sub_byte_range.io_ref);

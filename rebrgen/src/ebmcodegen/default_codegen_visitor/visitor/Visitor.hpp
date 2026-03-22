@@ -92,6 +92,8 @@ std::function<expected<Result>(Result elem_type)> recursive_struct_type_wrapper;
 std::function<expected<Result>(Result elem)> make_pointer_wrapper;
 std::function<expected<Result>(Result elem)> make_optional_wrapper;
 std::function<expected<Result>(Context_Type_VARIANT& ctx)> variant_type_custom;
+std::function<expected<Result>(Context_Type_STRUCT& ctx)> struct_type_custom;
+std::function<expected<Result>(Context_Type_RECURSIVE_STRUCT& ctx)> recursive_struct_type_custom;
 std::function<expected<Result>(size_t bit_size)> make_int_type;
 std::function<expected<Result>(size_t bit_size)> make_uint_type;
 std::function<expected<Result>(size_t bit_size)> make_float_type;
@@ -136,6 +138,8 @@ std::function<expected<Result>(Context_Statement_ENUM_DECL& ctx)> enum_decl_visi
 std::function<expected<Result>(Context_Statement_ENUM_MEMBER_DECL& ctx)> enum_member_decl_visitor;
 std::function<expected<Result>(Context_Statement_INIT_CHECK& ctx)> init_check_visitor;
 std::function<expected<Result>(Context_Statement_SUB_BYTE_RANGE& ctx)> sub_byte_range_visitor;
+std::string meta_type_name = "";  // type name for TypeKind::META (e.g. "Any" for Python, "interface{}" for Go)
+std::function<expected<Result>(Result name)> enum_type_name_wrapper;  // wraps the resolved enum name (e.g. "Union[name,int]" for Python)
 
 // if this returns `pass` using default logic
 std::function<expected<Result>(Context_Expression_DEFAULT_VALUE& ctx)> default_value_custom;
