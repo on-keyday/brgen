@@ -74,5 +74,102 @@ DEFINE_VISITOR(entry_before) {
     config.infinity_loop_keyword = "loop";
     // Native endian: cfg! macro evaluates to a bool at compile-time.
     config.native_endian_check = "cfg!(target_endian = \"little\")";
+    config.decoder_return_type = "Result<(), anyhow::Error>";
+    config.encoder_input_type = "&mut impl std::io::Write";
+    config.setter_status_ok = "Ok(())";
+    config.setter_status_failure = "Err(anyhow::anyhow!(\"setter failed\"))";
+
+    config.make_pointer_wrapper = [](Result elem) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        return CODE("Some(&", elem.to_writer(), ")");
+    };
+    config.make_optional_wrapper = [](Result elem) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        return CODE("Some(", elem.to_writer(), ")");
+    };
+    config.is_error_visitor = [](Context_Expression_IS_ERROR& ctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        MAYBE(t, ctx.visit(ctx.target_expr));
+        return CODE("let Err(err) = ", t.to_writer());
+    };
+    config.conditional_visitor = [](Context_Expression_CONDITIONAL& ctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        MAYBE(cond_str, ctx.visit(ctx.condition));
+        MAYBE(then_str, ctx.visit(ctx.then));
+        MAYBE(else_str, ctx.visit(ctx.else_));
+        return CODE("if ", tidy_condition_brace(cond_str.to_string()), " {", tidy_condition_brace(then_str.to_string()), "} else {", tidy_condition_brace(else_str.to_string()), "}");
+    };
+    config.error_return_visitor = [](Context_Statement_ERROR_RETURN& ctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        return CODELINE("return Err(err);");
+    };
+    config.error_report_visitor = [](Context_Statement_ERROR_REPORT& ctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        MAYBE(literal, ctx.get(ctx.error_report.message));
+        auto text = futils::escape::escape_str<std::string>(literal.body.data);
+        return CODELINE(std::format("return Err(anyhow::anyhow!(\"{}\"));", text));
+    };
+    config.enum_member_decl_visitor = [](Context_Statement_ENUM_MEMBER_DECL& ctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        auto name = ctx.identifier();
+        MAYBE(value_str, ctx.visit(ctx.enum_member_decl.value));
+        return CODELINE("pub const ", name, ":Self = Self(", value_str.to_writer(), ");");
+    };
+    config.array_type_wrapper = [](Context_Type_ARRAY& ctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        MAYBE(type, ctx.visit(ctx.element_type));
+        auto len = ctx.length.value();
+        return CODE("[", type.to_writer(), "; ", std::to_string(len), "]");
+    };
+    config.read_data_visitor = [](Context_Statement_READ_DATA& ctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        if (auto lw = ctx.read_data.lowered_statement()) {
+            return ctx.visit(lw->io_statement.id);
+        }
+        MAYBE(target, ctx.visit(ctx.read_data.target));
+        MAYBE(type, ctx.get(ctx.read_data.data_type));
+        auto io_name = ctx.identifier(ctx.read_data.io_ref);
+        MAYBE(size, get_size_str(ctx, ctx.read_data.size));
+        CodeWriter w;
+        if (auto cand = is_bytes_type(ctx, ctx.read_data.data_type)) {
+            if (cand == BytesType::array) {
+                w.writeln(io_name, ".read_exact(&mut ", target.to_writer(), ")?;");
+            }
+            else {
+                w.writeln(target.to_writer(), ".resize(", size, " as usize,0);");
+                w.writeln(io_name, ".read_exact(&mut ", target.to_writer(), ")?;");
+            }
+        }
+        else {
+            return unexpect_error("unsupported type for READ_DATA: {}", to_string(type.body.kind));
+        }
+        return w;
+    };
+    config.index_access_custom = [](Context_Expression_INDEX_ACCESS& ctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        MAYBE(base_str, ctx.visit(ctx.base));
+        MAYBE(index_str, ctx.visit(ctx.index));
+        CodeWriter w;
+        w.write(base_str.to_writer(), "[", index_str.to_writer(), " as usize]");
+        return w;
+    };
+    config.write_data_visitor = [](Context_Statement_WRITE_DATA& ctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        if (auto lw = ctx.write_data.lowered_statement()) {
+            return ctx.visit(lw->io_statement.id);
+        }
+        MAYBE(target, ctx.visit(ctx.write_data.target));
+        MAYBE(type, ctx.get(ctx.write_data.data_type));
+        auto io_name = ctx.identifier(ctx.write_data.io_ref);
+        MAYBE(size, get_size_str(ctx, ctx.write_data.size));
+        CodeWriter w;
+        if (auto cand = is_bytes_type(ctx, ctx.write_data.data_type)) {
+            w.writeln(io_name, ".write_all(&", target.to_writer(), "[..", size, "]", ")?;");
+        }
+        else {
+            return unexpect_error("unsupported type for WRITE_DATA: {}", to_string(type.body.kind));
+        }
+        return w;
+    };
     return pass;
 }

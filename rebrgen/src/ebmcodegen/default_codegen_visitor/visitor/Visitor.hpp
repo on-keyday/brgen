@@ -58,6 +58,7 @@ bool field_name_prior_to_type = false;
 bool parameter_name_prior_to_type = false;
 bool variable_name_prior_to_type = true;
 std::string usize_type_name = "usize";
+std::function<expected<Result>(Context_Expression_INDEX_ACCESS& ctx)> index_access_custom;
 bool byte_aligned_int = true;
 bool byte_aligned_float = true;
 bool support_small_size_float = true;
@@ -134,6 +135,7 @@ std::function<expected<Result>(Context_Expression_AS_ARG& ctx)> as_arg_visitor;
 std::function<expected<Result>(Context_Statement_ENUM_DECL& ctx)> enum_decl_visitor;
 std::function<expected<Result>(Context_Statement_ENUM_MEMBER_DECL& ctx)> enum_member_decl_visitor;
 std::function<expected<Result>(Context_Statement_INIT_CHECK& ctx)> init_check_visitor;
+std::function<expected<Result>(Context_Statement_SUB_BYTE_RANGE& ctx)> sub_byte_range_visitor;
 
 // if this returns `pass` using default logic
 std::function<expected<Result>(Context_Expression_DEFAULT_VALUE& ctx)> default_value_custom;
