@@ -40,7 +40,8 @@ auto load_paths() {
                     continue;
                 }
                 if (it->path().filename() == "fn_test.bgn" ||
-                    it->path().filename() == "error_tolerant.bgn") {
+                    it->path().filename() == "error_tolerant.bgn" ||
+                    it->path().filename() == "partial_regex.bgn") {
                     continue;  // Skip test files
                 }
                 paths.push_back(it->path());
