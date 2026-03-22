@@ -75,9 +75,29 @@ DEFINE_VISITOR(entry_before) {
     // Native endian: cfg! macro evaluates to a bool at compile-time.
     config.native_endian_check = "cfg!(target_endian = \"little\")";
     config.decoder_return_type = "Result<(), anyhow::Error>";
+    config.encoder_return_type = "Result<(), anyhow::Error>";
     config.encoder_input_type = "&mut impl std::io::Write";
     config.setter_status_ok = "Ok(())";
     config.setter_status_failure = "Err(anyhow::anyhow!(\"setter failed\"))";
+    config.void_type = "()";
+    config.property_setter_return_type = "Result<(), anyhow::Error>";
+    config.optional_type_wrapper = [](Result elem) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        return CODE("Option<", elem.to_writer(), ">");
+    };
+    config.pointer_type_wrapper = [](Result elem) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        return CODE("Option<&", elem.to_writer(), ">");
+    };
+    config.recursive_struct_type_wrapper = [](Result name) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        return CODE("Option<Box<", name.to_writer(), ">>");
+    };
+    config.vector_type_wrapper = [](Context_Type_VECTOR& ctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        MAYBE(elem, ctx.visit(ctx.element_type));
+        return CODE("Vec<", elem.to_writer(), ">");
+    };
 
     config.make_pointer_wrapper = [](Result elem) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
