@@ -21,6 +21,9 @@
 #include "../codegen.hpp"
 DEFINE_VISITOR(Type_RECURSIVE_STRUCT) {
     using namespace CODEGEN_NAMESPACE;
+    if (ctx.config().recursive_struct_type_custom) {
+        CALL_OR_PASS(result, ctx.config().recursive_struct_type_custom(ctx));
+    }
     auto name = ctx.identifier(ctx.id);
     if (ctx.config().recursive_struct_type_wrapper) {
         MAYBE(res, ctx.config().recursive_struct_type_wrapper(name));

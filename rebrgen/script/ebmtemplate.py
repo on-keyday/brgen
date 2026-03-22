@@ -15,6 +15,9 @@ END_MARKER = "/*DO NOT EDIT ABOVE SECTION MANUALLY*/\n"
 def get_tool_path():
     """Determine the ebmcodegen tool path based on the OS."""
     tool_path = "tool/ebmcodegen.exe" if sys.platform == "win32" else "tool/ebmcodegen"
+    # Use absolute path so subprocess.run can locate the executable regardless of
+    # how the OS resolves relative paths (Windows searches PATH, not CWD).
+    tool_path = os.path.abspath(tool_path)
     if not os.path.exists(tool_path):
         print(
             f"Error: '{tool_path}' not found. Please build the project first using 'python script/build.py native Debug'.",

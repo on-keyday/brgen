@@ -79,7 +79,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Setup Emscripten
-        uses: mymindstorm/setup-emsdk@6ab9eb1bda2574c4ddb79809fc9247783eaf9021 # v14
+        id: setup-emsdk
+        uses: ./.github/actions/setup-emsdk
       - name: Set up Ninja
         uses: seanmiddleditch/gha-setup-ninja@7e868db0f3406270dd46e1dac26c65f621456723 # master
       - name: Set up Clang
@@ -99,7 +100,7 @@ jobs:
           path: |
             ./rebrgen/built
             ./rebrgen/utils
-          key: rebrgen-wasm-${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('rebrgen/script/build.py') }}
+          key: rebrgen-wasm-${{ runner.os }}-${{ env.cache-name }}-${{ steps.setup-emsdk.outputs.version }}-${{ hashFiles('rebrgen/script/build.py') }}
       - name: Pull Utils
         if: ${{ steps.cache_rebrgen_wasm.outputs.cache-hit }}
         working-directory: rebrgen
@@ -121,7 +122,6 @@ jobs:
       - name: Build WASM
         working-directory: rebrgen
         run: |
-          rm -rf ./built/web
           BUILD_OLD_BMGEN=1 EMSDK_DIR=$EMSDK/ FUTILS_DIR=./utils python script/build.py web Release
           cp README.md web/ || true
           cp LICENSE web/ || true
@@ -609,7 +609,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Setup Emscripten
-        uses: mymindstorm/setup-emsdk@6ab9eb1bda2574c4ddb79809fc9247783eaf9021 # v14
+        id: setup-emsdk
+        uses: ./.github/actions/setup-emsdk
       - name: Set up Ninja
         uses: seanmiddleditch/gha-setup-ninja@7e868db0f3406270dd46e1dac26c65f621456723 # master
       - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
@@ -625,7 +626,7 @@ jobs:
           path: |
             ./built
             ./utils
-          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.py') }}
+          key: ${{ runner.os }}-${{ env.cache-name }}-${{ steps.setup-emsdk.outputs.version }}-${{ hashFiles('build.py') }}
       - name: Pull Utils
         if: ${{ steps.cache_wasm.outputs.cache-hit }}
         run: |

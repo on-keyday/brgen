@@ -140,23 +140,22 @@
       "skipFiles": ["<node_internals>/**"]
     },
     {
-      "type": "go",
+      "type": "debugpy",
       "request": "launch",
-      "cwd": "C:\\Users\\ukfco\\AppData\\Local\\Temp\\unictest\\tr-e8ed8d8573\\r-aa0f885cbf\\t-d19137569f",
-      "name": "Debug ebm2go unictest (DNSPacketTest)",
-      "program": "C:/Users/ukfco/AppData/Local/Temp/unictest/tr-e8ed8d8573/r-aa0f885cbf/t-d19137569f/go_proj",
+      "cwd": "C:\\Users\\ukfco\\AppData\\Local\\Temp\\unictest\\tr-1c400f9e9a\\r-77d5c72dbc\\t-80413df973",
+      "name": "Debug ebm2python unictest (ExtendedBinaryModule)",
+      "program": "C:\\Users\\ukfco\\AppData\\Local\\Temp\\unictest\\tr-1c400f9e9a\\r-77d5c72dbc\\t-80413df973\\test_script.py",
       "args": [
-        "C:/Users/ukfco/AppData/Local/Temp/unictest/tr-e8ed8d8573/r-aa0f885cbf/t-d19137569f/input.bin",
-        "C:/Users/ukfco/AppData/Local/Temp/unictest/tr-e8ed8d8573/r-aa0f885cbf/t-d19137569f/output.bin"
-      ],
-      "stopOnEntry": true
+        "C:/Users/ukfco/AppData/Local/Temp/unictest/tr-1c400f9e9a/r-77d5c72dbc/t-80413df973/input.bin",
+        "C:/Users/ukfco/AppData/Local/Temp/unictest/tr-1c400f9e9a/r-77d5c72dbc/t-80413df973/output.bin"
+      ]
     },
     {
       "name": "Debug ebm2c",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceRoot}/rebrgen/tool/ebm2llvm",
-      "args": ["-i", "${workspaceRoot}/rebrgen/save/llvm_case.ebm"],
+      "program": "${workspaceRoot}/rebrgen/tool/ebmgen",
+      "args": ["-i", "${workspaceRoot}/rebrgen/src/test/http2_frame_test.bgn"],
       "stopAtEntry": false,
       "cwd": "${workspaceRoot}",
       "environment": [],

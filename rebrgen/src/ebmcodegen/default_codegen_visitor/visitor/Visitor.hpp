@@ -58,6 +58,7 @@ bool field_name_prior_to_type = false;
 bool parameter_name_prior_to_type = false;
 bool variable_name_prior_to_type = true;
 std::string usize_type_name = "usize";
+std::function<expected<Result>(Context_Expression_INDEX_ACCESS& ctx)> index_access_custom;
 bool byte_aligned_int = true;
 bool byte_aligned_float = true;
 bool support_small_size_float = true;
@@ -82,6 +83,7 @@ bool use_base_type_of_enum = false;
 std::function<expected<Result>(Context_Type_ARRAY& ctx)> array_type_wrapper;
 std::function<expected<Result>(Context_Statement_PROGRAM_DECL&)> program_decl_start_wrapper;
 std::function<expected<Result>(Context_Statement_PROGRAM_DECL&)> program_decl_custom;
+std::function<expected<Result>(Context_Statement_PROGRAM_DECL& ctx, CodeWriter& result)> program_decl_end_wrapper;
 std::function<expected<Result>(Context_Type_VECTOR& ctx)> vector_type_wrapper;
 std::function<expected<Result>(Context_Statement_PARAMETER_DECL& ctx, Result typ)> param_type_wrapper;
 std::function<expected<Result>(Context_Statement_PARAMETER_DECL& ctx, Result typ)> param_visitor;
@@ -91,6 +93,8 @@ std::function<expected<Result>(Result elem_type)> recursive_struct_type_wrapper;
 std::function<expected<Result>(Result elem)> make_pointer_wrapper;
 std::function<expected<Result>(Result elem)> make_optional_wrapper;
 std::function<expected<Result>(Context_Type_VARIANT& ctx)> variant_type_custom;
+std::function<expected<Result>(Context_Type_STRUCT& ctx)> struct_type_custom;
+std::function<expected<Result>(Context_Type_RECURSIVE_STRUCT& ctx)> recursive_struct_type_custom;
 std::function<expected<Result>(size_t bit_size)> make_int_type;
 std::function<expected<Result>(size_t bit_size)> make_uint_type;
 std::function<expected<Result>(size_t bit_size)> make_float_type;
@@ -134,6 +138,9 @@ std::function<expected<Result>(Context_Expression_AS_ARG& ctx)> as_arg_visitor;
 std::function<expected<Result>(Context_Statement_ENUM_DECL& ctx)> enum_decl_visitor;
 std::function<expected<Result>(Context_Statement_ENUM_MEMBER_DECL& ctx)> enum_member_decl_visitor;
 std::function<expected<Result>(Context_Statement_INIT_CHECK& ctx)> init_check_visitor;
+std::function<expected<Result>(Context_Statement_SUB_BYTE_RANGE& ctx)> sub_byte_range_visitor;
+std::string meta_type_name = "";  // type name for TypeKind::META (e.g. "Any" for Python, "interface{}" for Go)
+std::function<expected<Result>(Result name)> enum_type_name_wrapper;  // wraps the resolved enum name (e.g. "Union[name,int]" for Python)
 
 // if this returns `pass` using default logic
 std::function<expected<Result>(Context_Expression_DEFAULT_VALUE& ctx)> default_value_custom;
