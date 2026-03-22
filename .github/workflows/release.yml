@@ -172,7 +172,7 @@ jobs:
           tar -czf artifacts.tar.gz -C bundle .
       - name: Attest Artifacts
         if: startsWith(github.ref, 'refs/tags/')
-        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26
+        uses: actions/attest@e18a799f23337c367f76b067253d6f53abc6f03d
         with:
           subject-checksums: ./artifacts/brgen-checksum.txt
           subject-name: brgen-artifacts
