@@ -76,7 +76,7 @@ format MpAddressAdd:
     reserved :u3
     e :u1
     addr_id :u8
-    optionLength ::= input.offset + input.remain # exclude kind and length field
+    optionLength ::= input.scope_length - 2 # exclude kind and length field
     hmacLen ::= e == 0 ? 8 : 0
     optionLength >= u64(hmacLen)
     addrPortLen ::= optionLength - u64(hmacLen)
@@ -135,7 +135,7 @@ format MpCapable:
     f :u1
     g :u1
     h :u1
-    optionLength ::= input.offset + input.remain # exclude kind and length field
+    optionLength ::= input.scope_length - 2 # exclude kind and length field
     if optionLength > 2:
         option_sender_key :[8]u8
         if optionLength > 10:

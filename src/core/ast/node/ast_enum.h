@@ -705,11 +705,12 @@ enum class IOMethod {
     input_bit_offset = 6,
     input_remain = 7,
     input_subrange = 8,
-    config_endian_little = 9,
-    config_endian_big = 10,
-    config_endian_native = 11,
-    config_bit_order_lsb = 12,
-    config_bit_order_msb = 13,
+    input_scope_length = 9,
+    config_endian_little = 10,
+    config_endian_big = 11,
+    config_endian_native = 12,
+    config_bit_order_lsb = 13,
+    config_bit_order_msb = 14,
 };
 constexpr const char* to_string(IOMethod e) {
     switch(e) {
@@ -722,6 +723,7 @@ constexpr const char* to_string(IOMethod e) {
     case IOMethod::input_bit_offset: return "input_bit_offset";
     case IOMethod::input_remain: return "input_remain";
     case IOMethod::input_subrange: return "input_subrange";
+    case IOMethod::input_scope_length: return "input_scope_length";
     case IOMethod::config_endian_little: return "config_endian_little";
     case IOMethod::config_endian_big: return "config_endian_big";
     case IOMethod::config_endian_native: return "config_endian_native";
@@ -741,6 +743,7 @@ template<>constexpr std::optional<IOMethod> from_string<IOMethod>(std::string_vi
     if(str == "input_bit_offset") return IOMethod::input_bit_offset;
     if(str == "input_remain") return IOMethod::input_remain;
     if(str == "input_subrange") return IOMethod::input_subrange;
+    if(str == "input_scope_length") return IOMethod::input_scope_length;
     if(str == "config_endian_little") return IOMethod::config_endian_little;
     if(str == "config_endian_big") return IOMethod::config_endian_big;
     if(str == "config_endian_native") return IOMethod::config_endian_native;
@@ -749,9 +752,9 @@ template<>constexpr std::optional<IOMethod> from_string<IOMethod>(std::string_vi
     return std::nullopt;
 }
 template<>constexpr size_t enum_elem_count<IOMethod>() {
-    return 14;
+    return 15;
 }
-template<>constexpr std::array<std::pair<IOMethod,std::string_view>,14> make_enum_array<IOMethod>() {
+template<>constexpr std::array<std::pair<IOMethod,std::string_view>,15> make_enum_array<IOMethod>() {
     return {
         std::pair{IOMethod::unspec,"unspec"},
         std::pair{IOMethod::output_put,"output_put"},
@@ -762,6 +765,7 @@ template<>constexpr std::array<std::pair<IOMethod,std::string_view>,14> make_enu
         std::pair{IOMethod::input_bit_offset,"input_bit_offset"},
         std::pair{IOMethod::input_remain,"input_remain"},
         std::pair{IOMethod::input_subrange,"input_subrange"},
+        std::pair{IOMethod::input_scope_length,"input_scope_length"},
         std::pair{IOMethod::config_endian_little,"config_endian_little"},
         std::pair{IOMethod::config_endian_big,"config_endian_big"},
         std::pair{IOMethod::config_endian_native,"config_endian_native"},
@@ -769,7 +773,7 @@ template<>constexpr std::array<std::pair<IOMethod,std::string_view>,14> make_enu
         std::pair{IOMethod::config_bit_order_msb,"config_bit_order_msb"},
     };
 }
-template<>constexpr std::array<std::pair<IOMethod,std::string_view>,14> make_enum_name_array<IOMethod>() {
+template<>constexpr std::array<std::pair<IOMethod,std::string_view>,15> make_enum_name_array<IOMethod>() {
     return {
         std::pair{IOMethod::unspec,"unspec"},
         std::pair{IOMethod::output_put,"output_put"},
@@ -780,6 +784,7 @@ template<>constexpr std::array<std::pair<IOMethod,std::string_view>,14> make_enu
         std::pair{IOMethod::input_bit_offset,"input_bit_offset"},
         std::pair{IOMethod::input_remain,"input_remain"},
         std::pair{IOMethod::input_subrange,"input_subrange"},
+        std::pair{IOMethod::input_scope_length,"input_scope_length"},
         std::pair{IOMethod::config_endian_little,"config_endian_little"},
         std::pair{IOMethod::config_endian_big,"config_endian_big"},
         std::pair{IOMethod::config_endian_native,"config_endian_native"},

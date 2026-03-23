@@ -1,0 +1,27 @@
+{
+    "name": "brgen-lsp",
+    "owner": {
+        "name": "on-keyday"
+    },
+    "plugins": [
+        {
+            "name": "brgen-lsp-plugin",
+            "source": "./plugins/brgen-lsp-plugin",
+            "description": "brgen language server plugin for Claude Code",
+            "lspServers": {
+                "brgen": {
+                    "command": "node",
+                    "args": [
+                        "C:/workspace/shbrgen/brgen/lsp/server/out/server.js",
+                        "--stdio",
+                        "--src2json",
+                        "C:/workspace/shbrgen/brgen/tool/src2json.exe"
+                    ],
+                    "extensionToLanguage": {
+                        ".bgn": "brgen"
+                    }
+                }
+            }
+        }
+    ]
+}

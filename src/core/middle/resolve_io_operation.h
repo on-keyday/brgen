@@ -29,6 +29,9 @@ namespace brgen::middle {
                 else if (name == "input.remain") {
                     method = ast::IOMethod::input_remain;
                 }
+                else if (name == "input.scope_length") {
+                    method = ast::IOMethod::input_scope_length;
+                }
                 else if (name == "input.bit_offset") {
                     method = ast::IOMethod::input_bit_offset;
                 }

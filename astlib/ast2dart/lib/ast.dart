@@ -387,6 +387,8 @@ InputBitOffset,
 InputRemain,
 @JsonValue('input_subrange')
 InputSubrange,
+@JsonValue('input_scope_length')
+InputScopeLength,
 @JsonValue('config_endian_little')
 ConfigEndianLittle,
 @JsonValue('config_endian_big')

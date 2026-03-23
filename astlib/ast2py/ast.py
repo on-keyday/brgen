@@ -216,6 +216,7 @@ class IoMethod(PyEnum):
     INPUT_BIT_OFFSET = "input_bit_offset"
     INPUT_REMAIN = "input_remain"
     INPUT_SUBRANGE = "input_subrange"
+    INPUT_SCOPE_LENGTH = "input_scope_length"
     CONFIG_ENDIAN_LITTLE = "config_endian_little"
     CONFIG_ENDIAN_BIG = "config_endian_big"
     CONFIG_ENDIAN_NATIVE = "config_endian_native"

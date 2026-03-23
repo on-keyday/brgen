@@ -1,0 +1,8 @@
+{
+    "name": "brgen-lsp-plugin",
+    "description": "brgen language server for Claude Code, providing code intelligence features",
+    "version": "0.0.1",
+    "author": {
+        "name": "on-keyday"
+    }
+}

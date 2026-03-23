@@ -192,6 +192,7 @@ export const IoMethod = {
 	input_bit_offset: "input_bit_offset",
 	input_remain: "input_remain",
 	input_subrange: "input_subrange",
+	input_scope_length: "input_scope_length",
 	config_endian_little: "config_endian_little",
 	config_endian_big: "config_endian_big",
 	config_endian_native: "config_endian_native",
@@ -202,7 +203,7 @@ export const IoMethod = {
 export type IoMethod = (typeof IoMethod)[keyof typeof IoMethod];
 
 export function isIoMethod(obj: any): obj is IoMethod {
-	return obj && typeof obj === 'string' && (obj === "unspec" || obj === "output_put" || obj === "input_peek" || obj === "input_get" || obj === "input_backward" || obj === "input_offset" || obj === "input_bit_offset" || obj === "input_remain" || obj === "input_subrange" || obj === "config_endian_little" || obj === "config_endian_big" || obj === "config_endian_native" || obj === "config_bit_order_lsb" || obj === "config_bit_order_msb")
+	return obj && typeof obj === 'string' && (obj === "unspec" || obj === "output_put" || obj === "input_peek" || obj === "input_get" || obj === "input_backward" || obj === "input_offset" || obj === "input_bit_offset" || obj === "input_remain" || obj === "input_subrange" || obj === "input_scope_length" || obj === "config_endian_little" || obj === "config_endian_big" || obj === "config_endian_native" || obj === "config_bit_order_lsb" || obj === "config_bit_order_msb")
 }
 
 export const SpecialLiteralKind = {

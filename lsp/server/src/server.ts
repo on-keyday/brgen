@@ -238,6 +238,29 @@ const tokenizeSource = async (doc :TextDocument) =>{
     }
 }
 
+const parseOnlyImpl = async (doc: TextDocument, docInfo: DocumentInfo) => {
+    const path = url.fileURLToPath(doc.uri);
+    const text = doc.getText();
+    const settings = await getDocumentSettings(doc.uri);
+    const ast = await execSrc2JSON(settings.src2json, parserCommand(path), text, ast2ts.isAstFile);
+    docInfo.prevFile = ast;
+    if (ast.ast !== null) {
+        docInfo.prevNode = ast2ts.parseAST(ast.ast);
+    }
+};
+
+const ensureParsed = async (doc: TextDocument): Promise<DocumentInfo> => {
+    const docInfo = getOrCreateDocumentInfo(doc);
+    if (docInfo.prevNode === null) {
+        try {
+            await parseOnlyImpl(doc, docInfo);
+        } catch(e: any) {
+            console.log(`parse error: ${e}`);
+        }
+    }
+    return docInfo;
+};
+
 connection.onRequest("textDocument/semanticTokens/full",async (params)=>{
     console.log(`textDocument/semanticTokens/full: ${JSON.stringify(params)}`);
     const doc = documents.get(params?.textDocument?.uri);
@@ -251,19 +274,18 @@ connection.onRequest("textDocument/semanticTokens/full",async (params)=>{
 
 const hover = async (params :HoverParams)=>{
     console.log(`textDocument/hover: ${JSON.stringify(params)}`);
-    const hover = documents.get(params?.textDocument?.uri);
-    if(hover===undefined){
+    const doc = documents.get(params?.textDocument?.uri);
+    if(doc===undefined){
         return null;
     }
-    hover.getText();
-    const pos =  hover.offsetAt(params.position);
+    const pos = doc.offsetAt(params.position);
     console.log("target pos: %d",pos)
-    const docInfo = getOrCreateDocumentInfo(hover);
+    const docInfo = await ensureParsed(doc);
     if(docInfo.prevNode===null) {
         console.log("prevNode is null");
         return null;
     }
-    return  analyze.analyzeHover(docInfo.prevNode,pos);
+    return analyze.analyzeHover(docInfo.prevNode,pos);
 }
 
 connection.onHover(hover)
@@ -273,15 +295,15 @@ const definitionHandler = async (params :DefinitionParams) => {
     const doc = documents.get(params?.textDocument?.uri);
     if(doc===undefined){
         console.log(`document ${params?.textDocument?.uri} is not found`);
-        return null; 
+        return null;
     }
-    const pos =  doc.offsetAt(params.position);
-    const docInfo = getOrCreateDocumentInfo(doc);
+    const pos = doc.offsetAt(params.position);
+    const docInfo = await ensureParsed(doc);
     if(docInfo.prevNode===null) {
         console.log("prevNode is null");
         return null;
     }
-    const def= await analyze.analyzeDefinition(docInfo.prevFile!,docInfo.prevNode,pos,false)
+    const def = await analyze.analyzeDefinition(docInfo.prevFile!,docInfo.prevNode,pos,false)
     if(def===null){
         console.log("def is null");
         return null;
@@ -295,15 +317,15 @@ const typeDefinitionHandler = async (params :DefinitionParams) => {
     const doc = documents.get(params?.textDocument?.uri);
     if(doc===undefined){
         console.log(`document ${params?.textDocument?.uri} is not found`);
-        return null; 
+        return null;
     }
-    const pos =  doc.offsetAt(params.position);
-    const docInfo = getOrCreateDocumentInfo(doc);
+    const pos = doc.offsetAt(params.position);
+    const docInfo = await ensureParsed(doc);
     if(docInfo.prevNode===null) {
         console.log("prevNode is null");
         return null;
     }
-    const def= await analyze.analyzeDefinition(docInfo.prevFile!,docInfo.prevNode,pos,true)
+    const def = await analyze.analyzeDefinition(docInfo.prevFile!,docInfo.prevNode,pos,true)
     if(def===null){
         console.log("def is null");
         return null;
@@ -320,9 +342,9 @@ connection.onDocumentSymbol(async (params) =>{
     const doc = documents.get(params?.textDocument?.uri);
     if(doc===undefined){
         console.log(`document ${params?.textDocument?.uri} is not found`);
-        return null; 
+        return null;
     }
-    const docInfo = getOrCreateDocumentInfo(doc);
+    const docInfo = await ensureParsed(doc);
     if(docInfo.prevNode===null) {
         return null;
     }
@@ -335,10 +357,16 @@ interface BrgenLSPSettings {
     src2json :string;
 }
 
+// Parse --src2json <path> from CLI args (for non-VSCode clients like Claude Code)
+const cliSrc2json = (() => {
+    const idx = process.argv.indexOf('--src2json');
+    return idx !== -1 ? process.argv[idx + 1] : null;
+})();
+
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
 // Please note that this is not the case when using this server with the client provided in this example
 // but could happen with other clients.
-const defaultSettings: BrgenLSPSettings = { src2json: `./tool/src2json${(process.platform === "win32" ? ".exe" : "")}` };
+const defaultSettings: BrgenLSPSettings = { src2json: cliSrc2json ?? `./tool/src2json${(process.platform === "win32" ? ".exe" : "")}` };
 let globalSettings: BrgenLSPSettings = defaultSettings;
 
 // Cache the settings of all open documents
@@ -385,6 +413,13 @@ const  getDocumentSettings = async(resource: string) => {
         return defaultSettings;
     });
 }
+
+// Trigger AST-only parse on open so non-VSCode clients (e.g. Claude Code) that
+// don't request semanticTokens/full can still get hover/definition/documentSymbol.
+documents.onDidOpen(e => {
+    const docInfo = getOrCreateDocumentInfo(e.document);
+    parseOnlyImpl(e.document, docInfo).catch(err => console.log(`onDidOpen parse error: ${err}`));
+});
 
 // Only keep settings for open documents
 documents.onDidClose(e => {

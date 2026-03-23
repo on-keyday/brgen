@@ -116,6 +116,7 @@ enum IOMethod:
     input_bit_offset
     input_remain
     input_subrange
+    input_scope_length
     config_endian_little
     config_endian_big
     config_endian_native
