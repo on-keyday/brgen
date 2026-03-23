@@ -128,6 +128,7 @@ namespace ebmcodegen {
             body.func_desc({});
             body.id({});
             body.inner_type({});
+            body.io_input_desc({});
             body.length({});
             body.pointee_type({});
             body.size({});
