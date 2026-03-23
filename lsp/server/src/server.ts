@@ -247,6 +247,11 @@ const parseOnlyImpl = async (doc: TextDocument, docInfo: DocumentInfo) => {
     if (ast.ast !== null) {
         docInfo.prevNode = ast2ts.parseAST(ast.ast);
     }
+    if (claudeMode) {
+        const positionAt = (pos: number) => doc.positionAt(pos);
+        const diags = ast.error !== null ? analyze.makeDiagnostic(positionAt, ast.error) : [];
+        connection.sendDiagnostics({ uri: doc.uri, diagnostics: diags });
+    }
 };
 
 const ensureParsed = async (doc: TextDocument): Promise<DocumentInfo> => {
@@ -362,6 +367,9 @@ const cliSrc2json = (() => {
     const idx = process.argv.indexOf('--src2json');
     return idx !== -1 ? process.argv[idx + 1] : null;
 })();
+
+// --claude: send diagnostics via parseOnlyImpl (for clients that don't request semanticTokens)
+const claudeMode = process.argv.includes('--claude');
 
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
 // Please note that this is not the case when using this server with the client provided in this example

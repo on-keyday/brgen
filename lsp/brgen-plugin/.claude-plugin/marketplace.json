@@ -15,7 +15,8 @@
                         "C:/workspace/shbrgen/brgen/lsp/server/out/server.js",
                         "--stdio",
                         "--src2json",
-                        "C:/workspace/shbrgen/brgen/tool/src2json.exe"
+                        "C:/workspace/shbrgen/brgen/tool/src2json.exe",
+                        "--claude"
                     ],
                     "extensionToLanguage": {
                         ".bgn": "brgen"
