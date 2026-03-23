@@ -79,10 +79,6 @@ export function MonacoEditor({
   // Track whether a programmatic edit is in progress to avoid feedback loops.
   const suppressChange = useRef(false);
 
-  // Track the last value we pushed INTO the editor from props, so we can
-  // distinguish "our prop changed" from "editor echoed back what we set".
-  const lastPushedValue = useRef(value);
-
   // Create editor on mount
   useEffect(() => {
     const container = containerRef.current;
@@ -114,9 +110,7 @@ export function MonacoEditor({
     // Listen for user edits (writable editors only)
     const disposable = model.onDidChangeContent(() => {
       if (suppressChange.current) return;
-      const val = editor.getValue();
-      lastPushedValue.current = val;
-      onChangeRef.current?.(val);
+      onChangeRef.current?.(editor.getValue());
     });
 
     return () => {
@@ -137,12 +131,11 @@ export function MonacoEditor({
     const model = editor.getModel();
     if (!model) return;
 
-    // Skip if this is just the editor echoing back a user edit we already
-    // forwarded via onChange (the Zustand round-trip).
-    if (value === lastPushedValue.current) return;
+    // Skip if the model already has this content (e.g. Zustand echoing back
+    // a user edit). Compare against the live model value, not a stale ref,
+    // to avoid clobbering rapid keystrokes during async round-trips.
+    if (model.getValue() === value) return;
 
-    // The value genuinely changed externally (file load, sharing link, etc.)
-    lastPushedValue.current = value;
     suppressChange.current = true;
 
     if (readOnly) {
@@ -152,10 +145,7 @@ export function MonacoEditor({
       // For writable editors, use applyEdits to preserve undo stack.
       // Replace the entire content as a single edit operation.
       const fullRange = model.getFullModelRange();
-      model.applyEdits([{
-        range: fullRange,
-        text: value,
-      }]);
+      model.applyEdits([{ range: fullRange, text: value }]);
     }
 
     suppressChange.current = false;
