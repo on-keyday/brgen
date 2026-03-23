@@ -595,6 +595,7 @@ namespace ebmcodegen::util {
         }
     }
 
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     ebmgen::expected<size_t> get_variant_index(auto&& visitor, ebm::TypeRef variant_type, ebm::TypeRef candidate_type) {
         auto& module_ = get_visitor(visitor).module_;
         MAYBE(type, module_.get_type(variant_type));

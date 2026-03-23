@@ -155,5 +155,6 @@
   },
   "liveServer.settings.port": 5501,
   "shellcheck.exclude": ["1017"],
-  "clangd.arguments": ["--fallback-style=none"]
+  "clangd.arguments": ["--fallback-style=none"],
+  "C_Cpp.codeAnalysis.clangTidy.codeAction.formatFixes": true
 }

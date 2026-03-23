@@ -1,0 +1,25 @@
+---
+# 警告をエラーとして扱うか（ビルドを失敗させたい場合に有効）
+WarningsAsErrors: 'bugprone-*'
+
+# 解析対象のヘッダー指定（自作コードのみを対象にする例）
+HeaderFilterRegex: '^src/.*|^rebrgen/src/.*'
+  # third_partyディレクトリを除外
+
+# チェック項目の選定
+Checks: >
+  clang-diagnostic-*,
+  clang-analyzer-*,
+  -*,
+  bugprone-*,
+  cppcoreguidelines-*,
+  performance-*,
+  portability-*,
+  modernize-*,
+  -modernize-use-using,
+  -modernize-use-nullptr,
+  -modernize-use-override,
+  -modernize-use-trailing-return-type,
+  readability-identifier-naming
+  
+

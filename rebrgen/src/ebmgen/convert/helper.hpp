@@ -8,8 +8,8 @@ namespace ebmgen {
 #define EBM_AST_CONSTRUCTOR(ref_name, RefType, add_func, make_func, ...) \
     ebm::RefType ref_name;                                               \
     {                                                                    \
-        MAYBE(new_ref____, add_func(make_func(__VA_ARGS__)));            \
-        ref_name = new_ref____;                                          \
+        MAYBE(new_ref_ebm_ebm, add_func(make_func(__VA_ARGS__)));        \
+        ref_name = new_ref_ebm_ebm;                                      \
     }
 
 #define EBM_AST_STATEMENT(ref_name, make_func, ...) \
@@ -89,12 +89,12 @@ namespace ebmgen {
 
     ebm::ExpressionBody make_identifier_expr(ebm::StatementRef id, ebm::TypeRef type);
 
-#define EBM_IDENTIFIER(ref_name, id, typ)                                              \
-    ebm::ExpressionRef ref_name;                                                       \
-    {                                                                                  \
-        MAYBE(unique_id__, ctx.repository().new_expression_id());                      \
-        EBMA_ADD_EXPR(ref_name##_inner__, unique_id__, make_identifier_expr(id, typ)); \
-        ref_name = ref_name##_inner__;                                                 \
+#define EBM_IDENTIFIER(ref_name, id, typ)                                                  \
+    ebm::ExpressionRef ref_name;                                                           \
+    {                                                                                      \
+        MAYBE(unique_id_ebm, ctx.repository().new_expression_id());                        \
+        EBMA_ADD_EXPR(ref_name##_inner_ebm, unique_id_ebm, make_identifier_expr(id, typ)); \
+        ref_name = ref_name##_inner_ebm;                                                   \
     }
 
 #define EBM_DEFINE_VARIABLE(ref_name, id, typ, initial_ref, decl_kind, is_reference)                                    \
@@ -108,53 +108,53 @@ namespace ebmgen {
 #define EBM_DEFINE_ANONYMOUS_VARIABLE(ref_name, typ, initial_ref) \
     EBM_DEFINE_VARIABLE(ref_name, {}, typ, initial_ref, ebm::VariableDeclKind::MUTABLE, false)
 
-#define EBM_DEFINE_PARAMETER(ref_name, id, typ, is_state_variable)                                     \
-    EBM_AST_VARIABLE_REF(ref_name) {                                                                   \
-        MAYBE(new_id_, ctx.repository().new_statement_id());                                           \
-        EBMA_ADD_STATEMENT(new_var_ref__, new_id_, (make_parameter_decl(id, typ, is_state_variable))); \
-        EBM_IDENTIFIER(new_expr_ref__, new_var_ref__, typ);                                            \
-        EBM_AST_VARIABLE_REF_SET(ref_name, new_expr_ref__, new_var_ref__);                             \
+#define EBM_DEFINE_PARAMETER(ref_name, id, typ, is_state_variable)                                       \
+    EBM_AST_VARIABLE_REF(ref_name) {                                                                     \
+        MAYBE(new_id_, ctx.repository().new_statement_id());                                             \
+        EBMA_ADD_STATEMENT(new_var_ref_ebm, new_id_, (make_parameter_decl(id, typ, is_state_variable))); \
+        EBM_IDENTIFIER(new_expr_ref_ebm, new_var_ref_ebm, typ);                                          \
+        EBM_AST_VARIABLE_REF_SET(ref_name, new_expr_ref_ebm, new_var_ref_ebm);                           \
     }
 
     ebm::ExpressionBody make_cast(ebm::TypeRef to_typ, ebm::TypeRef from_typ, ebm::ExpressionRef expr, ebm::CastType cast_kind);
 
-#define EBM_CAST(ref_name, to_typ, from_typ, expr)                                                 \
-    ebm::ExpressionRef ref_name;                                                                   \
-    {                                                                                              \
-        if (get_id(from_typ) != get_id(to_typ)) {                                                  \
-            MAYBE(cast_kind________, ctx.get_type_converter().get_cast_type(to_typ, from_typ));    \
-            EBMA_ADD_EXPR(cast_ref________, make_cast(to_typ, from_typ, expr, cast_kind________)); \
-            ref_name = cast_ref________;                                                           \
-        }                                                                                          \
-        else {                                                                                     \
-            ref_name = expr;                                                                       \
-        }                                                                                          \
+#define EBM_CAST(ref_name, to_typ, from_typ, expr)                                                                 \
+    ebm::ExpressionRef ref_name;                                                                                   \
+    {                                                                                                              \
+        if (get_id(from_typ) != get_id(to_typ)) {                                                                  \
+            MAYBE(cast_kind_ebm_ebm_ebm_ebm, ctx.get_type_converter().get_cast_type(to_typ, from_typ));            \
+            EBMA_ADD_EXPR(cast_ref_ebm_ebm_ebm_ebm, make_cast(to_typ, from_typ, expr, cast_kind_ebm_ebm_ebm_ebm)); \
+            ref_name = cast_ref_ebm_ebm_ebm_ebm;                                                                   \
+        }                                                                                                          \
+        else {                                                                                                     \
+            ref_name = expr;                                                                                       \
+        }                                                                                                          \
     }
 
     ebm::ExpressionBody make_binary_op(ebm::BinaryOp bop, ebm::TypeRef type, ebm::ExpressionRef left, ebm::ExpressionRef right);
 
-#define EBM_BINARY_OP(ref_name, bop__, typ, left__, right__)                                       \
-    ebm::ExpressionRef ref_name;                                                                   \
-    {                                                                                              \
-        MAYBE(casted, insert_binary_op_cast(ctx, bop__, typ, left__, right__));                    \
-        EBM_AST_EXPRESSION(ref_name##__, make_binary_op, bop__, typ, casted.first, casted.second); \
-        ref_name = ref_name##__;                                                                   \
+#define EBM_BINARY_OP(ref_name, bop_ebm, typ, left_ebm, right_ebm)                                     \
+    ebm::ExpressionRef ref_name;                                                                       \
+    {                                                                                                  \
+        MAYBE(casted, insert_binary_op_cast(ctx, bop_ebm, typ, left_ebm, right_ebm));                  \
+        EBM_AST_EXPRESSION(ref_name##_ebm, make_binary_op, bop_ebm, typ, casted.first, casted.second); \
+        ref_name = ref_name##_ebm;                                                                     \
     }
 
     ebm::ExpressionBody make_unary_op(ebm::UnaryOp uop, ebm::TypeRef type, ebm::ExpressionRef operand);
 
-#define EBM_UNARY_OP(ref_name, uop__, typ, operand__) \
-    EBM_AST_EXPRESSION(ref_name, make_unary_op, uop__, typ, operand__)
+#define EBM_UNARY_OP(ref_name, uop_ebm, typ, operand_ebm) \
+    EBM_AST_EXPRESSION(ref_name, make_unary_op, uop_ebm, typ, operand_ebm)
 
     ebm::StatementBody make_assignment(ebm::ExpressionRef target, ebm::ExpressionRef value);
 
-#define EBM_ASSIGNMENT(ref_name, target__, value__) \
-    EBM_AST_STATEMENT(ref_name, make_assignment, target__, value__)
+#define EBM_ASSIGNMENT(ref_name, target_ebm, value_ebm) \
+    EBM_AST_STATEMENT(ref_name, make_assignment, target_ebm, value_ebm)
 
     ebm::ExpressionBody make_index(ebm::TypeRef type, ebm::ExpressionRef base, ebm::ExpressionRef index);
 
-#define EBM_INDEX(ref_name, type, base__, index__) \
-    EBM_AST_EXPRESSION(ref_name, make_index, type, base__, index__)
+#define EBM_INDEX(ref_name, type, base_ebm, index_ebm) \
+    EBM_AST_EXPRESSION(ref_name, make_index, type, base_ebm, index_ebm)
 
     ebm::StatementBody make_write_data(ebm::IOData io_data);
 
@@ -172,24 +172,24 @@ namespace ebmgen {
     EBM_AST_STATEMENT(ref_name, make_read_data, io_data)
 
 // internally, represent as i = i + 1 because no INCREMENT operator in EBM
-#define EBM_INCREMENT(ref_name, target__, target_type_)                              \
-    ebm::StatementRef ref_name;                                                      \
-    {                                                                                \
-        EBMU_INT_LITERAL(one, 1);                                                    \
-        EBM_BINARY_OP(incremented, ebm::BinaryOp::add, target_type_, target__, one); \
-        EBM_ASSIGNMENT(increment_ref____, target__, incremented);                    \
-        ref_name = increment_ref____;                                                \
+#define EBM_INCREMENT(ref_name, target_ebm, target_type_)                              \
+    ebm::StatementRef ref_name;                                                        \
+    {                                                                                  \
+        EBMU_INT_LITERAL(one, 1);                                                      \
+        EBM_BINARY_OP(incremented, ebm::BinaryOp::add, target_type_, target_ebm, one); \
+        EBM_ASSIGNMENT(increment_ref_ebm_ebm, target_ebm, incremented);                \
+        ref_name = increment_ref_ebm_ebm;                                              \
     }
 
     ebm::StatementBody make_block(ebm::Block&& block);
 
-#define EBM_BLOCK(ref_name, block_body__) \
-    EBM_AST_STATEMENT(ref_name, make_block, block_body__)
+#define EBM_BLOCK(ref_name, block_body_ebm) \
+    EBM_AST_STATEMENT(ref_name, make_block, block_body_ebm)
 
     ebm::StatementBody make_loop(ebm::LoopStatement&& loop_stmt);
 
-#define EBM_LOOP(ref_name, loop_stmt__) \
-    EBM_AST_STATEMENT(ref_name, make_loop, std::move(loop_stmt__))
+#define EBM_LOOP(ref_name, loop_stmt_ebm) \
+    EBM_AST_STATEMENT(ref_name, make_loop, std::move(loop_stmt_ebm))
 
     ebm::StatementBody make_while_loop(ebm::ExpressionRef condition, ebm::StatementRef body);
 
@@ -197,105 +197,105 @@ namespace ebmgen {
 
     ebm::StatementBody make_iteration_loop(ebm::StatementRef item_var, ebm::ExpressionRef collection, ebm::StatementRef body, ebm::StatementRef lowered_loop);
 
-#define EBM_WHILE_LOOP(ref_name, condition__, body__) \
-    EBM_AST_STATEMENT(ref_name, make_while_loop, condition__, body__)
+#define EBM_WHILE_LOOP(ref_name, condition_ebm, body_ebm) \
+    EBM_AST_STATEMENT(ref_name, make_while_loop, condition_ebm, body_ebm)
 
-#define EBM_FOR_LOOP(ref_name, init, condition__, step, body__) \
-    EBM_AST_STATEMENT(ref_name, make_for_loop, init, condition__, step, body__)
+#define EBM_FOR_LOOP(ref_name, init, condition_ebm, step, body_ebm) \
+    EBM_AST_STATEMENT(ref_name, make_for_loop, init, condition_ebm, step, body_ebm)
 
-#define EBM_COUNTER_LOOP_START_CUSTOM(counter_name, counter_type)                       \
-    EBM_AST_VARIABLE_REF(counter_name);                                                 \
-    {                                                                                   \
-        EBMU_INT_LITERAL(zero, 0);                                                      \
-        MAYBE(zero_expr__, ctx.repository().get_expression(zero));                      \
-        EBM_CAST(zero_casted, counter_type, zero_expr__.body.type, zero);               \
-        EBM_DEFINE_ANONYMOUS_VARIABLE(counter_name##__, counter_type, zero_casted);     \
-        EBM_AST_VARIABLE_REF_SET(counter_name, counter_name##__, counter_name##___def); \
+#define EBM_COUNTER_LOOP_START_CUSTOM(counter_name, counter_type)                           \
+    EBM_AST_VARIABLE_REF(counter_name);                                                     \
+    {                                                                                       \
+        EBMU_INT_LITERAL(zero, 0);                                                          \
+        MAYBE(zero_expr_ebm, ctx.repository().get_expression(zero));                        \
+        EBM_CAST(zero_casted, counter_type, zero_expr_ebm.body.type, zero);                 \
+        EBM_DEFINE_ANONYMOUS_VARIABLE(counter_name##_ebm, counter_type, zero_casted);       \
+        EBM_AST_VARIABLE_REF_SET(counter_name, counter_name##_ebm, counter_name##_ebm_def); \
     }
 
-#define EBM_COUNTER_LOOP_START(counter_name)                                            \
-    EBM_AST_VARIABLE_REF(counter_name);                                                 \
-    {                                                                                   \
-        EBMU_COUNTER_TYPE(counter_type);                                                \
-        EBM_COUNTER_LOOP_START_CUSTOM(counter_name##__, counter_type);                  \
-        EBM_AST_VARIABLE_REF_SET(counter_name, counter_name##__, counter_name##___def); \
+#define EBM_COUNTER_LOOP_START(counter_name)                                                \
+    EBM_AST_VARIABLE_REF(counter_name);                                                     \
+    {                                                                                       \
+        EBMU_COUNTER_TYPE(counter_type);                                                    \
+        EBM_COUNTER_LOOP_START_CUSTOM(counter_name##_ebm, counter_type);                    \
+        EBM_AST_VARIABLE_REF_SET(counter_name, counter_name##_ebm, counter_name##_ebm_def); \
     }
 
-#define EBM_COUNTER_LOOP_END_BODY(loop_stmt, counter_name, counter_type, limit_expr__, body__) \
-    ebm::StatementBody loop_stmt;                                                              \
-    {                                                                                          \
-        EBMU_BOOL_TYPE(bool_type);                                                             \
-        EBM_BINARY_OP(cmp, ebm::BinaryOp::less, bool_type, counter_name, limit_expr__);        \
-        EBM_INCREMENT(inc, counter_name, counter_type);                                        \
-        loop_stmt = make_for_loop(counter_name##_def, cmp, inc, body__);                       \
-        EBMA_ADD_STATEMENT(lowered, std::move(loop_stmt));                                     \
-        loop_stmt = make_iteration_loop(counter_name##_def, limit_expr__, body__, lowered);    \
+#define EBM_COUNTER_LOOP_END_BODY(loop_stmt, counter_name, counter_type, limit_expr_ebm, body_ebm) \
+    ebm::StatementBody loop_stmt;                                                                  \
+    {                                                                                              \
+        EBMU_BOOL_TYPE(bool_type);                                                                 \
+        EBM_BINARY_OP(cmp, ebm::BinaryOp::less, bool_type, counter_name, limit_expr_ebm);          \
+        EBM_INCREMENT(inc, counter_name, counter_type);                                            \
+        loop_stmt = make_for_loop(counter_name##_def, cmp, inc, body_ebm);                         \
+        EBMA_ADD_STATEMENT(lowered, std::move(loop_stmt));                                         \
+        loop_stmt = make_iteration_loop(counter_name##_def, limit_expr_ebm, body_ebm, lowered);    \
     }
 
-#define EBM_COUNTER_LOOP_END_CUSTOM(loop_stmt, counter_name, counter_type, limit_expr__, body__) \
-    ebm::StatementRef loop_stmt;                                                                 \
-    {                                                                                            \
-        EBM_COUNTER_LOOP_END_BODY(body, counter_name, counter_type, limit_expr__, body__);       \
-        EBMA_ADD_STATEMENT(added, std::move(body));                                              \
-        loop_stmt = added;                                                                       \
+#define EBM_COUNTER_LOOP_END_CUSTOM(loop_stmt, counter_name, counter_type, limit_expr_ebm, body_ebm) \
+    ebm::StatementRef loop_stmt;                                                                     \
+    {                                                                                                \
+        EBM_COUNTER_LOOP_END_BODY(body, counter_name, counter_type, limit_expr_ebm, body_ebm);       \
+        EBMA_ADD_STATEMENT(added, std::move(body));                                                  \
+        loop_stmt = added;                                                                           \
     }
 
-#define EBM_COUNTER_LOOP_END(loop_stmt, counter_name, limit_expr__, body__)                           \
-    ebm::StatementRef loop_stmt;                                                                      \
-    {                                                                                                 \
-        EBMU_COUNTER_TYPE(counter_type);                                                              \
-        EBM_COUNTER_LOOP_END_CUSTOM(loop_stmt##__, counter_name, counter_type, limit_expr__, body__); \
-        loop_stmt = loop_stmt##__;                                                                    \
+#define EBM_COUNTER_LOOP_END(loop_stmt, counter_name, limit_expr_ebm, body_ebm)                             \
+    ebm::StatementRef loop_stmt;                                                                            \
+    {                                                                                                       \
+        EBMU_COUNTER_TYPE(counter_type);                                                                    \
+        EBM_COUNTER_LOOP_END_CUSTOM(loop_stmt##_ebm, counter_name, counter_type, limit_expr_ebm, body_ebm); \
+        loop_stmt = loop_stmt##_ebm;                                                                        \
     }
 
     ebm::ExpressionBody make_array_size(ebm::TypeRef type, ebm::ExpressionRef array_expr);
 
-#define EBM_ARRAY_SIZE(ref_name, array_expr__)                                          \
-    ebm::ExpressionRef ref_name;                                                        \
-    {                                                                                   \
-        EBMU_COUNTER_TYPE(counter_type);                                                \
-        EBMA_ADD_EXPR(array_size_ref____, make_array_size(counter_type, array_expr__)); \
-        ref_name = array_size_ref____;                                                  \
+#define EBM_ARRAY_SIZE(ref_name, array_expr_ebm)                                              \
+    ebm::ExpressionRef ref_name;                                                              \
+    {                                                                                         \
+        EBMU_COUNTER_TYPE(counter_type);                                                      \
+        EBMA_ADD_EXPR(array_size_ref_ebm_ebm, make_array_size(counter_type, array_expr_ebm)); \
+        ref_name = array_size_ref_ebm_ebm;                                                    \
     }
 
     ebm::LoweredIOStatement make_lowered_statement(ebm::LoweringIOType lowering_type, ebm::StatementRef body);
 
     ebm::StatementBody make_error_report(ebm::StringRef message, ebm::Expressions&& arguments);
 
-#define EBM_ERROR_REPORT(ref_name, message__, arguments__) \
-    EBM_AST_STATEMENT(ref_name, make_error_report, message__, arguments__)
+#define EBM_ERROR_REPORT(ref_name, message_ebm, arguments_ebm) \
+    EBM_AST_STATEMENT(ref_name, make_error_report, message_ebm, arguments_ebm)
 
     ebm::StatementBody make_if_statement(ebm::ExpressionRef condition, ebm::StatementRef then_block, ebm::StatementRef else_block);
-#define EBM_IF_STATEMENT(ref_name, condition__, then_block__, else_block__) \
-    EBM_AST_STATEMENT(ref_name, make_if_statement, condition__, then_block__, else_block__)
+#define EBM_IF_STATEMENT(ref_name, condition_ebm, then_block_ebm, else_block_ebm) \
+    EBM_AST_STATEMENT(ref_name, make_if_statement, condition_ebm, then_block_ebm, else_block_ebm)
 
     ebm::StatementBody make_assert_statement(ebm::ExpressionRef condition, ebm::StatementRef lowered_statement);
-#define EBM_ASSERT(ref_name, condition__, lowered_statement__) \
-    EBM_AST_STATEMENT(ref_name, make_assert_statement, condition__, lowered_statement__)
+#define EBM_ASSERT(ref_name, condition_ebm, lowered_statement_ebm) \
+    EBM_AST_STATEMENT(ref_name, make_assert_statement, condition_ebm, lowered_statement_ebm)
 
     ebm::StatementBody make_lowered_statements(ebm::LoweredIOStatements&& lowered_statements);
 
-#define EBM_LOWERED_IO_STATEMENTS(ref_name, lowered_statements__) \
-    EBM_AST_STATEMENT(ref_name, make_lowered_statements, std::move(lowered_statements__))
+#define EBM_LOWERED_IO_STATEMENTS(ref_name, lowered_statements_ebm) \
+    EBM_AST_STATEMENT(ref_name, make_lowered_statements, std::move(lowered_statements_ebm))
 
     ebm::ExpressionBody make_member_access(ebm::TypeRef type, ebm::ExpressionRef base, ebm::ExpressionRef member);
-#define EBM_MEMBER_ACCESS(ref_name, type, base__, member__) \
-    EBM_AST_EXPRESSION(ref_name, make_member_access, type, base__, member__)
+#define EBM_MEMBER_ACCESS(ref_name, type, base_ebm, member_ebm) \
+    EBM_AST_EXPRESSION(ref_name, make_member_access, type, base_ebm, member_ebm)
 
     ebm::ExpressionBody make_as_arg(ebm::TypeRef type, ebm::ExpressionRef target_expr, bool is_inout = false);
 
-#define EBM_AS_ARG(ref_name, type, target_expr__) \
-    EBM_AST_EXPRESSION(ref_name, make_as_arg, type, target_expr__, false)
-#define EBM_AS_INOUT_ARG(ref_name, type, target_expr__) \
-    EBM_AST_EXPRESSION(ref_name, make_as_arg, type, target_expr__, true)
+#define EBM_AS_ARG(ref_name, type, target_expr_ebm) \
+    EBM_AST_EXPRESSION(ref_name, make_as_arg, type, target_expr_ebm, false)
+#define EBM_AS_INOUT_ARG(ref_name, type, target_expr_ebm) \
+    EBM_AST_EXPRESSION(ref_name, make_as_arg, type, target_expr_ebm, true)
 
     ebm::ExpressionBody make_enum_member(ebm::TypeRef type, ebm::StatementRef enum_decl, ebm::ExpressionRef member);
-#define EBM_ENUM_MEMBER(ref_name, type, enum_decl__, member__) \
-    EBM_AST_EXPRESSION(ref_name, make_enum_member, type, enum_decl__, member__)
+#define EBM_ENUM_MEMBER(ref_name, type, enum_decl_ebm, member_ebm) \
+    EBM_AST_EXPRESSION(ref_name, make_enum_member, type, enum_decl_ebm, member_ebm)
 
     ebm::ExpressionBody make_call(ebm::TypeRef typ, ebm::CallDesc&& call_desc);
-#define EBM_CALL(ref_name, typ, call_desc__) \
-    EBM_AST_EXPRESSION(ref_name, make_call, typ, call_desc__)
+#define EBM_CALL(ref_name, typ, call_desc_ebm) \
+    EBM_AST_EXPRESSION(ref_name, make_call, typ, call_desc_ebm)
 
     ebm::StatementBody make_expression_statement(ebm::ExpressionRef expr);
 
@@ -323,8 +323,8 @@ namespace ebmgen {
     ebm::ExpressionBody make_can_read_stream(ebm::TypeRef type, ebm::StatementRef io_ref, ebm::StreamType stream_type, ebm::Size num_bytes);
 
 #define EBM_CAN_READ_STREAM(ref_name, io_ref, stream_type, num_bytes) \
-    EBMU_BOOL_TYPE(ref_name##_type_____);                             \
-    EBM_AST_EXPRESSION(ref_name, make_can_read_stream, ref_name##_type_____, io_ref, stream_type, num_bytes);
+    EBMU_BOOL_TYPE(ref_name##_type_ebm_ebm_);                         \
+    EBM_AST_EXPRESSION(ref_name, make_can_read_stream, ref_name##_type_ebm_ebm_, io_ref, stream_type, num_bytes);
 
     ebm::StatementBody make_append(ebm::ExpressionRef target, ebm::ExpressionRef value);
 #define EBM_APPEND(ref_name, target, value) \
@@ -333,8 +333,8 @@ namespace ebmgen {
     ebm::ExpressionBody make_get_remaining_bytes(ebm::TypeRef type, ebm::StreamType stream_type, ebm::StatementRef io_ref);
 
 #define EBM_GET_REMAINING_BYTES(ref_name, stream_type, io_ref) \
-    EBMU_COUNTER_TYPE(ref_name##_type_____);                   \
-    EBM_AST_EXPRESSION(ref_name, make_get_remaining_bytes, ref_name##_type_____, stream_type, io_ref)
+    EBMU_COUNTER_TYPE(ref_name##_type_ebm_ebm_);               \
+    EBM_AST_EXPRESSION(ref_name, make_get_remaining_bytes, ref_name##_type_ebm_ebm_, stream_type, io_ref)
     ebm::StatementBody make_break(ebm::StatementRef loop_id);
     ebm::StatementBody make_continue(ebm::StatementRef loop_id);
 
@@ -355,8 +355,8 @@ namespace ebmgen {
 
     ebm::StatementBody make_property_member_decl(ebm::PropertyMemberDecl&& prop_member);
 
-#define EBM_PROPERTY_MEMBER_DECL(ref_name, prop_member__) \
-    EBM_AST_STATEMENT(ref_name, make_property_member_decl, prop_member__)
+#define EBM_PROPERTY_MEMBER_DECL(ref_name, prop_member_ebm) \
+    EBM_AST_STATEMENT(ref_name, make_property_member_decl, prop_member_ebm)
 
     ebm::StatementBody make_property_decl(ebm::PropertyDecl&& prop_decl);
 
@@ -391,17 +391,17 @@ namespace ebmgen {
 
     ebm::ExpressionBody make_bool_literal(ebm::TypeRef type, bool value);
 
-#define EBM_BOOL_LITERAL(ref_name, value) \
-    EBMU_BOOL_TYPE(ref_name##_type_____); \
-    EBM_AST_EXPRESSION(ref_name, make_bool_literal, ref_name##_type_____, value)
+#define EBM_BOOL_LITERAL(ref_name, value)     \
+    EBMU_BOOL_TYPE(ref_name##_type_ebm_ebm_); \
+    EBM_AST_EXPRESSION(ref_name, make_bool_literal, ref_name##_type_ebm_ebm_, value)
 
     ebm::ExpressionBody make_self(ebm::TypeRef type);
 #define EBM_SELF(ref_name, typ) \
     EBM_AST_EXPRESSION(ref_name, make_self, typ)
 
     ebm::StatementBody make_init_check_statement(ebm::InitCheck&& init_check);
-#define EBM_INIT_CHECK_STATEMENT(ref_name, init_check__) \
-    EBM_AST_STATEMENT(ref_name, make_init_check_statement, init_check__)
+#define EBM_INIT_CHECK_STATEMENT(ref_name, init_check_ebm) \
+    EBM_AST_STATEMENT(ref_name, make_init_check_statement, init_check_ebm)
 
     expected<ebm::Size> make_fixed_size(size_t n, ebm::SizeUnit unit);
     expected<ebm::Size> make_dynamic_size(ebm::ExpressionRef ref, ebm::SizeUnit unit);
