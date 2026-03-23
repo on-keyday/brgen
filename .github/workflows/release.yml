@@ -197,7 +197,7 @@ jobs:
           path: ./artifacts
       - name: Unpack Artifacts
         run: |
-          tar -xzf artifacts/brgen-artifacts.tar.gz -C ./artifacts
+          tar -xzf artifacts/artifacts.tar.gz -C ./artifacts
           ls -Ral .
       - name: Attest Artifacts
         uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26
