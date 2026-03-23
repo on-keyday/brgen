@@ -9,6 +9,7 @@
 #include <core/ast/tool/compare.h>
 #include <list>
 #include <memory>
+#include <unordered_set>
 
 namespace brgen::middle {
 
@@ -16,6 +17,8 @@ namespace brgen::middle {
         LocationError& warnings;
 
         std::shared_ptr<ast::Scope> current_global;
+
+        std::unordered_set<ast::Ident*> recurse_detect;
 
         std::shared_ptr<ast::Type> unwrap_ident_type(const std::shared_ptr<ast::Type>& typ) {
             if (auto ident = ast::as<ast::IdentType>(typ)) {
@@ -858,6 +861,9 @@ namespace brgen::middle {
         }
 
         std::optional<std::shared_ptr<ast::Ident>> find_matching_ident(ast::Ident* ident, std::shared_ptr<ast::Ident>* levenshtein_candidate = nullptr) {
+            if (auto found = recurse_detect.find(ident); found != recurse_detect.end()) {
+                return std::nullopt;  // 再帰的な参照は無視する
+            }
             bool global_search = false;
             size_t min_dist = 3;  // これ以上の距離の候補は無視する
             auto search = [&](std::shared_ptr<ast::Ident>& def, bool may_forward) {
@@ -1236,6 +1242,8 @@ namespace brgen::middle {
                 auto& base = (*found);
                 if (auto def = ast::as<ast::Binary>(base->base.lock());
                     def && !def->expr_type) {
+                    recurse_detect.insert(ident.get());
+                    auto guard = futils::helper::defer([&] { recurse_detect.erase(ident.get()); });
                     auto bin = ast::cast_to<ast::Binary>(base->base.lock());
                     typing_expr(bin->right);
                     typing_assign(bin);

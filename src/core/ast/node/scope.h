@@ -101,7 +101,7 @@ namespace brgen::ast {
                 }
             }
             if (next) {
-                return next->lookup_forward(fn);
+                return next->lookup_forward(fn, only_type_allowed);
             }
             return std::nullopt;
         }
@@ -151,7 +151,6 @@ namespace brgen::ast {
        private:
         std::shared_ptr<Scope> root;
         std::shared_ptr<Scope> current;
-        std::vector<std::shared_ptr<Scope>> prev_branch_end;
 
         void maybe_init() {
             if (!root) {
@@ -164,12 +163,6 @@ namespace brgen::ast {
                 current->next->prev = current;
                 current->next->owner = current->owner;
                 current = current->next;
-                /*
-                for (auto& prev : prev_branch_end) {
-                    prev->next = current;
-                }
-                prev_branch_end.clear();
-                */
             }
         }
 
@@ -182,7 +175,6 @@ namespace brgen::ast {
             current = current->branch;
             current->branch_root = true;
             return futils::helper::defer([this, d] {
-                prev_branch_end.push_back(std::move(current));
                 current = d;
             });
         }

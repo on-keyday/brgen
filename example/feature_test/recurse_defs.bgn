@@ -1,0 +1,10 @@
+x ::= y
+
+format X:
+    x ::= y # global y
+    y ::= u16()
+    z ::= y # local y
+
+y ::= z
+
+z ::= y
