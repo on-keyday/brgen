@@ -58948,11 +58948,16 @@ namespace ebm2z3 {
     template<typename Result,typename Context>
     expected<Result> dispatch_Type_ENCODER_INPUT(Context&& ctx,const ebm::Type& in,ebm::TypeRef alias_ref){
         auto& kind = in.body.kind;
+        if (!in.body.io_input_desc()) {
+            return unexpect_error("Unexpected null pointer for TypeBody::io_input_desc");
+        }
+        auto& io_input_desc = *in.body.io_input_desc();
         auto main_logic = [&]() -> expected<Result>{
             Context_Type_ENCODER_INPUT new_ctx{
                 .visitor = get_visitor_arg_from_context(ctx),
                 .item_id = is_nil(alias_ref) ? in.id : alias_ref,
                 .kind = kind,
+                .io_input_desc = io_input_desc,
             };
             return get_visitor_from_context<Result>(ctx,new_ctx).visit(new_ctx);
         };
@@ -58960,6 +58965,7 @@ namespace ebm2z3 {
             .visitor = get_visitor_arg_from_context(ctx),
             .item_id = is_nil(alias_ref) ? in.id : alias_ref,
             .kind = kind,
+            .io_input_desc = io_input_desc,
             .main_logic = main_logic,
         };
         expected<Result> before_result = get_visitor_from_context<Result>(ctx,before_ctx).visit(before_ctx);
@@ -58969,6 +58975,7 @@ namespace ebm2z3 {
             .visitor = get_visitor_arg_from_context(ctx),
             .item_id = is_nil(alias_ref) ? in.id : alias_ref,
             .kind = kind,
+            .io_input_desc = io_input_desc,
             .main_logic = main_logic,
             .result = main_result,
         };
@@ -58983,11 +58990,16 @@ namespace ebm2z3 {
     template<typename Result,typename Context>
     expected<Result> dispatch_Type_DECODER_INPUT(Context&& ctx,const ebm::Type& in,ebm::TypeRef alias_ref){
         auto& kind = in.body.kind;
+        if (!in.body.io_input_desc()) {
+            return unexpect_error("Unexpected null pointer for TypeBody::io_input_desc");
+        }
+        auto& io_input_desc = *in.body.io_input_desc();
         auto main_logic = [&]() -> expected<Result>{
             Context_Type_DECODER_INPUT new_ctx{
                 .visitor = get_visitor_arg_from_context(ctx),
                 .item_id = is_nil(alias_ref) ? in.id : alias_ref,
                 .kind = kind,
+                .io_input_desc = io_input_desc,
             };
             return get_visitor_from_context<Result>(ctx,new_ctx).visit(new_ctx);
         };
@@ -58995,6 +59007,7 @@ namespace ebm2z3 {
             .visitor = get_visitor_arg_from_context(ctx),
             .item_id = is_nil(alias_ref) ? in.id : alias_ref,
             .kind = kind,
+            .io_input_desc = io_input_desc,
             .main_logic = main_logic,
         };
         expected<Result> before_result = get_visitor_from_context<Result>(ctx,before_ctx).visit(before_ctx);
@@ -59004,6 +59017,7 @@ namespace ebm2z3 {
             .visitor = get_visitor_arg_from_context(ctx),
             .item_id = is_nil(alias_ref) ? in.id : alias_ref,
             .kind = kind,
+            .io_input_desc = io_input_desc,
             .main_logic = main_logic,
             .result = main_result,
         };

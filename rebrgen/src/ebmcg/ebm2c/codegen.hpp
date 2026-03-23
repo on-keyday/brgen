@@ -5330,71 +5330,77 @@ namespace ebm2c {
         BaseVisitor& visitor;
         ebm::TypeRef item_id;
         const ebm::TypeKind& kind;
+        const ebm::IOInputDesc& io_input_desc;
     };
     struct VisitorTag_Type_ENCODER_INPUT {};
     // Deconstruct context fields
     #define EBM2C_DECONSTRUCT_TYPE_ENCODER_INPUT(instance_name) \
-    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;
+    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& io_input_desc = instance_name.io_input_desc;
     template <typename Result>
     struct Context_Type_ENCODER_INPUT_before : ebmcodegen::util::ContextBase<Context_Type_ENCODER_INPUT_before<Result>> {
         constexpr static std::string_view context_name = "Type_ENCODER_INPUT_before";
         BaseVisitor& visitor;
         ebm::TypeRef item_id;
         const ebm::TypeKind& kind;
+        const ebm::IOInputDesc& io_input_desc;
         ebmcodegen::util::MainLogicWrapper<Result> main_logic;
     };
     struct VisitorTag_Type_ENCODER_INPUT_before {};
     // Deconstruct context fields
     #define EBM2C_DECONSTRUCT_TYPE_ENCODER_INPUT_BEFORE(instance_name) \
-    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& main_logic = instance_name.main_logic;
+    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& io_input_desc = instance_name.io_input_desc;auto& main_logic = instance_name.main_logic;
     template <typename Result>
     struct Context_Type_ENCODER_INPUT_after : ebmcodegen::util::ContextBase<Context_Type_ENCODER_INPUT_after<Result>> {
         constexpr static std::string_view context_name = "Type_ENCODER_INPUT_after";
         BaseVisitor& visitor;
         ebm::TypeRef item_id;
         const ebm::TypeKind& kind;
+        const ebm::IOInputDesc& io_input_desc;
         ebmcodegen::util::MainLogicWrapper<Result> main_logic;
         expected<Result>& result;
     };
     struct VisitorTag_Type_ENCODER_INPUT_after {};
     // Deconstruct context fields
     #define EBM2C_DECONSTRUCT_TYPE_ENCODER_INPUT_AFTER(instance_name) \
-    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& main_logic = instance_name.main_logic;auto& result = instance_name.result;
+    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& io_input_desc = instance_name.io_input_desc;auto& main_logic = instance_name.main_logic;auto& result = instance_name.result;
     struct Context_Type_DECODER_INPUT : ebmcodegen::util::ContextBase<Context_Type_DECODER_INPUT> {
         constexpr static std::string_view context_name = "Type_DECODER_INPUT";
         BaseVisitor& visitor;
         ebm::TypeRef item_id;
         const ebm::TypeKind& kind;
+        const ebm::IOInputDesc& io_input_desc;
     };
     struct VisitorTag_Type_DECODER_INPUT {};
     // Deconstruct context fields
     #define EBM2C_DECONSTRUCT_TYPE_DECODER_INPUT(instance_name) \
-    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;
+    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& io_input_desc = instance_name.io_input_desc;
     template <typename Result>
     struct Context_Type_DECODER_INPUT_before : ebmcodegen::util::ContextBase<Context_Type_DECODER_INPUT_before<Result>> {
         constexpr static std::string_view context_name = "Type_DECODER_INPUT_before";
         BaseVisitor& visitor;
         ebm::TypeRef item_id;
         const ebm::TypeKind& kind;
+        const ebm::IOInputDesc& io_input_desc;
         ebmcodegen::util::MainLogicWrapper<Result> main_logic;
     };
     struct VisitorTag_Type_DECODER_INPUT_before {};
     // Deconstruct context fields
     #define EBM2C_DECONSTRUCT_TYPE_DECODER_INPUT_BEFORE(instance_name) \
-    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& main_logic = instance_name.main_logic;
+    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& io_input_desc = instance_name.io_input_desc;auto& main_logic = instance_name.main_logic;
     template <typename Result>
     struct Context_Type_DECODER_INPUT_after : ebmcodegen::util::ContextBase<Context_Type_DECODER_INPUT_after<Result>> {
         constexpr static std::string_view context_name = "Type_DECODER_INPUT_after";
         BaseVisitor& visitor;
         ebm::TypeRef item_id;
         const ebm::TypeKind& kind;
+        const ebm::IOInputDesc& io_input_desc;
         ebmcodegen::util::MainLogicWrapper<Result> main_logic;
         expected<Result>& result;
     };
     struct VisitorTag_Type_DECODER_INPUT_after {};
     // Deconstruct context fields
     #define EBM2C_DECONSTRUCT_TYPE_DECODER_INPUT_AFTER(instance_name) \
-    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& main_logic = instance_name.main_logic;auto& result = instance_name.result;
+    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& io_input_desc = instance_name.io_input_desc;auto& main_logic = instance_name.main_logic;auto& result = instance_name.result;
     struct Context_Type_PROPERTY_SETTER_RETURN : ebmcodegen::util::ContextBase<Context_Type_PROPERTY_SETTER_RETURN> {
         constexpr static std::string_view context_name = "Type_PROPERTY_SETTER_RETURN";
         BaseVisitor& visitor;
