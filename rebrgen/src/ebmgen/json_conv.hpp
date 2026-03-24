@@ -51,6 +51,8 @@ namespace ebm {
     
     bool from_json(IOData& obj, const futils::json::JSON& j);
     
+    bool from_json(IOInputDesc& obj, const futils::json::JSON& j);
+    
     bool from_json(Identifier& obj, const futils::json::JSON& j);
     
     bool from_json(IdentifierRef& obj, const futils::json::JSON& j);

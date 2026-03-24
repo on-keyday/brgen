@@ -13,15 +13,30 @@
         module_: ebmgen::MappingTable
       item_id: ebm::StatementRef
       kind: const ebm::StatementKind&
-      write_data: IOData
+      write_data: const ebm::IOData&
         io_ref: StatementRef
         field: WeakStatementRef
         target: ExpressionRef
         data_type: TypeRef
         attribute: IOAttribute
+          endian: Endian
+          sign: bool
+          is_peek: bool
+          has_lowered_statement: bool
+          has_offset: bool
+          reserved: bool
+          dynamic_ref: *StatementRef
         size: Size
+          unit: SizeUnit
+          ref: *ExpressionRef
+          size: *Varint
         lowered_statement: *LoweredIOStatement
+          lowering_type: LoweringIOType
+          io_statement: LoweredStatementRef
         offset: *Size
+          unit: SizeUnit
+          ref: *ExpressionRef
+          size: *Varint
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 

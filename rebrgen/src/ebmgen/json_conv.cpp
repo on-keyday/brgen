@@ -1300,6 +1300,52 @@ namespace ebm {
         return true;
     }
     
+    bool from_json(IOInputDesc& obj, const futils::json::JSON& j) {
+        if (auto got = j.at("is_seekable")) {
+            bool tmp;
+            if(!futils::json::convert_from_json(*got, tmp)) {
+                return false;
+            }
+            obj.is_seekable(std::move(tmp));
+        }
+        else {
+            return false;
+        }
+        if (auto got = j.at("has_absolute_offset")) {
+            bool tmp;
+            if(!futils::json::convert_from_json(*got, tmp)) {
+                return false;
+            }
+            obj.has_absolute_offset(std::move(tmp));
+        }
+        else {
+            return false;
+        }
+        if (auto got = j.at("has_bit_offset")) {
+            bool tmp;
+            if(!futils::json::convert_from_json(*got, tmp)) {
+                return false;
+            }
+            obj.has_bit_offset(std::move(tmp));
+        }
+        else {
+            return false;
+        }
+        if (auto got = j.at("reserved")) {
+            std::uint8_t tmp;
+            if(!futils::json::convert_from_json(*got, tmp)) {
+                return false;
+            }
+            if(!obj.reserved(std::move(tmp))) {
+                return false;
+            }
+        }
+        else {
+            return false;
+        }
+        return true;
+    }
+    
     bool from_json(Identifier& obj, const futils::json::JSON& j) {
         if (auto got = j.at("id")) {
             if(!futils::json::convert_from_json(*got, obj.id)) {
@@ -3007,6 +3053,15 @@ namespace ebm {
                 return false;
             }
             if(!obj.inner_type(std::move(tmp))) {
+                return false;
+            }
+        }
+        if (auto got = j.at("io_input_desc")) {
+            IOInputDesc tmp;
+            if(!futils::json::convert_from_json(*got, tmp)) {
+                return false;
+            }
+            if(!obj.io_input_desc(std::move(tmp))) {
                 return false;
             }
         }

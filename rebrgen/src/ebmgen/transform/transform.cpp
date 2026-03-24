@@ -57,10 +57,14 @@ namespace ebmgen {
         if (timer) {
             timer("derive encode/decode wrapper");
         }
+        MAYBE_VOID(propagate_io, propagate_io_input_desc(ctx, timer));
+        if (timer) {
+            timer("propagate io input desc");
+        }
         if (!debug) {
             MAYBE_VOID(remove_unused, remove_unused_object(ctx, timer));
-            ctx.recalculate_id_index_map();
         }
+        ctx.recalculate_id_index_map();
         return {};
     }
 }  // namespace ebmgen

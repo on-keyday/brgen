@@ -862,6 +862,12 @@ enum ArrayAnnotation:
     read_temporary
     write_temporary
 
+format IOInputDesc:
+    is_seekable :u1 # Whether the input stream supports seeking (e.g., for random access)
+    has_absolute_offset :u1 # Whether the input stream has an absolute offset (for alignment or length calculation)
+    has_bit_offset :u1 # Whether the input stream has a bit-level offset (for bit-level parsing)
+    reserved :u5
+
 format TypeBody:
     kind :TypeKind
     match kind:
@@ -892,6 +898,10 @@ format TypeBody:
             base_type :TypeRef # Base type of the range (e.g., u8, u16) (maybe null)
         TypeKind.FUNCTION:
             func_desc :FuncTypeDesc # Function type description
+        TypeKind.ENCODER_INPUT:
+            io_input_desc :IOInputDesc
+        TypeKind.DECODER_INPUT:
+            io_input_desc :IOInputDesc
 
 format AnyRef:
     id :Varint # Reference to an entry in the identifiers, types, or expressions table

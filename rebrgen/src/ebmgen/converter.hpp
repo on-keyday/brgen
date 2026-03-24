@@ -5,11 +5,13 @@
 #include <ebm/extended_binary_module.hpp>
 #include <memory>
 #include <unordered_map>
+#include <unordered_set>
 #include "core/ast/node/ast_enum.h"
 #include "core/ast/node/base.h"
 #include "core/ast/node/expr.h"
 #include "core/ast/node/translated.h"
 #include "core/ast/node/type.h"
+#include "ebmgen/common.hpp"
 #include "reloc_ptr.hpp"
 #include <wrap/cout.h>
 
@@ -39,6 +41,11 @@ namespace ebmgen {
         alias_creation_to,
         alias_creation_from,
         creation,
+        alias_rewrite_target,
+        alias_rewrite_old,
+        alias_rewrite_new,
+        alias_recalculation_from,
+        alias_recalculation_to,
     };
 
     void debug_id_inspect(std::uint64_t id, DebugIDInspect issue);
@@ -184,6 +191,8 @@ namespace ebmgen {
             alias_id_map.clear();
             for (auto& alias : aliases) {
                 if (alias.hint == hint) {
+                    debug_id_inspect(get_id(alias.from), DebugIDInspect::alias_recalculation_from);
+                    debug_id_inspect(get_id(alias.to), DebugIDInspect::alias_recalculation_to);
                     alias_id_map[get_id(alias.from)] = get_id(alias.to);
                 }
             }
@@ -194,6 +203,25 @@ namespace ebmgen {
             for (const auto& instance : instances) {
                 cache[serialize(instance.body).value()] = instance.id;
             }
+        }
+
+        expected<void> rewrite_alias_target(const ID& alias_id, const ID& new_target_id) {
+            debug_id_inspect(get_id(alias_id), DebugIDInspect::alias_rewrite_target);
+            auto alias_it = alias_id_map.find(get_id(alias_id));
+            if (alias_it == alias_id_map.end()) {
+                return unexpect_error("Alias ID not found: {}", get_id(alias_id));
+            }
+            debug_id_inspect(alias_it->second, DebugIDInspect::alias_rewrite_old);
+            debug_id_inspect(get_id(new_target_id), DebugIDInspect::alias_rewrite_new);
+            auto old_target_ref = alias_it->second;
+            alias_it->second = get_id(new_target_id);
+            for (auto& alias : aliases) {
+                if (alias.hint == hint && get_id(alias.from) == get_id(alias_id) && get_id(alias.to) == old_target_ref) {
+                    alias.to = to_any_ref(new_target_id);
+                    return {};
+                }
+            }
+            return unexpect_error("Alias target not found for alias ID: {}", get_id(alias_id));
         }
 
        private:
@@ -224,10 +252,12 @@ namespace ebmgen {
         ebm::TypeRef encode_type;
         ebm::ExpressionRef encoder_input;
         ebm::StatementRef encoder_input_def;
+        ebm::TypeRef encoder_input_type;
         ebm::ExpressionRef decode;
         ebm::TypeRef decode_type;
         ebm::ExpressionRef decoder_input;
         ebm::StatementRef decoder_input_def;
+        ebm::TypeRef decoder_input_type;
         StateVariables state_variables;
     };
 
@@ -258,6 +288,10 @@ namespace ebmgen {
         bool on_available_check = false;
         ebm::StatementRef current_function_id;
         ebm::TypeRef current_function_return_type;
+        ebm::IOInputDesc current_io_input_desc;
+        bool needs_propagate_io_input_desc = false;
+        std::unordered_map<ebm::TypeRef, std::vector<ebm::TypeRef>> propagated_io_input_desc_hierarchy;
+        std::unordered_set<ebm::TypeRef> recursive_io_input_descs;
 
         void debug_visited(const char* action, const std::shared_ptr<ast::Node>& node, ebm::StatementRef ref, GenerateType typ) const;
 
@@ -301,8 +335,44 @@ namespace ebmgen {
             return current_function_id;
         }
 
+        ebm::IOInputDesc& get_current_io_input_desc() {
+            return current_io_input_desc;
+        }
+
+        void need_propagate_io_input_desc() {
+            needs_propagate_io_input_desc = true;
+        }
+
+        void set_recursive_io_input_desc(ebm::TypeRef type) {
+            recursive_io_input_descs.insert(type);
+        }
+
+        auto& get_recursive_io_input_descs() {
+            return recursive_io_input_descs;
+        }
+
+        [[nodiscard]] bool should_propagate_io_input_desc() const {
+            return needs_propagate_io_input_desc;
+        }
+
         ebm::TypeRef get_current_function_return_type() const {
             return current_function_return_type;
+        }
+
+        void add_propagated_io_input_desc_hierarchy(ebm::TypeRef parent, ebm::TypeRef child) {
+            propagated_io_input_desc_hierarchy[parent].push_back(child);
+        }
+
+        auto& get_propagated_io_input_desc_hierarchy() {
+            return propagated_io_input_desc_hierarchy;
+        }
+
+        [[nodiscard]] auto enter_io_input_desc() {
+            auto old = current_io_input_desc;
+            current_io_input_desc = ebm::IOInputDesc{};
+            return futils::helper::defer([this, old]() {
+                current_io_input_desc = old;
+            });
         }
 
         [[nodiscard]] auto set_current_function_id(ebm::StatementRef id, ebm::TypeRef return_type) {
@@ -367,21 +437,25 @@ namespace ebmgen {
                                       ebm::TypeRef encode_type,
                                       ebm::ExpressionRef encoder_input,
                                       ebm::StatementRef encoder_input_def,
+                                      ebm::TypeRef encoder_input_type,
                                       ebm::ExpressionRef decode,
                                       ebm::TypeRef decode_type,
                                       ebm::ExpressionRef decoder_input,
                                       ebm::StatementRef decoder_input_def,
+                                      ebm::TypeRef decoder_input_type,
                                       StateVariables state_variables) {
             format_encode_decode[node] = FormatEncodeDecode{
                 .encode = encode,
                 .encode_type = encode_type,
                 .encoder_input = encoder_input,
                 .encoder_input_def = encoder_input_def,
+                .encoder_input_type = encoder_input_type,
                 .decode = decode,
                 .decode_type = decode_type,
                 .decoder_input = decoder_input,
                 .decoder_input_def = decoder_input_def,
-                .state_variables = state_variables,
+                .decoder_input_type = decoder_input_type,
+                .state_variables = std::move(state_variables),
             };
             format_encode_decode_cache[get_id(format_id)] = &format_encode_decode[node];
         }
@@ -527,7 +601,7 @@ namespace ebmgen {
             debug_loc.column = column;
             debug_loc.start = start;
             debug_loc.end = end;
-            debug_locs.push_back(std::move(debug_loc));
+            debug_locs.push_back(debug_loc);
             return {};
         }
 
@@ -609,6 +683,10 @@ namespace ebmgen {
 
         ebm::Type* get_type(const ebm::TypeRef& ref) {
             return type_repo.get(ref);
+        }
+
+        expected<void> rewrite_type_alias(ebm::TypeRef alias_id, ebm::TypeRef new_target_id) {
+            return type_repo.rewrite_alias_target(alias_id, new_target_id);
         }
     };
 
@@ -741,7 +819,7 @@ namespace ebmgen {
         expected<void> convert_expr_impl(const std::shared_ptr<ast::Expr>& node, ebm::ExpressionBody& body);
     };
 
-    expected<ebm::ExpressionRef> get_alignment_requirement(ConverterContext& ctx, std::uint64_t alignment_bytes, ebm::StreamType type);
+    expected<ebm::ExpressionRef> get_alignment_requirement(ConverterContext& ctx, std::uint64_t alignment_bytes, ebm::StreamType type, ebm::StatementRef io_ref);
 
     struct EncoderConverter {
         ConverterContext& ctx;

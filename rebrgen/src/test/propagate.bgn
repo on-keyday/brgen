@@ -1,0 +1,28 @@
+format X:
+    prop :X
+    other :Other
+
+format Y:
+    prop :X 
+    other :Other
+   
+format Other:
+ prop :Prop
+
+format None:
+    x :u8
+
+format Prop:
+    len :u8
+    if len == 3:
+        p :u16
+    else:
+        m :Main
+
+format Main:
+    prop :Prop
+    x ::= input.offset
+    copy :[x]u8 
+
+format In:
+    internet :u8
