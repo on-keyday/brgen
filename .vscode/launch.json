@@ -155,7 +155,11 @@
       "type": "cppvsdbg",
       "request": "launch",
       "program": "${workspaceRoot}/rebrgen/tool/ebmgen",
-      "args": ["-i", "${workspaceRoot}/rebrgen/src/test/http2_frame_test.bgn"],
+      "args": [
+        "-i",
+        "${workspaceRoot}/rebrgen/src/test/native_endian_test.bgn",
+        "-g"
+      ],
       "stopAtEntry": false,
       "cwd": "${workspaceRoot}",
       "environment": [],

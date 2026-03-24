@@ -4,6 +4,7 @@
 #include "core/ast/node/ast_enum.h"
 #include "core/ast/node/base.h"
 #include "core/ast/node/expr.h"
+#include "core/ast/node/literal.h"
 #include "core/ast/node/translated.h"
 #include "core/ast/node/type.h"
 #include "ebm/extended_binary_module.hpp"
@@ -99,7 +100,7 @@ namespace ebmgen {
                 EBMA_CONVERT_EXPRESSION(target, bop->right);
                 EBMA_ADD_IDENTIFIER(ident_ref, ident->ident);
                 result_loop_stmt.collection(target);
-                if (ast::as<ast::IntType>(bop->right->expr_type)) {
+                if (ast::as<ast::IntType>(bop->right->expr_type) || ast::as<ast::IntLiteralType>(bop->right->expr_type)) {
                     result_loop_stmt.loop_type = ebm::LoopType::FOR_INT;
                     EBMA_CONVERT_TYPE(expr_type, bop->left->expr_type);
                     EBM_COUNTER_LOOP_START_CUSTOM(i, expr_type);
@@ -309,8 +310,21 @@ namespace ebmgen {
     expected<ebm::TypeRef> get_coder_input(ConverterContext& ctx, bool enc) {
         ebm::TypeBody b;
         b.kind = enc ? ebm::TypeKind::ENCODER_INPUT : ebm::TypeKind::DECODER_INPUT;
-        EBMA_ADD_TYPE(coder_input, std::move(b));
+        b.io_input_desc({});  // first, no need to set the actual desc
+        auto c = b;
+        EBMA_ADD_TYPE(actual_type, std::move(c));  // force add normal type
+        MAYBE(alias_type, ctx.repository().new_type_id());
+        EBMA_ADD_TYPE(coder_input, alias_type, std::move(b));
         return coder_input;
+    }
+
+    expected<void> rewrite_input_type_with_io_desc(ConverterContext& ctx, ebm::TypeRef id, bool enc, const ebm::IOInputDesc& desc) {
+        ebm::TypeBody b;
+        b.kind = enc ? ebm::TypeKind::ENCODER_INPUT : ebm::TypeKind::DECODER_INPUT;
+        b.io_input_desc(desc);  // first, no need to set the actual desc
+        EBMA_ADD_TYPE(actual_type, std::move(b));
+        MAYBE_VOID(_, ctx.repository().rewrite_type_alias(id, actual_type));
+        return {};
     }
 
     expected<void> StatementConverter::convert_statement_impl(const std::shared_ptr<ast::Return>& node, ebm::StatementRef id, ebm::StatementBody& body) {
@@ -661,9 +675,14 @@ namespace ebmgen {
         self_expr_body.type = struct_type;
         EBMA_ADD_EXPR(self_expr, std::move(self_expr_body));
 
+        if (node->body->struct_type->recursive) {
+            ctx.state().set_recursive_io_input_desc(encoder_input);
+            ctx.state().set_recursive_io_input_desc(decoder_input);
+        }
+
         auto set_self = ctx.state().set_self_ref(self_expr);
 
-        auto get_type = [&](std::shared_ptr<ast::Function> fn, GenerateType typ) -> expected<ebm::TypeRef> {
+        auto get_type = [&](const std::shared_ptr<ast::Function>& fn, GenerateType typ) -> expected<ebm::TypeRef> {
             ebm::TypeBody b;
             b.kind = typ == GenerateType::Encode ? ebm::TypeKind::ENCODER_RETURN : ebm::TypeKind::DECODER_RETURN;
             EBMA_ADD_TYPE(fn_return, std::move(b));
@@ -717,14 +736,17 @@ namespace ebmgen {
             });
         }
 
-        ctx.state().add_format_encode_decode(node, id, encode, enc_type, writer, writer_def,
-                                             decode, dec_type, reader, reader_def,
-                                             state_vars);
+        ctx.state().add_format_encode_decode(
+            node, id,
+            encode, enc_type, writer, writer_def, encoder_input,
+            decode, dec_type, reader, reader_def, decoder_input,
+            state_vars);
         const auto _node = ctx.state().set_current_node(node);
         MAYBE(struct_decl, ctx.get_statement_converter().convert_struct_decl(name_ref, node->body->struct_type));
 
-        auto handle = [&](ebm::StatementRef fn_ref, std::shared_ptr<ast::Function> fn, ebm::StatementRef coder_input, GenerateType typ) -> expected<void> {
+        auto handle = [&](ebm::StatementRef fn_ref, const std::shared_ptr<ast::Function>& fn, ebm::StatementRef coder_input, ebm::TypeRef coder_input_type, GenerateType typ) -> expected<void> {
             const auto _mode = ctx.state().set_current_generate_type(typ);
+            const auto _input = ctx.state().enter_io_input_desc();
             ebm::FunctionDecl derived_fn;
             if (fn) {
                 MAYBE(decl, ctx.get_statement_converter().convert_function_decl(fn_ref, fn, typ, coder_input));
@@ -761,11 +783,12 @@ namespace ebmgen {
             b.kind = ebm::StatementKind::FUNCTION_DECL;
             b.func_decl(std::move(derived_fn));
             EBMA_ADD_STATEMENT(stmt, fn_ref, std::move(b));
-            fn_ref = stmt;
+            assert(stmt == fn_ref);
+            MAYBE_VOID(_, rewrite_input_type_with_io_desc(ctx, coder_input_type, typ == GenerateType::Encode, ctx.state().get_current_io_input_desc()));
             return {};
         };
-        MAYBE_VOID(ok1, handle(enc_id, node->encode_fn.lock(), writer_def, GenerateType::Encode));
-        MAYBE_VOID(ok2, handle(dec_id, node->decode_fn.lock(), reader_def, GenerateType::Decode));
+        MAYBE_VOID(ok1, handle(enc_id, node->encode_fn.lock(), writer_def, encoder_input, GenerateType::Encode));
+        MAYBE_VOID(ok2, handle(dec_id, node->decode_fn.lock(), reader_def, decoder_input, GenerateType::Decode));
         struct_decl.has_encode_decode(true);
         struct_decl.encode_fn(enc_id);
         struct_decl.decode_fn(dec_id);
@@ -928,18 +951,21 @@ namespace ebmgen {
         return {};
     }
 
-    expected<ebm::StatementBody> with_io_changed(ConverterContext& ctx, ebm::WeakStatementRef* parent_io_def, ebm::ExpressionRef sub_byte_io, ebm::StatementRef sub_byte_io_def, bool is_enc, auto&& do_io) {
+    expected<ebm::StatementBody> with_io_changed(ConverterContext& ctx, ebm::WeakStatementRef* parent_io_def, ebm::ExpressionRef sub_byte_io, ebm::StatementRef sub_byte_io_def, ebm::TypeRef new_input_type, bool is_enc, auto&& do_io) {
         // this changed io_.[encoder|decoder]_input[def] are used in [encode|decode]_field_type
         MAYBE(io_, ctx.state().get_format_encode_decode(ctx.state().get_current_node()));
         auto& original = (is_enc ? io_.encoder_input : io_.decoder_input);
         auto& original_def = (is_enc ? io_.encoder_input_def : io_.decoder_input_def);
-        auto io_changed = futils::helper::defer([&, original, original_def] {
+        auto& original_type = (is_enc ? io_.encoder_input_type : io_.decoder_input_type);
+        auto io_changed = futils::helper::defer([&, original, original_def, original_type] {
             (is_enc ? io_.encoder_input : io_.decoder_input) = original;
             (is_enc ? io_.encoder_input_def : io_.decoder_input_def) = original_def;
+            (is_enc ? io_.encoder_input_type : io_.decoder_input_type) = original_type;
         });
         *parent_io_def = to_weak(original_def);
         original = sub_byte_io;
         original_def = sub_byte_io_def;
+        original_type = new_input_type;
         return do_io();
     }
 
@@ -998,12 +1024,19 @@ namespace ebmgen {
             EBM_SUB_RANGE_INIT(init, input_typ, sub_range_id);
             EBM_DEFINE_ANONYMOUS_VARIABLE(sub_byte_io, input_typ, init);
             sr.io_ref = sub_byte_io_def;
-            sub_range = std::move(sr);
-            MAYBE(subrange_body, with_io_changed(ctx, &sub_range->parent_io_ref, sub_byte_io, sub_byte_io_def, is_enc, do_io));
+            sub_range = sr;
+            {
+                MAYBE(io_, ctx.state().get_format_encode_decode(ctx.state().get_current_node()));
+                auto parent_input_type = is_enc ? io_.encoder_input_type : io_.decoder_input_type;
+                ctx.state().add_propagated_io_input_desc_hierarchy(parent_input_type, input_typ);
+            }
+            const auto io_desc = ctx.state().enter_io_input_desc();
+            MAYBE(subrange_body, with_io_changed(ctx, &sub_range->parent_io_ref, sub_byte_io, sub_byte_io_def, input_typ, is_enc, do_io));
             EBMA_ADD_STATEMENT(io_stmt, std::move(subrange_body));
             sub_range->io_statement = io_stmt;
             body.kind = ebm::StatementKind::SUB_BYTE_RANGE;
-            body.sub_byte_range(std::move(*sub_range));
+            body.sub_byte_range(*sub_range);
+            MAYBE_VOID(ok, rewrite_input_type_with_io_desc(ctx, input_typ, is_enc, ctx.state().get_current_io_input_desc()));
         }
         else {
             MAYBE(body_, do_io());
@@ -1189,7 +1222,7 @@ namespace ebmgen {
                 node->left->constant_level == ast::ConstantLevel::constant             ? var_decl.decl_kind(ebm::VariableDeclKind::CONSTANT)
                 : node->left->constant_level == ast::ConstantLevel::immutable_variable ? var_decl.decl_kind(ebm::VariableDeclKind::IMMUTABLE)
                                                                                        : var_decl.decl_kind(ebm::VariableDeclKind::MUTABLE);
-                body.var_decl(std::move(var_decl));
+                body.var_decl(var_decl);
             }
         }
         else if (assign_with_op) {

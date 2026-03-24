@@ -236,7 +236,7 @@ namespace ebmgen {
         return ref;
     }
 
-    expected<ebm::ExpressionRef> get_alignment_requirement(ConverterContext& ctx, std::uint64_t alignment_bytes, ebm::StreamType type) {
+    expected<ebm::ExpressionRef> get_alignment_requirement(ConverterContext& ctx, std::uint64_t alignment_bytes, ebm::StreamType type, ebm::StatementRef io_ref) {
         if (alignment_bytes == 0) {
             return unexpect_error("0 is not valid alignment");
         }
@@ -250,7 +250,10 @@ namespace ebmgen {
         body.kind = ebm::ExpressionKind::GET_STREAM_OFFSET;
         body.stream_type(type);
         body.unit(ebm::SizeUnit::BYTE_FIXED);
+        body.io_ref(io_ref);
         EBMA_ADD_EXPR(stream_offset, std::move(body));
+        ctx.state().get_current_io_input_desc().has_absolute_offset(true);
+        ctx.state().need_propagate_io_input_desc();
 
         EBMU_INT_LITERAL(alignment, alignment_bytes);
 
@@ -598,6 +601,13 @@ namespace ebmgen {
                     return unexpect_error("input.offset/input.bit_offset can be used only inside encode/decode function");
                 }
                 body.unit(node->method == ast::IOMethod::input_bit_offset ? ebm::SizeUnit::BIT_FIXED : ebm::SizeUnit::BYTE_FIXED);
+                if (node->method == ast::IOMethod::input_offset) {
+                    ctx.state().get_current_io_input_desc().has_absolute_offset(true);
+                }
+                else {
+                    ctx.state().get_current_io_input_desc().has_bit_offset(true);
+                }
+                ctx.state().need_propagate_io_input_desc();
                 break;
             }
             case ast::IOMethod::input_remain: {

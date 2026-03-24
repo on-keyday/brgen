@@ -193,7 +193,7 @@ namespace ebmgen {
         else if (ast::is_any_range(aty->length)) {
             if (field) {
                 if (is_alignment_vector(field)) {
-                    MAYBE(req_size, get_alignment_requirement(ctx, *field->arguments->alignment_value / 8, ebm::StreamType::OUTPUT));
+                    MAYBE(req_size, get_alignment_requirement(ctx, *field->arguments->alignment_value / 8, ebm::StreamType::INPUT, io_desc.io_ref));
                     MAYBE_VOID(ok, set_dynamic_size(req_size));
                     length = req_size;
                 }
@@ -381,6 +381,8 @@ namespace ebmgen {
         }
         MAYBE(par_encdec, ctx.state().get_format_encode_decode(base));
         MAYBE(cur_encdec, ctx.state().get_format_encode_decode(ctx.state().get_current_node()));
+
+        ctx.state().add_propagated_io_input_desc_hierarchy(cur_encdec.decoder_input_type, par_encdec.decoder_input_type);
 
         EBM_MEMBER_ACCESS(dec_access, par_encdec.decode_type, base_ref, par_encdec.decode);
         call_desc.callee = dec_access;

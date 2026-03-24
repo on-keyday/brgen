@@ -138,7 +138,7 @@ namespace ebmgen {
 
             if (ast::is_any_range(aty->length)) {
                 if (is_alignment_vector(field)) {  // this means array is fixed size, but we need to calculate the alignment at runtime
-                    MAYBE(req_size, get_alignment_requirement(ctx, *field->arguments->alignment_value / 8, ebm::StreamType::OUTPUT));
+                    MAYBE(req_size, get_alignment_requirement(ctx, *field->arguments->alignment_value / 8, ebm::StreamType::OUTPUT, io_desc.io_ref));
                     MAYBE_VOID(ok, set_dynamic_size(req_size));
                     length = req_size;
                 }
@@ -247,6 +247,8 @@ namespace ebmgen {
         MAYBE(par_encdec, ctx.state().get_format_encode_decode(base));
         MAYBE(cur_encdec, ctx.state().get_format_encode_decode(ctx.state().get_current_node()));
 
+        ctx.state().add_propagated_io_input_desc_hierarchy(cur_encdec.encoder_input_type, par_encdec.encoder_input_type);
+
         EBM_MEMBER_ACCESS(enc_access, par_encdec.encode_type, base_ref, par_encdec.encode);
         call_desc.callee = enc_access;
         MAYBE(enc_in_def, ctx.repository().get_expression(cur_encdec.encoder_input));
@@ -316,7 +318,7 @@ namespace ebmgen {
             return unexpect_error("Unsupported type for encoding: {}", node_type_to_string(typ->node_type));
         }
         assert(io_desc.size.unit != ebm::SizeUnit::UNKNOWN);
-        return make_write_data(std::move(io_desc));
+        return make_write_data(io_desc);
     }
 
     expected<ebm::StatementRef> EncoderConverter::encode_multi_byte_int_with_fixed_array(ebm::StatementRef io_ref, ebm::StatementRef field_ref, size_t n, ebm::IOAttribute endian, ebm::ExpressionRef from, ebm::TypeRef cast_from) {
@@ -326,7 +328,7 @@ namespace ebmgen {
         ebm::ReserveData reserve_data;
         reserve_data.write_data = to_weak(write_ref);
         reserve_data.size = fixed_size;
-        EBM_RESERVE_DATA(reserve, std::move(reserve_data));
+        EBM_RESERVE_DATA(reserve, reserve_data);
 
         if (n == 1) {  // special case for 1 byte
             EBM_INDEX(array_index, u8_t, buffer, zero);

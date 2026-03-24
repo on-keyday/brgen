@@ -10,9 +10,9 @@
 namespace ebmgen {
 
     void debug_id_inspect(std::uint64_t id, DebugIDInspect inspect) {
-        if (id == 4774) {
-            ;
-        }
+    }
+
+    static void finalize_inspect(ebm::ExtendedBinaryModule& mod) {
     }
 
     void ConverterState::debug_visited(const char* action, const std::shared_ptr<ast::Node>& node, ebm::StatementRef ref, GenerateType typ) const {
@@ -139,6 +139,8 @@ namespace ebmgen {
 
         ebm.debug_info.locs = std::move(debug_locs);
         ebm.debug_info.len_locs = loc_len;
+
+        finalize_inspect(ebm);
 
         return {};
     }
