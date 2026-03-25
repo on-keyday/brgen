@@ -73,7 +73,7 @@ python script/update_ebm.pyを実行してtest/binary_data/extended_binary_modul
 
 ctx.config()の中身はdefault_codegen_visitor/visitor/Visitor.hppと各言語固有のvisitor/Visitor_before.hppの両方で定義されているため両方確認すること。特にVisitor_before.hppの方は言語ごとに異なるため注意すること。
 
-また言語数はCLAUDE.mdやSKILL.mdに書いてある時点から増えている可能性が高くまた、さらに増える可能性もあるため、そこに書いてある言語個数はあくまで参考程度にとどめて実際のディレクトリ構造とコードを確認すること。
+**重要: 言語数はCLAUDE.mdやSKILL.mdに書いてある時点から増えている可能性が高くまた、さらに増える可能性もあるため、そこに書いてある言語個数はあくまで参考程度にとどめて実際のディレクトリ構造とコードを確認すること。**
 
 ctx.config().\*\_visitorや　ctx.config().\*\_custom, ctx.config().\*\_wrapperの実体はdefault_codegen_visitor/visitor/Visitor.hppに存在しておりdefault_codegen_visitor/visitor/内のデフォルトフック内で呼び出されている。命名規則は以下の通り。
 

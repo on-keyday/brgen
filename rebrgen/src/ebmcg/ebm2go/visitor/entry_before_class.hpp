@@ -466,10 +466,11 @@ DEFINE_VISITOR(entry_before) {
     };
     ctx.config().param_visitor = [](Context_Statement_PARAMETER_DECL& ctx, Result type) -> expected<Result> {
         auto kind = ctx.get_kind(ctx.param_decl.param_type);
-        if (!ctx.config().io_strategy.is_reader_writer_append() &&
-            (kind == ebm::TypeKind::ENCODER_INPUT ||
+        if ((kind == ebm::TypeKind::ENCODER_INPUT ||
              kind == ebm::TypeKind::DECODER_INPUT)) {
-            return CODE(ctx.identifier(), " ", type.to_writer(), ", ", offset_var(ctx.identifier()), " *int");
+            if (!ctx.config().io_strategy.is_reader_writer_append()) {
+                return CODE(ctx.identifier(), " ", type.to_writer(), ", ", offset_var(ctx.identifier()), " *int");
+            }
         }
         return CODE(ctx.identifier(), " ", type.to_writer());
     };
