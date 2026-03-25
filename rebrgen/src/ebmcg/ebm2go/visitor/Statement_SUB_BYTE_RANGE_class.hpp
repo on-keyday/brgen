@@ -39,7 +39,7 @@ DEFINE_VISITOR(Statement_SUB_BYTE_RANGE) {
         MAYBE(length, ctx.sub_byte_range.length());
         MAYBE(length_str, ctx.visit(length));
 
-        if (ctx.config().use_io_reader_writer) {
+        if (ctx.config().io_strategy.is_reader_writer()) {
             if (ctx.sub_byte_range.stream_type == ebm::StreamType::INPUT) {
                 // Decode: read length bytes from reader, wrap in bytes.Reader for child
                 w.writeln(io_, " := io.LimitReader(", parent_io_, ",int64(", length_str.to_writer(), "))");
@@ -84,7 +84,7 @@ DEFINE_VISITOR(Statement_SUB_BYTE_RANGE) {
             w.writeln(offset_var(io_), " := &", offset_var(io_), "Base");
             w.writeln(offset_ref(parent_io_), " += int(", length_str.to_writer(), ")");
         }
-        else if (ctx.config().append_io) {
+        else if (ctx.config().io_strategy.is_append()) {
             w.writeln(io_, " := ", parent_io_);
         }
         else {
@@ -104,7 +104,7 @@ DEFINE_VISITOR(Statement_SUB_BYTE_RANGE) {
         w.write(do_io.to_writer());
 
         if (ctx.sub_byte_range.stream_type == ebm::StreamType::OUTPUT) {
-            if (ctx.config().append_io) {
+            if (ctx.config().io_strategy.is_append()) {
                 w.writeln("if len(", io_, ") - len(", parent_io_, ") != int(", length_str.to_writer(), ") {");
                 ctx.config().imports.insert("fmt");
                 w.indent_writeln("return nil, fmt.Errorf(\"subrange length mismatch: expected %d, got %d\", int(", length_str.to_writer(), ") , len(", io_, ") - len(", parent_io_, "))");

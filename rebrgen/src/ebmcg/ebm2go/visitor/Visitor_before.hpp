@@ -13,8 +13,8 @@ std::unordered_set<std::uint64_t> bulk_primitive;
 std::unordered_set<std::uint64_t> any_variant;
 std::unordered_map<std::uint64_t, std::uint64_t> any_cast_counter;
 std::unordered_set<std::uint64_t> bool_mapped_func;
-bool use_io_reader_writer = true;
-bool append_io = false;
+// bool use_io_reader_writer = true;
+// bool append_io = false;
 ebm::StatementRef current_io;
 std::string encode_fn_name;
 std::string decode_fn_name;
@@ -25,3 +25,4 @@ std::vector<bool> no_heap_mode;
 bool has_byte_io = false;
 
 IOMode io_mode;
+IOStrategy io_strategy;

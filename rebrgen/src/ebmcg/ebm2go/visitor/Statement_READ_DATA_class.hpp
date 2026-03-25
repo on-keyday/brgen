@@ -50,7 +50,7 @@ DEFINE_VISITOR(Statement_READ_DATA) {
             return rctx.visit(low->io_statement.id);
         }
     }
-    if (is_single_byte_io(ctx, ctx.read_data) && ctx.config().decoder_input_type == "io.Reader") {  // currently, only for u8
+    if (is_single_byte_io(ctx, ctx.read_data) && ctx.config().io_strategy.is_std_io()) {  // currently, only for u8
         MAYBE(target, rctx.visit(rctx.read_data.target));
         if (ctx.is(ebm::TypeKind::ARRAY, rctx.read_data.data_type)) {
             target = CODE(target.to_writer(), "[0]");  // for single-byte array, read into the first element
@@ -112,14 +112,14 @@ DEFINE_VISITOR(Statement_READ_DATA) {
         MAYBE(layer_str, get_identifier_layer_str(rctx, from_weak(rctx.read_data.field)));
         layer_str = "\\\"" + layer_str + "\\\"";
         CodeWriter w;
-        if (ctx.config().use_io_reader_writer) {
+        if (ctx.config().io_strategy.is_reader_writer()) {
             // io.Reader mode
             auto read_full = [&](bool init_with_size) {
                 CodeWriter direct_allocate;
                 if (init_with_size) {
                     direct_allocate.writeln(target.to_writer(), " = make([]byte,", size_str, ")");
                 }
-                if (ctx.config().decoder_input_type == "*bytes.Reader") {
+                if (ctx.config().io_strategy.is_bytes_io()) {
                     direct_allocate.writeln("if n, err := ", io_, ".Read(", target.to_writer(), "[:]); err != nil {");
                     if (ctx.config().on_until_eof_loop) {
                         auto scope = direct_allocate.indent_scope();
@@ -177,7 +177,7 @@ DEFINE_VISITOR(Statement_READ_DATA) {
                 return direct_allocate;
             };
             if (auto dyn_size = rctx.read_data.size.ref(); dyn_size && ctx.is(ebm::ExpressionKind::GET_REMAINING_BYTES, *dyn_size)) {
-                if (ctx.config().decoder_input_type == "*bytes.Reader") {
+                if (ctx.config().io_strategy.is_bytes_io()) {
                     // allocate a slice with the remaining length and read directly into it
                     w.writeln("{");
                     {
@@ -222,7 +222,7 @@ DEFINE_VISITOR(Statement_READ_DATA) {
                     w.write(read_full(true));
                 }
                 else {
-                    if (ctx.config().decoder_input_type == "*bytes.Reader") {
+                    if (ctx.config().io_strategy.is_bytes_io()) {
                         w.writeln("if ", io_, ".Len() < ", size_str, " {");
                         ctx.config().imports.insert("fmt");
                         w.indent_writeln("return fmt.Errorf(\"Too larget length requested: %d < %d\",", io_, ".Len(), int64(", size_str, "))");

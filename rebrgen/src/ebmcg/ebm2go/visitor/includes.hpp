@@ -41,14 +41,46 @@ namespace ebm2go {
         bool bytes_io = false;
     };
 
-    inline std::string offset_var(std::string x) {
+    enum class IOKind {
+        Slice,    // []byte with &offset pointer
+        Append,   // []byte append mode
+        BytesIO,  // *bytes.Buffer (encode) / *bytes.Reader (decode)
+        StdIO,    // io.Writer (encode) / io.Reader (decode)
+    };
+
+    struct IOStrategy {
+        IOKind kind = IOKind::Slice;
+
+        bool is_reader_writer() const {
+            return kind == IOKind::BytesIO || kind == IOKind::StdIO;
+        }
+
+        bool is_reader_writer_append() const {
+            return is_reader_writer() || kind == IOKind::Append;
+        }
+
+        bool is_bytes_io() const {
+            return kind == IOKind::BytesIO;
+        }
+        bool is_std_io() const {
+            return kind == IOKind::StdIO;
+        }
+        bool is_append() const {
+            return kind == IOKind::Append;
+        }
+        bool is_slice() const {
+            return kind == IOKind::Slice;
+        }
+    };
+
+    inline std::string offset_var(const std::string& x) {
         return x + "Offset";
     }
-    inline std::string offset_ref(std::string x) {
+    inline std::string offset_ref(const std::string& x) {
         return std::format("*{}Offset", x);
     }
 
-    inline std::string byte_io_ref(std::string x) {
+    inline std::string byte_io_ref(const std::string& x) {
         return std::format("{}ByteIO", x);
     }
 

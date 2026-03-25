@@ -50,8 +50,12 @@ namespace CODEGEN_NAMESPACE {
 
         // When has_wrapper=true, convenience functions delegate to the auto-generated
         // wrapper (no state vars exposed). When false, state vars are threaded through.
-        CodeWriter& conv_def() { return has_wrapper ? empty_cw : def; }
-        CodeWriter& conv_use() { return has_wrapper ? empty_cw : use; }
+        CodeWriter& conv_def() {
+            return has_wrapper ? empty_cw : def;
+        }
+        CodeWriter& conv_use() {
+            return has_wrapper ? empty_cw : use;
+        }
 
         // Emit Must*[_impl]: panics on error, calls inner_fn[_impl]
         void write_must_wrapper(CodeWriter& w, std::string_view must_fn, std::string_view inner_fn,
@@ -117,7 +121,9 @@ namespace CODEGEN_NAMESPACE {
                 {
                     auto scope = w.indent_scope();
                     w.writeln("remain,err := s.", impl_inner, "(buf", use, ")");
-                    w.writeln("if err != nil {"); w.indent_writeln("return err"); w.writeln("}");
+                    w.writeln("if err != nil {");
+                    w.indent_writeln("return err");
+                    w.writeln("}");
                     w.writeln("if len(remain) != 0 {");
                     sctx.config().imports.insert("fmt");
                     w.indent_writeln("return fmt.Errorf(\"expect no remaining bytes but got %d bytes\",len(remain))");
@@ -130,7 +136,9 @@ namespace CODEGEN_NAMESPACE {
             {
                 auto scope = w.indent_scope();
                 w.writeln("remain,err := s.", inner_fn, "(buf", conv_use(), ")");
-                w.writeln("if err != nil {"); w.indent_writeln("return err"); w.writeln("}");
+                w.writeln("if err != nil {");
+                w.indent_writeln("return err");
+                w.writeln("}");
                 w.writeln("if len(remain) != 0 {");
                 sctx.config().imports.insert("fmt");
                 w.indent_writeln("return fmt.Errorf(\"expect no remaining bytes but got %d bytes\",len(remain))");
@@ -149,7 +157,9 @@ namespace CODEGEN_NAMESPACE {
                     sctx.config().imports.insert("bytes");
                     w.writeln("buf := bytes.NewBuffer(reserved)");
                     w.writeln("err := s.", inner_base, "_impl(buf", use, ")");
-                    w.writeln("if err != nil {"); w.indent_writeln("return nil,err"); w.writeln("}");
+                    w.writeln("if err != nil {");
+                    w.indent_writeln("return nil,err");
+                    w.writeln("}");
                     w.writeln("return buf.Bytes(), nil");
                 }
                 w.writeln("}");
@@ -160,7 +170,9 @@ namespace CODEGEN_NAMESPACE {
                 sctx.config().imports.insert("bytes");
                 w.writeln("buf := bytes.NewBuffer(reserved)");
                 w.writeln("err := s.", inner_base, "(buf", conv_use(), ")");
-                w.writeln("if err != nil {"); w.indent_writeln("return nil,err"); w.writeln("}");
+                w.writeln("if err != nil {");
+                w.indent_writeln("return nil,err");
+                w.writeln("}");
                 w.writeln("return buf.Bytes(), nil");
             }
             w.writeln("}");
@@ -176,7 +188,9 @@ namespace CODEGEN_NAMESPACE {
                     sctx.config().imports.insert("bytes");
                     w.writeln("buf := bytes.NewBuffer(reserved)");
                     w.writeln("err := s.", inner_base, "_impl(buf", use, ")");
-                    w.writeln("if err != nil {"); w.indent_writeln("return nil,err"); w.writeln("}");
+                    w.writeln("if err != nil {");
+                    w.indent_writeln("return nil,err");
+                    w.writeln("}");
                     w.writeln("return buf.Bytes(), nil");
                 }
                 w.writeln("}");
@@ -187,7 +201,9 @@ namespace CODEGEN_NAMESPACE {
                 sctx.config().imports.insert("bytes");
                 w.writeln("buf := bytes.NewBuffer(reserved)");
                 w.writeln("err := s.", inner_base, "(buf", conv_use(), ")");
-                w.writeln("if err != nil {"); w.indent_writeln("return nil,err"); w.writeln("}");
+                w.writeln("if err != nil {");
+                w.indent_writeln("return nil,err");
+                w.writeln("}");
                 w.writeln("return buf.Bytes(), nil");
             }
             w.writeln("}");
@@ -202,7 +218,9 @@ namespace CODEGEN_NAMESPACE {
                     auto scope = w.indent_scope();
                     w.writeln("var offset int");
                     w.writeln("err := s.", inner_base, "_impl(buf,&offset", use, ")");
-                    w.writeln("if err != nil {"); w.indent_writeln("return nil,err"); w.writeln("}");
+                    w.writeln("if err != nil {");
+                    w.indent_writeln("return nil,err");
+                    w.writeln("}");
                     w.writeln("return buf[:offset], nil");
                 }
                 w.writeln("}");
@@ -212,7 +230,9 @@ namespace CODEGEN_NAMESPACE {
                 auto scope = w.indent_scope();
                 w.writeln("var offset int");
                 w.writeln("err := s.", inner_base, "(buf,&offset", conv_use(), ")");
-                w.writeln("if err != nil {"); w.indent_writeln("return nil,err"); w.writeln("}");
+                w.writeln("if err != nil {");
+                w.indent_writeln("return nil,err");
+                w.writeln("}");
                 w.writeln("return buf[:offset], nil");
             }
             w.writeln("}");
@@ -228,7 +248,9 @@ namespace CODEGEN_NAMESPACE {
                     sctx.config().imports.insert("bytes");
                     w.writeln("r := bytes.NewReader(buf)");
                     w.writeln("err := s.", inner_base, "_impl(r", use, ")");
-                    w.writeln("if err != nil {"); w.indent_writeln("return nil,err"); w.writeln("}");
+                    w.writeln("if err != nil {");
+                    w.indent_writeln("return nil,err");
+                    w.writeln("}");
                     w.writeln("return buf[int(r.Size()) - r.Len():], nil");
                 }
                 w.writeln("}");
@@ -239,7 +261,9 @@ namespace CODEGEN_NAMESPACE {
                 sctx.config().imports.insert("bytes");
                 w.writeln("r := bytes.NewReader(buf)");
                 w.writeln("err := s.", inner_base, "(r", conv_use(), ")");
-                w.writeln("if err != nil {"); w.indent_writeln("return nil,err"); w.writeln("}");
+                w.writeln("if err != nil {");
+                w.indent_writeln("return nil,err");
+                w.writeln("}");
                 w.writeln("return buf[int(r.Size()) - r.Len():], nil");
             }
             w.writeln("}");
@@ -255,7 +279,9 @@ namespace CODEGEN_NAMESPACE {
                     sctx.config().imports.insert("bytes");
                     w.writeln("r := bytes.NewReader(buf)");
                     w.writeln("err := s.", inner_base, "_impl(r", use, ")");
-                    w.writeln("if err != nil {"); w.indent_writeln("return nil,err"); w.writeln("}");
+                    w.writeln("if err != nil {");
+                    w.indent_writeln("return nil,err");
+                    w.writeln("}");
                     w.writeln("return buf[int(r.Size()) - r.Len():], nil");
                 }
                 w.writeln("}");
@@ -266,7 +292,9 @@ namespace CODEGEN_NAMESPACE {
                 sctx.config().imports.insert("bytes");
                 w.writeln("r := bytes.NewReader(buf)");
                 w.writeln("err := s.", inner_base, "(r", conv_use(), ")");
-                w.writeln("if err != nil {"); w.indent_writeln("return nil,err"); w.writeln("}");
+                w.writeln("if err != nil {");
+                w.indent_writeln("return nil,err");
+                w.writeln("}");
                 w.writeln("return buf[int(r.Size()) - r.Len():], nil");
             }
             w.writeln("}");
@@ -281,7 +309,9 @@ namespace CODEGEN_NAMESPACE {
                     auto scope = w.indent_scope();
                     w.writeln("var offset int");
                     w.writeln("err := s.", inner_base, "_impl(buf,&offset", use, ")");
-                    w.writeln("if err != nil {"); w.indent_writeln("return nil,err"); w.writeln("}");
+                    w.writeln("if err != nil {");
+                    w.indent_writeln("return nil,err");
+                    w.writeln("}");
                     w.writeln("return buf[offset:], nil");
                 }
                 w.writeln("}");
@@ -291,7 +321,9 @@ namespace CODEGEN_NAMESPACE {
                 auto scope = w.indent_scope();
                 w.writeln("var offset int");
                 w.writeln("err := s.", inner_base, "(buf,&offset", conv_use(), ")");
-                w.writeln("if err != nil {"); w.indent_writeln("return nil,err"); w.writeln("}");
+                w.writeln("if err != nil {");
+                w.indent_writeln("return nil,err");
+                w.writeln("}");
                 w.writeln("return buf[offset:], nil");
             }
             w.writeln("}");
@@ -315,7 +347,7 @@ DEFINE_VISITOR(entry_before) {
     ctx.config().io_mode.bytes_io = ctx.flags().bytes_io;
     ctx.config().array_type_wrapper = [&](Context_Type_ARRAY& ctx) -> expected<Result> {
         MAYBE(elem_type, ctx.visit(ctx.element_type));
-        if (!ctx.config().use_io_reader_writer && !ctx.config().append_io && ctx.array_annotation != ebm::ArrayAnnotation::none) {
+        if (!ctx.config().io_strategy.is_reader_writer_append() && ctx.array_annotation != ebm::ArrayAnnotation::none) {
             // In *[]byte mode, annotated arrays are slices (they borrow from the IO buffer)
             return CODE("[]", elem_type.to_writer());
         }
@@ -434,8 +466,7 @@ DEFINE_VISITOR(entry_before) {
     };
     ctx.config().param_visitor = [](Context_Statement_PARAMETER_DECL& ctx, Result type) -> expected<Result> {
         auto kind = ctx.get_kind(ctx.param_decl.param_type);
-        if (!ctx.config().use_io_reader_writer &&
-            !ctx.config().append_io &&
+        if (!ctx.config().io_strategy.is_reader_writer_append() &&
             (kind == ebm::TypeKind::ENCODER_INPUT ||
              kind == ebm::TypeKind::DECODER_INPUT)) {
             return CODE(ctx.identifier(), " ", type.to_writer(), ", ", offset_var(ctx.identifier()), " *int");
@@ -448,8 +479,7 @@ DEFINE_VISITOR(entry_before) {
             return CODE("&", target.to_writer());
         }
         auto kind = ctx.get_kind(ctx.type);
-        if (!ctx.config().use_io_reader_writer &&
-            !ctx.config().append_io &&
+        if (!ctx.config().io_strategy.is_reader_writer_append() &&
             (kind == ebm::TypeKind::ENCODER_INPUT ||
              kind == ebm::TypeKind::DECODER_INPUT)) {
             return CODE(target.to_writer(), ", ", offset_var(target.to_string()));
@@ -463,7 +493,7 @@ DEFINE_VISITOR(entry_before) {
             sctx.config().encoder_input_type = "*bytes.Buffer";
             sctx.config().imports.insert("bytes");
             sctx.config().encode_fn_name = "WriteBuffer";
-            sctx.config().use_io_reader_writer = true;
+            sctx.config().io_strategy = IOStrategy{IOKind::BytesIO};
             MAYBE(enc, sctx.visit(encode_fn));
             w.write(std::move(enc.to_writer()));
             h.write_bytes_io_encode(w, "WriteBuffer");
@@ -472,7 +502,7 @@ DEFINE_VISITOR(entry_before) {
             sctx.config().encoder_input_type = "io.Writer";
             sctx.config().imports.insert("io");
             sctx.config().encode_fn_name = "Write";
-            sctx.config().use_io_reader_writer = true;
+            sctx.config().io_strategy = IOStrategy{IOKind::StdIO};
             MAYBE(enc, sctx.visit(encode_fn));
             w.write(std::move(enc.to_writer()));
             h.write_std_io_encode(w, "Write");
@@ -480,20 +510,17 @@ DEFINE_VISITOR(entry_before) {
         if (sctx.config().io_mode.slice_io) {
             sctx.config().encoder_input_type = "[]byte";
             sctx.config().encode_fn_name = "EncodeSlice";
-            sctx.config().use_io_reader_writer = false;
-            sctx.config().append_io = false;
+            sctx.config().io_strategy = IOStrategy{IOKind::Slice};
             MAYBE(enc, sctx.visit(encode_fn));
             w.write(std::move(enc.to_writer()));
             h.write_slice_io_encode(w, "EncodeSlice");
             sctx.config().encoder_input_type = "[]byte";
             sctx.config().encoder_return_type = "([]byte,error)";
             sctx.config().encode_fn_name = "Append";
-            sctx.config().use_io_reader_writer = false;
-            sctx.config().append_io = true;
+            sctx.config().io_strategy = IOStrategy{IOKind::Append};
             MAYBE(enc2, sctx.visit(encode_fn));
             w.write(std::move(enc2.to_writer()));
             sctx.config().encoder_return_type = "error";
-            sctx.config().append_io = false;
             h.write_must_append_wrapper(w, "Append");
         }
         return w;
@@ -506,7 +533,7 @@ DEFINE_VISITOR(entry_before) {
             sctx.config().decoder_input_type = "*bytes.Reader";
             sctx.config().imports.insert("bytes");
             sctx.config().decode_fn_name = "ReadBuffer";
-            sctx.config().use_io_reader_writer = true;
+            sctx.config().io_strategy = IOStrategy{IOKind::BytesIO};
             MAYBE(dec, sctx.visit(decode_fn));
             w.write(std::move(dec.to_writer()));
             h.write_bytes_io_decode(w, "ReadBuffer");
@@ -515,7 +542,7 @@ DEFINE_VISITOR(entry_before) {
             sctx.config().decoder_input_type = "io.Reader";
             sctx.config().imports.insert("io");
             sctx.config().decode_fn_name = "Read";
-            sctx.config().use_io_reader_writer = true;
+            sctx.config().io_strategy = IOStrategy{IOKind::StdIO};
             MAYBE(dec, sctx.visit(decode_fn));
             w.write(std::move(dec.to_writer()));
             h.write_std_io_decode(w, "Read");
@@ -523,7 +550,7 @@ DEFINE_VISITOR(entry_before) {
         if (sctx.config().io_mode.slice_io) {
             sctx.config().decoder_input_type = "[]byte";
             sctx.config().decode_fn_name = "DecodeSlice";
-            sctx.config().use_io_reader_writer = false;
+            sctx.config().io_strategy = IOStrategy{IOKind::Slice};
             MAYBE(dec, sctx.visit(decode_fn));
             w.write(std::move(dec.to_writer()));
             h.write_slice_io_decode(w, "DecodeSlice");
@@ -674,29 +701,18 @@ DEFINE_VISITOR(entry_before) {
         MAYBE(field_name, get_identifier_layer_str(ctx, from_weak(write_data.field)));
         field_name = "\\\"" + field_name + "\\\"";
         CodeWriter w;
-        if (ctx.config().use_io_reader_writer) {
+        if (ctx.config().io_strategy.is_reader_writer_append()) {
             // In io.Writer mode: no-op. The fixed array declaration provides storage.
             return "";
         }
-        else if (ctx.config().append_io) {
-            // on BIT_IO_TO_BIT_SHIFT lowering
-            // other RESERVE_DATA already reserve space in the IO buffer,
-            // so we can should append only new space
-            // w.writeln(rctx.identifier(), " := len(", io_ref, ") - len(", target.to_writer(), ")");
-            // w.writeln(io_ref, " = append(", io_ref, ", make([]byte,", size_str, "- len(", target.to_writer(), "))...)");
-            // w.writeln(target.to_writer(), " = ", io_ref, "[", rctx.identifier(), ":]");
-            // w.writeln("_ = ", target.to_writer(), "[", size_str, "- 1]");
+        rctx.config().imports.insert("errors");
+        w.writeln("if len(", io_ref, ") - ", offset_ref(io_ref), " < int(", size_str, ") {");
+        {
+            auto scope = w.indent_scope();
+            w.indent_writeln("return errors.New(\"not enough space to reserve data for field ", field_name, "\")");
         }
-        else {
-            rctx.config().imports.insert("errors");
-            w.writeln("if len(", io_ref, ") - ", offset_ref(io_ref), " < int(", size_str, ") {");
-            {
-                auto scope = w.indent_scope();
-                w.indent_writeln("return errors.New(\"not enough space to reserve data for field ", field_name, "\")");
-            }
-            w.writeln("}");
-            w.writeln(target.to_writer(), " = ", io_ref, "[", offset_ref(io_ref), ":", offset_ref(io_ref), "+ int(", size_str, ")]");
-        }
+        w.writeln("}");
+        w.writeln(target.to_writer(), " = ", io_ref, "[", offset_ref(io_ref), ":", offset_ref(io_ref), "+ int(", size_str, ")]");
         return w;
     };
     ctx.config().is_error_visitor = [&](Context_Expression_IS_ERROR& ectx) -> expected<Result> {
@@ -706,12 +722,12 @@ DEFINE_VISITOR(entry_before) {
     ctx.config().error_return_visitor = [&](Context_Statement_ERROR_RETURN& rctx) -> expected<Result> {
         MAYBE(err_expr, ctx.visit(rctx.value));
         CodeWriter w;
-        if (rctx.config().use_io_reader_writer && rctx.config().on_until_eof_loop) {
+        if (rctx.config().io_strategy.is_reader_writer() && rctx.config().on_until_eof_loop) {
             w.writeln("if ", err_expr.to_writer(), " == io.EOF {");
             w.writeln("break");
             w.writeln("}");
         }
-        if (ctx.config().append_io) {
+        if (ctx.config().io_strategy.is_append()) {
             w.writeln("return nil,", err_expr.to_writer());
         }
         else {
@@ -724,7 +740,7 @@ DEFINE_VISITOR(entry_before) {
         auto escaped_msg = futils::escape::escape_str<std::string>(err_expr.body.data);
         CodeWriter w;
         rptctx.config().imports.insert("errors");
-        if (ctx.config().append_io) {
+        if (ctx.config().io_strategy.is_append()) {
             w.writeln("return nil, errors.New(\"", escaped_msg, "\")");
         }
         else {
@@ -812,7 +828,7 @@ DEFINE_VISITOR(entry_before) {
             w.writeln("if !ok {");
             {
                 auto scope = w.indent_scope();
-                std::string nil = ictx.config().append_io ? "nil," : "";
+                std::string nil = ictx.config().io_strategy.is_append() ? "nil," : "";
                 if (ictx.init_check.init_check_type == ebm::InitCheckType::union_init_encode) {
                     ictx.config().imports.insert("errors");
                     w.writeln("return ", nil, "errors.New(\"invalid union type for encoding\")");
@@ -876,7 +892,7 @@ DEFINE_VISITOR(entry_before) {
     ctx.config().can_read_stream_visitor = [&](Context_Expression_CAN_READ_STREAM& cctx) -> expected<Result> {
         auto stream = cctx.identifier(cctx.io_ref);
         MAYBE(size_str, get_size_str(cctx, cctx.num_bytes));
-        if (ctx.config().use_io_reader_writer) {
+        if (ctx.config().io_strategy.is_reader_writer()) {
             if (size_str.to_string() == "1") {
                 // In io.Reader mode, we cannot check remaining bytes without consuming.
                 // For now, always return true and let io.ReadFull fail with io.ErrUnexpectedEOF.
@@ -944,6 +960,8 @@ DEFINE_VISITOR(entry_before) {
                 auto size_str = std::to_string(byte_size * 8);
                 return CODELINE("binary.", endian, ".PutUint", size_str, "(", target.to_writer(), "[:], uint", size_str, "(", value_str.to_writer(), "))");
             }
+            default:
+                break;
         }
         return pass;
     };
@@ -978,6 +996,8 @@ DEFINE_VISITOR(entry_before) {
                 }
                 return CODELINE(target.to_writer(), " = ", to);
             }
+            default:
+                break;
         }
         return pass;
     };

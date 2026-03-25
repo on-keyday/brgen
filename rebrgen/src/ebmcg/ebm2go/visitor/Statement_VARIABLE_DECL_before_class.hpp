@@ -29,7 +29,7 @@ DEFINE_VISITOR(Statement_VARIABLE_DECL_before) {
     using namespace CODEGEN_NAMESPACE;
     /*here to write the hook*/
     MAYBE(type, ctx.get(ctx.var_decl.var_type));
-    if (type.body.kind == ebm::TypeKind::ENCODER_RETURN && ctx.config().append_io) {
+    if (type.body.kind == ebm::TypeKind::ENCODER_RETURN && ctx.config().io_strategy.is_append()) {
         auto io = ctx.identifier(ctx.config().current_io);
         ctx.config().variable_initializer = "=";  // temporary
         auto ident = ctx.identifier();

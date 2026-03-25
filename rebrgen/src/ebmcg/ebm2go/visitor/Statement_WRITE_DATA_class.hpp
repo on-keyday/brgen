@@ -52,7 +52,7 @@ DEFINE_VISITOR(Statement_WRITE_DATA) {
             return wctx.visit(low->io_statement.id);
         }
     }
-    if (is_single_byte_io(ctx, ctx.write_data) && (ctx.config().use_io_reader_writer)) {  // currently, only for u8
+    if (is_single_byte_io(ctx, ctx.write_data) && ctx.config().io_strategy.is_reader_writer()) {  // currently, only for u8
         MAYBE(target, ctx.visit(ctx.write_data.target));
         if (ctx.is(ebm::TypeKind::ARRAY, ctx.write_data.data_type)) {
             target = CODE(target.to_writer(), "[0]");  // for single-byte array, write the first element
@@ -61,7 +61,7 @@ DEFINE_VISITOR(Statement_WRITE_DATA) {
         MAYBE(layer_str, get_identifier_layer_str(ctx, from_weak(ctx.write_data.field)));
         layer_str = "\\\"" + layer_str + "\\\"";
         CodeWriter w;
-        if (ctx.config().encoder_input_type == "*bytes.Buffer") {
+        if (ctx.config().io_strategy.is_bytes_io()) {
             w.writeln("if err := ", io_, ".WriteByte(", target.to_writer(), "); err != nil {");
             w.indent_writeln("return err");
             w.writeln("}");
@@ -99,7 +99,7 @@ DEFINE_VISITOR(Statement_WRITE_DATA) {
         MAYBE(layer_str, get_identifier_layer_str(wctx, from_weak(wctx.write_data.field)));
         layer_str = "\\\"" + layer_str + "\\\"";
         CodeWriter w;
-        if (ctx.config().use_io_reader_writer) {
+        if (ctx.config().io_strategy.is_reader_writer()) {
             // io.Writer mode: write data to writer
             if (cand == BytesType::vector) {
                 auto ref = wctx.write_data.size.ref();
@@ -131,7 +131,7 @@ DEFINE_VISITOR(Statement_WRITE_DATA) {
         };
         if (cand == BytesType::vector) {
             ctx.config().imports.insert("errors");
-            if (!ctx.config().append_io) {
+            if (!ctx.config().io_strategy.is_append()) {
                 w.writeln("if len(", io_, ") - ", offset_ref(io_), " < int(", offset_val, " + ", size_str, ") {");
                 {
                     auto scope = w.indent_scope();
@@ -145,13 +145,13 @@ DEFINE_VISITOR(Statement_WRITE_DATA) {
                 w.writeln("if len(", target.to_writer(), ") != int(", size_str, ") {");
                 ctx.config().imports.insert("fmt");
                 std::string nil;
-                if (ctx.config().append_io) {
+                if (ctx.config().io_strategy.is_append()) {
                     nil = "nil,";
                 }
                 w.indent_writeln("return ", nil, "fmt.Errorf(\"size mismatch when writing field ", layer_str, ": expected %d, got %d\", int(", size_str, "), len(", target.to_writer(), "))");
                 w.writeln("}");
             }
-            if (ctx.config().append_io) {
+            if (ctx.config().io_strategy.is_append()) {
                 w.writeln(io_, " = append(", io_, ",", target.to_writer(), "...)");
             }
             else {
@@ -161,17 +161,17 @@ DEFINE_VISITOR(Statement_WRITE_DATA) {
         else if (cand == BytesType::array) {
             auto array_anno = ctx.get_field<"array_annotation">(wctx.write_data.data_type);
             if (array_anno && *array_anno != ebm::ArrayAnnotation::none) {
-                // if (!ctx.config().append_io) {
+                // if (!ctx.config().io_strategy.is_append()) {
                 //  only shift
                 //  w.writeln("*", io_, " = (*", io_, ")[", offset_val, " + ", size_str, ":]");
                 //}
                 // nothing to do
-                if (ctx.config().append_io) {
+                if (ctx.config().io_strategy.is_append()) {
                     w.writeln(io_, " = append(", io_, ",", target.to_writer(), "[:", size_str, "]...)");
                 }
             }
             else {
-                if (ctx.config().append_io) {
+                if (ctx.config().io_strategy.is_append()) {
                     w.writeln(io_, " = append(", io_, ",", target.to_writer(), "[:", size_str, "]...)");
                 }
                 else {
@@ -186,7 +186,7 @@ DEFINE_VISITOR(Statement_WRITE_DATA) {
                 }
             }
         }
-        if (!ctx.config().append_io) {
+        if (!ctx.config().io_strategy.is_append()) {
             w.writeln(offset_ref(io_), " += int(", size_str, ")");
         }
         return w;
