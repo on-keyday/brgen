@@ -136,14 +136,14 @@ DEFINE_VISITOR(entry_before) {
         CodeWriter w;
         return w;
     };
-    ctx.config().write_data_visitor = [](Context_Statement_WRITE_DATA& ctx) -> expected<Result> {
+    ctx.config().write_data_custom = [](Context_Statement_WRITE_DATA& ctx) -> expected<Result> {
         if (auto ref = ctx.write_data.lowered_statement()) {
             return ctx.visit(ref->io_statement.id);
         }
         CodeWriter w;
         return w;
     };
-    ctx.config().read_data_visitor = [](Context_Statement_READ_DATA& ctx) -> expected<Result> {
+    ctx.config().read_data_custom = [](Context_Statement_READ_DATA& ctx) -> expected<Result> {
         CodeWriter w;
         return w;
     };

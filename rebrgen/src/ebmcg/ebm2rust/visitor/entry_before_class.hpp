@@ -141,27 +141,20 @@ DEFINE_VISITOR(entry_before) {
         auto len = ctx.length.value();
         return CODE("[", type.to_writer(), "; ", std::to_string(len), "]");
     };
-    config.read_data_visitor = [](Context_Statement_READ_DATA& ctx) -> expected<Result> {
+    config.read_data_bytes_io_wrapper = [](Context_Statement_READ_DATA& ctx, BytesType cand, Result target, std::string io_name) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
-        if (auto lw = ctx.read_data.lowered_statement()) {
-            return ctx.visit(lw->io_statement.id);
+        // lowered statement がある場合は default の lowered fallback に委ねる
+        if (ctx.read_data.lowered_statement()) {
+            return pass;
         }
-        MAYBE(target, ctx.visit(ctx.read_data.target));
-        MAYBE(type, ctx.get(ctx.read_data.data_type));
-        auto io_name = ctx.identifier(ctx.read_data.io_ref);
         MAYBE(size, get_size_str(ctx, ctx.read_data.size));
         CodeWriter w;
-        if (auto cand = is_bytes_type(ctx, ctx.read_data.data_type)) {
-            if (cand == BytesType::array) {
-                w.writeln(io_name, ".read_exact(&mut ", target.to_writer(), ")?;");
-            }
-            else {
-                w.writeln(target.to_writer(), ".resize(", size, " as usize,0);");
-                w.writeln(io_name, ".read_exact(&mut ", target.to_writer(), ")?;");
-            }
+        if (cand == BytesType::array) {
+            w.writeln(io_name, ".read_exact(&mut ", target.to_writer(), ")?;");
         }
         else {
-            return unexpect_error("unsupported type for READ_DATA: {}", to_string(type.body.kind));
+            w.writeln(target.to_writer(), ".resize(", size, " as usize,0);");
+            w.writeln(io_name, ".read_exact(&mut ", target.to_writer(), ")?;");
         }
         return w;
     };
@@ -186,22 +179,15 @@ DEFINE_VISITOR(entry_before) {
         use_w.write(std::move(result));
         return Result(std::move(use_w));
     };
-    config.write_data_visitor = [](Context_Statement_WRITE_DATA& ctx) -> expected<Result> {
+    config.write_data_bytes_io_wrapper = [](Context_Statement_WRITE_DATA& ctx, BytesType cand, Result target, std::string io_name) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
-        if (auto lw = ctx.write_data.lowered_statement()) {
-            return ctx.visit(lw->io_statement.id);
+        // lowered statement がある場合は default の lowered fallback に委ねる
+        if (ctx.write_data.lowered_statement()) {
+            return pass;
         }
-        MAYBE(target, ctx.visit(ctx.write_data.target));
-        MAYBE(type, ctx.get(ctx.write_data.data_type));
-        auto io_name = ctx.identifier(ctx.write_data.io_ref);
         MAYBE(size, get_size_str(ctx, ctx.write_data.size));
         CodeWriter w;
-        if (auto cand = is_bytes_type(ctx, ctx.write_data.data_type)) {
-            w.writeln(io_name, ".write_all(&", target.to_writer(), "[..", size, "]", ")?;");
-        }
-        else {
-            return unexpect_error("unsupported type for WRITE_DATA: {}", to_string(type.body.kind));
-        }
+        w.writeln(io_name, ".write_all(&", target.to_writer(), "[..", size, "]", ")?;");
         return w;
     };
     return pass;

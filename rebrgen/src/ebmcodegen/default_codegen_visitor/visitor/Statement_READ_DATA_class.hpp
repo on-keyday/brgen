@@ -41,12 +41,31 @@
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 
 #include "../codegen.hpp"
+#include "ebm/extended_binary_module.hpp"
+#include "ebmcodegen/stub/util.hpp"
 DEFINE_VISITOR(Statement_READ_DATA) {
     using namespace CODEGEN_NAMESPACE;
-    /*here to write the hook*/
-    if (ctx.config().read_data_visitor) {
-        MAYBE(res, ctx.config().read_data_visitor(ctx));
-        return res;
+    // read_data_custom: 先頭で完全インターセプト可能 (pass を返すと共通処理へ)
+    if (ctx.config().read_data_custom) {
+        CALL_OR_PASS(read_data, ctx.config().read_data_custom(ctx));
+    }
+    // Common: VECTORIZED_IO は lowered statement へ委譲
+    if (auto low = ctx.read_data.lowered_statement()) {
+        if (low->lowering_type == ebm::LoweringIOType::VECTORIZED_IO) {
+            return ctx.visit(low->io_statement.id);
+        }
+    }
+    // read_data_bytes_io_wrapper: bytes 型 I/O の言語固有処理 (pass → 共通処理へ)
+    if (ctx.config().read_data_bytes_io_wrapper) {
+        if (auto cand = is_bytes_type(ctx, ctx.read_data.data_type)) {
+            MAYBE(target, ctx.visit(ctx.read_data.target));
+            auto io_name = ctx.identifier(ctx.read_data.io_ref);
+            CALL_OR_PASS(bytes_io, ctx.config().read_data_bytes_io_wrapper(ctx, *cand, std::move(target), std::move(io_name)));
+        }
+    }
+    // Common: その他の lowered statement への委譲
+    if (auto lw = ctx.read_data.lowered_statement()) {
+        return ctx.visit(lw->io_statement.id);
     }
     return ctx.get_impl<expected<Result>>([&](auto&& impl) {
         return impl.visitor_Statement_READ_DATA_GeneratorDefaultHook.visit(ctx);

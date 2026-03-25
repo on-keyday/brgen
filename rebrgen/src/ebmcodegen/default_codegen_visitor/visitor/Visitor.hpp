@@ -110,8 +110,10 @@ bool func_style_cast = true;
 std::vector<CodeWriter> decl_toplevel;
 bool on_assign = false;  // useful for expression generation
 
-std::function<expected<Result>(Context_Statement_WRITE_DATA& ctx)> write_data_visitor;
-std::function<expected<Result>(Context_Statement_READ_DATA& ctx)> read_data_visitor;
+std::function<expected<Result>(Context_Statement_WRITE_DATA& ctx)> write_data_custom;
+std::function<expected<Result>(Context_Statement_READ_DATA& ctx)> read_data_custom;
+std::function<expected<Result>(Context_Statement_READ_DATA& ctx, BytesType cand, Result target, std::string io_name)> read_data_bytes_io_wrapper;
+std::function<expected<Result>(Context_Statement_WRITE_DATA& ctx, BytesType cand, Result target, std::string io_name)> write_data_bytes_io_wrapper;
 std::function<expected<Result>(Context_Expression_CAN_READ_STREAM& ctx)> can_read_stream_visitor;
 std::function<expected<Result>(Context_Statement_RESERVE_DATA& ctx)> reserve_data_visitor;
 

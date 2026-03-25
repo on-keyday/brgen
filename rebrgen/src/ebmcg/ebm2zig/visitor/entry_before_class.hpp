@@ -447,62 +447,32 @@ DEFINE_VISITOR(entry_before) {
 
     // === IO hooks ===
 
-    // WRITE_DATA: basic byte-array IO using writer.writeAll()
-    config.write_data_visitor = [&](Context_Statement_WRITE_DATA& wctx) -> expected<Result> {
-        // Delegate VECTORIZED_IO to lowered statement
-        if (auto low = wctx.write_data.lowered_statement()) {
-            if (low->lowering_type == ebm::LoweringIOType::VECTORIZED_IO) {
-                return wctx.visit(low->io_statement.id);
-            }
+    // WRITE_DATA: bytes 型 I/O (VECTORIZED_IO/lowered fallback は default で処理)
+    config.write_data_bytes_io_wrapper = [&](Context_Statement_WRITE_DATA& wctx, BytesType cand, Result target, std::string io_) -> expected<Result> {
+        CodeWriter w;
+        if (cand == BytesType::array) {
+            w.writeln("try ", io_, ".writeAll(&", target.to_writer(), ");");
         }
-        if (auto cand = is_bytes_type(wctx, wctx.write_data.data_type)) {
-            MAYBE(target, wctx.visit(wctx.write_data.target));
-            auto io_ = wctx.identifier(wctx.write_data.io_ref);
-            CodeWriter w;
-            if (cand == BytesType::array) {
-                w.writeln("try ", io_, ".writeAll(&", target.to_writer(), ");");
-            }
-            else {
-                // vector/slice
-                w.writeln("try ", io_, ".writeAll(", target.to_writer(), ");");
-            }
-            return w;
+        else {
+            // vector/slice
+            w.writeln("try ", io_, ".writeAll(", target.to_writer(), ");");
         }
-        // Delegate other lowered statements
-        if (auto lw = wctx.write_data.lowered_statement()) {
-            return wctx.visit(lw->io_statement.id);
-        }
-        return CODELINE("// TODO(ebm2zig): WRITE_DATA not yet implemented");
+        return w;
     };
 
-    // READ_DATA: basic byte-array IO using reader.readNoEof()
-    config.read_data_visitor = [&](Context_Statement_READ_DATA& rctx) -> expected<Result> {
-        // Delegate VECTORIZED_IO to lowered statement
-        if (auto low = rctx.read_data.lowered_statement()) {
-            if (low->lowering_type == ebm::LoweringIOType::VECTORIZED_IO) {
-                return rctx.visit(low->io_statement.id);
-            }
+    // READ_DATA: bytes 型 I/O (VECTORIZED_IO/lowered fallback は default で処理)
+    config.read_data_bytes_io_wrapper = [&](Context_Statement_READ_DATA& rctx, BytesType cand, Result target, std::string io_) -> expected<Result> {
+        CodeWriter w;
+        if (cand == BytesType::array) {
+            w.writeln("try ", io_, ".readNoEof(&", target.to_writer(), ");");
         }
-        if (auto cand = is_bytes_type(rctx, rctx.read_data.data_type)) {
-            MAYBE(target, rctx.visit(rctx.read_data.target));
-            auto io_ = rctx.identifier(rctx.read_data.io_ref);
-            CodeWriter w;
-            if (cand == BytesType::array) {
-                w.writeln("try ", io_, ".readNoEof(&", target.to_writer(), ");");
-            }
-            else {
-                // vector/slice: need to allocate first
-                MAYBE(size_str, get_size_str(rctx, rctx.read_data.size));
-                w.writeln(target.to_writer(), " = try allocator.alloc(u8, ", size_str, ");");
-                w.writeln("try ", io_, ".readNoEof(", target.to_writer(), ");");
-            }
-            return w;
+        else {
+            // vector/slice: need to allocate first
+            MAYBE(size_str, get_size_str(rctx, rctx.read_data.size));
+            w.writeln(target.to_writer(), " = try allocator.alloc(u8, ", size_str, ");");
+            w.writeln("try ", io_, ".readNoEof(", target.to_writer(), ");");
         }
-        // Delegate other lowered statements
-        if (auto lw = rctx.read_data.lowered_statement()) {
-            return rctx.visit(lw->io_statement.id);
-        }
-        return CODELINE("// TODO(ebm2zig): READ_DATA not yet implemented");
+        return w;
     };
 
     return pass;
