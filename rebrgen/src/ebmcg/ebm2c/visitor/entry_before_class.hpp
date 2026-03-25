@@ -125,5 +125,90 @@ DEFINE_VISITOR(entry_before) {
     };
     // Native endian: use a compile-time preprocessor constant (GCC/Clang).
     ctx.config().native_endian_check = "(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)";
+    ctx.config().read_data_custom = [](Context_Statement_READ_DATA& ctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        auto lw = ctx.read_data.lowered_statement();
+        if (!lw) return pass;
+        if (lw->lowering_type == ebm::LoweringIOType::VECTORIZED_IO) return pass;
+        // bytes型はbytes_io_wrapperに委ねる（read_temporaryも含む）
+        if (is_bytes_type(ctx, ctx.read_data.data_type)) return pass;
+        if (lw->lowering_type == ebm::LoweringIOType::ARRAY_FOR_EACH &&
+            ctx.read_data.size.unit != ebm::SizeUnit::DYNAMIC) {
+            MAYBE(target, ctx.visit(ctx.read_data.target));
+            if (auto length = get_element_count_default(ctx, ctx.read_data.data_type, ctx.read_data.size)) {
+                CodeWriter w;
+                w.writeln("EBM_RESERVE_VECTOR(", target.to_writer(), ", ", *length, ");");
+                MAYBE(lowered, ctx.visit(lw->io_statement.id));
+                w.write(std::move(lowered.to_writer()));
+                return w;
+            }
+        }
+        return pass;
+    };
+    ctx.config().read_data_bytes_io_wrapper = [](Context_Statement_READ_DATA& ctx, BytesType cand, Result target, std::string io_) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        MAYBE(size_str, get_size_str(ctx, ctx.read_data.size));
+        auto offset_val = CODE("0");
+        if (auto offset = ctx.read_data.offset()) {
+            MAYBE(offset_str, get_size_str(ctx, *offset));
+            offset_val = offset_str;
+        }
+        MAYBE(layer_str, get_identifier_layer_str(ctx, from_weak(ctx.read_data.field)));
+        layer_str = "\"" + layer_str + "\"";
+        if (cand == BytesType::vector) {
+            return CODELINE("EBM_READ_BYTES(", io_, ", ", target.to_writer(), ", ", size_str, ", ", offset_val, ", ", layer_str, ");");
+        }
+        auto annot = ctx.get_field<"array_annotation">(ctx.read_data.data_type);
+        if (annot && *annot == ebm::ArrayAnnotation::read_temporary) {
+            return CODELINE("EBM_READ_ARRAY_BYTES_TEMPORARY(", io_, ", ", target.to_writer(), ", ", size_str, ", ", offset_val, ", ", layer_str, ");");
+        }
+        return CODELINE("EBM_READ_ARRAY_BYTES(", io_, ", ", target.to_writer(), ", ", size_str, ", ", offset_val, ", ", layer_str, ");");
+    };
+    ctx.config().write_data_custom = [](Context_Statement_WRITE_DATA& ctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        if (!ctx.config().on_destructor_generation()) return pass;
+        auto lw = ctx.write_data.lowered_statement();
+        if (!lw) return pass;
+        // bytes型はbytes_io_wrapperに委ねる（destructor modeのEBM_FREE_VECTOR/no-opはそちらで処理）
+        if (is_bytes_type(ctx, ctx.write_data.data_type)) return pass;
+        if (lw->lowering_type == ebm::LoweringIOType::VECTORIZED_IO) {
+            return ctx.visit(lw->io_statement.id);
+        }
+        if (lw->lowering_type != ebm::LoweringIOType::STRUCT_CALL &&
+            lw->lowering_type != ebm::LoweringIOType::ARRAY_FOR_EACH) {
+            return CODELINE("// WRITE_DATA skipped in free function generation");
+        }
+        MAYBE(vec_elem_free, ctx.visit(lw->io_statement.id));
+        if (lw->lowering_type == ebm::LoweringIOType::ARRAY_FOR_EACH) {
+            MAYBE(target, ctx.visit(ctx.write_data.target));
+            vec_elem_free.to_writer().writeln("EBM_FREE_VECTOR(", target.to_writer(), ", sizeof(", target.to_writer(), ".data[0])", ");");
+        }
+        return vec_elem_free;
+    };
+    ctx.config().write_data_bytes_io_wrapper = [](Context_Statement_WRITE_DATA& ctx, BytesType cand, Result target, std::string io_) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        if (ctx.config().on_destructor_generation()) {
+            if (cand == BytesType::vector) {
+                return CODELINE("EBM_FREE_VECTOR(", target.to_writer(), ",1);");
+            }
+            return {};  // no need to free for array in free function
+        }
+        MAYBE(size_str, get_size_str(ctx, ctx.write_data.size));
+        auto offset_val = CODE("0");
+        if (auto offset = ctx.write_data.offset()) {
+            MAYBE(offset_str, get_size_str(ctx, *offset));
+            offset_val = offset_str;
+        }
+        MAYBE(layer_str, get_identifier_layer_str(ctx, from_weak(ctx.write_data.field)));
+        layer_str = "\"" + layer_str + "\"";
+        if (cand == BytesType::vector) {
+            return CODELINE("EBM_WRITE_BYTES(", io_, ", ", target.to_writer(), ", ", size_str, ", ", offset_val, ", ", layer_str, ");");
+        }
+        auto annot = ctx.get_field<"array_annotation">(ctx.write_data.data_type);
+        if (annot && *annot == ebm::ArrayAnnotation::write_temporary) {
+            return CODELINE("EBM_WRITE_ARRAY_BYTES_TEMPORARY(", io_, ", ", target.to_writer(), ", ", size_str, ", ", offset_val, ", ", layer_str, ");");
+        }
+        return CODELINE("EBM_WRITE_ARRAY_BYTES(", io_, ", ", target.to_writer(), ", ", size_str, ", ", offset_val, ", ", layer_str, ");");
+    };
     return pass;
 }

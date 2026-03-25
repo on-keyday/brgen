@@ -17,6 +17,7 @@
 
 #include "../codegen.hpp"
 #include "ebm/extended_binary_module.hpp"
+#include "io_helpers.hpp"
 DEFINE_VISITOR(entry_before) {
     auto& config = ctx.config();
     config.begin_block = ":";
@@ -245,5 +246,22 @@ DEFINE_VISITOR(entry_before) {
         return w;
     };
 
+    config.read_data_custom = [](Context_Statement_READ_DATA& ctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        if (ctx.read_data.lowered_statement()) return pass;
+        MAYBE(target, ctx.visit(ctx.read_data.target));
+        MAYBE(fmt, type_to_struct_format(ctx, ctx.read_data.data_type, ctx.read_data.attribute, ctx.read_data.size));
+        MAYBE(size_str, get_size_str(ctx, ctx.read_data.size));
+        auto io_ = ctx.identifier(ctx.read_data.io_ref);
+        return CODELINE(target.to_writer(), " = struct.unpack(", fmt, ", ", io_, ".read(", size_str, "))[0]");
+    };
+    config.write_data_custom = [](Context_Statement_WRITE_DATA& ctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        if (ctx.write_data.lowered_statement()) return pass;
+        MAYBE(target, ctx.visit(ctx.write_data.target));
+        MAYBE(fmt, type_to_struct_format(ctx, ctx.write_data.data_type, ctx.write_data.attribute, ctx.write_data.size));
+        auto io_ = ctx.identifier(ctx.write_data.io_ref);
+        return CODELINE(io_, ".write(struct.pack(", fmt, ", ", target.to_writer(), "))");
+    };
     return pass;
 }
