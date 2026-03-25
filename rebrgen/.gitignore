@@ -10,3 +10,4 @@ __pycache__/
 unictest_latest.txt
 *.ebm
 .mypy_cache
+.claude/settings.local.json

@@ -38,6 +38,6 @@ zig-out/
 
 wasmCopy.js
 /web/dev/dist/
-.claude/
+.claude/settings.local.json
 *.tar.gz
 build_config.json
