@@ -27,6 +27,8 @@ namespace ebm2go {
 
     constexpr auto physical_field = "body.id.struct_decl.related_variant.variant_desc.related_field.field_decl";
 
+    constexpr auto has_absolute_offset = "param_decl.param_type.io_input_desc.has_absolute_offset";
+
     struct ArrayLengthInfo {
         const ebm::IOData* write_data = nullptr;
         const ebm::FieldDecl* vector_field = nullptr;
@@ -76,6 +78,15 @@ namespace ebm2go {
     inline std::string offset_var(const std::string& x) {
         return x + "Offset";
     }
+
+    inline std::string abs_offset_var(const std::string& x) {
+        return std::format("{}AbsOffset", x);
+    }
+
+    inline std::string abs_offset_ref(const std::string& x) {
+        return std::format("*{}AbsOffset", x);
+    }
+
     inline std::string offset_ref(const std::string& x) {
         return std::format("*{}Offset", x);
     }

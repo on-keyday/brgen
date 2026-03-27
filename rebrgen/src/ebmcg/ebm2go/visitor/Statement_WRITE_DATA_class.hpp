@@ -52,6 +52,11 @@ DEFINE_VISITOR(Statement_WRITE_DATA) {
             return wctx.visit(low->io_statement.id);
         }
     }
+    auto append_abs_offset = [&](CodeWriter& w, auto&& size) {
+        if (ctx.get_field<has_absolute_offset>(ctx.write_data.io_ref) == true) {
+            w.writeln(abs_offset_ref(ctx.identifier(ctx.write_data.io_ref)), " += int(", size, ")");
+        }
+    };
     if (is_single_byte_io(ctx, ctx.write_data) && ctx.config().io_strategy.is_reader_writer()) {  // currently, only for u8
         MAYBE(target, ctx.visit(ctx.write_data.target));
         if (ctx.is(ebm::TypeKind::ARRAY, ctx.write_data.data_type)) {
@@ -85,6 +90,7 @@ DEFINE_VISITOR(Statement_WRITE_DATA) {
             }
             w.writeln("}");
         }
+        append_abs_offset(w, "1");
         return w;
     }
     if (auto cand = is_bytes_type(wctx, wctx.write_data.data_type)) {
@@ -120,6 +126,7 @@ DEFINE_VISITOR(Statement_WRITE_DATA) {
                 w.indent_writeln("return err");
                 w.writeln("}");
             }
+            append_abs_offset(w, size_str);
             return w;
         }
         auto range = [&](auto&& start, auto&& size) {
@@ -189,6 +196,7 @@ DEFINE_VISITOR(Statement_WRITE_DATA) {
         if (!ctx.config().io_strategy.is_append()) {
             w.writeln(offset_ref(io_), " += int(", size_str, ")");
         }
+        append_abs_offset(w, size_str);
         return w;
     }
     if (auto lw = wctx.write_data.lowered_statement()) {

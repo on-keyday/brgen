@@ -28,17 +28,23 @@ namespace CODEGEN_NAMESPACE {
 
     inline expected<std::pair<CodeWriter, CodeWriter>> get_additional_parameters(Context_Statement_STRUCT_DECL& ctx, ebm::StatementRef func) {
         MAYBE(decl, ctx.get_field<"func_decl">(func));
+        if (decl.params.container.empty()) {
+            return std::make_pair(CodeWriter{}, CodeWriter{});
+        }
+        CodeWriter def, use;
+        if (ctx.get_field<has_absolute_offset>(decl.params.container[0]) == true) {
+            def.write(", ", abs_offset_var(ctx.identifier(decl.params.container[0])), " *int");
+            use.write(", ", abs_offset_var(ctx.identifier(decl.params.container[0])));
+        }
         if (decl.params.container.size() > 1) {
-            CodeWriter def, use;
             for (size_t i = 1; i < decl.params.container.size(); i++) {
                 auto current = decl.params.container[i];
                 MAYBE(param, ctx.visit(current));
                 def.write(",", param.to_writer());
                 use.write(",", ctx.identifier(current));
             }
-            return std::make_pair(def, use);
         }
-        return {};
+        return std::make_pair(def, use);
     }
 
     struct StructIOHelper {
@@ -334,8 +340,13 @@ namespace CODEGEN_NAMESPACE {
     inline expected<StructIOHelper> make_struct_io_helper(Context_Statement_STRUCT_DECL& sctx, ebm::StatementRef func) {
         MAYBE(def_use, get_additional_parameters(sctx, func));
         MAYBE(fd, sctx.get_field<"func_decl">(func));
-        return StructIOHelper{sctx, std::move(def_use.first), std::move(def_use.second),
-                              fd.attribute.has_wrapper(), std::string(sctx.identifier())};
+        return StructIOHelper{
+            .sctx = sctx,
+            .def = std::move(def_use.first),
+            .use = std::move(def_use.second),
+            .has_wrapper = fd.attribute.has_wrapper(),
+            .name = std::string(sctx.identifier()),
+        };
     }
 
 }  // namespace CODEGEN_NAMESPACE
@@ -466,13 +477,21 @@ DEFINE_VISITOR(entry_before) {
     };
     ctx.config().param_visitor = [](Context_Statement_PARAMETER_DECL& ctx, Result type) -> expected<Result> {
         auto kind = ctx.get_kind(ctx.param_decl.param_type);
-        if ((kind == ebm::TypeKind::ENCODER_INPUT ||
-             kind == ebm::TypeKind::DECODER_INPUT)) {
-            if (!ctx.config().io_strategy.is_reader_writer_append()) {
-                return CODE(ctx.identifier(), " ", type.to_writer(), ", ", offset_var(ctx.identifier()), " *int");
-            }
+        if (kind != ebm::TypeKind::ENCODER_INPUT &&
+            kind != ebm::TypeKind::DECODER_INPUT) {
+            return CODE(ctx.identifier(), " ", type.to_writer());
         }
-        return CODE(ctx.identifier(), " ", type.to_writer());
+        CodeWriter w;
+        if (!ctx.config().io_strategy.is_reader_writer_append()) {
+            w = CODE(ctx.identifier(), " ", type.to_writer(), ", ", offset_var(ctx.identifier()), " *int");
+        }
+        else {
+            w = CODE(ctx.identifier(), " ", type.to_writer());
+        }
+        if (ctx.get_field<"io_input_desc.has_absolute_offset">(ctx.param_decl.param_type) == true) {
+            w.write(", ", abs_offset_var(ctx.identifier()), " *int");
+        }
+        return w;
     };
     ctx.config().as_arg_visitor = [](Context_Expression_AS_ARG& ctx) -> expected<Result> {
         MAYBE(target, ctx.visit(ctx.as_arg.target_expr));
@@ -480,12 +499,21 @@ DEFINE_VISITOR(entry_before) {
             return CODE("&", target.to_writer());
         }
         auto kind = ctx.get_kind(ctx.type);
-        if (!ctx.config().io_strategy.is_reader_writer_append() &&
-            (kind == ebm::TypeKind::ENCODER_INPUT ||
-             kind == ebm::TypeKind::DECODER_INPUT)) {
-            return CODE(target.to_writer(), ", ", offset_var(target.to_string()));
+        if (kind != ebm::TypeKind::ENCODER_INPUT &&
+            kind != ebm::TypeKind::DECODER_INPUT) {
+            return target;
         }
-        return target;
+        CodeWriter w;
+        if (!ctx.config().io_strategy.is_reader_writer_append()) {
+            w = CODE(target.to_writer(), ", ", offset_var(target.to_string()));
+        }
+        else {
+            w = target.to_writer();
+        }
+        if (ctx.get_field<"io_input_desc.has_absolute_offset">(ctx.type) == true) {
+            w = CODE(std::move(w), ", ", abs_offset_var(target.to_string()));
+        }
+        return w;
     };
     ctx.config().struct_encode_start_wrapper = [](Context_Statement_STRUCT_DECL& sctx, ebm::StatementRef encode_fn) -> expected<Result> {
         CodeWriter w;
@@ -1025,6 +1053,10 @@ DEFINE_VISITOR(entry_before) {
         CodeWriter w;
         w.write(var_name, " == 1");
         return w;
+    };
+    ctx.config().get_stream_offset_custom = [&](Context_Expression_GET_STREAM_OFFSET& gso_ctx) -> expected<Result> {
+        auto io_ref = gso_ctx.identifier(gso_ctx.io_ref);
+        return abs_offset_ref(io_ref);
     };
     return pass;
 }
