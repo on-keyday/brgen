@@ -144,7 +144,7 @@ func main() {{
                 "request": "launch",
                 "cwd": os.getcwd(),
                 "name": f"Debug ebm2go unictest ({TEST_TARGET_FORMAT})",
-                "program": proj_dir.absolute().as_posix() + "/main.go",
+                "program": proj_dir.absolute().as_posix(),
                 "args": [
                     INPUT_FILE,
                     OUTPUT_FILE,

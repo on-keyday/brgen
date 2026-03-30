@@ -119,6 +119,9 @@ def source_emsdk():
             os.environ[key] = value
 
 
+PARALLEL_BUILD = os.getenv("PARALLEL_BUILD", build_config.get("PARALLEL_BUILD", ""))
+
+
 if BUILD_MODE == "native":
     subprocess.run(
         [
@@ -142,7 +145,7 @@ if BUILD_MODE == "native":
         stderr=sys.stderr,
     )
     subprocess.run(
-        ["cmake", "--build", f"./built/{BUILD_MODE}/{BUILD_TYPE}"],
+        ["cmake", "--build", f"./built/{BUILD_MODE}/{BUILD_TYPE}"] + (["-j", PARALLEL_BUILD] if PARALLEL_BUILD else []),
         check=True,
         stdout=sys.stdout,
         stderr=sys.stderr,
