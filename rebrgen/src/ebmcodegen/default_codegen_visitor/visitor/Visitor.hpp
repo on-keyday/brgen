@@ -6,6 +6,7 @@
   Available variables:
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
+#include <functional>
 bool use_brace_for_condition = true;
 bool use_elif = false;
 bool auto_output_root = true;
@@ -167,6 +168,7 @@ std::function<expected<Result>(Context_Statement_VARIABLE_DECL& ctx)> variable_d
 
 std::function<expected<Result>(Context_Expression_MAX_VALUE& ctx)> max_value_custom;
 std::function<expected<Result>(Context_Statement_LENGTH_CHECK& ctx)> length_check_custom;
+// std::function<expected<Result>(Context_Statement_UPDATE_OFFSET& ctx)> update_offset_custom;
 
 template <class Kind>
 struct MemoizationConfig {
