@@ -1,6 +1,6 @@
 ---
 name: rebrgen-overview
-description: rebrgen プロジェクトの全体像、アーキテクチャ、ファイル構成の概要。プロジェクトを把握したいとき、どこに何があるか確認したいときに参照する。
+description: rebrgen プロジェクトの全体像、アーキテクチャ、ファイル構成の概要。プロジェクトを把握したいとき、どこに何があるか確認したいときに参照する。**作業開始前に必ず読むこと。**
 ---
 
 ## プロジェクトの目的
@@ -53,18 +53,21 @@ src/
 │   ├── body_subset.cpp               # 自動生成（編集禁止）
 │   └── class_based.cpp               # クラスベースフックシステム生成ロジック
 │
-├── ebmcg/                            # コンパイル型言語ジェネレーター
-│   ├── ebm2c/
+├── ebmcg/                            # ebmコードジェネレーター
+│   ├── ebm2c/                        # 言語及び実装hook一覧は`python script/ebmtemplate.py list all` で確認可能
 │   ├── ebm2go/
 │   ├── ebm2python/
 │   ├── ebm2p4/
-│   └── ebm2rust/
+│   ├── ebm2rust/
+|   ...
 │
-└── ebmip/                            # インタープリター型ジェネレーター
-    └── ebm2rmw/
+└── ebmip/                            # ebmインタープリター
+    ├── ebm2rmw/                      # 言語及び実装hook一覧は`python script/ebmtemplate_ip.py list all` で確認可能
+    ...
 ```
 
 各 `ebm2<lang>/` の構成:
+
 ```
 ebm2<lang>/
 ├── main.cpp              # 自動生成（編集禁止）
@@ -78,10 +81,12 @@ ebm2<lang>/
 
 ## 利用できるスキル
 
-| スキル | 用途 |
-|--------|------|
-| `/rebrgen-build` | ビルド・再生成手順 |
-| `/rebrgen-test` | unictest でテスト実行 |
-| `/rebrgen-new-lang` | 新言語ジェネレーター追加 |
-| `/rebrgen-debug` | コンパイルエラー・デバッグ戦略 |
-| `/rebrgen-query` | EBM クエリエンジンの使い方 |
+| スキル                         | 用途                                            |
+| ------------------------------ | ----------------------------------------------- |
+| `/rebrgen-build`               | ビルド・再生成手順                              |
+| `/rebrgen-test`                | unictest テスト実行実行手順及び機能実装進捗確認 |
+| `/rebrgen-new-lang`            | 新言語ジェネレーター追加                        |
+| `/rebrgen-debug`               | コンパイルエラー・デバッグ戦略                  |
+| `/rebrgen-query`               | EBM クエリエンジンの使い方                      |
+| `/rebrgen-inter-lang-refactor` | リファクタリングの方針と手法                    |
+| `/rebrgen-new-feature`         | 新機能追加手順及び開発者への対処                |
