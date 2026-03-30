@@ -140,6 +140,7 @@ add_library(ebmgen_lib STATIC
     "src/ebmgen/transform/array_setter.cpp"
     "src/ebmgen/transform/derive_encode_decode_wrapper.cpp"
     "src/ebmgen/transform/propagate_io_input_desc.cpp"
+    #"src/ebmgen/transform/insert_update_offset.cpp"
 )
 
 target_link_libraries(ebm_mapping ebm futils)

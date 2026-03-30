@@ -140,26 +140,23 @@
       "skipFiles": ["<node_internals>/**"]
     },
     {
-      "type": "debugpy",
+      "type": "go",
       "request": "launch",
-      "cwd": "C:\\Users\\ukfco\\AppData\\Local\\Temp\\unictest\\tr-1c400f9e9a\\r-77d5c72dbc\\t-80413df973",
-      "name": "Debug ebm2python unictest (ExtendedBinaryModule)",
-      "program": "C:\\Users\\ukfco\\AppData\\Local\\Temp\\unictest\\tr-1c400f9e9a\\r-77d5c72dbc\\t-80413df973\\test_script.py",
+      "cwd": "C:\\Users\\ukfco\\AppData\\Local\\Temp\\unictest\\tr-32959c280b\\r-299e371876\\t-612820af34",
+      "name": "Debug ebm2go unictest (NetlinkTest)",
+      "program": "C:/Users/ukfco/AppData/Local/Temp/unictest/tr-32959c280b/r-299e371876/t-612820af34/go_proj",
       "args": [
-        "C:/Users/ukfco/AppData/Local/Temp/unictest/tr-1c400f9e9a/r-77d5c72dbc/t-80413df973/input.bin",
-        "C:/Users/ukfco/AppData/Local/Temp/unictest/tr-1c400f9e9a/r-77d5c72dbc/t-80413df973/output.bin"
-      ]
+        "C:/Users/ukfco/AppData/Local/Temp/unictest/tr-32959c280b/r-299e371876/t-612820af34/input.bin",
+        "C:/Users/ukfco/AppData/Local/Temp/unictest/tr-32959c280b/r-299e371876/t-612820af34/output.bin"
+      ],
+      "stopOnEntry": true
     },
     {
       "name": "Debug ebm2c",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceRoot}/rebrgen/tool/ebmgen",
-      "args": [
-        "-i",
-        "${workspaceRoot}/rebrgen/src/test/native_endian_test.bgn",
-        "-g"
-      ],
+      "program": "${workspaceRoot}/rebrgen/tool/ebm2go",
+      "args": ["-i", "${workspaceRoot}/rebrgen/save/native_endian.ebm"],
       "stopAtEntry": false,
       "cwd": "${workspaceRoot}",
       "environment": [],
