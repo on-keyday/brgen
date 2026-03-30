@@ -32,11 +32,11 @@ DEFINE_VISITOR(Statement_SUB_BYTE_RANGE) {
     auto io_ = ctx.identifier(ctx.sub_byte_range.io_ref);
     auto parent_io_ = ctx.identifier(ctx.sub_byte_range.parent_io_ref);
 
-    auto has_abs_offset = ctx.get_field<has_absolute_offset>(ctx.sub_byte_range.io_ref) == true;
+    auto has_abs_offset = has_absolute_offset(ctx, ctx.sub_byte_range.io_ref);
 
     CodeWriter w;
 
-    if (has_absolute_offset) {
+    if (has_abs_offset) {
         w.writeln(abs_offset_var(io_), " := ", abs_offset_var(parent_io_));
     }
 

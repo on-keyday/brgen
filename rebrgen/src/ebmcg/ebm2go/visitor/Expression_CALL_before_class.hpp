@@ -44,7 +44,9 @@ DEFINE_VISITOR(Expression_CALL_before) {
         else {
             return pass;
         }
-        if (func_decl.attribute.has_wrapper()) {
+        if (func_decl.attribute.has_wrapper() ||
+            (!func_decl.params.container.empty() &&
+             has_absolute_offset(ctx, func_decl.params.container[0]))) {
             ident += "_impl";
         }
         MAYBE(base, callee.body.base());
