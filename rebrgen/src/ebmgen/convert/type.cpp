@@ -40,11 +40,11 @@ namespace ebmgen {
         // special case for StructUnionType
         if (auto n = ast::as<ast::StructUnionType>(type)) {
             MAYBE(varint_id, ctx.repository().new_type_id());
-            body.kind = ebm::TypeKind::VARIANT;
+            body.kind = ebm::TypeKind::STRUCT_UNION;
             EBMA_CONVERT_STATEMENT(related_field, field);
-            ebm::VariantDesc desc;
+            ebm::StructUnionDesc desc;
             desc.related_field = to_weak(related_field);
-            ebm::Types members;
+            ebm::StructUnionMembers members;
             std::optional<std::uint64_t> max_bit_size;
             for (auto& struct_member : n->structs) {
                 MAYBE(member_type_ref, ctx.get_statement_converter().convert_struct_decl(struct_member, varint_id));
@@ -52,7 +52,7 @@ namespace ebmgen {
                 body.kind = ebm::TypeKind::STRUCT;
                 body.id(to_weak(member_type_ref));
                 EBMA_ADD_TYPE(member_type_ref2, std::move(body));
-                append(members, member_type_ref2);
+                append(members, ebm::StructUnionMember{.member_type = member_type_ref2});
                 ctx.state().cache_type(struct_member, member_type_ref2);
                 // try get struct size
                 MAYBE(struct_stmt, ctx.repository().get_statement(member_type_ref));
@@ -81,7 +81,7 @@ namespace ebmgen {
                 EBMU_UINT_TYPE(variant_common, *max_bit_size);
                 desc.common_type = variant_common;
             }
-            body.variant_desc(std::move(desc));
+            body.struct_union_desc(std::move(desc));
             EBMA_ADD_TYPE(type_ref, varint_id, std::move(body));
             return type_ref;
         }
