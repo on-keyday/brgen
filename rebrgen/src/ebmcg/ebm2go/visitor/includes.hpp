@@ -25,7 +25,7 @@ namespace ebm2go {
         return nullptr;
     }
 
-    constexpr auto physical_field = "body.id.struct_decl.related_variant.variant_desc.related_field.field_decl";
+    constexpr auto physical_field = "body.id.struct_decl.related_variant.struct_union_desc.related_field.field_decl";
 
     constexpr auto has_absolute_offset_type = "io_input_desc.has_absolute_offset";
 

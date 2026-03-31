@@ -809,21 +809,17 @@ DEFINE_VISITOR_CLASS(Statement_PROGRAM_DECL) {
                     continue;
                 }
             }
-            auto variant_desc = s.body.variant_desc();
-            if (!variant_desc) {
-                continue;
-            }
-            if (is_nil(variant_desc->related_field)) {
+            if (auto variant_desc = s.body.variant_desc()) {
                 Variant v{.id = s.id};
                 for (auto member : variant_desc->members.container) {
                     v.members.push_back(member);
                 }
                 c_ctx.variants[get_id(s.id)] = v;
             }
-            else {
+            if (auto struct_union_desc = s.body.struct_union_desc()) {
                 Union u{.id = s.id};
-                for (auto member_type_ref : variant_desc->members.container) {
-                    auto struct_key = ctx.get_field<"body.id">(member_type_ref);
+                for (auto member_type_ref : struct_union_desc->members.container) {
+                    auto struct_key = ctx.get_field<"body.id">(member_type_ref.member_type);
                     if (!struct_key) {
                         continue;
                     }

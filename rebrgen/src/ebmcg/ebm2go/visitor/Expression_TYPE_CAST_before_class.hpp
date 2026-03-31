@@ -27,27 +27,23 @@
 #include "ebm/extended_binary_module.hpp"
 DEFINE_VISITOR(Expression_TYPE_CAST_before) {
     using namespace CODEGEN_NAMESPACE;
-    auto target_type = ctx.module().get_type(ctx.type);
-    if (!target_type) return pass;
-    if (target_type->body.kind == ebm::TypeKind::VARIANT) {
-        auto variant_desc = target_type->body.variant_desc();
-        if (variant_desc) {
-            if (!is_nil(variant_desc->common_type)) {
-                ebm::Expression expr;
-                expr.body.kind = ebm::ExpressionKind::TYPE_CAST;
-                expr.body.type = variant_desc->common_type;
-                expr.body.type_cast_desc(ebm::TypeCastDesc{
-                    .source_expr = ctx.type_cast_desc.source_expr,
-                    .from_type = ctx.type_cast_desc.from_type,
-                    .cast_kind = ebm::CastType::OTHER,
-                });
-                MAYBE(expr_str, ctx.visit(expr));
-                return CODE(expr_str.to_writer());
-            }
-            else {
-                MAYBE(source_expr_str, ctx.visit(ctx.type_cast_desc.source_expr));
-                return CODE(source_expr_str.to_writer());
-            }
+
+    if (auto variant_desc = is_variant_like(ctx, ctx.type); variant_desc) {
+        if (!is_nil(variant_desc->common_type)) {
+            ebm::Expression expr;
+            expr.body.kind = ebm::ExpressionKind::TYPE_CAST;
+            expr.body.type = variant_desc->common_type;
+            expr.body.type_cast_desc(ebm::TypeCastDesc{
+                .source_expr = ctx.type_cast_desc.source_expr,
+                .from_type = ctx.type_cast_desc.from_type,
+                .cast_kind = ebm::CastType::OTHER,
+            });
+            MAYBE(expr_str, ctx.visit(expr));
+            return CODE(expr_str.to_writer());
+        }
+        else {
+            MAYBE(source_expr_str, ctx.visit(ctx.type_cast_desc.source_expr));
+            return CODE(source_expr_str.to_writer());
         }
     }
     auto source_type = ctx.module().get_type(ctx.type_cast_desc.from_type);
@@ -71,7 +67,8 @@ DEFINE_VISITOR(Expression_TYPE_CAST_before) {
             return CODE(tmp_var);
         }
     }
-
+    auto target_type = ctx.module().get_type(ctx.type);
+    if (!target_type) return pass;
     if (ctx.type_cast_desc.cast_kind == ebm::CastType::FLOAT_TO_INT_BIT) {
         MAYBE(target_size, target_type->body.size());
         MAYBE(target_type_str, ctx.visit(ctx.type));

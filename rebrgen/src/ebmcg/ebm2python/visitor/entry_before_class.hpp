@@ -108,11 +108,22 @@ DEFINE_VISITOR(entry_before) {
         }
         return Result("Union[" + members_str + "]");
     };
+    config.struct_union_type_custom = [](Context_Type_STRUCT_UNION& ctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        std::string members_str;
+        for (auto& member_type_ref : ctx.struct_union_desc.members.container) {
+            MAYBE(member_str, ctx.visit(member_type_ref.member_type));
+            if (!members_str.empty()) members_str += ", ";
+            members_str += member_str.to_string();
+        }
+        return Result("Union[" + members_str + "]");
+    };
 
     config.default_value_custom = [](Context_Expression_DEFAULT_VALUE& ctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
         MAYBE(type_body, ctx.get(ctx.type));
-        if (type_body.body.kind == ebm::TypeKind::VARIANT) {
+        if (type_body.body.kind == ebm::TypeKind::VARIANT ||
+            type_body.body.kind == ebm::TypeKind::STRUCT_UNION) {
             return "None";
         }
         if (type_body.body.kind == ebm::TypeKind::ARRAY) {

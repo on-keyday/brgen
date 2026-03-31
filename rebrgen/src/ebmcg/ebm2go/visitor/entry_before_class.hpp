@@ -644,14 +644,14 @@ DEFINE_VISITOR(entry_before) {
         if (is_composite_func(fctx.func_decl.kind)) {
             // may change return type or params
             if (fctx.func_decl.kind == ebm::FunctionKind::COMPOSITE_GETTER) {
-                auto got = ctx.get_field<"variant_desc">(fctx.func_decl.return_type);
+                auto got = ctx.get_field<"struct_union_desc">(fctx.func_decl.return_type);
                 if (got && !is_nil(got->common_type)) {
                     MAYBE(typ, ctx.visit(got->common_type));
                     return_type = typ;
                 }
             }
             else {
-                auto got = ctx.get_field<"param_decl.param_type.variant_desc">(fctx.func_decl.params.container[0]);
+                auto got = ctx.get_field<"param_decl.param_type.struct_union_desc">(fctx.func_decl.params.container[0]);
                 if (got && !is_nil(got->common_type)) {
                     MAYBE(typ, ctx.visit(got->common_type));
                     auto param_name = ctx.identifier(fctx.func_decl.params.container[0]);
@@ -909,8 +909,7 @@ DEFINE_VISITOR(entry_before) {
         return "";
     };
     ctx.config().variant_type_custom = [&](Context_Type_VARIANT& vctx) -> expected<Result> {
-        if (is_nil(vctx.variant_desc.related_field) &&
-            is_nil(vctx.variant_desc.common_type)) {
+        if (is_nil(vctx.variant_desc.common_type)) {
             ctx.config().any_variant.insert(get_id(vctx.item_id));
             return CODE("any");
         }

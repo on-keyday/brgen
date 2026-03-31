@@ -443,7 +443,7 @@ namespace ebmcodegen::util {
         if (const ebm::StructDecl* decl = statement.body.struct_decl()) {
             if (auto related_varint = decl->related_variant()) {
                 MAYBE(type, visitor.module_.get_type(*related_varint));
-                MAYBE(desc, type.body.variant_desc());
+                MAYBE(desc, type.body.struct_union_desc());
                 MAYBE(upper_layers, get_identifier_layer(visitor, from_weak(desc.related_field), state));
                 layers.insert(layers.end(), upper_layers.begin(), upper_layers.end());
                 if (state == LayerState::as_expr) {
@@ -486,15 +486,13 @@ namespace ebmcodegen::util {
         const ebmgen::MappingTable& module_ = get_visitor(visitor).module_;
         MAYBE(type, module_.get_type(variant));
         std::vector<ebm::StatementRef> result;
-        if (type.body.kind == ebm::TypeKind::VARIANT) {
-            auto varint_desc = type.body.variant_desc();
-            if (!is_nil(varint_desc->related_field)) {
-                auto& members = varint_desc->members;
-                for (auto& mem : members.container) {
-                    MAYBE(member_type, module_.get_type(mem));
-                    MAYBE(stmt_id, member_type.body.id());
-                    result.push_back(stmt_id.id);
-                }
+        if (type.body.kind == ebm::TypeKind::STRUCT_UNION) {
+            auto struct_union_desc = type.body.struct_union_desc();
+            auto& members = struct_union_desc->members;
+            for (auto& mem : members.container) {
+                MAYBE(member_type, module_.get_type(mem.member_type));
+                MAYBE(stmt_id, member_type.body.id());
+                result.push_back(stmt_id.id);
             }
         }
         return result;
@@ -504,16 +502,14 @@ namespace ebmcodegen::util {
         const ebmgen::MappingTable& module_ = get_visitor(visitor).module_;
         MAYBE(type, module_.get_type(variant));
         std::vector<std::pair<ebm::StatementRef, std::decay_t<decltype(*visit_Statement(visitor, ebm::StatementRef{}))>>> result;
-        if (type.body.kind == ebm::TypeKind::VARIANT) {
-            auto varint_desc = type.body.variant_desc();
-            if (!is_nil(varint_desc->related_field)) {
-                auto& members = varint_desc->members;
-                for (auto& mem : members.container) {
-                    MAYBE(member_type, module_.get_type(mem));
-                    MAYBE(stmt_id, member_type.body.id());
-                    MAYBE(stmt_str, visit_Statement(visitor, from_weak(stmt_id)));
-                    result.push_back({stmt_id.id, std::move(stmt_str)});
-                }
+        if (type.body.kind == ebm::TypeKind::STRUCT_UNION) {
+            auto struct_union_desc = type.body.struct_union_desc();
+            auto& members = struct_union_desc->members;
+            for (auto& mem : members.container) {
+                MAYBE(member_type, module_.get_type(mem.member_type));
+                MAYBE(stmt_id, member_type.body.id());
+                MAYBE(stmt_str, visit_Statement(visitor, from_weak(stmt_id)));
+                result.push_back({stmt_id.id, std::move(stmt_str)});
             }
         }
         return result;
@@ -596,22 +592,22 @@ namespace ebmcodegen::util {
     }
 
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-    ebmgen::expected<size_t> get_variant_index(auto&& visitor, ebm::TypeRef variant_type, ebm::TypeRef candidate_type) {
+    ebmgen::expected<size_t> get_struct_union_index(auto&& visitor, ebm::TypeRef variant_type, ebm::TypeRef candidate_type) {
         auto& module_ = get_visitor(visitor).module_;
         MAYBE(type, module_.get_type(variant_type));
-        if (type.body.kind != ebm::TypeKind::VARIANT) {
-            return ebmgen::unexpect_error("not a variant type");
+        if (type.body.kind != ebm::TypeKind::STRUCT_UNION) {
+            return ebmgen::unexpect_error("not STRUCT_UNION variant type");
         }
-        MAYBE(desc, type.body.variant_desc());
+        MAYBE(desc, type.body.struct_union_desc());
         for (size_t i = 0; i < desc.members.container.size(); ++i) {
-            if (get_id(desc.members.container[i]) == get_id(candidate_type)) {
+            if (get_id(desc.members.container[i].member_type) == get_id(candidate_type)) {
                 return i;
             }
         }
         return ebmgen::unexpect_error("type not found in variant members");
     }
 
-    ebmgen::expected<ebm::TypeRef> get_variant_member_from_field(auto&& visitor, ebm::StatementRef field_ref) {
+    ebmgen::expected<ebm::TypeRef> get_struct_union_member_from_field(auto&& visitor, ebm::StatementRef field_ref) {
         ebmgen::MappingTable& module_ = get_visitor(visitor).module_;
         MAYBE(field_stmt, module_.get_statement(field_ref));
         MAYBE(field_decl, field_stmt.body.field_decl());
@@ -619,15 +615,15 @@ namespace ebmcodegen::util {
         MAYBE(struct_decl, parent_struct.body.struct_decl());
         MAYBE(rel_var, struct_decl.related_variant());
         MAYBE(type, module_.get_type(rel_var));
-        if (type.body.kind != ebm::TypeKind::VARIANT) {
-            return ebmgen::unexpect_error("not a variant type");
+        if (type.body.kind != ebm::TypeKind::STRUCT_UNION) {
+            return ebmgen::unexpect_error("not STRUCT_UNION variant type");
         }
-        MAYBE(desc, type.body.variant_desc());
+        MAYBE(desc, type.body.struct_union_desc());
         for (auto& member_type_ref : desc.members.container) {
-            MAYBE(member_type, module_.get_type(member_type_ref));
+            MAYBE(member_type, module_.get_type(member_type_ref.member_type));
             MAYBE(member_stmt_id, member_type.body.id());
             if (get_id(member_stmt_id) == get_id(field_decl.parent_struct)) {
-                return member_type_ref;
+                return member_type_ref.member_type;
             }
         }
         return ebmgen::unexpect_error("type not found in variant members");
@@ -644,7 +640,7 @@ namespace ebmcodegen::util {
                 return stmt_ref;
             }
             MAYBE(variant_type, module_.get_type(*rel));
-            MAYBE(variant_desc, variant_type.body.variant_desc());
+            MAYBE(variant_desc, variant_type.body.struct_union_desc());
             MAYBE(parent_field_stmt, module_.get_statement(variant_desc.related_field));
             MAYBE(field_decl, parent_field_stmt.body.field_decl());
             stmt_ref = from_weak(field_decl.parent_struct);
@@ -956,5 +952,35 @@ namespace ebmcodegen::util {
                 return std::make_pair(t.body.kind, type);
             }
         }
+    }
+
+    struct VariantLike {
+        ebm::TypeRef common_type;
+        std::vector<ebm::TypeRef> variants;
+    };
+
+    std::optional<VariantLike> is_variant_like(auto&& visitor, ebm::TypeRef type_ref) {
+        ebmgen::MappingTable& m = get_visitor(visitor).module_;
+        auto type = m.get_type(type_ref);
+        if (!type) {
+            return std::nullopt;
+        }
+        if (auto desc = type->body.variant_desc()) {
+            VariantLike result;
+            result.common_type = desc->common_type;
+            for (auto& member : desc->members.container) {
+                result.variants.push_back(member);
+            }
+            return result;
+        }
+        if (auto desc = type->body.struct_union_desc()) {
+            VariantLike result;
+            result.common_type = desc->common_type;
+            for (auto& member : desc->members.container) {
+                result.variants.push_back(member.member_type);
+            }
+            return result;
+        }
+        return std::nullopt;
     }
 }  // namespace ebmcodegen::util

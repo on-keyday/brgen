@@ -95,6 +95,7 @@ std::function<expected<Result>(Result elem_type)> recursive_struct_type_wrapper;
 std::function<expected<Result>(Result elem)> make_pointer_wrapper;
 std::function<expected<Result>(Result elem)> make_optional_wrapper;
 std::function<expected<Result>(Context_Type_VARIANT& ctx)> variant_type_custom;
+std::function<expected<Result>(Context_Type_STRUCT_UNION& ctx)> struct_union_type_custom;
 std::function<expected<Result>(Context_Type_STRUCT& ctx)> struct_type_custom;
 std::function<expected<Result>(Context_Type_RECURSIVE_STRUCT& ctx)> recursive_struct_type_custom;
 std::function<expected<Result>(size_t bit_size)> make_int_type;

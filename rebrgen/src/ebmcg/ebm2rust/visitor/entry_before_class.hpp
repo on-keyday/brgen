@@ -81,6 +81,7 @@ DEFINE_VISITOR(entry_before) {
     config.setter_status_failure = "Err(anyhow::anyhow!(\"setter failed\"))";
     config.void_type = "()";
     config.property_setter_return_type = "Result<(), anyhow::Error>";
+    config.variant_prefix = "Variant";
     config.optional_type_wrapper = [](Result elem) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
         return CODE("Option<", elem.to_writer(), ">");
