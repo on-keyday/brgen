@@ -2028,8 +2028,6 @@ namespace ebm::zc {
     struct Statement;
     struct Types;
     struct VariantDesc;
-    struct StructUnionMember;
-    struct StructUnionMembers;
     struct StructUnionDesc;
     struct FuncTypeDesc;
     struct TypeBody;
@@ -5054,81 +5052,24 @@ namespace ebm::zc {
             v(v, "members",visitor_tag<decltype(std::declval<VariantDesc>().members),false>{});
         }
     };
-    struct EBM_API StructUnionMember{
-        TypeRef member_type;
-        ExpressionRef condition;
-        ::futils::error::Error<> encode(::futils::binary::writer& w) const ;
-        ::futils::error::Error<> decode(::futils::binary::reader& r);
-        constexpr static const char* visitor_name = "StructUnionMember";
-        template<typename Visitor>
-        constexpr void visit(Visitor&& v) {
-            v(v, "member_type",(*this).member_type);
-            v(v, "condition",(*this).condition);
-        }
-        template<typename Visitor>
-        constexpr void visit(Visitor&& v) const {
-            v(v, "member_type",(*this).member_type);
-            v(v, "condition",(*this).condition);
-        }
-        template<typename T,bool rvalue = false>
-        struct visitor_tag {
-            using type = T;
-            static constexpr bool is_rvalue = rvalue;
-        };
-        template<typename Visitor>
-        static constexpr void visit_static(Visitor&& v) {
-            v(v, "member_type",visitor_tag<decltype(std::declval<StructUnionMember>().member_type),false>{});
-            v(v, "condition",visitor_tag<decltype(std::declval<StructUnionMember>().condition),false>{});
-        }
-    };
-    struct EBM_API StructUnionMembers{
-        Varint len;
-        std::vector<StructUnionMember> container;
-        ::futils::error::Error<> encode(::futils::binary::writer& w) const ;
-        ::futils::error::Error<> decode(::futils::binary::reader& r);
-        constexpr static const char* visitor_name = "StructUnionMembers";
-        template<typename Visitor>
-        constexpr void visit(Visitor&& v) {
-            v(v, "len",(*this).len);
-            v(v, "container",(*this).container);
-        }
-        template<typename Visitor>
-        constexpr void visit(Visitor&& v) const {
-            v(v, "len",(*this).len);
-            v(v, "container",(*this).container);
-        }
-        template<typename T,bool rvalue = false>
-        struct visitor_tag {
-            using type = T;
-            static constexpr bool is_rvalue = rvalue;
-        };
-        template<typename Visitor>
-        static constexpr void visit_static(Visitor&& v) {
-            v(v, "len",visitor_tag<decltype(std::declval<StructUnionMembers>().len),false>{});
-            v(v, "container",visitor_tag<decltype(std::declval<StructUnionMembers>().container),false>{});
-        }
-    };
     struct EBM_API StructUnionDesc{
-        TypeRef common_type;
-        StructUnionMembers members;
+        VariantDesc variant_desc;
         WeakStatementRef related_field;
-        ExpressionRef condition;
+        LoweredStatementRef lowered_match_statement;
         ::futils::error::Error<> encode(::futils::binary::writer& w) const ;
         ::futils::error::Error<> decode(::futils::binary::reader& r);
         constexpr static const char* visitor_name = "StructUnionDesc";
         template<typename Visitor>
         constexpr void visit(Visitor&& v) {
-            v(v, "common_type",(*this).common_type);
-            v(v, "members",(*this).members);
+            v(v, "variant_desc",(*this).variant_desc);
             v(v, "related_field",(*this).related_field);
-            v(v, "condition",(*this).condition);
+            v(v, "lowered_match_statement",(*this).lowered_match_statement);
         }
         template<typename Visitor>
         constexpr void visit(Visitor&& v) const {
-            v(v, "common_type",(*this).common_type);
-            v(v, "members",(*this).members);
+            v(v, "variant_desc",(*this).variant_desc);
             v(v, "related_field",(*this).related_field);
-            v(v, "condition",(*this).condition);
+            v(v, "lowered_match_statement",(*this).lowered_match_statement);
         }
         template<typename T,bool rvalue = false>
         struct visitor_tag {
@@ -5137,10 +5078,9 @@ namespace ebm::zc {
         };
         template<typename Visitor>
         static constexpr void visit_static(Visitor&& v) {
-            v(v, "common_type",visitor_tag<decltype(std::declval<StructUnionDesc>().common_type),false>{});
-            v(v, "members",visitor_tag<decltype(std::declval<StructUnionDesc>().members),false>{});
+            v(v, "variant_desc",visitor_tag<decltype(std::declval<StructUnionDesc>().variant_desc),false>{});
             v(v, "related_field",visitor_tag<decltype(std::declval<StructUnionDesc>().related_field),false>{});
-            v(v, "condition",visitor_tag<decltype(std::declval<StructUnionDesc>().condition),false>{});
+            v(v, "lowered_match_statement",visitor_tag<decltype(std::declval<StructUnionDesc>().lowered_match_statement),false>{});
         }
     };
     struct EBM_API FuncTypeDesc{

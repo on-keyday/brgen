@@ -59364,31 +59364,15 @@ namespace ebm2json {
     }
     template<typename Result, typename UserContext,typename TypeContext>
     expected<Result> traverse_children_Type_STRUCT_UNION(UserContext&& ctx,TypeContext&& type_ctx) {
-        if (!is_nil(type_ctx.struct_union_desc.common_type)) {
-            auto result_common_type = visit_Object<Result>(std::forward<UserContext>(ctx),type_ctx.struct_union_desc.common_type);
+        if (!is_nil(type_ctx.struct_union_desc.variant_desc.common_type)) {
+            auto result_common_type = visit_Object<Result>(std::forward<UserContext>(ctx),type_ctx.struct_union_desc.variant_desc.common_type);
             if (!result_common_type) {
                 return unexpect_error(std::move(result_common_type.error()));
             }
         }
-        for (size_t i_container = 0; i_container < type_ctx.struct_union_desc.members.container.size(); ++i_container) {
-            if (!is_nil(type_ctx.struct_union_desc.members.container[i_container].member_type)) {
-                auto result_member_type = visit_Object<Result>(std::forward<UserContext>(ctx),type_ctx.struct_union_desc.members.container[i_container].member_type);
-                if (!result_member_type) {
-                    return unexpect_error(std::move(result_member_type.error()));
-                }
-            }
-            if (!is_nil(type_ctx.struct_union_desc.members.container[i_container].condition)) {
-                auto result_condition = visit_Object<Result>(std::forward<UserContext>(ctx),type_ctx.struct_union_desc.members.container[i_container].condition);
-                if (!result_condition) {
-                    return unexpect_error(std::move(result_condition.error()));
-                }
-            }
-        }
-        if (!is_nil(type_ctx.struct_union_desc.condition)) {
-            auto result_condition = visit_Object<Result>(std::forward<UserContext>(ctx),type_ctx.struct_union_desc.condition);
-            if (!result_condition) {
-                return unexpect_error(std::move(result_condition.error()));
-            }
+        auto result_members = dispatch_Types_default<Result>(std::forward<UserContext>(ctx),type_ctx.struct_union_desc.variant_desc.members);
+        if (!result_members) {
+            return unexpect_error(std::move(result_members.error()));
         }
         return {};
     }

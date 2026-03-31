@@ -859,23 +859,14 @@ format FuncTypeDesc:
     annotation :FuncTypeAnnotation # Function type annotation
     reserved :u6 # Reserved for future use
 
-format StructUnionMember:
-    member_type :TypeRef # Type of the variant member
-    condition :ExpressionRef # Condition for this variant member (e.g., discriminator value, availability condition)
-
-format StructUnionMembers:
-    len :Varint
-    container :[len.value]StructUnionMember # List of struct union members
-
 format VariantDesc:
     common_type :TypeRef # Optional common type for all union members
     members :Types # List of variant members
 
 format StructUnionDesc: # physical representation of a union
-     common_type :TypeRef # Optional common type for all struct union members
-     members :StructUnionMembers # List of struct union members
+     variant_desc  :VariantDesc
      related_field :WeakStatementRef # Reference to the field that holds this variant 
-     condition :ExpressionRef # Condition for this struct union (this is from match expression, otherwise null)
+     lowered_match_statement :LoweredStatementRef # Lowered match statement form that 
 
 enum ArrayAnnotation:
     :u8

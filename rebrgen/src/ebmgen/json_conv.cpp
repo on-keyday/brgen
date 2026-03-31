@@ -2903,16 +2903,8 @@ namespace ebm {
     }
     
     bool from_json(StructUnionDesc& obj, const futils::json::JSON& j) {
-        if (auto got = j.at("common_type")) {
-            if(!futils::json::convert_from_json(*got, obj.common_type)) {
-                return false;
-            }
-        }
-        else {
-            return false;
-        }
-        if (auto got = j.at("members")) {
-            if(!futils::json::convert_from_json(*got, obj.members)) {
+        if (auto got = j.at("variant_desc")) {
+            if(!futils::json::convert_from_json(*got, obj.variant_desc)) {
                 return false;
             }
         }
@@ -2927,48 +2919,8 @@ namespace ebm {
         else {
             return false;
         }
-        if (auto got = j.at("condition")) {
-            if(!futils::json::convert_from_json(*got, obj.condition)) {
-                return false;
-            }
-        }
-        else {
-            return false;
-        }
-        return true;
-    }
-    
-    bool from_json(StructUnionMember& obj, const futils::json::JSON& j) {
-        if (auto got = j.at("member_type")) {
-            if(!futils::json::convert_from_json(*got, obj.member_type)) {
-                return false;
-            }
-        }
-        else {
-            return false;
-        }
-        if (auto got = j.at("condition")) {
-            if(!futils::json::convert_from_json(*got, obj.condition)) {
-                return false;
-            }
-        }
-        else {
-            return false;
-        }
-        return true;
-    }
-    
-    bool from_json(StructUnionMembers& obj, const futils::json::JSON& j) {
-        if (auto got = j.at("len")) {
-            if(!futils::json::convert_from_json(*got, obj.len)) {
-                return false;
-            }
-        }
-        else {
-            return false;
-        }
-        if (auto got = j.at("container")) {
-            if(!futils::json::convert_from_json(*got, obj.container)) {
+        if (auto got = j.at("lowered_match_statement")) {
+            if(!futils::json::convert_from_json(*got, obj.lowered_match_statement)) {
                 return false;
             }
         }

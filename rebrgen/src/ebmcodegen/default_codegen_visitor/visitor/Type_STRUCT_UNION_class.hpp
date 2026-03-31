@@ -14,14 +14,13 @@
       item_id: ebm::TypeRef
       kind: const ebm::TypeKind&
       struct_union_desc: const ebm::StructUnionDesc&
-        common_type: TypeRef
-        members: StructUnionMembers
-          len: Varint
-          container: std::vector<StructUnionMember>
-            member_type: TypeRef
-            condition: ExpressionRef
+        variant_desc: VariantDesc
+          common_type: TypeRef
+          members: Types
+            len: Varint
+            container: std::vector<TypeRef>
         related_field: WeakStatementRef
-        condition: ExpressionRef
+        lowered_match_statement: LoweredStatementRef
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 

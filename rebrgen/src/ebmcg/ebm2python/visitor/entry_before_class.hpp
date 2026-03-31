@@ -111,8 +111,8 @@ DEFINE_VISITOR(entry_before) {
     config.struct_union_type_custom = [](Context_Type_STRUCT_UNION& ctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
         std::string members_str;
-        for (auto& member_type_ref : ctx.struct_union_desc.members.container) {
-            MAYBE(member_str, ctx.visit(member_type_ref.member_type));
+        for (auto& member_type_ref : ctx.struct_union_desc.variant_desc.members.container) {
+            MAYBE(member_str, ctx.visit(member_type_ref));
             if (!members_str.empty()) members_str += ", ";
             members_str += member_str.to_string();
         }

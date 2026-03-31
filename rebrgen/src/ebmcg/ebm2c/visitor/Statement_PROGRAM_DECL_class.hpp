@@ -818,8 +818,8 @@ DEFINE_VISITOR_CLASS(Statement_PROGRAM_DECL) {
             }
             if (auto struct_union_desc = s.body.struct_union_desc()) {
                 Union u{.id = s.id};
-                for (auto member_type_ref : struct_union_desc->members.container) {
-                    auto struct_key = ctx.get_field<"body.id">(member_type_ref.member_type);
+                for (auto member_type_ref : struct_union_desc->variant_desc.members.container) {
+                    auto struct_key = ctx.get_field<"body.id">(member_type_ref);
                     if (!struct_key) {
                         continue;
                     }

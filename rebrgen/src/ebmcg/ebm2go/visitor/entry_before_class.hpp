@@ -645,15 +645,15 @@ DEFINE_VISITOR(entry_before) {
             // may change return type or params
             if (fctx.func_decl.kind == ebm::FunctionKind::COMPOSITE_GETTER) {
                 auto got = ctx.get_field<"struct_union_desc">(fctx.func_decl.return_type);
-                if (got && !is_nil(got->common_type)) {
-                    MAYBE(typ, ctx.visit(got->common_type));
+                if (got && !is_nil(got->variant_desc.common_type)) {
+                    MAYBE(typ, ctx.visit(got->variant_desc.common_type));
                     return_type = typ;
                 }
             }
             else {
                 auto got = ctx.get_field<"param_decl.param_type.struct_union_desc">(fctx.func_decl.params.container[0]);
-                if (got && !is_nil(got->common_type)) {
-                    MAYBE(typ, ctx.visit(got->common_type));
+                if (got && !is_nil(got->variant_desc.common_type)) {
+                    MAYBE(typ, ctx.visit(got->variant_desc.common_type));
                     auto param_name = ctx.identifier(fctx.func_decl.params.container[0]);
                     params = CODE(param_name, " ", typ.to_writer());
                 }

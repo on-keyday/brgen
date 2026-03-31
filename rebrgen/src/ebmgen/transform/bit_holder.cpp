@@ -27,8 +27,8 @@ namespace ebmgen {
         else if (auto desc = field_type.body.struct_union_desc(); desc) {  // for STRUCT_UNION
             std::uint64_t size = 0;
             bool primitive = false;
-            for (const auto& member : desc->members.container) {
-                MAYBE(member_size, sizeof_type(tctx, member.member_type));
+            for (const auto& member : desc->variant_desc.members.container) {
+                MAYBE(member_size, sizeof_type(tctx, member));
                 if (member_size) {
                     size = std::max(size, member_size->size);
                     primitive = primitive || member_size->primitive;

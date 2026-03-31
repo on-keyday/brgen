@@ -53,8 +53,8 @@ DEFINE_VISITOR(Statement_FIELD_DECL) {
         w.writeln("#[default]");
         w.writeln("None,");
         MAYBE(members, ctx.get_field<"struct_union_desc">(ctx.field_decl.field_type));
-        for (auto& member_type_ref : members.members.container) {
-            MAYBE(type, ctx.visit(member_type_ref.member_type));
+        for (auto& member_type_ref : members.variant_desc.members.container) {
+            MAYBE(type, ctx.visit(member_type_ref));
             w.writeln("V", std::format("{}", i), "(", type.to_writer(), "),");
             i++;
         }
@@ -67,8 +67,8 @@ DEFINE_VISITOR(Statement_FIELD_DECL) {
         {
             auto impl_scope = impl_w.indent_scope();
             int j = 0;
-            for (auto& member_type_ref : members.members.container) {
-                MAYBE(type, ctx.visit(member_type_ref.member_type));
+            for (auto& member_type_ref : members.variant_desc.members.container) {
+                MAYBE(type, ctx.visit(member_type_ref));
                 auto arm = std::string("V") + std::to_string(j);
                 auto arm_lower = std::string("v") + std::to_string(j);
                 impl_w.writeln("#[inline(always)]");

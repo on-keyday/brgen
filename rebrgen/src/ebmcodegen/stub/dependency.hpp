@@ -37,8 +37,8 @@ namespace ebmcodegen::util {
                 }
                 else if (last_type->body.kind == ebm::TypeKind::STRUCT_UNION) {
                     MAYBE(struct_union_desc, last_type->body.struct_union_desc());
-                    for (auto& mem : struct_union_desc.members.container) {
-                        MAYBE(member_type, module_.get_type(mem.member_type));
+                    for (auto& mem : struct_union_desc.variant_desc.members.container) {
+                        MAYBE(member_type, module_.get_type(mem));
                         MAYBE(stmt_id, member_type.body.id());
                         deps.push_back(get_id(stmt_id));
                     }
