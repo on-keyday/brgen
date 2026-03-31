@@ -3178,13 +3178,111 @@ namespace ebmcodegen {
                 return in->nested_types();
             }
         }
+        else if constexpr (std::is_same_v<T, ebm::StructUnionDesc>) {
+            if constexpr (false) {}
+            else if constexpr (FieldIndex == 209) {
+                auto& ref = in.common_type;
+                return ref;
+            }
+            else if constexpr (FieldIndex == 23) {
+                auto& ref = in.members;
+                return ref;
+            }
+            else if constexpr (FieldIndex == 188) {
+                auto& ref = in.related_field;
+                return ref;
+            }
+            else if constexpr (FieldIndex == 3) {
+                auto& ref = in.condition;
+                return ref;
+            }
+        }
+        else if constexpr (std::is_same_v<T,ebm::StructUnionDesc*> || std::is_same_v<T,const ebm::StructUnionDesc*>) {
+            if constexpr (false) {}
+            else if constexpr (FieldIndex == 209) {
+                if (!in) {
+                    return decltype(std::addressof(in->common_type))();
+                }
+                return std::addressof(in->common_type);
+            }
+            else if constexpr (FieldIndex == 23) {
+                if (!in) {
+                    return decltype(std::addressof(in->members))();
+                }
+                return std::addressof(in->members);
+            }
+            else if constexpr (FieldIndex == 188) {
+                if (!in) {
+                    return decltype(std::addressof(in->related_field))();
+                }
+                return std::addressof(in->related_field);
+            }
+            else if constexpr (FieldIndex == 3) {
+                if (!in) {
+                    return decltype(std::addressof(in->condition))();
+                }
+                return std::addressof(in->condition);
+            }
+        }
+        else if constexpr (std::is_same_v<T, ebm::StructUnionMember>) {
+            if constexpr (false) {}
+            else if constexpr (FieldIndex == 210) {
+                auto& ref = in.member_type;
+                return ref;
+            }
+            else if constexpr (FieldIndex == 3) {
+                auto& ref = in.condition;
+                return ref;
+            }
+        }
+        else if constexpr (std::is_same_v<T,ebm::StructUnionMember*> || std::is_same_v<T,const ebm::StructUnionMember*>) {
+            if constexpr (false) {}
+            else if constexpr (FieldIndex == 210) {
+                if (!in) {
+                    return decltype(std::addressof(in->member_type))();
+                }
+                return std::addressof(in->member_type);
+            }
+            else if constexpr (FieldIndex == 3) {
+                if (!in) {
+                    return decltype(std::addressof(in->condition))();
+                }
+                return std::addressof(in->condition);
+            }
+        }
+        else if constexpr (std::is_same_v<T, ebm::StructUnionMembers>) {
+            if constexpr (false) {}
+            else if constexpr (FieldIndex == 5) {
+                auto& ref = in.len;
+                return ref;
+            }
+            else if constexpr (FieldIndex == 6) {
+                auto& ref = in.container;
+                return ref;
+            }
+        }
+        else if constexpr (std::is_same_v<T,ebm::StructUnionMembers*> || std::is_same_v<T,const ebm::StructUnionMembers*>) {
+            if constexpr (false) {}
+            else if constexpr (FieldIndex == 5) {
+                if (!in) {
+                    return decltype(std::addressof(in->len))();
+                }
+                return std::addressof(in->len);
+            }
+            else if constexpr (FieldIndex == 6) {
+                if (!in) {
+                    return decltype(std::addressof(in->container))();
+                }
+                return std::addressof(in->container);
+            }
+        }
         else if constexpr (std::is_same_v<T, ebm::SubByteRange>) {
             if constexpr (false) {}
             else if constexpr (FieldIndex == 56) {
                 auto& ref = in.stream_type;
                 return ref;
             }
-            else if constexpr (FieldIndex == 209) {
+            else if constexpr (FieldIndex == 211) {
                 auto& ref = in.range_type;
                 return ref;
             }
@@ -3201,7 +3299,7 @@ namespace ebmcodegen {
                 auto& ref = in.io_ref;
                 return ref;
             }
-            else if constexpr (FieldIndex == 210) {
+            else if constexpr (FieldIndex == 212) {
                 auto& ref = in.parent_io_ref;
                 return ref;
             }
@@ -3218,7 +3316,7 @@ namespace ebmcodegen {
                 }
                 return std::addressof(in->stream_type);
             }
-            else if constexpr (FieldIndex == 209) {
+            else if constexpr (FieldIndex == 211) {
                 if (!in) {
                     return decltype(std::addressof(in->range_type))();
                 }
@@ -3248,7 +3346,7 @@ namespace ebmcodegen {
                 }
                 return std::addressof(in->io_ref);
             }
-            else if constexpr (FieldIndex == 210) {
+            else if constexpr (FieldIndex == 212) {
                 if (!in) {
                     return decltype(std::addressof(in->parent_io_ref))();
                 }
@@ -3293,37 +3391,40 @@ namespace ebmcodegen {
                 auto& ref = in.kind;
                 return ref;
             }
-            else if constexpr (FieldIndex == 211) {
+            else if constexpr (FieldIndex == 213) {
                 return in.array_annotation();
             }
             else if constexpr (FieldIndex == 22) {
                 return in.base_type();
             }
-            else if constexpr (FieldIndex == 212) {
+            else if constexpr (FieldIndex == 214) {
                 return in.element_type();
             }
-            else if constexpr (FieldIndex == 213) {
+            else if constexpr (FieldIndex == 215) {
                 return in.func_desc();
             }
             else if constexpr (FieldIndex == 28) {
                 return in.id();
             }
-            else if constexpr (FieldIndex == 214) {
+            else if constexpr (FieldIndex == 216) {
                 return in.inner_type();
             }
-            else if constexpr (FieldIndex == 215) {
+            else if constexpr (FieldIndex == 217) {
                 return in.io_input_desc();
             }
             else if constexpr (FieldIndex == 193) {
                 return in.length();
             }
-            else if constexpr (FieldIndex == 216) {
+            else if constexpr (FieldIndex == 218) {
                 return in.pointee_type();
             }
             else if constexpr (FieldIndex == 105) {
                 return in.size();
             }
-            else if constexpr (FieldIndex == 217) {
+            else if constexpr (FieldIndex == 219) {
+                return in.struct_union_desc();
+            }
+            else if constexpr (FieldIndex == 220) {
                 return in.variant_desc();
             }
         }
@@ -3335,7 +3436,7 @@ namespace ebmcodegen {
                 }
                 return std::addressof(in->kind);
             }
-            else if constexpr (FieldIndex == 211) {
+            else if constexpr (FieldIndex == 213) {
                 if (!in) {
                     return decltype(in->array_annotation())();
                 }
@@ -3347,13 +3448,13 @@ namespace ebmcodegen {
                 }
                 return in->base_type();
             }
-            else if constexpr (FieldIndex == 212) {
+            else if constexpr (FieldIndex == 214) {
                 if (!in) {
                     return decltype(in->element_type())();
                 }
                 return in->element_type();
             }
-            else if constexpr (FieldIndex == 213) {
+            else if constexpr (FieldIndex == 215) {
                 if (!in) {
                     return decltype(in->func_desc())();
                 }
@@ -3365,13 +3466,13 @@ namespace ebmcodegen {
                 }
                 return in->id();
             }
-            else if constexpr (FieldIndex == 214) {
+            else if constexpr (FieldIndex == 216) {
                 if (!in) {
                     return decltype(in->inner_type())();
                 }
                 return in->inner_type();
             }
-            else if constexpr (FieldIndex == 215) {
+            else if constexpr (FieldIndex == 217) {
                 if (!in) {
                     return decltype(in->io_input_desc())();
                 }
@@ -3383,7 +3484,7 @@ namespace ebmcodegen {
                 }
                 return in->length();
             }
-            else if constexpr (FieldIndex == 216) {
+            else if constexpr (FieldIndex == 218) {
                 if (!in) {
                     return decltype(in->pointee_type())();
                 }
@@ -3395,7 +3496,13 @@ namespace ebmcodegen {
                 }
                 return in->size();
             }
-            else if constexpr (FieldIndex == 217) {
+            else if constexpr (FieldIndex == 219) {
+                if (!in) {
+                    return decltype(in->struct_union_desc())();
+                }
+                return in->struct_union_desc();
+            }
+            else if constexpr (FieldIndex == 220) {
                 if (!in) {
                     return decltype(in->variant_desc())();
                 }
@@ -3404,43 +3511,43 @@ namespace ebmcodegen {
         }
         else if constexpr (std::is_same_v<T, ebm::TypeCastDesc>) {
             if constexpr (false) {}
-            else if constexpr (FieldIndex == 218) {
+            else if constexpr (FieldIndex == 221) {
                 auto& ref = in.source_expr;
                 return ref;
             }
-            else if constexpr (FieldIndex == 219) {
+            else if constexpr (FieldIndex == 222) {
                 auto& ref = in.from_type;
                 return ref;
             }
-            else if constexpr (FieldIndex == 220) {
+            else if constexpr (FieldIndex == 223) {
                 auto& ref = in.cast_kind;
                 return ref;
             }
-            else if constexpr (FieldIndex == 221) {
+            else if constexpr (FieldIndex == 224) {
                 return in.cast_function();
             }
         }
         else if constexpr (std::is_same_v<T,ebm::TypeCastDesc*> || std::is_same_v<T,const ebm::TypeCastDesc*>) {
             if constexpr (false) {}
-            else if constexpr (FieldIndex == 218) {
+            else if constexpr (FieldIndex == 221) {
                 if (!in) {
                     return decltype(std::addressof(in->source_expr))();
                 }
                 return std::addressof(in->source_expr);
             }
-            else if constexpr (FieldIndex == 219) {
+            else if constexpr (FieldIndex == 222) {
                 if (!in) {
                     return decltype(std::addressof(in->from_type))();
                 }
                 return std::addressof(in->from_type);
             }
-            else if constexpr (FieldIndex == 220) {
+            else if constexpr (FieldIndex == 223) {
                 if (!in) {
                     return decltype(std::addressof(in->cast_kind))();
                 }
                 return std::addressof(in->cast_kind);
             }
-            else if constexpr (FieldIndex == 221) {
+            else if constexpr (FieldIndex == 224) {
                 if (!in) {
                     return decltype(in->cast_function())();
                 }
@@ -3479,18 +3586,18 @@ namespace ebmcodegen {
                 auto& ref = in.name;
                 return ref;
             }
-            else if constexpr (FieldIndex == 222) {
+            else if constexpr (FieldIndex == 225) {
                 auto& ref = in.var_type;
                 return ref;
             }
-            else if constexpr (FieldIndex == 223) {
+            else if constexpr (FieldIndex == 226) {
                 auto& ref = in.initial_value;
                 return ref;
             }
-            else if constexpr (FieldIndex == 224) {
+            else if constexpr (FieldIndex == 227) {
                 return in.decl_kind();
             }
-            else if constexpr (FieldIndex == 225) {
+            else if constexpr (FieldIndex == 228) {
                 return in.is_reference();
             }
             else if constexpr (FieldIndex == 2) {
@@ -3505,25 +3612,25 @@ namespace ebmcodegen {
                 }
                 return std::addressof(in->name);
             }
-            else if constexpr (FieldIndex == 222) {
+            else if constexpr (FieldIndex == 225) {
                 if (!in) {
                     return decltype(std::addressof(in->var_type))();
                 }
                 return std::addressof(in->var_type);
             }
-            else if constexpr (FieldIndex == 223) {
+            else if constexpr (FieldIndex == 226) {
                 if (!in) {
                     return decltype(std::addressof(in->initial_value))();
                 }
                 return std::addressof(in->initial_value);
             }
-            else if constexpr (FieldIndex == 224) {
+            else if constexpr (FieldIndex == 227) {
                 if (!in) {
                     return std::optional<decltype(in->decl_kind())>{};
                 }
                 return std::optional<decltype(in->decl_kind())>(in->decl_kind());
             }
-            else if constexpr (FieldIndex == 225) {
+            else if constexpr (FieldIndex == 228) {
                 if (!in) {
                     return std::optional<decltype(in->is_reference())>{};
                 }
@@ -3538,7 +3645,7 @@ namespace ebmcodegen {
         }
         else if constexpr (std::is_same_v<T, ebm::VariantDesc>) {
             if constexpr (false) {}
-            else if constexpr (FieldIndex == 226) {
+            else if constexpr (FieldIndex == 209) {
                 auto& ref = in.common_type;
                 return ref;
             }
@@ -3546,14 +3653,10 @@ namespace ebmcodegen {
                 auto& ref = in.members;
                 return ref;
             }
-            else if constexpr (FieldIndex == 188) {
-                auto& ref = in.related_field;
-                return ref;
-            }
         }
         else if constexpr (std::is_same_v<T,ebm::VariantDesc*> || std::is_same_v<T,const ebm::VariantDesc*>) {
             if constexpr (false) {}
-            else if constexpr (FieldIndex == 226) {
+            else if constexpr (FieldIndex == 209) {
                 if (!in) {
                     return decltype(std::addressof(in->common_type))();
                 }
@@ -3564,12 +3667,6 @@ namespace ebmcodegen {
                     return decltype(std::addressof(in->members))();
                 }
                 return std::addressof(in->members);
-            }
-            else if constexpr (FieldIndex == 188) {
-                if (!in) {
-                    return decltype(std::addressof(in->related_field))();
-                }
-                return std::addressof(in->related_field);
             }
         }
         else if constexpr (std::is_same_v<T, ebm::WeakStatementRef>) {
@@ -5151,16 +5248,76 @@ namespace ebmcodegen {
     }
     
     template<>
-    constexpr size_t get_type_index<ebm::SubByteRange>() {
+    constexpr size_t get_type_index<ebm::StructUnionDesc>() {
         return 55;
     }
     template<>
     constexpr size_t get_field_index<55>(std::string_view field_name) {
+        if (field_name == "common_type") {
+            return 209;
+        }
+        if (field_name == "members") {
+            return 23;
+        }
+        if (field_name == "related_field") {
+            return 188;
+        }
+        if (field_name == "condition") {
+            return 3;
+        }
+        if (std::is_constant_evaluated()) {
+            throw "No such field";
+        }
+        return static_cast<size_t>(-1); // to avoid compile error
+    }
+    
+    template<>
+    constexpr size_t get_type_index<ebm::StructUnionMember>() {
+        return 56;
+    }
+    template<>
+    constexpr size_t get_field_index<56>(std::string_view field_name) {
+        if (field_name == "member_type") {
+            return 210;
+        }
+        if (field_name == "condition") {
+            return 3;
+        }
+        if (std::is_constant_evaluated()) {
+            throw "No such field";
+        }
+        return static_cast<size_t>(-1); // to avoid compile error
+    }
+    
+    template<>
+    constexpr size_t get_type_index<ebm::StructUnionMembers>() {
+        return 57;
+    }
+    template<>
+    constexpr size_t get_field_index<57>(std::string_view field_name) {
+        if (field_name == "len") {
+            return 5;
+        }
+        if (field_name == "container") {
+            return 6;
+        }
+        if (std::is_constant_evaluated()) {
+            throw "No such field";
+        }
+        return static_cast<size_t>(-1); // to avoid compile error
+    }
+    
+    template<>
+    constexpr size_t get_type_index<ebm::SubByteRange>() {
+        return 58;
+    }
+    template<>
+    constexpr size_t get_field_index<58>(std::string_view field_name) {
         if (field_name == "stream_type") {
             return 56;
         }
         if (field_name == "range_type") {
-            return 209;
+            return 211;
         }
         if (field_name == "expression") {
             return 173;
@@ -5175,7 +5332,7 @@ namespace ebmcodegen {
             return 45;
         }
         if (field_name == "parent_io_ref") {
-            return 210;
+            return 212;
         }
         if (field_name == "io_statement") {
             return 46;
@@ -5188,10 +5345,10 @@ namespace ebmcodegen {
     
     template<>
     constexpr size_t get_type_index<ebm::Type>() {
-        return 56;
+        return 59;
     }
     template<>
-    constexpr size_t get_field_index<56>(std::string_view field_name) {
+    constexpr size_t get_field_index<59>(std::string_view field_name) {
         if (field_name == "id") {
             return 28;
         }
@@ -5206,45 +5363,48 @@ namespace ebmcodegen {
     
     template<>
     constexpr size_t get_type_index<ebm::TypeBody>() {
-        return 57;
+        return 60;
     }
     template<>
-    constexpr size_t get_field_index<57>(std::string_view field_name) {
+    constexpr size_t get_field_index<60>(std::string_view field_name) {
         if (field_name == "kind") {
             return 11;
         }
         if (field_name == "array_annotation") {
-            return 211;
+            return 213;
         }
         if (field_name == "base_type") {
             return 22;
         }
         if (field_name == "element_type") {
-            return 212;
+            return 214;
         }
         if (field_name == "func_desc") {
-            return 213;
+            return 215;
         }
         if (field_name == "id") {
             return 28;
         }
         if (field_name == "inner_type") {
-            return 214;
+            return 216;
         }
         if (field_name == "io_input_desc") {
-            return 215;
+            return 217;
         }
         if (field_name == "length") {
             return 193;
         }
         if (field_name == "pointee_type") {
-            return 216;
+            return 218;
         }
         if (field_name == "size") {
             return 105;
         }
+        if (field_name == "struct_union_desc") {
+            return 219;
+        }
         if (field_name == "variant_desc") {
-            return 217;
+            return 220;
         }
         if (std::is_constant_evaluated()) {
             throw "No such field";
@@ -5254,21 +5414,21 @@ namespace ebmcodegen {
     
     template<>
     constexpr size_t get_type_index<ebm::TypeCastDesc>() {
-        return 58;
+        return 61;
     }
     template<>
-    constexpr size_t get_field_index<58>(std::string_view field_name) {
+    constexpr size_t get_field_index<61>(std::string_view field_name) {
         if (field_name == "source_expr") {
-            return 218;
+            return 221;
         }
         if (field_name == "from_type") {
-            return 219;
+            return 222;
         }
         if (field_name == "cast_kind") {
-            return 220;
+            return 223;
         }
         if (field_name == "cast_function") {
-            return 221;
+            return 224;
         }
         if (std::is_constant_evaluated()) {
             throw "No such field";
@@ -5278,10 +5438,10 @@ namespace ebmcodegen {
     
     template<>
     constexpr size_t get_type_index<ebm::Types>() {
-        return 59;
+        return 62;
     }
     template<>
-    constexpr size_t get_field_index<59>(std::string_view field_name) {
+    constexpr size_t get_field_index<62>(std::string_view field_name) {
         if (field_name == "len") {
             return 5;
         }
@@ -5296,24 +5456,24 @@ namespace ebmcodegen {
     
     template<>
     constexpr size_t get_type_index<ebm::VariableDecl>() {
-        return 60;
+        return 63;
     }
     template<>
-    constexpr size_t get_field_index<60>(std::string_view field_name) {
+    constexpr size_t get_field_index<63>(std::string_view field_name) {
         if (field_name == "name") {
             return 21;
         }
         if (field_name == "var_type") {
-            return 222;
+            return 225;
         }
         if (field_name == "initial_value") {
-            return 223;
+            return 226;
         }
         if (field_name == "decl_kind") {
-            return 224;
+            return 227;
         }
         if (field_name == "is_reference") {
-            return 225;
+            return 228;
         }
         if (field_name == "reserved") {
             return 2;
@@ -5326,18 +5486,15 @@ namespace ebmcodegen {
     
     template<>
     constexpr size_t get_type_index<ebm::VariantDesc>() {
-        return 61;
+        return 64;
     }
     template<>
-    constexpr size_t get_field_index<61>(std::string_view field_name) {
+    constexpr size_t get_field_index<64>(std::string_view field_name) {
         if (field_name == "common_type") {
-            return 226;
+            return 209;
         }
         if (field_name == "members") {
             return 23;
-        }
-        if (field_name == "related_field") {
-            return 188;
         }
         if (std::is_constant_evaluated()) {
             throw "No such field";
@@ -5347,10 +5504,10 @@ namespace ebmcodegen {
     
     template<>
     constexpr size_t get_type_index<ebm::WeakStatementRef>() {
-        return 62;
+        return 65;
     }
     template<>
-    constexpr size_t get_field_index<62>(std::string_view field_name) {
+    constexpr size_t get_field_index<65>(std::string_view field_name) {
         if (field_name == "id") {
             return 28;
         }
@@ -5362,42 +5519,6 @@ namespace ebmcodegen {
     
     template<>
     constexpr size_t get_type_index<ebm::StatementRef>() {
-        return 63;
-    }
-    template<>
-    constexpr size_t get_field_index<63>(std::string_view field_name) {
-        if (std::is_constant_evaluated()) {
-            throw "No such field";
-        }
-        return static_cast<size_t>(-1); // to avoid compile error
-    }
-    
-    template<>
-    constexpr size_t get_type_index<ebm::TypeRef>() {
-        return 64;
-    }
-    template<>
-    constexpr size_t get_field_index<64>(std::string_view field_name) {
-        if (std::is_constant_evaluated()) {
-            throw "No such field";
-        }
-        return static_cast<size_t>(-1); // to avoid compile error
-    }
-    
-    template<>
-    constexpr size_t get_type_index<ebm::ExpressionRef>() {
-        return 65;
-    }
-    template<>
-    constexpr size_t get_field_index<65>(std::string_view field_name) {
-        if (std::is_constant_evaluated()) {
-            throw "No such field";
-        }
-        return static_cast<size_t>(-1); // to avoid compile error
-    }
-    
-    template<>
-    constexpr size_t get_type_index<ebm::IdentifierRef>() {
         return 66;
     }
     template<>
@@ -5409,7 +5530,7 @@ namespace ebmcodegen {
     }
     
     template<>
-    constexpr size_t get_type_index<ebm::StringRef>() {
+    constexpr size_t get_type_index<ebm::TypeRef>() {
         return 67;
     }
     template<>
@@ -5421,7 +5542,7 @@ namespace ebmcodegen {
     }
     
     template<>
-    constexpr size_t get_type_index<ebm::AnyRef>() {
+    constexpr size_t get_type_index<ebm::ExpressionRef>() {
         return 68;
     }
     template<>
@@ -5433,7 +5554,7 @@ namespace ebmcodegen {
     }
     
     template<>
-    constexpr size_t get_type_index<ebm::Varint>() {
+    constexpr size_t get_type_index<ebm::IdentifierRef>() {
         return 69;
     }
     template<>
@@ -5445,7 +5566,7 @@ namespace ebmcodegen {
     }
     
     template<>
-    constexpr size_t get_type_index<bool>() {
+    constexpr size_t get_type_index<ebm::StringRef>() {
         return 70;
     }
     template<>
@@ -5457,7 +5578,7 @@ namespace ebmcodegen {
     }
     
     template<>
-    constexpr size_t get_type_index<std::uint8_t>() {
+    constexpr size_t get_type_index<ebm::AnyRef>() {
         return 71;
     }
     template<>
@@ -5469,7 +5590,7 @@ namespace ebmcodegen {
     }
     
     template<>
-    constexpr size_t get_type_index<ebm::AliasHint>() {
+    constexpr size_t get_type_index<ebm::Varint>() {
         return 72;
     }
     template<>
@@ -5481,7 +5602,7 @@ namespace ebmcodegen {
     }
     
     template<>
-    constexpr size_t get_type_index<ebm::ArrayAnnotation>() {
+    constexpr size_t get_type_index<bool>() {
         return 73;
     }
     template<>
@@ -5493,7 +5614,7 @@ namespace ebmcodegen {
     }
     
     template<>
-    constexpr size_t get_type_index<ebm::BinaryOp>() {
+    constexpr size_t get_type_index<std::uint8_t>() {
         return 74;
     }
     template<>
@@ -5505,7 +5626,7 @@ namespace ebmcodegen {
     }
     
     template<>
-    constexpr size_t get_type_index<ebm::CastType>() {
+    constexpr size_t get_type_index<ebm::AliasHint>() {
         return 75;
     }
     template<>
@@ -5517,7 +5638,7 @@ namespace ebmcodegen {
     }
     
     template<>
-    constexpr size_t get_type_index<ebm::CompositeFieldKind>() {
+    constexpr size_t get_type_index<ebm::ArrayAnnotation>() {
         return 76;
     }
     template<>
@@ -5529,7 +5650,7 @@ namespace ebmcodegen {
     }
     
     template<>
-    constexpr size_t get_type_index<ebm::Endian>() {
+    constexpr size_t get_type_index<ebm::BinaryOp>() {
         return 77;
     }
     template<>
@@ -5541,7 +5662,7 @@ namespace ebmcodegen {
     }
     
     template<>
-    constexpr size_t get_type_index<ebm::ExpressionKind>() {
+    constexpr size_t get_type_index<ebm::CastType>() {
         return 78;
     }
     template<>
@@ -5553,7 +5674,7 @@ namespace ebmcodegen {
     }
     
     template<>
-    constexpr size_t get_type_index<ebm::FuncTypeAnnotation>() {
+    constexpr size_t get_type_index<ebm::CompositeFieldKind>() {
         return 79;
     }
     template<>
@@ -5565,7 +5686,7 @@ namespace ebmcodegen {
     }
     
     template<>
-    constexpr size_t get_type_index<ebm::FunctionKind>() {
+    constexpr size_t get_type_index<ebm::Endian>() {
         return 80;
     }
     template<>
@@ -5577,7 +5698,7 @@ namespace ebmcodegen {
     }
     
     template<>
-    constexpr size_t get_type_index<ebm::InitCheckType>() {
+    constexpr size_t get_type_index<ebm::ExpressionKind>() {
         return 81;
     }
     template<>
@@ -5589,7 +5710,7 @@ namespace ebmcodegen {
     }
     
     template<>
-    constexpr size_t get_type_index<ebm::LengthCheckType>() {
+    constexpr size_t get_type_index<ebm::FuncTypeAnnotation>() {
         return 82;
     }
     template<>
@@ -5601,7 +5722,7 @@ namespace ebmcodegen {
     }
     
     template<>
-    constexpr size_t get_type_index<ebm::LoopType>() {
+    constexpr size_t get_type_index<ebm::FunctionKind>() {
         return 83;
     }
     template<>
@@ -5613,7 +5734,7 @@ namespace ebmcodegen {
     }
     
     template<>
-    constexpr size_t get_type_index<ebm::LoweringIOType>() {
+    constexpr size_t get_type_index<ebm::InitCheckType>() {
         return 84;
     }
     template<>
@@ -5625,7 +5746,7 @@ namespace ebmcodegen {
     }
     
     template<>
-    constexpr size_t get_type_index<ebm::MergeMode>() {
+    constexpr size_t get_type_index<ebm::LengthCheckType>() {
         return 85;
     }
     template<>
@@ -5637,7 +5758,7 @@ namespace ebmcodegen {
     }
     
     template<>
-    constexpr size_t get_type_index<ebm::OpCode>() {
+    constexpr size_t get_type_index<ebm::LoopType>() {
         return 86;
     }
     template<>
@@ -5649,7 +5770,7 @@ namespace ebmcodegen {
     }
     
     template<>
-    constexpr size_t get_type_index<ebm::SetterStatus>() {
+    constexpr size_t get_type_index<ebm::LoweringIOType>() {
         return 87;
     }
     template<>
@@ -5661,7 +5782,7 @@ namespace ebmcodegen {
     }
     
     template<>
-    constexpr size_t get_type_index<ebm::SizeUnit>() {
+    constexpr size_t get_type_index<ebm::MergeMode>() {
         return 88;
     }
     template<>
@@ -5673,7 +5794,7 @@ namespace ebmcodegen {
     }
     
     template<>
-    constexpr size_t get_type_index<ebm::StatementKind>() {
+    constexpr size_t get_type_index<ebm::OpCode>() {
         return 89;
     }
     template<>
@@ -5685,7 +5806,7 @@ namespace ebmcodegen {
     }
     
     template<>
-    constexpr size_t get_type_index<ebm::StreamType>() {
+    constexpr size_t get_type_index<ebm::SetterStatus>() {
         return 90;
     }
     template<>
@@ -5697,7 +5818,7 @@ namespace ebmcodegen {
     }
     
     template<>
-    constexpr size_t get_type_index<ebm::SubByteRangeType>() {
+    constexpr size_t get_type_index<ebm::SizeUnit>() {
         return 91;
     }
     template<>
@@ -5709,7 +5830,7 @@ namespace ebmcodegen {
     }
     
     template<>
-    constexpr size_t get_type_index<ebm::TypeKind>() {
+    constexpr size_t get_type_index<ebm::StatementKind>() {
         return 92;
     }
     template<>
@@ -5721,7 +5842,7 @@ namespace ebmcodegen {
     }
     
     template<>
-    constexpr size_t get_type_index<ebm::UnaryOp>() {
+    constexpr size_t get_type_index<ebm::StreamType>() {
         return 93;
     }
     template<>
@@ -5733,11 +5854,47 @@ namespace ebmcodegen {
     }
     
     template<>
-    constexpr size_t get_type_index<ebm::VariableDeclKind>() {
+    constexpr size_t get_type_index<ebm::SubByteRangeType>() {
         return 94;
     }
     template<>
     constexpr size_t get_field_index<94>(std::string_view field_name) {
+        if (std::is_constant_evaluated()) {
+            throw "No such field";
+        }
+        return static_cast<size_t>(-1); // to avoid compile error
+    }
+    
+    template<>
+    constexpr size_t get_type_index<ebm::TypeKind>() {
+        return 95;
+    }
+    template<>
+    constexpr size_t get_field_index<95>(std::string_view field_name) {
+        if (std::is_constant_evaluated()) {
+            throw "No such field";
+        }
+        return static_cast<size_t>(-1); // to avoid compile error
+    }
+    
+    template<>
+    constexpr size_t get_type_index<ebm::UnaryOp>() {
+        return 96;
+    }
+    template<>
+    constexpr size_t get_field_index<96>(std::string_view field_name) {
+        if (std::is_constant_evaluated()) {
+            throw "No such field";
+        }
+        return static_cast<size_t>(-1); // to avoid compile error
+    }
+    
+    template<>
+    constexpr size_t get_type_index<ebm::VariableDeclKind>() {
+        return 97;
+    }
+    template<>
+    constexpr size_t get_field_index<97>(std::string_view field_name) {
         if (std::is_constant_evaluated()) {
             throw "No such field";
         }
@@ -6740,6 +6897,60 @@ namespace ebmcodegen {
         else if constexpr (index.index == 55) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
+                    return (std::vector<ebm::StructUnionDesc>*)nullptr;
+                }
+                else {
+                    return std::vector<ebm::StructUnionDesc>{};
+                }
+            }
+            else {
+                if constexpr (index.is_ptr) {
+                    return (ebm::StructUnionDesc*)nullptr;
+                }
+                else {
+                    return ebm::StructUnionDesc{};
+                }
+            }
+        }
+        else if constexpr (index.index == 56) {
+            if constexpr (index.is_array) {
+                if constexpr (index.is_ptr) {
+                    return (std::vector<ebm::StructUnionMember>*)nullptr;
+                }
+                else {
+                    return std::vector<ebm::StructUnionMember>{};
+                }
+            }
+            else {
+                if constexpr (index.is_ptr) {
+                    return (ebm::StructUnionMember*)nullptr;
+                }
+                else {
+                    return ebm::StructUnionMember{};
+                }
+            }
+        }
+        else if constexpr (index.index == 57) {
+            if constexpr (index.is_array) {
+                if constexpr (index.is_ptr) {
+                    return (std::vector<ebm::StructUnionMembers>*)nullptr;
+                }
+                else {
+                    return std::vector<ebm::StructUnionMembers>{};
+                }
+            }
+            else {
+                if constexpr (index.is_ptr) {
+                    return (ebm::StructUnionMembers*)nullptr;
+                }
+                else {
+                    return ebm::StructUnionMembers{};
+                }
+            }
+        }
+        else if constexpr (index.index == 58) {
+            if constexpr (index.is_array) {
+                if constexpr (index.is_ptr) {
                     return (std::vector<ebm::SubByteRange>*)nullptr;
                 }
                 else {
@@ -6755,7 +6966,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 56) {
+        else if constexpr (index.index == 59) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::Type>*)nullptr;
@@ -6773,7 +6984,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 57) {
+        else if constexpr (index.index == 60) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::TypeBody>*)nullptr;
@@ -6791,7 +7002,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 58) {
+        else if constexpr (index.index == 61) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::TypeCastDesc>*)nullptr;
@@ -6809,7 +7020,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 59) {
+        else if constexpr (index.index == 62) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::Types>*)nullptr;
@@ -6827,7 +7038,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 60) {
+        else if constexpr (index.index == 63) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::VariableDecl>*)nullptr;
@@ -6845,7 +7056,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 61) {
+        else if constexpr (index.index == 64) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::VariantDesc>*)nullptr;
@@ -6863,7 +7074,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 62) {
+        else if constexpr (index.index == 65) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::WeakStatementRef>*)nullptr;
@@ -6881,7 +7092,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 63) {
+        else if constexpr (index.index == 66) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::StatementRef>*)nullptr;
@@ -6899,7 +7110,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 64) {
+        else if constexpr (index.index == 67) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::TypeRef>*)nullptr;
@@ -6917,7 +7128,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 65) {
+        else if constexpr (index.index == 68) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::ExpressionRef>*)nullptr;
@@ -6935,7 +7146,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 66) {
+        else if constexpr (index.index == 69) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::IdentifierRef>*)nullptr;
@@ -6953,7 +7164,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 67) {
+        else if constexpr (index.index == 70) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::StringRef>*)nullptr;
@@ -6971,7 +7182,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 68) {
+        else if constexpr (index.index == 71) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::AnyRef>*)nullptr;
@@ -6989,7 +7200,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 69) {
+        else if constexpr (index.index == 72) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::Varint>*)nullptr;
@@ -7007,7 +7218,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 70) {
+        else if constexpr (index.index == 73) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<bool>*)nullptr;
@@ -7025,7 +7236,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 71) {
+        else if constexpr (index.index == 74) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<std::uint8_t>*)nullptr;
@@ -7043,7 +7254,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 72) {
+        else if constexpr (index.index == 75) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::AliasHint>*)nullptr;
@@ -7061,7 +7272,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 73) {
+        else if constexpr (index.index == 76) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::ArrayAnnotation>*)nullptr;
@@ -7079,7 +7290,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 74) {
+        else if constexpr (index.index == 77) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::BinaryOp>*)nullptr;
@@ -7097,7 +7308,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 75) {
+        else if constexpr (index.index == 78) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::CastType>*)nullptr;
@@ -7115,7 +7326,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 76) {
+        else if constexpr (index.index == 79) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::CompositeFieldKind>*)nullptr;
@@ -7133,7 +7344,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 77) {
+        else if constexpr (index.index == 80) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::Endian>*)nullptr;
@@ -7151,7 +7362,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 78) {
+        else if constexpr (index.index == 81) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::ExpressionKind>*)nullptr;
@@ -7169,7 +7380,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 79) {
+        else if constexpr (index.index == 82) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::FuncTypeAnnotation>*)nullptr;
@@ -7187,7 +7398,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 80) {
+        else if constexpr (index.index == 83) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::FunctionKind>*)nullptr;
@@ -7205,7 +7416,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 81) {
+        else if constexpr (index.index == 84) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::InitCheckType>*)nullptr;
@@ -7223,7 +7434,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 82) {
+        else if constexpr (index.index == 85) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::LengthCheckType>*)nullptr;
@@ -7241,7 +7452,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 83) {
+        else if constexpr (index.index == 86) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::LoopType>*)nullptr;
@@ -7259,7 +7470,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 84) {
+        else if constexpr (index.index == 87) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::LoweringIOType>*)nullptr;
@@ -7277,7 +7488,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 85) {
+        else if constexpr (index.index == 88) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::MergeMode>*)nullptr;
@@ -7295,7 +7506,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 86) {
+        else if constexpr (index.index == 89) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::OpCode>*)nullptr;
@@ -7313,7 +7524,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 87) {
+        else if constexpr (index.index == 90) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::SetterStatus>*)nullptr;
@@ -7331,7 +7542,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 88) {
+        else if constexpr (index.index == 91) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::SizeUnit>*)nullptr;
@@ -7349,7 +7560,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 89) {
+        else if constexpr (index.index == 92) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::StatementKind>*)nullptr;
@@ -7367,7 +7578,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 90) {
+        else if constexpr (index.index == 93) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::StreamType>*)nullptr;
@@ -7385,7 +7596,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 91) {
+        else if constexpr (index.index == 94) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::SubByteRangeType>*)nullptr;
@@ -7403,7 +7614,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 92) {
+        else if constexpr (index.index == 95) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::TypeKind>*)nullptr;
@@ -7421,7 +7632,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 93) {
+        else if constexpr (index.index == 96) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::UnaryOp>*)nullptr;
@@ -7439,7 +7650,7 @@ namespace ebmcodegen {
                 }
             }
         }
-        else if constexpr (index.index == 94) {
+        else if constexpr (index.index == 97) {
             if constexpr (index.is_array) {
                 if constexpr (index.is_ptr) {
                     return (std::vector<ebm::VariableDeclKind>*)nullptr;
@@ -7478,7 +7689,7 @@ namespace ebmcodegen {
             return 8;
         }
         if (name == "array_annotation") {
-            return 211;
+            return 213;
         }
         if (name == "array_expr") {
             return 31;
@@ -7526,10 +7737,10 @@ namespace ebmcodegen {
             return 7;
         }
         if (name == "cast_function") {
-            return 221;
+            return 224;
         }
         if (name == "cast_kind") {
-            return 220;
+            return 223;
         }
         if (name == "cast_type") {
             return 120;
@@ -7544,7 +7755,7 @@ namespace ebmcodegen {
             return 136;
         }
         if (name == "common_type") {
-            return 226;
+            return 209;
         }
         if (name == "composite_field") {
             return 85;
@@ -7586,7 +7797,7 @@ namespace ebmcodegen {
             return 79;
         }
         if (name == "decl_kind") {
-            return 224;
+            return 227;
         }
         if (name == "decode_fn") {
             return 204;
@@ -7601,7 +7812,7 @@ namespace ebmcodegen {
             return 102;
         }
         if (name == "element_type") {
-            return 212;
+            return 214;
         }
         if (name == "else_") {
             return 39;
@@ -7673,13 +7884,13 @@ namespace ebmcodegen {
             return 159;
         }
         if (name == "from_type") {
-            return 219;
+            return 222;
         }
         if (name == "func_decl") {
             return 175;
         }
         if (name == "func_desc") {
-            return 213;
+            return 215;
         }
         if (name == "func_id") {
             return 121;
@@ -7769,13 +7980,13 @@ namespace ebmcodegen {
             return 114;
         }
         if (name == "initial_value") {
-            return 223;
+            return 226;
         }
         if (name == "inner_composite") {
             return 83;
         }
         if (name == "inner_type") {
-            return 214;
+            return 216;
         }
         if (name == "int64_value") {
             return 43;
@@ -7784,7 +7995,7 @@ namespace ebmcodegen {
             return 44;
         }
         if (name == "io_input_desc") {
-            return 215;
+            return 217;
         }
         if (name == "io_ref") {
             return 45;
@@ -7811,7 +8022,7 @@ namespace ebmcodegen {
             return 195;
         }
         if (name == "is_reference") {
-            return 225;
+            return 228;
         }
         if (name == "is_seekable") {
             return 107;
@@ -7891,6 +8102,9 @@ namespace ebmcodegen {
         if (name == "member_id") {
             return 123;
         }
+        if (name == "member_type") {
+            return 210;
+        }
         if (name == "members") {
             return 23;
         }
@@ -7946,7 +8160,7 @@ namespace ebmcodegen {
             return 94;
         }
         if (name == "parent_io_ref") {
-            return 210;
+            return 212;
         }
         if (name == "parent_struct") {
             return 81;
@@ -7955,7 +8169,7 @@ namespace ebmcodegen {
             return 112;
         }
         if (name == "pointee_type") {
-            return 216;
+            return 218;
         }
         if (name == "program") {
             return 113;
@@ -7976,7 +8190,7 @@ namespace ebmcodegen {
             return 151;
         }
         if (name == "range_type") {
-            return 209;
+            return 211;
         }
         if (name == "read_data") {
             return 187;
@@ -8036,7 +8250,7 @@ namespace ebmcodegen {
             return 19;
         }
         if (name == "source_expr") {
-            return 218;
+            return 221;
         }
         if (name == "start") {
             return 55;
@@ -8070,6 +8284,9 @@ namespace ebmcodegen {
         }
         if (name == "struct_id") {
             return 129;
+        }
+        if (name == "struct_union_desc") {
+            return 219;
         }
         if (name == "sub_byte_range") {
             return 191;
@@ -8129,10 +8346,10 @@ namespace ebmcodegen {
             return 192;
         }
         if (name == "var_type") {
-            return 222;
+            return 225;
         }
         if (name == "variant_desc") {
-            return 217;
+            return 220;
         }
         if (name == "version") {
             return 65;
@@ -8153,7 +8370,7 @@ namespace ebmcodegen {
         case 91: return "annotation";
         case 119: return "arg_num";
         case 8: return "arguments";
-        case 211: return "array_annotation";
+        case 213: return "array_annotation";
         case 31: return "array_expr";
         case 32: return "as_arg";
         case 164: return "assert_desc";
@@ -8169,13 +8386,13 @@ namespace ebmcodegen {
         case 166: return "break_";
         case 36: return "call_desc";
         case 7: return "callee";
-        case 221: return "cast_function";
-        case 220: return "cast_kind";
+        case 224: return "cast_function";
+        case 223: return "cast_kind";
         case 120: return "cast_type";
         case 37: return "char_value";
         case 139: return "collection";
         case 136: return "column";
-        case 226: return "common_type";
+        case 209: return "common_type";
         case 85: return "composite_field";
         case 167: return "composite_field_decl";
         case 86: return "composite_getter";
@@ -8189,12 +8406,12 @@ namespace ebmcodegen {
         case 194: return "data";
         case 104: return "data_type";
         case 79: return "debug_info";
-        case 224: return "decl_kind";
+        case 227: return "decl_kind";
         case 204: return "decode_fn";
         case 157: return "derived_from";
         case 20: return "dynamic_expr";
         case 102: return "dynamic_ref";
-        case 212: return "element_type";
+        case 214: return "element_type";
         case 39: return "else_";
         case 111: return "else_block";
         case 205: return "encode_fn";
@@ -8218,9 +8435,9 @@ namespace ebmcodegen {
         case 134: return "file_id";
         case 14: return "files";
         case 159: return "from";
-        case 219: return "from_type";
+        case 222: return "from_type";
         case 175: return "func_decl";
-        case 213: return "func_desc";
+        case 215: return "func_desc";
         case 121: return "func_id";
         case 154: return "getter_condition";
         case 156: return "getter_function";
@@ -8250,12 +8467,12 @@ namespace ebmcodegen {
         case 141: return "init";
         case 178: return "init_check";
         case 114: return "init_check_type";
-        case 223: return "initial_value";
+        case 226: return "initial_value";
         case 83: return "inner_composite";
-        case 214: return "inner_type";
+        case 216: return "inner_type";
         case 43: return "int64_value";
         case 44: return "int_value";
-        case 215: return "io_input_desc";
+        case 217: return "io_input_desc";
         case 45: return "io_ref";
         case 46: return "io_statement";
         case 145: return "is_exhaustive";
@@ -8264,7 +8481,7 @@ namespace ebmcodegen {
         case 1: return "is_inout";
         case 99: return "is_peek";
         case 195: return "is_recursive";
-        case 225: return "is_reference";
+        case 228: return "is_reference";
         case 107: return "is_seekable";
         case 82: return "is_state_variable";
         case 92: return "is_user_defined";
@@ -8291,6 +8508,7 @@ namespace ebmcodegen {
         case 66: return "max_id";
         case 49: return "member";
         case 123: return "member_id";
+        case 210: return "member_type";
         case 23: return "members";
         case 152: return "merge_mode";
         case 27: return "message";
@@ -8309,17 +8527,17 @@ namespace ebmcodegen {
         case 150: return "param_type";
         case 90: return "params";
         case 94: return "parent_format";
-        case 210: return "parent_io_ref";
+        case 212: return "parent_io_ref";
         case 81: return "parent_struct";
         case 112: return "path";
-        case 216: return "pointee_type";
+        case 218: return "pointee_type";
         case 113: return "program";
         case 207: return "properties";
         case 95: return "property";
         case 185: return "property_decl";
         case 186: return "property_member_decl";
         case 151: return "property_type";
-        case 209: return "range_type";
+        case 211: return "range_type";
         case 187: return "read_data";
         case 163: return "ref";
         case 125: return "reg";
@@ -8339,7 +8557,7 @@ namespace ebmcodegen {
         case 98: return "sign";
         case 105: return "size";
         case 19: return "source";
-        case 218: return "source_expr";
+        case 221: return "source_expr";
         case 55: return "start";
         case 74: return "statements";
         case 73: return "statements_len";
@@ -8351,6 +8569,7 @@ namespace ebmcodegen {
         case 69: return "strings_len";
         case 190: return "struct_decl";
         case 129: return "struct_id";
+        case 219: return "struct_union_desc";
         case 191: return "sub_byte_range";
         case 58: return "sub_range";
         case 18: return "target";
@@ -8370,8 +8589,8 @@ namespace ebmcodegen {
         case 25: return "value";
         case 148: return "values";
         case 192: return "var_decl";
-        case 222: return "var_type";
-        case 217: return "variant_desc";
+        case 225: return "var_type";
+        case 220: return "variant_desc";
         case 65: return "version";
         case 97: return "wrapper_function";
         case 161: return "write_data";
@@ -8381,20 +8600,20 @@ namespace ebmcodegen {
     
     constexpr std::string_view type_name_from_index(size_t index) {
         switch (index) {
-        case 72: return "AliasHint";
-        case 68: return "AnyRef";
-        case 73: return "ArrayAnnotation";
+        case 75: return "AliasHint";
+        case 71: return "AnyRef";
+        case 76: return "ArrayAnnotation";
         case 0: return "AsArgDesc";
         case 1: return "AssertDesc";
-        case 74: return "BinaryOp";
+        case 77: return "BinaryOp";
         case 2: return "Block";
         case 3: return "CallDesc";
-        case 75: return "CastType";
+        case 78: return "CastType";
         case 4: return "CompositeFieldDecl";
-        case 76: return "CompositeFieldKind";
+        case 79: return "CompositeFieldKind";
         case 5: return "Condition";
         case 6: return "DebugInfo";
-        case 77: return "Endian";
+        case 80: return "Endian";
         case 7: return "EndianConvertDesc";
         case 8: return "EndianVariable";
         case 9: return "EnumDecl";
@@ -8402,43 +8621,43 @@ namespace ebmcodegen {
         case 11: return "ErrorReport";
         case 12: return "Expression";
         case 13: return "ExpressionBody";
-        case 78: return "ExpressionKind";
-        case 65: return "ExpressionRef";
+        case 81: return "ExpressionKind";
+        case 68: return "ExpressionRef";
         case 14: return "Expressions";
         case 15: return "ExtendedBinaryModule";
         case 16: return "FieldDecl";
-        case 79: return "FuncTypeAnnotation";
+        case 82: return "FuncTypeAnnotation";
         case 17: return "FuncTypeDesc";
         case 18: return "FunctionAttribute";
         case 19: return "FunctionDecl";
-        case 80: return "FunctionKind";
+        case 83: return "FunctionKind";
         case 20: return "IOAttribute";
         case 21: return "IOData";
         case 22: return "IOInputDesc";
         case 23: return "Identifier";
-        case 66: return "IdentifierRef";
+        case 69: return "IdentifierRef";
         case 24: return "IfStatement";
         case 25: return "ImportDecl";
         case 26: return "InitCheck";
-        case 81: return "InitCheckType";
+        case 84: return "InitCheckType";
         case 27: return "Instruction";
         case 28: return "JumpOffset";
         case 29: return "LengthCheck";
-        case 82: return "LengthCheckType";
+        case 85: return "LengthCheckType";
         case 30: return "Loc";
         case 31: return "LoopFlowControl";
         case 32: return "LoopStatement";
-        case 83: return "LoopType";
+        case 86: return "LoopType";
         case 33: return "LoweredExpressionRef";
         case 34: return "LoweredIOStatement";
         case 35: return "LoweredIOStatements";
         case 36: return "LoweredStatementRef";
-        case 84: return "LoweringIOType";
+        case 87: return "LoweringIOType";
         case 37: return "MatchBranch";
         case 38: return "MatchStatement";
-        case 85: return "MergeMode";
+        case 88: return "MergeMode";
         case 39: return "Metadata";
-        case 86: return "OpCode";
+        case 89: return "OpCode";
         case 40: return "OptionalImmediateSize";
         case 41: return "ParameterDecl";
         case 42: return "PropertyDecl";
@@ -8448,34 +8667,37 @@ namespace ebmcodegen {
         case 46: return "ReserveData";
         case 47: return "RetValue";
         case 48: return "SetEndian";
-        case 87: return "SetterStatus";
+        case 90: return "SetterStatus";
         case 49: return "Size";
-        case 88: return "SizeUnit";
+        case 91: return "SizeUnit";
         case 50: return "Statement";
         case 51: return "StatementBody";
-        case 89: return "StatementKind";
-        case 63: return "StatementRef";
-        case 90: return "StreamType";
+        case 92: return "StatementKind";
+        case 66: return "StatementRef";
+        case 93: return "StreamType";
         case 52: return "String";
         case 53: return "StringLiteral";
-        case 67: return "StringRef";
+        case 70: return "StringRef";
         case 54: return "StructDecl";
-        case 55: return "SubByteRange";
-        case 91: return "SubByteRangeType";
-        case 56: return "Type";
-        case 57: return "TypeBody";
-        case 58: return "TypeCastDesc";
-        case 92: return "TypeKind";
-        case 64: return "TypeRef";
-        case 59: return "Types";
-        case 93: return "UnaryOp";
-        case 60: return "VariableDecl";
-        case 94: return "VariableDeclKind";
-        case 61: return "VariantDesc";
-        case 69: return "Varint";
-        case 62: return "WeakStatementRef";
-        case 70: return "bool";
-        case 71: return "std::uint8_t";
+        case 55: return "StructUnionDesc";
+        case 56: return "StructUnionMember";
+        case 57: return "StructUnionMembers";
+        case 58: return "SubByteRange";
+        case 94: return "SubByteRangeType";
+        case 59: return "Type";
+        case 60: return "TypeBody";
+        case 61: return "TypeCastDesc";
+        case 95: return "TypeKind";
+        case 67: return "TypeRef";
+        case 62: return "Types";
+        case 96: return "UnaryOp";
+        case 63: return "VariableDecl";
+        case 97: return "VariableDeclKind";
+        case 64: return "VariantDesc";
+        case 72: return "Varint";
+        case 65: return "WeakStatementRef";
+        case 73: return "bool";
+        case 74: return "std::uint8_t";
         default: return "";
         }
     }
@@ -8670,6 +8892,15 @@ namespace ebmcodegen {
         case 62: {
             return get_field_index<62>(field_name);
         }
+        case 63: {
+            return get_field_index<63>(field_name);
+        }
+        case 64: {
+            return get_field_index<64>(field_name);
+        }
+        case 65: {
+            return get_field_index<65>(field_name);
+        }
         default:
             return -1;
         }
@@ -8840,29 +9071,38 @@ namespace ebmcodegen {
         if (type_name == "StructDecl") {
             return 54;
         }
-        if (type_name == "SubByteRange") {
+        if (type_name == "StructUnionDesc") {
             return 55;
         }
-        if (type_name == "Type") {
+        if (type_name == "StructUnionMember") {
             return 56;
         }
-        if (type_name == "TypeBody") {
+        if (type_name == "StructUnionMembers") {
             return 57;
         }
-        if (type_name == "TypeCastDesc") {
+        if (type_name == "SubByteRange") {
             return 58;
         }
-        if (type_name == "Types") {
+        if (type_name == "Type") {
             return 59;
         }
-        if (type_name == "VariableDecl") {
+        if (type_name == "TypeBody") {
             return 60;
         }
-        if (type_name == "VariantDesc") {
+        if (type_name == "TypeCastDesc") {
             return 61;
         }
-        if (type_name == "WeakStatementRef") {
+        if (type_name == "Types") {
             return 62;
+        }
+        if (type_name == "VariableDecl") {
+            return 63;
+        }
+        if (type_name == "VariantDesc") {
+            return 64;
+        }
+        if (type_name == "WeakStatementRef") {
+            return 65;
         }
         throw "No such type name";
     }
@@ -8870,13 +9110,13 @@ namespace ebmcodegen {
         switch (type_index) {
         case 0: {
             if (field_index == get_field_index<0>("target_expr")) {
-                return {.index = 65, .is_array = false, .is_ptr = false};
+                return {.index = 68, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<0>("is_inout")) {
-                return {.index = 70, .is_array = false, .is_ptr = false};
+                return {.index = 73, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<0>("reserved")) {
-                return {.index = 71, .is_array = false, .is_ptr = false};
+                return {.index = 74, .is_array = false, .is_ptr = false};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
@@ -8891,16 +9131,16 @@ namespace ebmcodegen {
         }
         case 2: {
             if (field_index == get_field_index<2>("len")) {
-                return {.index = 69, .is_array = false, .is_ptr = false};
+                return {.index = 72, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<2>("container")) {
-                return {.index = 63, .is_array = true, .is_ptr = false};
+                return {.index = 66, .is_array = true, .is_ptr = false};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 3: {
             if (field_index == get_field_index<3>("callee")) {
-                return {.index = 65, .is_array = false, .is_ptr = false};
+                return {.index = 68, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<3>("arguments")) {
                 return {.index = 14, .is_array = false, .is_ptr = false};
@@ -8912,28 +9152,28 @@ namespace ebmcodegen {
                 return {.index = 2, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<4>("composite_type")) {
-                return {.index = 64, .is_array = false, .is_ptr = false};
+                return {.index = 67, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<4>("kind")) {
-                return {.index = 76, .is_array = false, .is_ptr = false};
+                return {.index = 79, .is_array = false, .is_ptr = false};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 5: {
             if (field_index == get_field_index<5>("cond")) {
-                return {.index = 65, .is_array = false, .is_ptr = false};
+                return {.index = 68, .is_array = false, .is_ptr = false};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 6: {
             if (field_index == get_field_index<6>("len_files")) {
-                return {.index = 69, .is_array = false, .is_ptr = false};
+                return {.index = 72, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<6>("files")) {
-                return {.index = 67, .is_array = true, .is_ptr = false};
+                return {.index = 70, .is_array = true, .is_ptr = false};
             }
             if (field_index == get_field_index<6>("len_locs")) {
-                return {.index = 69, .is_array = false, .is_ptr = false};
+                return {.index = 72, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<6>("locs")) {
                 return {.index = 30, .is_array = true, .is_ptr = false};
@@ -8942,16 +9182,16 @@ namespace ebmcodegen {
         }
         case 7: {
             if (field_index == get_field_index<7>("endian")) {
-                return {.index = 77, .is_array = false, .is_ptr = false};
+                return {.index = 80, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<7>("reserved")) {
-                return {.index = 71, .is_array = false, .is_ptr = false};
+                return {.index = 74, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<7>("target")) {
-                return {.index = 65, .is_array = false, .is_ptr = false};
+                return {.index = 68, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<7>("source")) {
-                return {.index = 65, .is_array = false, .is_ptr = false};
+                return {.index = 68, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<7>("lowered_statement")) {
                 return {.index = 36, .is_array = false, .is_ptr = false};
@@ -8960,22 +9200,22 @@ namespace ebmcodegen {
         }
         case 8: {
             if (field_index == get_field_index<8>("endian")) {
-                return {.index = 77, .is_array = false, .is_ptr = false};
+                return {.index = 80, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<8>("reserved")) {
-                return {.index = 71, .is_array = false, .is_ptr = false};
+                return {.index = 74, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<8>("dynamic_expr")) {
-                return {.index = 65, .is_array = false, .is_ptr = true};
+                return {.index = 68, .is_array = false, .is_ptr = true};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 9: {
             if (field_index == get_field_index<9>("name")) {
-                return {.index = 66, .is_array = false, .is_ptr = false};
+                return {.index = 69, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<9>("base_type")) {
-                return {.index = 64, .is_array = false, .is_ptr = false};
+                return {.index = 67, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<9>("members")) {
                 return {.index = 2, .is_array = false, .is_ptr = false};
@@ -8984,22 +9224,22 @@ namespace ebmcodegen {
         }
         case 10: {
             if (field_index == get_field_index<10>("name")) {
-                return {.index = 66, .is_array = false, .is_ptr = false};
+                return {.index = 69, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<10>("enum_decl")) {
-                return {.index = 62, .is_array = false, .is_ptr = false};
-            }
-            if (field_index == get_field_index<10>("value")) {
                 return {.index = 65, .is_array = false, .is_ptr = false};
             }
+            if (field_index == get_field_index<10>("value")) {
+                return {.index = 68, .is_array = false, .is_ptr = false};
+            }
             if (field_index == get_field_index<10>("string_repr")) {
-                return {.index = 67, .is_array = false, .is_ptr = false};
+                return {.index = 70, .is_array = false, .is_ptr = false};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 11: {
             if (field_index == get_field_index<11>("message")) {
-                return {.index = 67, .is_array = false, .is_ptr = false};
+                return {.index = 70, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<11>("arguments")) {
                 return {.index = 14, .is_array = false, .is_ptr = false};
@@ -9008,7 +9248,7 @@ namespace ebmcodegen {
         }
         case 12: {
             if (field_index == get_field_index<12>("id")) {
-                return {.index = 65, .is_array = false, .is_ptr = false};
+                return {.index = 68, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<12>("body")) {
                 return {.index = 13, .is_array = false, .is_ptr = false};
@@ -9017,175 +9257,175 @@ namespace ebmcodegen {
         }
         case 13: {
             if (field_index == get_field_index<13>("type")) {
-                return {.index = 64, .is_array = false, .is_ptr = false};
+                return {.index = 67, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<13>("kind")) {
-                return {.index = 78, .is_array = false, .is_ptr = false};
+                return {.index = 81, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<13>("array_expr")) {
-                return {.index = 65, .is_array = false, .is_ptr = true};
+                return {.index = 68, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<13>("as_arg")) {
                 return {.index = 0, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<13>("base")) {
-                return {.index = 65, .is_array = false, .is_ptr = true};
+                return {.index = 68, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<13>("bool_value")) {
-                return {.index = 71, .is_array = false, .is_ptr = true};
+                return {.index = 74, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<13>("bop")) {
-                return {.index = 74, .is_array = false, .is_ptr = true};
+                return {.index = 77, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<13>("call_desc")) {
                 return {.index = 3, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<13>("char_value")) {
-                return {.index = 69, .is_array = false, .is_ptr = true};
+                return {.index = 72, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<13>("condition")) {
-                return {.index = 65, .is_array = false, .is_ptr = true};
+                return {.index = 68, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<13>("conditional_stmt")) {
-                return {.index = 63, .is_array = false, .is_ptr = true};
+                return {.index = 66, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<13>("else_")) {
-                return {.index = 65, .is_array = false, .is_ptr = true};
+                return {.index = 68, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<13>("end")) {
-                return {.index = 65, .is_array = false, .is_ptr = true};
+                return {.index = 68, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<13>("endian_expr")) {
-                return {.index = 63, .is_array = false, .is_ptr = true};
+                return {.index = 66, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<13>("enum_decl")) {
-                return {.index = 63, .is_array = false, .is_ptr = true};
+                return {.index = 66, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<13>("id")) {
-                return {.index = 62, .is_array = false, .is_ptr = true};
+                return {.index = 65, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<13>("index")) {
-                return {.index = 65, .is_array = false, .is_ptr = true};
+                return {.index = 68, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<13>("int64_value")) {
                 return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<13>("int_value")) {
-                return {.index = 69, .is_array = false, .is_ptr = true};
+                return {.index = 72, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<13>("io_ref")) {
-                return {.index = 63, .is_array = false, .is_ptr = true};
+                return {.index = 66, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<13>("io_statement")) {
-                return {.index = 63, .is_array = false, .is_ptr = true};
+                return {.index = 66, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<13>("left")) {
-                return {.index = 65, .is_array = false, .is_ptr = true};
+                return {.index = 68, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<13>("lowered_expr")) {
                 return {.index = 33, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<13>("member")) {
-                return {.index = 65, .is_array = false, .is_ptr = true};
+                return {.index = 68, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<13>("num_bytes")) {
                 return {.index = 49, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<13>("operand")) {
-                return {.index = 65, .is_array = false, .is_ptr = true};
+                return {.index = 68, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<13>("or_cond")) {
                 return {.index = 14, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<13>("right")) {
-                return {.index = 65, .is_array = false, .is_ptr = true};
+                return {.index = 68, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<13>("setter_status")) {
-                return {.index = 87, .is_array = false, .is_ptr = true};
-            }
-            if (field_index == get_field_index<13>("start")) {
-                return {.index = 65, .is_array = false, .is_ptr = true};
-            }
-            if (field_index == get_field_index<13>("stream_type")) {
                 return {.index = 90, .is_array = false, .is_ptr = true};
             }
+            if (field_index == get_field_index<13>("start")) {
+                return {.index = 68, .is_array = false, .is_ptr = true};
+            }
+            if (field_index == get_field_index<13>("stream_type")) {
+                return {.index = 93, .is_array = false, .is_ptr = true};
+            }
             if (field_index == get_field_index<13>("string_value")) {
-                return {.index = 67, .is_array = false, .is_ptr = true};
+                return {.index = 70, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<13>("sub_range")) {
-                return {.index = 62, .is_array = false, .is_ptr = true};
+                return {.index = 65, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<13>("target_expr")) {
-                return {.index = 65, .is_array = false, .is_ptr = true};
+                return {.index = 68, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<13>("target_stmt")) {
-                return {.index = 63, .is_array = false, .is_ptr = true};
+                return {.index = 66, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<13>("then")) {
-                return {.index = 65, .is_array = false, .is_ptr = true};
+                return {.index = 68, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<13>("type_cast_desc")) {
-                return {.index = 58, .is_array = false, .is_ptr = true};
+                return {.index = 61, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<13>("type_ref")) {
-                return {.index = 64, .is_array = false, .is_ptr = true};
+                return {.index = 67, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<13>("unit")) {
-                return {.index = 88, .is_array = false, .is_ptr = true};
+                return {.index = 91, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<13>("uop")) {
-                return {.index = 93, .is_array = false, .is_ptr = true};
+                return {.index = 96, .is_array = false, .is_ptr = true};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 14: {
             if (field_index == get_field_index<14>("len")) {
-                return {.index = 69, .is_array = false, .is_ptr = false};
+                return {.index = 72, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<14>("container")) {
-                return {.index = 65, .is_array = true, .is_ptr = false};
+                return {.index = 68, .is_array = true, .is_ptr = false};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 15: {
             if (field_index == get_field_index<15>("version")) {
-                return {.index = 71, .is_array = false, .is_ptr = false};
+                return {.index = 74, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<15>("max_id")) {
-                return {.index = 68, .is_array = false, .is_ptr = false};
+                return {.index = 71, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<15>("identifiers_len")) {
-                return {.index = 69, .is_array = false, .is_ptr = false};
+                return {.index = 72, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<15>("identifiers")) {
                 return {.index = 23, .is_array = true, .is_ptr = false};
             }
             if (field_index == get_field_index<15>("strings_len")) {
-                return {.index = 69, .is_array = false, .is_ptr = false};
+                return {.index = 72, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<15>("strings")) {
                 return {.index = 53, .is_array = true, .is_ptr = false};
             }
             if (field_index == get_field_index<15>("types_len")) {
-                return {.index = 69, .is_array = false, .is_ptr = false};
+                return {.index = 72, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<15>("types")) {
-                return {.index = 56, .is_array = true, .is_ptr = false};
+                return {.index = 59, .is_array = true, .is_ptr = false};
             }
             if (field_index == get_field_index<15>("statements_len")) {
-                return {.index = 69, .is_array = false, .is_ptr = false};
+                return {.index = 72, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<15>("statements")) {
                 return {.index = 50, .is_array = true, .is_ptr = false};
             }
             if (field_index == get_field_index<15>("expressions_len")) {
-                return {.index = 69, .is_array = false, .is_ptr = false};
+                return {.index = 72, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<15>("expressions")) {
                 return {.index = 12, .is_array = true, .is_ptr = false};
             }
             if (field_index == get_field_index<15>("aliases_len")) {
-                return {.index = 69, .is_array = false, .is_ptr = false};
+                return {.index = 72, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<15>("aliases")) {
                 return {.index = 44, .is_array = true, .is_ptr = false};
@@ -9197,28 +9437,28 @@ namespace ebmcodegen {
         }
         case 16: {
             if (field_index == get_field_index<16>("name")) {
-                return {.index = 66, .is_array = false, .is_ptr = false};
+                return {.index = 69, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<16>("field_type")) {
-                return {.index = 64, .is_array = false, .is_ptr = false};
+                return {.index = 67, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<16>("parent_struct")) {
-                return {.index = 62, .is_array = false, .is_ptr = false};
+                return {.index = 65, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<16>("is_state_variable")) {
-                return {.index = 70, .is_array = false, .is_ptr = false};
+                return {.index = 73, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<16>("inner_composite")) {
-                return {.index = 70, .is_array = false, .is_ptr = false};
+                return {.index = 73, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<16>("has_metadata")) {
-                return {.index = 70, .is_array = false, .is_ptr = false};
+                return {.index = 73, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<16>("reserved")) {
-                return {.index = 71, .is_array = false, .is_ptr = false};
+                return {.index = 74, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<16>("composite_field")) {
-                return {.index = 62, .is_array = false, .is_ptr = true};
+                return {.index = 65, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<16>("composite_getter")) {
                 return {.index = 36, .is_array = false, .is_ptr = true};
@@ -9233,97 +9473,97 @@ namespace ebmcodegen {
         }
         case 17: {
             if (field_index == get_field_index<17>("return_type")) {
-                return {.index = 64, .is_array = false, .is_ptr = false};
+                return {.index = 67, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<17>("params")) {
-                return {.index = 59, .is_array = false, .is_ptr = false};
+                return {.index = 62, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<17>("annotation")) {
-                return {.index = 79, .is_array = false, .is_ptr = false};
+                return {.index = 82, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<17>("reserved")) {
-                return {.index = 71, .is_array = false, .is_ptr = false};
+                return {.index = 74, .is_array = false, .is_ptr = false};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 18: {
             if (field_index == get_field_index<18>("is_user_defined")) {
-                return {.index = 70, .is_array = false, .is_ptr = false};
+                return {.index = 73, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<18>("has_wrapper")) {
-                return {.index = 70, .is_array = false, .is_ptr = false};
+                return {.index = 73, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<18>("reserved")) {
-                return {.index = 71, .is_array = false, .is_ptr = false};
+                return {.index = 74, .is_array = false, .is_ptr = false};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 19: {
             if (field_index == get_field_index<19>("name")) {
-                return {.index = 66, .is_array = false, .is_ptr = false};
+                return {.index = 69, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<19>("return_type")) {
-                return {.index = 64, .is_array = false, .is_ptr = false};
+                return {.index = 67, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<19>("params")) {
                 return {.index = 2, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<19>("parent_format")) {
-                return {.index = 62, .is_array = false, .is_ptr = false};
+                return {.index = 65, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<19>("kind")) {
-                return {.index = 80, .is_array = false, .is_ptr = false};
+                return {.index = 83, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<19>("property")) {
-                return {.index = 62, .is_array = false, .is_ptr = true};
+                return {.index = 65, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<19>("attribute")) {
                 return {.index = 18, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<19>("wrapper_function")) {
-                return {.index = 63, .is_array = false, .is_ptr = true};
+                return {.index = 66, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<19>("body")) {
-                return {.index = 63, .is_array = false, .is_ptr = false};
+                return {.index = 66, .is_array = false, .is_ptr = false};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 20: {
             if (field_index == get_field_index<20>("endian")) {
-                return {.index = 77, .is_array = false, .is_ptr = false};
+                return {.index = 80, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<20>("sign")) {
-                return {.index = 70, .is_array = false, .is_ptr = false};
+                return {.index = 73, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<20>("is_peek")) {
-                return {.index = 70, .is_array = false, .is_ptr = false};
+                return {.index = 73, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<20>("has_lowered_statement")) {
-                return {.index = 70, .is_array = false, .is_ptr = false};
+                return {.index = 73, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<20>("has_offset")) {
-                return {.index = 70, .is_array = false, .is_ptr = false};
+                return {.index = 73, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<20>("reserved")) {
-                return {.index = 70, .is_array = false, .is_ptr = false};
+                return {.index = 73, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<20>("dynamic_ref")) {
-                return {.index = 63, .is_array = false, .is_ptr = true};
+                return {.index = 66, .is_array = false, .is_ptr = true};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 21: {
             if (field_index == get_field_index<21>("io_ref")) {
-                return {.index = 63, .is_array = false, .is_ptr = false};
+                return {.index = 66, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<21>("field")) {
-                return {.index = 62, .is_array = false, .is_ptr = false};
-            }
-            if (field_index == get_field_index<21>("target")) {
                 return {.index = 65, .is_array = false, .is_ptr = false};
             }
+            if (field_index == get_field_index<21>("target")) {
+                return {.index = 68, .is_array = false, .is_ptr = false};
+            }
             if (field_index == get_field_index<21>("data_type")) {
-                return {.index = 64, .is_array = false, .is_ptr = false};
+                return {.index = 67, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<21>("attribute")) {
                 return {.index = 20, .is_array = false, .is_ptr = false};
@@ -9341,22 +9581,22 @@ namespace ebmcodegen {
         }
         case 22: {
             if (field_index == get_field_index<22>("is_seekable")) {
-                return {.index = 70, .is_array = false, .is_ptr = false};
+                return {.index = 73, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<22>("has_absolute_offset")) {
-                return {.index = 70, .is_array = false, .is_ptr = false};
+                return {.index = 73, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<22>("has_bit_offset")) {
-                return {.index = 70, .is_array = false, .is_ptr = false};
+                return {.index = 73, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<22>("reserved")) {
-                return {.index = 71, .is_array = false, .is_ptr = false};
+                return {.index = 74, .is_array = false, .is_ptr = false};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 23: {
             if (field_index == get_field_index<23>("id")) {
-                return {.index = 66, .is_array = false, .is_ptr = false};
+                return {.index = 69, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<23>("body")) {
                 return {.index = 52, .is_array = false, .is_ptr = false};
@@ -9368,67 +9608,67 @@ namespace ebmcodegen {
                 return {.index = 5, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<24>("then_block")) {
-                return {.index = 63, .is_array = false, .is_ptr = false};
+                return {.index = 66, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<24>("else_block")) {
-                return {.index = 63, .is_array = false, .is_ptr = false};
+                return {.index = 66, .is_array = false, .is_ptr = false};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 25: {
             if (field_index == get_field_index<25>("name")) {
-                return {.index = 66, .is_array = false, .is_ptr = false};
+                return {.index = 69, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<25>("path")) {
-                return {.index = 67, .is_array = false, .is_ptr = false};
+                return {.index = 70, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<25>("program")) {
-                return {.index = 63, .is_array = false, .is_ptr = false};
+                return {.index = 66, .is_array = false, .is_ptr = false};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 26: {
             if (field_index == get_field_index<26>("init_check_type")) {
-                return {.index = 81, .is_array = false, .is_ptr = false};
+                return {.index = 84, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<26>("target_field")) {
-                return {.index = 65, .is_array = false, .is_ptr = false};
+                return {.index = 68, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<26>("expect_value")) {
-                return {.index = 65, .is_array = false, .is_ptr = false};
+                return {.index = 68, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<26>("related_function")) {
-                return {.index = 62, .is_array = false, .is_ptr = false};
+                return {.index = 65, .is_array = false, .is_ptr = false};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 27: {
             if (field_index == get_field_index<27>("op")) {
-                return {.index = 86, .is_array = false, .is_ptr = false};
+                return {.index = 89, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<27>("arg_num")) {
-                return {.index = 69, .is_array = false, .is_ptr = true};
+                return {.index = 72, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<27>("cast_type")) {
-                return {.index = 75, .is_array = false, .is_ptr = true};
+                return {.index = 78, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<27>("func_id")) {
-                return {.index = 63, .is_array = false, .is_ptr = true};
+                return {.index = 66, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<27>("imm")) {
                 return {.index = 40, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<27>("index")) {
-                return {.index = 69, .is_array = false, .is_ptr = true};
+                return {.index = 72, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<27>("member_id")) {
-                return {.index = 63, .is_array = false, .is_ptr = true};
+                return {.index = 66, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<27>("msg_id")) {
-                return {.index = 67, .is_array = false, .is_ptr = true};
+                return {.index = 70, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<27>("offset")) {
-                return {.index = 69, .is_array = false, .is_ptr = true};
+                return {.index = 72, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<27>("reg")) {
                 return {.index = 45, .is_array = false, .is_ptr = true};
@@ -9440,97 +9680,97 @@ namespace ebmcodegen {
                 return {.index = 48, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<27>("str_id")) {
-                return {.index = 67, .is_array = false, .is_ptr = true};
+                return {.index = 70, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<27>("struct_id")) {
-                return {.index = 63, .is_array = false, .is_ptr = true};
+                return {.index = 66, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<27>("target")) {
                 return {.index = 28, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<27>("value")) {
-                return {.index = 69, .is_array = false, .is_ptr = true};
+                return {.index = 72, .is_array = false, .is_ptr = true};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 28: {
             if (field_index == get_field_index<28>("backward")) {
-                return {.index = 70, .is_array = false, .is_ptr = false};
+                return {.index = 73, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<28>("reserved")) {
-                return {.index = 71, .is_array = false, .is_ptr = false};
+                return {.index = 74, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<28>("offset")) {
-                return {.index = 69, .is_array = false, .is_ptr = false};
+                return {.index = 72, .is_array = false, .is_ptr = false};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 29: {
             if (field_index == get_field_index<29>("target")) {
-                return {.index = 65, .is_array = false, .is_ptr = false};
+                return {.index = 68, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<29>("expected_length")) {
-                return {.index = 65, .is_array = false, .is_ptr = false};
+                return {.index = 68, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<29>("related_function")) {
-                return {.index = 62, .is_array = false, .is_ptr = false};
+                return {.index = 65, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<29>("lowered_statement")) {
                 return {.index = 36, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<29>("length_check_type")) {
-                return {.index = 82, .is_array = false, .is_ptr = false};
+                return {.index = 85, .is_array = false, .is_ptr = false};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 30: {
             if (field_index == get_field_index<30>("ident")) {
-                return {.index = 68, .is_array = false, .is_ptr = false};
+                return {.index = 71, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<30>("file_id")) {
-                return {.index = 69, .is_array = false, .is_ptr = false};
+                return {.index = 72, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<30>("line")) {
-                return {.index = 69, .is_array = false, .is_ptr = false};
+                return {.index = 72, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<30>("column")) {
-                return {.index = 69, .is_array = false, .is_ptr = false};
+                return {.index = 72, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<30>("start")) {
-                return {.index = 69, .is_array = false, .is_ptr = false};
+                return {.index = 72, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<30>("end")) {
-                return {.index = 69, .is_array = false, .is_ptr = false};
+                return {.index = 72, .is_array = false, .is_ptr = false};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 31: {
             if (field_index == get_field_index<31>("related_statement")) {
-                return {.index = 62, .is_array = false, .is_ptr = false};
+                return {.index = 65, .is_array = false, .is_ptr = false};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 32: {
             if (field_index == get_field_index<32>("loop_type")) {
-                return {.index = 83, .is_array = false, .is_ptr = false};
+                return {.index = 86, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<32>("collection")) {
-                return {.index = 65, .is_array = false, .is_ptr = true};
+                return {.index = 68, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<32>("condition")) {
                 return {.index = 5, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<32>("increment")) {
-                return {.index = 63, .is_array = false, .is_ptr = true};
+                return {.index = 66, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<32>("init")) {
-                return {.index = 63, .is_array = false, .is_ptr = true};
+                return {.index = 66, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<32>("item_var")) {
-                return {.index = 63, .is_array = false, .is_ptr = true};
+                return {.index = 66, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<32>("body")) {
-                return {.index = 63, .is_array = false, .is_ptr = false};
+                return {.index = 66, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<32>("lowered_statement")) {
                 return {.index = 36, .is_array = false, .is_ptr = false};
@@ -9542,13 +9782,13 @@ namespace ebmcodegen {
         }
         case 33: {
             if (field_index == get_field_index<33>("id")) {
-                return {.index = 65, .is_array = false, .is_ptr = false};
+                return {.index = 68, .is_array = false, .is_ptr = false};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 34: {
             if (field_index == get_field_index<34>("lowering_type")) {
-                return {.index = 84, .is_array = false, .is_ptr = false};
+                return {.index = 87, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<34>("io_statement")) {
                 return {.index = 36, .is_array = false, .is_ptr = false};
@@ -9557,7 +9797,7 @@ namespace ebmcodegen {
         }
         case 35: {
             if (field_index == get_field_index<35>("len")) {
-                return {.index = 69, .is_array = false, .is_ptr = false};
+                return {.index = 72, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<35>("container")) {
                 return {.index = 34, .is_array = true, .is_ptr = false};
@@ -9566,7 +9806,7 @@ namespace ebmcodegen {
         }
         case 36: {
             if (field_index == get_field_index<36>("id")) {
-                return {.index = 63, .is_array = false, .is_ptr = false};
+                return {.index = 66, .is_array = false, .is_ptr = false};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
@@ -9575,19 +9815,19 @@ namespace ebmcodegen {
                 return {.index = 5, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<37>("body")) {
-                return {.index = 63, .is_array = false, .is_ptr = false};
+                return {.index = 66, .is_array = false, .is_ptr = false};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 38: {
             if (field_index == get_field_index<38>("target")) {
-                return {.index = 65, .is_array = false, .is_ptr = false};
+                return {.index = 68, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<38>("is_exhaustive")) {
-                return {.index = 70, .is_array = false, .is_ptr = false};
+                return {.index = 73, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<38>("reserved")) {
-                return {.index = 71, .is_array = false, .is_ptr = false};
+                return {.index = 74, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<38>("branches")) {
                 return {.index = 2, .is_array = false, .is_ptr = false};
@@ -9599,7 +9839,7 @@ namespace ebmcodegen {
         }
         case 39: {
             if (field_index == get_field_index<39>("name")) {
-                return {.index = 66, .is_array = false, .is_ptr = false};
+                return {.index = 69, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<39>("values")) {
                 return {.index = 14, .is_array = false, .is_ptr = false};
@@ -9608,49 +9848,49 @@ namespace ebmcodegen {
         }
         case 40: {
             if (field_index == get_field_index<40>("is_immediate")) {
-                return {.index = 70, .is_array = false, .is_ptr = false};
+                return {.index = 73, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<40>("reserved")) {
-                return {.index = 71, .is_array = false, .is_ptr = false};
+                return {.index = 74, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<40>("size")) {
-                return {.index = 69, .is_array = false, .is_ptr = true};
+                return {.index = 72, .is_array = false, .is_ptr = true};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 41: {
             if (field_index == get_field_index<41>("name")) {
-                return {.index = 66, .is_array = false, .is_ptr = false};
+                return {.index = 69, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<41>("param_type")) {
-                return {.index = 64, .is_array = false, .is_ptr = false};
+                return {.index = 67, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<41>("is_state_variable")) {
-                return {.index = 70, .is_array = false, .is_ptr = false};
+                return {.index = 73, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<41>("reserved")) {
-                return {.index = 71, .is_array = false, .is_ptr = false};
+                return {.index = 74, .is_array = false, .is_ptr = false};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 42: {
             if (field_index == get_field_index<42>("name")) {
-                return {.index = 66, .is_array = false, .is_ptr = false};
+                return {.index = 69, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<42>("parent_format")) {
-                return {.index = 62, .is_array = false, .is_ptr = false};
+                return {.index = 65, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<42>("property_type")) {
-                return {.index = 64, .is_array = false, .is_ptr = false};
+                return {.index = 67, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<42>("merge_mode")) {
-                return {.index = 85, .is_array = false, .is_ptr = false};
+                return {.index = 88, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<42>("setter_condition")) {
-                return {.index = 65, .is_array = false, .is_ptr = false};
+                return {.index = 68, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<42>("getter_condition")) {
-                return {.index = 65, .is_array = false, .is_ptr = false};
+                return {.index = 68, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<42>("members")) {
                 return {.index = 2, .is_array = false, .is_ptr = false};
@@ -9668,37 +9908,37 @@ namespace ebmcodegen {
         }
         case 43: {
             if (field_index == get_field_index<43>("setter_condition")) {
-                return {.index = 65, .is_array = false, .is_ptr = false};
+                return {.index = 68, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<43>("getter_condition")) {
-                return {.index = 65, .is_array = false, .is_ptr = false};
+                return {.index = 68, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<43>("field")) {
-                return {.index = 63, .is_array = false, .is_ptr = false};
+                return {.index = 66, .is_array = false, .is_ptr = false};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 44: {
             if (field_index == get_field_index<44>("hint")) {
-                return {.index = 72, .is_array = false, .is_ptr = false};
+                return {.index = 75, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<44>("from")) {
-                return {.index = 68, .is_array = false, .is_ptr = false};
+                return {.index = 71, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<44>("to")) {
-                return {.index = 68, .is_array = false, .is_ptr = false};
+                return {.index = 71, .is_array = false, .is_ptr = false};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 45: {
             if (field_index == get_field_index<45>("index")) {
-                return {.index = 63, .is_array = false, .is_ptr = false};
+                return {.index = 66, .is_array = false, .is_ptr = false};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 46: {
             if (field_index == get_field_index<46>("write_data")) {
-                return {.index = 62, .is_array = false, .is_ptr = false};
+                return {.index = 65, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<46>("size")) {
                 return {.index = 49, .is_array = false, .is_ptr = false};
@@ -9707,37 +9947,37 @@ namespace ebmcodegen {
         }
         case 47: {
             if (field_index == get_field_index<47>("has_value")) {
-                return {.index = 70, .is_array = false, .is_ptr = false};
+                return {.index = 73, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<47>("reserved")) {
-                return {.index = 71, .is_array = false, .is_ptr = false};
+                return {.index = 74, .is_array = false, .is_ptr = false};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 48: {
             if (field_index == get_field_index<48>("endian")) {
-                return {.index = 77, .is_array = false, .is_ptr = false};
+                return {.index = 80, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<48>("reserved")) {
-                return {.index = 71, .is_array = false, .is_ptr = false};
+                return {.index = 74, .is_array = false, .is_ptr = false};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 49: {
             if (field_index == get_field_index<49>("unit")) {
-                return {.index = 88, .is_array = false, .is_ptr = false};
+                return {.index = 91, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<49>("ref")) {
-                return {.index = 65, .is_array = false, .is_ptr = true};
+                return {.index = 68, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<49>("size")) {
-                return {.index = 69, .is_array = false, .is_ptr = true};
+                return {.index = 72, .is_array = false, .is_ptr = true};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 50: {
             if (field_index == get_field_index<50>("id")) {
-                return {.index = 63, .is_array = false, .is_ptr = false};
+                return {.index = 66, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<50>("body")) {
                 return {.index = 51, .is_array = false, .is_ptr = false};
@@ -9746,7 +9986,7 @@ namespace ebmcodegen {
         }
         case 51: {
             if (field_index == get_field_index<51>("kind")) {
-                return {.index = 89, .is_array = false, .is_ptr = false};
+                return {.index = 92, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<51>("assert_desc")) {
                 return {.index = 1, .is_array = false, .is_ptr = true};
@@ -9779,7 +10019,7 @@ namespace ebmcodegen {
                 return {.index = 11, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<51>("expression")) {
-                return {.index = 65, .is_array = false, .is_ptr = true};
+                return {.index = 68, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<51>("field_decl")) {
                 return {.index = 16, .is_array = false, .is_ptr = true};
@@ -9827,10 +10067,10 @@ namespace ebmcodegen {
                 return {.index = 21, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<51>("related_field")) {
-                return {.index = 62, .is_array = false, .is_ptr = true};
+                return {.index = 65, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<51>("related_function")) {
-                return {.index = 62, .is_array = false, .is_ptr = true};
+                return {.index = 65, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<51>("reserve_data")) {
                 return {.index = 46, .is_array = false, .is_ptr = true};
@@ -9839,16 +10079,16 @@ namespace ebmcodegen {
                 return {.index = 54, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<51>("sub_byte_range")) {
-                return {.index = 55, .is_array = false, .is_ptr = true};
+                return {.index = 58, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<51>("target")) {
-                return {.index = 65, .is_array = false, .is_ptr = true};
+                return {.index = 68, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<51>("value")) {
-                return {.index = 65, .is_array = false, .is_ptr = true};
+                return {.index = 68, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<51>("var_decl")) {
-                return {.index = 60, .is_array = false, .is_ptr = true};
+                return {.index = 63, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<51>("write_data")) {
                 return {.index = 21, .is_array = false, .is_ptr = true};
@@ -9857,7 +10097,7 @@ namespace ebmcodegen {
         }
         case 52: {
             if (field_index == get_field_index<52>("length")) {
-                return {.index = 69, .is_array = false, .is_ptr = false};
+                return {.index = 72, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<52>("data")) {
                 return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
@@ -9866,7 +10106,7 @@ namespace ebmcodegen {
         }
         case 53: {
             if (field_index == get_field_index<53>("id")) {
-                return {.index = 67, .is_array = false, .is_ptr = false};
+                return {.index = 70, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<53>("body")) {
                 return {.index = 52, .is_array = false, .is_ptr = false};
@@ -9875,46 +10115,46 @@ namespace ebmcodegen {
         }
         case 54: {
             if (field_index == get_field_index<54>("name")) {
-                return {.index = 66, .is_array = false, .is_ptr = false};
+                return {.index = 69, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<54>("fields")) {
                 return {.index = 2, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<54>("is_recursive")) {
-                return {.index = 70, .is_array = false, .is_ptr = false};
+                return {.index = 73, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<54>("is_fixed_size")) {
-                return {.index = 70, .is_array = false, .is_ptr = false};
+                return {.index = 73, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<54>("has_related_variant")) {
-                return {.index = 70, .is_array = false, .is_ptr = false};
+                return {.index = 73, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<54>("has_encode_decode")) {
-                return {.index = 70, .is_array = false, .is_ptr = false};
+                return {.index = 73, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<54>("has_functions")) {
-                return {.index = 70, .is_array = false, .is_ptr = false};
+                return {.index = 73, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<54>("has_properties")) {
-                return {.index = 70, .is_array = false, .is_ptr = false};
+                return {.index = 73, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<54>("has_parent")) {
-                return {.index = 70, .is_array = false, .is_ptr = false};
+                return {.index = 73, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<54>("has_nested_types")) {
-                return {.index = 70, .is_array = false, .is_ptr = false};
+                return {.index = 73, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<54>("related_variant")) {
-                return {.index = 64, .is_array = false, .is_ptr = true};
+                return {.index = 67, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<54>("size")) {
                 return {.index = 49, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<54>("decode_fn")) {
-                return {.index = 63, .is_array = false, .is_ptr = true};
+                return {.index = 66, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<54>("encode_fn")) {
-                return {.index = 63, .is_array = false, .is_ptr = true};
+                return {.index = 66, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<54>("methods")) {
                 return {.index = 2, .is_array = false, .is_ptr = true};
@@ -9923,7 +10163,7 @@ namespace ebmcodegen {
                 return {.index = 2, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<54>("parent_struct")) {
-                return {.index = 62, .is_array = false, .is_ptr = true};
+                return {.index = 65, .is_array = false, .is_ptr = true};
             }
             if (field_index == get_field_index<54>("nested_types")) {
                 return {.index = 2, .is_array = false, .is_ptr = true};
@@ -9931,140 +10171,173 @@ namespace ebmcodegen {
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 55: {
-            if (field_index == get_field_index<55>("stream_type")) {
-                return {.index = 90, .is_array = false, .is_ptr = false};
+            if (field_index == get_field_index<55>("common_type")) {
+                return {.index = 67, .is_array = false, .is_ptr = false};
             }
-            if (field_index == get_field_index<55>("range_type")) {
-                return {.index = 91, .is_array = false, .is_ptr = false};
+            if (field_index == get_field_index<55>("members")) {
+                return {.index = 57, .is_array = false, .is_ptr = false};
             }
-            if (field_index == get_field_index<55>("expression")) {
-                return {.index = 65, .is_array = false, .is_ptr = true};
+            if (field_index == get_field_index<55>("related_field")) {
+                return {.index = 65, .is_array = false, .is_ptr = false};
             }
-            if (field_index == get_field_index<55>("length")) {
-                return {.index = 65, .is_array = false, .is_ptr = true};
-            }
-            if (field_index == get_field_index<55>("offset")) {
-                return {.index = 65, .is_array = false, .is_ptr = true};
-            }
-            if (field_index == get_field_index<55>("io_ref")) {
-                return {.index = 63, .is_array = false, .is_ptr = false};
-            }
-            if (field_index == get_field_index<55>("parent_io_ref")) {
-                return {.index = 62, .is_array = false, .is_ptr = false};
-            }
-            if (field_index == get_field_index<55>("io_statement")) {
-                return {.index = 63, .is_array = false, .is_ptr = false};
+            if (field_index == get_field_index<55>("condition")) {
+                return {.index = 68, .is_array = false, .is_ptr = false};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 56: {
-            if (field_index == get_field_index<56>("id")) {
-                return {.index = 64, .is_array = false, .is_ptr = false};
+            if (field_index == get_field_index<56>("member_type")) {
+                return {.index = 67, .is_array = false, .is_ptr = false};
             }
-            if (field_index == get_field_index<56>("body")) {
-                return {.index = 57, .is_array = false, .is_ptr = false};
+            if (field_index == get_field_index<56>("condition")) {
+                return {.index = 68, .is_array = false, .is_ptr = false};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 57: {
-            if (field_index == get_field_index<57>("kind")) {
-                return {.index = 92, .is_array = false, .is_ptr = false};
+            if (field_index == get_field_index<57>("len")) {
+                return {.index = 72, .is_array = false, .is_ptr = false};
             }
-            if (field_index == get_field_index<57>("array_annotation")) {
-                return {.index = 73, .is_array = false, .is_ptr = true};
-            }
-            if (field_index == get_field_index<57>("base_type")) {
-                return {.index = 64, .is_array = false, .is_ptr = true};
-            }
-            if (field_index == get_field_index<57>("element_type")) {
-                return {.index = 64, .is_array = false, .is_ptr = true};
-            }
-            if (field_index == get_field_index<57>("func_desc")) {
-                return {.index = 17, .is_array = false, .is_ptr = true};
-            }
-            if (field_index == get_field_index<57>("id")) {
-                return {.index = 62, .is_array = false, .is_ptr = true};
-            }
-            if (field_index == get_field_index<57>("inner_type")) {
-                return {.index = 64, .is_array = false, .is_ptr = true};
-            }
-            if (field_index == get_field_index<57>("io_input_desc")) {
-                return {.index = 22, .is_array = false, .is_ptr = true};
-            }
-            if (field_index == get_field_index<57>("length")) {
-                return {.index = 69, .is_array = false, .is_ptr = true};
-            }
-            if (field_index == get_field_index<57>("pointee_type")) {
-                return {.index = 64, .is_array = false, .is_ptr = true};
-            }
-            if (field_index == get_field_index<57>("size")) {
-                return {.index = 69, .is_array = false, .is_ptr = true};
-            }
-            if (field_index == get_field_index<57>("variant_desc")) {
-                return {.index = 61, .is_array = false, .is_ptr = true};
+            if (field_index == get_field_index<57>("container")) {
+                return {.index = 56, .is_array = true, .is_ptr = false};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 58: {
-            if (field_index == get_field_index<58>("source_expr")) {
+            if (field_index == get_field_index<58>("stream_type")) {
+                return {.index = 93, .is_array = false, .is_ptr = false};
+            }
+            if (field_index == get_field_index<58>("range_type")) {
+                return {.index = 94, .is_array = false, .is_ptr = false};
+            }
+            if (field_index == get_field_index<58>("expression")) {
+                return {.index = 68, .is_array = false, .is_ptr = true};
+            }
+            if (field_index == get_field_index<58>("length")) {
+                return {.index = 68, .is_array = false, .is_ptr = true};
+            }
+            if (field_index == get_field_index<58>("offset")) {
+                return {.index = 68, .is_array = false, .is_ptr = true};
+            }
+            if (field_index == get_field_index<58>("io_ref")) {
+                return {.index = 66, .is_array = false, .is_ptr = false};
+            }
+            if (field_index == get_field_index<58>("parent_io_ref")) {
                 return {.index = 65, .is_array = false, .is_ptr = false};
             }
-            if (field_index == get_field_index<58>("from_type")) {
-                return {.index = 64, .is_array = false, .is_ptr = false};
-            }
-            if (field_index == get_field_index<58>("cast_kind")) {
-                return {.index = 75, .is_array = false, .is_ptr = false};
-            }
-            if (field_index == get_field_index<58>("cast_function")) {
-                return {.index = 62, .is_array = false, .is_ptr = true};
+            if (field_index == get_field_index<58>("io_statement")) {
+                return {.index = 66, .is_array = false, .is_ptr = false};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 59: {
-            if (field_index == get_field_index<59>("len")) {
-                return {.index = 69, .is_array = false, .is_ptr = false};
+            if (field_index == get_field_index<59>("id")) {
+                return {.index = 67, .is_array = false, .is_ptr = false};
             }
-            if (field_index == get_field_index<59>("container")) {
-                return {.index = 64, .is_array = true, .is_ptr = false};
+            if (field_index == get_field_index<59>("body")) {
+                return {.index = 60, .is_array = false, .is_ptr = false};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 60: {
-            if (field_index == get_field_index<60>("name")) {
-                return {.index = 66, .is_array = false, .is_ptr = false};
+            if (field_index == get_field_index<60>("kind")) {
+                return {.index = 95, .is_array = false, .is_ptr = false};
             }
-            if (field_index == get_field_index<60>("var_type")) {
-                return {.index = 64, .is_array = false, .is_ptr = false};
+            if (field_index == get_field_index<60>("array_annotation")) {
+                return {.index = 76, .is_array = false, .is_ptr = true};
             }
-            if (field_index == get_field_index<60>("initial_value")) {
-                return {.index = 65, .is_array = false, .is_ptr = false};
+            if (field_index == get_field_index<60>("base_type")) {
+                return {.index = 67, .is_array = false, .is_ptr = true};
             }
-            if (field_index == get_field_index<60>("decl_kind")) {
-                return {.index = 94, .is_array = false, .is_ptr = false};
+            if (field_index == get_field_index<60>("element_type")) {
+                return {.index = 67, .is_array = false, .is_ptr = true};
             }
-            if (field_index == get_field_index<60>("is_reference")) {
-                return {.index = 70, .is_array = false, .is_ptr = false};
+            if (field_index == get_field_index<60>("func_desc")) {
+                return {.index = 17, .is_array = false, .is_ptr = true};
             }
-            if (field_index == get_field_index<60>("reserved")) {
-                return {.index = 71, .is_array = false, .is_ptr = false};
+            if (field_index == get_field_index<60>("id")) {
+                return {.index = 65, .is_array = false, .is_ptr = true};
+            }
+            if (field_index == get_field_index<60>("inner_type")) {
+                return {.index = 67, .is_array = false, .is_ptr = true};
+            }
+            if (field_index == get_field_index<60>("io_input_desc")) {
+                return {.index = 22, .is_array = false, .is_ptr = true};
+            }
+            if (field_index == get_field_index<60>("length")) {
+                return {.index = 72, .is_array = false, .is_ptr = true};
+            }
+            if (field_index == get_field_index<60>("pointee_type")) {
+                return {.index = 67, .is_array = false, .is_ptr = true};
+            }
+            if (field_index == get_field_index<60>("size")) {
+                return {.index = 72, .is_array = false, .is_ptr = true};
+            }
+            if (field_index == get_field_index<60>("struct_union_desc")) {
+                return {.index = 55, .is_array = false, .is_ptr = true};
+            }
+            if (field_index == get_field_index<60>("variant_desc")) {
+                return {.index = 64, .is_array = false, .is_ptr = true};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 61: {
-            if (field_index == get_field_index<61>("common_type")) {
-                return {.index = 64, .is_array = false, .is_ptr = false};
+            if (field_index == get_field_index<61>("source_expr")) {
+                return {.index = 68, .is_array = false, .is_ptr = false};
             }
-            if (field_index == get_field_index<61>("members")) {
-                return {.index = 59, .is_array = false, .is_ptr = false};
+            if (field_index == get_field_index<61>("from_type")) {
+                return {.index = 67, .is_array = false, .is_ptr = false};
             }
-            if (field_index == get_field_index<61>("related_field")) {
-                return {.index = 62, .is_array = false, .is_ptr = false};
+            if (field_index == get_field_index<61>("cast_kind")) {
+                return {.index = 78, .is_array = false, .is_ptr = false};
+            }
+            if (field_index == get_field_index<61>("cast_function")) {
+                return {.index = 65, .is_array = false, .is_ptr = true};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 62: {
-            if (field_index == get_field_index<62>("id")) {
-                return {.index = 63, .is_array = false, .is_ptr = false};
+            if (field_index == get_field_index<62>("len")) {
+                return {.index = 72, .is_array = false, .is_ptr = false};
+            }
+            if (field_index == get_field_index<62>("container")) {
+                return {.index = 67, .is_array = true, .is_ptr = false};
+            }
+            return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
+        }
+        case 63: {
+            if (field_index == get_field_index<63>("name")) {
+                return {.index = 69, .is_array = false, .is_ptr = false};
+            }
+            if (field_index == get_field_index<63>("var_type")) {
+                return {.index = 67, .is_array = false, .is_ptr = false};
+            }
+            if (field_index == get_field_index<63>("initial_value")) {
+                return {.index = 68, .is_array = false, .is_ptr = false};
+            }
+            if (field_index == get_field_index<63>("decl_kind")) {
+                return {.index = 97, .is_array = false, .is_ptr = false};
+            }
+            if (field_index == get_field_index<63>("is_reference")) {
+                return {.index = 73, .is_array = false, .is_ptr = false};
+            }
+            if (field_index == get_field_index<63>("reserved")) {
+                return {.index = 74, .is_array = false, .is_ptr = false};
+            }
+            return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
+        }
+        case 64: {
+            if (field_index == get_field_index<64>("common_type")) {
+                return {.index = 67, .is_array = false, .is_ptr = false};
+            }
+            if (field_index == get_field_index<64>("members")) {
+                return {.index = 62, .is_array = false, .is_ptr = false};
+            }
+            return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
+        }
+        case 65: {
+            if (field_index == get_field_index<65>("id")) {
+                return {.index = 66, .is_array = false, .is_ptr = false};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
