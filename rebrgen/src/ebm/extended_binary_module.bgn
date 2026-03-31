@@ -816,7 +816,8 @@ enum TypeKind:
     ARRAY
     VECTOR
     # for union
-    VARIANT
+    VARIANT # normal variant
+    STRUCT_UNION # special type for ast::StructUnionType
     RANGE
 
     # encoder/decoder return value (these are language specific, e.g errno + int for C, Result<T, E> for Rust, error for Go)
@@ -858,10 +859,23 @@ format FuncTypeDesc:
     annotation :FuncTypeAnnotation # Function type annotation
     reserved :u6 # Reserved for future use
 
+format StructUnionMember:
+    member_type :TypeRef # Type of the variant member
+    condition :ExpressionRef # Condition for this variant member (e.g., discriminator value, availability condition)
+
+format StructUnionMembers:
+    len :Varint
+    container :[len.value]StructUnionMember # List of struct union members
+
 format VariantDesc:
     common_type :TypeRef # Optional common type for all union members
-    members :Types # List of variant member types
-    related_field :WeakStatementRef # Reference to the field that holds this variant (maybe null)
+    members :Types # List of variant members
+
+format StructUnionDesc: # physical representation of a union
+     common_type :TypeRef # Optional common type for all struct union members
+     members :StructUnionMembers # List of struct union members
+     related_field :WeakStatementRef # Reference to the field that holds this variant 
+     condition :ExpressionRef # Condition for this struct union (this is from match expression, otherwise null)
 
 enum ArrayAnnotation:
     :u8
@@ -897,6 +911,8 @@ format TypeBody:
             base_type :TypeRef # Optional base type (e.g., u8, u16)
         TypeKind.VARIANT:
             variant_desc :VariantDesc # Variant type description
+        TypeKind.STRUCT_UNION:
+            struct_union_desc :StructUnionDesc # Struct union type description
         TypeKind.OPTIONAL:
             inner_type :TypeRef # Optional inner type
         TypeKind.PTR:
