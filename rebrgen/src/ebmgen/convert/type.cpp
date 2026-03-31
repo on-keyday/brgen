@@ -47,6 +47,7 @@ namespace ebmgen {
             ebm::Types members;
             std::optional<std::uint64_t> max_bit_size;
             ebm::MatchStatement m;
+            m.is_exhaustive(n->exhaustive);
             for (size_t i = 0; i < n->structs.size(); i++) {
                 auto& struct_member = n->structs[i];
                 MAYBE(member_type_ref, ctx.get_statement_converter().convert_struct_decl(struct_member, varint_id));
@@ -61,6 +62,7 @@ namespace ebmgen {
                     ebm::StatementBody body{.kind = ebm::StatementKind::MATCH_BRANCH};
                     body.match_branch(br);
                     EBMA_ADD_STATEMENT(ref_name, std::move(body));
+                    append(m.branches, ref_name);
                 }
                 append(members, member_type_ref2);
                 ctx.state().cache_type(struct_member, member_type_ref2);

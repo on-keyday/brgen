@@ -77,7 +77,7 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS) {
     InitialContext ictx{.visitor = ctx.visitor};
     LayoutAccess access{ictx};
     StructLayout* struct_layout;
-    if (auto union_field = get_variant_member_from_field(ctx, id)) {
+    if (auto union_field = get_struct_union_member_from_field(ctx, id)) {
         MAYBE(base_layout, analyze_layout(ictx, *union_field));
         struct_layout = access.get_struct_layout_detail(*union_field);
     }

@@ -70,6 +70,8 @@ namespace ebm2rmw {
         std::unordered_map<std::pair<size_t, /*element_type*/ ebm::TypeRef>, ebm::TypeRef> array_layout_reverse_lookup;
         std::unordered_map<ebm::TypeRef, VectorLayout> vector_layouts;
         std::unordered_map<ebm::TypeRef, UnionLayout> union_layouts;
+        std::unordered_map<ebm::TypeRef, ebm::StatementRef> struct_union_match_stmts;  // TypeRef → lowered match StatementRef
+        std::unordered_map<ebm::TypeRef, ebm::StatementRef> struct_union_selector_fns;  // TypeRef → compiled selector fn key
         ebm::TypeRef u8_type;
 
         friend struct LayoutAccess;
@@ -100,11 +102,29 @@ namespace ebm2rmw {
             union_layouts[type] = std::move(layout);
         }
 
+        void add_struct_union_match_stmt(ebm::TypeRef type, ebm::StatementRef match_stmt) {
+            struct_union_match_stmts[type] = match_stmt;
+        }
+
+        void add_struct_union_selector_fn(ebm::TypeRef type, ebm::StatementRef selector_fn) {
+            struct_union_selector_fns[type] = selector_fn;
+        }
+
         TypeLayout* get_type_layout(ebm::TypeRef type) {
             auto it = type_layouts.find(type);
             if (it != type_layouts.end()) {
                 return &it->second;
             }
+            return nullptr;
+        }
+
+        std::unordered_map<ebm::TypeRef, ebm::StatementRef>& get_struct_union_match_stmts() {
+            return struct_union_match_stmts;
+        }
+
+        ebm::StatementRef* get_struct_union_selector_fn(ebm::TypeRef type) {
+            auto it = struct_union_selector_fns.find(type);
+            if (it != struct_union_selector_fns.end()) return &it->second;
             return nullptr;
         }
     };
@@ -182,6 +202,30 @@ namespace ebm2rmw {
             context.add_struct_layout(from_weak(*id), std::move(layout));
             context.add_type_layout(type, TypeLayout(type, layout.size));
             return TypeLayout(type, layout.size);
+        }
+        if (auto struct_union = type_stmt.body.struct_union_desc()) {
+            std::vector<TypeLayout> variant_layouts;
+            size_t max_size = 0;
+            for (auto& member : struct_union->variant_desc.members.container) {
+                MAYBE(member_layout, analyze_layout(ctx, member));
+                if (member_layout.size > max_size) {
+                    max_size = member_layout.size;
+                }
+                variant_layouts.push_back(member_layout);
+            }
+            size_t bit = max_size * 8;
+            bit = (bit + 7) & ~7;
+            TypeLayout layout(type, bit / 8);
+            context.add_type_layout(type, layout);
+            context.add_union_layout(type, UnionLayout{
+                                               .variants = std::move(variant_layouts),
+                                               .size = layout.size,
+                                           });
+            // Store the lowered match statement ref for selector compilation
+            if (!is_nil(struct_union->lowered_match_statement.id)) {
+                context.add_struct_union_match_stmt(type, struct_union->lowered_match_statement.id);
+            }
+            return layout;
         }
         if (auto variants = type_stmt.body.variant_desc()) {
             std::vector<TypeLayout> variant_layouts;
@@ -304,6 +348,16 @@ namespace ebm2rmw {
                 return ebmgen::unexpect_error("vector layout not found");
             }
             return layout->second.element_type;
+        }
+
+        UnionLayout* get_union_layout(ebm::TypeRef type) {
+            auto it = context().union_layouts.find(type);
+            if (it == context().union_layouts.end()) return nullptr;
+            return &it->second;
+        }
+
+        ebm::StatementRef* get_struct_union_selector_fn(ebm::TypeRef type) {
+            return context().get_struct_union_selector_fn(type);
         }
     };
 
