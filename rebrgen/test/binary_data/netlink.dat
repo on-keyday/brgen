@@ -1,5 +1,5 @@
 # --- Netlink Message Header (struct nlmsghdr) ---
-24 00 00 00   # nlmsg_len: 36 bytes (Total length)
+2c 00 00 00   # nlmsg_len: 39 bytes (Total length including padding)
 10 00         # nlmsg_type: RTM_NEWLINK (16)
 01 00         # nlmsg_flags: NLM_F_REQUEST (1)
 00 00 00 00   # nlmsg_seq: 0

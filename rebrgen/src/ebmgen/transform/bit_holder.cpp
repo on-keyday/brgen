@@ -24,10 +24,10 @@ namespace ebmgen {
         else if (auto base_type = field_type.body.base_type(); base_type && !is_nil(*base_type)) {
             return sizeof_type(tctx, *base_type);
         }
-        else if (auto desc = field_type.body.variant_desc(); desc) {  // for VARIANT
+        else if (auto desc = field_type.body.struct_union_desc(); desc) {  // for STRUCT_UNION
             std::uint64_t size = 0;
             bool primitive = false;
-            for (const auto& member : desc->members.container) {
+            for (const auto& member : desc->variant_desc.members.container) {
                 MAYBE(member_size, sizeof_type(tctx, member));
                 if (member_size) {
                     size = std::max(size, member_size->size);
@@ -103,7 +103,7 @@ namespace ebmgen {
 
         MAYBE(original_field_type_decl, tctx.type_repository().get(original_field_type));
         auto src_type = original_field_type;
-        if (original_field_type_decl.body.kind == ebm::TypeKind::VARIANT ||
+        if (original_field_type_decl.body.kind == ebm::TypeKind::STRUCT_UNION ||
             original_field_type_decl.body.kind == ebm::TypeKind::STRUCT) {  // TODO: map to each type
             EBMU_UINT_TYPE(temp_type, current_size);
             src_type = temp_type;

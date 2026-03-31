@@ -25,7 +25,17 @@ namespace ebm2go {
         return nullptr;
     }
 
-    constexpr auto physical_field = "body.id.struct_decl.related_variant.variant_desc.related_field.field_decl";
+    constexpr auto physical_field = "body.id.struct_decl.related_variant.struct_union_desc.related_field.field_decl";
+
+    constexpr auto has_absolute_offset_type = "io_input_desc.has_absolute_offset";
+
+    constexpr bool has_absolute_offset(auto&& ctx, ebm::StatementRef io_ref) {
+        auto stmt = ctx.template get_field<"param_decl.param_type">(io_ref);
+        if (!stmt) {
+            stmt = ctx.template get_field<"var_decl.var_type">(io_ref);
+        }
+        return ctx.template get_field<has_absolute_offset_type>(stmt) == true;
+    }
 
     struct ArrayLengthInfo {
         const ebm::IOData* write_data = nullptr;
@@ -76,6 +86,15 @@ namespace ebm2go {
     inline std::string offset_var(const std::string& x) {
         return x + "Offset";
     }
+
+    inline std::string abs_offset_var(const std::string& x) {
+        return std::format("{}AbsOffset", x);
+    }
+
+    inline std::string abs_offset_ref(const std::string& x) {
+        return std::format("*{}AbsOffset", x);
+    }
+
     inline std::string offset_ref(const std::string& x) {
         return std::format("*{}Offset", x);
     }
@@ -90,6 +109,14 @@ namespace ebm2go {
                io_.size.unit == ebm::SizeUnit::BYTE_FIXED &&
                io_.size.size()->value() == 1 &&
                (kind == ebm::TypeKind::UINT || kind == ebm::TypeKind::ARRAY);
+    }
+
+    // Emit `*<io>AbsOffset += int(<size_expr>)` if the IO stream has has_absolute_offset.
+    // Used by READ_DATA and WRITE_DATA visitors to keep abs_offset in sync with stream position.
+    inline void append_abs_offset(auto& ctx, ebm::StatementRef io_ref, auto& w, auto&& size_expr) {
+        if (has_absolute_offset(ctx, io_ref) == true) {
+            w.writeln(abs_offset_ref(ctx.identifier(io_ref)), " += int(", size_expr, ")");
+        }
     }
 
 }  // namespace ebm2go

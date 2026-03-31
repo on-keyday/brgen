@@ -28,7 +28,7 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
     // Check if the member field belongs to a variant member struct
     // If so, insert the intermediate union field access: base.tmpN.member
     MAYBE(member_body, ctx.get_field<"body.id">(ctx.member));
-    if (auto type_ref = get_variant_member_from_field(ctx, from_weak(member_body))) {
+    if (auto type_ref = get_struct_union_member_from_field(ctx, from_weak(member_body))) {
         MAYBE(base, ctx.visit(ctx.base));
         MAYBE(member, ctx.visit(ctx.member));
         // The union field name matches the member statement ID: tmp{statement_id}

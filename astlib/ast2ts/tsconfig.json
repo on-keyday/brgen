@@ -1,13 +1,12 @@
 {
-    "compilerOptions": {
-        "target": "es6",
-        "module": "commonjs",
-        "declaration": true,
-        "outDir": "./out",
-        "strict": true,
-        "esModuleInterop": true
-    },
-    "include": [
-        "."  
-    ]
+  "compilerOptions": {
+    "target": "es2024",
+    "module": "commonjs",
+    "declaration": true,
+    "rootDir": "./src",
+    "outDir": "./out",
+    "strict": true,
+    "esModuleInterop": true
+  },
+  "include": ["."]
 }

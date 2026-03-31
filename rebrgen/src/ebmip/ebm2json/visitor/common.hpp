@@ -52,10 +52,10 @@ namespace ebm2json {
             MAYBE(member, ctx.identifier(ctx.member));
             auto field_member = ctx.get_field<"body.id">(ctx.member);
             if (field_member) {
-                if (auto type = get_variant_member_from_field(ctx, field_member->id)) {
+                if (auto type = get_struct_union_member_from_field(ctx, field_member->id)) {
                     auto variant_type = ctx.get_field<"body.id.struct_decl.related_variant">(*type);
                     if (variant_type) {
-                        MAYBE(index, get_variant_index(ctx, *variant_type, *type));
+                        MAYBE(index, get_struct_union_index(ctx, *variant_type, *type));
                         return std::format("{}.{}.{}", base, index, member);
                     }
                 }

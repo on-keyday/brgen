@@ -30,10 +30,15 @@
 DEFINE_VISITOR(Statement_SUB_BYTE_RANGE) {
     using namespace CODEGEN_NAMESPACE;
     auto io_ = ctx.identifier(ctx.sub_byte_range.io_ref);
-    auto io_base_ = io_ + "_base";
     auto parent_io_ = ctx.identifier(ctx.sub_byte_range.parent_io_ref);
 
+    auto has_abs_offset = has_absolute_offset(ctx, ctx.sub_byte_range.io_ref);
+
     CodeWriter w;
+
+    if (has_abs_offset) {
+        w.writeln(abs_offset_var(io_), " := ", abs_offset_var(parent_io_));
+    }
 
     if (ctx.sub_byte_range.range_type == ebm::SubByteRangeType::bytes) {
         MAYBE(length, ctx.sub_byte_range.length());
@@ -120,26 +125,6 @@ DEFINE_VISITOR(Statement_SUB_BYTE_RANGE) {
                 w.writeln(offset_ref(parent_io_), "+= int(", length_str.to_writer(), ")");
             }
         }
-    }
-    else if (ctx.sub_byte_range.range_type == ebm::SubByteRangeType::seek_bytes) {
-        MAYBE(length, ctx.sub_byte_range.length());
-        MAYBE(length_str, ctx.visit(length));
-        MAYBE(offset, ctx.sub_byte_range.offset());
-        MAYBE(offset_str, ctx.visit(offset));
-
-        if (ctx.sub_byte_range.stream_type == ebm::StreamType::INPUT) {
-            // Decode: slice from offset with length, no parent advancement
-            w.writeln(io_base_, " := ", parent_io_, "[int(", offset_str.to_writer(), "):int(", offset_str.to_writer(), " + ", length_str.to_writer(), ")]");
-            w.writeln(io_, " := ", io_base_);
-        }
-        else {
-            // Encode: slice from offset with length for writing
-            w.writeln(io_base_, " := ", parent_io_, "[int(", offset_str.to_writer(), "):int(", offset_str.to_writer(), " + ", length_str.to_writer(), ")]");
-            w.writeln(io_, " := &", io_base_);
-        }
-
-        MAYBE(do_io, ctx.visit(ctx.sub_byte_range.io_statement));
-        w.write(do_io.to_writer());
     }
 
     return w;

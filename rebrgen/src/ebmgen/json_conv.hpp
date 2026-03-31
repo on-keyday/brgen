@@ -123,6 +123,8 @@ namespace ebm {
     
     bool from_json(StructDecl& obj, const futils::json::JSON& j);
     
+    bool from_json(StructUnionDesc& obj, const futils::json::JSON& j);
+    
     bool from_json(SubByteRange& obj, const futils::json::JSON& j);
     
     bool from_json(Type& obj, const futils::json::JSON& j);

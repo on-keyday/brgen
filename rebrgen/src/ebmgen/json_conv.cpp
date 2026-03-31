@@ -2902,6 +2902,34 @@ namespace ebm {
         return true;
     }
     
+    bool from_json(StructUnionDesc& obj, const futils::json::JSON& j) {
+        if (auto got = j.at("variant_desc")) {
+            if(!futils::json::convert_from_json(*got, obj.variant_desc)) {
+                return false;
+            }
+        }
+        else {
+            return false;
+        }
+        if (auto got = j.at("related_field")) {
+            if(!futils::json::convert_from_json(*got, obj.related_field)) {
+                return false;
+            }
+        }
+        else {
+            return false;
+        }
+        if (auto got = j.at("lowered_match_statement")) {
+            if(!futils::json::convert_from_json(*got, obj.lowered_match_statement)) {
+                return false;
+            }
+        }
+        else {
+            return false;
+        }
+        return true;
+    }
+    
     bool from_json(SubByteRange& obj, const futils::json::JSON& j) {
         if (auto got = j.at("stream_type")) {
             if(!futils::json::convert_from_json(*got, obj.stream_type)) {
@@ -3092,6 +3120,15 @@ namespace ebm {
                 return false;
             }
         }
+        if (auto got = j.at("struct_union_desc")) {
+            StructUnionDesc tmp;
+            if(!futils::json::convert_from_json(*got, tmp)) {
+                return false;
+            }
+            if(!obj.struct_union_desc(std::move(tmp))) {
+                return false;
+            }
+        }
         if (auto got = j.at("variant_desc")) {
             VariantDesc tmp;
             if(!futils::json::convert_from_json(*got, tmp)) {
@@ -3243,14 +3280,6 @@ namespace ebm {
         }
         if (auto got = j.at("members")) {
             if(!futils::json::convert_from_json(*got, obj.members)) {
-                return false;
-            }
-        }
-        else {
-            return false;
-        }
-        if (auto got = j.at("related_field")) {
-            if(!futils::json::convert_from_json(*got, obj.related_field)) {
                 return false;
             }
         }
@@ -4558,6 +4587,10 @@ namespace ebm {
             }
             if (s == "VARIANT") {
                 obj = TypeKind::VARIANT;
+                return true;
+            }
+            if (s == "STRUCT_UNION") {
+                obj = TypeKind::STRUCT_UNION;
                 return true;
             }
             if (s == "RANGE") {

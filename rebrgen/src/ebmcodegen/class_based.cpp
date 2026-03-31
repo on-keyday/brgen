@@ -1805,15 +1805,26 @@ namespace ebmcodegen {
                 }
                 if (auto found = struct_map.find(field->type); found != struct_map.end()) {
                     auto& struct_def = found->second;
-                    futils::helper::DynDefer if_scope;
+                    futils::helper::DynDefer if_scope, array_scope;
                     std::string new_prefix = std::format("{}{}.", prefix, field->name);
                     if (field->attr & PTR && !root) {
                         src.writeln("if (auto ptr_", field->name, " = ", prefix, field->name, "()) {");
                         if_scope = src.indent_scope_ex();
                         new_prefix = std::format("(*ptr_{}).", field->name);
                     }
+                    if (field->attr & ARRAY) {
+                        auto i = std::format("i_{}", field->name);
+                        src.writeln("for (size_t ", i, " = 0; ", i, " < ", new_prefix, "size(); ++", i, ") {");
+                        array_scope = src.indent_scope_ex();
+                        auto prefix_base = field->attr & PTR && !root ? std::format("(*ptr_{})", field->name) : std::format("{}{}", prefix, field->name);
+                        new_prefix = std::format("{}[{}].", prefix_base, i);
+                    }
                     for (auto& sub_field : struct_def.fields) {
                         handle_recursive(handle_recursive, &sub_field, new_prefix, false);
+                    }
+                    if (array_scope) {
+                        array_scope.execute();
+                        src.writeln("}");
                     }
                     if (if_scope) {
                         if_scope.execute();

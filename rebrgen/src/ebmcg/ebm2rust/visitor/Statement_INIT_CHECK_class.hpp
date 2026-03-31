@@ -32,11 +32,7 @@ DEFINE_VISITOR(Statement_INIT_CHECK) {
     MAYBE(target_type, ctx.get(target_expr.body.type));
     MAYBE(expect_expr, ctx.get(ctx.init_check.expect_value));
 
-    if (target_type.body.kind != ebm::TypeKind::VARIANT) {
-        return unexpect_error("unsupported type for INIT_CHECK: {}", to_string(target_type.body.kind));
-    }
-
-    MAYBE(variant_index, get_variant_index(ctx, target_expr.body.type, expect_expr.body.type));
+    MAYBE(variant_index, get_struct_union_index(ctx, target_expr.body.type, expect_expr.body.type));
 
     MAYBE(target, ctx.visit(ctx.init_check.target_field));
     MAYBE(target_type_rust, ctx.visit(target_expr.body.type));

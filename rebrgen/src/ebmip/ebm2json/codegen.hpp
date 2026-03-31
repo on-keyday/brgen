@@ -890,6 +890,10 @@ namespace ebm2json {
     template<typename Result = Result, typename UserContext,typename TypeContext>
     expected<Result> traverse_children_Type_VARIANT(UserContext&& ctx,TypeContext&& type_ctx);
     template<typename Result = Result,typename Context>
+    expected<Result> dispatch_Type_STRUCT_UNION(Context&& ctx,const ebm::Type& in,ebm::TypeRef alias_ref = {});
+    template<typename Result = Result, typename UserContext,typename TypeContext>
+    expected<Result> traverse_children_Type_STRUCT_UNION(UserContext&& ctx,TypeContext&& type_ctx);
+    template<typename Result = Result,typename Context>
     expected<Result> dispatch_Type_RANGE(Context&& ctx,const ebm::Type& in,ebm::TypeRef alias_ref = {});
     template<typename Result = Result, typename UserContext,typename TypeContext>
     expected<Result> traverse_children_Type_RANGE(UserContext&& ctx,TypeContext&& type_ctx);
@@ -968,6 +972,9 @@ namespace ebm2json {
             }
             case ebm::TypeKind::VARIANT: {
                 return dispatch_Type_VARIANT<Result>(std::forward<Context>(ctx),in,alias_ref);
+            }
+            case ebm::TypeKind::STRUCT_UNION: {
+                return dispatch_Type_STRUCT_UNION<Result>(std::forward<Context>(ctx),in,alias_ref);
             }
             case ebm::TypeKind::RANGE: {
                 return dispatch_Type_RANGE<Result>(std::forward<Context>(ctx),in,alias_ref);
@@ -1274,6 +1281,7 @@ namespace ebm2json {
     struct Context_Type_ARRAY;
     struct Context_Type_VECTOR;
     struct Context_Type_VARIANT;
+    struct Context_Type_STRUCT_UNION;
     struct Context_Type_RANGE;
     struct Context_Type_ENCODER_RETURN;
     struct Context_Type_DECODER_RETURN;
@@ -5156,6 +5164,44 @@ namespace ebm2json {
     // Deconstruct context fields
     #define EBM2JSON_DECONSTRUCT_TYPE_VARIANT_AFTER(instance_name) \
     auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& variant_desc = instance_name.variant_desc;auto& main_logic = instance_name.main_logic;auto& result = instance_name.result;
+    struct Context_Type_STRUCT_UNION : ebmcodegen::util::ContextBase<Context_Type_STRUCT_UNION> {
+        constexpr static std::string_view context_name = "Type_STRUCT_UNION";
+        BaseVisitor& visitor;
+        ebm::TypeRef item_id;
+        const ebm::TypeKind& kind;
+        const ebm::StructUnionDesc& struct_union_desc;
+    };
+    struct VisitorTag_Type_STRUCT_UNION {};
+    // Deconstruct context fields
+    #define EBM2JSON_DECONSTRUCT_TYPE_STRUCT_UNION(instance_name) \
+    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& struct_union_desc = instance_name.struct_union_desc;
+    template <typename Result>
+    struct Context_Type_STRUCT_UNION_before : ebmcodegen::util::ContextBase<Context_Type_STRUCT_UNION_before<Result>> {
+        constexpr static std::string_view context_name = "Type_STRUCT_UNION_before";
+        BaseVisitor& visitor;
+        ebm::TypeRef item_id;
+        const ebm::TypeKind& kind;
+        const ebm::StructUnionDesc& struct_union_desc;
+        ebmcodegen::util::MainLogicWrapper<Result> main_logic;
+    };
+    struct VisitorTag_Type_STRUCT_UNION_before {};
+    // Deconstruct context fields
+    #define EBM2JSON_DECONSTRUCT_TYPE_STRUCT_UNION_BEFORE(instance_name) \
+    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& struct_union_desc = instance_name.struct_union_desc;auto& main_logic = instance_name.main_logic;
+    template <typename Result>
+    struct Context_Type_STRUCT_UNION_after : ebmcodegen::util::ContextBase<Context_Type_STRUCT_UNION_after<Result>> {
+        constexpr static std::string_view context_name = "Type_STRUCT_UNION_after";
+        BaseVisitor& visitor;
+        ebm::TypeRef item_id;
+        const ebm::TypeKind& kind;
+        const ebm::StructUnionDesc& struct_union_desc;
+        ebmcodegen::util::MainLogicWrapper<Result> main_logic;
+        expected<Result>& result;
+    };
+    struct VisitorTag_Type_STRUCT_UNION_after {};
+    // Deconstruct context fields
+    #define EBM2JSON_DECONSTRUCT_TYPE_STRUCT_UNION_AFTER(instance_name) \
+    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& struct_union_desc = instance_name.struct_union_desc;auto& main_logic = instance_name.main_logic;auto& result = instance_name.result;
     struct Context_Type_RANGE : ebmcodegen::util::ContextBase<Context_Type_RANGE> {
         constexpr static std::string_view context_name = "Type_RANGE";
         BaseVisitor& visitor;
@@ -6138,6 +6184,12 @@ namespace ebm2json {
     #define EBM2JSON_CODEGEN_CONTEXT_Type_VARIANT_before ebm2json::Context_Type_VARIANT_before<Result>
     #define EBM2JSON_CODEGEN_VISITOR_Type_VARIANT_after ebm2json::Visitor<ebm2json::UserHook<ebm2json::VisitorTag_Type_VARIANT_after>>
     #define EBM2JSON_CODEGEN_CONTEXT_Type_VARIANT_after ebm2json::Context_Type_VARIANT_after<Result>
+    #define EBM2JSON_CODEGEN_VISITOR_Type_STRUCT_UNION ebm2json::Visitor<ebm2json::UserHook<ebm2json::VisitorTag_Type_STRUCT_UNION>>
+    #define EBM2JSON_CODEGEN_CONTEXT_Type_STRUCT_UNION ebm2json::Context_Type_STRUCT_UNION
+    #define EBM2JSON_CODEGEN_VISITOR_Type_STRUCT_UNION_before ebm2json::Visitor<ebm2json::UserHook<ebm2json::VisitorTag_Type_STRUCT_UNION_before>>
+    #define EBM2JSON_CODEGEN_CONTEXT_Type_STRUCT_UNION_before ebm2json::Context_Type_STRUCT_UNION_before<Result>
+    #define EBM2JSON_CODEGEN_VISITOR_Type_STRUCT_UNION_after ebm2json::Visitor<ebm2json::UserHook<ebm2json::VisitorTag_Type_STRUCT_UNION_after>>
+    #define EBM2JSON_CODEGEN_CONTEXT_Type_STRUCT_UNION_after ebm2json::Context_Type_STRUCT_UNION_after<Result>
     #define EBM2JSON_CODEGEN_VISITOR_Type_RANGE ebm2json::Visitor<ebm2json::UserHook<ebm2json::VisitorTag_Type_RANGE>>
     #define EBM2JSON_CODEGEN_CONTEXT_Type_RANGE ebm2json::Context_Type_RANGE
     #define EBM2JSON_CODEGEN_VISITOR_Type_RANGE_before ebm2json::Visitor<ebm2json::UserHook<ebm2json::VisitorTag_Type_RANGE_before>>

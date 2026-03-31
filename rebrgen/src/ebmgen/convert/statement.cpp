@@ -459,7 +459,7 @@ namespace ebmgen {
             return std::nullopt;
         }
         MAYBE(related_variant, ctx.repository().get_type(*related_variant_ref));
-        MAYBE(desc, related_variant.body.variant_desc());
+        MAYBE(desc, related_variant.body.struct_union_desc());
         MAYBE(self_ref, ctx.state().get_self_ref_for_id(from_weak(desc.related_field)));
         ebm::InitCheck check;
         check.init_check_type = typ;

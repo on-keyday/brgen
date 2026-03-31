@@ -657,6 +657,10 @@ namespace ebmgen::visitor {
     template<typename Result = Result, typename UserContext,typename TypeContext>
     expected<Result> traverse_children_Type_VARIANT(UserContext&& ctx,TypeContext&& type_ctx);
     template<typename Result = Result,typename Context>
+    expected<Result> dispatch_Type_STRUCT_UNION(Context&& ctx,const ebm::Type& in,ebm::TypeRef alias_ref = {});
+    template<typename Result = Result, typename UserContext,typename TypeContext>
+    expected<Result> traverse_children_Type_STRUCT_UNION(UserContext&& ctx,TypeContext&& type_ctx);
+    template<typename Result = Result,typename Context>
     expected<Result> dispatch_Type_RANGE(Context&& ctx,const ebm::Type& in,ebm::TypeRef alias_ref = {});
     template<typename Result = Result, typename UserContext,typename TypeContext>
     expected<Result> traverse_children_Type_RANGE(UserContext&& ctx,TypeContext&& type_ctx);
@@ -735,6 +739,9 @@ namespace ebmgen::visitor {
             }
             case ebm::TypeKind::VARIANT: {
                 return dispatch_Type_VARIANT<Result>(std::forward<Context>(ctx),in,alias_ref);
+            }
+            case ebm::TypeKind::STRUCT_UNION: {
+                return dispatch_Type_STRUCT_UNION<Result>(std::forward<Context>(ctx),in,alias_ref);
             }
             case ebm::TypeKind::RANGE: {
                 return dispatch_Type_RANGE<Result>(std::forward<Context>(ctx),in,alias_ref);
@@ -3626,6 +3633,32 @@ namespace ebmgen::visitor {
         ebmcodegen::util::MainLogicWrapper<Result> main_logic;
         expected<Result>& result;
     };
+    struct Context_Type_STRUCT_UNION : ebmcodegen::util::ContextBase<Context_Type_STRUCT_UNION> {
+        constexpr static std::string_view context_name = "Type_STRUCT_UNION";
+        BaseVisitor& visitor;
+        ebm::TypeRef item_id;
+        const ebm::TypeKind& kind;
+        const ebm::StructUnionDesc& struct_union_desc;
+    };
+    template <typename Result>
+    struct Context_Type_STRUCT_UNION_before : ebmcodegen::util::ContextBase<Context_Type_STRUCT_UNION_before<Result>> {
+        constexpr static std::string_view context_name = "Type_STRUCT_UNION_before";
+        BaseVisitor& visitor;
+        ebm::TypeRef item_id;
+        const ebm::TypeKind& kind;
+        const ebm::StructUnionDesc& struct_union_desc;
+        ebmcodegen::util::MainLogicWrapper<Result> main_logic;
+    };
+    template <typename Result>
+    struct Context_Type_STRUCT_UNION_after : ebmcodegen::util::ContextBase<Context_Type_STRUCT_UNION_after<Result>> {
+        constexpr static std::string_view context_name = "Type_STRUCT_UNION_after";
+        BaseVisitor& visitor;
+        ebm::TypeRef item_id;
+        const ebm::TypeKind& kind;
+        const ebm::StructUnionDesc& struct_union_desc;
+        ebmcodegen::util::MainLogicWrapper<Result> main_logic;
+        expected<Result>& result;
+    };
     struct Context_Type_RANGE : ebmcodegen::util::ContextBase<Context_Type_RANGE> {
         constexpr static std::string_view context_name = "Type_RANGE";
         BaseVisitor& visitor;
@@ -5892,6 +5925,8 @@ namespace ebmgen::visitor {
     }
     template<typename Result, typename UserContext,typename TypeContext>
     expected<Result> traverse_children_Statement_LOWERED_IO_STATEMENTS(UserContext&& ctx,TypeContext&& type_ctx) {
+        for (size_t i_container = 0; i_container < type_ctx.lowered_io_statements.container.size(); ++i_container) {
+        }
         return {};
     }
     template<typename Result,typename Context>
@@ -9241,6 +9276,58 @@ namespace ebmgen::visitor {
         return {};
     }
     template<typename Result,typename Context>
+    expected<Result> dispatch_Type_STRUCT_UNION(Context&& ctx,const ebm::Type& in,ebm::TypeRef alias_ref){
+        auto& kind = in.body.kind;
+        if (!in.body.struct_union_desc()) {
+            return unexpect_error("Unexpected null pointer for TypeBody::struct_union_desc");
+        }
+        auto& struct_union_desc = *in.body.struct_union_desc();
+        auto main_logic = [&]() -> expected<Result>{
+            Context_Type_STRUCT_UNION new_ctx{
+                .visitor = get_visitor_arg_from_context(ctx),
+                .item_id = is_nil(alias_ref) ? in.id : alias_ref,
+                .kind = kind,
+                .struct_union_desc = struct_union_desc,
+            };
+            return get_visitor_from_context<Result>(ctx,new_ctx).visit(new_ctx);
+        };
+        Context_Type_STRUCT_UNION_before<Result> before_ctx{
+            .visitor = get_visitor_arg_from_context(ctx),
+            .item_id = is_nil(alias_ref) ? in.id : alias_ref,
+            .kind = kind,
+            .struct_union_desc = struct_union_desc,
+            .main_logic = main_logic,
+        };
+        expected<Result> before_result = get_visitor_from_context<Result>(ctx,before_ctx).visit(before_ctx);
+        CODEGEN_MAY_HIJACK(before_result);
+        expected<Result> main_result = main_logic();
+        Context_Type_STRUCT_UNION_after<Result> after_ctx{
+            .visitor = get_visitor_arg_from_context(ctx),
+            .item_id = is_nil(alias_ref) ? in.id : alias_ref,
+            .kind = kind,
+            .struct_union_desc = struct_union_desc,
+            .main_logic = main_logic,
+            .result = main_result,
+        };
+        expected<Result> after_result = get_visitor_from_context<Result>(ctx,after_ctx).visit(after_ctx);
+        CODEGEN_MAY_HIJACK(after_result);
+        return main_result;
+    }
+    template<typename Result, typename UserContext,typename TypeContext>
+    expected<Result> traverse_children_Type_STRUCT_UNION(UserContext&& ctx,TypeContext&& type_ctx) {
+        if (!is_nil(type_ctx.struct_union_desc.variant_desc.common_type)) {
+            auto result_common_type = visit_Object<Result>(std::forward<UserContext>(ctx),type_ctx.struct_union_desc.variant_desc.common_type);
+            if (!result_common_type) {
+                return unexpect_error(std::move(result_common_type.error()));
+            }
+        }
+        auto result_members = dispatch_Types_default<Result>(std::forward<UserContext>(ctx),type_ctx.struct_union_desc.variant_desc.members);
+        if (!result_members) {
+            return unexpect_error(std::move(result_members.error()));
+        }
+        return {};
+    }
+    template<typename Result,typename Context>
     expected<Result> dispatch_Type_RANGE(Context&& ctx,const ebm::Type& in,ebm::TypeRef alias_ref){
         auto& kind = in.body.kind;
         if (!in.body.base_type()) {
@@ -9992,6 +10079,9 @@ namespace ebmgen::visitor {
         }
         else if constexpr (std::is_same_v<TypeContextType,Context_Type_VARIANT> || std::is_same_v<TypeContextType,Context_Type_VARIANT_before<Result>> || std::is_same_v<TypeContextType,Context_Type_VARIANT_after<Result>>) {
             return traverse_children_Type_VARIANT<Result>(std::forward<UserContext>(uctx),std::forward<TypeContext>(type_ctx));
+        }
+        else if constexpr (std::is_same_v<TypeContextType,Context_Type_STRUCT_UNION> || std::is_same_v<TypeContextType,Context_Type_STRUCT_UNION_before<Result>> || std::is_same_v<TypeContextType,Context_Type_STRUCT_UNION_after<Result>>) {
+            return traverse_children_Type_STRUCT_UNION<Result>(std::forward<UserContext>(uctx),std::forward<TypeContext>(type_ctx));
         }
         else if constexpr (std::is_same_v<TypeContextType,Context_Type_RANGE> || std::is_same_v<TypeContextType,Context_Type_RANGE_before<Result>> || std::is_same_v<TypeContextType,Context_Type_RANGE_after<Result>>) {
             return traverse_children_Type_RANGE<Result>(std::forward<UserContext>(uctx),std::forward<TypeContext>(type_ctx));

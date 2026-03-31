@@ -565,6 +565,7 @@ enum StatementKind:
     ARRAY_TO_INT # for endian conversion on decode
     INT_TO_ARRAY # for endian conversion on encode
     LENGTH_CHECK # checking length context
+    #UPDATE_OFFSET # update absolute offset counter for alignment tracking
 
 
 
@@ -663,6 +664,10 @@ format LengthCheck: # marker statement for length check context (e.g., vector le
     lowered_statement :LoweredStatementRef # Optional lowered statement for the length check (e.g., for vector length check)
     length_check_type :LengthCheckType # Type of length check
 
+#format UpdateOffset: # update absolute offset counter after IO operation for alignment tracking
+#    io_ref :StatementRef # Reference to the IO stream whose offset counter to update
+#    size :Size # Amount to add to the offset counter (same unit as the IO operation)
+
 format StatementBody:
     kind :StatementKind
     match kind:
@@ -748,6 +753,8 @@ format StatementBody:
             endian_convert :EndianConvertDesc
         StatementKind.LENGTH_CHECK:
             length_check :LengthCheck
+        #StatementKind.UPDATE_OFFSET:
+        #    update_offset :UpdateOffset
 
 format Expressions:
     len :Varint
@@ -809,7 +816,8 @@ enum TypeKind:
     ARRAY
     VECTOR
     # for union
-    VARIANT
+    VARIANT # normal variant
+    STRUCT_UNION # special type for ast::StructUnionType
     RANGE
 
     # encoder/decoder return value (these are language specific, e.g errno + int for C, Result<T, E> for Rust, error for Go)
@@ -853,8 +861,12 @@ format FuncTypeDesc:
 
 format VariantDesc:
     common_type :TypeRef # Optional common type for all union members
-    members :Types # List of variant member types
-    related_field :WeakStatementRef # Reference to the field that holds this variant (maybe null)
+    members :Types # List of variant members
+
+format StructUnionDesc: # physical representation of a union
+     variant_desc  :VariantDesc
+     related_field :WeakStatementRef # Reference to the field that holds this variant 
+     lowered_match_statement :LoweredStatementRef # Lowered match statement form that 
 
 enum ArrayAnnotation:
     :u8
@@ -890,6 +902,8 @@ format TypeBody:
             base_type :TypeRef # Optional base type (e.g., u8, u16)
         TypeKind.VARIANT:
             variant_desc :VariantDesc # Variant type description
+        TypeKind.STRUCT_UNION:
+            struct_union_desc :StructUnionDesc # Struct union type description
         TypeKind.OPTIONAL:
             inner_type :TypeRef # Optional inner type
         TypeKind.PTR:

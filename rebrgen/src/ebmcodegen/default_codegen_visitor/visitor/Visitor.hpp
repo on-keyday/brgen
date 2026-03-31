@@ -6,6 +6,7 @@
   Available variables:
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
+#include <functional>
 bool use_brace_for_condition = true;
 bool use_elif = false;
 bool auto_output_root = true;
@@ -94,6 +95,7 @@ std::function<expected<Result>(Result elem_type)> recursive_struct_type_wrapper;
 std::function<expected<Result>(Result elem)> make_pointer_wrapper;
 std::function<expected<Result>(Result elem)> make_optional_wrapper;
 std::function<expected<Result>(Context_Type_VARIANT& ctx)> variant_type_custom;
+std::function<expected<Result>(Context_Type_STRUCT_UNION& ctx)> struct_union_type_custom;
 std::function<expected<Result>(Context_Type_STRUCT& ctx)> struct_type_custom;
 std::function<expected<Result>(Context_Type_RECURSIVE_STRUCT& ctx)> recursive_struct_type_custom;
 std::function<expected<Result>(size_t bit_size)> make_int_type;
@@ -167,6 +169,7 @@ std::function<expected<Result>(Context_Statement_VARIABLE_DECL& ctx)> variable_d
 
 std::function<expected<Result>(Context_Expression_MAX_VALUE& ctx)> max_value_custom;
 std::function<expected<Result>(Context_Statement_LENGTH_CHECK& ctx)> length_check_custom;
+// std::function<expected<Result>(Context_Statement_UPDATE_OFFSET& ctx)> update_offset_custom;
 
 template <class Kind>
 struct MemoizationConfig {

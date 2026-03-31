@@ -7002,6 +7002,78 @@ static_assert(sizeof(ebm2json::Visitor<ebm2json::UserHook<ebm2json::VisitorTag_T
 template <>
 struct ebm2json::Visitor<ebm2json::UserHook<ebm2json::VisitorTag_Type_VARIANT_after>> {}; // Unimplemented
 #endif
+#if __has_include("visitor/Type_STRUCT_UNION_class.hpp")
+#define CODEGEN_VISITOR(dummy_name) ebm2json::Visitor<ebm2json::UserHook<ebm2json::VisitorTag_Type_STRUCT_UNION>>
+#define CODEGEN_CONTEXT(dummy_name) Context_Type_STRUCT_UNION
+#include "visitor/Type_STRUCT_UNION_class.hpp"
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("Context_Type_STRUCT_UNION"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_CONTEXT(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_CONTEXT
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("ebm2json::Visitor<ebm2json::UserHook<ebm2json::VisitorTag_Type_STRUCT_UNION>>"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_VISITOR(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_VISITOR
+static_assert(sizeof(ebm2json::Visitor<ebm2json::UserHook<ebm2json::VisitorTag_Type_STRUCT_UNION>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION)
+#define CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION 0
+#endif
+#else
+template <>
+struct ebm2json::Visitor<ebm2json::UserHook<ebm2json::VisitorTag_Type_STRUCT_UNION>> {}; // Unimplemented
+#endif
+#if __has_include("visitor/Type_STRUCT_UNION_before_class.hpp")
+#define CODEGEN_VISITOR(dummy_name) ebm2json::Visitor<ebm2json::UserHook<ebm2json::VisitorTag_Type_STRUCT_UNION_before>>
+#define CODEGEN_CONTEXT(dummy_name) Context_Type_STRUCT_UNION_before<Result>
+#include "visitor/Type_STRUCT_UNION_before_class.hpp"
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("Context_Type_STRUCT_UNION_before<Result>"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_CONTEXT(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_CONTEXT
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("ebm2json::Visitor<ebm2json::UserHook<ebm2json::VisitorTag_Type_STRUCT_UNION_before>>"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_VISITOR(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_VISITOR
+static_assert(sizeof(ebm2json::Visitor<ebm2json::UserHook<ebm2json::VisitorTag_Type_STRUCT_UNION_before>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_BEFORE)
+#define CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_BEFORE 0
+#endif
+#else
+template <>
+struct ebm2json::Visitor<ebm2json::UserHook<ebm2json::VisitorTag_Type_STRUCT_UNION_before>> {}; // Unimplemented
+#endif
+#if __has_include("visitor/Type_STRUCT_UNION_after_class.hpp")
+#define CODEGEN_VISITOR(dummy_name) ebm2json::Visitor<ebm2json::UserHook<ebm2json::VisitorTag_Type_STRUCT_UNION_after>>
+#define CODEGEN_CONTEXT(dummy_name) Context_Type_STRUCT_UNION_after<Result>
+#include "visitor/Type_STRUCT_UNION_after_class.hpp"
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("Context_Type_STRUCT_UNION_after<Result>"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_CONTEXT(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_CONTEXT
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("ebm2json::Visitor<ebm2json::UserHook<ebm2json::VisitorTag_Type_STRUCT_UNION_after>>"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_VISITOR(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_VISITOR
+static_assert(sizeof(ebm2json::Visitor<ebm2json::UserHook<ebm2json::VisitorTag_Type_STRUCT_UNION_after>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_AFTER)
+#define CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_AFTER 0
+#endif
+#else
+template <>
+struct ebm2json::Visitor<ebm2json::UserHook<ebm2json::VisitorTag_Type_STRUCT_UNION_after>> {}; // Unimplemented
+#endif
 #if __has_include("visitor/Type_RANGE_class.hpp")
 #define CODEGEN_VISITOR(dummy_name) ebm2json::Visitor<ebm2json::UserHook<ebm2json::VisitorTag_Type_RANGE>>
 #define CODEGEN_CONTEXT(dummy_name) Context_Type_RANGE
@@ -16815,6 +16887,99 @@ static_assert(sizeof(ebm2json::Visitor<ebm2json::UserInlinedHook<ebm2json::Visit
 template <>
 struct ebm2json::Visitor<ebm2json::UserInlinedHook<ebm2json::VisitorTag_Type_VARIANT_after>> {}; // Unimplemented
 #endif
+#if __has_include("visitor/Type_STRUCT_UNION.hpp")
+// Inlined hook for Type_STRUCT_UNION for backward compatibility
+template <>
+struct ebm2json::Visitor<ebm2json::UserInlinedHook<ebm2json::VisitorTag_Type_STRUCT_UNION>> {
+    // for backward compatibility
+    ebm2json::MergedVisitor* __legacy_compat_ptr = nullptr;
+    expected<Result> visit(Context_Type_STRUCT_UNION& ctx) {
+        EBM2JSON_DECONSTRUCT_TYPE_STRUCT_UNION(ctx);
+        auto& program_name = ctx.visitor.program_name;
+        auto& flags = ctx.visitor.flags;
+        auto& output = ctx.visitor.output;
+        auto& wm = ctx.visitor.wm;
+        auto& module_ = ctx.visitor.module_;
+        __legacy_compat_ptr = ctx.visitor.__legacy_compat_ptr;
+        // for backward compatibility
+        auto& root = wm.root;
+        auto add_writer = [&]{ return wm.add_writer(); };
+        auto get_writer = [&]{ return wm.get_writer(); };
+        using namespace ebm2json;
+        #include "visitor/Type_STRUCT_UNION.hpp"
+        return {};
+    }
+};
+static_assert(sizeof(ebm2json::Visitor<ebm2json::UserInlinedHook<ebm2json::VisitorTag_Type_STRUCT_UNION>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION)
+#define CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION 1
+#endif
+#else
+template <>
+struct ebm2json::Visitor<ebm2json::UserInlinedHook<ebm2json::VisitorTag_Type_STRUCT_UNION>> {}; // Unimplemented
+#endif
+#if __has_include("visitor/Type_STRUCT_UNION_before.hpp")
+// Inlined hook for Type_STRUCT_UNION_before for backward compatibility
+template <>
+struct ebm2json::Visitor<ebm2json::UserInlinedHook<ebm2json::VisitorTag_Type_STRUCT_UNION_before>> {
+    // for backward compatibility
+    ebm2json::MergedVisitor* __legacy_compat_ptr = nullptr;
+    expected<Result> visit(Context_Type_STRUCT_UNION_before<Result>& ctx) {
+        EBM2JSON_DECONSTRUCT_TYPE_STRUCT_UNION_BEFORE(ctx);
+        auto& program_name = ctx.visitor.program_name;
+        auto& flags = ctx.visitor.flags;
+        auto& output = ctx.visitor.output;
+        auto& wm = ctx.visitor.wm;
+        auto& module_ = ctx.visitor.module_;
+        __legacy_compat_ptr = ctx.visitor.__legacy_compat_ptr;
+        // for backward compatibility
+        auto& root = wm.root;
+        auto add_writer = [&]{ return wm.add_writer(); };
+        auto get_writer = [&]{ return wm.get_writer(); };
+        using namespace ebm2json;
+        #include "visitor/Type_STRUCT_UNION_before.hpp"
+        return pass;
+    }
+};
+static_assert(sizeof(ebm2json::Visitor<ebm2json::UserInlinedHook<ebm2json::VisitorTag_Type_STRUCT_UNION_before>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_BEFORE)
+#define CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_BEFORE 1
+#endif
+#else
+template <>
+struct ebm2json::Visitor<ebm2json::UserInlinedHook<ebm2json::VisitorTag_Type_STRUCT_UNION_before>> {}; // Unimplemented
+#endif
+#if __has_include("visitor/Type_STRUCT_UNION_after.hpp")
+// Inlined hook for Type_STRUCT_UNION_after for backward compatibility
+template <>
+struct ebm2json::Visitor<ebm2json::UserInlinedHook<ebm2json::VisitorTag_Type_STRUCT_UNION_after>> {
+    // for backward compatibility
+    ebm2json::MergedVisitor* __legacy_compat_ptr = nullptr;
+    expected<Result> visit(Context_Type_STRUCT_UNION_after<Result>& ctx) {
+        EBM2JSON_DECONSTRUCT_TYPE_STRUCT_UNION_AFTER(ctx);
+        auto& program_name = ctx.visitor.program_name;
+        auto& flags = ctx.visitor.flags;
+        auto& output = ctx.visitor.output;
+        auto& wm = ctx.visitor.wm;
+        auto& module_ = ctx.visitor.module_;
+        __legacy_compat_ptr = ctx.visitor.__legacy_compat_ptr;
+        // for backward compatibility
+        auto& root = wm.root;
+        auto add_writer = [&]{ return wm.add_writer(); };
+        auto get_writer = [&]{ return wm.get_writer(); };
+        using namespace ebm2json;
+        #include "visitor/Type_STRUCT_UNION_after.hpp"
+        return pass;
+    }
+};
+static_assert(sizeof(ebm2json::Visitor<ebm2json::UserInlinedHook<ebm2json::VisitorTag_Type_STRUCT_UNION_after>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_AFTER)
+#define CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_AFTER 1
+#endif
+#else
+template <>
+struct ebm2json::Visitor<ebm2json::UserInlinedHook<ebm2json::VisitorTag_Type_STRUCT_UNION_after>> {}; // Unimplemented
+#endif
 #if __has_include("visitor/Type_RANGE.hpp")
 // Inlined hook for Type_RANGE for backward compatibility
 template <>
@@ -24821,6 +24986,78 @@ static_assert(sizeof(ebm2json::Visitor<ebm2json::UserDSLHook<ebm2json::VisitorTa
 #else
 template <>
 struct ebm2json::Visitor<ebm2json::UserDSLHook<ebm2json::VisitorTag_Type_VARIANT_after>> {}; // Unimplemented
+#endif
+#if __has_include("visitor/dsl/Type_STRUCT_UNION_dsl_class.hpp")
+#define CODEGEN_VISITOR(dummy_name) ebm2json::Visitor<ebm2json::UserDSLHook<ebm2json::VisitorTag_Type_STRUCT_UNION>>
+#define CODEGEN_CONTEXT(dummy_name) Context_Type_STRUCT_UNION
+#include "visitor/dsl/Type_STRUCT_UNION_dsl_class.hpp"
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("Context_Type_STRUCT_UNION"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_CONTEXT(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_CONTEXT
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("ebm2json::Visitor<ebm2json::UserDSLHook<ebm2json::VisitorTag_Type_STRUCT_UNION>>"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_VISITOR(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_VISITOR
+static_assert(sizeof(ebm2json::Visitor<ebm2json::UserDSLHook<ebm2json::VisitorTag_Type_STRUCT_UNION>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION)
+#define CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION 2
+#endif
+#else
+template <>
+struct ebm2json::Visitor<ebm2json::UserDSLHook<ebm2json::VisitorTag_Type_STRUCT_UNION>> {}; // Unimplemented
+#endif
+#if __has_include("visitor/dsl/Type_STRUCT_UNION_before_dsl_class.hpp")
+#define CODEGEN_VISITOR(dummy_name) ebm2json::Visitor<ebm2json::UserDSLHook<ebm2json::VisitorTag_Type_STRUCT_UNION_before>>
+#define CODEGEN_CONTEXT(dummy_name) Context_Type_STRUCT_UNION_before<Result>
+#include "visitor/dsl/Type_STRUCT_UNION_before_dsl_class.hpp"
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("Context_Type_STRUCT_UNION_before<Result>"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_CONTEXT(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_CONTEXT
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("ebm2json::Visitor<ebm2json::UserDSLHook<ebm2json::VisitorTag_Type_STRUCT_UNION_before>>"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_VISITOR(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_VISITOR
+static_assert(sizeof(ebm2json::Visitor<ebm2json::UserDSLHook<ebm2json::VisitorTag_Type_STRUCT_UNION_before>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_BEFORE)
+#define CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_BEFORE 2
+#endif
+#else
+template <>
+struct ebm2json::Visitor<ebm2json::UserDSLHook<ebm2json::VisitorTag_Type_STRUCT_UNION_before>> {}; // Unimplemented
+#endif
+#if __has_include("visitor/dsl/Type_STRUCT_UNION_after_dsl_class.hpp")
+#define CODEGEN_VISITOR(dummy_name) ebm2json::Visitor<ebm2json::UserDSLHook<ebm2json::VisitorTag_Type_STRUCT_UNION_after>>
+#define CODEGEN_CONTEXT(dummy_name) Context_Type_STRUCT_UNION_after<Result>
+#include "visitor/dsl/Type_STRUCT_UNION_after_dsl_class.hpp"
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("Context_Type_STRUCT_UNION_after<Result>"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_CONTEXT(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_CONTEXT
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("ebm2json::Visitor<ebm2json::UserDSLHook<ebm2json::VisitorTag_Type_STRUCT_UNION_after>>"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_VISITOR(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_VISITOR
+static_assert(sizeof(ebm2json::Visitor<ebm2json::UserDSLHook<ebm2json::VisitorTag_Type_STRUCT_UNION_after>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_AFTER)
+#define CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_AFTER 2
+#endif
+#else
+template <>
+struct ebm2json::Visitor<ebm2json::UserDSLHook<ebm2json::VisitorTag_Type_STRUCT_UNION_after>> {}; // Unimplemented
 #endif
 #if __has_include("visitor/dsl/Type_RANGE_dsl_class.hpp")
 #define CODEGEN_VISITOR(dummy_name) ebm2json::Visitor<ebm2json::UserDSLHook<ebm2json::VisitorTag_Type_RANGE>>
@@ -34635,6 +34872,99 @@ static_assert(sizeof(ebm2json::Visitor<ebm2json::UserInlinedDSLHook<ebm2json::Vi
 template <>
 struct ebm2json::Visitor<ebm2json::UserInlinedDSLHook<ebm2json::VisitorTag_Type_VARIANT_after>> {}; // Unimplemented
 #endif
+#if __has_include("visitor/dsl/Type_STRUCT_UNION_dsl.hpp")
+// Inlined hook for Type_STRUCT_UNION for backward compatibility
+template <>
+struct ebm2json::Visitor<ebm2json::UserInlinedDSLHook<ebm2json::VisitorTag_Type_STRUCT_UNION>> {
+    // for backward compatibility
+    ebm2json::MergedVisitor* __legacy_compat_ptr = nullptr;
+    expected<Result> visit(Context_Type_STRUCT_UNION& ctx) {
+        EBM2JSON_DECONSTRUCT_TYPE_STRUCT_UNION(ctx);
+        auto& program_name = ctx.visitor.program_name;
+        auto& flags = ctx.visitor.flags;
+        auto& output = ctx.visitor.output;
+        auto& wm = ctx.visitor.wm;
+        auto& module_ = ctx.visitor.module_;
+        __legacy_compat_ptr = ctx.visitor.__legacy_compat_ptr;
+        // for backward compatibility
+        auto& root = wm.root;
+        auto add_writer = [&]{ return wm.add_writer(); };
+        auto get_writer = [&]{ return wm.get_writer(); };
+        using namespace ebm2json;
+        #include "visitor/dsl/Type_STRUCT_UNION_dsl.hpp"
+        return {};
+    }
+};
+static_assert(sizeof(ebm2json::Visitor<ebm2json::UserInlinedDSLHook<ebm2json::VisitorTag_Type_STRUCT_UNION>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION)
+#define CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION 3
+#endif
+#else
+template <>
+struct ebm2json::Visitor<ebm2json::UserInlinedDSLHook<ebm2json::VisitorTag_Type_STRUCT_UNION>> {}; // Unimplemented
+#endif
+#if __has_include("visitor/dsl/Type_STRUCT_UNION_before_dsl.hpp")
+// Inlined hook for Type_STRUCT_UNION_before for backward compatibility
+template <>
+struct ebm2json::Visitor<ebm2json::UserInlinedDSLHook<ebm2json::VisitorTag_Type_STRUCT_UNION_before>> {
+    // for backward compatibility
+    ebm2json::MergedVisitor* __legacy_compat_ptr = nullptr;
+    expected<Result> visit(Context_Type_STRUCT_UNION_before<Result>& ctx) {
+        EBM2JSON_DECONSTRUCT_TYPE_STRUCT_UNION_BEFORE(ctx);
+        auto& program_name = ctx.visitor.program_name;
+        auto& flags = ctx.visitor.flags;
+        auto& output = ctx.visitor.output;
+        auto& wm = ctx.visitor.wm;
+        auto& module_ = ctx.visitor.module_;
+        __legacy_compat_ptr = ctx.visitor.__legacy_compat_ptr;
+        // for backward compatibility
+        auto& root = wm.root;
+        auto add_writer = [&]{ return wm.add_writer(); };
+        auto get_writer = [&]{ return wm.get_writer(); };
+        using namespace ebm2json;
+        #include "visitor/dsl/Type_STRUCT_UNION_before_dsl.hpp"
+        return pass;
+    }
+};
+static_assert(sizeof(ebm2json::Visitor<ebm2json::UserInlinedDSLHook<ebm2json::VisitorTag_Type_STRUCT_UNION_before>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_BEFORE)
+#define CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_BEFORE 3
+#endif
+#else
+template <>
+struct ebm2json::Visitor<ebm2json::UserInlinedDSLHook<ebm2json::VisitorTag_Type_STRUCT_UNION_before>> {}; // Unimplemented
+#endif
+#if __has_include("visitor/dsl/Type_STRUCT_UNION_after_dsl.hpp")
+// Inlined hook for Type_STRUCT_UNION_after for backward compatibility
+template <>
+struct ebm2json::Visitor<ebm2json::UserInlinedDSLHook<ebm2json::VisitorTag_Type_STRUCT_UNION_after>> {
+    // for backward compatibility
+    ebm2json::MergedVisitor* __legacy_compat_ptr = nullptr;
+    expected<Result> visit(Context_Type_STRUCT_UNION_after<Result>& ctx) {
+        EBM2JSON_DECONSTRUCT_TYPE_STRUCT_UNION_AFTER(ctx);
+        auto& program_name = ctx.visitor.program_name;
+        auto& flags = ctx.visitor.flags;
+        auto& output = ctx.visitor.output;
+        auto& wm = ctx.visitor.wm;
+        auto& module_ = ctx.visitor.module_;
+        __legacy_compat_ptr = ctx.visitor.__legacy_compat_ptr;
+        // for backward compatibility
+        auto& root = wm.root;
+        auto add_writer = [&]{ return wm.add_writer(); };
+        auto get_writer = [&]{ return wm.get_writer(); };
+        using namespace ebm2json;
+        #include "visitor/dsl/Type_STRUCT_UNION_after_dsl.hpp"
+        return pass;
+    }
+};
+static_assert(sizeof(ebm2json::Visitor<ebm2json::UserInlinedDSLHook<ebm2json::VisitorTag_Type_STRUCT_UNION_after>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_AFTER)
+#define CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_AFTER 3
+#endif
+#else
+template <>
+struct ebm2json::Visitor<ebm2json::UserInlinedDSLHook<ebm2json::VisitorTag_Type_STRUCT_UNION_after>> {}; // Unimplemented
+#endif
 #if __has_include("visitor/dsl/Type_RANGE_dsl.hpp")
 // Inlined hook for Type_RANGE for backward compatibility
 template <>
@@ -42641,6 +42971,78 @@ static_assert(sizeof(ebm2json::Visitor<ebm2json::DefaultCodegenVisitorHook<ebm2j
 #else
 template <>
 struct ebm2json::Visitor<ebm2json::DefaultCodegenVisitorHook<ebm2json::VisitorTag_Type_VARIANT_after>> {}; // Unimplemented
+#endif
+#if __has_include("ebmcodegen/default_interpret_visitor/visitor/Type_STRUCT_UNION_class.hpp")
+#define CODEGEN_VISITOR(dummy_name) ebm2json::Visitor<ebm2json::DefaultCodegenVisitorHook<ebm2json::VisitorTag_Type_STRUCT_UNION>>
+#define CODEGEN_CONTEXT(dummy_name) Context_Type_STRUCT_UNION
+#include "ebmcodegen/default_interpret_visitor/visitor/Type_STRUCT_UNION_class.hpp"
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("Context_Type_STRUCT_UNION"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_CONTEXT(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_CONTEXT
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("ebm2json::Visitor<ebm2json::DefaultCodegenVisitorHook<ebm2json::VisitorTag_Type_STRUCT_UNION>>"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_VISITOR(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_VISITOR
+static_assert(sizeof(ebm2json::Visitor<ebm2json::DefaultCodegenVisitorHook<ebm2json::VisitorTag_Type_STRUCT_UNION>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION)
+#define CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION 4
+#endif
+#else
+template <>
+struct ebm2json::Visitor<ebm2json::DefaultCodegenVisitorHook<ebm2json::VisitorTag_Type_STRUCT_UNION>> {}; // Unimplemented
+#endif
+#if __has_include("ebmcodegen/default_interpret_visitor/visitor/Type_STRUCT_UNION_before_class.hpp")
+#define CODEGEN_VISITOR(dummy_name) ebm2json::Visitor<ebm2json::DefaultCodegenVisitorHook<ebm2json::VisitorTag_Type_STRUCT_UNION_before>>
+#define CODEGEN_CONTEXT(dummy_name) Context_Type_STRUCT_UNION_before<Result>
+#include "ebmcodegen/default_interpret_visitor/visitor/Type_STRUCT_UNION_before_class.hpp"
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("Context_Type_STRUCT_UNION_before<Result>"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_CONTEXT(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_CONTEXT
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("ebm2json::Visitor<ebm2json::DefaultCodegenVisitorHook<ebm2json::VisitorTag_Type_STRUCT_UNION_before>>"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_VISITOR(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_VISITOR
+static_assert(sizeof(ebm2json::Visitor<ebm2json::DefaultCodegenVisitorHook<ebm2json::VisitorTag_Type_STRUCT_UNION_before>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_BEFORE)
+#define CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_BEFORE 4
+#endif
+#else
+template <>
+struct ebm2json::Visitor<ebm2json::DefaultCodegenVisitorHook<ebm2json::VisitorTag_Type_STRUCT_UNION_before>> {}; // Unimplemented
+#endif
+#if __has_include("ebmcodegen/default_interpret_visitor/visitor/Type_STRUCT_UNION_after_class.hpp")
+#define CODEGEN_VISITOR(dummy_name) ebm2json::Visitor<ebm2json::DefaultCodegenVisitorHook<ebm2json::VisitorTag_Type_STRUCT_UNION_after>>
+#define CODEGEN_CONTEXT(dummy_name) Context_Type_STRUCT_UNION_after<Result>
+#include "ebmcodegen/default_interpret_visitor/visitor/Type_STRUCT_UNION_after_class.hpp"
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("Context_Type_STRUCT_UNION_after<Result>"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_CONTEXT(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_CONTEXT
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("ebm2json::Visitor<ebm2json::DefaultCodegenVisitorHook<ebm2json::VisitorTag_Type_STRUCT_UNION_after>>"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_VISITOR(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_VISITOR
+static_assert(sizeof(ebm2json::Visitor<ebm2json::DefaultCodegenVisitorHook<ebm2json::VisitorTag_Type_STRUCT_UNION_after>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_AFTER)
+#define CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_AFTER 4
+#endif
+#else
+template <>
+struct ebm2json::Visitor<ebm2json::DefaultCodegenVisitorHook<ebm2json::VisitorTag_Type_STRUCT_UNION_after>> {}; // Unimplemented
 #endif
 #if __has_include("ebmcodegen/default_interpret_visitor/visitor/Type_RANGE_class.hpp")
 #define CODEGEN_VISITOR(dummy_name) ebm2json::Visitor<ebm2json::DefaultCodegenVisitorHook<ebm2json::VisitorTag_Type_RANGE>>
@@ -52455,6 +52857,99 @@ static_assert(sizeof(ebm2json::Visitor<ebm2json::DefaultCodegenVisitorInlinedHoo
 template <>
 struct ebm2json::Visitor<ebm2json::DefaultCodegenVisitorInlinedHook<ebm2json::VisitorTag_Type_VARIANT_after>> {}; // Unimplemented
 #endif
+#if __has_include("ebmcodegen/default_interpret_visitor/visitor/Type_STRUCT_UNION.hpp")
+// Inlined hook for Type_STRUCT_UNION for backward compatibility
+template <>
+struct ebm2json::Visitor<ebm2json::DefaultCodegenVisitorInlinedHook<ebm2json::VisitorTag_Type_STRUCT_UNION>> {
+    // for backward compatibility
+    ebm2json::MergedVisitor* __legacy_compat_ptr = nullptr;
+    expected<Result> visit(Context_Type_STRUCT_UNION& ctx) {
+        EBM2JSON_DECONSTRUCT_TYPE_STRUCT_UNION(ctx);
+        auto& program_name = ctx.visitor.program_name;
+        auto& flags = ctx.visitor.flags;
+        auto& output = ctx.visitor.output;
+        auto& wm = ctx.visitor.wm;
+        auto& module_ = ctx.visitor.module_;
+        __legacy_compat_ptr = ctx.visitor.__legacy_compat_ptr;
+        // for backward compatibility
+        auto& root = wm.root;
+        auto add_writer = [&]{ return wm.add_writer(); };
+        auto get_writer = [&]{ return wm.get_writer(); };
+        using namespace ebm2json;
+        #include "ebmcodegen/default_interpret_visitor/visitor/Type_STRUCT_UNION.hpp"
+        return {};
+    }
+};
+static_assert(sizeof(ebm2json::Visitor<ebm2json::DefaultCodegenVisitorInlinedHook<ebm2json::VisitorTag_Type_STRUCT_UNION>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION)
+#define CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION 5
+#endif
+#else
+template <>
+struct ebm2json::Visitor<ebm2json::DefaultCodegenVisitorInlinedHook<ebm2json::VisitorTag_Type_STRUCT_UNION>> {}; // Unimplemented
+#endif
+#if __has_include("ebmcodegen/default_interpret_visitor/visitor/Type_STRUCT_UNION_before.hpp")
+// Inlined hook for Type_STRUCT_UNION_before for backward compatibility
+template <>
+struct ebm2json::Visitor<ebm2json::DefaultCodegenVisitorInlinedHook<ebm2json::VisitorTag_Type_STRUCT_UNION_before>> {
+    // for backward compatibility
+    ebm2json::MergedVisitor* __legacy_compat_ptr = nullptr;
+    expected<Result> visit(Context_Type_STRUCT_UNION_before<Result>& ctx) {
+        EBM2JSON_DECONSTRUCT_TYPE_STRUCT_UNION_BEFORE(ctx);
+        auto& program_name = ctx.visitor.program_name;
+        auto& flags = ctx.visitor.flags;
+        auto& output = ctx.visitor.output;
+        auto& wm = ctx.visitor.wm;
+        auto& module_ = ctx.visitor.module_;
+        __legacy_compat_ptr = ctx.visitor.__legacy_compat_ptr;
+        // for backward compatibility
+        auto& root = wm.root;
+        auto add_writer = [&]{ return wm.add_writer(); };
+        auto get_writer = [&]{ return wm.get_writer(); };
+        using namespace ebm2json;
+        #include "ebmcodegen/default_interpret_visitor/visitor/Type_STRUCT_UNION_before.hpp"
+        return pass;
+    }
+};
+static_assert(sizeof(ebm2json::Visitor<ebm2json::DefaultCodegenVisitorInlinedHook<ebm2json::VisitorTag_Type_STRUCT_UNION_before>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_BEFORE)
+#define CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_BEFORE 5
+#endif
+#else
+template <>
+struct ebm2json::Visitor<ebm2json::DefaultCodegenVisitorInlinedHook<ebm2json::VisitorTag_Type_STRUCT_UNION_before>> {}; // Unimplemented
+#endif
+#if __has_include("ebmcodegen/default_interpret_visitor/visitor/Type_STRUCT_UNION_after.hpp")
+// Inlined hook for Type_STRUCT_UNION_after for backward compatibility
+template <>
+struct ebm2json::Visitor<ebm2json::DefaultCodegenVisitorInlinedHook<ebm2json::VisitorTag_Type_STRUCT_UNION_after>> {
+    // for backward compatibility
+    ebm2json::MergedVisitor* __legacy_compat_ptr = nullptr;
+    expected<Result> visit(Context_Type_STRUCT_UNION_after<Result>& ctx) {
+        EBM2JSON_DECONSTRUCT_TYPE_STRUCT_UNION_AFTER(ctx);
+        auto& program_name = ctx.visitor.program_name;
+        auto& flags = ctx.visitor.flags;
+        auto& output = ctx.visitor.output;
+        auto& wm = ctx.visitor.wm;
+        auto& module_ = ctx.visitor.module_;
+        __legacy_compat_ptr = ctx.visitor.__legacy_compat_ptr;
+        // for backward compatibility
+        auto& root = wm.root;
+        auto add_writer = [&]{ return wm.add_writer(); };
+        auto get_writer = [&]{ return wm.get_writer(); };
+        using namespace ebm2json;
+        #include "ebmcodegen/default_interpret_visitor/visitor/Type_STRUCT_UNION_after.hpp"
+        return pass;
+    }
+};
+static_assert(sizeof(ebm2json::Visitor<ebm2json::DefaultCodegenVisitorInlinedHook<ebm2json::VisitorTag_Type_STRUCT_UNION_after>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_AFTER)
+#define CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_AFTER 5
+#endif
+#else
+template <>
+struct ebm2json::Visitor<ebm2json::DefaultCodegenVisitorInlinedHook<ebm2json::VisitorTag_Type_STRUCT_UNION_after>> {}; // Unimplemented
+#endif
 #if __has_include("ebmcodegen/default_interpret_visitor/visitor/Type_RANGE.hpp")
 // Inlined hook for Type_RANGE for backward compatibility
 template <>
@@ -55479,6 +55974,8 @@ namespace ebm2json {
     }
     template<typename Result, typename UserContext,typename TypeContext>
     expected<Result> traverse_children_Statement_LOWERED_IO_STATEMENTS(UserContext&& ctx,TypeContext&& type_ctx) {
+        for (size_t i_container = 0; i_container < type_ctx.lowered_io_statements.container.size(); ++i_container) {
+        }
         return {};
     }
     template<typename Result,typename Context>
@@ -58828,6 +59325,58 @@ namespace ebm2json {
         return {};
     }
     template<typename Result,typename Context>
+    expected<Result> dispatch_Type_STRUCT_UNION(Context&& ctx,const ebm::Type& in,ebm::TypeRef alias_ref){
+        auto& kind = in.body.kind;
+        if (!in.body.struct_union_desc()) {
+            return unexpect_error("Unexpected null pointer for TypeBody::struct_union_desc");
+        }
+        auto& struct_union_desc = *in.body.struct_union_desc();
+        auto main_logic = [&]() -> expected<Result>{
+            Context_Type_STRUCT_UNION new_ctx{
+                .visitor = get_visitor_arg_from_context(ctx),
+                .item_id = is_nil(alias_ref) ? in.id : alias_ref,
+                .kind = kind,
+                .struct_union_desc = struct_union_desc,
+            };
+            return get_visitor_from_context<Result>(ctx,new_ctx).visit(new_ctx);
+        };
+        Context_Type_STRUCT_UNION_before<Result> before_ctx{
+            .visitor = get_visitor_arg_from_context(ctx),
+            .item_id = is_nil(alias_ref) ? in.id : alias_ref,
+            .kind = kind,
+            .struct_union_desc = struct_union_desc,
+            .main_logic = main_logic,
+        };
+        expected<Result> before_result = get_visitor_from_context<Result>(ctx,before_ctx).visit(before_ctx);
+        CODEGEN_MAY_HIJACK(before_result);
+        expected<Result> main_result = main_logic();
+        Context_Type_STRUCT_UNION_after<Result> after_ctx{
+            .visitor = get_visitor_arg_from_context(ctx),
+            .item_id = is_nil(alias_ref) ? in.id : alias_ref,
+            .kind = kind,
+            .struct_union_desc = struct_union_desc,
+            .main_logic = main_logic,
+            .result = main_result,
+        };
+        expected<Result> after_result = get_visitor_from_context<Result>(ctx,after_ctx).visit(after_ctx);
+        CODEGEN_MAY_HIJACK(after_result);
+        return main_result;
+    }
+    template<typename Result, typename UserContext,typename TypeContext>
+    expected<Result> traverse_children_Type_STRUCT_UNION(UserContext&& ctx,TypeContext&& type_ctx) {
+        if (!is_nil(type_ctx.struct_union_desc.variant_desc.common_type)) {
+            auto result_common_type = visit_Object<Result>(std::forward<UserContext>(ctx),type_ctx.struct_union_desc.variant_desc.common_type);
+            if (!result_common_type) {
+                return unexpect_error(std::move(result_common_type.error()));
+            }
+        }
+        auto result_members = dispatch_Types_default<Result>(std::forward<UserContext>(ctx),type_ctx.struct_union_desc.variant_desc.members);
+        if (!result_members) {
+            return unexpect_error(std::move(result_members.error()));
+        }
+        return {};
+    }
+    template<typename Result,typename Context>
     expected<Result> dispatch_Type_RANGE(Context&& ctx,const ebm::Type& in,ebm::TypeRef alias_ref){
         auto& kind = in.body.kind;
         if (!in.body.base_type()) {
@@ -59579,6 +60128,9 @@ namespace ebm2json {
         }
         else if constexpr (std::is_same_v<TypeContextType,Context_Type_VARIANT> || std::is_same_v<TypeContextType,Context_Type_VARIANT_before<Result>> || std::is_same_v<TypeContextType,Context_Type_VARIANT_after<Result>>) {
             return traverse_children_Type_VARIANT<Result>(std::forward<UserContext>(uctx),std::forward<TypeContext>(type_ctx));
+        }
+        else if constexpr (std::is_same_v<TypeContextType,Context_Type_STRUCT_UNION> || std::is_same_v<TypeContextType,Context_Type_STRUCT_UNION_before<Result>> || std::is_same_v<TypeContextType,Context_Type_STRUCT_UNION_after<Result>>) {
+            return traverse_children_Type_STRUCT_UNION<Result>(std::forward<UserContext>(uctx),std::forward<TypeContext>(type_ctx));
         }
         else if constexpr (std::is_same_v<TypeContextType,Context_Type_RANGE> || std::is_same_v<TypeContextType,Context_Type_RANGE_before<Result>> || std::is_same_v<TypeContextType,Context_Type_RANGE_after<Result>>) {
             return traverse_children_Type_RANGE<Result>(std::forward<UserContext>(uctx),std::forward<TypeContext>(type_ctx));
@@ -62526,6 +63078,36 @@ namespace ebm2json {
     };
     #if !defined(CODEGEN_EXPECTED_PRIORITY_TYPE_VARIANT_AFTER)
     #define CODEGEN_EXPECTED_PRIORITY_TYPE_VARIANT_AFTER 6
+    #endif
+    template <>
+    struct Visitor<GeneratorDefaultHook<VisitorTag_Type_STRUCT_UNION>> {
+        template<typename Context>
+        auto visit(Context&& ctx) {
+            return visit_unimplemented(get_visitor_from_context<void>(ctx,ctx),"Type_STRUCT_UNION",get_id(ctx.item_id));
+        }
+    };
+    #if !defined(CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION)
+    #define CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION 6
+    #endif
+    template <>
+    struct Visitor<GeneratorDefaultHook<VisitorTag_Type_STRUCT_UNION_before>> {
+        template<typename Context>
+        auto visit(Context&& ctx) {
+            return pass;
+        }
+    };
+    #if !defined(CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_BEFORE)
+    #define CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_BEFORE 6
+    #endif
+    template <>
+    struct Visitor<GeneratorDefaultHook<VisitorTag_Type_STRUCT_UNION_after>> {
+        template<typename Context>
+        auto visit(Context&& ctx) {
+            return pass;
+        }
+    };
+    #if !defined(CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_AFTER)
+    #define CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_AFTER 6
     #endif
     template <>
     struct Visitor<GeneratorDefaultHook<VisitorTag_Type_RANGE>> {
@@ -72461,6 +73043,105 @@ namespace ebm2json {
                 static_assert(CODEGEN_EXPECTED_PRIORITY_TYPE_VARIANT_AFTER>= 0 && CODEGEN_EXPECTED_PRIORITY_TYPE_VARIANT_AFTER < 7, "No suitable visitor hook found for Type_VARIANT_after");
             }
         }
+        Visitor<UserHook<VisitorTag_Type_STRUCT_UNION>> visitor_Type_STRUCT_UNION_UserHook;
+        Visitor<UserInlinedHook<VisitorTag_Type_STRUCT_UNION>> visitor_Type_STRUCT_UNION_UserInlinedHook;
+        Visitor<UserDSLHook<VisitorTag_Type_STRUCT_UNION>> visitor_Type_STRUCT_UNION_UserDSLHook;
+        Visitor<UserInlinedDSLHook<VisitorTag_Type_STRUCT_UNION>> visitor_Type_STRUCT_UNION_UserInlinedDSLHook;
+        Visitor<DefaultCodegenVisitorHook<VisitorTag_Type_STRUCT_UNION>> visitor_Type_STRUCT_UNION_DefaultCodegenVisitorHook;
+        Visitor<DefaultCodegenVisitorInlinedHook<VisitorTag_Type_STRUCT_UNION>> visitor_Type_STRUCT_UNION_DefaultCodegenVisitorInlinedHook;
+        Visitor<GeneratorDefaultHook<VisitorTag_Type_STRUCT_UNION>> visitor_Type_STRUCT_UNION_GeneratorDefaultHook;
+        auto& get_visitor_Type_STRUCT_UNION(const Context_Type_STRUCT_UNION&) {
+            if constexpr (CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION == 0) {
+                return visitor_Type_STRUCT_UNION_UserHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION == 1) {
+                return visitor_Type_STRUCT_UNION_UserInlinedHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION == 2) {
+                return visitor_Type_STRUCT_UNION_UserDSLHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION == 3) {
+                return visitor_Type_STRUCT_UNION_UserInlinedDSLHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION == 4) {
+                return visitor_Type_STRUCT_UNION_DefaultCodegenVisitorHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION == 5) {
+                return visitor_Type_STRUCT_UNION_DefaultCodegenVisitorInlinedHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION == 6) {
+                return visitor_Type_STRUCT_UNION_GeneratorDefaultHook;
+            }
+            else {
+                static_assert(CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION>= 0 && CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION < 7, "No suitable visitor hook found for Type_STRUCT_UNION");
+            }
+        }
+        Visitor<UserHook<VisitorTag_Type_STRUCT_UNION_before>> visitor_Type_STRUCT_UNION_before_UserHook;
+        Visitor<UserInlinedHook<VisitorTag_Type_STRUCT_UNION_before>> visitor_Type_STRUCT_UNION_before_UserInlinedHook;
+        Visitor<UserDSLHook<VisitorTag_Type_STRUCT_UNION_before>> visitor_Type_STRUCT_UNION_before_UserDSLHook;
+        Visitor<UserInlinedDSLHook<VisitorTag_Type_STRUCT_UNION_before>> visitor_Type_STRUCT_UNION_before_UserInlinedDSLHook;
+        Visitor<DefaultCodegenVisitorHook<VisitorTag_Type_STRUCT_UNION_before>> visitor_Type_STRUCT_UNION_before_DefaultCodegenVisitorHook;
+        Visitor<DefaultCodegenVisitorInlinedHook<VisitorTag_Type_STRUCT_UNION_before>> visitor_Type_STRUCT_UNION_before_DefaultCodegenVisitorInlinedHook;
+        Visitor<GeneratorDefaultHook<VisitorTag_Type_STRUCT_UNION_before>> visitor_Type_STRUCT_UNION_before_GeneratorDefaultHook;
+        auto& get_visitor_Type_STRUCT_UNION_before(const Context_Type_STRUCT_UNION_before<Result>&) {
+            if constexpr (CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_BEFORE == 0) {
+                return visitor_Type_STRUCT_UNION_before_UserHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_BEFORE == 1) {
+                return visitor_Type_STRUCT_UNION_before_UserInlinedHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_BEFORE == 2) {
+                return visitor_Type_STRUCT_UNION_before_UserDSLHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_BEFORE == 3) {
+                return visitor_Type_STRUCT_UNION_before_UserInlinedDSLHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_BEFORE == 4) {
+                return visitor_Type_STRUCT_UNION_before_DefaultCodegenVisitorHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_BEFORE == 5) {
+                return visitor_Type_STRUCT_UNION_before_DefaultCodegenVisitorInlinedHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_BEFORE == 6) {
+                return visitor_Type_STRUCT_UNION_before_GeneratorDefaultHook;
+            }
+            else {
+                static_assert(CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_BEFORE>= 0 && CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_BEFORE < 7, "No suitable visitor hook found for Type_STRUCT_UNION_before");
+            }
+        }
+        Visitor<UserHook<VisitorTag_Type_STRUCT_UNION_after>> visitor_Type_STRUCT_UNION_after_UserHook;
+        Visitor<UserInlinedHook<VisitorTag_Type_STRUCT_UNION_after>> visitor_Type_STRUCT_UNION_after_UserInlinedHook;
+        Visitor<UserDSLHook<VisitorTag_Type_STRUCT_UNION_after>> visitor_Type_STRUCT_UNION_after_UserDSLHook;
+        Visitor<UserInlinedDSLHook<VisitorTag_Type_STRUCT_UNION_after>> visitor_Type_STRUCT_UNION_after_UserInlinedDSLHook;
+        Visitor<DefaultCodegenVisitorHook<VisitorTag_Type_STRUCT_UNION_after>> visitor_Type_STRUCT_UNION_after_DefaultCodegenVisitorHook;
+        Visitor<DefaultCodegenVisitorInlinedHook<VisitorTag_Type_STRUCT_UNION_after>> visitor_Type_STRUCT_UNION_after_DefaultCodegenVisitorInlinedHook;
+        Visitor<GeneratorDefaultHook<VisitorTag_Type_STRUCT_UNION_after>> visitor_Type_STRUCT_UNION_after_GeneratorDefaultHook;
+        auto& get_visitor_Type_STRUCT_UNION_after(const Context_Type_STRUCT_UNION_after<Result>&) {
+            if constexpr (CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_AFTER == 0) {
+                return visitor_Type_STRUCT_UNION_after_UserHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_AFTER == 1) {
+                return visitor_Type_STRUCT_UNION_after_UserInlinedHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_AFTER == 2) {
+                return visitor_Type_STRUCT_UNION_after_UserDSLHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_AFTER == 3) {
+                return visitor_Type_STRUCT_UNION_after_UserInlinedDSLHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_AFTER == 4) {
+                return visitor_Type_STRUCT_UNION_after_DefaultCodegenVisitorHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_AFTER == 5) {
+                return visitor_Type_STRUCT_UNION_after_DefaultCodegenVisitorInlinedHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_AFTER == 6) {
+                return visitor_Type_STRUCT_UNION_after_GeneratorDefaultHook;
+            }
+            else {
+                static_assert(CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_AFTER>= 0 && CODEGEN_EXPECTED_PRIORITY_TYPE_STRUCT_UNION_AFTER < 7, "No suitable visitor hook found for Type_STRUCT_UNION_after");
+            }
+        }
         Visitor<UserHook<VisitorTag_Type_RANGE>> visitor_Type_RANGE_UserHook;
         Visitor<UserInlinedHook<VisitorTag_Type_RANGE>> visitor_Type_RANGE_UserInlinedHook;
         Visitor<UserDSLHook<VisitorTag_Type_RANGE>> visitor_Type_RANGE_UserDSLHook;
@@ -74717,6 +75398,18 @@ namespace ebm2json {
         }
         expected<Result> visit(Context_Type_VARIANT_after<Result>& ctx) {
             auto visitor = impl.get_visitor_Type_VARIANT_after(ctx);
+            return visitor.visit(ctx);
+        }
+        expected<Result> visit(Context_Type_STRUCT_UNION& ctx) {
+            auto visitor = impl.get_visitor_Type_STRUCT_UNION(ctx);
+            return visitor.visit(ctx);
+        }
+        expected<Result> visit(Context_Type_STRUCT_UNION_before<Result>& ctx) {
+            auto visitor = impl.get_visitor_Type_STRUCT_UNION_before(ctx);
+            return visitor.visit(ctx);
+        }
+        expected<Result> visit(Context_Type_STRUCT_UNION_after<Result>& ctx) {
+            auto visitor = impl.get_visitor_Type_STRUCT_UNION_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_RANGE& ctx) {

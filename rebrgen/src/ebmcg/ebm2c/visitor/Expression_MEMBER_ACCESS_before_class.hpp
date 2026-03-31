@@ -82,7 +82,7 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
             return CODE(getter_func_name, "(&", base_, args.empty() ? "" : ", ", args, ")");
         }
     }
-    if (auto type_ref = get_variant_member_from_field(ctx, from_weak(body))) {
+    if (auto type_ref = get_struct_union_member_from_field(ctx, from_weak(body))) {
         MAYBE(base, ctx.visit(ctx.base));
         MAYBE(ident, ctx.identifier(*type_ref));
         MAYBE(member, ctx.visit(ctx.member));

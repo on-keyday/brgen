@@ -13,6 +13,11 @@
         module_: ebmgen::MappingTable
       item_id: ebm::TypeRef
       kind: const ebm::TypeKind&
+      io_input_desc: const ebm::IOInputDesc&
+        is_seekable: bool
+        has_absolute_offset: bool
+        has_bit_offset: bool
+        reserved: std::uint8_t
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 

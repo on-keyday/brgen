@@ -47,6 +47,10 @@ DEFINE_VISITOR(Expression_INDEX_ACCESS) {
         instr.op = ebm::OpCode::ARRAY_GET_IMM;
         instr.index(*int_value);
     }
-    ctx.config().env.add_instruction(instr, str_repr, element_layout.size, ctx.type);
+    auto base_kind = ctx.get_field<"type.kind.optional">(ctx.base);
+    LayoutScratch layout_scratch;
+    layout_scratch.offset(element_layout.size);
+    layout_scratch.size(base_kind ? size_t(*base_kind) : size_t(ebm::TypeKind::ARRAY));
+    ctx.config().env.add_instruction(instr, str_repr, layout_scratch.scratch.as_value(), ctx.type);
     return Result{.str_repr = str_repr};
 }

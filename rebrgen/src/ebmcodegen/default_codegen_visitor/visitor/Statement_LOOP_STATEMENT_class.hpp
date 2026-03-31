@@ -30,7 +30,7 @@
 #include "../codegen.hpp"
 DEFINE_VISITOR(Statement_LOOP_STATEMENT) {
     if (ctx.config().loop_statement_custom) {
-        return ctx.config().loop_statement_custom(ctx);
+        CALL_OR_PASS(result, ctx.config().loop_statement_custom(ctx));
     }
     auto& loop = ctx.loop;
     if (!is_nil(loop.lowered_statement.id)) {

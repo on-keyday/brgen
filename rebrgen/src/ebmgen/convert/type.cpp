@@ -40,18 +40,30 @@ namespace ebmgen {
         // special case for StructUnionType
         if (auto n = ast::as<ast::StructUnionType>(type)) {
             MAYBE(varint_id, ctx.repository().new_type_id());
-            body.kind = ebm::TypeKind::VARIANT;
+            body.kind = ebm::TypeKind::STRUCT_UNION;
             EBMA_CONVERT_STATEMENT(related_field, field);
-            ebm::VariantDesc desc;
+            ebm::StructUnionDesc desc;
             desc.related_field = to_weak(related_field);
             ebm::Types members;
             std::optional<std::uint64_t> max_bit_size;
-            for (auto& struct_member : n->structs) {
+            ebm::MatchStatement m;
+            m.is_exhaustive(n->exhaustive);
+            for (size_t i = 0; i < n->structs.size(); i++) {
+                auto& struct_member = n->structs[i];
                 MAYBE(member_type_ref, ctx.get_statement_converter().convert_struct_decl(struct_member, varint_id));
                 ebm::TypeBody body;
                 body.kind = ebm::TypeKind::STRUCT;
                 body.id(to_weak(member_type_ref));
                 EBMA_ADD_TYPE(member_type_ref2, std::move(body));
+                if (i < n->conds.size() && n->conds[i]) {
+                    EBMA_CONVERT_EXPRESSION(member_cond_ref, n->conds[i]);
+                    ebm::MatchBranch br;
+                    br.condition = make_condition(member_cond_ref);
+                    ebm::StatementBody body{.kind = ebm::StatementKind::MATCH_BRANCH};
+                    body.match_branch(br);
+                    EBMA_ADD_STATEMENT(ref_name, std::move(body));
+                    append(m.branches, ref_name);
+                }
                 append(members, member_type_ref2);
                 ctx.state().cache_type(struct_member, member_type_ref2);
                 // try get struct size
@@ -76,12 +88,21 @@ namespace ebmgen {
                     max_bit_size = std::nullopt;  // not fixed
                 }
             }
-            desc.members = std::move(members);
+            desc.variant_desc.members = std::move(members);
+            if (n->cond) {
+                EBMA_CONVERT_EXPRESSION(overall_cond_ref, n->cond);
+                m.target = overall_cond_ref;
+            }
             if (max_bit_size) {
                 EBMU_UINT_TYPE(variant_common, *max_bit_size);
-                desc.common_type = variant_common;
+                desc.variant_desc.common_type = variant_common;
             }
-            body.variant_desc(std::move(desc));
+            MAYBE_VOID(setter_lowered, ctx.get_statement_converter().derive_match_lowered_if(m, false));
+            ebm::StatementBody m_body{.kind = ebm::StatementKind::MATCH_STATEMENT};
+            m_body.match_statement(std::move(m));
+            EBMA_ADD_STATEMENT(match_stmt_ref, std::move(m_body));
+            desc.lowered_match_statement = ebm::LoweredStatementRef{match_stmt_ref};
+            body.struct_union_desc(std::move(desc));
             EBMA_ADD_TYPE(type_ref, varint_id, std::move(body));
             return type_ref;
         }

@@ -41,7 +41,7 @@ DEFINE_VISITOR(Statement_ASSIGNMENT_before) {
         if (ctx.get_field<"struct_decl.related_variant">(comp->parent_struct)) {
             auto field_id = ctx.get_field<"body.id">(*member);
             if (field_id) {
-                if (auto variant_type = get_variant_member_from_field(ctx, from_weak(*field_id))) {
+                if (auto variant_type = get_struct_union_member_from_field(ctx, from_weak(*field_id))) {
                     // variant member composite field: use INIT_CHECK-asserted variable (tmp{type_id})
                     auto variant_hold = std::format("tmp{}", get_id(*variant_type));
                     base_ = CODE(variant_hold);
@@ -63,7 +63,7 @@ DEFINE_VISITOR(Statement_ASSIGNMENT_before) {
     if (!may_variant) {
         return pass;
     }
-    if (auto type_ref = get_variant_member_from_field(ctx, *may_variant)) {
+    if (auto type_ref = get_struct_union_member_from_field(ctx, *may_variant)) {
         if (ctx.config().bulk_primitive.contains(get_id(*type_ref))) {
             // bulk primitive assignment
             MAYBE(base, ctx.get_field<"base.base">(ctx.target));

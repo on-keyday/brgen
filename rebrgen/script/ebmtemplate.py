@@ -329,6 +329,28 @@ def get_available_templates() -> list[str]:
 
 def list_defined_templates(lang: str, gmode: str):
     """List all defined templates for a given language."""
+    if lang == "all":
+            try:
+                with open("build_config.json") as f:
+                    build_config = json.load(f)
+                target_languages = build_config.get(
+                    str(gmode).upper() + "_TARGET_LANGUAGE", []
+                ) + [f"default"]
+                if not target_languages:
+                    print(
+                        "Error: No target languages defined in build_config.json.",
+                        file=sys.stderr,
+                    )
+                    return
+                for lang in target_languages:
+                    if lang == "all":
+                        continue  # avoid infinity recursion
+                    print(f"\n--- Templates for language: '{lang}' ---")
+                    list_defined_templates(lang, gmode)
+                return
+            except Exception as e:
+                print(f"Error: Failed to read build_config.json: {e}", file=sys.stderr)
+                return
     if lang == "default":
         visitor_dir = f"src/ebmcodegen/default_{gmode}_visitor/visitor"
     else:

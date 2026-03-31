@@ -35,8 +35,17 @@ namespace ebmcodegen::util {
                     MAYBE(decl, ebmgen::access_field<"body.id">(module_, last_type));
                     deps.push_back(get_id(decl.id));
                 }
+                else if (last_type->body.kind == ebm::TypeKind::STRUCT_UNION) {
+                    MAYBE(struct_union_desc, last_type->body.struct_union_desc());
+                    for (auto& mem : struct_union_desc.variant_desc.members.container) {
+                        MAYBE(member_type, module_.get_type(mem));
+                        MAYBE(stmt_id, member_type.body.id());
+                        deps.push_back(get_id(stmt_id));
+                    }
+                }
                 else if (last_type->body.kind == ebm::TypeKind::VARIANT) {
-                    for (auto& member_ref : last_type->body.variant_desc()->members.container) {
+                    MAYBE(variant_desc, last_type->body.variant_desc());
+                    for (auto& member_ref : variant_desc.members.container) {
                         MAYBE(member_decl, ebmgen::access_field<"body.id">(module_, member_ref));
                         deps.push_back(get_id(member_decl.id));
                     }

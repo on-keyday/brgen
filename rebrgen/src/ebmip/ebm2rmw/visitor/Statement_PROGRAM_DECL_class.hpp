@@ -22,9 +22,11 @@
 #include "../codegen.hpp"
 #include <ebmgen/interactive/debugger.hpp>
 #include "ebm/extended_binary_module.hpp"
+#include "file/file.h"
 #include "file/file_view.h"
 #include "interpret.hpp"
 #include "layout.hpp"
+#include "number/hex/bin2hex.h"
 #include "optimize.hpp"
 #include "wrap/cout.h"
 DEFINE_VISITOR(Statement_PROGRAM_DECL) {
@@ -41,14 +43,34 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
     }
     auto entry_stmt_ref = query_result.first[0];
     MAYBE(entry_stmt, ctx.get(from_any_ref<ebm::StatementRef>(entry_stmt_ref)));
-    auto entry_decode_fn = *entry_stmt.body.struct_decl()->decode_fn();
+    auto struct_decl = entry_stmt.body.struct_decl();
+    auto entry_decode_fn = *struct_decl->decode_fn();
     auto f = ctx.config().env.new_function(entry_decode_fn);
     TypeLayoutContext layout_ctx;
     ctx.config().layout_context = &layout_ctx;
     auto res = ctx.visit(entry_decode_fn);
-    if (ctx.flags().dump_ops) {
+
+    // Compile encode function if available and encode is not skipped
+    auto entry_encode_fn_ptr = struct_decl->encode_fn();
+    if (!ctx.flags().skip_encode && entry_encode_fn_ptr) {
+        auto entry_encode_fn = *entry_encode_fn_ptr;
+        if (!ctx.config().env.has_function(entry_encode_fn)) {
+            auto fe = ctx.config().env.new_function(entry_encode_fn);
+            auto encode_res = ctx.visit(entry_encode_fn);
+            if (!encode_res) {
+                futils::wrap::cerr_wrap() << "Warning: failed to compile encode function: " << encode_res.error().error<std::string>() << "\n";
+            }
+        }
+    }
+
+    auto dump_ops = [&] {
+        InitialContext ictx{.visitor = ctx.visitor};
         for (auto& func : ctx.config().env.get_function_insert_order()) {
-            MAYBE(func_decl, ctx.get_field<"func_decl">(ebm::StatementRef{func}));
+            auto func_decl_res = ctx.get_field<"func_decl">(ebm::StatementRef{func});
+            if (!func_decl_res) {
+                continue;
+            }
+            auto& func_decl = *func_decl_res;
             if (!is_nil(func_decl.parent_format)) {
                 futils::wrap::cout_wrap() << "Function " << ctx.identifier(func_decl.parent_format) << "." << ctx.identifier(ebm::StatementRef{func});
             }
@@ -56,10 +78,9 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
                 futils::wrap::cout_wrap() << "Function " << ctx.identifier(ebm::StatementRef{func});
             }
             futils::wrap::cout_wrap() << " (id: " << get_id(func) << "):\n";
-            size_t instr_index = 0;
-            InitialContext ictx{.visitor = ctx.visitor};
             auto& func_body = ctx.config().env.get_functions()[func];
             futils::wrap::cout_wrap() << " max local: " << func_body.local_count << "\n";
+            size_t instr_index = 0;
             for (auto& instr : func_body.instructions) {
                 futils::wrap::cout_wrap() << " " << instr_index << ":  " << to_string(instr.instr.op, true);
                 auto args = instruction_args(instr.instr, ictx, instr_index, &func_body);
@@ -74,28 +95,111 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
                     instr.instr.op == ebm::OpCode::STORE_LOCAL ||
                     instr.instr.op == ebm::OpCode::STORE_LOCAL_IMM ||
                     instr.instr.op == ebm::OpCode::LOAD_LOCAL_REF) {
-                    auto offset = instr.scratch;
-                    futils::wrap::cout_wrap() << " local offset: " << offset;
+                    futils::wrap::cout_wrap() << " local offset: " << instr.scratch;
                 }
                 if (instr.instr.op == ebm::OpCode::LOAD_PARAM) {
-                    auto offset = instr.scratch;
-                    futils::wrap::cout_wrap() << " param offset: " << offset;
+                    futils::wrap::cout_wrap() << " param offset: " << instr.scratch;
                 }
                 futils::wrap::cout_wrap() << " // " << instr.str_repr << "\n";
                 instr_index++;
             }
         }
+    };
+    if (ctx.flags().dump_ops) {
+        dump_ops();
     }
     if (!res) {
         return res;
     }
+
+    // Compile STRUCT_UNION variant selector functions
+    for (auto& [su_type, match_stmt_ref] : layout_ctx.get_struct_union_match_stmts()) {
+        auto emit_store_local_imm = [&](size_t val, std::string label) -> expected<void> {
+            ebm::Instruction instr;
+            instr.op = ebm::OpCode::STORE_LOCAL_IMM;
+            MAYBE(v, varint(val));
+            instr.value(v);
+            ctx.config().env.add_instruction(instr, std::move(label), 0);
+            return {};
+        };
+
+        auto fixup_jump = [&](size_t from_idx, size_t to_idx) -> expected<void> {
+            auto& jmp = ctx.config().env.access_instructions()[from_idx].instr;
+            ebm::JumpOffset offset;
+            MAYBE(off, varint(to_idx - from_idx));
+            offset.offset = off;
+            jmp.target(offset);
+            return {};
+        };
+
+        auto compile_selector = [&]() -> expected<void> {
+            MAYBE(match_stmt, ctx.get(match_stmt_ref));
+            auto* match = match_stmt.body.match_statement();
+            if (!match) {
+                return unexpect_error("lowered_match_statement is not a MATCH_STATEMENT");
+            }
+            auto if_stmt_ref = match->lowered_if_statement.id;
+            if (is_nil(if_stmt_ref)) {
+                return unexpect_error("MATCH_STATEMENT has no lowered_if_statement");
+            }
+            MAYBE(if_thens, flatten_if_then(ctx, if_stmt_ref));
+
+            auto selector_fn = ctx.config().env.new_function(if_stmt_ref);
+            ctx.config().env.get_functions()[if_stmt_ref].local_count = 1;  // slot 0 = result
+
+            MAYBE_VOID(_, emit_store_local_imm(if_thens.size(), std::format("default_variant = {}", if_thens.size())));
+
+            std::vector<size_t> jump_to_end_indices;
+
+            for (size_t i = 0; i < if_thens.size(); i++) {
+                auto& entry = if_thens[i];
+                size_t jif_idx = 0;
+                bool has_condition = entry.condition.has_value();
+
+                if (has_condition) {
+                    MAYBE_VOID(cond_res, ctx.visit(*entry.condition));
+                    ebm::Instruction jif_instr;
+                    jif_instr.op = ebm::OpCode::JUMP_IF_FALSE;
+                    ctx.config().env.add_instruction(jif_instr, std::format("branch {} cond false -> next", i));
+                    jif_idx = ctx.config().env.access_instructions().size() - 1;
+                }
+
+                MAYBE_VOID(_, emit_store_local_imm(i, std::format("variant_index = {}", i)));
+
+                if (has_condition) {
+                    ebm::Instruction jump_instr;
+                    jump_instr.op = ebm::OpCode::JUMP;
+                    ctx.config().env.add_instruction(jump_instr, "jump to end");
+                    jump_to_end_indices.push_back(ctx.config().env.access_instructions().size() - 1);
+
+                    MAYBE_VOID(_, fixup_jump(jif_idx, ctx.config().env.access_instructions().size()));
+                }
+                // else: fall through to end naturally
+            }
+
+            size_t end_idx = ctx.config().env.access_instructions().size();
+            for (auto jump_idx : jump_to_end_indices) {
+                MAYBE_VOID(_, fixup_jump(jump_idx, end_idx));
+            }
+
+            layout_ctx.add_struct_union_selector_fn(su_type, if_stmt_ref);
+            return {};
+        };
+
+        auto compile_res = compile_selector();
+        if (!compile_res) {
+            futils::wrap::cerr_wrap() << "Warning: failed to compile STRUCT_UNION selector: "
+                                      << compile_res.error().error<std::string>() << "\n";
+        }
+    }
+
     if (ctx.flags().binary_file.empty()) {
         futils::wrap::cerr_wrap() << "No binary file specified, skipping execution.\n";
         return res;
     }
     futils::file::View file;
-    if (auto res = file.open(ctx.flags().binary_file); !res) {
-        return unexpect_error("Failed to open binary file {}: {}", ctx.flags().binary_file, res.error().error<std::string>());
+    if (auto fres = file.open(ctx.flags().binary_file); !fres) {
+        return unexpect_error("Failed to open binary file {}: {}", ctx.flags().binary_file, fres.error().error<std::string>());
     }
     if (file.size() == 0) {
         return unexpect_error("Binary file is empty: {}", ctx.flags().binary_file);
@@ -105,11 +209,55 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
     Optimizer optimizer;
     optimizer.optimize_function(ctx.config().env);
     RuntimeEnv runtime;
-    std::vector<Value> params;
-    params.resize(decl.params.container.size());  // initialize parameters with default values (currently all zero/empty, can be extended to support user-specified parameter values)
+    std::vector<Value> decode_params;
+    decode_params.resize(decl.params.container.size());
     runtime.input = futils::view::rvec(file.data(), file.size());
     runtime.input_pos = 0;
     InitialContext initial_ctx{.visitor = ctx.visitor};
-    MAYBE_VOID(rt, runtime.interpret(initial_ctx, entry_stmt.id, params));
+    MAYBE_VOID(rt, runtime.interpret(initial_ctx, entry_stmt.id, decode_params));
+
+    auto encode_step = [&]() -> expected<void> {
+        auto entry_encode_fn = *entry_encode_fn_ptr;
+        if (!ctx.config().env.has_function(entry_encode_fn)) {
+            futils::wrap::cerr_wrap() << "Warning: encode function not compiled, skipping encode step.\n";
+            return {};
+        }
+        const auto encode_env = ctx.config().env.new_function(entry_encode_fn);
+        auto* encode_fnt = ctx.module().get_statement(entry_encode_fn);
+        if (!encode_fnt) {
+            futils::wrap::cerr_wrap() << "Warning: failed to get encode function statement\n";
+            return {};
+        }
+        auto encode_decl_res = encode_fnt->body.func_decl();
+        std::vector<Value> encode_params;
+        if (encode_decl_res) {
+            encode_params.resize(encode_decl_res->params.container.size());
+        }
+        MAYBE_VOID(enc_res, runtime.interpret_encode(initial_ctx, encode_params));
+        futils::wrap::cerr_wrap() << "Encode complete. Output size: " << runtime.output_buf.size() << " bytes\n";
+        if (ctx.flags().dump_output) {
+            std::string hex_output;
+            futils::number::hex::to_hex(hex_output, futils::view::rvec(runtime.output_buf));
+            futils::wrap::cout_wrap() << "Encoded output (hex): " << hex_output << "\n";
+        }
+        if (!ctx.flags().output_file.empty()) {
+            auto out_file = futils::file::File::create(ctx.flags().output_file);
+            if (!out_file) {
+                return unexpect_error("Failed to open output file {}: {}", ctx.flags().output_file, out_file.error().error<std::string>());
+            }
+            auto w_res = out_file->write_file_all(futils::view::rvec(runtime.output_buf));
+            if (!w_res) {
+                return unexpect_error("Failed to write output file {}: {}", ctx.flags().output_file, w_res.error().error<std::string>());
+            }
+            futils::wrap::cerr_wrap() << "Encoded output written to: " << ctx.flags().output_file << "\n";
+        }
+        return {};
+    };
+
+    // Encode step (W in RMW)
+    if (!ctx.flags().skip_encode && entry_encode_fn_ptr) {
+        MAYBE_VOID(enc_res, encode_step());
+    }
+
     return res;
 }

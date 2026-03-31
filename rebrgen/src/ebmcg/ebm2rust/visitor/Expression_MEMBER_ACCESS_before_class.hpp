@@ -25,9 +25,9 @@
 DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
     MAYBE(member, ctx.get(ctx.member));
     MAYBE(id, member.body.id());
-    if (auto type_ref = get_variant_member_from_field(ctx, from_weak(id))) {
+    if (auto type_ref = get_struct_union_member_from_field(ctx, from_weak(id))) {
         MAYBE(base_expr, ctx.get(ctx.base));
-        MAYBE(variant_index, get_variant_index(ctx, base_expr.body.type, *type_ref));
+        MAYBE(variant_index, get_struct_union_index(ctx, base_expr.body.type, *type_ref));
         auto arm_lower = std::string("v") + std::to_string(variant_index);
         bool is_mutable = false;
         if (auto mut_it = ctx.config().variant_mutable_contexts.find(get_id(*type_ref));

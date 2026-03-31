@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     fs,
     path::{Path, PathBuf},
+    thread,
 };
 use tokio::task::JoinHandle;
 use uuid::Uuid;
@@ -46,6 +47,9 @@ struct Args {
 
     #[arg(long,help("test output json file path, if specified, test results will be saved in this file in JSON format"))]
     output_json: Option<String>,
+
+    #[arg(long, help("parallel test execution limit. default is unlimited"))]
+    parallel_limit: Option<usize>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -411,6 +415,7 @@ fn make_runner_input_matrix(
 }
 
 async fn run_source_setup(
+    sema: &Option<std::sync::Arc<tokio::sync::Semaphore>>,
     common_setup_commands: Vec<String>,
     runner_source_map: SourceCodeFormatMap,
     source_runner_matrix: &mut RunnerInputMatrix,
@@ -440,7 +445,20 @@ async fn run_source_setup(
         let source_dir = source_dir.clone();
         let current_dir = current_dir.clone();
         let source_send = source_send.clone();
+        let sema = sema.clone();
         let h = tokio::spawn(async move {
+            #[allow(unused_variables)]
+            let bound = if let Some(sema) = &sema {
+                let permit = match sema.acquire().await {
+                    Ok(permit) => permit,
+                    Err(e) => {
+                        return Err(anyhow::anyhow!("failed to acquire semaphore permit for source setup: source={}, error={}", source_name, e));
+                    }
+                };
+                Some(permit)
+            } else {
+                None
+            };
             let spawned = tokio::process::Command::new(replaced_setup_command[0].clone())
                 .args(&replaced_setup_command[1..])
                 .current_dir(&source_dir)
@@ -504,6 +522,7 @@ enum SetupFailureInfo {
 }
 
 async fn run_setup(
+    sema: &Option<std::sync::Arc<tokio::sync::Semaphore>>,
     runner_source_map: RunnerInputMatrix,
     source_dir_map: Option<std::collections::HashMap<String, String>>,
     binary_cache: &mut InputBinaryCache,
@@ -535,6 +554,7 @@ async fn run_setup(
             String::new()
         };
 
+        let sema = sema.clone();
         let h: JoinHandle<anyhow::Result<()>> = tokio::spawn(async move {
             if matrix.setup_command.is_empty() {
                 return Err(std::io::Error::new(
@@ -552,6 +572,20 @@ async fn run_setup(
                 .iter()
                 .map(|s| s.replace("$WORK_DIR", &current_dir))
                 .collect();
+
+            #[allow(unused_variables)]
+            let bound = if let Some(sema) = &sema {
+                let permit = match sema.acquire().await {
+                    Ok(permit) => permit,
+                    Err(e) => {
+                        return Err(anyhow::anyhow!("failed to acquire semaphore permit for test setup: runner={}, option_set={}, source={}, error={}", key.runner_name, key.option_set_name, key.source_name, e));
+                    }
+                };
+                Some(permit)
+            } else {
+                None
+            };
+
             let spawned = tokio::process::Command::new(replaced_setup_command[0].clone())
                 .args(&replaced_setup_command[1..])
                 .current_dir(&runner_dir)
@@ -625,6 +659,7 @@ async fn run_setup(
 }
 
 async fn run_tests(
+    sema: &Option<std::sync::Arc<tokio::sync::Semaphore>>,
     parsed: &Args,
     setup_infos: &Vec<PrepareInfo>,
     inputs: Vec<TestInput>,
@@ -665,6 +700,7 @@ async fn run_tests(
             println!("----------------------------------------");
             let current_dir = current_dir.clone();
             let shorter = parsed.shorter_path;
+            let sema = sema.clone();
             let h: JoinHandle<()> = tokio::spawn(async move {
                 let send3 = send2.clone();
                 let result_info = ResultInfo {
@@ -705,6 +741,20 @@ async fn run_tests(
                         .iter()
                         .map(|s| s.replace("$WORK_DIR", &current_dir))
                         .collect();
+
+                    #[allow(unused_variables)]
+                    let bound= if let Some(sema) = &sema {
+                        let permit = match sema.acquire().await {
+                            Ok(permit) => permit,
+                            Err(e) => {
+                                return Err(anyhow::anyhow!("failed to acquire semaphore permit for test execution: runner={}, option_set={}, source={}, format={}, input={}, error={}", runner, option_set.name, source, input.format_name, input.name, e));
+                            }
+                        };
+                        Some(permit)
+                    } else {
+                        None
+                    };
+
                     let output = tokio::process::Command::new(replaced_run_command[0].clone())
                         .args(&replaced_run_command[1..])
                         .current_dir(&task_dir)
@@ -944,8 +994,23 @@ async fn main() -> anyhow::Result<()> {
 
     let mut setup_failures = Vec::new();
 
+    let sema = if let Some(mut parallel_setup) = parsed.parallel_limit {
+        if parallel_setup == 0 {
+            parallel_setup = thread::available_parallelism()
+                .map(|n| n.get())
+                .unwrap_or(4);
+        }
+        println!("Running setups with parallel limit: {}", parallel_setup);
+        Some(std::sync::Arc::new(tokio::sync::Semaphore::new(
+            parallel_setup,
+        )))
+    } else {
+        None
+    };
+
     if let Some(common_setup_commands) = &test_config.common_source_setup {
         let (fail_count, source_dir_map_) = run_source_setup(
+            &sema,
             common_setup_commands.clone(),
             source_format_map,
             &mut runner_source_map,
@@ -961,6 +1026,7 @@ async fn main() -> anyhow::Result<()> {
     }
 
     let (setup_infos, fail_count2) = run_setup(
+        &sema,
         runner_source_map,
         source_dir_map,
         &mut binary_cache,
@@ -974,6 +1040,7 @@ async fn main() -> anyhow::Result<()> {
     println!("----------------------------------------");
 
     let test_results = run_tests(
+        &sema,
         &parsed,
         &setup_infos,
         inputs,

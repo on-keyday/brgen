@@ -18,7 +18,6 @@
         members: Types
           len: Varint
           container: std::vector<TypeRef>
-        related_field: WeakStatementRef
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 
@@ -29,7 +28,7 @@ DEFINE_VISITOR(Type_VARIANT) {
         CALL_OR_PASS(result, ctx.config().variant_type_custom(ctx));
     }
     /*here to write the hook*/
-    if (!is_nil(ctx.variant_desc.common_type) && is_nil(ctx.variant_desc.related_field)) {
+    if (!is_nil(ctx.variant_desc.common_type)) {
         return ctx.visit(ctx.variant_desc.common_type);
     }
     auto enum_name = ctx.config().variant_prefix + std::format("{}", get_id(ctx.item_id));

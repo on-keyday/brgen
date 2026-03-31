@@ -18,7 +18,6 @@
         members: Types
           len: Varint
           container: std::vector<TypeRef>
-        related_field: WeakStatementRef
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 

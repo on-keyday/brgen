@@ -26,3 +26,7 @@ bool has_byte_io = false;
 
 IOMode io_mode;
 IOStrategy io_strategy;
+
+futils::helper::Scoped<bool> on_native_endian{false};
+
+futils::helper::Scoped<bool> without_abs_param{false};

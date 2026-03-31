@@ -132,6 +132,7 @@ namespace ebmcodegen {
             body.length({});
             body.pointee_type({});
             body.size({});
+            body.struct_union_desc({});
             body.variant_desc({});
             std::set<std::string_view> subset;
             std::vector<std::string_view> ordered;
