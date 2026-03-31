@@ -10,9 +10,9 @@
   "author": "on-keyday (https://github.com/on-keyday)",
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^24.0.0",
+    "@types/node": "^25.5.0",
     "ts-node": "^10.9.1",
-    "typescript": "^5.2.2"
+    "typescript": "^6.0.2"
   },
   "dependencies": {
     "vscode-languageserver": "^9.0.1"
