@@ -88,9 +88,12 @@ format Field:
 format Message:
     fields :[..]Field
 
+
+input.endian = config.endian.big
+
 format GRPCHeader:
     compress :u8
-    len :ub32
+    len :u32
 
 config.url = "https://github.com/containerd/ttrpc/blob/main/PROTOCOL.md"
 
