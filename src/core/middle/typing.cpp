@@ -1884,8 +1884,11 @@ namespace brgen::middle {
                     for (auto& elem : p->elements) {
                         if (auto s = ast::as<ast::SpecifyOrder>(elem); s && s->order_type == ast::OrderType::byte) {
                             if (auto l = p->endian.lock()) {
+                                // TODO(on-keyday): global endianness changes multiple times are now allowed on ebm
+                                //                  but json2cpp2 does not allow it.
+                                //                  for usability, we allow changing global endianness multiple times on ebm
                                 warnings
-                                    .warning(s->loc, "byte order is specified but endian is already specified. overwritten by after one")
+                                    .warning(s->loc, "byte order is specified but endian is already specified. some generator may not support changing global endianness multiple times. in the future, this warnings will be disabled but currently, emit for old generator consideration")
                                     .warning(l->loc, "previous endian is specified here");
                             }
                             p->endian = ast::cast_to<ast::SpecifyOrder>(elem);
