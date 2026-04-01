@@ -87,3 +87,26 @@ format Field:
 
 format Message:
     fields :[..]Field
+
+format GRPCHeader:
+    compress :u8
+    len :ub32
+
+config.url = "https://github.com/containerd/ttrpc/blob/main/PROTOCOL.md"
+
+format TTRPCHeader:
+    len :u32 
+    stream_id :u32
+    msg_type :TTRPCMessageType
+    
+format TTRPCFlags:
+    reserved :u5
+    no_data :u1
+    remote_open :u1
+    remote_closed :u1
+
+enum TTRPCMessageType:
+    :u8 
+    request
+    response
+    data 

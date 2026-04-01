@@ -4,6 +4,40 @@ config.cpp.vector_type = "NoHeapVector"
 config.cpp.include = "no_heap_vector.h"
 config.url = "https://www.rfc-editor.org/rfc/rfc9113.html"
 
+CONNECTION_PREFACE ::= "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n"
+
+enum PseudoHeader:
+    :u8 
+    authority = ":authority"
+    path = ":path"
+    scheme = ":scheme"
+    method = ":method"
+    status = ":status"
+
+CONNECTION_LEVEL_ID ::= u32(0)
+CLIENT_INITIAL_ID ::= u32(1)
+SERVER_INITIAL_ID ::= u32(2)
+
+enum ParseState:
+    :u8
+    wait_header
+    header_read
+    gone_away
+    wait_preface
+
+enum H2StreamState:
+    :u8
+    idle
+    open
+    reserved_local
+    reserved_remote
+    half_closed_local
+    half_closed_remote
+    close
+    
+fn isClientInitiated(id :u31) -> bool:
+    return id & 1 == 1
+
 enum H2Error:
     none = 0x0
     protocol = 0x1
@@ -34,15 +68,20 @@ enum H2Type:
     WINDOW_UPDATE = 0x8
     CONTINUATION = 0x9
 
-
-format FrameHeader:
-    len :u24
-    type:H2Type
-    reserved_flag :u4(0)
+format Flags:
+    reserved_flag1 :u2(0)
+    priority :u1 
+    reserved_flag2 :u1(0)
     padding :u1
     end_headers :u1
     unused :u1
     end_stream_or_ack :u1 #TODO(on-keyday): rename? make it more clear
+
+
+format FrameHeader:
+    len :u24
+    type:H2Type
+    flags :Flags
     reserved :u1
     stream_id:u31
 
@@ -52,6 +91,7 @@ state FrameHeaderState:
 header_state :FrameHeaderState
 
 format FrameBody:
+    config.go.union = "noheap"
     match header_state.header.type:
         H2Type.DATA => data :DataFrame
         H2Type.HEADERS => headers :HeadersFrame
@@ -66,12 +106,12 @@ format FrameBody:
         .. => unknown :[header_state.header.len]u8
 
 format DataFrame:
-    if header_state.header.padding == 1:
+    if header_state.header.flags.padding == 1:
         padding_len :u8
         u32(header_state.header.len) > u32(padding_len + 1) # violate this is protocol error
-    len ::= header_state.header.padding == 1 ? header_state.header.len - 1 - u32(padding_len) : header_state.header.len
+    len ::= header_state.header.flags.padding == 1 ? header_state.header.len - 1 - u32(padding_len) : header_state.header.len
     data :[len]u8
-    if header_state.header.padding == 1:
+    if header_state.header.flags.padding == 1:
         padding :[padding_len]u8
 
 format StreamWeight:
@@ -81,13 +121,14 @@ format StreamWeight:
 
 
 format HeadersFrame:
-    priority :StreamWeight
-    if header_state.header.padding == 1:
+    if header_state.header.flags.priority == 1:
+        priority :StreamWeight
+    if header_state.header.flags.padding == 1:
         padding_len :u8
         u32(header_state.header.len) > u32(padding_len + 1) # violate this is protocol error
     len ::= u32(header_state.header.len) - u32(available(padding_len)?padding_len:0)
     header_block :[len]u8
-    if header_state.header.padding == 1:
+    if header_state.header.flags.padding == 1:
         padding :[padding_len]u8
 
 format PriorityFrame:
@@ -98,13 +139,34 @@ format RstStreamFrame:
     header_state.header.len == 4
     error_code :u32
 
+enum SettingsID:
+    :u16
+    HEADER_TABLE_SIZE = 1
+    ENABLE_PUSH = 2
+    MAX_CONCURRENT_STREAMS = 3
+    INITIAL_WINDOW_SIZE = 4
+    MAX_FRAME_SIZE = 5
+    MAX_HEADER_LIST_SIZE = 6
+
+state PredefinedSettings:
+    table_size :u32
+    enable_push :bool 
+    max_concurrent_streams :u32 
+    initial_window_size :u32
+    max_frame_size :u32
+    max_header_list_size :u32
+
+fn allowedMaxFrameSize(size :u32) -> bool:
+    return size >= 16384 && size <= 16777215 
+
+
 format Setting:
-    id :u16
+    id :SettingsID
     value :u32
 
 format SettingsFrame:
     header_state.header.len % 6 == 0
-    if header_state.header.end_stream_or_ack == 1:
+    if header_state.header.flags.end_stream_or_ack == 1:
         header_state.header.len == 0
         return
     settings :[header_state.header.len / 6]Setting
@@ -131,5 +193,3 @@ format WindowUpdateFrame:
 
 format ContinuationFrame:
     header_block :[header_state.header.len]u8
-
-    
