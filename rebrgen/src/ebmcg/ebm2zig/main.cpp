@@ -75573,7 +75573,7 @@ DEFINE_ENTRY(ebm2zig::Flags, ebm2zig::Output) {
     };
     auto result = entry_function();
     if (!result) {
-        futils::wrap::cerr_wrap() << visitor.program_name << ": error: " << result.error().error(); << "\n"
+        futils::wrap::cerr_wrap() << visitor.program_name << ": error: " << result.error().error() << "\n"
         return 1;
     }
     return 0;
