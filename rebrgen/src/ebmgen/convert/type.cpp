@@ -56,6 +56,9 @@ namespace ebmgen {
                 body.id(to_weak(member_type_ref));
                 EBMA_ADD_TYPE(member_type_ref2, std::move(body));
                 if (i < n->conds.size() && n->conds[i]) {
+                    // TODO(on-keyday): currently, use encode for condition evaluation, but ideally,
+                    // we should use other mechanism by analyzing expressions strictly
+                    const auto _mode = ctx.state().set_current_generate_type(GenerateType::Encode);
                     EBMA_CONVERT_EXPRESSION(member_cond_ref, n->conds[i]);
                     ebm::MatchBranch br;
                     br.condition = make_condition(member_cond_ref);
@@ -90,6 +93,9 @@ namespace ebmgen {
             }
             desc.variant_desc.members = std::move(members);
             if (n->cond) {
+                // TODO(on-keyday): currently, use Encode for condition evaluation, but ideally,
+                // we should use other mechanism by analyzing expressions strictly
+                const auto _mode = ctx.state().set_current_generate_type(GenerateType::Encode);
                 EBMA_CONVERT_EXPRESSION(overall_cond_ref, n->cond);
                 m.target = overall_cond_ref;
             }

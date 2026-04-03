@@ -1067,9 +1067,15 @@ enum OpCode:
     PEEK_U8         = 0x65
     SEEK_REL        = 0x66 
     SEEK_ABS        = 0x67 
-    AVAILABLE       = 0x68 
-    GET_OFFSET      = 0x69 
-    SET_ENDIAN      = 0x6A 
+    AVAILABLE       = 0x68
+    GET_OFFSET      = 0x69
+    SET_ENDIAN      = 0x6A
+
+    # Sub-range (subrange input/output scope management)
+    PUSH_SUB_INPUT      = 0x6B  # pop length → save parent input, set sub-input of that length
+    POP_SUB_INPUT       = 0x6C  # restore parent input, advance parent by saved length
+    PUSH_SEEK_SUB_INPUT = 0x6D  # pop length, pop offset → sub-input at absolute offset (no parent advance)
+    POP_SEEK_SUB_INPUT  = 0x6E  # restore parent input (no advance)
 
     # --- 0x70: Stream Output ---
     WRITE_U8        = 0x70
@@ -1077,7 +1083,9 @@ enum OpCode:
     WRITE_U32       = 0x72
     WRITE_U64       = 0x73
     WRITE_BYTES     = 0x74
-    WRITE_BITS      = 0x75 
+    WRITE_BITS      = 0x75
+    PUSH_SUB_OUTPUT     = 0x76  # pop expected_length → record output position for validation
+    POP_SUB_OUTPUT      = 0x77  # validate written bytes == expected_length (unless skip flag set)
 
     # --- 0x90: Object & Structure ---
     NEW_STRUCT      = 0x90 

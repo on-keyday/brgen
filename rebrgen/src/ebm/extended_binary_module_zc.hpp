@@ -1632,12 +1632,18 @@ namespace ebm::zc {
         AVAILABLE = 0x68,
         GET_OFFSET = 0x69,
         SET_ENDIAN = 0x6A,
+        PUSH_SUB_INPUT = 0x6B,
+        POP_SUB_INPUT = 0x6C,
+        PUSH_SEEK_SUB_INPUT = 0x6D,
+        POP_SEEK_SUB_INPUT = 0x6E,
         WRITE_U8 = 0x70,
         WRITE_U16 = 0x71,
         WRITE_U32 = 0x72,
         WRITE_U64 = 0x73,
         WRITE_BYTES = 0x74,
         WRITE_BITS = 0x75,
+        PUSH_SUB_OUTPUT = 0x76,
+        POP_SUB_OUTPUT = 0x77,
         NEW_STRUCT = 0x90,
         LOAD_SELF_MEMBER = 0x91,
         LOAD_MEMBER = 0x92,
@@ -1710,12 +1716,18 @@ namespace ebm::zc {
             case OpCode::AVAILABLE: return origin_form ? "AVAILABLE":"AVAILABLE" ;
             case OpCode::GET_OFFSET: return origin_form ? "GET_OFFSET":"GET_OFFSET" ;
             case OpCode::SET_ENDIAN: return origin_form ? "SET_ENDIAN":"SET_ENDIAN" ;
+            case OpCode::PUSH_SUB_INPUT: return origin_form ? "PUSH_SUB_INPUT":"PUSH_SUB_INPUT" ;
+            case OpCode::POP_SUB_INPUT: return origin_form ? "POP_SUB_INPUT":"POP_SUB_INPUT" ;
+            case OpCode::PUSH_SEEK_SUB_INPUT: return origin_form ? "PUSH_SEEK_SUB_INPUT":"PUSH_SEEK_SUB_INPUT" ;
+            case OpCode::POP_SEEK_SUB_INPUT: return origin_form ? "POP_SEEK_SUB_INPUT":"POP_SEEK_SUB_INPUT" ;
             case OpCode::WRITE_U8: return origin_form ? "WRITE_U8":"WRITE_U8" ;
             case OpCode::WRITE_U16: return origin_form ? "WRITE_U16":"WRITE_U16" ;
             case OpCode::WRITE_U32: return origin_form ? "WRITE_U32":"WRITE_U32" ;
             case OpCode::WRITE_U64: return origin_form ? "WRITE_U64":"WRITE_U64" ;
             case OpCode::WRITE_BYTES: return origin_form ? "WRITE_BYTES":"WRITE_BYTES" ;
             case OpCode::WRITE_BITS: return origin_form ? "WRITE_BITS":"WRITE_BITS" ;
+            case OpCode::PUSH_SUB_OUTPUT: return origin_form ? "PUSH_SUB_OUTPUT":"PUSH_SUB_OUTPUT" ;
+            case OpCode::POP_SUB_OUTPUT: return origin_form ? "POP_SUB_OUTPUT":"POP_SUB_OUTPUT" ;
             case OpCode::NEW_STRUCT: return origin_form ? "NEW_STRUCT":"NEW_STRUCT" ;
             case OpCode::LOAD_SELF_MEMBER: return origin_form ? "LOAD_SELF_MEMBER":"LOAD_SELF_MEMBER" ;
             case OpCode::LOAD_MEMBER: return origin_form ? "LOAD_MEMBER":"LOAD_MEMBER" ;
@@ -1905,6 +1917,18 @@ namespace ebm::zc {
         if (str == "SET_ENDIAN") {
             return OpCode::SET_ENDIAN;
         }
+        if (str == "PUSH_SUB_INPUT") {
+            return OpCode::PUSH_SUB_INPUT;
+        }
+        if (str == "POP_SUB_INPUT") {
+            return OpCode::POP_SUB_INPUT;
+        }
+        if (str == "PUSH_SEEK_SUB_INPUT") {
+            return OpCode::PUSH_SEEK_SUB_INPUT;
+        }
+        if (str == "POP_SEEK_SUB_INPUT") {
+            return OpCode::POP_SEEK_SUB_INPUT;
+        }
         if (str == "WRITE_U8") {
             return OpCode::WRITE_U8;
         }
@@ -1922,6 +1946,12 @@ namespace ebm::zc {
         }
         if (str == "WRITE_BITS") {
             return OpCode::WRITE_BITS;
+        }
+        if (str == "PUSH_SUB_OUTPUT") {
+            return OpCode::PUSH_SUB_OUTPUT;
+        }
+        if (str == "POP_SUB_OUTPUT") {
+            return OpCode::POP_SUB_OUTPUT;
         }
         if (str == "NEW_STRUCT") {
             return OpCode::NEW_STRUCT;

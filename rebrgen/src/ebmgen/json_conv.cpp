@@ -4193,6 +4193,22 @@ namespace ebm {
                 obj = OpCode::SET_ENDIAN;
                 return true;
             }
+            if (s == "PUSH_SUB_INPUT") {
+                obj = OpCode::PUSH_SUB_INPUT;
+                return true;
+            }
+            if (s == "POP_SUB_INPUT") {
+                obj = OpCode::POP_SUB_INPUT;
+                return true;
+            }
+            if (s == "PUSH_SEEK_SUB_INPUT") {
+                obj = OpCode::PUSH_SEEK_SUB_INPUT;
+                return true;
+            }
+            if (s == "POP_SEEK_SUB_INPUT") {
+                obj = OpCode::POP_SEEK_SUB_INPUT;
+                return true;
+            }
             if (s == "WRITE_U8") {
                 obj = OpCode::WRITE_U8;
                 return true;
@@ -4215,6 +4231,14 @@ namespace ebm {
             }
             if (s == "WRITE_BITS") {
                 obj = OpCode::WRITE_BITS;
+                return true;
+            }
+            if (s == "PUSH_SUB_OUTPUT") {
+                obj = OpCode::PUSH_SUB_OUTPUT;
+                return true;
+            }
+            if (s == "POP_SUB_OUTPUT") {
+                obj = OpCode::POP_SUB_OUTPUT;
                 return true;
             }
             if (s == "NEW_STRUCT") {
