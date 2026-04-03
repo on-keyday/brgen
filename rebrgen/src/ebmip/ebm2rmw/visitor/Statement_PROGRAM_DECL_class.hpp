@@ -21,6 +21,8 @@
 
 #include "../codegen.hpp"
 #include <ebmgen/interactive/debugger.hpp>
+#include "comb2/composite/range.h"
+#include "core/sequencer.h"
 #include "ebm/extended_binary_module.hpp"
 #include "file/file.h"
 #include "file/file_view.h"
@@ -223,7 +225,8 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
         runtime.input = futils::view::rvec(file.data(), file.size());
         runtime.input_pos = 0;
         MAYBE_VOID(_, runtime.interpret(initial_ctx, entry_stmt.id, decode_params));
-    } else {
+    }
+    else {
         // Write-only mode: zero-initialize struct from layout
         LayoutAccess access(initial_ctx);
         auto* layout = access.get_struct_layout_detail(entry_stmt.id);
@@ -246,99 +249,158 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
         // Syntax: field.nested  /  array_field[N]  /  vector_field[N]  /  vector_field[+]
         auto navigate_field = [&](std::string_view path) -> expected<ObjectRef> {
             ObjectRef current(runtime.decoded_self_type, futils::view::wvec(runtime.decoded_self_bytes));
-            while (!path.empty()) {
-                auto dot_pos = path.find('.');
-                auto segment = dot_pos != std::string_view::npos ? path.substr(0, dot_pos) : path;
-                path = dot_pos != std::string_view::npos ? path.substr(dot_pos + 1) : "";
-
-                auto bracket_pos = segment.find('[');
-                std::string_view field_name = bracket_pos != std::string_view::npos ? segment.substr(0, bracket_pos) : segment;
-
-                auto* layout = access.get_struct_layout_detail(current.type);
-                if (!layout) {
-                    return ebmgen::unexpect_error("type is not a struct, cannot navigate to field '{}'", field_name);
+            auto seq = futils::make_ref_seq(path);
+            ObjectRef parent_current;
+            while (!seq.eos()) {
+                if (seq.rptr != 0) {
+                    if (seq.current() != '.' && seq.current() != '[') {
+                        return ebmgen::unexpect_error("unexpected character '{}' in path at {}", seq.current(), path.substr(0, seq.rptr));
+                    }
+                    if (seq.current() == '.') {
+                        seq.consume();  // consume '.'
+                    }
                 }
-                bool found = false;
-                for (auto& fl : layout->fields) {
-                    if (initial_ctx.identifier(fl.field) != field_name) {
-                        continue;
+                auto start = seq.rptr;
+                while (seq.current() != '.' && seq.current() != '[' && !seq.eos()) {
+                    seq.consume();
+                }
+                auto segment = path.substr(0, seq.rptr);
+                auto field_name = path.substr(start, seq.rptr - start);
+                if (!field_name.empty()) {
+                    auto* layout = access.get_struct_layout_detail(current.type);
+                    if (!layout) {
+                        return ebmgen::unexpect_error("type is not a struct, cannot navigate to field '{}'", segment);
                     }
-                    auto got = current.raw_object.substr(fl.offset, fl.type.size);
-                    if (got.size() != fl.type.size) {
-                        return ebmgen::unexpect_error("field size mismatch for '{}'", field_name);
-                    }
-                    auto parent_current = current;
-                    current = ObjectRef(fl.type.type, got);
-                    if (bracket_pos != std::string_view::npos) {
-                        auto index_content = segment.substr(bracket_pos + 1);
-                        auto close = index_content.find(']');
-                        if (close == std::string_view::npos) {
-                            return ebmgen::unexpect_error("missing ']' in '{}'", segment);
+                    bool found = false;
+                    for (auto& fl : layout->fields) {
+                        if (initial_ctx.identifier(fl.field) != field_name) {
+                            continue;
                         }
-                        auto index_str = index_content.substr(0, close);
-                        const auto type_kind = initial_ctx.get_kind(fl.type.type);
-                        if (type_kind == ebm::TypeKind::ARRAY) {
-                            MAYBE(elem_layout, access.get_array_element_type(fl.type.type));
+                        auto got = current.raw_object.substr(fl.offset, fl.type.size);
+                        if (got.size() != fl.type.size) {
+                            return ebmgen::unexpect_error("field size mismatch for '{}'", segment);
+                        }
+                        current = ObjectRef(fl.type.type, got);
+                        found = true;
+                    }
+                    if (!found) {
+                        auto identifier = initial_ctx.identifier(layout->type);
+                        return ebmgen::unexpect_error("field '{}' not found in '{}'", segment, identifier ? *identifier : std::to_string(get_id(layout->type)));
+                    }
+                    parent_current = current;
+                }
+                else if (seq.current() == '[') {
+                    seq.consume();
+                    start = seq.rptr;
+                    while (seq.current() != ']' && !seq.eos()) {
+                        seq.consume();
+                    }
+                    if (seq.eos()) {
+                        return ebmgen::unexpect_error("missing ']' in path");
+                    }
+                    auto index_str = path.substr(start, seq.rptr - start);
+                    seq.consume();  // consume ']'
+                    segment = path.substr(0, seq.rptr);
+                    const auto type_kind = initial_ctx.get_kind(current.type);
+                    if (type_kind == ebm::TypeKind::ARRAY) {
+                        MAYBE(elem_layout, access.get_array_element_type(current.type));
+                        std::uint64_t index = 0;
+                        if (!futils::number::prefix_integer(index_str, index)) {
+                            return ebmgen::unexpect_error("invalid array index in '{}'", index_str);
+                        }
+                        if ((index + 1) * elem_layout.size > current.raw_object.size()) {
+                            return ebmgen::unexpect_error("array index {} out of bounds in '{}'", index, segment);
+                        }
+                        current = ObjectRef(elem_layout.type, current.raw_object.substr(index * elem_layout.size, elem_layout.size));
+                        parent_current = current;
+                    }
+                    else if (type_kind == ebm::TypeKind::VECTOR) {
+                        MAYBE(elem_layout, access.get_vector_element_type(current.type));
+                        if (index_str == "+") {
+                            // push_back: allocate new element
+                            size_t element_count = 0;
+                            MAYBE(new_elem, runtime.vector_alloc_back(initial_ctx, current, elem_layout.size, elem_layout.type, &element_count));
+                            current = new_elem;
+                            futils::wrap::cerr_wrap() << "Appended new element to '" << segment << "' at index " << element_count - 1 << "\n";
+                        }
+                        else {
                             std::uint64_t index = 0;
                             if (!futils::number::prefix_integer(index_str, index)) {
-                                return ebmgen::unexpect_error("invalid array index in '{}'", segment);
+                                return ebmgen::unexpect_error("invalid vector index in '{}'", index_str);
                             }
-                            if ((index + 1) * elem_layout.size > current.raw_object.size()) {
-                                return ebmgen::unexpect_error("array index {} out of bounds in '{}'", index, segment);
-                            }
-                            current = ObjectRef(elem_layout.type, current.raw_object.substr(index * elem_layout.size, elem_layout.size));
-                        } else if (type_kind == ebm::TypeKind::VECTOR) {
-                            MAYBE(elem_layout, access.get_vector_element_type(fl.type.type));
-                            if (index_str == "+") {
-                                // push_back: allocate new element
-                                MAYBE(new_elem, runtime.vector_alloc_back(initial_ctx, current, elem_layout.size, elem_layout.type));
-                                current = new_elem;
-                            } else {
-                                std::uint64_t index = 0;
-                                if (!futils::number::prefix_integer(index_str, index)) {
-                                    return ebmgen::unexpect_error("invalid vector index in '{}'", segment);
-                                }
-                                MAYBE(elem_obj, runtime.vector_get_element(current, static_cast<size_t>(index), elem_layout));
-                                current = elem_obj;
-                            }
-                        } else if (type_kind == ebm::TypeKind::VARIANT || type_kind == ebm::TypeKind::STRUCT_UNION) {
-                            // Reinterpret the union's raw bytes as variant[N]'s type.
-                            // Variant names are auto-generated (tmp123 etc.), so index by insertion order.
-                            auto* union_layout = access.get_union_layout(fl.type.type);
-                            if (!union_layout) {
-                                return ebmgen::unexpect_error("union layout not found for '{}'", field_name);
-                            }
-                            std::uint64_t index = 0;
-                            if (!futils::number::prefix_integer(index_str, index)) {
-                                return ebmgen::unexpect_error("invalid variant index in '{}'", segment);
-                            }
-                            if (index >= union_layout->variants.size()) {
-                                return ebmgen::unexpect_error("variant index {} out of bounds (count={}) in '{}'", index, union_layout->variants.size(), segment);
-                            }
-                            if (!ctx.flags().skip_variant_check && type_kind == ebm::TypeKind::STRUCT_UNION) {
-                                auto* selector_ref = access.get_struct_union_selector_fn(fl.type.type);
-                                if (selector_ref) {
-                                    MAYBE(active_index, runtime.eval_struct_union_variant(initial_ctx, *selector_ref, parent_current));
-                                    if (active_index != static_cast<size_t>(index)) {
-                                        return ebmgen::unexpect_error("variant index {} does not match active variant {} for '{}' (use --skip-variant-check to override)", index, active_index, field_name);
-                                    }
-                                }
-                            }
-                            auto& variant_layout = union_layout->variants[static_cast<size_t>(index)];
-                            auto variant_raw = current.raw_object.substr(0, variant_layout.size);
-                            if (variant_raw.size() != variant_layout.size) {
-                                return ebmgen::unexpect_error("variant {} size mismatch in '{}'", index, segment);
-                            }
-                            current = ObjectRef(variant_layout.type, variant_raw);
-                        } else {
-                            return ebmgen::unexpect_error("field '{}' is not an array, vector, or variant type", field_name);
+                            MAYBE(elem_obj, runtime.vector_get_element(current, static_cast<size_t>(index), elem_layout));
+                            current = elem_obj;
                         }
+                        parent_current = current;
                     }
-                    found = true;
-                    break;
+                    else if (type_kind == ebm::TypeKind::VARIANT || type_kind == ebm::TypeKind::STRUCT_UNION) {
+                        // Reinterpret the union's raw bytes as variant[N]'s type.
+                        // Variant names are auto-generated (tmp123 etc.), so index by insertion order.
+                        auto* union_layout = access.get_union_layout(current.type);
+                        if (!union_layout) {
+                            return ebmgen::unexpect_error("union layout not found for '{}'", segment);
+                        }
+                        std::uint64_t index = 0;
+                        if (!futils::number::prefix_integer(index_str, index)) {
+                            return ebmgen::unexpect_error("invalid variant index in '{}'", index_str);
+                        }
+                        if (index >= union_layout->variants.size()) {
+                            return ebmgen::unexpect_error("variant index {} out of bounds (count={}) in '{}'", index, union_layout->variants.size(), segment);
+                        }
+                        if (!ctx.flags().skip_variant_check && type_kind == ebm::TypeKind::STRUCT_UNION) {
+                            auto* selector_ref = access.get_struct_union_selector_fn(current.type);
+                            if (selector_ref) {
+                                MAYBE(active_index, runtime.eval_struct_union_variant(initial_ctx, *selector_ref, parent_current));
+                                if (active_index != static_cast<size_t>(index)) {
+                                    return ebmgen::unexpect_error("variant index {} does not match active variant {} for '{}' (use --skip-variant-check to override)", index, active_index, segment);
+                                }
+                            }
+                        }
+                        auto& variant_layout = union_layout->variants[static_cast<size_t>(index)];
+                        auto variant_raw = current.raw_object.substr(0, variant_layout.size);
+                        if (variant_raw.size() != variant_layout.size) {
+                            return ebmgen::unexpect_error("variant {} size mismatch in '{}'", index, segment);
+                        }
+                        current = ObjectRef(variant_layout.type, variant_raw);
+                        parent_current = current;
+                    }
+                    else if (type_kind == ebm::TypeKind::STRUCT) {
+                        // for struct, find STRUCT_UNION fields and reinterpret as needed
+                        auto* struct_layout = access.get_struct_layout_detail(current.type);
+                        if (!struct_layout) {
+                            return ebmgen::unexpect_error("struct layout not found for '{}'", segment);
+                        }
+                        std::uint64_t index = 0;
+                        if (!futils::number::prefix_integer(index_str, index)) {
+                            return ebmgen::unexpect_error("invalid variant index in '{}'", index_str);
+                        }
+                        size_t current_count = 0;
+                        bool found = false;
+                        for (auto& field : struct_layout->fields) {
+                            auto* field_union_layout = access.get_union_layout(field.type.type);
+                            if (!field_union_layout) {
+                                continue;
+                            }
+
+                            if (index == current_count) {
+                                found = true;
+                                MAYBE(member, access.read_member(current, field.field));
+                                current = member;
+                                break;
+                            }
+                            current_count++;
+                        }
+                        if (!found) {
+                            return ebmgen::unexpect_error("struct '{}' does not have enough union fields for index {} in '{}'", segment, index, segment);
+                        }
+                        // specially, not update parent_current
+                    }
+                    else {
+                        return ebmgen::unexpect_error("field '{}' is not an array, vector, or variant type", segment);
+                    }
                 }
-                if (!found) {
-                    return ebmgen::unexpect_error("field '{}' not found in struct", field_name);
+                else {
+                    return ebmgen::unexpect_error("unexpected character '{}' in path at {}", seq.current(), path.substr(0, seq.rptr));
                 }
             }
             return current;
