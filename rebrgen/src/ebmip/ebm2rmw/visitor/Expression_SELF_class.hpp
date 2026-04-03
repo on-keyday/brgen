@@ -23,7 +23,10 @@ DEFINE_VISITOR(Expression_SELF) {
     using namespace CODEGEN_NAMESPACE;
     /*here to write the hook*/
     InitialContext ictx{.visitor = ctx.visitor};
+
     MAYBE(_, analyze_layout(ictx, ctx.type))
-    ctx.config().env.add_instruction({.op = ebm::OpCode::LOAD_SELF}, "self");
-    return Result{.str_repr = "self"};
+    MAYBE(type_str, ctx.identifier(ctx.type));
+    auto str = std::format("self<{}>", type_str);
+    ctx.config().env.add_instruction({.op = ebm::OpCode::LOAD_SELF}, str);
+    return Result{.str_repr = str};
 }

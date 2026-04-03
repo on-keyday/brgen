@@ -54,7 +54,9 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS) {
         base = std::move(base_);
     }
     else {
-        base = Result{.str_repr = "self"};
+        MAYBE(self_type, ctx.get_field<"type">(ctx.base));
+        MAYBE(self_type_str, ctx.identifier(self_type));
+        base = Result{.str_repr = std::format("self<{}>", self_type_str)};
     }
     if (ctx.is(ebm::StatementKind::PROPERTY_DECL, id)) {
         auto prop = ctx.get_field<"property_decl">(id);
@@ -77,15 +79,18 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS) {
     InitialContext ictx{.visitor = ctx.visitor};
     LayoutAccess access{ictx};
     StructLayout* struct_layout;
+    MAYBE(base_type, ctx.get_field<"type">(ctx.base));
     if (auto union_field = get_struct_union_member_from_field(ctx, id)) {
         MAYBE(base_layout, analyze_layout(ictx, *union_field));
         struct_layout = access.get_struct_layout_detail(*union_field);
+        MAYBE(union_index, get_struct_union_index(ctx, base_type, *union_field));
+        base.str_repr += std::format("[{}]", union_index);
     }
     else {
-        MAYBE(base_type, ctx.get_field<"type">(ctx.base));
         MAYBE(base_layout, analyze_layout(ictx, base_type));
         struct_layout = access.get_struct_layout_detail(base_type);
     }
+
     if (!struct_layout) {
         return ebmgen::unexpect_error("member access base is not a struct or union");
     }
