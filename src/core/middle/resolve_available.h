@@ -32,12 +32,12 @@ namespace brgen::middle {
                     ident->usage = ast::IdentUsage::reference_builtin_fn;
                     auto t = p->arguments[0];
                     if (ident->ident == "available") {
-                        auto a = std::make_shared<ast::Available>(std::move(t), ast::cast_to<ast::Call>(std::move(node)));
+                        auto a = std::make_shared<ast::Available>(ident->loc, std::move(t), ast::cast_to<ast::Call>(std::move(node)));
                         a->expr_type = std::make_shared<ast::BoolType>(ident->loc);
                         node = std::move(a);
                     }
                     else {
-                        auto a = std::make_shared<ast::SizeOf>(std::move(t), ast::cast_to<ast::Call>(std::move(node)));
+                        auto a = std::make_shared<ast::SizeOf>(ident->loc, std::move(t), ast::cast_to<ast::Call>(std::move(node)));
                         a->expr_type = std::make_shared<ast::IntType>(ident->loc, 64, ast::Endian::unspec, false);
                         node = std::move(a);
                     }

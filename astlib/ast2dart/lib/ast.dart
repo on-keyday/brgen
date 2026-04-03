@@ -683,6 +683,7 @@ factory OrCond.fromJson(Map<String, dynamic> json) => _$OrCondFromJson(json);
 class Sizeof extends Expr {
     Call? base;
     Expr? target;
+    int? evaluatedValue;
 factory Sizeof.fromJson(Map<String, dynamic> json) => _$SizeofFromJson(json);
 }
 @JsonSerializable()

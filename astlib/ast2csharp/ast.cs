@@ -478,6 +478,7 @@ public class Sizeof : Expr{
 	public ConstantLevel ConstantLevel{get;set;}
 	public Call? Base{get;set;}
 	public Expr? Target{get;set;}
+	public ulong? EvaluatedValue{get;set;}
 }
 public class BadExpr : Expr{
 	public Loc Loc{get;set;}
@@ -1331,6 +1332,7 @@ public static class Ast {
                node.ConstantLevel = ast.Node[i].Body[constant_level];
                node.Base = ast.Node[i].Body[base];
                node.Target = ast.Node[i].Body[target];
+               node.EvaluatedValue = ast.Node[i].Body[evaluated_value];
            case NodeType.BadExpr:
                var node = nodes[i] as BadExpr;
                node.Loc = ast.Node[i].Body[loc];

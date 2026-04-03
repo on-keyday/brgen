@@ -2200,17 +2200,24 @@ int ast2c_Sizeof_parse(ast2c_Ast* ast,ast2c_Sizeof* s,ast2c_json_handlers* h, vo
 	s->expr_type = NULL;
 	s->base = NULL;
 	s->target = NULL;
+	s->evaluated_value = NULL;
 	void* expr_type = h->object_get(h, obj_body, "expr_type");
 	void* constant_level = h->object_get(h, obj_body, "constant_level");
 	void* base = h->object_get(h, obj_body, "base");
 	void* target = h->object_get(h, obj_body, "target");
+	void* evaluated_value = h->object_get(h, obj_body, "evaluated_value");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_Sizeof::loc is null"); } return 0; }
 	if (!expr_type) { if(h->error) { h->error(h,expr_type, "ast2c_Sizeof::expr_type is null"); } return 0; }
 	if (!constant_level) { if(h->error) { h->error(h,constant_level, "ast2c_Sizeof::constant_level is null"); } return 0; }
 	if (!base) { if(h->error) { h->error(h,base, "ast2c_Sizeof::base is null"); } return 0; }
 	if (!target) { if(h->error) { h->error(h,target, "ast2c_Sizeof::target is null"); } return 0; }
+	if (!evaluated_value) { if(h->error) { h->error(h,evaluated_value, "ast2c_Sizeof::evaluated_value is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_Sizeof::loc"); }
+		goto error;
+	}
+	if(!h->number_get(h,evaluated_value,&s->evaluated_value)) {
+		if(h->error) { h->error(h,evaluated_value, "failed to parse ast2c_Sizeof::evaluated_value"); }
 		goto error;
 	}
 	return 1;

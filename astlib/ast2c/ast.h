@@ -893,6 +893,7 @@ struct ast2c_Sizeof {
 	ast2c_ConstantLevel constant_level;
 	ast2c_Call* base;
 	ast2c_Expr* target;
+	uint64_t* evaluated_value;
 };
 
 // returns 1 if succeed 0 if failed

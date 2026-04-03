@@ -108,8 +108,8 @@ namespace brgen::ast {
         std::shared_ptr<Expr> target;
         std::shared_ptr<Type> expected_type;
 
-        Available(std::shared_ptr<Expr>&& a, std::shared_ptr<Call>&& c)
-            : Expr(a->loc, NodeType::available), base(std::move(c)), target(std::move(a)) {}
+        Available(lexer::Loc loc, std::shared_ptr<Expr>&& a, std::shared_ptr<Call>&& c)
+            : Expr(loc, NodeType::available), base(std::move(c)), target(std::move(a)) {}
 
         Available()
             : Expr({}, NodeType::available) {}
@@ -128,9 +128,12 @@ namespace brgen::ast {
         define_node_type(NodeType::sizeof_);
         std::shared_ptr<Call> base;
         std::shared_ptr<Expr> target;
+        // Computed byte size of target when it is a fixed-length type; nullopt otherwise.
+        // Set during the typing pass (primitives) and after analyze_bit_size_and_alignment (structs etc.).
+        std::optional<size_t> evaluated_value;
 
-        SizeOf(std::shared_ptr<Expr>&& a, std::shared_ptr<Call>&& c)
-            : Expr(a->loc, NodeType::sizeof_), base(std::move(c)), target(std::move(a)) {}
+        SizeOf(lexer::Loc loc, std::shared_ptr<Expr>&& a, std::shared_ptr<Call>&& c)
+            : Expr(loc, NodeType::sizeof_), base(std::move(c)), target(std::move(a)) {}
 
         SizeOf()
             : Expr({}, NodeType::sizeof_) {}
@@ -139,6 +142,7 @@ namespace brgen::ast {
             Expr::dump(field_);
             sdebugf_omit(base);
             sdebugf(target);
+            sdebugf(evaluated_value);
         }
     };
 

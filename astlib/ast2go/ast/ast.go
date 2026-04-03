@@ -2389,11 +2389,12 @@ func (n *OrCond) GetLoc() Loc {
 }
 
 type Sizeof struct {
-	Loc           Loc
-	ExprType      Type
-	ConstantLevel ConstantLevel
-	Base          *Call
-	Target        Expr
+	Loc            Loc
+	ExprType       Type
+	ConstantLevel  ConstantLevel
+	Base           *Call
+	Target         Expr
+	EvaluatedValue *uint64
 }
 
 func (n *Sizeof) isExpr() {}
@@ -4460,10 +4461,11 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeSizeof:
 			v := n.node[i].(*Sizeof)
 			var tmp struct {
-				ExprType      *uintptr      `json:"expr_type"`
-				ConstantLevel ConstantLevel `json:"constant_level"`
-				Base          *uintptr      `json:"base"`
-				Target        *uintptr      `json:"target"`
+				ExprType       *uintptr      `json:"expr_type"`
+				ConstantLevel  ConstantLevel `json:"constant_level"`
+				Base           *uintptr      `json:"base"`
+				Target         *uintptr      `json:"target"`
+				EvaluatedValue *uint64       `json:"evaluated_value"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -4478,6 +4480,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			if tmp.Target != nil {
 				v.Target = n.node[*tmp.Target].(Expr)
 			}
+			v.EvaluatedValue = tmp.EvaluatedValue
 		case NodeTypeBadExpr:
 			v := n.node[i].(*BadExpr)
 			var tmp struct {

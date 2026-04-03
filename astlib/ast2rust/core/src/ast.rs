@@ -5440,6 +5440,7 @@ pub struct Sizeof {
 	pub constant_level: ConstantLevel,
 	pub base: Option<Rc<RefCell<Call>>>,
 	pub target: Option<Expr>,
+	pub evaluated_value: Option<u64>,
 }
 
 impl From<&Rc<RefCell<Sizeof>>> for NodeType {
@@ -9697,6 +9698,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				constant_level: ConstantLevel::Unknown,
 				base: None,
 				target: None,
+				evaluated_value: None,
 				})))
 			},
 			NodeType::BadExpr => {
@@ -12150,6 +12152,17 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().target = Some(target_body.try_into()?);
 				}
+				let evaluated_value_body = match raw_node.body.get("evaluated_value") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"evaluated_value")),
+				};
+				node.borrow_mut().evaluated_value = match evaluated_value_body.as_u64() {
+					Some(v)=>Some(v),
+					None=> match evaluated_value_body.is_null() {
+						true=>None,
+						false=>return Err(Error::MismatchJSONType(evaluated_value_body.into(),JSONType::Number)),
+					},
+				};
 			},
 			NodeType::BadExpr => {
 				let node = nodes[i].clone();

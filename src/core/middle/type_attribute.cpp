@@ -519,4 +519,21 @@ namespace brgen::middle {
     void detect_non_dynamic_type(const std::shared_ptr<ast::Node>& node) {
         TypeAttribute().detect_non_dynamic_type(node);
     }
+
+    void evaluate_sizeof(const std::shared_ptr<ast::Node>& node) {
+        auto trv = [&](auto&& self, const std::shared_ptr<ast::Node>& n) -> void {
+            if (auto s = ast::as<ast::SizeOf>(n)) {
+                if (!s->evaluated_value && s->target && s->target->expr_type &&
+                    s->target->expr_type->bit_size &&
+                    *s->target->expr_type->bit_size % 8 == 0) {
+                    s->evaluated_value = *s->target->expr_type->bit_size / 8;
+                    s->constant_level = ast::ConstantLevel::constant;
+                }
+            }
+            ast::traverse(n, [&](auto&& child) {
+                self(self, child);
+            });
+        };
+        trv(trv, node);
+    }
 }  // namespace brgen::middle

@@ -771,6 +771,7 @@ export function isOrCond(obj: any): obj is OrCond {
 export interface Sizeof extends Expr {
 	base: Call|null;
 	target: Expr|null;
+	evaluated_value: number|null;
 }
 
 export function isSizeof(obj: any): obj is Sizeof {
@@ -1684,6 +1685,7 @@ export function parseAST(obj: JsonAst): ParseResult {
 				constant_level: ConstantLevel.unknown,
 				base: null,
 				target: null,
+				evaluated_value: null,
 			}
 			c.node.push(n);
 			break;
@@ -3270,6 +3272,11 @@ export function parseAST(obj: JsonAst): ParseResult {
 				throw new Error('invalid node list at Sizeof::target');
 			}
 			n.target = tmptarget;
+			const tmpevaluated_value = on.body?.evaluated_value;
+			if (tmpevaluated_value !== null && typeof tmpevaluated_value !== "number") {
+				throw new Error('invalid node list at Sizeof::evaluated_value');
+			}
+			n.evaluated_value = on.body.evaluated_value;
 			break;
 		}
 		case "bad_expr": {

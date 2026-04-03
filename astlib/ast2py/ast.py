@@ -458,6 +458,7 @@ class OrCond(Expr):
 class Sizeof(Expr):
     base: Optional[Call]
     target: Optional[Expr]
+    evaluated_value: Optional[int]
 
 
 class BadExpr(Expr):
@@ -1513,6 +1514,11 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].target = x if isinstance(x,Expr) else raiseError(TypeError('type mismatch at Sizeof::target'))
                 else:
                     node[i].target = None
+                x = ast.node[i].body["evaluated_value"]
+                if x is not None:
+                    node[i].evaluated_value = x if isinstance(x,int) else raiseError(TypeError('type mismatch at Sizeof::evaluated_value'))
+                else:
+                    node[i].evaluated_value = None
             case NodeType.BAD_EXPR:
                 if ast.node[i].body["expr_type"] is not None:
                     x = node[ast.node[i].body["expr_type"]]

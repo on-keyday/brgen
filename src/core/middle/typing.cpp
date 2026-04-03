@@ -1,6 +1,5 @@
 /*license*/
 #include "../lexer/token.h"
-#include "../common/file.h"
 #include <core/ast/traverse.h>
 #include <helper/defer.h>
 #include "replacer.h"
@@ -9,6 +8,7 @@
 #include <core/ast/tool/compare.h>
 #include <list>
 #include <memory>
+#include <set>
 #include <unordered_set>
 
 namespace brgen::middle {
@@ -25,6 +25,40 @@ namespace brgen::middle {
                 return ident->base.lock();
             }
             return typ;
+        }
+
+        static std::optional<size_t> try_compute_bit_size(const std::shared_ptr<ast::Type>& type, std::set<ast::Type*>& visited) {
+            if (!type) return std::nullopt;
+            if (type->bit_size) return type->bit_size;
+            if (!visited.insert(type.get()).second) return std::nullopt;
+            if (auto ident = ast::as<ast::IdentType>(type)) {
+                return try_compute_bit_size(ident->base.lock(), visited);
+            }
+            if (auto st = ast::as<ast::StructType>(type)) {
+                size_t total = 0;
+                for (auto& m : st->fields) {
+                    auto f = ast::as<ast::Field>(m);
+                    if (!f || !f->field_type) return std::nullopt;
+                    auto sz = try_compute_bit_size(f->field_type, visited);
+                    if (!sz) return std::nullopt;
+                    total += *sz;
+                }
+                return total;
+            }
+            if (auto arr = ast::as<ast::ArrayType>(type)) {
+                if (!arr->length_value || !arr->element_type) return std::nullopt;
+                auto elem_sz = try_compute_bit_size(arr->element_type, visited);
+                if (!elem_sz) return std::nullopt;
+                return *arr->length_value * *elem_sz;
+            }
+            return std::nullopt;
+        }
+
+        static std::optional<size_t> try_compute_byte_size(const std::shared_ptr<ast::Type>& type) {
+            std::set<ast::Type*> visited;
+            auto bit_sz = try_compute_bit_size(type, visited);
+            if (!bit_sz || *bit_sz % 8 != 0) return std::nullopt;
+            return *bit_sz / 8;
         }
 
         bool equal_type(const std::shared_ptr<ast::Type>& left, const std::shared_ptr<ast::Type>& right) {
@@ -818,7 +852,8 @@ namespace brgen::middle {
                    usage == ast::IdentUsage::reference_type ||
                    usage == ast::IdentUsage::maybe_type ||
                    usage == ast::IdentUsage::reference_member ||
-                   usage == ast::IdentUsage::reference_member_type;
+                   usage == ast::IdentUsage::reference_member_type ||
+                   usage == ast::IdentUsage::reference_builtin_fn;
         }
 
         int get_damerau_levenshtein(const std::string& s1, const std::string& s2, size_t min_dist) {
@@ -1522,7 +1557,18 @@ namespace brgen::middle {
             }
             if (auto s = ast::as<ast::SizeOf>(expr)) {
                 typing_expr(s->target, false);
-                s->constant_level = ast::ConstantLevel::variable;  // TODO(on-keyday): make this constant if possible
+                auto target_type = s->target->expr_type;
+                if (auto type_lit = ast::as<ast::TypeLiteral>(s->target)) {
+                    target_type = type_lit->type_literal;
+                }
+                auto byte_size = try_compute_byte_size(target_type);
+                if (byte_size) {
+                    s->evaluated_value = *byte_size;
+                    s->constant_level = ast::ConstantLevel::constant;
+                }
+                else {
+                    s->constant_level = ast::ConstantLevel::variable;
+                }
             }
             if (auto b = ast::as<ast::SpecifyOrder>(expr)) {
                 typing_specify_order(b);

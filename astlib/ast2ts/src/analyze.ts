@@ -200,6 +200,11 @@ export const analyzeHover = async (prevNode :ast2ts.ParseResult, pos :number) =>
                 found = node;
                 break;
             }
+            else if (ast2ts.isSizeof(node)) {
+                console.log(`found: ${node.node_type} ${JSON.stringify(node.loc)}`)
+                found = node;
+                break;
+            }
             console.log(`hit: ${node.node_type} ${JSON.stringify(node.loc)}`)
         }
         if(ast2ts.isMember(node)){
@@ -337,6 +342,9 @@ export const analyzeHover = async (prevNode :ast2ts.ParseResult, pos :number) =>
     }
     else if(ast2ts.isAssert(found)){
         return makeHover("assert",`assertion ${found.is_io_related?"(io_related)":""}`); 
+    }
+    else if(ast2ts.isSizeof(found)){
+        return makeHover("sizeof",`sizeof (type: ${typeToString(found.target?.expr_type)}, size: ${bitSize(found.evaluated_value !== null ? found.evaluated_value * 8 : null)})`);
     }
     else if(ast2ts.isType(found)){
         let sign = "";

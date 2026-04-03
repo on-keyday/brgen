@@ -26,7 +26,7 @@
       "request": "launch",
       "program": "${workspaceRoot}/tool/src2json",
       "args": [
-        "${workspaceRoot}/example/feature_test/recurse_defs.bgn",
+        "${workspaceRoot}/example/feature_test/sizeof.bgn",
         "--print-json",
         "--print-on-error",
         "--error-tolerant"

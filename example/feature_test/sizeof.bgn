@@ -6,3 +6,55 @@ format X:
     d :u8
 
 sizeof(X) == 4
+
+x :X 
+
+sizeof(x) == 4
+
+format Y:
+    array :[sizeof(X)]u8
+
+sizeof(Y) == 4
+
+format Z:
+    x :X
+    y :Y
+
+sizeof(Z) == 8
+
+format Empty:
+    # no fields
+    ..
+
+sizeof(Empty) == 0
+
+format NoAlignment:
+    x :u16
+    y :u8
+
+sizeof(NoAlignment) == 3
+
+format BitField:
+    a :u1
+    b :u2
+    c :u3
+    d :u2
+
+sizeof(BitField) == 1
+
+format BitField2:
+    a :u1
+    b :u2
+    c :u3
+    d :u3
+
+# not defined in this spec. sizeof must be a multiple of 8 bits 
+# TODO: or alignup to the next byte boundary?
+sizeof(BitField2) != 2 
+
+format BitField3:
+    a :u1
+    c :u10
+    d :u5
+
+sizeof(BitField3) == 2

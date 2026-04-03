@@ -536,6 +536,7 @@ int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& f
 
     if (!flags.not_analyze_size_alignment) {
         brgen::middle::analyze_bit_size_and_alignment(*p);
+        brgen::middle::evaluate_sizeof(*p);
         may_cancel_task();
     }
 

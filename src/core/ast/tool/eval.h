@@ -411,6 +411,11 @@ namespace brgen::ast::tool {
                     return make_result<EResultType::integer>(2);
                 }
             }
+            if (auto s = ast::as<ast::SizeOf>(expr)) {
+                if (s->evaluated_value) {
+                    return make_result<EResultType::integer>(static_cast<std::int64_t>(*s->evaluated_value));
+                }
+            }
             return unexpect(LocError{expr->loc, "not supported"});
         }
 

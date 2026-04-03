@@ -1398,6 +1398,7 @@ namespace brgen::ast {
         void parse_enum_base_type(std::shared_ptr<ast::Enum>& enum_, lexer::Token& base) {
             s.skip_white();
             enum_->base_type = parse_type(false);
+            enum_->enum_type->bit_size = enum_->base_type->bit_size;
             s.skip_space();
             s.must_consume_token(lexer::Tag::line, "to separate enum base type");
             s.skip_line();
