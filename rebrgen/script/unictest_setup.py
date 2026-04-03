@@ -36,6 +36,17 @@ else:
 
 setup_target_file = pl.Path(runner_dir) / f"test_target{file_ext}"
 
+# Resolve which source directory the tool lives in (ebmcg = compiled generator, ebmip = interpreter)
+def find_tool_unictest_script(workdir: pl.Path, command: str) -> pl.Path:
+    for subdir in ("ebmcg", "ebmip"):
+        candidate = workdir / "src" / subdir / command / "unictest.py"
+        if candidate.exists():
+            return candidate
+    raise FileNotFoundError(f"unictest.py not found for {command} in src/ebmcg or src/ebmip")
+
+def is_interpreter_tool(workdir: pl.Path, command: str) -> bool:
+    return (workdir / "src" / "ebmip" / command / "unictest.py").exists()
+
 
 def hexdump(data: bytes) -> str:
     result = ""
@@ -66,21 +77,29 @@ if mode == "setup":
 
     additional_args = unictest_env_vars["UNICTEST_OPTION_SET_SETUP_OPTIONS"].split(",")
 
-    test_info_file = pl.Path(runner_dir) / "test_info.json"
-    cmd = [
-        ebm2target,
-        "-i",
-        ebm_input_file,
-        "--debug-unimplemented",
-        "--test-info",
-        test_info_file.as_posix(),
-    ]
-    cmd.extend(additional_args)
-    print(f"\nRunning command: {' '.join(cmd)}")
-    output = sp.check_output(cmd, timeout=60)
+    if is_interpreter_tool(pl.Path(original_workdir), target_command):
+        # Interpreter tools (ebmip) don't generate source code.
+        # Write the EBM file path so unictest.py can locate it.
+        with open(setup_target_file, "w") as f:
+            f.write(ebm_input_file)
+        print(f"Interpreter tool setup: EBM path written to {setup_target_file}")
+    else:
+        test_info_file = pl.Path(runner_dir) / "test_info.json"
+        cmd = [
+            ebm2target,
+            "-i",
+            ebm_input_file,
+            "--debug-unimplemented",
+            "--test-info",
+            test_info_file.as_posix(),
+        ]
+        cmd.extend(additional_args)
+        print(f"\nRunning command: {' '.join(cmd)}")
+        output = sp.check_output(cmd, timeout=60)
 
-    with open(setup_target_file, "wb") as f:
-        f.write(output)
+        with open(setup_target_file, "wb") as f:
+            f.write(output)
+
 elif mode == "test":
     task_dir = unictest_env_vars["UNICTEST_WORK_DIR"]
     original_input_file = unictest_env_vars["UNICTEST_BINARY_FILE"]
@@ -91,9 +110,7 @@ elif mode == "test":
     with open(input_file, "wb") as f:
         f.write(input_data)
     output_file = pl.Path(task_dir) / "output.bin"
-    test_script_file = (
-        pl.Path(original_workdir) / f"src/ebmcg/{target_command}/unictest.py"
-    )
+    test_script_file = find_tool_unictest_script(pl.Path(original_workdir), target_command)
     print(f"\nRunning test script: {test_script_file.as_posix()}", flush=True)
     additional_args = unictest_env_vars["UNICTEST_OPTION_SET_RUN_OPTIONS"].split(",")
     optionset_name = unictest_env_vars["UNICTEST_OPTION_SET_NAME"]
