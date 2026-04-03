@@ -155,10 +155,17 @@
       "name": "Debug ebm2c",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceRoot}/rebrgen/tool/ebm2go",
-      "args": ["-i", "${workspaceRoot}/rebrgen/save/native_endian.ebm"],
+      "program": "${workspaceRoot}/rebrgen/tool/ebm2rmw",
+      "args": [
+        "-i",
+        "save/tcp.ebm",
+        "--entry-point",
+        "TCPSegment",
+        "--binary-file",
+        "save/tcp.dat"
+      ],
       "stopAtEntry": false,
-      "cwd": "${workspaceRoot}",
+      "cwd": "${workspaceRoot}/rebrgen",
       "environment": [],
       "console": "integratedTerminal"
       //"preLaunchTask": "build",
