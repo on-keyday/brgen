@@ -74237,1311 +74237,1311 @@ namespace ebm2z3 {
     
         VisitorsImpl& impl;
         expected<Result> visit(Context_entry& ctx) {
-            auto visitor = impl.get_visitor_entry(ctx);
+            auto& visitor = impl.get_visitor_entry(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_entry_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_entry_before(ctx);
+            auto& visitor = impl.get_visitor_entry_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_entry_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_entry_after(ctx);
+            auto& visitor = impl.get_visitor_entry_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_pre_visitor& ctx) {
-            auto visitor = impl.get_visitor_pre_visitor(ctx);
+            auto& visitor = impl.get_visitor_pre_visitor(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_pre_visitor_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_pre_visitor_before(ctx);
+            auto& visitor = impl.get_visitor_pre_visitor_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_pre_visitor_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_pre_visitor_after(ctx);
+            auto& visitor = impl.get_visitor_pre_visitor_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_post_entry<Result>& ctx) {
-            auto visitor = impl.get_visitor_post_entry(ctx);
+            auto& visitor = impl.get_visitor_post_entry(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_post_entry_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_post_entry_before(ctx);
+            auto& visitor = impl.get_visitor_post_entry_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_post_entry_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_post_entry_after(ctx);
+            auto& visitor = impl.get_visitor_post_entry_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_BLOCK& ctx) {
-            auto visitor = impl.get_visitor_Statement_BLOCK(ctx);
+            auto& visitor = impl.get_visitor_Statement_BLOCK(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_BLOCK_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_BLOCK_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_BLOCK_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_BLOCK_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_BLOCK_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_BLOCK_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_ASSIGNMENT& ctx) {
-            auto visitor = impl.get_visitor_Statement_ASSIGNMENT(ctx);
+            auto& visitor = impl.get_visitor_Statement_ASSIGNMENT(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_ASSIGNMENT_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_ASSIGNMENT_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_ASSIGNMENT_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_ASSIGNMENT_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_ASSIGNMENT_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_ASSIGNMENT_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_YIELD& ctx) {
-            auto visitor = impl.get_visitor_Statement_YIELD(ctx);
+            auto& visitor = impl.get_visitor_Statement_YIELD(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_YIELD_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_YIELD_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_YIELD_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_YIELD_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_YIELD_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_YIELD_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_APPEND& ctx) {
-            auto visitor = impl.get_visitor_Statement_APPEND(ctx);
+            auto& visitor = impl.get_visitor_Statement_APPEND(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_APPEND_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_APPEND_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_APPEND_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_APPEND_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_APPEND_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_APPEND_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_RETURN& ctx) {
-            auto visitor = impl.get_visitor_Statement_RETURN(ctx);
+            auto& visitor = impl.get_visitor_Statement_RETURN(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_RETURN_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_RETURN_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_RETURN_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_RETURN_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_RETURN_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_RETURN_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_ERROR_RETURN& ctx) {
-            auto visitor = impl.get_visitor_Statement_ERROR_RETURN(ctx);
+            auto& visitor = impl.get_visitor_Statement_ERROR_RETURN(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_ERROR_RETURN_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_ERROR_RETURN_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_ERROR_RETURN_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_ERROR_RETURN_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_ERROR_RETURN_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_ERROR_RETURN_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_ASSERT& ctx) {
-            auto visitor = impl.get_visitor_Statement_ASSERT(ctx);
+            auto& visitor = impl.get_visitor_Statement_ASSERT(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_ASSERT_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_ASSERT_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_ASSERT_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_ASSERT_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_ASSERT_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_ASSERT_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_READ_DATA& ctx) {
-            auto visitor = impl.get_visitor_Statement_READ_DATA(ctx);
+            auto& visitor = impl.get_visitor_Statement_READ_DATA(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_READ_DATA_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_READ_DATA_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_READ_DATA_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_READ_DATA_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_READ_DATA_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_READ_DATA_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_WRITE_DATA& ctx) {
-            auto visitor = impl.get_visitor_Statement_WRITE_DATA(ctx);
+            auto& visitor = impl.get_visitor_Statement_WRITE_DATA(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_WRITE_DATA_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_WRITE_DATA_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_WRITE_DATA_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_WRITE_DATA_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_WRITE_DATA_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_WRITE_DATA_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_RESERVE_DATA& ctx) {
-            auto visitor = impl.get_visitor_Statement_RESERVE_DATA(ctx);
+            auto& visitor = impl.get_visitor_Statement_RESERVE_DATA(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_RESERVE_DATA_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_RESERVE_DATA_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_RESERVE_DATA_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_RESERVE_DATA_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_RESERVE_DATA_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_RESERVE_DATA_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_IF_STATEMENT& ctx) {
-            auto visitor = impl.get_visitor_Statement_IF_STATEMENT(ctx);
+            auto& visitor = impl.get_visitor_Statement_IF_STATEMENT(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_IF_STATEMENT_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_IF_STATEMENT_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_IF_STATEMENT_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_IF_STATEMENT_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_IF_STATEMENT_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_IF_STATEMENT_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_LOOP_STATEMENT& ctx) {
-            auto visitor = impl.get_visitor_Statement_LOOP_STATEMENT(ctx);
+            auto& visitor = impl.get_visitor_Statement_LOOP_STATEMENT(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_LOOP_STATEMENT_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_LOOP_STATEMENT_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_LOOP_STATEMENT_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_LOOP_STATEMENT_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_LOOP_STATEMENT_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_LOOP_STATEMENT_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_MATCH_STATEMENT& ctx) {
-            auto visitor = impl.get_visitor_Statement_MATCH_STATEMENT(ctx);
+            auto& visitor = impl.get_visitor_Statement_MATCH_STATEMENT(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_MATCH_STATEMENT_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_MATCH_STATEMENT_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_MATCH_STATEMENT_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_MATCH_STATEMENT_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_MATCH_STATEMENT_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_MATCH_STATEMENT_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_MATCH_BRANCH& ctx) {
-            auto visitor = impl.get_visitor_Statement_MATCH_BRANCH(ctx);
+            auto& visitor = impl.get_visitor_Statement_MATCH_BRANCH(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_MATCH_BRANCH_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_MATCH_BRANCH_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_MATCH_BRANCH_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_MATCH_BRANCH_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_MATCH_BRANCH_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_MATCH_BRANCH_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_BREAK& ctx) {
-            auto visitor = impl.get_visitor_Statement_BREAK(ctx);
+            auto& visitor = impl.get_visitor_Statement_BREAK(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_BREAK_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_BREAK_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_BREAK_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_BREAK_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_BREAK_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_BREAK_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_CONTINUE& ctx) {
-            auto visitor = impl.get_visitor_Statement_CONTINUE(ctx);
+            auto& visitor = impl.get_visitor_Statement_CONTINUE(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_CONTINUE_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_CONTINUE_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_CONTINUE_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_CONTINUE_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_CONTINUE_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_CONTINUE_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_FUNCTION_DECL& ctx) {
-            auto visitor = impl.get_visitor_Statement_FUNCTION_DECL(ctx);
+            auto& visitor = impl.get_visitor_Statement_FUNCTION_DECL(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_FUNCTION_DECL_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_FUNCTION_DECL_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_FUNCTION_DECL_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_FUNCTION_DECL_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_FUNCTION_DECL_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_FUNCTION_DECL_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_VARIABLE_DECL& ctx) {
-            auto visitor = impl.get_visitor_Statement_VARIABLE_DECL(ctx);
+            auto& visitor = impl.get_visitor_Statement_VARIABLE_DECL(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_VARIABLE_DECL_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_VARIABLE_DECL_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_VARIABLE_DECL_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_VARIABLE_DECL_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_VARIABLE_DECL_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_VARIABLE_DECL_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_PARAMETER_DECL& ctx) {
-            auto visitor = impl.get_visitor_Statement_PARAMETER_DECL(ctx);
+            auto& visitor = impl.get_visitor_Statement_PARAMETER_DECL(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_PARAMETER_DECL_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_PARAMETER_DECL_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_PARAMETER_DECL_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_PARAMETER_DECL_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_PARAMETER_DECL_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_PARAMETER_DECL_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_FIELD_DECL& ctx) {
-            auto visitor = impl.get_visitor_Statement_FIELD_DECL(ctx);
+            auto& visitor = impl.get_visitor_Statement_FIELD_DECL(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_FIELD_DECL_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_FIELD_DECL_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_FIELD_DECL_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_FIELD_DECL_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_FIELD_DECL_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_FIELD_DECL_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_COMPOSITE_FIELD_DECL& ctx) {
-            auto visitor = impl.get_visitor_Statement_COMPOSITE_FIELD_DECL(ctx);
+            auto& visitor = impl.get_visitor_Statement_COMPOSITE_FIELD_DECL(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_COMPOSITE_FIELD_DECL_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_COMPOSITE_FIELD_DECL_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_COMPOSITE_FIELD_DECL_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_COMPOSITE_FIELD_DECL_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_COMPOSITE_FIELD_DECL_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_COMPOSITE_FIELD_DECL_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_ENUM_DECL& ctx) {
-            auto visitor = impl.get_visitor_Statement_ENUM_DECL(ctx);
+            auto& visitor = impl.get_visitor_Statement_ENUM_DECL(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_ENUM_DECL_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_ENUM_DECL_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_ENUM_DECL_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_ENUM_DECL_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_ENUM_DECL_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_ENUM_DECL_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_ENUM_MEMBER_DECL& ctx) {
-            auto visitor = impl.get_visitor_Statement_ENUM_MEMBER_DECL(ctx);
+            auto& visitor = impl.get_visitor_Statement_ENUM_MEMBER_DECL(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_ENUM_MEMBER_DECL_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_ENUM_MEMBER_DECL_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_ENUM_MEMBER_DECL_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_ENUM_MEMBER_DECL_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_ENUM_MEMBER_DECL_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_ENUM_MEMBER_DECL_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_STRUCT_DECL& ctx) {
-            auto visitor = impl.get_visitor_Statement_STRUCT_DECL(ctx);
+            auto& visitor = impl.get_visitor_Statement_STRUCT_DECL(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_STRUCT_DECL_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_STRUCT_DECL_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_STRUCT_DECL_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_STRUCT_DECL_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_STRUCT_DECL_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_STRUCT_DECL_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_UNION_DECL& ctx) {
-            auto visitor = impl.get_visitor_Statement_UNION_DECL(ctx);
+            auto& visitor = impl.get_visitor_Statement_UNION_DECL(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_UNION_DECL_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_UNION_DECL_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_UNION_DECL_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_UNION_DECL_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_UNION_DECL_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_UNION_DECL_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_UNION_MEMBER_DECL& ctx) {
-            auto visitor = impl.get_visitor_Statement_UNION_MEMBER_DECL(ctx);
+            auto& visitor = impl.get_visitor_Statement_UNION_MEMBER_DECL(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_UNION_MEMBER_DECL_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_UNION_MEMBER_DECL_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_UNION_MEMBER_DECL_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_UNION_MEMBER_DECL_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_UNION_MEMBER_DECL_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_UNION_MEMBER_DECL_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_PROGRAM_DECL& ctx) {
-            auto visitor = impl.get_visitor_Statement_PROGRAM_DECL(ctx);
+            auto& visitor = impl.get_visitor_Statement_PROGRAM_DECL(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_PROGRAM_DECL_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_PROGRAM_DECL_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_PROGRAM_DECL_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_PROGRAM_DECL_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_PROGRAM_DECL_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_PROGRAM_DECL_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_PROPERTY_DECL& ctx) {
-            auto visitor = impl.get_visitor_Statement_PROPERTY_DECL(ctx);
+            auto& visitor = impl.get_visitor_Statement_PROPERTY_DECL(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_PROPERTY_DECL_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_PROPERTY_DECL_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_PROPERTY_DECL_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_PROPERTY_DECL_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_PROPERTY_DECL_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_PROPERTY_DECL_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_PROPERTY_MEMBER_DECL& ctx) {
-            auto visitor = impl.get_visitor_Statement_PROPERTY_MEMBER_DECL(ctx);
+            auto& visitor = impl.get_visitor_Statement_PROPERTY_MEMBER_DECL(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_PROPERTY_MEMBER_DECL_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_PROPERTY_MEMBER_DECL_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_PROPERTY_MEMBER_DECL_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_PROPERTY_MEMBER_DECL_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_PROPERTY_MEMBER_DECL_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_PROPERTY_MEMBER_DECL_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_METADATA& ctx) {
-            auto visitor = impl.get_visitor_Statement_METADATA(ctx);
+            auto& visitor = impl.get_visitor_Statement_METADATA(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_METADATA_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_METADATA_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_METADATA_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_METADATA_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_METADATA_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_METADATA_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_IMPORT_MODULE& ctx) {
-            auto visitor = impl.get_visitor_Statement_IMPORT_MODULE(ctx);
+            auto& visitor = impl.get_visitor_Statement_IMPORT_MODULE(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_IMPORT_MODULE_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_IMPORT_MODULE_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_IMPORT_MODULE_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_IMPORT_MODULE_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_IMPORT_MODULE_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_IMPORT_MODULE_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_EXPRESSION& ctx) {
-            auto visitor = impl.get_visitor_Statement_EXPRESSION(ctx);
+            auto& visitor = impl.get_visitor_Statement_EXPRESSION(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_EXPRESSION_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_EXPRESSION_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_EXPRESSION_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_EXPRESSION_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_EXPRESSION_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_EXPRESSION_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_ERROR_REPORT& ctx) {
-            auto visitor = impl.get_visitor_Statement_ERROR_REPORT(ctx);
+            auto& visitor = impl.get_visitor_Statement_ERROR_REPORT(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_ERROR_REPORT_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_ERROR_REPORT_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_ERROR_REPORT_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_ERROR_REPORT_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_ERROR_REPORT_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_ERROR_REPORT_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_LOWERED_IO_STATEMENTS& ctx) {
-            auto visitor = impl.get_visitor_Statement_LOWERED_IO_STATEMENTS(ctx);
+            auto& visitor = impl.get_visitor_Statement_LOWERED_IO_STATEMENTS(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_LOWERED_IO_STATEMENTS_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_LOWERED_IO_STATEMENTS_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_LOWERED_IO_STATEMENTS_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_LOWERED_IO_STATEMENTS_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_LOWERED_IO_STATEMENTS_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_LOWERED_IO_STATEMENTS_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_SUB_BYTE_RANGE& ctx) {
-            auto visitor = impl.get_visitor_Statement_SUB_BYTE_RANGE(ctx);
+            auto& visitor = impl.get_visitor_Statement_SUB_BYTE_RANGE(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_SUB_BYTE_RANGE_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_SUB_BYTE_RANGE_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_SUB_BYTE_RANGE_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_SUB_BYTE_RANGE_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_SUB_BYTE_RANGE_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_SUB_BYTE_RANGE_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_INIT_CHECK& ctx) {
-            auto visitor = impl.get_visitor_Statement_INIT_CHECK(ctx);
+            auto& visitor = impl.get_visitor_Statement_INIT_CHECK(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_INIT_CHECK_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_INIT_CHECK_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_INIT_CHECK_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_INIT_CHECK_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_INIT_CHECK_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_INIT_CHECK_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_ENDIAN_VARIABLE& ctx) {
-            auto visitor = impl.get_visitor_Statement_ENDIAN_VARIABLE(ctx);
+            auto& visitor = impl.get_visitor_Statement_ENDIAN_VARIABLE(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_ENDIAN_VARIABLE_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_ENDIAN_VARIABLE_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_ENDIAN_VARIABLE_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_ENDIAN_VARIABLE_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_ENDIAN_VARIABLE_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_ENDIAN_VARIABLE_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_ARRAY_TO_INT& ctx) {
-            auto visitor = impl.get_visitor_Statement_ARRAY_TO_INT(ctx);
+            auto& visitor = impl.get_visitor_Statement_ARRAY_TO_INT(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_ARRAY_TO_INT_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_ARRAY_TO_INT_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_ARRAY_TO_INT_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_ARRAY_TO_INT_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_ARRAY_TO_INT_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_ARRAY_TO_INT_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_INT_TO_ARRAY& ctx) {
-            auto visitor = impl.get_visitor_Statement_INT_TO_ARRAY(ctx);
+            auto& visitor = impl.get_visitor_Statement_INT_TO_ARRAY(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_INT_TO_ARRAY_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_INT_TO_ARRAY_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_INT_TO_ARRAY_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_INT_TO_ARRAY_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_INT_TO_ARRAY_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_INT_TO_ARRAY_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_LENGTH_CHECK& ctx) {
-            auto visitor = impl.get_visitor_Statement_LENGTH_CHECK(ctx);
+            auto& visitor = impl.get_visitor_Statement_LENGTH_CHECK(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_LENGTH_CHECK_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_LENGTH_CHECK_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_LENGTH_CHECK_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_LENGTH_CHECK_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_LENGTH_CHECK_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_LENGTH_CHECK_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement& ctx) {
-            auto visitor = impl.get_visitor_Statement(ctx);
+            auto& visitor = impl.get_visitor_Statement(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_before(ctx);
+            auto& visitor = impl.get_visitor_Statement_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Statement_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Statement_after(ctx);
+            auto& visitor = impl.get_visitor_Statement_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Block& ctx) {
-            auto visitor = impl.get_visitor_Block(ctx);
+            auto& visitor = impl.get_visitor_Block(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Block_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Block_before(ctx);
+            auto& visitor = impl.get_visitor_Block_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Block_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Block_after(ctx);
+            auto& visitor = impl.get_visitor_Block_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_LITERAL_INT& ctx) {
-            auto visitor = impl.get_visitor_Expression_LITERAL_INT(ctx);
+            auto& visitor = impl.get_visitor_Expression_LITERAL_INT(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_LITERAL_INT_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_LITERAL_INT_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_LITERAL_INT_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_LITERAL_INT_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_LITERAL_INT_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_LITERAL_INT_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_LITERAL_INT64& ctx) {
-            auto visitor = impl.get_visitor_Expression_LITERAL_INT64(ctx);
+            auto& visitor = impl.get_visitor_Expression_LITERAL_INT64(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_LITERAL_INT64_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_LITERAL_INT64_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_LITERAL_INT64_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_LITERAL_INT64_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_LITERAL_INT64_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_LITERAL_INT64_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_LITERAL_BOOL& ctx) {
-            auto visitor = impl.get_visitor_Expression_LITERAL_BOOL(ctx);
+            auto& visitor = impl.get_visitor_Expression_LITERAL_BOOL(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_LITERAL_BOOL_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_LITERAL_BOOL_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_LITERAL_BOOL_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_LITERAL_BOOL_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_LITERAL_BOOL_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_LITERAL_BOOL_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_LITERAL_STRING& ctx) {
-            auto visitor = impl.get_visitor_Expression_LITERAL_STRING(ctx);
+            auto& visitor = impl.get_visitor_Expression_LITERAL_STRING(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_LITERAL_STRING_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_LITERAL_STRING_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_LITERAL_STRING_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_LITERAL_STRING_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_LITERAL_STRING_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_LITERAL_STRING_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_LITERAL_TYPE& ctx) {
-            auto visitor = impl.get_visitor_Expression_LITERAL_TYPE(ctx);
+            auto& visitor = impl.get_visitor_Expression_LITERAL_TYPE(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_LITERAL_TYPE_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_LITERAL_TYPE_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_LITERAL_TYPE_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_LITERAL_TYPE_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_LITERAL_TYPE_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_LITERAL_TYPE_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_LITERAL_CHAR& ctx) {
-            auto visitor = impl.get_visitor_Expression_LITERAL_CHAR(ctx);
+            auto& visitor = impl.get_visitor_Expression_LITERAL_CHAR(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_LITERAL_CHAR_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_LITERAL_CHAR_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_LITERAL_CHAR_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_LITERAL_CHAR_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_LITERAL_CHAR_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_LITERAL_CHAR_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_IDENTIFIER& ctx) {
-            auto visitor = impl.get_visitor_Expression_IDENTIFIER(ctx);
+            auto& visitor = impl.get_visitor_Expression_IDENTIFIER(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_IDENTIFIER_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_IDENTIFIER_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_IDENTIFIER_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_IDENTIFIER_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_IDENTIFIER_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_IDENTIFIER_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_BINARY_OP& ctx) {
-            auto visitor = impl.get_visitor_Expression_BINARY_OP(ctx);
+            auto& visitor = impl.get_visitor_Expression_BINARY_OP(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_BINARY_OP_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_BINARY_OP_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_BINARY_OP_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_BINARY_OP_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_BINARY_OP_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_BINARY_OP_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_UNARY_OP& ctx) {
-            auto visitor = impl.get_visitor_Expression_UNARY_OP(ctx);
+            auto& visitor = impl.get_visitor_Expression_UNARY_OP(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_UNARY_OP_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_UNARY_OP_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_UNARY_OP_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_UNARY_OP_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_UNARY_OP_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_UNARY_OP_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_CALL& ctx) {
-            auto visitor = impl.get_visitor_Expression_CALL(ctx);
+            auto& visitor = impl.get_visitor_Expression_CALL(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_CALL_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_CALL_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_CALL_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_CALL_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_CALL_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_CALL_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_INDEX_ACCESS& ctx) {
-            auto visitor = impl.get_visitor_Expression_INDEX_ACCESS(ctx);
+            auto& visitor = impl.get_visitor_Expression_INDEX_ACCESS(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_INDEX_ACCESS_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_INDEX_ACCESS_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_INDEX_ACCESS_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_INDEX_ACCESS_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_INDEX_ACCESS_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_INDEX_ACCESS_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_MEMBER_ACCESS& ctx) {
-            auto visitor = impl.get_visitor_Expression_MEMBER_ACCESS(ctx);
+            auto& visitor = impl.get_visitor_Expression_MEMBER_ACCESS(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_MEMBER_ACCESS_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_MEMBER_ACCESS_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_MEMBER_ACCESS_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_MEMBER_ACCESS_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_MEMBER_ACCESS_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_MEMBER_ACCESS_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_ENUM_MEMBER& ctx) {
-            auto visitor = impl.get_visitor_Expression_ENUM_MEMBER(ctx);
+            auto& visitor = impl.get_visitor_Expression_ENUM_MEMBER(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_ENUM_MEMBER_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_ENUM_MEMBER_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_ENUM_MEMBER_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_ENUM_MEMBER_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_ENUM_MEMBER_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_ENUM_MEMBER_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_TYPE_CAST& ctx) {
-            auto visitor = impl.get_visitor_Expression_TYPE_CAST(ctx);
+            auto& visitor = impl.get_visitor_Expression_TYPE_CAST(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_TYPE_CAST_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_TYPE_CAST_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_TYPE_CAST_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_TYPE_CAST_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_TYPE_CAST_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_TYPE_CAST_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_RANGE& ctx) {
-            auto visitor = impl.get_visitor_Expression_RANGE(ctx);
+            auto& visitor = impl.get_visitor_Expression_RANGE(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_RANGE_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_RANGE_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_RANGE_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_RANGE_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_RANGE_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_RANGE_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_DEFAULT_VALUE& ctx) {
-            auto visitor = impl.get_visitor_Expression_DEFAULT_VALUE(ctx);
+            auto& visitor = impl.get_visitor_Expression_DEFAULT_VALUE(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_DEFAULT_VALUE_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_DEFAULT_VALUE_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_DEFAULT_VALUE_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_DEFAULT_VALUE_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_DEFAULT_VALUE_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_DEFAULT_VALUE_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_IS_LITTLE_ENDIAN& ctx) {
-            auto visitor = impl.get_visitor_Expression_IS_LITTLE_ENDIAN(ctx);
+            auto& visitor = impl.get_visitor_Expression_IS_LITTLE_ENDIAN(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_IS_LITTLE_ENDIAN_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_IS_LITTLE_ENDIAN_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_IS_LITTLE_ENDIAN_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_IS_LITTLE_ENDIAN_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_IS_LITTLE_ENDIAN_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_IS_LITTLE_ENDIAN_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_GET_STREAM_OFFSET& ctx) {
-            auto visitor = impl.get_visitor_Expression_GET_STREAM_OFFSET(ctx);
+            auto& visitor = impl.get_visitor_Expression_GET_STREAM_OFFSET(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_GET_STREAM_OFFSET_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_GET_STREAM_OFFSET_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_GET_STREAM_OFFSET_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_GET_STREAM_OFFSET_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_GET_STREAM_OFFSET_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_GET_STREAM_OFFSET_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_GET_REMAINING_BYTES& ctx) {
-            auto visitor = impl.get_visitor_Expression_GET_REMAINING_BYTES(ctx);
+            auto& visitor = impl.get_visitor_Expression_GET_REMAINING_BYTES(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_GET_REMAINING_BYTES_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_GET_REMAINING_BYTES_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_GET_REMAINING_BYTES_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_GET_REMAINING_BYTES_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_GET_REMAINING_BYTES_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_GET_REMAINING_BYTES_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_CAN_READ_STREAM& ctx) {
-            auto visitor = impl.get_visitor_Expression_CAN_READ_STREAM(ctx);
+            auto& visitor = impl.get_visitor_Expression_CAN_READ_STREAM(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_CAN_READ_STREAM_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_CAN_READ_STREAM_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_CAN_READ_STREAM_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_CAN_READ_STREAM_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_CAN_READ_STREAM_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_CAN_READ_STREAM_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_ARRAY_SIZE& ctx) {
-            auto visitor = impl.get_visitor_Expression_ARRAY_SIZE(ctx);
+            auto& visitor = impl.get_visitor_Expression_ARRAY_SIZE(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_ARRAY_SIZE_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_ARRAY_SIZE_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_ARRAY_SIZE_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_ARRAY_SIZE_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_ARRAY_SIZE_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_ARRAY_SIZE_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_ENUM_IS_DEFINED& ctx) {
-            auto visitor = impl.get_visitor_Expression_ENUM_IS_DEFINED(ctx);
+            auto& visitor = impl.get_visitor_Expression_ENUM_IS_DEFINED(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_ENUM_IS_DEFINED_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_ENUM_IS_DEFINED_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_ENUM_IS_DEFINED_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_ENUM_IS_DEFINED_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_ENUM_IS_DEFINED_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_ENUM_IS_DEFINED_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_IS_ERROR& ctx) {
-            auto visitor = impl.get_visitor_Expression_IS_ERROR(ctx);
+            auto& visitor = impl.get_visitor_Expression_IS_ERROR(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_IS_ERROR_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_IS_ERROR_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_IS_ERROR_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_IS_ERROR_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_IS_ERROR_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_IS_ERROR_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_MAX_VALUE& ctx) {
-            auto visitor = impl.get_visitor_Expression_MAX_VALUE(ctx);
+            auto& visitor = impl.get_visitor_Expression_MAX_VALUE(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_MAX_VALUE_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_MAX_VALUE_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_MAX_VALUE_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_MAX_VALUE_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_MAX_VALUE_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_MAX_VALUE_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_READ_DATA& ctx) {
-            auto visitor = impl.get_visitor_Expression_READ_DATA(ctx);
+            auto& visitor = impl.get_visitor_Expression_READ_DATA(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_READ_DATA_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_READ_DATA_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_READ_DATA_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_READ_DATA_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_READ_DATA_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_READ_DATA_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_WRITE_DATA& ctx) {
-            auto visitor = impl.get_visitor_Expression_WRITE_DATA(ctx);
+            auto& visitor = impl.get_visitor_Expression_WRITE_DATA(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_WRITE_DATA_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_WRITE_DATA_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_WRITE_DATA_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_WRITE_DATA_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_WRITE_DATA_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_WRITE_DATA_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_CONDITIONAL_STATEMENT& ctx) {
-            auto visitor = impl.get_visitor_Expression_CONDITIONAL_STATEMENT(ctx);
+            auto& visitor = impl.get_visitor_Expression_CONDITIONAL_STATEMENT(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_CONDITIONAL_STATEMENT_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_CONDITIONAL_STATEMENT_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_CONDITIONAL_STATEMENT_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_CONDITIONAL_STATEMENT_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_CONDITIONAL_STATEMENT_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_CONDITIONAL_STATEMENT_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_CONDITIONAL& ctx) {
-            auto visitor = impl.get_visitor_Expression_CONDITIONAL(ctx);
+            auto& visitor = impl.get_visitor_Expression_CONDITIONAL(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_CONDITIONAL_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_CONDITIONAL_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_CONDITIONAL_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_CONDITIONAL_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_CONDITIONAL_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_CONDITIONAL_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_AVAILABLE& ctx) {
-            auto visitor = impl.get_visitor_Expression_AVAILABLE(ctx);
+            auto& visitor = impl.get_visitor_Expression_AVAILABLE(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_AVAILABLE_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_AVAILABLE_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_AVAILABLE_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_AVAILABLE_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_AVAILABLE_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_AVAILABLE_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_SIZEOF& ctx) {
-            auto visitor = impl.get_visitor_Expression_SIZEOF(ctx);
+            auto& visitor = impl.get_visitor_Expression_SIZEOF(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_SIZEOF_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_SIZEOF_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_SIZEOF_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_SIZEOF_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_SIZEOF_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_SIZEOF_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_SUB_RANGE_INIT& ctx) {
-            auto visitor = impl.get_visitor_Expression_SUB_RANGE_INIT(ctx);
+            auto& visitor = impl.get_visitor_Expression_SUB_RANGE_INIT(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_SUB_RANGE_INIT_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_SUB_RANGE_INIT_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_SUB_RANGE_INIT_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_SUB_RANGE_INIT_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_SUB_RANGE_INIT_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_SUB_RANGE_INIT_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_OR_COND& ctx) {
-            auto visitor = impl.get_visitor_Expression_OR_COND(ctx);
+            auto& visitor = impl.get_visitor_Expression_OR_COND(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_OR_COND_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_OR_COND_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_OR_COND_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_OR_COND_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_OR_COND_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_OR_COND_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_ADDRESS_OF& ctx) {
-            auto visitor = impl.get_visitor_Expression_ADDRESS_OF(ctx);
+            auto& visitor = impl.get_visitor_Expression_ADDRESS_OF(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_ADDRESS_OF_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_ADDRESS_OF_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_ADDRESS_OF_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_ADDRESS_OF_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_ADDRESS_OF_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_ADDRESS_OF_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_OPTIONAL_OF& ctx) {
-            auto visitor = impl.get_visitor_Expression_OPTIONAL_OF(ctx);
+            auto& visitor = impl.get_visitor_Expression_OPTIONAL_OF(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_OPTIONAL_OF_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_OPTIONAL_OF_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_OPTIONAL_OF_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_OPTIONAL_OF_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_OPTIONAL_OF_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_OPTIONAL_OF_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_SETTER_STATUS& ctx) {
-            auto visitor = impl.get_visitor_Expression_SETTER_STATUS(ctx);
+            auto& visitor = impl.get_visitor_Expression_SETTER_STATUS(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_SETTER_STATUS_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_SETTER_STATUS_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_SETTER_STATUS_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_SETTER_STATUS_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_SETTER_STATUS_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_SETTER_STATUS_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_SELF& ctx) {
-            auto visitor = impl.get_visitor_Expression_SELF(ctx);
+            auto& visitor = impl.get_visitor_Expression_SELF(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_SELF_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_SELF_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_SELF_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_SELF_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_SELF_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_SELF_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_AS_ARG& ctx) {
-            auto visitor = impl.get_visitor_Expression_AS_ARG(ctx);
+            auto& visitor = impl.get_visitor_Expression_AS_ARG(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_AS_ARG_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_AS_ARG_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_AS_ARG_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_AS_ARG_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_AS_ARG_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_AS_ARG_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression& ctx) {
-            auto visitor = impl.get_visitor_Expression(ctx);
+            auto& visitor = impl.get_visitor_Expression(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_before(ctx);
+            auto& visitor = impl.get_visitor_Expression_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expression_after(ctx);
+            auto& visitor = impl.get_visitor_Expression_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expressions& ctx) {
-            auto visitor = impl.get_visitor_Expressions(ctx);
+            auto& visitor = impl.get_visitor_Expressions(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expressions_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expressions_before(ctx);
+            auto& visitor = impl.get_visitor_Expressions_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expressions_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Expressions_after(ctx);
+            auto& visitor = impl.get_visitor_Expressions_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_INT& ctx) {
-            auto visitor = impl.get_visitor_Type_INT(ctx);
+            auto& visitor = impl.get_visitor_Type_INT(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_INT_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_INT_before(ctx);
+            auto& visitor = impl.get_visitor_Type_INT_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_INT_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_INT_after(ctx);
+            auto& visitor = impl.get_visitor_Type_INT_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_UINT& ctx) {
-            auto visitor = impl.get_visitor_Type_UINT(ctx);
+            auto& visitor = impl.get_visitor_Type_UINT(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_UINT_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_UINT_before(ctx);
+            auto& visitor = impl.get_visitor_Type_UINT_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_UINT_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_UINT_after(ctx);
+            auto& visitor = impl.get_visitor_Type_UINT_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_USIZE& ctx) {
-            auto visitor = impl.get_visitor_Type_USIZE(ctx);
+            auto& visitor = impl.get_visitor_Type_USIZE(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_USIZE_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_USIZE_before(ctx);
+            auto& visitor = impl.get_visitor_Type_USIZE_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_USIZE_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_USIZE_after(ctx);
+            auto& visitor = impl.get_visitor_Type_USIZE_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_FLOAT& ctx) {
-            auto visitor = impl.get_visitor_Type_FLOAT(ctx);
+            auto& visitor = impl.get_visitor_Type_FLOAT(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_FLOAT_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_FLOAT_before(ctx);
+            auto& visitor = impl.get_visitor_Type_FLOAT_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_FLOAT_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_FLOAT_after(ctx);
+            auto& visitor = impl.get_visitor_Type_FLOAT_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_STRUCT& ctx) {
-            auto visitor = impl.get_visitor_Type_STRUCT(ctx);
+            auto& visitor = impl.get_visitor_Type_STRUCT(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_STRUCT_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_STRUCT_before(ctx);
+            auto& visitor = impl.get_visitor_Type_STRUCT_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_STRUCT_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_STRUCT_after(ctx);
+            auto& visitor = impl.get_visitor_Type_STRUCT_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_RECURSIVE_STRUCT& ctx) {
-            auto visitor = impl.get_visitor_Type_RECURSIVE_STRUCT(ctx);
+            auto& visitor = impl.get_visitor_Type_RECURSIVE_STRUCT(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_RECURSIVE_STRUCT_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_RECURSIVE_STRUCT_before(ctx);
+            auto& visitor = impl.get_visitor_Type_RECURSIVE_STRUCT_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_RECURSIVE_STRUCT_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_RECURSIVE_STRUCT_after(ctx);
+            auto& visitor = impl.get_visitor_Type_RECURSIVE_STRUCT_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_BOOL& ctx) {
-            auto visitor = impl.get_visitor_Type_BOOL(ctx);
+            auto& visitor = impl.get_visitor_Type_BOOL(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_BOOL_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_BOOL_before(ctx);
+            auto& visitor = impl.get_visitor_Type_BOOL_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_BOOL_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_BOOL_after(ctx);
+            auto& visitor = impl.get_visitor_Type_BOOL_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_VOID& ctx) {
-            auto visitor = impl.get_visitor_Type_VOID(ctx);
+            auto& visitor = impl.get_visitor_Type_VOID(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_VOID_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_VOID_before(ctx);
+            auto& visitor = impl.get_visitor_Type_VOID_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_VOID_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_VOID_after(ctx);
+            auto& visitor = impl.get_visitor_Type_VOID_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_META& ctx) {
-            auto visitor = impl.get_visitor_Type_META(ctx);
+            auto& visitor = impl.get_visitor_Type_META(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_META_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_META_before(ctx);
+            auto& visitor = impl.get_visitor_Type_META_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_META_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_META_after(ctx);
+            auto& visitor = impl.get_visitor_Type_META_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_ENUM& ctx) {
-            auto visitor = impl.get_visitor_Type_ENUM(ctx);
+            auto& visitor = impl.get_visitor_Type_ENUM(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_ENUM_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_ENUM_before(ctx);
+            auto& visitor = impl.get_visitor_Type_ENUM_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_ENUM_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_ENUM_after(ctx);
+            auto& visitor = impl.get_visitor_Type_ENUM_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_ARRAY& ctx) {
-            auto visitor = impl.get_visitor_Type_ARRAY(ctx);
+            auto& visitor = impl.get_visitor_Type_ARRAY(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_ARRAY_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_ARRAY_before(ctx);
+            auto& visitor = impl.get_visitor_Type_ARRAY_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_ARRAY_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_ARRAY_after(ctx);
+            auto& visitor = impl.get_visitor_Type_ARRAY_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_VECTOR& ctx) {
-            auto visitor = impl.get_visitor_Type_VECTOR(ctx);
+            auto& visitor = impl.get_visitor_Type_VECTOR(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_VECTOR_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_VECTOR_before(ctx);
+            auto& visitor = impl.get_visitor_Type_VECTOR_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_VECTOR_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_VECTOR_after(ctx);
+            auto& visitor = impl.get_visitor_Type_VECTOR_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_VARIANT& ctx) {
-            auto visitor = impl.get_visitor_Type_VARIANT(ctx);
+            auto& visitor = impl.get_visitor_Type_VARIANT(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_VARIANT_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_VARIANT_before(ctx);
+            auto& visitor = impl.get_visitor_Type_VARIANT_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_VARIANT_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_VARIANT_after(ctx);
+            auto& visitor = impl.get_visitor_Type_VARIANT_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_STRUCT_UNION& ctx) {
-            auto visitor = impl.get_visitor_Type_STRUCT_UNION(ctx);
+            auto& visitor = impl.get_visitor_Type_STRUCT_UNION(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_STRUCT_UNION_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_STRUCT_UNION_before(ctx);
+            auto& visitor = impl.get_visitor_Type_STRUCT_UNION_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_STRUCT_UNION_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_STRUCT_UNION_after(ctx);
+            auto& visitor = impl.get_visitor_Type_STRUCT_UNION_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_RANGE& ctx) {
-            auto visitor = impl.get_visitor_Type_RANGE(ctx);
+            auto& visitor = impl.get_visitor_Type_RANGE(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_RANGE_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_RANGE_before(ctx);
+            auto& visitor = impl.get_visitor_Type_RANGE_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_RANGE_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_RANGE_after(ctx);
+            auto& visitor = impl.get_visitor_Type_RANGE_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_ENCODER_RETURN& ctx) {
-            auto visitor = impl.get_visitor_Type_ENCODER_RETURN(ctx);
+            auto& visitor = impl.get_visitor_Type_ENCODER_RETURN(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_ENCODER_RETURN_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_ENCODER_RETURN_before(ctx);
+            auto& visitor = impl.get_visitor_Type_ENCODER_RETURN_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_ENCODER_RETURN_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_ENCODER_RETURN_after(ctx);
+            auto& visitor = impl.get_visitor_Type_ENCODER_RETURN_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_DECODER_RETURN& ctx) {
-            auto visitor = impl.get_visitor_Type_DECODER_RETURN(ctx);
+            auto& visitor = impl.get_visitor_Type_DECODER_RETURN(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_DECODER_RETURN_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_DECODER_RETURN_before(ctx);
+            auto& visitor = impl.get_visitor_Type_DECODER_RETURN_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_DECODER_RETURN_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_DECODER_RETURN_after(ctx);
+            auto& visitor = impl.get_visitor_Type_DECODER_RETURN_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_ENCODER_INPUT& ctx) {
-            auto visitor = impl.get_visitor_Type_ENCODER_INPUT(ctx);
+            auto& visitor = impl.get_visitor_Type_ENCODER_INPUT(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_ENCODER_INPUT_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_ENCODER_INPUT_before(ctx);
+            auto& visitor = impl.get_visitor_Type_ENCODER_INPUT_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_ENCODER_INPUT_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_ENCODER_INPUT_after(ctx);
+            auto& visitor = impl.get_visitor_Type_ENCODER_INPUT_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_DECODER_INPUT& ctx) {
-            auto visitor = impl.get_visitor_Type_DECODER_INPUT(ctx);
+            auto& visitor = impl.get_visitor_Type_DECODER_INPUT(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_DECODER_INPUT_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_DECODER_INPUT_before(ctx);
+            auto& visitor = impl.get_visitor_Type_DECODER_INPUT_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_DECODER_INPUT_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_DECODER_INPUT_after(ctx);
+            auto& visitor = impl.get_visitor_Type_DECODER_INPUT_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_PROPERTY_SETTER_RETURN& ctx) {
-            auto visitor = impl.get_visitor_Type_PROPERTY_SETTER_RETURN(ctx);
+            auto& visitor = impl.get_visitor_Type_PROPERTY_SETTER_RETURN(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_PROPERTY_SETTER_RETURN_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_PROPERTY_SETTER_RETURN_before(ctx);
+            auto& visitor = impl.get_visitor_Type_PROPERTY_SETTER_RETURN_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_PROPERTY_SETTER_RETURN_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_PROPERTY_SETTER_RETURN_after(ctx);
+            auto& visitor = impl.get_visitor_Type_PROPERTY_SETTER_RETURN_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_OPTIONAL& ctx) {
-            auto visitor = impl.get_visitor_Type_OPTIONAL(ctx);
+            auto& visitor = impl.get_visitor_Type_OPTIONAL(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_OPTIONAL_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_OPTIONAL_before(ctx);
+            auto& visitor = impl.get_visitor_Type_OPTIONAL_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_OPTIONAL_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_OPTIONAL_after(ctx);
+            auto& visitor = impl.get_visitor_Type_OPTIONAL_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_PTR& ctx) {
-            auto visitor = impl.get_visitor_Type_PTR(ctx);
+            auto& visitor = impl.get_visitor_Type_PTR(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_PTR_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_PTR_before(ctx);
+            auto& visitor = impl.get_visitor_Type_PTR_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_PTR_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_PTR_after(ctx);
+            auto& visitor = impl.get_visitor_Type_PTR_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_FUNCTION& ctx) {
-            auto visitor = impl.get_visitor_Type_FUNCTION(ctx);
+            auto& visitor = impl.get_visitor_Type_FUNCTION(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_FUNCTION_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_FUNCTION_before(ctx);
+            auto& visitor = impl.get_visitor_Type_FUNCTION_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_FUNCTION_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_FUNCTION_after(ctx);
+            auto& visitor = impl.get_visitor_Type_FUNCTION_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type& ctx) {
-            auto visitor = impl.get_visitor_Type(ctx);
+            auto& visitor = impl.get_visitor_Type(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_before(ctx);
+            auto& visitor = impl.get_visitor_Type_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Type_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Type_after(ctx);
+            auto& visitor = impl.get_visitor_Type_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Types& ctx) {
-            auto visitor = impl.get_visitor_Types(ctx);
+            auto& visitor = impl.get_visitor_Types(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Types_before<Result>& ctx) {
-            auto visitor = impl.get_visitor_Types_before(ctx);
+            auto& visitor = impl.get_visitor_Types_before(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Types_after<Result>& ctx) {
-            auto visitor = impl.get_visitor_Types_after(ctx);
+            auto& visitor = impl.get_visitor_Types_after(ctx);
             return visitor.visit(ctx);
         }
     };

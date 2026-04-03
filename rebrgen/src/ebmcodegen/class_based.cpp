@@ -671,7 +671,6 @@ namespace ebmcodegen {
         if (!self.empty()) {
             instance_name = std::format("{}.{}", self, instance_name);
         }
-        auto visitor_requirements = visitor_requirements_name(cls);
         auto expect = generate_generator_priority_check(w, cls, index);
         w.writeln("if constexpr (", expect, ") {");
         {
@@ -725,7 +724,7 @@ namespace ebmcodegen {
         w.writeln(result_type, " visit(", context_instance_name(cls), "& ctx) {");
         {
             auto scope = w.indent_scope();
-            w.writeln("auto visitor = impl.", get_hook_fn_name(cls), "(ctx);");
+            w.writeln("auto& visitor = impl.", get_hook_fn_name(cls), "(ctx);");
             w.writeln("return visitor.visit(ctx);");
         }
         w.writeln("}");
@@ -1627,7 +1626,6 @@ namespace ebmcodegen {
         w.writeln(result_type, " visit_Object(Context&& ctx, ebm::", cls.ref_name(), " ref)  {");
         {
             auto scope = w.indent_scope();
-            auto dispatch_fn = dispatch_fn_name(cls);
             w.writeln("return visit_", cls.class_name(), "<Result>(std::forward<Context>(ctx),ref);");
         }
         w.writeln("}");
