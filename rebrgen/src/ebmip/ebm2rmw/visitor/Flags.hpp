@@ -36,3 +36,7 @@ DEFINE_BOOL_FLAG(print_vector_content, false, "print-vector-content", "show vect
 DEFINE_STRING_FLAG(output_file, "", "output-file", "output binary file (encode result)", "FILE");
 DEFINE_BOOL_FLAG(skip_encode, false, "skip-encode", "skip encode step after decode");
 DEFINE_BOOL_FLAG(dump_output, false, "dump-output", "dump encoded output as hex");
+DEFINE_STRING_FLAG(modify_fields, "", "modify-fields", "semicolon-separated field modifications applied after decode (e.g., header.version=2;ttl=64)", "FIELDS");
+DEFINE_STRING_FLAG(modify_json, "", "modify-json", "JSON file with field modifications ({\"field.path\": integer_value, ...})", "FILE");
+DEFINE_BOOL_FLAG(skip_write_size_check, false, "skip-write-size-check", "skip dynamic-size validation in WRITE_BYTES (suppress size mismatch errors)");
+DEFINE_BOOL_FLAG(skip_variant_check, false, "skip-variant-check", "skip active-variant validation when navigating STRUCT_UNION fields by index");

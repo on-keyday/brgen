@@ -32,7 +32,8 @@ DEFINE_VISITOR(Statement_VARIABLE_DECL) {
     MAYBE(initial_value, ctx.visit(ctx.var_decl.initial_value));
     auto identifier = ctx.identifier();
     auto kind = ctx.get_kind(ctx.var_decl.var_type);
-    if (kind == ebm::TypeKind::DECODER_RETURN || kind == ebm::TypeKind::ENCODER_RETURN) {
+    if (kind == ebm::TypeKind::DECODER_RETURN || kind == ebm::TypeKind::ENCODER_RETURN ||
+        kind == ebm::TypeKind::DECODER_INPUT || kind == ebm::TypeKind::ENCODER_INPUT) {
         return {};
     }
     ebm::Instruction instr;

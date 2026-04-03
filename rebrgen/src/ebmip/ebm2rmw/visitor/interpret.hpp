@@ -275,10 +275,28 @@ namespace ebm2rmw {
         return args;
     }
 
+    struct SubInputContext {
+        futils::view::rvec saved_input;
+        size_t saved_input_pos;
+        size_t advance_length;  // bytes to advance parent input_pos on pop (0 = no advance, for seek variants)
+    };
+
+    struct SubOutputContext {
+        size_t saved_output_len;
+        size_t expected_length;
+    };
+
     struct RuntimeEnv {
         futils::view::rvec input;
         size_t input_pos = 0;
         std::vector<std::uint8_t> output_buf;
+        std::vector<SubInputContext> sub_input_stack;
+        std::vector<SubOutputContext> sub_output_stack;
+
+        RuntimeEnv() {
+            sub_input_stack.reserve(16);
+            sub_output_stack.reserve(16);
+        }
 
         // Saved after decode for use in encode
         std::vector<std::uint8_t> decoded_self_bytes;
@@ -480,7 +498,8 @@ namespace ebm2rmw {
                     TmpCodeWriter vw;
                     ObjectRef final_self(decoded_self_type, futils::view::wvec(decoded_self_bytes));
                     print_layout(ctx, vw, final_self, &bytes_arena, nullptr, variant_eval_fn);
-                    futils::wrap::cout_wrap() << "=== Decoded Self (with variant) ===\n" << vw.out() << "\n";
+                    futils::wrap::cout_wrap() << "=== Decoded Self (with variant) ===\n"
+                                              << vw.out() << "\n";
                 }
             }
             return res;
@@ -559,6 +578,23 @@ namespace ebm2rmw {
                 }
             }
             return res;
+        }
+
+        ebmgen::expected<ObjectRef> vector_get_element(ObjectRef vec, size_t index, TypeLayout elem_layout) {
+            MAYBE(slot, decode_uint64(vec, pointer_size));
+            if (slot == 0) {
+                return ebmgen::unexpect_error("vector is empty");
+            }
+            size_t actual_index = slot - 1;
+            if (actual_index >= bytes_arena.size()) {
+                return ebmgen::unexpect_error("invalid vector slot {}", actual_index);
+            }
+            auto& byte_array = bytes_arena[actual_index];
+            if ((index + 1) * elem_layout.size > byte_array.size()) {
+                return ebmgen::unexpect_error("vector index {} out of bounds (count={})", index, byte_array.size() / elem_layout.size);
+            }
+            auto elem_raw = futils::view::wvec(byte_array).substr(index * elem_layout.size, elem_layout.size);
+            return ObjectRef(elem_layout.type, elem_raw);
         }
 
        private:
@@ -669,6 +705,93 @@ namespace ebm2rmw {
                 switch (instr.instr.op) {
                     case ebm::OpCode::NOP:
                         break;
+                    case ebm::OpCode::PUSH_SUB_INPUT: {
+                        if (stack.empty()) {
+                            return ebmgen::unexpect_error("stack underflow on PUSH_SUB_INPUT");
+                        }
+                        auto len_val = stack_pop();
+                        len_val.unref();
+                        if (!std::holds_alternative<std::uint64_t>(len_val.value)) {
+                            return ebmgen::unexpect_error("PUSH_SUB_INPUT: length is not integer");
+                        }
+                        size_t length = static_cast<size_t>(std::get<std::uint64_t>(len_val.value));
+                        auto sub = input.substr(input_pos, length);
+                        if (sub.size() < length) {
+                            return ebmgen::unexpect_error("PUSH_SUB_INPUT: need {} bytes but only {} available", length, sub.size());
+                        }
+                        sub_input_stack.push_back({input, input_pos, length});
+                        input = sub;
+                        input_pos = 0;
+                        break;
+                    }
+                    case ebm::OpCode::POP_SUB_INPUT: {
+                        if (sub_input_stack.empty()) {
+                            return ebmgen::unexpect_error("sub_input_stack underflow on POP_SUB_INPUT");
+                        }
+                        auto& saved = sub_input_stack.back();
+                        input = saved.saved_input;
+                        input_pos = saved.saved_input_pos + saved.advance_length;
+                        sub_input_stack.pop_back();
+                        break;
+                    }
+                    case ebm::OpCode::PUSH_SEEK_SUB_INPUT: {
+                        if (stack.size() < 2) {
+                            return ebmgen::unexpect_error("stack underflow on PUSH_SEEK_SUB_INPUT");
+                        }
+                        auto len_val = stack_pop();
+                        len_val.unref();
+                        auto off_val = stack_pop();
+                        off_val.unref();
+                        if (!std::holds_alternative<std::uint64_t>(len_val.value) ||
+                            !std::holds_alternative<std::uint64_t>(off_val.value)) {
+                            return ebmgen::unexpect_error("PUSH_SEEK_SUB_INPUT: non-integer operand");
+                        }
+                        size_t length = static_cast<size_t>(std::get<std::uint64_t>(len_val.value));
+                        size_t offset = static_cast<size_t>(std::get<std::uint64_t>(off_val.value));
+                        auto sub = input.substr(offset, length);
+                        if (sub.size() < length) {
+                            return ebmgen::unexpect_error("PUSH_SEEK_SUB_INPUT: need {} bytes at offset {} but only {} available", length, offset, sub.size());
+                        }
+                        sub_input_stack.push_back({input, input_pos, 0});
+                        input = sub;
+                        input_pos = 0;
+                        break;
+                    }
+                    case ebm::OpCode::POP_SEEK_SUB_INPUT: {
+                        if (sub_input_stack.empty()) {
+                            return ebmgen::unexpect_error("sub_input_stack underflow on POP_SEEK_SUB_INPUT");
+                        }
+                        auto& saved = sub_input_stack.back();
+                        input = saved.saved_input;
+                        input_pos = saved.saved_input_pos;
+                        sub_input_stack.pop_back();
+                        break;
+                    }
+                    case ebm::OpCode::PUSH_SUB_OUTPUT: {
+                        if (stack.empty()) {
+                            return ebmgen::unexpect_error("stack underflow on PUSH_SUB_OUTPUT");
+                        }
+                        auto len_val = stack_pop();
+                        len_val.unref();
+                        if (!std::holds_alternative<std::uint64_t>(len_val.value)) {
+                            return ebmgen::unexpect_error("PUSH_SUB_OUTPUT: length is not integer");
+                        }
+                        auto expected = static_cast<size_t>(std::get<std::uint64_t>(len_val.value));
+                        sub_output_stack.push_back({output_buf.size(), expected});
+                        break;
+                    }
+                    case ebm::OpCode::POP_SUB_OUTPUT: {
+                        if (sub_output_stack.empty()) {
+                            return ebmgen::unexpect_error("sub_output_stack underflow on POP_SUB_OUTPUT");
+                        }
+                        auto saved = sub_output_stack.back();
+                        sub_output_stack.pop_back();
+                        size_t written = output_buf.size() - saved.saved_output_len;
+                        if (!ctx.flags().skip_write_size_check && written != saved.expected_length) {
+                            return ebmgen::unexpect_error("SUB_OUTPUT size mismatch: expected {} bytes but wrote {}", saved.expected_length, written);
+                        }
+                        break;
+                    }
                     case ebm::OpCode::HALT:
                         return ebmgen::unexpect_error("HALT reached");
                     case ebm::OpCode::PUSH_IMM_INT: {
@@ -791,6 +914,40 @@ namespace ebm2rmw {
                         }
                         break;
                     }
+                    case ebm::OpCode::ARRAY_LEN: {
+                        if (stack.empty()) {
+                            return ebmgen::unexpect_error("stack underflow on ARRAY_LEN");
+                        }
+                        auto arr_val = stack_pop();
+                        arr_val.unref();
+                        if (!std::holds_alternative<ObjectRef>(arr_val.value)) {
+                            return ebmgen::unexpect_error("ARRAY_LEN operand is not an array");
+                        }
+                        auto arr_ptr = std::get<ObjectRef>(arr_val.value);
+                        LayoutScratch ls{instr.scratch};
+                        auto element_size = ls.size() > 0 ? ls.size() : size_t(1);
+                        auto base_kind = ebm::TypeKind(ls.offset());
+                        if (base_kind == ebm::TypeKind::VECTOR) {
+                            MAYBE(arena_index, decode_uint64(arr_ptr));
+                            if (arena_index == 0) {
+                                return ebmgen::unexpect_error("ARRAY_LEN on uninitialized vector");
+                            }
+                            size_t actual_index = arena_index - 1;
+                            if (actual_index >= bytes_arena.size()) {
+                                return ebmgen::unexpect_error("ARRAY_LEN: invalid vector index: {} (out of {})", actual_index, bytes_arena.size());
+                            }
+                            auto& byte_array = bytes_arena[actual_index];
+                            if (byte_array.size() % element_size != 0) {
+                                return ebmgen::unexpect_error("ARRAY_LEN: vector size {} is not a multiple of element size {}", byte_array.size(), element_size);
+                            }
+                            size_t length = byte_array.size() / element_size;
+                            stack_push(Value{length});
+                        }
+                        else {
+                            stack_push(Value{element_size});  // actually, element_size is full array length on ARRAY
+                        }
+                        break;
+                    }
                     case ebm::OpCode::ARRAY_GET_IMM: {
                         if (stack.empty()) {
                             return ebmgen::unexpect_error("stack underflow on ARRAY_GET_IMM");
@@ -872,6 +1029,11 @@ namespace ebm2rmw {
                             }
                             stack_push(Value{ObjectRef{instr.type_info, element}});
                         }
+                        break;
+                    }
+                    case ebm::OpCode::AVAILABLE: {
+                        std::uint64_t available = input.size() > input_pos ? input.size() - input_pos : 0;
+                        stack_push(Value{available});
                         break;
                     }
                     case ebm::OpCode::READ_BYTE: {
@@ -1147,8 +1309,9 @@ namespace ebm2rmw {
                         LayoutScratch ls{instr.scratch};
                         auto kind = ebm::TypeKind(ls.offset());
                         size_t static_size = ls.size();
-                        if (static_size == 0) {
-                            // dynamic size: pop size from stack
+                        size_t expected_size = 0;
+                        const bool is_dynamic = (static_size == 0);
+                        if (is_dynamic) {
                             if (stack.size() < 2) [[unlikely]] {
                                 return ebmgen::unexpect_error("stack underflow on WRITE_BYTES (need size and target)");
                             }
@@ -1157,8 +1320,7 @@ namespace ebm2rmw {
                             if (!std::holds_alternative<std::uint64_t>(size_val.value)) [[unlikely]] {
                                 return ebmgen::unexpect_error("WRITE_BYTES dynamic size is not an integer");
                             }
-                            // Note: size_val is popped to balance the stack; actual write size
-                            // comes from the object's stored data for VECTOR, or raw_object for ARRAY.
+                            expected_size = static_cast<size_t>(std::get<std::uint64_t>(size_val.value));
                         }
                         if (stack.empty()) [[unlikely]] {
                             return ebmgen::unexpect_error("stack underflow on WRITE_BYTES target");
@@ -1169,6 +1331,7 @@ namespace ebm2rmw {
                             return ebmgen::unexpect_error("WRITE_BYTES target is not an object");
                         }
                         auto& arr = std::get<ObjectRef>(target.value);
+                        size_t actual_written = 0;
                         if (kind == ebm::TypeKind::VECTOR) {
                             MAYBE(index, decode_uint64(arr));
                             if (index == 0) {
@@ -1179,11 +1342,16 @@ namespace ebm2rmw {
                                 return ebmgen::unexpect_error("WRITE_BYTES invalid vector index: {} (out of {})", actual_index, bytes_arena.size());
                             }
                             auto& byte_array = bytes_arena[actual_index];
+                            actual_written = byte_array.size();
                             output_buf.insert(output_buf.end(), byte_array.begin(), byte_array.end());
                         }
                         else {
                             size_t bytes_to_write = std::min(static_size > 0 ? static_size : arr.raw_object.size(), arr.raw_object.size());
+                            actual_written = bytes_to_write;
                             output_buf.insert(output_buf.end(), arr.raw_object.begin(), arr.raw_object.begin() + bytes_to_write);
+                        }
+                        if (is_dynamic && !ctx.flags().skip_write_size_check && actual_written != expected_size) {
+                            return ebmgen::unexpect_error("WRITE_BYTES size mismatch: expected {} bytes but wrote {} (use --skip-write-size-check to suppress)", expected_size, actual_written);
                         }
                         break;
                     }

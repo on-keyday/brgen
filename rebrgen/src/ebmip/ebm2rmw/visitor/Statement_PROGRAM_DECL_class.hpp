@@ -26,7 +26,10 @@
 #include "file/file_view.h"
 #include "interpret.hpp"
 #include "layout.hpp"
+#include "json/json.h"
 #include "number/hex/bin2hex.h"
+#include "number/prefix.h"
+#include "strutil/splits.h"
 #include "optimize.hpp"
 #include "wrap/cout.h"
 DEFINE_VISITOR(Statement_PROGRAM_DECL) {
@@ -193,28 +196,199 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
         }
     }
 
-    if (ctx.flags().binary_file.empty()) {
+    const bool has_modifications = !ctx.flags().modify_fields.empty() || !ctx.flags().modify_json.empty();
+
+    if (ctx.flags().binary_file.empty() && !has_modifications) {
         futils::wrap::cerr_wrap() << "No binary file specified, skipping execution.\n";
         return res;
     }
-    futils::file::View file;
-    if (auto fres = file.open(ctx.flags().binary_file); !fres) {
-        return unexpect_error("Failed to open binary file {}: {}", ctx.flags().binary_file, fres.error().error<std::string>());
-    }
-    if (file.size() == 0) {
-        return unexpect_error("Binary file is empty: {}", ctx.flags().binary_file);
-    }
+
     MAYBE(fnt, ctx.module().get_statement(entry_decode_fn));
     MAYBE(decl, fnt.body.func_decl());
     Optimizer optimizer;
     optimizer.optimize_function(ctx.config().env);
     RuntimeEnv runtime;
-    std::vector<Value> decode_params;
-    decode_params.resize(decl.params.container.size());
-    runtime.input = futils::view::rvec(file.data(), file.size());
-    runtime.input_pos = 0;
     InitialContext initial_ctx{.visitor = ctx.visitor};
-    MAYBE_VOID(rt, runtime.interpret(initial_ctx, entry_stmt.id, decode_params));
+
+    futils::file::View file;
+    if (!ctx.flags().binary_file.empty()) {
+        if (auto fres = file.open(ctx.flags().binary_file); !fres) {
+            return unexpect_error("Failed to open binary file {}: {}", ctx.flags().binary_file, fres.error().error<std::string>());
+        }
+        if (file.size() == 0) {
+            return unexpect_error("Binary file is empty: {}", ctx.flags().binary_file);
+        }
+        std::vector<Value> decode_params;
+        decode_params.resize(decl.params.container.size());
+        runtime.input = futils::view::rvec(file.data(), file.size());
+        runtime.input_pos = 0;
+        MAYBE_VOID(_, runtime.interpret(initial_ctx, entry_stmt.id, decode_params));
+    } else {
+        // Write-only mode: zero-initialize struct from layout
+        LayoutAccess access(initial_ctx);
+        auto* layout = access.get_struct_layout_detail(entry_stmt.id);
+        if (!layout) {
+            return unexpect_error("Failed to get struct layout for '{}'", entry_str);
+        }
+        runtime.decoded_self_bytes.assign(layout->size, 0);
+        runtime.decoded_self_type = layout->type;
+        futils::wrap::cerr_wrap() << "No binary file: zero-initialized " << entry_str << " (" << layout->size << " bytes)\n";
+    }
+
+    // Modify step (M in RMW)
+    auto modify_step = [&]() -> expected<void> {
+        if (!has_modifications) {
+            return {};
+        }
+        LayoutAccess access(initial_ctx);
+
+        // Navigate a dot-separated path
+        // Syntax: field.nested  /  array_field[N]  /  vector_field[N]  /  vector_field[+]
+        auto navigate_field = [&](std::string_view path) -> expected<ObjectRef> {
+            ObjectRef current(runtime.decoded_self_type, futils::view::wvec(runtime.decoded_self_bytes));
+            while (!path.empty()) {
+                auto dot_pos = path.find('.');
+                auto segment = dot_pos != std::string_view::npos ? path.substr(0, dot_pos) : path;
+                path = dot_pos != std::string_view::npos ? path.substr(dot_pos + 1) : "";
+
+                auto bracket_pos = segment.find('[');
+                std::string_view field_name = bracket_pos != std::string_view::npos ? segment.substr(0, bracket_pos) : segment;
+
+                auto* layout = access.get_struct_layout_detail(current.type);
+                if (!layout) {
+                    return ebmgen::unexpect_error("type is not a struct, cannot navigate to field '{}'", field_name);
+                }
+                bool found = false;
+                for (auto& fl : layout->fields) {
+                    if (initial_ctx.identifier(fl.field) != field_name) {
+                        continue;
+                    }
+                    auto got = current.raw_object.substr(fl.offset, fl.type.size);
+                    if (got.size() != fl.type.size) {
+                        return ebmgen::unexpect_error("field size mismatch for '{}'", field_name);
+                    }
+                    auto parent_current = current;
+                    current = ObjectRef(fl.type.type, got);
+                    if (bracket_pos != std::string_view::npos) {
+                        auto index_content = segment.substr(bracket_pos + 1);
+                        auto close = index_content.find(']');
+                        if (close == std::string_view::npos) {
+                            return ebmgen::unexpect_error("missing ']' in '{}'", segment);
+                        }
+                        auto index_str = index_content.substr(0, close);
+                        const auto type_kind = initial_ctx.get_kind(fl.type.type);
+                        if (type_kind == ebm::TypeKind::ARRAY) {
+                            MAYBE(elem_layout, access.get_array_element_type(fl.type.type));
+                            std::uint64_t index = 0;
+                            if (!futils::number::prefix_integer(index_str, index)) {
+                                return ebmgen::unexpect_error("invalid array index in '{}'", segment);
+                            }
+                            if ((index + 1) * elem_layout.size > current.raw_object.size()) {
+                                return ebmgen::unexpect_error("array index {} out of bounds in '{}'", index, segment);
+                            }
+                            current = ObjectRef(elem_layout.type, current.raw_object.substr(index * elem_layout.size, elem_layout.size));
+                        } else if (type_kind == ebm::TypeKind::VECTOR) {
+                            MAYBE(elem_layout, access.get_vector_element_type(fl.type.type));
+                            if (index_str == "+") {
+                                // push_back: allocate new element
+                                MAYBE(new_elem, runtime.vector_alloc_back(initial_ctx, current, elem_layout.size, elem_layout.type));
+                                current = new_elem;
+                            } else {
+                                std::uint64_t index = 0;
+                                if (!futils::number::prefix_integer(index_str, index)) {
+                                    return ebmgen::unexpect_error("invalid vector index in '{}'", segment);
+                                }
+                                MAYBE(elem_obj, runtime.vector_get_element(current, static_cast<size_t>(index), elem_layout));
+                                current = elem_obj;
+                            }
+                        } else if (type_kind == ebm::TypeKind::VARIANT || type_kind == ebm::TypeKind::STRUCT_UNION) {
+                            // Reinterpret the union's raw bytes as variant[N]'s type.
+                            // Variant names are auto-generated (tmp123 etc.), so index by insertion order.
+                            auto* union_layout = access.get_union_layout(fl.type.type);
+                            if (!union_layout) {
+                                return ebmgen::unexpect_error("union layout not found for '{}'", field_name);
+                            }
+                            std::uint64_t index = 0;
+                            if (!futils::number::prefix_integer(index_str, index)) {
+                                return ebmgen::unexpect_error("invalid variant index in '{}'", segment);
+                            }
+                            if (index >= union_layout->variants.size()) {
+                                return ebmgen::unexpect_error("variant index {} out of bounds (count={}) in '{}'", index, union_layout->variants.size(), segment);
+                            }
+                            if (!ctx.flags().skip_variant_check && type_kind == ebm::TypeKind::STRUCT_UNION) {
+                                auto* selector_ref = access.get_struct_union_selector_fn(fl.type.type);
+                                if (selector_ref) {
+                                    MAYBE(active_index, runtime.eval_struct_union_variant(initial_ctx, *selector_ref, parent_current));
+                                    if (active_index != static_cast<size_t>(index)) {
+                                        return ebmgen::unexpect_error("variant index {} does not match active variant {} for '{}' (use --skip-variant-check to override)", index, active_index, field_name);
+                                    }
+                                }
+                            }
+                            auto& variant_layout = union_layout->variants[static_cast<size_t>(index)];
+                            auto variant_raw = current.raw_object.substr(0, variant_layout.size);
+                            if (variant_raw.size() != variant_layout.size) {
+                                return ebmgen::unexpect_error("variant {} size mismatch in '{}'", index, segment);
+                            }
+                            current = ObjectRef(variant_layout.type, variant_raw);
+                        } else {
+                            return ebmgen::unexpect_error("field '{}' is not an array, vector, or variant type", field_name);
+                        }
+                    }
+                    found = true;
+                    break;
+                }
+                if (!found) {
+                    return ebmgen::unexpect_error("field '{}' not found in struct", field_name);
+                }
+            }
+            return current;
+        };
+
+        auto apply_one = [&](std::string_view path, std::uint64_t new_value) -> expected<void> {
+            MAYBE(field_obj, navigate_field(path));
+            MAYBE_VOID(_, encode_uint64(field_obj, new_value));
+            futils::wrap::cerr_wrap() << "Modified '" << path << "' = " << new_value << "\n";
+            return {};
+        };
+
+        // Semicolon-separated "field.path=value" entries
+        for (auto& entry : futils::strutil::split(ctx.flags().modify_fields, ";")) {
+            if (entry.empty()) {
+                continue;
+            }
+            auto eq_pos = entry.find('=');
+            if (eq_pos == std::string_view::npos) {
+                return ebmgen::unexpect_error("invalid modify entry '{}': expected 'field.path=value'", entry);
+            }
+            std::uint64_t new_value = 0;
+            if (!futils::number::prefix_integer(entry.substr(eq_pos + 1), new_value)) {
+                return ebmgen::unexpect_error("invalid integer value in '{}'", entry);
+            }
+            MAYBE_VOID(_, apply_one(std::string_view(entry).substr(0, eq_pos), new_value));
+        }
+
+        // JSON file entries: {"field.path": integer_value, ...}
+        if (!ctx.flags().modify_json.empty()) {
+            futils::file::View jf;
+            if (auto fres = jf.open(ctx.flags().modify_json); !fres) {
+                return ebmgen::unexpect_error("failed to open modify-json '{}': {}", ctx.flags().modify_json, fres.error().error<std::string>());
+            }
+            auto json = futils::json::parse<futils::json::JSON>(futils::view::rvec(jf), true);
+            if (!json.is_object()) {
+                return ebmgen::unexpect_error("modify-json must be a JSON object");
+            }
+            for (auto it = json.obegin(); it != json.oend(); ++it) {
+                std::uint64_t new_value = 0;
+                if (!get<1>(*it).as_number(new_value)) {
+                    return ebmgen::unexpect_error("value for '{}' must be an integer", get<0>(*it));
+                }
+                MAYBE_VOID(_, apply_one(std::string_view(get<0>(*it)), new_value));
+            }
+        }
+
+        return {};
+    };
+    MAYBE_VOID(_, modify_step());
 
     auto encode_step = [&]() -> expected<void> {
         auto entry_encode_fn = *entry_encode_fn_ptr;
