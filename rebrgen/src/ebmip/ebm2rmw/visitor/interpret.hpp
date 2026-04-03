@@ -82,7 +82,8 @@ namespace ebm2rmw {
                                     if (actual_index < arena->size()) {
                                         auto& byte_array = (*arena)[actual_index];
                                         auto elem_layout = access.get_vector_element_type(field.type.type);
-                                        if (elem_layout && elem_layout->size > 0 && byte_array.size() % elem_layout->size == 0) {
+
+                                        if (elem_layout && !is_u8(ctx, elem_layout->type) && byte_array.size() % elem_layout->size == 0) {
                                             size_t count = byte_array.size() / elem_layout->size;
                                             w.writeln(" [");
                                             auto inner = w.indent_scope();
@@ -284,6 +285,7 @@ namespace ebm2rmw {
     struct SubOutputContext {
         size_t saved_output_len;
         size_t expected_length;
+        std::string_view str_repr;
     };
 
     struct RuntimeEnv {
@@ -313,7 +315,7 @@ namespace ebm2rmw {
             return ObjectRef(ref, substr);
         }
 
-        ebmgen::expected<ObjectRef> vector_alloc_back(InitialContext& ctx, ObjectRef vec, size_t element_size, ebm::TypeRef element_type) {
+        ebmgen::expected<ObjectRef> vector_alloc_back(InitialContext& ctx, ObjectRef vec, size_t element_size, ebm::TypeRef element_type, size_t* element_count = nullptr) {
             MAYBE(index, decode_uint64(vec));
             if (index == 0) {
                 bytes_arena.emplace_back();
@@ -325,6 +327,9 @@ namespace ebm2rmw {
                 return ebmgen::unexpect_error("invalid vector index: {} (out of {})", actual_index, bytes_arena.size());
             }
             bytes_arena[actual_index].resize(bytes_arena[actual_index].size() + element_size);
+            if (element_count) {
+                *element_count = bytes_arena[actual_index].size() / element_size;
+            }
             bytes_arena_usage += element_size;
             auto elem_place = futils::view::wvec(bytes_arena[actual_index]).substr(bytes_arena[actual_index].size() - element_size, element_size);
             return ObjectRef(element_type, elem_place);
@@ -777,7 +782,7 @@ namespace ebm2rmw {
                             return ebmgen::unexpect_error("PUSH_SUB_OUTPUT: length is not integer");
                         }
                         auto expected = static_cast<size_t>(std::get<std::uint64_t>(len_val.value));
-                        sub_output_stack.push_back({output_buf.size(), expected});
+                        sub_output_stack.push_back({output_buf.size(), expected, instr.str_repr});
                         break;
                     }
                     case ebm::OpCode::POP_SUB_OUTPUT: {
@@ -788,7 +793,7 @@ namespace ebm2rmw {
                         sub_output_stack.pop_back();
                         size_t written = output_buf.size() - saved.saved_output_len;
                         if (!ctx.flags().skip_write_size_check && written != saved.expected_length) {
-                            return ebmgen::unexpect_error("SUB_OUTPUT size mismatch: expected {} bytes but wrote {}", saved.expected_length, written);
+                            return ebmgen::unexpect_error("SUB_OUTPUT size mismatch: expected {} bytes but wrote {}: expected for {}", saved.expected_length, written, saved.str_repr);
                         }
                         break;
                     }
@@ -910,7 +915,7 @@ namespace ebm2rmw {
                         }
                         auto cond_val = std::get<std::uint64_t>(cond.value);
                         if (cond_val == 0) {
-                            return ebmgen::unexpect_error("ASSERT failed");
+                            return ebmgen::unexpect_error("ASSERT failed: {}", instr.str_repr);
                         }
                         break;
                     }
