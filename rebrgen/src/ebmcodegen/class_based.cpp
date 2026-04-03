@@ -1710,7 +1710,7 @@ namespace ebmcodegen {
             w.writeln("if (!result) {");
             {
                 auto err_scope = w.indent_scope();
-                w.writeln("futils::wrap::cerr_wrap() << visitor.program_name << \": error: \" << result.error().error();");
+                w.writeln(R"(futils::wrap::cerr_wrap() << visitor.program_name << ": error: " << result.error().error(); << "\n")");
                 w.writeln("return 1;");
             }
             w.writeln("}");
