@@ -1,5 +1,5 @@
 config.go.package = "ether"
-format TCPHeader:
+format TCPHeaderFixed:
     srcPort :u16
     dstPort :u16
     seqNum :u32
@@ -10,7 +10,11 @@ format TCPHeader:
     windowSize :u16
     checksum :u16
     urgentPointer :u16
-    options :[..]TCPOption(input = input.subrange(u8(dataOffset*4)-20))
+
+format TCPHeader:
+    fixed :TCPHeaderFixed
+    fixed.dataOffset >= 5
+    options :[..]TCPOption(input = input.subrange(u8(fixed.dataOffset*4)-sizeof(TCPHeaderFixed)))
 
 format TCPSegment:
     hdr :TCPHeader
