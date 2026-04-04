@@ -2335,6 +2335,14 @@ namespace ebm {
     }
     
     bool from_json(SizeofDesc& obj, const futils::json::JSON& j) {
+        if (auto got = j.at("target_expr")) {
+            if(!futils::json::convert_from_json(*got, obj.target_expr)) {
+                return false;
+            }
+        }
+        else {
+            return false;
+        }
         if (auto got = j.at("target_type")) {
             if(!futils::json::convert_from_json(*got, obj.target_type)) {
                 return false;

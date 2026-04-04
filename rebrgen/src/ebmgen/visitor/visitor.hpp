@@ -3029,6 +3029,7 @@ namespace ebmgen::visitor {
         ebm::ExpressionRef item_id;
         const ebm::TypeRef& type;
         const ebm::ExpressionKind& kind;
+        const ebm::SizeofDesc& sizeof_desc;
     };
     template <typename Result>
     struct Context_Expression_SIZEOF_before : ebmcodegen::util::ContextBase<Context_Expression_SIZEOF_before<Result>> {
@@ -3037,6 +3038,7 @@ namespace ebmgen::visitor {
         ebm::ExpressionRef item_id;
         const ebm::TypeRef& type;
         const ebm::ExpressionKind& kind;
+        const ebm::SizeofDesc& sizeof_desc;
         ebmcodegen::util::MainLogicWrapper<Result> main_logic;
     };
     template <typename Result>
@@ -3046,6 +3048,7 @@ namespace ebmgen::visitor {
         ebm::ExpressionRef item_id;
         const ebm::TypeRef& type;
         const ebm::ExpressionKind& kind;
+        const ebm::SizeofDesc& sizeof_desc;
         ebmcodegen::util::MainLogicWrapper<Result> main_logic;
         expected<Result>& result;
     };
@@ -8189,12 +8192,17 @@ namespace ebmgen::visitor {
     expected<Result> dispatch_Expression_SIZEOF(Context&& ctx,const ebm::Expression& in,ebm::ExpressionRef alias_ref){
         auto& type = in.body.type;
         auto& kind = in.body.kind;
+        if (!in.body.sizeof_desc()) {
+            return unexpect_error("Unexpected null pointer for ExpressionBody::sizeof_desc");
+        }
+        auto& sizeof_desc = *in.body.sizeof_desc();
         auto main_logic = [&]() -> expected<Result>{
             Context_Expression_SIZEOF new_ctx{
                 .visitor = get_visitor_arg_from_context(ctx),
                 .item_id = is_nil(alias_ref) ? in.id : alias_ref,
                 .type = type,
                 .kind = kind,
+                .sizeof_desc = sizeof_desc,
             };
             return get_visitor_from_context<Result>(ctx,new_ctx).visit(new_ctx);
         };
@@ -8203,6 +8211,7 @@ namespace ebmgen::visitor {
             .item_id = is_nil(alias_ref) ? in.id : alias_ref,
             .type = type,
             .kind = kind,
+            .sizeof_desc = sizeof_desc,
             .main_logic = main_logic,
         };
         expected<Result> before_result = get_visitor_from_context<Result>(ctx,before_ctx).visit(before_ctx);
@@ -8213,6 +8222,7 @@ namespace ebmgen::visitor {
             .item_id = is_nil(alias_ref) ? in.id : alias_ref,
             .type = type,
             .kind = kind,
+            .sizeof_desc = sizeof_desc,
             .main_logic = main_logic,
             .result = main_result,
         };
@@ -8226,6 +8236,26 @@ namespace ebmgen::visitor {
             auto result_type = visit_Object<Result>(std::forward<UserContext>(ctx),type_ctx.type);
             if (!result_type) {
                 return unexpect_error(std::move(result_type.error()));
+            }
+        }
+        if (!is_nil(type_ctx.sizeof_desc.target_expr)) {
+            auto result_target_expr = visit_Object<Result>(std::forward<UserContext>(ctx),type_ctx.sizeof_desc.target_expr);
+            if (!result_target_expr) {
+                return unexpect_error(std::move(result_target_expr.error()));
+            }
+        }
+        if (!is_nil(type_ctx.sizeof_desc.target_type)) {
+            auto result_target_type = visit_Object<Result>(std::forward<UserContext>(ctx),type_ctx.sizeof_desc.target_type);
+            if (!result_target_type) {
+                return unexpect_error(std::move(result_target_type.error()));
+            }
+        }
+        if (auto ptr = type_ctx.sizeof_desc.size.ref()) {
+            if (!is_nil((*ptr))) {
+                auto result_ref = visit_Object<Result>(std::forward<UserContext>(ctx),(*ptr));
+                if (!result_ref) {
+                    return unexpect_error(std::move(result_ref.error()));
+                }
             }
         }
         return {};

@@ -2610,6 +2610,10 @@ namespace ebmcodegen {
         }
         else if constexpr (std::is_same_v<T, ebm::SizeofDesc>) {
             if constexpr (false) {}
+            else if constexpr (FieldIndex == 0) {
+                auto& ref = in.target_expr;
+                return ref;
+            }
             else if constexpr (FieldIndex == 165) {
                 auto& ref = in.target_type;
                 return ref;
@@ -2621,6 +2625,12 @@ namespace ebmcodegen {
         }
         else if constexpr (std::is_same_v<T,ebm::SizeofDesc*> || std::is_same_v<T,const ebm::SizeofDesc*>) {
             if constexpr (false) {}
+            else if constexpr (FieldIndex == 0) {
+                if (!in) {
+                    return decltype(std::addressof(in->target_expr))();
+                }
+                return std::addressof(in->target_expr);
+            }
             else if constexpr (FieldIndex == 165) {
                 if (!in) {
                     return decltype(std::addressof(in->target_type))();
@@ -4989,6 +4999,9 @@ namespace ebmcodegen {
     }
     template<>
     constexpr size_t get_field_index<50>(std::string_view field_name) {
+        if (field_name == "target_expr") {
+            return 0;
+        }
         if (field_name == "target_type") {
             return 165;
         }
@@ -9917,6 +9930,9 @@ namespace ebmcodegen {
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
         case 50: {
+            if (field_index == get_field_index<50>("target_expr")) {
+                return {.index = 67, .is_array = false, .is_ptr = false};
+            }
             if (field_index == get_field_index<50>("target_type")) {
                 return {.index = 66, .is_array = false, .is_ptr = false};
             }

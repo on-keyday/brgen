@@ -162,6 +162,8 @@ std::function<expected<Result>(Context_Expression_UNARY_OP& ctx, Result& operand
 
 std::function<expected<Result>(Context_Expression_TYPE_CAST& ctx)> type_cast_custom;
 
+std::function<expected<Result>(Context_Expression_SIZEOF& ctx)> sizeof_custom;
+
 std::function<expected<Result>(Context_Statement_IF_STATEMENT& ctx)> if_statement_custom;
 
 std::function<expected<Result>(Context_Statement_ASSIGNMENT& ctx)> assignment_custom;

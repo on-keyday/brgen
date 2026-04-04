@@ -288,6 +288,26 @@ namespace ebmgen {
         return {};
     }
 
+    expected<void> ExpressionConverter::convert_expr_impl(const std::shared_ptr<ast::SizeOf>& node, ebm::ExpressionBody& body) {
+        body.kind = ebm::ExpressionKind::SIZEOF;
+        EBMA_CONVERT_EXPRESSION(target, node->target);
+        ebm::SizeofDesc sizeof_desc;
+        if (!node->evaluated_value) {
+            return unexpect_error("dynamic sizeof is not supported yet");
+        }
+        MAYBE(target_type, ctx.repository().get_expression(target));
+        if (auto type_literal = target_type.body.type_ref()) {
+            sizeof_desc.target_type = *type_literal;
+        }
+        else {
+            sizeof_desc.target_type = target_type.body.type;
+        }
+        sizeof_desc.target_expr = target;
+        sizeof_desc.size = get_size(*node->evaluated_value * 8);
+        body.sizeof_desc(sizeof_desc);
+        return {};
+    }
+
     expected<void> ExpressionConverter::convert_expr_impl(const std::shared_ptr<ast::BoolLiteral>& node, ebm::ExpressionBody& body) {
         body.kind = ebm::ExpressionKind::LITERAL_BOOL;
         body.bool_value(node->value);

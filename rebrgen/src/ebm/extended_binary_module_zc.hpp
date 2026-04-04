@@ -2987,6 +2987,7 @@ namespace ebm::zc {
         }
     };
     struct EBM_API SizeofDesc{
+        ExpressionRef target_expr;
         TypeRef target_type;
         Size size;
         ::futils::error::Error<> encode(::futils::binary::writer& w) const ;
@@ -2994,11 +2995,13 @@ namespace ebm::zc {
         constexpr static const char* visitor_name = "SizeofDesc";
         template<typename Visitor>
         constexpr void visit(Visitor&& v) {
+            v(v, "target_expr",(*this).target_expr);
             v(v, "target_type",(*this).target_type);
             v(v, "size",(*this).size);
         }
         template<typename Visitor>
         constexpr void visit(Visitor&& v) const {
+            v(v, "target_expr",(*this).target_expr);
             v(v, "target_type",(*this).target_type);
             v(v, "size",(*this).size);
         }
@@ -3009,6 +3012,7 @@ namespace ebm::zc {
         };
         template<typename Visitor>
         static constexpr void visit_static(Visitor&& v) {
+            v(v, "target_expr",visitor_tag<decltype(std::declval<SizeofDesc>().target_expr),false>{});
             v(v, "target_type",visitor_tag<decltype(std::declval<SizeofDesc>().target_type),false>{});
             v(v, "size",visitor_tag<decltype(std::declval<SizeofDesc>().size),false>{});
         }

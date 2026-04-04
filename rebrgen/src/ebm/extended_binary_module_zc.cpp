@@ -20691,6 +20691,9 @@ namespace ebm::zc {
         return ::futils::error::Error<>();
     }
     ::futils::error::Error<> SizeofDesc::encode(::futils::binary::writer& w) const {
+        if (auto err = (*this).target_expr.encode(w)) {
+            return err;
+        }
         if (auto err = (*this).target_type.encode(w)) {
             return err;
         }
@@ -20700,6 +20703,9 @@ namespace ebm::zc {
         return ::futils::error::Error<>();
     }
     ::futils::error::Error<> SizeofDesc::decode(::futils::binary::reader& r) {
+        if (auto err = (*this).target_expr.decode(r)) {
+            return err;
+        }
         if (auto err = (*this).target_type.decode(r)) {
             return err;
         }

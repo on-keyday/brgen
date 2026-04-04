@@ -189,6 +189,7 @@ format TypeCastDesc:
         cast_function :WeakStatementRef # Reference to the cast function
 
 format SizeofDesc:
+    target_expr :ExpressionRef # Expression to get size of (type literal or any expression)
     target_type :TypeRef # Type to get size of
     size :Size # Size information for the type (e.g., fixed size, dynamic size expression)
 
