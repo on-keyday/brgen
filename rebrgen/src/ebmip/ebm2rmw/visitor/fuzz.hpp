@@ -1,0 +1,224 @@
+/*license*/
+#pragma once
+
+#include "../codegen.hpp"
+#include "interpret.hpp"
+#include "layout.hpp"
+#include <random>
+
+namespace ebm2rmw {
+
+    // Simple PRNG wrapper providing type-appropriate random values.
+    struct FuzzRng {
+       private:
+        std::mt19937_64 rng;
+
+        // Interesting boundary values used with ~12% probability for integer fields
+        static constexpr std::uint64_t interesting_values[] = {
+            0, 1, 2,
+            0x7fULL, 0x80ULL, 0xffULL,
+            0x100ULL, 0x7fffULL, 0x8000ULL, 0xffffULL,
+            0x10000ULL, 0x7fffffffULL, 0x80000000ULL, 0xffffffffULL,
+            0x100000000ULL, 0x7fffffffffffffffULL, 0xffffffffffffffffULL,
+        };
+
+       public:
+        explicit FuzzRng(std::uint64_t seed)
+            : rng(seed) {}
+
+        std::uint64_t next_raw() {
+            return rng();
+        }
+
+        // Random unsigned integer bounded to [0, 2^bits)
+        std::uint64_t next_uint(size_t bits) {
+            if (bits == 0) return 0;
+            const std::uint64_t mask = (bits >= 64) ? ~std::uint64_t(0)
+                                                     : ((std::uint64_t(1) << bits) - 1);
+            // ~12% chance of an interesting boundary value
+            if ((rng() & 7) == 0) {
+                const size_t idx = static_cast<size_t>(rng() % std::size(interesting_values));
+                return interesting_values[idx] & mask;
+            }
+            return rng() & mask;
+        }
+
+        bool next_bool() {
+            return (rng() & 1) != 0;
+        }
+
+        size_t next_choice(size_t n) {
+            if (n <= 1) return 0;
+            return static_cast<size_t>(rng() % n);
+        }
+
+        // Geometric-ish distribution: biased toward small values, bounded by max
+        size_t next_vector_length(size_t max) {
+            if (max == 0) return 0;
+            size_t len = 0;
+            while (len < max && (rng() % 3) != 0) {
+                ++len;
+            }
+            return len;
+        }
+    };
+
+    // Forward declarations
+    void fuzz_fill_object(InitialContext& ctx, FuzzRng& rng, RuntimeEnv& runtime,
+                          ObjectRef obj, size_t max_vec_len, LayoutAccess& access);
+    void fuzz_fill_struct(InitialContext& ctx, FuzzRng& rng, RuntimeEnv& runtime,
+                          ObjectRef struct_obj, size_t max_vec_len, LayoutAccess& access);
+
+    // Fill a field/object with random data appropriate for its type.
+    // On any error the field is left at whatever value it already had (typically zero).
+    // This is intentional: partial fills still exercise interesting parser behaviour.
+    inline void fuzz_fill_object(InitialContext& ctx, FuzzRng& rng, RuntimeEnv& runtime,
+                                 ObjectRef obj, size_t max_vec_len, LayoutAccess& access) {
+        if (obj.raw_object.empty()) return;
+
+        const auto opt_kind = ctx.get_kind(obj.type);
+        if (!opt_kind) return;
+        switch (*opt_kind) {
+            case ebm::TypeKind::UINT:
+            case ebm::TypeKind::INT: {
+                const size_t bits = obj.raw_object.size() * 8;
+                const std::uint64_t val = rng.next_uint(bits);
+                if (!encode_uint64(obj, val)) {
+                    // Happens only when size > 8 bytes; fill byte-by-byte instead
+                    for (auto& b : obj.raw_object) {
+                        b = static_cast<std::uint8_t>(rng.next_uint(8));
+                    }
+                }
+                break;
+            }
+            case ebm::TypeKind::BOOL: {
+                encode_uint64(obj, rng.next_bool() ? 1 : 0);
+                break;
+            }
+            case ebm::TypeKind::ENUM:
+            case ebm::TypeKind::FLOAT: {
+                // Raw byte fill: encode handles semantic constraints
+                for (auto& b : obj.raw_object) {
+                    b = static_cast<std::uint8_t>(rng.next_uint(8));
+                }
+                break;
+            }
+            case ebm::TypeKind::ARRAY: {
+                auto elem_res = access.get_array_element_type(obj.type);
+                if (!elem_res) break;  // layout missing: leave as zero
+                const auto& elem_layout = *elem_res;
+                if (elem_layout.size == 0) break;
+                const size_t count = obj.raw_object.size() / elem_layout.size;
+                for (size_t i = 0; i < count; i++) {
+                    ObjectRef elem_obj(elem_layout.type,
+                                      obj.raw_object.substr(i * elem_layout.size, elem_layout.size));
+                    fuzz_fill_object(ctx, rng, runtime, elem_obj, max_vec_len, access);
+                }
+                break;
+            }
+            case ebm::TypeKind::VECTOR: {
+                auto elem_res = access.get_vector_element_type(obj.type);
+                if (!elem_res) break;  // layout missing: leave as zero
+                const auto& elem_layout = *elem_res;
+                if (elem_layout.size == 0) break;
+                const size_t count = rng.next_vector_length(max_vec_len);
+                for (size_t i = 0; i < count; i++) {
+                    auto new_elem_res = runtime.vector_alloc_back(
+                        ctx, obj, elem_layout.size, elem_layout.type, nullptr);
+                    if (!new_elem_res) break;  // arena error: leave vector shorter
+                    fuzz_fill_object(ctx, rng, runtime, *new_elem_res, max_vec_len, access);
+                }
+                break;
+            }
+            case ebm::TypeKind::STRUCT: {
+                fuzz_fill_struct(ctx, rng, runtime, obj, max_vec_len, access);
+                break;
+            }
+            case ebm::TypeKind::VARIANT: {
+                // No discriminant selector: pick a random variant to fill
+                auto* union_layout = access.get_union_layout(obj.type);
+                if (!union_layout || union_layout->variants.empty()) break;
+                const size_t variant_idx = rng.next_choice(union_layout->variants.size());
+                const auto& variant = union_layout->variants[variant_idx];
+                if (variant.size == 0 || variant.size > obj.raw_object.size()) break;
+                fuzz_fill_object(ctx, rng, runtime,
+                                 ObjectRef(variant.type, obj.raw_object.substr(0, variant.size)),
+                                 max_vec_len, access);
+                break;
+            }
+            case ebm::TypeKind::STRUCT_UNION: {
+                // When called directly (not via fuzz_fill_struct) we lack the parent
+                // struct needed to evaluate the selector, so pick a random variant.
+                // fuzz_fill_struct handles STRUCT_UNION fields properly.
+                auto* union_layout = access.get_union_layout(obj.type);
+                if (!union_layout || union_layout->variants.empty()) break;
+                const size_t variant_idx = rng.next_choice(union_layout->variants.size());
+                const auto& variant = union_layout->variants[variant_idx];
+                if (variant.size == 0 || variant.size > obj.raw_object.size()) break;
+                fuzz_fill_object(ctx, rng, runtime,
+                                 ObjectRef(variant.type, obj.raw_object.substr(0, variant.size)),
+                                 max_vec_len, access);
+                break;
+            }
+            default:
+                // RECURSIVE_STRUCT, OPTIONAL, etc.: leave as zero (safe)
+                break;
+        }
+    }
+
+    // Two-pass struct fill.
+    // Pass 1 fills non-STRUCT_UNION fields (including discriminant fields).
+    // Pass 2 uses the compiled selector to determine which STRUCT_UNION variant is
+    // active, then fills only that variant's data.
+    inline void fuzz_fill_struct(InitialContext& ctx, FuzzRng& rng, RuntimeEnv& runtime,
+                                 ObjectRef struct_obj, size_t max_vec_len, LayoutAccess& access) {
+        auto* struct_layout = access.get_struct_layout_detail(struct_obj.type);
+        if (!struct_layout) {
+            // Layout unknown: raw byte fill as fallback
+            for (auto& b : struct_obj.raw_object) {
+                b = static_cast<std::uint8_t>(rng.next_uint(8));
+            }
+            return;
+        }
+
+        // Pass 1: non-STRUCT_UNION fields (populates discriminants)
+        for (const auto& fl : struct_layout->fields) {
+            if (ctx.get_kind(fl.type.type) == ebm::TypeKind::STRUCT_UNION) continue;
+            if (fl.offset + fl.type.size > struct_obj.raw_object.size()) continue;
+            fuzz_fill_object(ctx, rng, runtime,
+                             ObjectRef(fl.type.type,
+                                      struct_obj.raw_object.substr(fl.offset, fl.type.size)),
+                             max_vec_len, access);
+        }
+
+        // Pass 2: STRUCT_UNION fields — use selector if available
+        for (const auto& fl : struct_layout->fields) {
+            if (ctx.get_kind(fl.type.type) != ebm::TypeKind::STRUCT_UNION) continue;
+            if (fl.offset + fl.type.size > struct_obj.raw_object.size()) continue;
+            ObjectRef field_obj(fl.type.type,
+                                struct_obj.raw_object.substr(fl.offset, fl.type.size));
+
+            auto* union_layout = access.get_union_layout(fl.type.type);
+            if (!union_layout || union_layout->variants.empty()) continue;
+
+            size_t variant_idx = 0;
+            const auto* selector_ref = access.get_struct_union_selector_fn(fl.type.type);
+            if (selector_ref) {
+                auto vres = runtime.eval_struct_union_variant(ctx, *selector_ref, struct_obj);
+                if (vres && *vres < union_layout->variants.size()) {
+                    variant_idx = *vres;
+                }
+                // Selector failed or returned OOB: use variant 0
+            } else {
+                variant_idx = rng.next_choice(union_layout->variants.size());
+            }
+
+            const auto& variant = union_layout->variants[variant_idx];
+            if (variant.size == 0 || variant.size > field_obj.raw_object.size()) continue;
+            fuzz_fill_object(ctx, rng, runtime,
+                             ObjectRef(variant.type, field_obj.raw_object.substr(0, variant.size)),
+                             max_vec_len, access);
+        }
+    }
+
+}  // namespace ebm2rmw
