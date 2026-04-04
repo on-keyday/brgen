@@ -58244,22 +58244,12 @@ namespace ebm2z3 {
     expected<Result> dispatch_Expression_SIZEOF(Context&& ctx,const ebm::Expression& in,ebm::ExpressionRef alias_ref){
         auto& type = in.body.type;
         auto& kind = in.body.kind;
-        if (!in.body.lowered_expr()) {
-            return unexpect_error("Unexpected null pointer for ExpressionBody::lowered_expr");
-        }
-        auto& lowered_expr = *in.body.lowered_expr();
-        if (!in.body.target_expr()) {
-            return unexpect_error("Unexpected null pointer for ExpressionBody::target_expr");
-        }
-        auto& target_expr = *in.body.target_expr();
         auto main_logic = [&]() -> expected<Result>{
             Context_Expression_SIZEOF new_ctx{
                 .visitor = get_visitor_arg_from_context(ctx),
                 .item_id = is_nil(alias_ref) ? in.id : alias_ref,
                 .type = type,
                 .kind = kind,
-                .lowered_expr = lowered_expr,
-                .target_expr = target_expr,
             };
             return get_visitor_from_context<Result>(ctx,new_ctx).visit(new_ctx);
         };
@@ -58268,8 +58258,6 @@ namespace ebm2z3 {
             .item_id = is_nil(alias_ref) ? in.id : alias_ref,
             .type = type,
             .kind = kind,
-            .lowered_expr = lowered_expr,
-            .target_expr = target_expr,
             .main_logic = main_logic,
         };
         expected<Result> before_result = get_visitor_from_context<Result>(ctx,before_ctx).visit(before_ctx);
@@ -58280,8 +58268,6 @@ namespace ebm2z3 {
             .item_id = is_nil(alias_ref) ? in.id : alias_ref,
             .type = type,
             .kind = kind,
-            .lowered_expr = lowered_expr,
-            .target_expr = target_expr,
             .main_logic = main_logic,
             .result = main_result,
         };
@@ -58295,12 +58281,6 @@ namespace ebm2z3 {
             auto result_type = visit_Object<Result>(std::forward<UserContext>(ctx),type_ctx.type);
             if (!result_type) {
                 return unexpect_error(std::move(result_type.error()));
-            }
-        }
-        if (!is_nil(type_ctx.target_expr)) {
-            auto result_target_expr = visit_Object<Result>(std::forward<UserContext>(ctx),type_ctx.target_expr);
-            if (!result_target_expr) {
-                return unexpect_error(std::move(result_target_expr.error()));
             }
         }
         return {};

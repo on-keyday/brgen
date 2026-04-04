@@ -4345,13 +4345,11 @@ namespace ebm2all {
         ebm::ExpressionRef item_id;
         const ebm::TypeRef& type;
         const ebm::ExpressionKind& kind;
-        const ebm::LoweredExpressionRef& lowered_expr;
-        const ebm::ExpressionRef& target_expr;
     };
     struct VisitorTag_Expression_SIZEOF {};
     // Deconstruct context fields
     #define EBM2ALL_DECONSTRUCT_EXPRESSION_SIZEOF(instance_name) \
-    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& type = instance_name.type;auto& kind = instance_name.kind;auto& lowered_expr = instance_name.lowered_expr;auto& target_expr = instance_name.target_expr;
+    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& type = instance_name.type;auto& kind = instance_name.kind;
     template <typename Result>
     struct Context_Expression_SIZEOF_before : ebmcodegen::util::ContextBase<Context_Expression_SIZEOF_before<Result>> {
         constexpr static std::string_view context_name = "Expression_SIZEOF_before";
@@ -4359,14 +4357,12 @@ namespace ebm2all {
         ebm::ExpressionRef item_id;
         const ebm::TypeRef& type;
         const ebm::ExpressionKind& kind;
-        const ebm::LoweredExpressionRef& lowered_expr;
-        const ebm::ExpressionRef& target_expr;
         ebmcodegen::util::MainLogicWrapper<Result> main_logic;
     };
     struct VisitorTag_Expression_SIZEOF_before {};
     // Deconstruct context fields
     #define EBM2ALL_DECONSTRUCT_EXPRESSION_SIZEOF_BEFORE(instance_name) \
-    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& type = instance_name.type;auto& kind = instance_name.kind;auto& lowered_expr = instance_name.lowered_expr;auto& target_expr = instance_name.target_expr;auto& main_logic = instance_name.main_logic;
+    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& type = instance_name.type;auto& kind = instance_name.kind;auto& main_logic = instance_name.main_logic;
     template <typename Result>
     struct Context_Expression_SIZEOF_after : ebmcodegen::util::ContextBase<Context_Expression_SIZEOF_after<Result>> {
         constexpr static std::string_view context_name = "Expression_SIZEOF_after";
@@ -4374,15 +4370,13 @@ namespace ebm2all {
         ebm::ExpressionRef item_id;
         const ebm::TypeRef& type;
         const ebm::ExpressionKind& kind;
-        const ebm::LoweredExpressionRef& lowered_expr;
-        const ebm::ExpressionRef& target_expr;
         ebmcodegen::util::MainLogicWrapper<Result> main_logic;
         expected<Result>& result;
     };
     struct VisitorTag_Expression_SIZEOF_after {};
     // Deconstruct context fields
     #define EBM2ALL_DECONSTRUCT_EXPRESSION_SIZEOF_AFTER(instance_name) \
-    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& type = instance_name.type;auto& kind = instance_name.kind;auto& lowered_expr = instance_name.lowered_expr;auto& target_expr = instance_name.target_expr;auto& main_logic = instance_name.main_logic;auto& result = instance_name.result;
+    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& type = instance_name.type;auto& kind = instance_name.kind;auto& main_logic = instance_name.main_logic;auto& result = instance_name.result;
     struct Context_Expression_SUB_RANGE_INIT : ebmcodegen::util::ContextBase<Context_Expression_SUB_RANGE_INIT> {
         constexpr static std::string_view context_name = "Expression_SUB_RANGE_INIT";
         BaseVisitor& visitor;

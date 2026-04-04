@@ -2027,6 +2027,7 @@ namespace ebm {
     struct CallDesc;
     struct TypeCastDesc;
     struct Size;
+    struct SizeofDesc;
     struct ExpressionBody;
     struct Expression;
     struct IfStatement;
@@ -2985,6 +2986,33 @@ namespace ebm {
             v(v, "size",visitor_tag<decltype(std::declval<Size>().size()),false>{});
         }
     };
+    struct EBM_API SizeofDesc{
+        TypeRef target_type;
+        Size size;
+        ::futils::error::Error<> encode(::futils::binary::writer& w) const ;
+        ::futils::error::Error<> decode(::futils::binary::reader& r);
+        constexpr static const char* visitor_name = "SizeofDesc";
+        template<typename Visitor>
+        constexpr void visit(Visitor&& v) {
+            v(v, "target_type",(*this).target_type);
+            v(v, "size",(*this).size);
+        }
+        template<typename Visitor>
+        constexpr void visit(Visitor&& v) const {
+            v(v, "target_type",(*this).target_type);
+            v(v, "size",(*this).size);
+        }
+        template<typename T,bool rvalue = false>
+        struct visitor_tag {
+            using type = T;
+            static constexpr bool is_rvalue = rvalue;
+        };
+        template<typename Visitor>
+        static constexpr void visit_static(Visitor&& v) {
+            v(v, "target_type",visitor_tag<decltype(std::declval<SizeofDesc>().target_type),false>{});
+            v(v, "size",visitor_tag<decltype(std::declval<SizeofDesc>().size),false>{});
+        }
+    };
     struct EBM_API ExpressionBody{
         TypeRef type;
         ExpressionKind kind{};
@@ -3093,8 +3121,7 @@ namespace ebm {
             LoweredExpressionRef lowered_expr;
         };
         struct EBM_API union_struct_63{
-            ExpressionRef target_expr;
-            LoweredExpressionRef lowered_expr;
+            SizeofDesc sizeof_desc;
         };
         struct EBM_API union_struct_64{
             WeakStatementRef sub_range;
@@ -3223,6 +3250,10 @@ namespace ebm {
         SetterStatus* setter_status();
         bool setter_status(SetterStatus&& v);
         bool setter_status(const SetterStatus& v);
+        const SizeofDesc* sizeof_desc() const;
+        SizeofDesc* sizeof_desc();
+        bool sizeof_desc(SizeofDesc&& v);
+        bool sizeof_desc(const SizeofDesc& v);
         const ExpressionRef* start() const;
         ExpressionRef* start();
         bool start(ExpressionRef&& v);
@@ -3301,6 +3332,7 @@ namespace ebm {
             v(v, "or_cond",(*this).or_cond());
             v(v, "right",(*this).right());
             v(v, "setter_status",(*this).setter_status());
+            v(v, "sizeof_desc",(*this).sizeof_desc());
             v(v, "start",(*this).start());
             v(v, "stream_type",(*this).stream_type());
             v(v, "string_value",(*this).string_value());
@@ -3344,6 +3376,7 @@ namespace ebm {
             v(v, "or_cond",(*this).or_cond());
             v(v, "right",(*this).right());
             v(v, "setter_status",(*this).setter_status());
+            v(v, "sizeof_desc",(*this).sizeof_desc());
             v(v, "start",(*this).start());
             v(v, "stream_type",(*this).stream_type());
             v(v, "string_value",(*this).string_value());
@@ -3392,6 +3425,7 @@ namespace ebm {
             v(v, "or_cond",visitor_tag<decltype(std::declval<ExpressionBody>().or_cond()),false>{});
             v(v, "right",visitor_tag<decltype(std::declval<ExpressionBody>().right()),false>{});
             v(v, "setter_status",visitor_tag<decltype(std::declval<ExpressionBody>().setter_status()),false>{});
+            v(v, "sizeof_desc",visitor_tag<decltype(std::declval<ExpressionBody>().sizeof_desc()),false>{});
             v(v, "start",visitor_tag<decltype(std::declval<ExpressionBody>().start()),false>{});
             v(v, "stream_type",visitor_tag<decltype(std::declval<ExpressionBody>().stream_type()),false>{});
             v(v, "string_value",visitor_tag<decltype(std::declval<ExpressionBody>().string_value()),false>{});

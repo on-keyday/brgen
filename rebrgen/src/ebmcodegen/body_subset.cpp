@@ -91,6 +91,7 @@ namespace ebmcodegen {
             body.or_cond({});
             body.right({});
             body.setter_status({});
+            body.sizeof_desc({});
             body.start({});
             body.stream_type({});
             body.string_value({});

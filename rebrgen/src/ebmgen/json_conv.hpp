@@ -109,6 +109,8 @@ namespace ebm {
     
     bool from_json(Size& obj, const futils::json::JSON& j);
     
+    bool from_json(SizeofDesc& obj, const futils::json::JSON& j);
+    
     bool from_json(Statement& obj, const futils::json::JSON& j);
     
     bool from_json(StatementBody& obj, const futils::json::JSON& j);

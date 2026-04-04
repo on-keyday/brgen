@@ -3509,12 +3509,6 @@ namespace ebm::zc {
         }
         return std::addressof(std::get<28>((*this).union_variant_34).lowered_expr);
         }
-        if (ExpressionKind::SIZEOF==(*this).kind) {
-        if(!std::holds_alternative<union_struct_63>(union_variant_34)) {
-            return nullptr;
-        }
-        return std::addressof(std::get<29>((*this).union_variant_34).lowered_expr);
-        }
         return nullptr;
     }
     LoweredExpressionRef* ExpressionBody::lowered_expr() {
@@ -3621,13 +3615,6 @@ namespace ebm::zc {
             std::get<28>((*this).union_variant_34).lowered_expr = v;
             return true;
         }
-        if (ExpressionKind::SIZEOF==(*this).kind) {
-            if(!std::holds_alternative<union_struct_63>(union_variant_34)) {
-                union_variant_34 = union_struct_63();
-            }
-            std::get<29>((*this).union_variant_34).lowered_expr = v;
-            return true;
-        }
         return false;
     }
     bool ExpressionBody::lowered_expr(LoweredExpressionRef&& v) {
@@ -3729,13 +3716,6 @@ namespace ebm::zc {
                 union_variant_34 = union_struct_62();
             }
             std::get<28>((*this).union_variant_34).lowered_expr = std::move(v);
-            return true;
-        }
-        if (ExpressionKind::SIZEOF==(*this).kind) {
-            if(!std::holds_alternative<union_struct_63>(union_variant_34)) {
-                union_variant_34 = union_struct_63();
-            }
-            std::get<29>((*this).union_variant_34).lowered_expr = std::move(v);
             return true;
         }
         return false;
@@ -4915,6 +4895,290 @@ namespace ebm::zc {
         }
         return false;
     }
+    const SizeofDesc* ExpressionBody::sizeof_desc() const {
+        if (ExpressionKind::LITERAL_INT==(*this).kind) {
+        return nullptr;
+        }
+        if (ExpressionKind::LITERAL_INT64==(*this).kind) {
+        return nullptr;
+        }
+        if (ExpressionKind::LITERAL_BOOL==(*this).kind) {
+        return nullptr;
+        }
+        if (ExpressionKind::LITERAL_STRING==(*this).kind) {
+        return nullptr;
+        }
+        if (ExpressionKind::LITERAL_TYPE==(*this).kind) {
+        return nullptr;
+        }
+        if (ExpressionKind::LITERAL_CHAR==(*this).kind) {
+        return nullptr;
+        }
+        if (ExpressionKind::IDENTIFIER==(*this).kind) {
+        return nullptr;
+        }
+        if (ExpressionKind::BINARY_OP==(*this).kind) {
+        return nullptr;
+        }
+        if (ExpressionKind::UNARY_OP==(*this).kind) {
+        return nullptr;
+        }
+        if (ExpressionKind::CALL==(*this).kind) {
+        return nullptr;
+        }
+        if (ExpressionKind::INDEX_ACCESS==(*this).kind) {
+        return nullptr;
+        }
+        if (ExpressionKind::MEMBER_ACCESS==(*this).kind) {
+        return nullptr;
+        }
+        if (ExpressionKind::ENUM_MEMBER==(*this).kind) {
+        return nullptr;
+        }
+        if (ExpressionKind::TYPE_CAST==(*this).kind) {
+        return nullptr;
+        }
+        if (ExpressionKind::RANGE==(*this).kind) {
+        return nullptr;
+        }
+        if (ExpressionKind::IS_LITTLE_ENDIAN==(*this).kind) {
+        return nullptr;
+        }
+        if (ExpressionKind::GET_STREAM_OFFSET==(*this).kind) {
+        return nullptr;
+        }
+        if (ExpressionKind::GET_REMAINING_BYTES==(*this).kind) {
+        return nullptr;
+        }
+        if (ExpressionKind::CAN_READ_STREAM==(*this).kind) {
+        return nullptr;
+        }
+        if (ExpressionKind::ARRAY_SIZE==(*this).kind) {
+        return nullptr;
+        }
+        if (ExpressionKind::IS_ERROR==(*this).kind) {
+        return nullptr;
+        }
+        if (ExpressionKind::MAX_VALUE==(*this).kind) {
+        return nullptr;
+        }
+        if (ExpressionKind::READ_DATA==(*this).kind) {
+        return nullptr;
+        }
+        if (ExpressionKind::WRITE_DATA==(*this).kind) {
+        return nullptr;
+        }
+        if (ExpressionKind::CONDITIONAL_STATEMENT==(*this).kind) {
+        return nullptr;
+        }
+        if (ExpressionKind::CONDITIONAL==(*this).kind) {
+        return nullptr;
+        }
+        if (ExpressionKind::AVAILABLE==(*this).kind) {
+        return nullptr;
+        }
+        if (ExpressionKind::ENUM_IS_DEFINED==(*this).kind) {
+        return nullptr;
+        }
+        if (ExpressionKind::SIZEOF==(*this).kind) {
+        if(!std::holds_alternative<union_struct_63>(union_variant_34)) {
+            return nullptr;
+        }
+        return std::addressof(std::get<29>((*this).union_variant_34).sizeof_desc);
+        }
+        return nullptr;
+    }
+    SizeofDesc* ExpressionBody::sizeof_desc() {
+        return const_cast<SizeofDesc*>(std::as_const(*this).sizeof_desc());
+    }
+    bool ExpressionBody::sizeof_desc(const SizeofDesc& v) {
+        if (ExpressionKind::LITERAL_INT==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::LITERAL_INT64==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::LITERAL_BOOL==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::LITERAL_STRING==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::LITERAL_TYPE==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::LITERAL_CHAR==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::IDENTIFIER==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::BINARY_OP==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::UNARY_OP==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::CALL==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::INDEX_ACCESS==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::MEMBER_ACCESS==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::ENUM_MEMBER==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::TYPE_CAST==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::RANGE==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::IS_LITTLE_ENDIAN==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::GET_STREAM_OFFSET==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::GET_REMAINING_BYTES==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::CAN_READ_STREAM==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::ARRAY_SIZE==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::IS_ERROR==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::MAX_VALUE==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::READ_DATA==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::WRITE_DATA==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::CONDITIONAL_STATEMENT==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::CONDITIONAL==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::AVAILABLE==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::ENUM_IS_DEFINED==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::SIZEOF==(*this).kind) {
+            if(!std::holds_alternative<union_struct_63>(union_variant_34)) {
+                union_variant_34 = union_struct_63();
+            }
+            std::get<29>((*this).union_variant_34).sizeof_desc = v;
+            return true;
+        }
+        return false;
+    }
+    bool ExpressionBody::sizeof_desc(SizeofDesc&& v) {
+        if (ExpressionKind::LITERAL_INT==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::LITERAL_INT64==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::LITERAL_BOOL==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::LITERAL_STRING==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::LITERAL_TYPE==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::LITERAL_CHAR==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::IDENTIFIER==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::BINARY_OP==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::UNARY_OP==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::CALL==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::INDEX_ACCESS==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::MEMBER_ACCESS==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::ENUM_MEMBER==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::TYPE_CAST==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::RANGE==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::IS_LITTLE_ENDIAN==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::GET_STREAM_OFFSET==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::GET_REMAINING_BYTES==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::CAN_READ_STREAM==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::ARRAY_SIZE==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::IS_ERROR==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::MAX_VALUE==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::READ_DATA==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::WRITE_DATA==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::CONDITIONAL_STATEMENT==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::CONDITIONAL==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::AVAILABLE==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::ENUM_IS_DEFINED==(*this).kind) {
+            return false;
+        }
+        if (ExpressionKind::SIZEOF==(*this).kind) {
+            if(!std::holds_alternative<union_struct_63>(union_variant_34)) {
+                union_variant_34 = union_struct_63();
+            }
+            std::get<29>((*this).union_variant_34).sizeof_desc = std::move(v);
+            return true;
+        }
+        return false;
+    }
     const ExpressionRef* ExpressionBody::start() const {
         if (ExpressionKind::LITERAL_INT==(*this).kind) {
         return nullptr;
@@ -5739,10 +6003,7 @@ namespace ebm::zc {
         return std::addressof(std::get<28>((*this).union_variant_34).target_expr);
         }
         if (ExpressionKind::SIZEOF==(*this).kind) {
-        if(!std::holds_alternative<union_struct_63>(union_variant_34)) {
-            return nullptr;
-        }
-        return std::addressof(std::get<29>((*this).union_variant_34).target_expr);
+        return nullptr;
         }
         if (ExpressionKind::SUB_RANGE_INIT==(*this).kind) {
         return nullptr;
@@ -5869,11 +6130,7 @@ namespace ebm::zc {
             return true;
         }
         if (ExpressionKind::SIZEOF==(*this).kind) {
-            if(!std::holds_alternative<union_struct_63>(union_variant_34)) {
-                union_variant_34 = union_struct_63();
-            }
-            std::get<29>((*this).union_variant_34).target_expr = v;
-            return true;
+            return false;
         }
         if (ExpressionKind::SUB_RANGE_INIT==(*this).kind) {
             return false;
@@ -5999,11 +6256,7 @@ namespace ebm::zc {
             return true;
         }
         if (ExpressionKind::SIZEOF==(*this).kind) {
-            if(!std::holds_alternative<union_struct_63>(union_variant_34)) {
-                union_variant_34 = union_struct_63();
-            }
-            std::get<29>((*this).union_variant_34).target_expr = std::move(v);
-            return true;
+            return false;
         }
         if (ExpressionKind::SUB_RANGE_INIT==(*this).kind) {
             return false;
@@ -20437,6 +20690,24 @@ namespace ebm::zc {
         }
         return ::futils::error::Error<>();
     }
+    ::futils::error::Error<> SizeofDesc::encode(::futils::binary::writer& w) const {
+        if (auto err = (*this).target_type.encode(w)) {
+            return err;
+        }
+        if (auto err = (*this).size.encode(w)) {
+            return err;
+        }
+        return ::futils::error::Error<>();
+    }
+    ::futils::error::Error<> SizeofDesc::decode(::futils::binary::reader& r) {
+        if (auto err = (*this).target_type.decode(r)) {
+            return err;
+        }
+        if (auto err = (*this).size.decode(r)) {
+            return err;
+        }
+        return ::futils::error::Error<>();
+    }
     ::futils::error::Error<> ExpressionBody::encode(::futils::binary::writer& w) const {
         if (auto err = (*this).type.encode(w)) {
             return err;
@@ -20745,10 +21016,7 @@ namespace ebm::zc {
             if(!std::holds_alternative<union_struct_63>(union_variant_34)) {
                 return ::futils::error::Error<>("encode: ExpressionBody: union_variant_34 variant alternative union_struct_63 is not set",::futils::error::Category::lib);
             }
-            if (auto err = std::get<29>((*this).union_variant_34).target_expr.encode(w)) {
-                return err;
-            }
-            if (auto err = std::get<29>((*this).union_variant_34).lowered_expr.encode(w)) {
+            if (auto err = std::get<29>((*this).union_variant_34).sizeof_desc.encode(w)) {
                 return err;
             }
         }
@@ -21118,10 +21386,7 @@ namespace ebm::zc {
             if(!std::holds_alternative<union_struct_63>(union_variant_34)) {
                 union_variant_34 = union_struct_63();
             }
-            if (auto err = std::get<29>((*this).union_variant_34).target_expr.decode(r)) {
-                return err;
-            }
-            if (auto err = std::get<29>((*this).union_variant_34).lowered_expr.decode(r)) {
+            if (auto err = std::get<29>((*this).union_variant_34).sizeof_desc.decode(r)) {
                 return err;
             }
         }
