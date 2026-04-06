@@ -162,6 +162,10 @@ namespace ebmgen {
                     MAYBE(expected_len, varint(vector_len));
                     body.length(expected_len);
                 }
+                else if(n->length){
+                    EBMA_CONVERT_EXPRESSION(length_expr, n->length);
+                    body.length_expr(length_expr);
+                }
                 body.element_type(element_type);
             }
             else if constexpr (std::is_same_v<T, std::shared_ptr<ast::IntLiteralType>>) {

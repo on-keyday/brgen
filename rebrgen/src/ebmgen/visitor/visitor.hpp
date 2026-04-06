@@ -3584,6 +3584,7 @@ namespace ebmgen::visitor {
         ebm::TypeRef item_id;
         const ebm::TypeKind& kind;
         const ebm::TypeRef& element_type;
+        const ebm::ExpressionRef& length_expr;
     };
     template <typename Result>
     struct Context_Type_VECTOR_before : ebmcodegen::util::ContextBase<Context_Type_VECTOR_before<Result>> {
@@ -3592,6 +3593,7 @@ namespace ebmgen::visitor {
         ebm::TypeRef item_id;
         const ebm::TypeKind& kind;
         const ebm::TypeRef& element_type;
+        const ebm::ExpressionRef& length_expr;
         ebmcodegen::util::MainLogicWrapper<Result> main_logic;
     };
     template <typename Result>
@@ -3601,6 +3603,7 @@ namespace ebmgen::visitor {
         ebm::TypeRef item_id;
         const ebm::TypeKind& kind;
         const ebm::TypeRef& element_type;
+        const ebm::ExpressionRef& length_expr;
         ebmcodegen::util::MainLogicWrapper<Result> main_logic;
         expected<Result>& result;
     };
@@ -9186,12 +9189,17 @@ namespace ebmgen::visitor {
             return unexpect_error("Unexpected null pointer for TypeBody::element_type");
         }
         auto& element_type = *in.body.element_type();
+        if (!in.body.length_expr()) {
+            return unexpect_error("Unexpected null pointer for TypeBody::length_expr");
+        }
+        auto& length_expr = *in.body.length_expr();
         auto main_logic = [&]() -> expected<Result>{
             Context_Type_VECTOR new_ctx{
                 .visitor = get_visitor_arg_from_context(ctx),
                 .item_id = is_nil(alias_ref) ? in.id : alias_ref,
                 .kind = kind,
                 .element_type = element_type,
+                .length_expr = length_expr,
             };
             return get_visitor_from_context<Result>(ctx,new_ctx).visit(new_ctx);
         };
@@ -9200,6 +9208,7 @@ namespace ebmgen::visitor {
             .item_id = is_nil(alias_ref) ? in.id : alias_ref,
             .kind = kind,
             .element_type = element_type,
+            .length_expr = length_expr,
             .main_logic = main_logic,
         };
         expected<Result> before_result = get_visitor_from_context<Result>(ctx,before_ctx).visit(before_ctx);
@@ -9210,6 +9219,7 @@ namespace ebmgen::visitor {
             .item_id = is_nil(alias_ref) ? in.id : alias_ref,
             .kind = kind,
             .element_type = element_type,
+            .length_expr = length_expr,
             .main_logic = main_logic,
             .result = main_result,
         };
@@ -9223,6 +9233,12 @@ namespace ebmgen::visitor {
             auto result_element_type = visit_Object<Result>(std::forward<UserContext>(ctx),type_ctx.element_type);
             if (!result_element_type) {
                 return unexpect_error(std::move(result_element_type.error()));
+            }
+        }
+        if (!is_nil(type_ctx.length_expr)) {
+            auto result_length_expr = visit_Object<Result>(std::forward<UserContext>(ctx),type_ctx.length_expr);
+            if (!result_length_expr) {
+                return unexpect_error(std::move(result_length_expr.error()));
             }
         }
         return {};

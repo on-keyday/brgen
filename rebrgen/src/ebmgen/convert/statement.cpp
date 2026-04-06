@@ -1022,6 +1022,12 @@ namespace ebmgen {
             }
             MAYBE(input_typ, get_coder_input(ctx, is_enc));
             EBM_SUB_RANGE_INIT(init, input_typ, sub_range_id);
+            if (is_enc) {
+                MAYBE(field, ctx.repository().get_statement(def_ref));
+                MAYBE(field_decl, field.body.field_decl());
+                field_decl.has_range(true);
+                field_decl.range_statement(to_weak(sub_range_id));
+            }
             EBM_DEFINE_ANONYMOUS_VARIABLE(sub_byte_io, input_typ, init);
             sr.io_ref = sub_byte_io_def;
             sub_range = sr;
