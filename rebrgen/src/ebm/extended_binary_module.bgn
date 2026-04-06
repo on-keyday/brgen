@@ -370,13 +370,16 @@ format FieldDecl:
     is_state_variable :u1 # 0: regular, 1: state variable
     inner_composite :u1 # 0: normal field, 1: part of composite field
     has_metadata :u1
-    reserved :u5  # Reserved for future use    
+    has_range :u1
+    reserved :u4  # Reserved for future use    
     if inner_composite == 1:
         composite_field :WeakStatementRef # Reference to CompositeFieldDecl
         composite_getter :LoweredStatementRef # Getter function for composite field
         composite_setter :LoweredStatementRef # Setter function for composite field
     if has_metadata == 1:
         metadata :Block # Metadata
+    if has_range == 1:
+        range_statement :WeakStatementRef # Range expression for the field (e.g., for validation or sub-range init)
 
 format StructDecl:
     name :IdentifierRef # Struct name
@@ -897,6 +900,7 @@ format TypeBody:
             array_annotation :ArrayAnnotation
         TypeKind.VECTOR:
             element_type :TypeRef
+            length_expr :ExpressionRef # Expression for the length of the vector (maybe null)
         TypeKind.STRUCT:
             id :WeakStatementRef # Reference to struct name
         TypeKind.RECURSIVE_STRUCT:
