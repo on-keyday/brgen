@@ -3,9 +3,9 @@
 llvm = "19"          # clang++, clang-format 等を含む
 cmake = "3.26"
 jq = "1.8.1"
-python = "3.14.3"      # script/build.py 用（お使いのバージョンに合わせて）
+python = "3.14.4"      # script/build.py 用（お使いのバージョンに合わせて）
 
 # webplayground / 多言語展開用
-go = "1.26.1"          # API/MCP サーバー用
-rust = "1.94.0"        # Wasm ビルド用
+go = "1.26.2"          # API/MCP サーバー用
+rust = "1.94.1"        # Wasm ビルド用
 # zig = "0.13.0"     # もし Zig ジェネレータの検証も自動化するなら

@@ -25,7 +25,7 @@ jobs:
       - name: Set up Ninja
         uses: seanmiddleditch/gha-setup-ninja@7e868db0f3406270dd46e1dac26c65f621456723 # master
       - name: Set up Clang
-        uses: egor-tensin/setup-clang@471a6f8ef1d449dba8e1a51780e7f943572a3f99 # v2.1
+        uses: egor-tensin/setup-clang@8092a31dc33b0c41ee7cc5bb81fd0267490a0161 # v2.2
         with:
           version: latest
           platform: x64
@@ -84,7 +84,7 @@ jobs:
       - name: Set up Ninja
         uses: seanmiddleditch/gha-setup-ninja@7e868db0f3406270dd46e1dac26c65f621456723 # master
       - name: Set up Clang
-        uses: egor-tensin/setup-clang@471a6f8ef1d449dba8e1a51780e7f943572a3f99 # v2.1
+        uses: egor-tensin/setup-clang@8092a31dc33b0c41ee7cc5bb81fd0267490a0161 # v2.2
         with:
           version: latest
           platform: x64
@@ -182,7 +182,7 @@ jobs:
       - name: Set up Ninja
         uses: seanmiddleditch/gha-setup-ninja@7e868db0f3406270dd46e1dac26c65f621456723 # master
       - name: Set up Clang
-        uses: egor-tensin/setup-clang@471a6f8ef1d449dba8e1a51780e7f943572a3f99 # v2.1
+        uses: egor-tensin/setup-clang@8092a31dc33b0c41ee7cc5bb81fd0267490a0161 # v2.2
         with:
           version: latest
           platform: x64
@@ -252,7 +252,7 @@ jobs:
       - name: Set up Ninja
         uses: seanmiddleditch/gha-setup-ninja@7e868db0f3406270dd46e1dac26c65f621456723 # master
       - name: Set up Go
-        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
           go-version: ">=1.20"
       - name: Install Homebrew Clang
@@ -330,7 +330,7 @@ jobs:
       - name: Set up Ninja
         uses: seanmiddleditch/gha-setup-ninja@7e868db0f3406270dd46e1dac26c65f621456723 # master
       - name: Set up Clang
-        uses: egor-tensin/setup-clang@471a6f8ef1d449dba8e1a51780e7f943572a3f99 # v2.1
+        uses: egor-tensin/setup-clang@8092a31dc33b0c41ee7cc5bb81fd0267490a0161 # v2.2
         with:
           version: latest
           platform: x64
@@ -576,7 +576,7 @@ jobs:
         run: |
           go install github.com/Songmu/gocredits/cmd/gocredits@latest
       - name: Set up ruby
-        uses: ruby/setup-ruby@319994f95fa847cf3fb3cd3dbe89f6dcde9f178f # v1.295.0
+        uses: ruby/setup-ruby@e65c17d16e57e481586a6a5a0282698790062f92 # v1.300.0
         with:
           ruby-version: ruby
       - uses: github/setup-licensed@be11bcbb82e3140b6cf260e647c3efeeca8fcefd # v1.3.1
@@ -613,7 +613,7 @@ jobs:
         uses: ./.github/actions/setup-emsdk
       - name: Set up Ninja
         uses: seanmiddleditch/gha-setup-ninja@7e868db0f3406270dd46e1dac26c65f621456723 # master
-      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
           go-version: "1.26"
       - name: Cache

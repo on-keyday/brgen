@@ -76,7 +76,7 @@ jobs:
       - name: Set up Ninja
         uses: seanmiddleditch/gha-setup-ninja@7e868db0f3406270dd46e1dac26c65f621456723 # master
       - name: Set up Clang
-        uses: egor-tensin/setup-clang@471a6f8ef1d449dba8e1a51780e7f943572a3f99 # v2.1
+        uses: egor-tensin/setup-clang@8092a31dc33b0c41ee7cc5bb81fd0267490a0161 # v2.2
         if: matrix.language == 'c-cpp'
         with:
           version: latest
@@ -84,7 +84,7 @@ jobs:
       - name: Install libc++-dev and libc++abi-dev
         run: sudo apt-get install libc++-dev libc++abi-dev -y
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@38697555549f1db7851b81482ff19f1fa5c4fedc # v4.34.1
+        uses: github/codeql-action/init@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
         with:
           languages: ${{ matrix.language }}
           debug: true
@@ -99,6 +99,6 @@ jobs:
           ./tool/src2json --version
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@38697555549f1db7851b81482ff19f1fa5c4fedc # v4.34.1
+        uses: github/codeql-action/analyze@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
         with:
           category: "/language:${{matrix.language}}"
