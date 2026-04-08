@@ -1,0 +1,80 @@
+config.url = "https://wiki.yo-net.jp/%E3%83%95%E3%82%A9%E3%83%B3%E3%83%88_TrueType_%E6%A7%8B%E9%80%A0%E8%A7%A3%E6%9E%90"
+
+input.endian = config.endian.big
+
+format TTFHeader:
+    scaler_type :u32
+    num_tables :u16
+    search_range :u16
+    entry_selector :u16
+    range_shift :u16
+
+format TableRecord:
+    tag :u32
+    check_sum :u32
+    offset :u32
+    length :u32
+
+format TTF:
+    header :TTFHeader
+    tables :[header.num_tables]TableRecord
+
+
+format HeadVersion:
+    major :u16
+    minor :u16
+
+format FixPoint16:
+    integer :u16
+    fraction :u16
+
+format HeadTable:
+    version :HeadVersion
+    font_revision :FixPoint16
+    check_sum_adjustment :u32
+    magic_number :u32
+    flags :format Flags:
+        config.type = u16
+        reserved :u2
+        last_resort :u1
+        font_converted :u1
+        lossless :u1
+        apple_specified :u3
+        deprecated_field :u1
+        force_l_to_r :u1
+        vertical :u1
+        instructions_dependent :u1
+        force_ppm_to_integer :u1
+        left_side_bearing_zero :u1
+        y0_is_zero :u1
+        baseline_at_y0 :u1
+    units_per_em :u16
+    created :u64
+    modified :u64
+    x_min :i16
+    y_min :i16
+    x_max :i16
+    y_max :i16
+    mac_style :u16
+    lowest_rec_ppem :u16
+    font_direction_hint :i16
+    index_to_loc_format :i16
+    glyph_data_format :i16
+
+
+format MaxpTable:
+    version :FixPoint16
+    num_glyphs :u16
+    max_points :u16
+    max_contours :u16
+    max_composite_points :u16
+    max_composite_contours :u16
+    max_zones :u16
+    max_twilight_points :u16
+    max_storage :u16
+    max_function_defs :u16
+    max_instruction_defs :u16
+    max_stack_elements :u16
+    max_size_of_instructions :u16
+    max_component_elements :u16
+    max_component_depth :u16
