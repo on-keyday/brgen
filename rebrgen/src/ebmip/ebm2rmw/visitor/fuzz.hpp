@@ -401,6 +401,18 @@ namespace ebm2rmw {
         buf += "# Auto-generated fuzzer dictionary\n";
         buf += "# Format: AFL/libFuzzer compatible\n\n";
 
+        auto append_hex_byte = [&](std::uint8_t byte_val) {
+            buf += std::format("\\x{:02x}", byte_val);
+        };
+
+        auto append_hex_value = [&](std::uint64_t val, size_t byte_size, auto byte_order_fn) {
+            buf += "\"";
+            for (size_t b = 0; b < byte_size; b++) {
+                append_hex_byte(byte_order_fn(val, b));
+            }
+            buf += "\"\n";
+        };
+
         // Collect distinct field sizes for boundary tokens
         std::set<size_t> field_sizes;
 
@@ -412,14 +424,12 @@ namespace ebm2rmw {
             auto* member = stmt.body.enum_member_decl();
             if (!member) continue;
 
-            // Get the enum member's integer value
             auto* expr = ctx.module().get_expression(member->value);
             if (!expr) continue;
             const auto* int_val = expr->body.int_value();
             if (!int_val) continue;
             std::uint64_t val = int_val->value();
 
-            // Get the base type size from the parent enum
             size_t byte_size = 0;
             auto* enum_stmt = ctx.module().get_statement(member->enum_decl);
             if (enum_stmt) {
@@ -433,29 +443,18 @@ namespace ebm2rmw {
                                                               : (val <= 0xffffffff) ? 4
                                                                                     : 8;
 
-            // Emit both little-endian and big-endian representations
             auto name = ctx.identifier(stmt.id);
-            auto emit = [&](std::string_view suffix, auto write_fn) {
-                buf += "# ";
-                buf += name;
-                buf += suffix;
-                buf += "\n";
-                buf += "\"";
-                for (size_t b = 0; b < byte_size; b++) {
-                    auto byte_val = write_fn(val, b);
-                    char hex[5];
-                    snprintf(hex, sizeof(hex), "\\x%02x", static_cast<unsigned>(byte_val));
-                    buf += hex;
-                }
-                buf += "\"\n";
+            auto le = [](std::uint64_t v, size_t b) -> std::uint8_t {
+                return static_cast<std::uint8_t>((v >> (b * 8)) & 0xff);
+            };
+            auto be = [&](std::uint64_t v, size_t b) -> std::uint8_t {
+                return static_cast<std::uint8_t>((v >> ((byte_size - 1 - b) * 8)) & 0xff);
             };
 
-            emit("_le", [](std::uint64_t v, size_t b) -> std::uint8_t {
-                return static_cast<std::uint8_t>((v >> (b * 8)) & 0xff);
-            });
-            emit("_be", [&](std::uint64_t v, size_t b) -> std::uint8_t {
-                return static_cast<std::uint8_t>((v >> ((byte_size - 1 - b) * 8)) & 0xff);
-            });
+            buf += std::format("# {}_le\n", name);
+            append_hex_value(val, byte_size, le);
+            buf += std::format("# {}_be\n", name);
+            append_hex_value(val, byte_size, be);
             buf += "\n";
         }
 
@@ -467,39 +466,23 @@ namespace ebm2rmw {
         }
 
         // Emit boundary values for each field size
+        auto le = [](std::uint64_t v, size_t b) -> std::uint8_t {
+            return static_cast<std::uint8_t>((v >> (b * 8)) & 0xff);
+        };
         buf += "# Boundary values by field size\n";
         for (size_t sz : field_sizes) {
             if (sz == 0 || sz > 8) continue;
             const size_t bits = sz * 8;
             const std::uint64_t max_val = (bits >= 64) ? ~std::uint64_t(0)
                                                         : ((std::uint64_t(1) << bits) - 1);
-            // All zeros
-            buf += std::format("# zeros_{}\n\"", sz);
-            for (size_t b = 0; b < sz; b++) buf += "\\x00";
-            buf += "\"\n";
+            buf += std::format("# zeros_{}\n", sz);
+            append_hex_value(0, sz, le);
 
-            // All ones (max unsigned)
-            buf += std::format("# max_{}\n\"", sz);
-            for (size_t b = 0; b < sz; b++) {
-                char hex[5];
-                snprintf(hex, sizeof(hex), "\\x%02x",
-                         static_cast<unsigned>((max_val >> (b * 8)) & 0xff));
-                buf += hex;
-            }
-            buf += "\"\n";
+            buf += std::format("# max_{}\n", sz);
+            append_hex_value(max_val, sz, le);
 
-            // 0x80... (sign bit / midpoint)
-            if (sz >= 1) {
-                const std::uint64_t mid = std::uint64_t(1) << (bits - 1);
-                buf += std::format("# mid_{}_le\n\"", sz);
-                for (size_t b = 0; b < sz; b++) {
-                    char hex[5];
-                    snprintf(hex, sizeof(hex), "\\x%02x",
-                             static_cast<unsigned>((mid >> (b * 8)) & 0xff));
-                    buf += hex;
-                }
-                buf += "\"\n";
-            }
+            buf += std::format("# mid_{}_le\n", sz);
+            append_hex_value(std::uint64_t(1) << (bits - 1), sz, le);
         }
 
         auto w = out->write_file_all(futils::view::rvec(buf));
