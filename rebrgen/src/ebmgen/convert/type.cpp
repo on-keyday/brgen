@@ -162,9 +162,16 @@ namespace ebmgen {
                     MAYBE(expected_len, varint(vector_len));
                     body.length(expected_len);
                 }
-                else if(n->length){
-                    EBMA_CONVERT_EXPRESSION(length_expr, n->length);
-                    body.length_expr(length_expr);
+                else if (n->length) {
+                    if (auto mode = ctx.state().get_current_generate_type(); mode == GenerateType::Normal) {
+                        // use for encode mode currently
+                        const auto _mode = ctx.state().set_current_generate_type(GenerateType::Encode);
+                        EBMA_CONVERT_EXPRESSION(length_expr, n->length);
+                    }
+                    else {
+                        EBMA_CONVERT_EXPRESSION(length_expr, n->length);
+                        body.length_expr(length_expr);
+                    }
                 }
                 body.element_type(element_type);
             }
