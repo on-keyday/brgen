@@ -200,7 +200,7 @@ jobs:
           tar -xzf artifacts/artifacts.tar.gz -C ./artifacts
           ls -Ral .
       - name: Attest Artifacts
-        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26
+        uses: actions/attest@c65e8d47370080bc2ce65b721b2fb5044a21718d
         with:
           subject-checksums: ./artifacts/brgen-checksum.txt
           subject-name: brgen-artifacts
