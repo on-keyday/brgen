@@ -32,52 +32,25 @@
 #include "number/hex/bin2hex.h"
 #include "number/prefix.h"
 #include "strutil/splits.h"
+#include "fuzz.hpp"
 #include "optimize.hpp"
 #include "wrap/cout.h"
-DEFINE_VISITOR(Statement_PROGRAM_DECL) {
-    using namespace CODEGEN_NAMESPACE;
-    auto entry_str = ctx.flags().entry_point;
-    if (entry_str.empty()) {
-        return unexpect_error("Entry point is not specified.");
-    }
-    auto query = std::format("Statement{{ body.struct_decl.has_encode_decode and id == \"{}\" }}", entry_str);
-    futils::wrap::cerr_wrap() << "Querying entry point with: " << query << "\n";
-    MAYBE(query_result, ebmgen::run_query(ctx.module(), query));
-    if (query_result.first.size() != 1) {
-        return unexpect_error("Entry point not found: {}", entry_str);
-    }
-    auto entry_stmt_ref = query_result.first[0];
-    MAYBE(entry_stmt, ctx.get(from_any_ref<ebm::StatementRef>(entry_stmt_ref)));
-    auto struct_decl = entry_stmt.body.struct_decl();
-    auto entry_decode_fn = *struct_decl->decode_fn();
-    auto f = ctx.config().env.new_function(entry_decode_fn);
-    TypeLayoutContext layout_ctx;
-    ctx.config().layout_context = &layout_ctx;
-    auto res = ctx.visit(entry_decode_fn);
 
-    // Compile encode function if available and encode is not skipped
-    auto entry_encode_fn_ptr = struct_decl->encode_fn();
-    if (!ctx.flags().skip_encode && entry_encode_fn_ptr) {
-        auto entry_encode_fn = *entry_encode_fn_ptr;
-        if (!ctx.config().env.has_function(entry_encode_fn)) {
-            auto fe = ctx.config().env.new_function(entry_encode_fn);
-            auto encode_res = ctx.visit(entry_encode_fn);
-            if (!encode_res) {
-                futils::wrap::cerr_wrap() << "Warning: failed to compile encode function: " << encode_res.error().error<std::string>() << "\n";
-            }
-        }
-    }
+namespace ebm2rmw {
 
-    auto dump_ops = [&] {
+    // -------------------------------------------------------------------------
+    // dump_bytecode: print all compiled instructions to stdout (--dump-ops)
+    // -------------------------------------------------------------------------
+    void dump_bytecode(Context_Statement_PROGRAM_DECL& ctx) {
         InitialContext ictx{.visitor = ctx.visitor};
         for (auto& func : ctx.config().env.get_function_insert_order()) {
             auto func_decl_res = ctx.get_field<"func_decl">(ebm::StatementRef{func});
-            if (!func_decl_res) {
-                continue;
-            }
+            if (!func_decl_res) continue;
             auto& func_decl = *func_decl_res;
             if (!is_nil(func_decl.parent_format)) {
-                futils::wrap::cout_wrap() << "Function " << ctx.identifier(func_decl.parent_format) << "." << ctx.identifier(ebm::StatementRef{func});
+                futils::wrap::cout_wrap() << "Function "
+                                          << ctx.identifier(func_decl.parent_format) << "."
+                                          << ctx.identifier(ebm::StatementRef{func});
             }
             else {
                 futils::wrap::cout_wrap() << "Function " << ctx.identifier(ebm::StatementRef{func});
@@ -87,14 +60,17 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
             futils::wrap::cout_wrap() << " max local: " << func_body.local_count << "\n";
             size_t instr_index = 0;
             for (auto& instr : func_body.instructions) {
-                futils::wrap::cout_wrap() << " " << instr_index << ":  " << to_string(instr.instr.op, true);
+                futils::wrap::cout_wrap() << " " << instr_index << ":  "
+                                          << to_string(instr.instr.op, true);
                 auto args = instruction_args(instr.instr, ictx, instr_index, &func_body);
                 if (!args.empty()) {
                     futils::wrap::cout_wrap() << ", args={" << args << "}";
                 }
-                if (instr.instr.op == ebm::OpCode::LOAD_MEMBER || instr.instr.op == ebm::OpCode::LOAD_SELF_MEMBER) {
+                if (instr.instr.op == ebm::OpCode::LOAD_MEMBER ||
+                    instr.instr.op == ebm::OpCode::LOAD_SELF_MEMBER) {
                     LayoutScratch scratch{instr.scratch};
-                    futils::wrap::cout_wrap() << " member offset: " << scratch.offset() << ", size: " << scratch.size();
+                    futils::wrap::cout_wrap() << " member offset: " << scratch.offset()
+                                              << ", size: " << scratch.size();
                 }
                 if (instr.instr.op == ebm::OpCode::LOAD_LOCAL ||
                     instr.instr.op == ebm::OpCode::STORE_LOCAL ||
@@ -109,16 +85,15 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
                 instr_index++;
             }
         }
-    };
-    if (ctx.flags().dump_ops) {
-        dump_ops();
-    }
-    if (!res) {
-        return res;
     }
 
-    // Compile STRUCT_UNION variant selector functions
-    for (auto& [su_type, match_stmt_ref] : layout_ctx.get_struct_union_match_stmts()) {
+    // -------------------------------------------------------------------------
+    // compile_one_selector: compile one STRUCT_UNION variant selector function
+    // -------------------------------------------------------------------------
+    expected<void> compile_one_selector(Context_Statement_PROGRAM_DECL& ctx,
+                                        TypeLayoutContext& layout_ctx,
+                                        ebm::TypeRef su_type,
+                                        ebm::StatementRef match_stmt_ref) {
         auto emit_store_local_imm = [&](size_t val, std::string label) -> expected<void> {
             ebm::Instruction instr;
             instr.op = ebm::OpCode::STORE_LOCAL_IMM;
@@ -137,115 +112,153 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
             return {};
         };
 
-        auto compile_selector = [&]() -> expected<void> {
-            MAYBE(match_stmt, ctx.get(match_stmt_ref));
-            auto* match = match_stmt.body.match_statement();
-            if (!match) {
-                return unexpect_error("lowered_match_statement is not a MATCH_STATEMENT");
-            }
-            auto if_stmt_ref = match->lowered_if_statement.id;
-            if (is_nil(if_stmt_ref)) {
-                return unexpect_error("MATCH_STATEMENT has no lowered_if_statement");
-            }
-            MAYBE(if_thens, flatten_if_then(ctx, if_stmt_ref));
+        MAYBE(match_stmt, ctx.get(match_stmt_ref));
+        auto* match = match_stmt.body.match_statement();
+        if (!match) {
+            return unexpect_error("lowered_match_statement is not a MATCH_STATEMENT");
+        }
+        auto if_stmt_ref = match->lowered_if_statement.id;
+        if (is_nil(if_stmt_ref)) {
+            return unexpect_error("MATCH_STATEMENT has no lowered_if_statement");
+        }
+        MAYBE(if_thens, flatten_if_then(ctx, if_stmt_ref));
 
-            auto selector_fn = ctx.config().env.new_function(if_stmt_ref);
-            ctx.config().env.get_functions()[if_stmt_ref].local_count = 1;  // slot 0 = result
+        auto selector_fn = ctx.config().env.new_function(if_stmt_ref);
+        ctx.config().env.get_functions()[if_stmt_ref].local_count = 1;  // slot 0 = result
 
-            MAYBE_VOID(_, emit_store_local_imm(if_thens.size(), std::format("default_variant = {}", if_thens.size())));
+        MAYBE_VOID(_, emit_store_local_imm(if_thens.size(),
+                                            std::format("default_variant = {}", if_thens.size())));
 
-            std::vector<size_t> jump_to_end_indices;
+        std::vector<size_t> jump_to_end_indices;
+        for (size_t i = 0; i < if_thens.size(); i++) {
+            auto& entry = if_thens[i];
+            size_t jif_idx = 0;
+            bool has_condition = entry.condition.has_value();
 
-            for (size_t i = 0; i < if_thens.size(); i++) {
-                auto& entry = if_thens[i];
-                size_t jif_idx = 0;
-                bool has_condition = entry.condition.has_value();
-
-                if (has_condition) {
-                    MAYBE_VOID(cond_res, ctx.visit(*entry.condition));
-                    ebm::Instruction jif_instr;
-                    jif_instr.op = ebm::OpCode::JUMP_IF_FALSE;
-                    ctx.config().env.add_instruction(jif_instr, std::format("branch {} cond false -> next", i));
-                    jif_idx = ctx.config().env.access_instructions().size() - 1;
-                }
-
-                MAYBE_VOID(_, emit_store_local_imm(i, std::format("variant_index = {}", i)));
-
-                if (has_condition) {
-                    ebm::Instruction jump_instr;
-                    jump_instr.op = ebm::OpCode::JUMP;
-                    ctx.config().env.add_instruction(jump_instr, "jump to end");
-                    jump_to_end_indices.push_back(ctx.config().env.access_instructions().size() - 1);
-
-                    MAYBE_VOID(_, fixup_jump(jif_idx, ctx.config().env.access_instructions().size()));
-                }
-                // else: fall through to end naturally
+            if (has_condition) {
+                MAYBE_VOID(cond_res, ctx.visit(*entry.condition));
+                ebm::Instruction jif_instr;
+                jif_instr.op = ebm::OpCode::JUMP_IF_FALSE;
+                ctx.config().env.add_instruction(jif_instr,
+                                                  std::format("branch {} cond false -> next", i));
+                jif_idx = ctx.config().env.access_instructions().size() - 1;
             }
 
-            size_t end_idx = ctx.config().env.access_instructions().size();
-            for (auto jump_idx : jump_to_end_indices) {
-                MAYBE_VOID(_, fixup_jump(jump_idx, end_idx));
+            MAYBE_VOID(_, emit_store_local_imm(i, std::format("variant_index = {}", i)));
+
+            if (has_condition) {
+                ebm::Instruction jump_instr;
+                jump_instr.op = ebm::OpCode::JUMP;
+                ctx.config().env.add_instruction(jump_instr, "jump to end");
+                jump_to_end_indices.push_back(ctx.config().env.access_instructions().size() - 1);
+                MAYBE_VOID(_, fixup_jump(jif_idx, ctx.config().env.access_instructions().size()));
             }
+        }
 
-            layout_ctx.add_struct_union_selector_fn(su_type, if_stmt_ref);
-            return {};
-        };
+        size_t end_idx = ctx.config().env.access_instructions().size();
+        for (auto jump_idx : jump_to_end_indices) {
+            MAYBE_VOID(_, fixup_jump(jump_idx, end_idx));
+        }
 
-        auto compile_res = compile_selector();
-        if (!compile_res) {
-            futils::wrap::cerr_wrap() << "Warning: failed to compile STRUCT_UNION selector: "
-                                      << compile_res.error().error<std::string>() << "\n";
+        layout_ctx.add_struct_union_selector_fn(su_type, if_stmt_ref);
+        return {};
+    }
+
+    // -------------------------------------------------------------------------
+    // compile_all_selectors: compile all STRUCT_UNION selectors (warns on fail)
+    // -------------------------------------------------------------------------
+    void compile_all_selectors(Context_Statement_PROGRAM_DECL& ctx,
+                               TypeLayoutContext& layout_ctx) {
+        for (auto& [su_type, match_stmt_ref] : layout_ctx.get_struct_union_match_stmts()) {
+            auto res = compile_one_selector(ctx, layout_ctx, su_type, match_stmt_ref);
+            if (!res) {
+                futils::wrap::cerr_wrap() << "Warning: failed to compile STRUCT_UNION selector: "
+                                          << res.error().error<std::string>() << "\n";
+            }
         }
     }
 
-    const bool has_modifications = !ctx.flags().modify_fields.empty() || !ctx.flags().modify_json.empty();
+    // -------------------------------------------------------------------------
+    // compile_vector_length_exprs: compile length_expr for all VECTOR types
+    // so that fuzz_fill_struct can evaluate them to determine vector sizes.
+    // -------------------------------------------------------------------------
+    void compile_vector_length_exprs(Context_Statement_PROGRAM_DECL& ctx,
+                                      TypeLayoutContext& layout_ctx) {
+        auto& types = ctx.module().module().types;
+        for (auto& type : types) {
+            if (type.body.kind != ebm::TypeKind::VECTOR) continue;
+            auto* length_expr = type.body.length_expr();
+            if (!length_expr || is_nil(*length_expr)) continue;
 
-    if (ctx.flags().binary_file.empty() && !has_modifications) {
-        futils::wrap::cerr_wrap() << "No binary file specified, skipping execution.\n";
-        return res;
+            // Create a synthetic function key from the expression ref
+            // (reinterpret as StatementRef for the function map key)
+            auto fn_key = from_any_ref<ebm::StatementRef>(to_any_ref(*length_expr));
+            if (ctx.config().env.has_function(fn_key)) {
+                layout_ctx.add_vector_length_fn(type.id, fn_key);
+                continue;
+            }
+            auto fn_guard = ctx.config().env.new_function(fn_key);
+            auto compile_res = ctx.visit(*length_expr);
+            if (!compile_res) {
+                futils::wrap::cerr_wrap()
+                    << "Warning: failed to compile VECTOR length_expr for type "
+                    << get_id(type.id) << ": "
+                    << compile_res.error().error<std::string>() << "\n";
+                continue;
+            }
+            layout_ctx.add_vector_length_fn(type.id, fn_key);
+        }
     }
 
-    MAYBE(fnt, ctx.module().get_statement(entry_decode_fn));
-    MAYBE(decl, fnt.body.func_decl());
-    Optimizer optimizer;
-    optimizer.optimize_function(ctx.config().env);
-    RuntimeEnv runtime;
-    InitialContext initial_ctx{.visitor = ctx.visitor};
-
-    futils::file::View file;
-    if (!ctx.flags().binary_file.empty()) {
-        if (auto fres = file.open(ctx.flags().binary_file); !fres) {
-            return unexpect_error("Failed to open binary file {}: {}", ctx.flags().binary_file, fres.error().error<std::string>());
-        }
-        if (file.size() == 0) {
-            return unexpect_error("Binary file is empty: {}", ctx.flags().binary_file);
-        }
+    // -------------------------------------------------------------------------
+    // decode_binary: decode a binary file into the runtime
+    // -------------------------------------------------------------------------
+    expected<void> decode_binary(Context_Statement_PROGRAM_DECL& ctx,
+                                 RuntimeEnv& runtime,
+                                 ebm::StatementRef entry_stmt_id,
+                                 const ebm::FunctionDecl& decl,
+                                 futils::file::View& file) {
+        InitialContext ictx{.visitor = ctx.visitor};
         std::vector<Value> decode_params;
         decode_params.resize(decl.params.container.size());
         runtime.input = futils::view::rvec(file.data(), file.size());
         runtime.input_pos = 0;
-        MAYBE_VOID(_, runtime.interpret(initial_ctx, entry_stmt.id, decode_params));
+        MAYBE_VOID(_, runtime.interpret(ictx, entry_stmt_id, decode_params));
+        return {};
     }
-    else {
-        // Write-only mode: zero-initialize struct from layout
-        LayoutAccess access(initial_ctx);
-        auto* layout = access.get_struct_layout_detail(entry_stmt.id);
+
+    // -------------------------------------------------------------------------
+    // zero_init_struct: zero-initialize a struct in the runtime (write-only mode)
+    // -------------------------------------------------------------------------
+    expected<void> zero_init_struct(Context_Statement_PROGRAM_DECL& ctx,
+                                    RuntimeEnv& runtime,
+                                    ebm::StatementRef entry_stmt_id,
+                                    std::string_view entry_str) {
+        InitialContext ictx{.visitor = ctx.visitor};
+        LayoutAccess access(ictx);
+        auto* layout = access.get_struct_layout_detail(entry_stmt_id);
         if (!layout) {
             return unexpect_error("Failed to get struct layout for '{}'", entry_str);
         }
         runtime.decoded_self_bytes.assign(layout->size, 0);
         runtime.decoded_self_type = layout->type;
-        futils::wrap::cerr_wrap() << "No binary file: zero-initialized " << entry_str << " (" << layout->size << " bytes)\n";
+        futils::wrap::cerr_wrap() << "No binary file: zero-initialized " << entry_str
+                                  << " (" << layout->size << " bytes)\n";
+        return {};
     }
 
-    // Modify step (M in RMW)
-    auto modify_step = [&]() -> expected<void> {
-        if (!has_modifications) {
-            return {};
-        }
-        LayoutAccess access(initial_ctx);
+    // -------------------------------------------------------------------------
+    // modify_fields: apply --modify-fields / --modify-json modifications
+    // -------------------------------------------------------------------------
+    expected<void> modify_fields(Context_Statement_PROGRAM_DECL& ctx, RuntimeEnv& runtime) {
+        const bool has_modifications =
+            !ctx.flags().modify_fields.empty() || !ctx.flags().modify_json.empty();
+        if (!has_modifications) return {};
 
-        // Navigate a dot-separated path
+        InitialContext ictx{.visitor = ctx.visitor};
+        LayoutAccess access(ictx);
+
+        // Navigate a dot-separated path.
         // Syntax: field.nested  /  array_field[N]  /  vector_field[N]  /  vector_field[+]
         auto navigate_field = [&](std::string_view path) -> expected<ObjectRef> {
             ObjectRef current(runtime.decoded_self_type, futils::view::wvec(runtime.decoded_self_bytes));
@@ -254,11 +267,10 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
             while (!seq.eos()) {
                 if (seq.rptr != 0) {
                     if (seq.current() != '.' && seq.current() != '[') {
-                        return ebmgen::unexpect_error("unexpected character '{}' in path at {}", seq.current(), path.substr(0, seq.rptr));
+                        return ebmgen::unexpect_error("unexpected character '{}' in path at {}",
+                                                      seq.current(), path.substr(0, seq.rptr));
                     }
-                    if (seq.current() == '.') {
-                        seq.consume();  // consume '.'
-                    }
+                    if (seq.current() == '.') seq.consume();
                 }
                 auto start = seq.rptr;
                 while (seq.current() != '.' && seq.current() != '[' && !seq.eos()) {
@@ -269,13 +281,12 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
                 if (!field_name.empty()) {
                     auto* layout = access.get_struct_layout_detail(current.type);
                     if (!layout) {
-                        return ebmgen::unexpect_error("type is not a struct, cannot navigate to field '{}'", segment);
+                        return ebmgen::unexpect_error(
+                            "type is not a struct, cannot navigate to field '{}'", segment);
                     }
                     bool found = false;
                     for (auto& fl : layout->fields) {
-                        if (initial_ctx.identifier(fl.field) != field_name) {
-                            continue;
-                        }
+                        if (ictx.identifier(fl.field) != field_name) continue;
                         auto got = current.raw_object.substr(fl.offset, fl.type.size);
                         if (got.size() != fl.type.size) {
                             return ebmgen::unexpect_error("field size mismatch for '{}'", segment);
@@ -284,24 +295,22 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
                         found = true;
                     }
                     if (!found) {
-                        auto identifier = initial_ctx.identifier(layout->type);
-                        return ebmgen::unexpect_error("field '{}' not found in '{}'", segment, identifier ? *identifier : std::to_string(get_id(layout->type)));
+                        auto identifier = ictx.identifier(layout->type);
+                        return ebmgen::unexpect_error(
+                            "field '{}' not found in '{}'", segment,
+                            identifier ? *identifier : std::to_string(get_id(layout->type)));
                     }
                     parent_current = current;
                 }
                 else if (seq.current() == '[') {
                     seq.consume();
                     start = seq.rptr;
-                    while (seq.current() != ']' && !seq.eos()) {
-                        seq.consume();
-                    }
-                    if (seq.eos()) {
-                        return ebmgen::unexpect_error("missing ']' in path");
-                    }
+                    while (seq.current() != ']' && !seq.eos()) seq.consume();
+                    if (seq.eos()) return ebmgen::unexpect_error("missing ']' in path");
                     auto index_str = path.substr(start, seq.rptr - start);
                     seq.consume();  // consume ']'
                     segment = path.substr(0, seq.rptr);
-                    const auto type_kind = initial_ctx.get_kind(current.type);
+                    const auto type_kind = ictx.get_kind(current.type);
                     if (type_kind == ebm::TypeKind::ARRAY) {
                         MAYBE(elem_layout, access.get_array_element_type(current.type));
                         std::uint64_t index = 0;
@@ -309,33 +318,39 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
                             return ebmgen::unexpect_error("invalid array index in '{}'", index_str);
                         }
                         if ((index + 1) * elem_layout.size > current.raw_object.size()) {
-                            return ebmgen::unexpect_error("array index {} out of bounds in '{}'", index, segment);
+                            return ebmgen::unexpect_error("array index {} out of bounds in '{}'",
+                                                          index, segment);
                         }
-                        current = ObjectRef(elem_layout.type, current.raw_object.substr(index * elem_layout.size, elem_layout.size));
+                        current = ObjectRef(elem_layout.type,
+                                            current.raw_object.substr(index * elem_layout.size,
+                                                                       elem_layout.size));
                         parent_current = current;
                     }
                     else if (type_kind == ebm::TypeKind::VECTOR) {
                         MAYBE(elem_layout, access.get_vector_element_type(current.type));
                         if (index_str == "+") {
-                            // push_back: allocate new element
                             size_t element_count = 0;
-                            MAYBE(new_elem, runtime.vector_alloc_back(initial_ctx, current, elem_layout.size, elem_layout.type, &element_count));
+                            MAYBE(new_elem, runtime.vector_alloc_back(
+                                                ictx, current, elem_layout.size,
+                                                elem_layout.type, &element_count));
                             current = new_elem;
-                            futils::wrap::cerr_wrap() << "Appended new element to '" << segment << "' at index " << element_count - 1 << "\n";
+                            futils::wrap::cerr_wrap() << "Appended new element to '" << segment
+                                                      << "' at index " << element_count - 1 << "\n";
                         }
                         else {
                             std::uint64_t index = 0;
                             if (!futils::number::prefix_integer(index_str, index)) {
-                                return ebmgen::unexpect_error("invalid vector index in '{}'", index_str);
+                                return ebmgen::unexpect_error("invalid vector index in '{}'",
+                                                              index_str);
                             }
-                            MAYBE(elem_obj, runtime.vector_get_element(current, static_cast<size_t>(index), elem_layout));
+                            MAYBE(elem_obj, runtime.vector_get_element(
+                                                current, static_cast<size_t>(index), elem_layout));
                             current = elem_obj;
                         }
                         parent_current = current;
                     }
-                    else if (type_kind == ebm::TypeKind::VARIANT || type_kind == ebm::TypeKind::STRUCT_UNION) {
-                        // Reinterpret the union's raw bytes as variant[N]'s type.
-                        // Variant names are auto-generated (tmp123 etc.), so index by insertion order.
+                    else if (type_kind == ebm::TypeKind::VARIANT ||
+                             type_kind == ebm::TypeKind::STRUCT_UNION) {
                         auto* union_layout = access.get_union_layout(current.type);
                         if (!union_layout) {
                             return ebmgen::unexpect_error("union layout not found for '{}'", segment);
@@ -345,30 +360,39 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
                             return ebmgen::unexpect_error("invalid variant index in '{}'", index_str);
                         }
                         if (index >= union_layout->variants.size()) {
-                            return ebmgen::unexpect_error("variant index {} out of bounds (count={}) in '{}'", index, union_layout->variants.size(), segment);
+                            return ebmgen::unexpect_error(
+                                "variant index {} out of bounds (count={}) in '{}'",
+                                index, union_layout->variants.size(), segment);
                         }
-                        if (!ctx.flags().skip_variant_check && type_kind == ebm::TypeKind::STRUCT_UNION) {
-                            auto* selector_ref = access.get_struct_union_selector_fn(current.type);
+                        if (!ctx.flags().skip_variant_check &&
+                            type_kind == ebm::TypeKind::STRUCT_UNION) {
+                            auto* selector_ref =
+                                access.get_struct_union_selector_fn(current.type);
                             if (selector_ref) {
-                                MAYBE(active_index, runtime.eval_struct_union_variant(initial_ctx, *selector_ref, parent_current));
+                                MAYBE(active_index, runtime.eval_struct_union_variant(
+                                                        ictx, *selector_ref, parent_current));
                                 if (active_index != static_cast<size_t>(index)) {
-                                    return ebmgen::unexpect_error("variant index {} does not match active variant {} for '{}' (use --skip-variant-check to override)", index, active_index, segment);
+                                    return ebmgen::unexpect_error(
+                                        "variant index {} does not match active variant {} for '{}' "
+                                        "(use --skip-variant-check to override)",
+                                        index, active_index, segment);
                                 }
                             }
                         }
                         auto& variant_layout = union_layout->variants[static_cast<size_t>(index)];
                         auto variant_raw = current.raw_object.substr(0, variant_layout.size);
                         if (variant_raw.size() != variant_layout.size) {
-                            return ebmgen::unexpect_error("variant {} size mismatch in '{}'", index, segment);
+                            return ebmgen::unexpect_error("variant {} size mismatch in '{}'",
+                                                          index, segment);
                         }
                         current = ObjectRef(variant_layout.type, variant_raw);
                         parent_current = current;
                     }
                     else if (type_kind == ebm::TypeKind::STRUCT) {
-                        // for struct, find STRUCT_UNION fields and reinterpret as needed
                         auto* struct_layout = access.get_struct_layout_detail(current.type);
                         if (!struct_layout) {
-                            return ebmgen::unexpect_error("struct layout not found for '{}'", segment);
+                            return ebmgen::unexpect_error("struct layout not found for '{}'",
+                                                          segment);
                         }
                         std::uint64_t index = 0;
                         if (!futils::number::prefix_integer(index_str, index)) {
@@ -377,11 +401,7 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
                         size_t current_count = 0;
                         bool found = false;
                         for (auto& field : struct_layout->fields) {
-                            auto* field_union_layout = access.get_union_layout(field.type.type);
-                            if (!field_union_layout) {
-                                continue;
-                            }
-
+                            if (!access.get_union_layout(field.type.type)) continue;
                             if (index == current_count) {
                                 found = true;
                                 MAYBE(member, access.read_member(current, field.field));
@@ -391,16 +411,20 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
                             current_count++;
                         }
                         if (!found) {
-                            return ebmgen::unexpect_error("struct '{}' does not have enough union fields for index {} in '{}'", segment, index, segment);
+                            return ebmgen::unexpect_error(
+                                "struct '{}' does not have enough union fields for index {} in '{}'",
+                                segment, index, segment);
                         }
-                        // specially, not update parent_current
+                        // Note: parent_current is intentionally not updated here
                     }
                     else {
-                        return ebmgen::unexpect_error("field '{}' is not an array, vector, or variant type", segment);
+                        return ebmgen::unexpect_error(
+                            "field '{}' is not an array, vector, or variant type", segment);
                     }
                 }
                 else {
-                    return ebmgen::unexpect_error("unexpected character '{}' in path at {}", seq.current(), path.substr(0, seq.rptr));
+                    return ebmgen::unexpect_error("unexpected character '{}' in path at {}",
+                                                  seq.current(), path.substr(0, seq.rptr));
                 }
             }
             return current;
@@ -413,14 +437,12 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
             return {};
         };
 
-        // Semicolon-separated "field.path=value" entries
         for (auto& entry : futils::strutil::split(ctx.flags().modify_fields, ";")) {
-            if (entry.empty()) {
-                continue;
-            }
+            if (entry.empty()) continue;
             auto eq_pos = entry.find('=');
             if (eq_pos == std::string_view::npos) {
-                return ebmgen::unexpect_error("invalid modify entry '{}': expected 'field.path=value'", entry);
+                return ebmgen::unexpect_error(
+                    "invalid modify entry '{}': expected 'field.path=value'", entry);
             }
             std::uint64_t new_value = 0;
             if (!futils::number::prefix_integer(entry.substr(eq_pos + 1), new_value)) {
@@ -429,11 +451,12 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
             MAYBE_VOID(_, apply_one(std::string_view(entry).substr(0, eq_pos), new_value));
         }
 
-        // JSON file entries: {"field.path": integer_value, ...}
         if (!ctx.flags().modify_json.empty()) {
             futils::file::View jf;
             if (auto fres = jf.open(ctx.flags().modify_json); !fres) {
-                return ebmgen::unexpect_error("failed to open modify-json '{}': {}", ctx.flags().modify_json, fres.error().error<std::string>());
+                return ebmgen::unexpect_error("failed to open modify-json '{}': {}",
+                                              ctx.flags().modify_json,
+                                              fres.error().error<std::string>());
             }
             auto json = futils::json::parse<futils::json::JSON>(futils::view::rvec(jf), true);
             if (!json.is_object()) {
@@ -449,13 +472,17 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
         }
 
         return {};
-    };
-    MAYBE_VOID(_, modify_step());
+    }
 
-    auto encode_step = [&]() -> expected<void> {
-        auto entry_encode_fn = *entry_encode_fn_ptr;
+    // -------------------------------------------------------------------------
+    // run_encode: encode the runtime object into runtime.output_buf
+    // -------------------------------------------------------------------------
+    expected<void> run_encode(Context_Statement_PROGRAM_DECL& ctx,
+                               RuntimeEnv& runtime,
+                               ebm::StatementRef entry_encode_fn) {
+        InitialContext ictx{.visitor = ctx.visitor};
         if (!ctx.config().env.has_function(entry_encode_fn)) {
-            futils::wrap::cerr_wrap() << "Warning: encode function not compiled, skipping encode step.\n";
+            futils::wrap::cerr_wrap() << "Warning: encode function not compiled, skipping.\n";
             return {};
         }
         const auto encode_env = ctx.config().env.new_function(entry_encode_fn);
@@ -464,13 +491,23 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
             futils::wrap::cerr_wrap() << "Warning: failed to get encode function statement\n";
             return {};
         }
-        auto encode_decl_res = encode_fnt->body.func_decl();
         std::vector<Value> encode_params;
-        if (encode_decl_res) {
+        if (auto encode_decl_res = encode_fnt->body.func_decl()) {
             encode_params.resize(encode_decl_res->params.container.size());
         }
-        MAYBE_VOID(enc_res, runtime.interpret_encode(initial_ctx, encode_params));
-        futils::wrap::cerr_wrap() << "Encode complete. Output size: " << runtime.output_buf.size() << " bytes\n";
+        MAYBE_VOID(_, runtime.interpret_encode(ictx, encode_params));
+        futils::wrap::cerr_wrap() << "Encode complete. Output size: "
+                                  << runtime.output_buf.size() << " bytes\n";
+        return {};
+    }
+
+    // -------------------------------------------------------------------------
+    // encode_output: encode + dump hex + write to --output-file
+    // -------------------------------------------------------------------------
+    expected<void> encode_output(Context_Statement_PROGRAM_DECL& ctx,
+                                 RuntimeEnv& runtime,
+                                 ebm::StatementRef entry_encode_fn) {
+        MAYBE_VOID(_, run_encode(ctx, runtime, entry_encode_fn));
         if (ctx.flags().dump_output) {
             std::string hex_output;
             futils::number::hex::to_hex(hex_output, futils::view::rvec(runtime.output_buf));
@@ -479,20 +516,306 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
         if (!ctx.flags().output_file.empty()) {
             auto out_file = futils::file::File::create(ctx.flags().output_file);
             if (!out_file) {
-                return unexpect_error("Failed to open output file {}: {}", ctx.flags().output_file, out_file.error().error<std::string>());
+                return unexpect_error("Failed to open output file {}: {}",
+                                      ctx.flags().output_file,
+                                      out_file.error().error<std::string>());
             }
             auto w_res = out_file->write_file_all(futils::view::rvec(runtime.output_buf));
             if (!w_res) {
-                return unexpect_error("Failed to write output file {}: {}", ctx.flags().output_file, w_res.error().error<std::string>());
+                return unexpect_error("Failed to write output file {}: {}",
+                                      ctx.flags().output_file,
+                                      w_res.error().error<std::string>());
             }
-            futils::wrap::cerr_wrap() << "Encoded output written to: " << ctx.flags().output_file << "\n";
+            futils::wrap::cerr_wrap() << "Encoded output written to: "
+                                      << ctx.flags().output_file << "\n";
         }
         return {};
-    };
+    }
 
-    // Encode step (W in RMW)
+    // -------------------------------------------------------------------------
+    // write_corpus_file: write a single generated buffer to the corpus directory
+    // or fallback to --output-file / --dump-output
+    // -------------------------------------------------------------------------
+    void write_corpus_file(Context_Statement_PROGRAM_DECL& ctx,
+                           const std::vector<std::uint8_t>& buf,
+                           size_t index,
+                           std::uint64_t iter_seed,
+                           const std::filesystem::path& corpus_dir) {
+        if (!corpus_dir.empty()) {
+            auto fname = std::format("id_{:06d}_seed_{}.bin", index, iter_seed);
+            auto out_file = futils::file::File::create((corpus_dir / fname).string());
+            if (!out_file) {
+                futils::wrap::cerr_wrap() << "Warning: failed to create corpus file '"
+                                          << fname << "': "
+                                          << out_file.error().error<std::string>() << "\n";
+                return;
+            }
+            if (auto w = out_file->write_file_all(futils::view::rvec(buf)); !w) {
+                futils::wrap::cerr_wrap() << "Warning: failed to write corpus file '"
+                                          << fname << "': "
+                                          << w.error().error<std::string>() << "\n";
+            }
+        }
+        else if (!ctx.flags().output_file.empty() && ctx.flags().fuzz_count == 1) {
+            auto out_file = futils::file::File::create(ctx.flags().output_file);
+            if (!out_file) {
+                futils::wrap::cerr_wrap() << "Warning: failed to create output file: "
+                                          << out_file.error().error<std::string>() << "\n";
+                return;
+            }
+            if (auto w = out_file->write_file_all(futils::view::rvec(buf)); !w) {
+                futils::wrap::cerr_wrap() << "Warning: failed to write output file: "
+                                          << w.error().error<std::string>() << "\n";
+                return;
+            }
+            futils::wrap::cerr_wrap() << "Output written to: " << ctx.flags().output_file << "\n";
+        }
+        else if (ctx.flags().dump_output) {
+            std::string hex;
+            futils::number::hex::to_hex(hex, futils::view::rvec(buf));
+            futils::wrap::cout_wrap() << "Generated [seed=" << iter_seed << "]: " << hex << "\n";
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // fuzz_generate_loop: generate fuzz_count random inputs from the format spec
+    // -------------------------------------------------------------------------
+    expected<void> fuzz_generate_loop(Context_Statement_PROGRAM_DECL& ctx,
+                                      ebm::StatementRef entry_stmt_id,
+                                      ebm::StatementRef entry_encode_fn) {
+        InitialContext ictx{.visitor = ctx.visitor};
+        LayoutAccess access(ictx);
+        auto* layout = access.get_struct_layout_detail(entry_stmt_id);
+        if (!layout) {
+            return unexpect_error("Failed to get struct layout for fuzz generation (entry='{}').",
+                                  ctx.flags().entry_point);
+        }
+
+        const std::uint64_t seed = resolve_fuzz_seed(ctx.flags().fuzz_seed);
+        futils::wrap::cerr_wrap() << "Fuzz seed: " << seed << "\n";
+
+        MAYBE(corpus_dir, prepare_corpus_dir(ctx.flags().fuzz_corpus_dir));
+
+        const size_t count = ctx.flags().fuzz_count;
+        const size_t max_vec_len = ctx.flags().fuzz_max_vector_len;
+        size_t success = 0;
+
+        for (size_t i = 0; i < count; i++) {
+            const std::uint64_t iter_seed = seed + i;
+            FuzzRng rng(iter_seed);
+
+            RuntimeEnv iter_runtime;
+            iter_runtime.decoded_self_bytes.assign(layout->size, 0);
+            iter_runtime.decoded_self_type = layout->type;
+
+            ObjectRef self_obj(layout->type,
+                               futils::view::wvec(iter_runtime.decoded_self_bytes));
+            fuzz_fill_object(ictx, rng, iter_runtime, self_obj, max_vec_len, access);
+
+            if (!ctx.flags().skip_encode) {
+                auto enc_res = run_encode(ctx, iter_runtime, entry_encode_fn);
+                if (!enc_res) {
+                    futils::wrap::cerr_wrap()
+                        << "Warning [iter " << i << ", seed=" << iter_seed
+                        << "]: encode failed: " << enc_res.error().error<std::string>() << "\n";
+                    continue;
+                }
+            }
+
+            futils::wrap::cerr_wrap() << "[" << i << "] " << iter_runtime.output_buf.size()
+                                      << " bytes (seed=" << iter_seed << ")\n";
+            write_corpus_file(ctx, iter_runtime.output_buf, i, iter_seed, corpus_dir);
+            ++success;
+        }
+
+        futils::wrap::cerr_wrap() << "Fuzz generation complete: " << success << "/" << count
+                                  << " inputs generated.\n";
+        return {};
+    }
+
+    // -------------------------------------------------------------------------
+    // fuzz_mutate_loop: decode once, then generate mutated variants
+    // -------------------------------------------------------------------------
+    expected<void> fuzz_mutate_loop(Context_Statement_PROGRAM_DECL& ctx,
+                                    RuntimeEnv& base_runtime,
+                                    ebm::StatementRef entry_stmt_id,
+                                    ebm::StatementRef entry_encode_fn) {
+        InitialContext ictx{.visitor = ctx.visitor};
+        LayoutAccess access(ictx);
+
+        // Collect all leaf fields that we can mutate in-place
+        std::vector<MutableField> fields;
+        collect_mutable_fields(ictx, access, base_runtime.decoded_self_type,
+                               0, "", fields);
+        if (fields.empty()) {
+            futils::wrap::cerr_wrap() << "Warning: no mutable fields found, nothing to mutate.\n";
+            return {};
+        }
+        futils::wrap::cerr_wrap() << "Found " << fields.size() << " mutable leaf fields.\n";
+
+        const std::uint64_t seed = resolve_fuzz_seed(ctx.flags().fuzz_seed);
+        futils::wrap::cerr_wrap() << "Mutate seed: " << seed << "\n";
+
+        MAYBE(corpus_dir, prepare_corpus_dir(ctx.flags().fuzz_corpus_dir));
+
+        const size_t count = ctx.flags().fuzz_count;
+        const size_t mutations_per = ctx.flags().fuzz_mutations;
+        size_t success = 0;
+
+        for (size_t i = 0; i < count; i++) {
+            const std::uint64_t iter_seed = seed + i;
+            FuzzRng rng(iter_seed);
+
+            RuntimeEnv iter_runtime;
+            iter_runtime.decoded_self_bytes = base_runtime.decoded_self_bytes;
+            iter_runtime.decoded_self_type = base_runtime.decoded_self_type;
+
+            for (size_t m = 0; m < mutations_per; m++) {
+                const size_t field_idx = rng.next_choice(fields.size());
+                apply_mutation(rng, iter_runtime.decoded_self_bytes, fields[field_idx]);
+            }
+
+            auto enc_res = run_encode(ctx, iter_runtime, entry_encode_fn);
+            if (!enc_res) {
+                futils::wrap::cerr_wrap()
+                    << "Warning [iter " << i << ", seed=" << iter_seed
+                    << "]: encode failed: " << enc_res.error().error<std::string>() << "\n";
+                continue;
+            }
+
+            futils::wrap::cerr_wrap() << "[" << i << "] " << iter_runtime.output_buf.size()
+                                      << " bytes (seed=" << iter_seed << ", mutations="
+                                      << mutations_per << ")\n";
+            write_corpus_file(ctx, iter_runtime.output_buf, i, iter_seed, corpus_dir);
+            ++success;
+        }
+
+        futils::wrap::cerr_wrap() << "Fuzz mutate complete: " << success << "/" << count
+                                  << " inputs generated.\n";
+        return {};
+    }
+
+}  // namespace ebm2rmw
+
+DEFINE_VISITOR(Statement_PROGRAM_DECL) {
+    using namespace CODEGEN_NAMESPACE;
+
+    // --- Entry point query ---
+    auto entry_str = ctx.flags().entry_point;
+    if (entry_str.empty()) {
+        return unexpect_error("Entry point is not specified.");
+    }
+    auto query = std::format(
+        "Statement{{ body.struct_decl.has_encode_decode and id == \"{}\" }}", entry_str);
+    futils::wrap::cerr_wrap() << "Querying entry point with: " << query << "\n";
+    MAYBE(query_result, ebmgen::run_query(ctx.module(), query));
+    if (query_result.first.size() != 1) {
+        return unexpect_error("Entry point not found: {}", entry_str);
+    }
+    MAYBE(entry_stmt, ctx.get(from_any_ref<ebm::StatementRef>(query_result.first[0])));
+    auto struct_decl = entry_stmt.body.struct_decl();
+
+    // --- Compile decode function ---
+    auto entry_decode_fn = *struct_decl->decode_fn();
+    auto f = ctx.config().env.new_function(entry_decode_fn);
+    TypeLayoutContext layout_ctx;
+    ctx.config().layout_context = &layout_ctx;
+    auto res = ctx.visit(entry_decode_fn);
+
+    // --- Compile encode function ---
+    auto entry_encode_fn_ptr = struct_decl->encode_fn();
     if (!ctx.flags().skip_encode && entry_encode_fn_ptr) {
-        MAYBE_VOID(enc_res, encode_step());
+        auto entry_encode_fn = *entry_encode_fn_ptr;
+        if (!ctx.config().env.has_function(entry_encode_fn)) {
+            auto fe = ctx.config().env.new_function(entry_encode_fn);
+            auto encode_res = ctx.visit(entry_encode_fn);
+            if (!encode_res) {
+                futils::wrap::cerr_wrap() << "Warning: failed to compile encode function: "
+                                          << encode_res.error().error<std::string>() << "\n";
+            }
+        }
+    }
+
+    if (ctx.flags().dump_ops) dump_bytecode(ctx);
+    if (!res) return res;
+
+    // --- Compile STRUCT_UNION selectors ---
+    compile_all_selectors(ctx, layout_ctx);
+
+    // --- Compile VECTOR length expressions ---
+    compile_vector_length_exprs(ctx, layout_ctx);
+
+    // --- Generate fuzz dictionary (if requested) ---
+    if (!ctx.flags().fuzz_dict.empty()) {
+        InitialContext ictx{.visitor = ctx.visitor};
+        LayoutAccess dict_access(ictx);
+        auto* layout = dict_access.get_struct_layout_detail(entry_stmt.id);
+        if (layout) {
+            auto dict_res = generate_fuzz_dict(ictx, dict_access, layout->type,
+                                                ctx.flags().fuzz_dict);
+            if (!dict_res) {
+                futils::wrap::cerr_wrap() << "Warning: dict generation failed: "
+                                          << dict_res.error().error<std::string>() << "\n";
+            }
+        }
+    }
+
+    // --- Early exit if nothing to do ---
+    const bool has_modifications =
+        !ctx.flags().modify_fields.empty() || !ctx.flags().modify_json.empty();
+    if (ctx.flags().binary_file.empty() && !has_modifications &&
+        !ctx.flags().fuzz_generate && !ctx.flags().fuzz_mutate) {
+        futils::wrap::cerr_wrap() << "No binary file specified, skipping execution.\n";
+        return res;
+    }
+
+    // --- Optimize compiled bytecode ---
+    MAYBE(fnt, ctx.module().get_statement(entry_decode_fn));
+    MAYBE(decl, fnt.body.func_decl());
+    Optimizer optimizer;
+    optimizer.optimize_function(ctx.config().env);
+
+    // --- Fuzz generate mode ---
+    if (ctx.flags().fuzz_generate) {
+        if (!entry_encode_fn_ptr) {
+            return unexpect_error("Fuzz generate requires an encode function (none found for '{}').",
+                                  entry_str);
+        }
+        MAYBE_VOID(_, fuzz_generate_loop(ctx, entry_stmt.id, *entry_encode_fn_ptr));
+        return res;
+    }
+
+    // --- Normal RMW mode ---
+    RuntimeEnv runtime;
+    futils::file::View file;
+    if (!ctx.flags().binary_file.empty()) {
+        if (auto fres = file.open(ctx.flags().binary_file); !fres) {
+            return unexpect_error("Failed to open binary file {}: {}",
+                                  ctx.flags().binary_file, fres.error().error<std::string>());
+        }
+        if (file.size() == 0) {
+            return unexpect_error("Binary file is empty: {}", ctx.flags().binary_file);
+        }
+        MAYBE_VOID(_, decode_binary(ctx, runtime, entry_stmt.id, decl, file));
+    }
+    else {
+        MAYBE_VOID(_, zero_init_struct(ctx, runtime, entry_stmt.id, entry_str));
+    }
+
+    // --- Fuzz mutate mode ---
+    if (ctx.flags().fuzz_mutate) {
+        if (!entry_encode_fn_ptr) {
+            return unexpect_error("Fuzz mutate requires an encode function (none found for '{}').",
+                                  entry_str);
+        }
+        MAYBE_VOID(_, fuzz_mutate_loop(ctx, runtime, entry_stmt.id, *entry_encode_fn_ptr));
+        return res;
+    }
+
+    MAYBE_VOID(_, modify_fields(ctx, runtime));
+
+    if (!ctx.flags().skip_encode && entry_encode_fn_ptr) {
+        MAYBE_VOID(_, encode_output(ctx, runtime, *entry_encode_fn_ptr));
     }
 
     return res;

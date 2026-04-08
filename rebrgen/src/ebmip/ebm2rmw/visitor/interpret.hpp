@@ -1,4 +1,5 @@
 /*license*/
+#pragma once
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -315,6 +316,18 @@ namespace ebm2rmw {
             return ObjectRef(ref, substr);
         }
 
+        // Ensure a VECTOR's arena entry exists (empty, 0 elements).
+        // Safe to call multiple times; only initializes on first call.
+        ebmgen::expected<void> vector_init(ObjectRef vec) {
+            MAYBE(index, decode_uint64(vec));
+            if (index == 0) {
+                bytes_arena.emplace_back();
+                index = bytes_arena.size();  // 1-based
+                MAYBE_VOID(_, encode_uint64(vec, index, pointer_size));
+            }
+            return {};
+        }
+
         ebmgen::expected<ObjectRef> vector_alloc_back(InitialContext& ctx, ObjectRef vec, size_t element_size, ebm::TypeRef element_type, size_t* element_count = nullptr) {
             MAYBE(index, decode_uint64(vec));
             if (index == 0) {
@@ -395,8 +408,14 @@ namespace ebm2rmw {
             };
         }
 
-        ebmgen::expected<size_t> eval_struct_union_variant(InitialContext& ctx, ebm::StatementRef selector_fn_ref, ObjectRef parent_self) {
-            auto fn_guard = ctx.config().env.new_function(selector_fn_ref);
+       private:
+        // Common helper: run a compiled function with `self` set, then extract a uint64 result.
+        // `extract` receives the frame and returns the Value* to read (nullptr if not found).
+        template <typename ExtractFn>
+        ebmgen::expected<std::uint64_t> eval_compiled_fn(
+            InitialContext& ctx, ebm::StatementRef fn_ref, ObjectRef parent_self,
+            ExtractFn&& extract) {
+            auto fn_guard = ctx.config().env.new_function(fn_ref);
             bool no_error = false;
             const auto frame = new_frame(no_error);
             auto& this_ = *call_stack.back();
@@ -407,14 +426,27 @@ namespace ebm2rmw {
                 return ebmgen::unexpect_error(std::move(res.error()));
             }
             no_error = true;
-            if (this_.locals.empty()) {
-                return ebmgen::unexpect_error("selector function produced no result");
+            auto* result_val = extract(this_);
+            if (!result_val || !std::holds_alternative<std::uint64_t>(result_val->value)) {
+                return ebmgen::unexpect_error("compiled function produced no integer result");
             }
-            auto& result_val = this_.locals[0];
-            if (!std::holds_alternative<std::uint64_t>(result_val.value)) {
-                return ebmgen::unexpect_error("selector function result is not an integer");
-            }
-            return static_cast<size_t>(std::get<std::uint64_t>(result_val.value));
+            return std::get<std::uint64_t>(result_val->value);
+        }
+
+       public:
+        ebmgen::expected<size_t> eval_struct_union_variant(InitialContext& ctx, ebm::StatementRef selector_fn_ref, ObjectRef parent_self) {
+            MAYBE(val, eval_compiled_fn(ctx, selector_fn_ref, parent_self,
+                [](auto& frame) -> Value* {
+                    return frame.locals.empty() ? nullptr : &frame.locals[0];
+                }));
+            return static_cast<size_t>(val);
+        }
+
+        ebmgen::expected<std::uint64_t> eval_vector_length(InitialContext& ctx, ebm::StatementRef length_fn_ref, ObjectRef parent_self) {
+            return eval_compiled_fn(ctx, length_fn_ref, parent_self,
+                [](auto& frame) -> Value* {
+                    return frame.stack.empty() ? nullptr : &frame.stack.back().second;
+                });
         }
 
         ebmgen::expected<void> interpret(InitialContext& ctx, ebm::StatementRef self_type, std::vector<Value>& params) {

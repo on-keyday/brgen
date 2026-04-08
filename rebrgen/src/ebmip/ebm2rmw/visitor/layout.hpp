@@ -72,6 +72,7 @@ namespace ebm2rmw {
         std::unordered_map<ebm::TypeRef, UnionLayout> union_layouts;
         std::unordered_map<ebm::TypeRef, ebm::StatementRef> struct_union_match_stmts;  // TypeRef → lowered match StatementRef
         std::unordered_map<ebm::TypeRef, ebm::StatementRef> struct_union_selector_fns;  // TypeRef → compiled selector fn key
+        std::unordered_map<ebm::TypeRef, ebm::StatementRef> vector_length_fns;          // VECTOR TypeRef → compiled length_expr fn key
         ebm::TypeRef u8_type;
 
         friend struct LayoutAccess;
@@ -125,6 +126,16 @@ namespace ebm2rmw {
         ebm::StatementRef* get_struct_union_selector_fn(ebm::TypeRef type) {
             auto it = struct_union_selector_fns.find(type);
             if (it != struct_union_selector_fns.end()) return &it->second;
+            return nullptr;
+        }
+
+        void add_vector_length_fn(ebm::TypeRef type, ebm::StatementRef fn) {
+            vector_length_fns[type] = fn;
+        }
+
+        ebm::StatementRef* get_vector_length_fn(ebm::TypeRef type) {
+            auto it = vector_length_fns.find(type);
+            if (it != vector_length_fns.end()) return &it->second;
             return nullptr;
         }
     };
@@ -358,6 +369,10 @@ namespace ebm2rmw {
 
         ebm::StatementRef* get_struct_union_selector_fn(ebm::TypeRef type) {
             return context().get_struct_union_selector_fn(type);
+        }
+
+        ebm::StatementRef* get_vector_length_fn(ebm::TypeRef type) {
+            return context().get_vector_length_fn(type);
         }
     };
 

@@ -14,6 +14,7 @@
       item_id: ebm::TypeRef
       kind: const ebm::TypeKind&
       element_type: const ebm::TypeRef&
+      length_expr: const ebm::ExpressionRef&
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 

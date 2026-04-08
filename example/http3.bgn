@@ -1,0 +1,112 @@
+
+config.url = "https://www.rfc-editor.org/rfc/rfc9114.html"
+
+qpkt ::= config.import("quic_varint.bgn")
+
+# HTTP/3 Error Codes (Section 8.1)
+enum H3Error:
+    H3_NO_ERROR = 0x100
+    H3_GENERAL_PROTOCOL_ERROR = 0x101
+    H3_INTERNAL_ERROR = 0x102
+    H3_STREAM_CREATION_ERROR = 0x103
+    H3_CLOSED_CRITICAL_STREAM = 0x104
+    H3_FRAME_UNEXPECTED = 0x105
+    H3_FRAME_ERROR = 0x106
+    H3_EXCESSIVE_LOAD = 0x107
+    H3_ID_ERROR = 0x108
+    H3_SETTINGS_ERROR = 0x109
+    H3_MISSING_SETTINGS = 0x10a
+    H3_REQUEST_REJECTED = 0x10b
+    H3_REQUEST_CANCELLED = 0x10c
+    H3_REQUEST_INCOMPLETE = 0x10d
+    H3_MESSAGE_ERROR = 0x10e
+    H3_CONNECT_ERROR = 0x10f
+    H3_VERSION_FALLBACK = 0x110
+
+# Frame Types (Section 7.2)
+enum H3FrameType:
+    DATA = 0x0
+    HEADERS = 0x1
+    CANCEL_PUSH = 0x3
+    SETTINGS = 0x4
+    PUSH_PROMISE = 0x5
+    GOAWAY = 0x6
+    MAX_PUSH_ID = 0xd
+
+# Unidirectional Stream Types (Section 6.2)
+enum UniStreamType:
+    CONTROL = 0x00
+    PUSH = 0x01
+    QPACK_ENCODER = 0x02
+    QPACK_DECODER = 0x03
+
+# HTTP/3 Frame Header (Section 7.1)
+# Type and Length are both QUIC variable-length integers
+format FrameHeader:
+    type :qpkt.VarInt
+    length :qpkt.VarInt
+
+state FrameHeaderState:
+    header :FrameHeader
+
+header_state :FrameHeaderState
+
+# Frame Body (Section 7.2)
+format FrameBody:
+    match H3FrameType(header_state.header.type):
+        H3FrameType.DATA => data :DataFrame
+        H3FrameType.HEADERS => headers :HeadersFrame
+        H3FrameType.CANCEL_PUSH => cancel_push :CancelPushFrame
+        H3FrameType.SETTINGS => settings :SettingsFrame
+        H3FrameType.PUSH_PROMISE => push_promise :PushPromiseFrame
+        H3FrameType.GOAWAY => goaway :GoAwayFrame
+        H3FrameType.MAX_PUSH_ID => max_push_id :MaxPushIdFrame
+        .. => unknown :[header_state.header.length]u8
+
+# DATA Frame (Section 7.2.1)
+format DataFrame:
+    data :[header_state.header.length]u8
+
+# HEADERS Frame (Section 7.2.2)
+format HeadersFrame:
+    encoded_field_section :[header_state.header.length]u8
+
+# CANCEL_PUSH Frame (Section 7.2.3)
+format CancelPushFrame:
+    push_id :qpkt.VarInt
+
+# Settings (Section 7.2.4.1)
+enum SettingsID:
+    QPACK_MAX_TABLE_CAPACITY = 0x01
+    MAX_FIELD_SECTION_SIZE = 0x06
+    QPACK_BLOCKED_STREAMS = 0x07
+
+format Setting:
+    id :qpkt.VarInt
+    value :qpkt.VarInt
+
+# SETTINGS Frame (Section 7.2.4)
+# Contains a sequence of Setting pairs filling the frame payload
+format SettingsFrame:
+    settings :[header_state.header.length]Setting
+
+# PUSH_PROMISE Frame (Section 7.2.5)
+format PushPromiseFrame:
+    push_id :qpkt.VarInt
+    encoded_field_section :[..]u8
+
+# GOAWAY Frame (Section 7.2.6)
+format GoAwayFrame:
+    id :qpkt.VarInt
+
+# MAX_PUSH_ID Frame (Section 7.2.7)
+format MaxPushIdFrame:
+    push_id :qpkt.VarInt
+
+# Unidirectional Stream Header (Section 6.2)
+format UniStreamHeader:
+    stream_type :qpkt.VarInt
+
+# Push Stream (Section 4.6)
+format PushStream:
+    push_id :qpkt.VarInt
