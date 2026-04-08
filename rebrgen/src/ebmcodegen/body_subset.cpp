@@ -131,6 +131,7 @@ namespace ebmcodegen {
             body.inner_type({});
             body.io_input_desc({});
             body.length({});
+            body.length_expr({});
             body.pointee_type({});
             body.size({});
             body.struct_union_desc({});

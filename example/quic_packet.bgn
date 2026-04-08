@@ -32,6 +32,9 @@ state QUICState:
    length :u8
 
 
+QUIC_VERSION_1 ::= u32(1)
+QUIC_VERSION_2 ::= u32(0x6b3343cf)
+
 format LongPacketHeader:
    long_packet_type :u2
    reserved :u2
@@ -41,20 +44,20 @@ format LongPacketHeader:
    dst_conn_id :ConnectionID(qstate.enable_length = false)
    src_conn_id :ConnectionID(qstate.enable_length = false)
    match version:
-      0 => hdr :VersionNegotiationPacket
+      0 => version_negotiation :VersionNegotiationPacket
       # version 1
-      1 => match long_packet_type:
-         0 => hdr :InitialPacketHeader
-         1 => hdr :ZeroRTTPacketHeader
-         2 => hdr :HandshakePacketHeader
-         3 => hdr :RetryPacket
+      QUIC_VERSION_1 => match long_packet_type:
+         0 => initial :InitialPacketHeader
+         1 => zero_rtt :ZeroRTTPacketHeader
+         2 => handshake :HandshakePacketHeader
+         3 => retry :RetryPacket
          .. => error("invalid long packet type")
       # version 2
-      0x6b3343cf => match long_packet_type: 
-         1 => hdr: InitialPacketHeader
-         2 => hdr: ZeroRTTPacketHeader
-         3 => hdr: HandshakePacketHeader
-         0 => hdr: RetryPacket
+      QUIC_VERSION_2 => match long_packet_type: 
+         1 => initial :InitialPacketHeader
+         2 => zero_rtt :ZeroRTTPacketHeader
+         3 => handshake :HandshakePacketHeader
+         0 => retry :RetryPacket
          .. => error("invalid long packet type")
       .. => error("invalid version")
 
@@ -108,7 +111,6 @@ format OneRTTPacketHeader:
    else:
       packet_number :[packet_number_length]u8
       payload :[..]u8
-   input.remain == 0
 
 
 format ConnectionID:

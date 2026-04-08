@@ -40,3 +40,12 @@ DEFINE_STRING_FLAG(modify_fields, "", "modify-fields", "semicolon-separated fiel
 DEFINE_STRING_FLAG(modify_json, "", "modify-json", "JSON file with field modifications ({\"field.path\": integer_value, ...})", "FILE");
 DEFINE_BOOL_FLAG(skip_write_size_check, false, "skip-write-size-check", "skip dynamic-size validation in WRITE_BYTES (suppress size mismatch errors)");
 DEFINE_BOOL_FLAG(skip_variant_check, false, "skip-variant-check", "skip active-variant validation when navigating STRUCT_UNION fields by index");
+// Fuzzing flags
+DEFINE_BOOL_FLAG(fuzz_generate, false, "fuzz-generate", "generate random structurally-valid binary inputs from the format spec");
+DEFINE_INT_FLAG(fuzz_count, size_t, 1, "fuzz-count", "number of inputs to generate in fuzz mode", "N");
+DEFINE_INT_FLAG(fuzz_seed, std::uint64_t, 0, "fuzz-seed", "random seed for fuzz generation (0 = auto from time; printed to stderr for replay)", "SEED");
+DEFINE_STRING_FLAG(fuzz_corpus_dir, "", "fuzz-corpus-dir", "output directory for generated corpus files (id_NNNNNN_seed_SEED.bin)", "DIR");
+DEFINE_INT_FLAG(fuzz_max_vector_len, size_t, 16, "fuzz-max-vector-len", "maximum number of elements to generate for vector/dynamic-length fields", "N");
+DEFINE_BOOL_FLAG(fuzz_mutate, false, "fuzz-mutate", "mutate an existing binary input by randomly modifying fields (requires --binary-file)");
+DEFINE_INT_FLAG(fuzz_mutations, size_t, 3, "fuzz-mutations", "number of field mutations to apply per output in mutate mode", "N");
+DEFINE_STRING_FLAG(fuzz_dict, "", "fuzz-dict", "generate AFL/libFuzzer dictionary file from the format spec", "FILE");

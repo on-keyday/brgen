@@ -5091,11 +5091,12 @@ namespace ebm2rmw {
         ebm::TypeRef item_id;
         const ebm::TypeKind& kind;
         const ebm::TypeRef& element_type;
+        const ebm::ExpressionRef& length_expr;
     };
     struct VisitorTag_Type_VECTOR {};
     // Deconstruct context fields
     #define EBM2RMW_DECONSTRUCT_TYPE_VECTOR(instance_name) \
-    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& element_type = instance_name.element_type;
+    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& element_type = instance_name.element_type;auto& length_expr = instance_name.length_expr;
     template <typename Result>
     struct Context_Type_VECTOR_before : ebmcodegen::util::ContextBase<Context_Type_VECTOR_before<Result>> {
         constexpr static std::string_view context_name = "Type_VECTOR_before";
@@ -5103,12 +5104,13 @@ namespace ebm2rmw {
         ebm::TypeRef item_id;
         const ebm::TypeKind& kind;
         const ebm::TypeRef& element_type;
+        const ebm::ExpressionRef& length_expr;
         ebmcodegen::util::MainLogicWrapper<Result> main_logic;
     };
     struct VisitorTag_Type_VECTOR_before {};
     // Deconstruct context fields
     #define EBM2RMW_DECONSTRUCT_TYPE_VECTOR_BEFORE(instance_name) \
-    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& element_type = instance_name.element_type;auto& main_logic = instance_name.main_logic;
+    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& element_type = instance_name.element_type;auto& length_expr = instance_name.length_expr;auto& main_logic = instance_name.main_logic;
     template <typename Result>
     struct Context_Type_VECTOR_after : ebmcodegen::util::ContextBase<Context_Type_VECTOR_after<Result>> {
         constexpr static std::string_view context_name = "Type_VECTOR_after";
@@ -5116,13 +5118,14 @@ namespace ebm2rmw {
         ebm::TypeRef item_id;
         const ebm::TypeKind& kind;
         const ebm::TypeRef& element_type;
+        const ebm::ExpressionRef& length_expr;
         ebmcodegen::util::MainLogicWrapper<Result> main_logic;
         expected<Result>& result;
     };
     struct VisitorTag_Type_VECTOR_after {};
     // Deconstruct context fields
     #define EBM2RMW_DECONSTRUCT_TYPE_VECTOR_AFTER(instance_name) \
-    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& element_type = instance_name.element_type;auto& main_logic = instance_name.main_logic;auto& result = instance_name.result;
+    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& element_type = instance_name.element_type;auto& length_expr = instance_name.length_expr;auto& main_logic = instance_name.main_logic;auto& result = instance_name.result;
     struct Context_Type_VARIANT : ebmcodegen::util::ContextBase<Context_Type_VARIANT> {
         constexpr static std::string_view context_name = "Type_VARIANT";
         BaseVisitor& visitor;

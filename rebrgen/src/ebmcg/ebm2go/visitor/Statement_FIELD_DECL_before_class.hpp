@@ -20,6 +20,7 @@
         is_state_variable: bool
         inner_composite: bool
         has_metadata: bool
+        has_range: bool
         reserved: std::uint8_t
         composite_field: *WeakStatementRef
         composite_getter: *LoweredStatementRef
@@ -27,6 +28,7 @@
         metadata: *Block
           len: Varint
           container: std::vector<StatementRef>
+        range_statement: *WeakStatementRef
       main_logic: ebmcodegen::util::MainLogicWrapper<Result>
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
