@@ -76,6 +76,15 @@ DEFINE_VISITOR(Statement_LOOP_STATEMENT) {
         jif_offset.backward(false);
         jif_instr.target(jif_offset);
     }
-    // ctx.config().env.add_instruction({.op = ebm::OpCode::NOP}, "end_loop");
+    // Patch pending break statements to jump to loop_end_index
+    for (auto break_idx : ctx.config().pending_breaks) {
+        auto& break_instr = ctx.config().env.access_instructions()[break_idx].instr;
+        ebm::JumpOffset break_offset;
+        MAYBE(break_off, varint(loop_end_index - break_idx));
+        break_offset.offset = break_off;
+        break_offset.backward(false);
+        break_instr.target(break_offset);
+    }
+    ctx.config().pending_breaks.clear();
     return {};
 }

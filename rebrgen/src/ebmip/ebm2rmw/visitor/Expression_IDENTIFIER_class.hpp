@@ -37,6 +37,7 @@ DEFINE_VISITOR(Expression_IDENTIFIER) {
         ebm::Instruction instr;
         instr.op = ebm::OpCode::LOAD_PARAM;
         instr.reg(ebm::RegisterIndex{.index = from_weak(ctx.id)});
+        ctx.config().env.add_param(from_weak(ctx.id));
         auto offset = ctx.config().env.get_param(from_weak(ctx.id));
         ctx.config().env.add_instruction(instr, ident, offset);
         return Result{.str_repr = std::move(ident)};

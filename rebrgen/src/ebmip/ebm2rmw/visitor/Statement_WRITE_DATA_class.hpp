@@ -48,7 +48,9 @@
 DEFINE_VISITOR(Statement_WRITE_DATA) {
     using namespace CODEGEN_NAMESPACE;
     if (auto lowered = ctx.write_data.lowered_statement();
-        lowered && lowered->lowering_type == ebm::LoweringIOType::VECTORIZED_IO) {
+        lowered && (lowered->lowering_type == ebm::LoweringIOType::VECTORIZED_IO ||
+                    lowered->lowering_type == ebm::LoweringIOType::BIT_FIELD_TO_BIT_SHIFT ||
+                    lowered->lowering_type == ebm::LoweringIOType::MULTI_REPRESENTATION)) {
         return ctx.visit(lowered->io_statement.id);
     }
     if (ctx.write_data.size.unit == ebm::SizeUnit::BYTE_FIXED &&

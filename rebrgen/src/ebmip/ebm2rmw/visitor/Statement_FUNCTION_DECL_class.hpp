@@ -36,6 +36,12 @@ DEFINE_VISITOR(Statement_FUNCTION_DECL) {
     using namespace CODEGEN_NAMESPACE;
     /*here to write the hook*/
     for (auto& param : ctx.func_decl.params.container) {
+        // Skip DECODER_INPUT/ENCODER_INPUT params — they are not passed
+        // as arguments at runtime (Expression_CALL also skips them).
+        auto kind = ctx.get_field<"param_decl.param_type.body.kind.optional">(param);
+        if (kind == ebm::TypeKind::DECODER_INPUT || kind == ebm::TypeKind::ENCODER_INPUT) {
+            continue;
+        }
         ctx.config().env.add_param(param);
     }
     return ctx.visit(ctx.func_decl.body);

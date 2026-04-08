@@ -85,6 +85,13 @@ DEFINE_VISITOR(Expression_DEFAULT_VALUE) {
         auto str_repr = std::format("OPTIONAL_OF({}){{.has_value = false}}", inner_default->str_repr);
         return Result{.str_repr = str_repr};
     }
+    if (ctx.is(ebm::TypeKind::PTR)) {
+        ebm::Instruction instr;
+        instr.op = ebm::OpCode::PUSH_IMM_INT;
+        instr.value(*varint(0));
+        ctx.config().env.add_instruction(instr, "nullptr");
+        return Result{.str_repr = "nullptr"};
+    }
     if (ctx.is(ebm::TypeKind::VARIANT)) {
         MAYBE(variant, ctx.get_field<"variant_desc">(ctx.type));
         if (!is_nil(variant.common_type)) {

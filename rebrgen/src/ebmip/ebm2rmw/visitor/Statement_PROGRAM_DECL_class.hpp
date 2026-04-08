@@ -211,6 +211,45 @@ namespace ebm2rmw {
     }
 
     // -------------------------------------------------------------------------
+    // build_state_params: build params vector for state variables (non-IO params)
+    // -------------------------------------------------------------------------
+    std::vector<Value> build_state_params(Context_Statement_PROGRAM_DECL& ctx,
+                                           RuntimeEnv& runtime,
+                                           const ebm::FunctionDecl& decl,
+                                           bool allocate_new) {
+        InitialContext ictx{.visitor = ctx.visitor};
+        LayoutAccess access(ictx);
+        std::vector<Value> params;
+        size_t state_idx = 0;
+        for (auto& p : decl.params.container) {
+            auto kind = ctx.get_field<"param_decl.param_type.body.kind.optional">(p);
+            if (kind == ebm::TypeKind::DECODER_INPUT || kind == ebm::TypeKind::ENCODER_INPUT) {
+                continue;
+            }
+            auto param_type = ctx.get_field<"param_decl.param_type">(p);
+            if (param_type) {
+                auto* layout = access.get_struct_layout_detail(*param_type);
+                if (layout) {
+                    if (allocate_new) {
+                        runtime.state_buffers.emplace_back(layout->size, 0);
+                    }
+                    if (state_idx < runtime.state_buffers.size()) {
+                        params.push_back(Value{ObjectRef(layout->type,
+                            futils::view::wvec(runtime.state_buffers[state_idx].data(),
+                                               runtime.state_buffers[state_idx].size()))});
+                    } else {
+                        params.emplace_back();
+                    }
+                    state_idx++;
+                    continue;
+                }
+            }
+            params.emplace_back();
+        }
+        return params;
+    }
+
+    // -------------------------------------------------------------------------
     // decode_binary: decode a binary file into the runtime
     // -------------------------------------------------------------------------
     expected<void> decode_binary(Context_Statement_PROGRAM_DECL& ctx,
@@ -219,8 +258,7 @@ namespace ebm2rmw {
                                  const ebm::FunctionDecl& decl,
                                  futils::file::View& file) {
         InitialContext ictx{.visitor = ctx.visitor};
-        std::vector<Value> decode_params;
-        decode_params.resize(decl.params.container.size());
+        auto decode_params = build_state_params(ctx, runtime, decl, true);
         runtime.input = futils::view::rvec(file.data(), file.size());
         runtime.input_pos = 0;
         MAYBE_VOID(_, runtime.interpret(ictx, entry_stmt_id, decode_params));
@@ -493,7 +531,7 @@ namespace ebm2rmw {
         }
         std::vector<Value> encode_params;
         if (auto encode_decl_res = encode_fnt->body.func_decl()) {
-            encode_params.resize(encode_decl_res->params.container.size());
+            encode_params = build_state_params(ctx, runtime, *encode_decl_res, false);
         }
         MAYBE_VOID(_, runtime.interpret_encode(ictx, encode_params));
         futils::wrap::cerr_wrap() << "Encode complete. Output size: "
@@ -742,8 +780,10 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
     // --- Compile STRUCT_UNION selectors ---
     compile_all_selectors(ctx, layout_ctx);
 
-    // --- Compile VECTOR length expressions ---
-    compile_vector_length_exprs(ctx, layout_ctx);
+    // --- Compile VECTOR length expressions (only needed for fuzz modes) ---
+    if (ctx.flags().fuzz_generate || ctx.flags().fuzz_mutate) {
+        compile_vector_length_exprs(ctx, layout_ctx);
+    }
 
     // --- Generate fuzz dictionary (if requested) ---
     if (!ctx.flags().fuzz_dict.empty()) {

@@ -11,3 +11,4 @@
 struct Env env;
 struct TypeLayoutContext* layout_context;
 bool is_lvalue = false;
+std::vector<size_t> pending_breaks;

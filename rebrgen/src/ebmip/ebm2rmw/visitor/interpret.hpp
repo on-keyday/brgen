@@ -295,6 +295,8 @@ namespace ebm2rmw {
         std::vector<std::uint8_t> output_buf;
         std::vector<SubInputContext> sub_input_stack;
         std::vector<SubOutputContext> sub_output_stack;
+        std::vector<std::vector<std::uint8_t>> state_buffers;
+        bool is_encoding = false;
 
         RuntimeEnv() {
             sub_input_stack.reserve(16);
@@ -415,11 +417,14 @@ namespace ebm2rmw {
         ebmgen::expected<std::uint64_t> eval_compiled_fn(
             InitialContext& ctx, ebm::StatementRef fn_ref, ObjectRef parent_self,
             ExtractFn&& extract) {
+            // Inherit caller's params (state variables) for selector/length functions
+            auto caller_params = call_stack.empty() ? std::vector<Value>{} : call_stack.back()->params;
             auto fn_guard = ctx.config().env.new_function(fn_ref);
             bool no_error = false;
             const auto frame = new_frame(no_error);
             auto& this_ = *call_stack.back();
             this_.self = parent_self;
+            this_.params = std::move(caller_params);
             size_t ip = 0;
             auto res = interpret_impl(ctx, ip);
             if (!res) {
@@ -523,6 +528,7 @@ namespace ebm2rmw {
                 if (ctx.flags().print_final_stack) {
                     dump_stack();
                 }
+                ctx.output().exit_code = 10;
                 return ebmgen::unexpect_error(std::move(res.error()));
             }
             else {
@@ -548,6 +554,7 @@ namespace ebm2rmw {
             }
             output_buf.clear();
             output_buf.reserve(decoded_self_bytes.size());
+            is_encoding = true;
             size_t ip = 0;
             bool no_error = false;
             auto start = ebmcodegen::Timepoint{};
@@ -1073,12 +1080,36 @@ namespace ebm2rmw {
                         stack_push(Value{available});
                         break;
                     }
+                    case ebm::OpCode::GET_OFFSET: {
+                        stack_push(Value{static_cast<std::uint64_t>(is_encoding ? output_buf.size() : input_pos)});
+                        break;
+                    }
                     case ebm::OpCode::READ_BYTE: {
                         if (stack.empty()) [[unlikely]] {
                             return ebmgen::unexpect_error("stack underflow on READ_BYTE");
                         }
                         MAYBE(offset, instr.instr.offset());
+                        if (input_pos >= input.size()) [[unlikely]] {
+                            return ebmgen::unexpect_error("READ_BYTE: end of input (pos={}, size={})", input_pos, input.size());
+                        }
                         auto target = stack_pop();
+                        // Value* (local variable reference): dereference and write to the underlying value
+                        if (auto ref = std::get_if<Value*>(&target.value)) {
+                            auto& inner = **ref;
+                            if (auto obj = std::get_if<ObjectRef>(&inner.value)) {
+                                // underlying is ObjectRef: write byte into the object buffer
+                                if (obj->raw_object.size() < offset.value() + 1) [[unlikely]] {
+                                    return ebmgen::unexpect_error("READ_BYTE target array is too small");
+                                }
+                                obj->raw_object[offset.value()] = input[input_pos];
+                            }
+                            else {
+                                // underlying is uint64_t or similar: store byte as integer
+                                inner.value = static_cast<std::uint64_t>(static_cast<unsigned char>(input[input_pos]));
+                            }
+                            input_pos += 1;
+                            break;
+                        }
                         target.unref();
                         if (!std::holds_alternative<ObjectRef>(target.value)) [[unlikely]] {
                             return ebmgen::unexpect_error("READ_BYTE target is not an object");
@@ -1383,7 +1414,10 @@ namespace ebm2rmw {
                             output_buf.insert(output_buf.end(), byte_array.begin(), byte_array.end());
                         }
                         else {
-                            size_t bytes_to_write = std::min(static_size > 0 ? static_size : arr.raw_object.size(), arr.raw_object.size());
+                            size_t bytes_to_write = is_dynamic ? expected_size : static_size;
+                            if (bytes_to_write > arr.raw_object.size()) [[unlikely]] {
+                                return ebmgen::unexpect_error("WRITE_BYTES: requested {} bytes but object only has {} bytes", bytes_to_write, arr.raw_object.size());
+                            }
                             actual_written = bytes_to_write;
                             output_buf.insert(output_buf.end(), arr.raw_object.begin(), arr.raw_object.begin() + bytes_to_write);
                         }
@@ -1420,6 +1454,9 @@ namespace ebm2rmw {
                             return ebmgen::unexpect_error("unsupported element type in VECTOR_PUSH");
                         }
                         break;
+                    }
+                    case ebm::OpCode::ERROR: {
+                        return ebmgen::unexpect_error("error: {}", instr.str_repr);
                     }
                     default:
                         return ebmgen::unexpect_error("unsupported opcode in interpreter: {}(0x{:x})", to_string(instr.instr.op, true), static_cast<std::uint32_t>(instr.instr.op));
