@@ -158,11 +158,14 @@
       "program": "${workspaceRoot}/rebrgen/tool/ebm2rmw",
       "args": [
         "-i",
-        "save/tcp.ebm",
+        "save/http2.ebm",
         "--entry-point",
-        "TCPSegment",
+        "HTTP2FrameTest",
         "--binary-file",
-        "save/tcp.dat"
+        "test/binary_data/http2_frame_test.dat",
+        "--dump-ops",
+        "--output-file",
+        "save/http2_output.bin"
       ],
       "stopAtEntry": false,
       "cwd": "${workspaceRoot}/rebrgen",
