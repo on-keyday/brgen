@@ -46,3 +46,5 @@ DEFINE_INT_FLAG(fuzz_count, size_t, 1, "fuzz-count", "number of inputs to genera
 DEFINE_INT_FLAG(fuzz_seed, std::uint64_t, 0, "fuzz-seed", "random seed for fuzz generation (0 = auto from time; printed to stderr for replay)", "SEED");
 DEFINE_STRING_FLAG(fuzz_corpus_dir, "", "fuzz-corpus-dir", "output directory for generated corpus files (id_NNNNNN_seed_SEED.bin)", "DIR");
 DEFINE_INT_FLAG(fuzz_max_vector_len, size_t, 16, "fuzz-max-vector-len", "maximum number of elements to generate for vector/dynamic-length fields", "N");
+DEFINE_BOOL_FLAG(fuzz_mutate, false, "fuzz-mutate", "mutate an existing binary input by randomly modifying fields (requires --binary-file)");
+DEFINE_INT_FLAG(fuzz_mutations, size_t, 3, "fuzz-mutations", "number of field mutations to apply per output in mutate mode", "N");

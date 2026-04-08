@@ -221,4 +221,149 @@ namespace ebm2rmw {
         }
     }
 
+    // =========================================================================
+    // Mutation support
+    // =========================================================================
+
+    // A mutable leaf field: its path (for diagnostics) and how to locate it
+    // within a decoded object's byte buffer.
+    struct MutableField {
+        std::string path;       // e.g. "header.src_port"
+        size_t offset;          // byte offset within decoded_self_bytes
+        size_t size;            // byte size of the field
+        ebm::TypeRef type;      // EBM type (for kind lookup)
+    };
+
+    // Recursively collect all leaf (scalar) fields reachable from a struct.
+    // Arrays are expanded element-by-element; vectors and unions are skipped
+    // because their storage is arena-based (not contiguous in decoded_self_bytes).
+    inline void collect_mutable_fields(InitialContext& ctx,
+                                       LayoutAccess& access,
+                                       ebm::TypeRef type,
+                                       size_t base_offset,
+                                       const std::string& path_prefix,
+                                       std::vector<MutableField>& out) {
+        const auto opt_kind = ctx.get_kind(type);
+        if (!opt_kind) return;
+        switch (*opt_kind) {
+            case ebm::TypeKind::UINT:
+            case ebm::TypeKind::INT:
+            case ebm::TypeKind::BOOL:
+            case ebm::TypeKind::ENUM:
+            case ebm::TypeKind::FLOAT:
+                // Leaf scalar — record it
+                if (auto tl = access.get_type_layout(type)) {
+                    out.push_back({path_prefix, base_offset, tl->size, type});
+                }
+                break;
+            case ebm::TypeKind::STRUCT: {
+                auto* sl = access.get_struct_layout_detail(type);
+                if (!sl) break;
+                for (const auto& fl : sl->fields) {
+                    auto id = ctx.identifier(fl.field);
+                    std::string child_path = path_prefix.empty()
+                                                 ? (id.empty() ? "?" : id)
+                                                 : path_prefix + "." + (id.empty() ? "?" : id);
+                    collect_mutable_fields(ctx, access, fl.type.type,
+                                           base_offset + fl.offset, child_path, out);
+                }
+                break;
+            }
+            case ebm::TypeKind::ARRAY: {
+                auto elem_res = access.get_array_element_type(type);
+                if (!elem_res) break;
+                auto tl = access.get_type_layout(type);
+                if (!tl) break;
+                const size_t count = tl->size / elem_res->size;
+                for (size_t i = 0; i < count; i++) {
+                    std::string child_path = path_prefix + "[" + std::to_string(i) + "]";
+                    collect_mutable_fields(ctx, access, elem_res->type,
+                                           base_offset + i * elem_res->size,
+                                           child_path, out);
+                }
+                break;
+            }
+            // VECTOR, VARIANT, STRUCT_UNION: arena-based or selector-dependent,
+            // skip for in-place mutation (generate mode handles these)
+            default:
+                break;
+        }
+    }
+
+    // Mutation strategies applied to a single field's bytes within decoded_self_bytes.
+    enum class MutationKind : int {
+        BIT_FLIP = 0,       // flip a random bit
+        BOUNDARY_VALUE,     // replace with an interesting boundary value
+        RANDOM_REPLACE,     // replace with a completely random value
+        BYTE_SWAP,          // swap two random bytes within the field
+        INCREMENT,          // increment by a small random amount
+        NUM_KINDS
+    };
+
+    inline void apply_mutation(FuzzRng& rng,
+                               std::vector<std::uint8_t>& bytes,
+                               const MutableField& field) {
+        if (field.size == 0) return;
+        const size_t end = field.offset + field.size;
+        if (end > bytes.size()) return;
+
+        const auto strategy = static_cast<MutationKind>(
+            rng.next_choice(static_cast<size_t>(MutationKind::NUM_KINDS)));
+
+        switch (strategy) {
+            case MutationKind::BIT_FLIP: {
+                const size_t bit_idx = static_cast<size_t>(rng.next_raw() % (field.size * 8));
+                bytes[field.offset + bit_idx / 8] ^= static_cast<std::uint8_t>(1 << (bit_idx % 8));
+                break;
+            }
+            case MutationKind::BOUNDARY_VALUE: {
+                // Write an interesting value (truncated to field size)
+                const std::uint64_t val = rng.next_uint(field.size * 8);
+                for (size_t i = 0; i < field.size && i < 8; i++) {
+                    bytes[field.offset + i] = static_cast<std::uint8_t>((val >> (i * 8)) & 0xff);
+                }
+                break;
+            }
+            case MutationKind::RANDOM_REPLACE: {
+                for (size_t i = 0; i < field.size; i++) {
+                    bytes[field.offset + i] = static_cast<std::uint8_t>(rng.next_uint(8));
+                }
+                break;
+            }
+            case MutationKind::BYTE_SWAP: {
+                if (field.size >= 2) {
+                    const size_t a = static_cast<size_t>(rng.next_raw() % field.size);
+                    size_t b = static_cast<size_t>(rng.next_raw() % field.size);
+                    if (b == a) b = (a + 1) % field.size;
+                    std::swap(bytes[field.offset + a], bytes[field.offset + b]);
+                }
+                else {
+                    // single byte: just flip a bit
+                    bytes[field.offset] ^= static_cast<std::uint8_t>(1 << (rng.next_raw() % 8));
+                }
+                break;
+            }
+            case MutationKind::INCREMENT: {
+                // Small increment/decrement (wrapping)
+                const int delta = static_cast<int>(rng.next_raw() % 5) - 2;  // -2..+2
+                if (field.size <= 8) {
+                    std::uint64_t val = 0;
+                    for (size_t i = 0; i < field.size; i++) {
+                        val |= static_cast<std::uint64_t>(bytes[field.offset + i]) << (i * 8);
+                    }
+                    val = static_cast<std::uint64_t>(static_cast<std::int64_t>(val) + delta);
+                    for (size_t i = 0; i < field.size; i++) {
+                        bytes[field.offset + i] = static_cast<std::uint8_t>((val >> (i * 8)) & 0xff);
+                    }
+                }
+                else {
+                    bytes[field.offset] = static_cast<std::uint8_t>(bytes[field.offset] + delta);
+                }
+                break;
+            }
+            default:
+                break;
+        }
+    }
+
 }  // namespace ebm2rmw

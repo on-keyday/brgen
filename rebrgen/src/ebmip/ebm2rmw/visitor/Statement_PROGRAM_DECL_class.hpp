@@ -599,6 +599,84 @@ namespace ebm2rmw {
         return {};
     }
 
+    // -------------------------------------------------------------------------
+    // fuzz_mutate_loop: decode once, then generate mutated variants
+    // -------------------------------------------------------------------------
+    expected<void> fuzz_mutate_loop(Context_Statement_PROGRAM_DECL& ctx,
+                                    RuntimeEnv& base_runtime,
+                                    ebm::StatementRef entry_stmt_id,
+                                    ebm::StatementRef entry_encode_fn) {
+        InitialContext ictx{.visitor = ctx.visitor};
+        LayoutAccess access(ictx);
+
+        // Collect all leaf fields that we can mutate in-place
+        std::vector<MutableField> fields;
+        collect_mutable_fields(ictx, access, base_runtime.decoded_self_type,
+                               0, "", fields);
+        if (fields.empty()) {
+            futils::wrap::cerr_wrap() << "Warning: no mutable fields found, nothing to mutate.\n";
+            return {};
+        }
+        futils::wrap::cerr_wrap() << "Found " << fields.size() << " mutable leaf fields.\n";
+
+        std::uint64_t seed = ctx.flags().fuzz_seed;
+        if (seed == 0) {
+            seed = static_cast<std::uint64_t>(
+                std::chrono::steady_clock::now().time_since_epoch().count());
+        }
+        futils::wrap::cerr_wrap() << "Mutate seed: " << seed << "\n";
+
+        std::filesystem::path corpus_dir;
+        if (!ctx.flags().fuzz_corpus_dir.empty()) {
+            corpus_dir = ctx.flags().fuzz_corpus_dir;
+            std::error_code ec;
+            std::filesystem::create_directories(corpus_dir, ec);
+            if (ec) {
+                return unexpect_error("Failed to create corpus dir '{}': {}",
+                                      ctx.flags().fuzz_corpus_dir, ec.message());
+            }
+        }
+
+        const size_t count = ctx.flags().fuzz_count;
+        const size_t mutations_per = ctx.flags().fuzz_mutations;
+        size_t success = 0;
+
+        for (size_t i = 0; i < count; i++) {
+            const std::uint64_t iter_seed = seed + i;
+            FuzzRng rng(iter_seed);
+
+            // Copy the decoded state
+            RuntimeEnv iter_runtime;
+            iter_runtime.decoded_self_bytes = base_runtime.decoded_self_bytes;
+            iter_runtime.decoded_self_type = base_runtime.decoded_self_type;
+
+            // Apply N random mutations
+            for (size_t m = 0; m < mutations_per; m++) {
+                const size_t field_idx = rng.next_choice(fields.size());
+                apply_mutation(rng, iter_runtime.decoded_self_bytes, fields[field_idx]);
+            }
+
+            // Encode
+            auto enc_res = encode_output(ctx, iter_runtime, entry_encode_fn);
+            if (!enc_res) {
+                futils::wrap::cerr_wrap()
+                    << "Warning [iter " << i << ", seed=" << iter_seed
+                    << "]: encode failed: " << enc_res.error().error<std::string>() << "\n";
+                continue;
+            }
+
+            futils::wrap::cerr_wrap() << "[" << i << "] " << iter_runtime.output_buf.size()
+                                      << " bytes (seed=" << iter_seed << ", mutations="
+                                      << mutations_per << ")\n";
+            write_corpus_file(ctx, iter_runtime.output_buf, i, iter_seed, corpus_dir);
+            ++success;
+        }
+
+        futils::wrap::cerr_wrap() << "Fuzz mutate complete: " << success << "/" << count
+                                  << " inputs generated.\n";
+        return {};
+    }
+
 }  // namespace ebm2rmw
 
 DEFINE_VISITOR(Statement_PROGRAM_DECL) {
@@ -649,7 +727,8 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
     // --- Early exit if nothing to do ---
     const bool has_modifications =
         !ctx.flags().modify_fields.empty() || !ctx.flags().modify_json.empty();
-    if (ctx.flags().binary_file.empty() && !has_modifications && !ctx.flags().fuzz_generate) {
+    if (ctx.flags().binary_file.empty() && !has_modifications &&
+        !ctx.flags().fuzz_generate && !ctx.flags().fuzz_mutate) {
         futils::wrap::cerr_wrap() << "No binary file specified, skipping execution.\n";
         return res;
     }
@@ -685,6 +764,16 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
     }
     else {
         MAYBE_VOID(_, zero_init_struct(ctx, runtime, entry_stmt.id, entry_str));
+    }
+
+    // --- Fuzz mutate mode ---
+    if (ctx.flags().fuzz_mutate) {
+        if (!entry_encode_fn_ptr) {
+            return unexpect_error("Fuzz mutate requires an encode function (none found for '{}').",
+                                  entry_str);
+        }
+        MAYBE_VOID(_, fuzz_mutate_loop(ctx, runtime, entry_stmt.id, *entry_encode_fn_ptr));
+        return res;
     }
 
     MAYBE_VOID(_, modify_fields(ctx, runtime));
