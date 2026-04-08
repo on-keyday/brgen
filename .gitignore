@@ -40,4 +40,5 @@ wasmCopy.js
 /web/dev/dist/
 .claude/settings.local.json
 *.tar.gz
+*.tsbuildinfo
 build_config.json
