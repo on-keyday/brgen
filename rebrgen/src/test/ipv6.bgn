@@ -1,0 +1,117 @@
+
+enum ProtocolNumber:
+    :u8
+    HOPOPT = 0
+    ICMP = 1
+    IGMP = 2
+    GGP = 3
+    IPV4 = 4
+    ST = 5
+    TCP = 6
+    CBT = 7
+    EGP = 8
+    IGP = 9
+    BBN_RCC_MON = 10
+    NVP_II = 11
+    PUP = 12
+    ARGUS = 13
+    EMCON = 14
+    XNET = 15
+    CHAOS = 16
+    UDP = 17
+    MUX = 18
+    DCN_MEAS = 19
+    HMP = 20
+    PRM = 21
+    XNS_IDP = 22
+    TRUNK_1 = 23
+    TRUNK_2 = 24
+    RoutingHeader = 43
+    ESP = 50
+    AH = 51
+    ICMPV6 = 58
+    OSPF = 89
+    Ethernet = 143
+enum EtherType:
+    :u16
+    IPv4 = 0x0800
+    ARP = 0x0806
+    IPv6 = 0x86DD
+
+format EthernetFrame:
+    dst_mac :[6]u8
+    src_mac :[6]u8
+    ether_type :EtherType
+
+format IPv6ExtHeader:
+    nextHeader :ProtocolNumber 
+    hdrExtLen :u8 
+format IPv6ExtCommon:
+    header :IPv6ExtHeader
+    data :[6 + header.hdrExtLen*8]u8
+format IPv6Header:
+    version :u4 
+    trafficClass :u8 flowLabel :u20
+    payloadLen :u16
+    nextHeader :ProtocolNumber
+    hopLimit :u8
+    srcAddr :[16]u8
+    dstAddr :[16]u8
+enum ICMPv6Type:
+    :u8
+    destination_unreachable = 1
+    packet_too_big = 2
+    time_exceeded = 3
+    parameter_problem = 4
+    echo_request = 128
+    echo_reply = 129
+    multicast_listener_query = 130
+    multicast_listener_report = 131
+    multicast_listener_done = 132
+    router_solicitation = 133
+    router_advertisement = 134
+    neighbor_solicitation = 135
+    neighbor_advertisement = 136
+    redirect_message = 137
+    router_renumbering = 138
+    node_information_query = 139
+    node_information_response = 140 
+    inverse_neighbor_discovery_solicitation = 141
+    inverse_neighbor_discovery_advertisement = 142
+    v2_multicast_listener_report = 143
+    home_agent_address_discovery_request = 144
+    home_agent_address_discovery_reply = 145
+    mobile_prefix_solicitation = 146
+    mobile_prefix_advertisement = 147
+    certification_path_solicitation = 148
+    certification_path_advertisement = 149
+    experimental_mobility_protocols = 253
+    experimental_mobility_protocols_2 = 254
+    reserved = 255
+
+format ICMPHeader:
+    type: ICMPv6Type   
+    code: u8
+    checksum: u16
+
+format NDPNeighborSolicitation:
+    reserved: u32
+    target_addr: [16]u8
+    options: [..]NDPOption
+enum NDPOptionType:
+    :u8
+    source_link_layer_address = 1
+    target_link_layer_address = 2
+    prefix_information = 3
+    redirect_header = 4
+    mtu = 5
+format NDPOption:
+    type: NDPOptionType
+    length: u8
+    length != 0
+    data: [length * 8 - 2]u8
+format TestPacket:
+   ether :EthernetFrame
+   ipv6 :IPv6Header
+   icmp :ICMPHeader
+   ndp :NDPNeighborSolicitation

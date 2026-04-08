@@ -91,7 +91,7 @@
         "name": "ipv6_test",
         "binary": "$WORK_DIR/test/binary_data/ipv6.dat",
         "format_name": "TestPacket",
-        "source": "$WORK_DIR/src/test/simple_case.bgn",
+        "source": "$WORK_DIR/src/test/ipv6.bgn",
         "failure_case": false,
         "hex": true
     },
