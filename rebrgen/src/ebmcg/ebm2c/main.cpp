@@ -75594,7 +75594,7 @@ DEFINE_ENTRY(ebm2c::Flags, ebm2c::Output) {
     auto result = entry_function();
     if (!result) {
         futils::wrap::cerr_wrap() << visitor.program_name << ": error: " << result.error().error() << "\n";
-        return 1;
+        return output.exit_code == 0? 1 : output.exit_code;
     }
-    return 0;
+    return output.exit_code;
 }

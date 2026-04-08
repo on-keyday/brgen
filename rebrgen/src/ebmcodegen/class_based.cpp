@@ -1711,10 +1711,10 @@ namespace ebmcodegen {
             {
                 auto err_scope = w.indent_scope();
                 w.writeln(R"(futils::wrap::cerr_wrap() << visitor.program_name << ": error: " << result.error().error() << "\n";)");
-                w.writeln("return 1;");
+                w.writeln("return output.exit_code == 0? 1 : output.exit_code;");
             }
             w.writeln("}");
-            w.writeln("return 0;");
+            w.writeln("return output.exit_code;");
         }
         w.writeln("}");
     }
