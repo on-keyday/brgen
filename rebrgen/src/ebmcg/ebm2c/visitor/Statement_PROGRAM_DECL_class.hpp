@@ -358,8 +358,12 @@ DEFINE_VISITOR_CLASS(Statement_PROGRAM_DECL) {
                     w.writeln("size_t capacity;");
                 }
                 w.writeln("} VECTOR_OF(void);");
+                std::set<std::string> defined_vector_types;
                 for (auto& v : c_ctx.vector_types) {
                     MAYBE(self_type, ctx.visit(v.self_type));
+                    if (defined_vector_types.insert(self_type.to_string()).second == false) {
+                        continue;
+                    }
                     MAYBE(elem_type, ctx.visit(v.elem_type));
                     w.writeln("typedef struct {");
                     {
