@@ -48,3 +48,5 @@ DEFINE_STRING_FLAG(fuzz_corpus_dir, "", "fuzz-corpus-dir", "output directory for
 DEFINE_INT_FLAG(fuzz_max_vector_len, size_t, 16, "fuzz-max-vector-len", "maximum number of elements to generate for vector/dynamic-length fields", "N");
 DEFINE_BOOL_FLAG(fuzz_mutate, false, "fuzz-mutate", "mutate an existing binary input by randomly modifying fields (requires --binary-file)");
 DEFINE_INT_FLAG(fuzz_mutations, size_t, 3, "fuzz-mutations", "number of field mutations to apply per output in mutate mode", "N");
+DEFINE_STRING_FLAG(fuzz_dict, "", "fuzz-dict", "generate AFL/libFuzzer dictionary file from the format spec", "FILE");
+DEFINE_BOOL_FLAG(fuzz_roundtrip, false, "fuzz-roundtrip", "roundtrip mode: decode stdin/binary-file then re-encode (exit 0 = success, for external fuzzer harness)");

@@ -5,6 +5,7 @@
 #include "interpret.hpp"
 #include "layout.hpp"
 #include <random>
+#include <set>
 
 namespace ebm2rmw {
 
@@ -364,6 +365,137 @@ namespace ebm2rmw {
             default:
                 break;
         }
+    }
+
+    // =========================================================================
+    // Dictionary generation for external fuzzers (AFL/libFuzzer format)
+    // =========================================================================
+
+    // Extract enum member values from the EBM module and write them as dictionary
+    // entries.  Also emits boundary values for each distinct field size found.
+    inline expected<void> generate_fuzz_dict(InitialContext& ctx,
+                                              LayoutAccess& access,
+                                              ebm::TypeRef root_type,
+                                              std::string_view dict_path) {
+        auto out = futils::file::File::create(dict_path);
+        if (!out) {
+            return ebmgen::unexpect_error("Failed to create dict file '{}': {}",
+                                           dict_path, out.error().error<std::string>());
+        }
+
+        std::string buf;
+        buf += "# Auto-generated fuzzer dictionary\n";
+        buf += "# Format: AFL/libFuzzer compatible\n\n";
+
+        // Collect distinct field sizes for boundary tokens
+        std::set<size_t> field_sizes;
+
+        // Walk all statements looking for ENUM_MEMBER_DECL
+        auto& stmts = ctx.module().module().statements;
+        for (size_t i = 0; i < stmts.size(); i++) {
+            auto& stmt = stmts[i];
+            if (stmt.body.kind != ebm::StatementKind::ENUM_MEMBER_DECL) continue;
+            auto* member = stmt.body.enum_member_decl();
+            if (!member) continue;
+
+            // Get the enum member's integer value
+            auto* expr = ctx.module().get_expression(member->value);
+            if (!expr) continue;
+            const auto* int_val = expr->body.int_value();
+            if (!int_val) continue;
+            std::uint64_t val = int_val->value();
+
+            // Get the base type size from the parent enum
+            size_t byte_size = 0;
+            auto* enum_stmt = ctx.module().get_statement(member->enum_decl);
+            if (enum_stmt) {
+                auto* edecl = enum_stmt->body.enum_decl();
+                if (edecl) {
+                    auto tl = access.get_type_layout(edecl->base_type);
+                    if (tl) byte_size = tl->size;
+                }
+            }
+            if (byte_size == 0) byte_size = (val <= 0xff) ? 1 : (val <= 0xffff) ? 2
+                                                              : (val <= 0xffffffff) ? 4
+                                                                                    : 8;
+
+            // Emit both little-endian and big-endian representations
+            auto name = ctx.identifier(stmt.id);
+            auto emit = [&](std::string_view suffix, auto write_fn) {
+                buf += "# ";
+                buf += name;
+                buf += suffix;
+                buf += "\n";
+                buf += "\"";
+                for (size_t b = 0; b < byte_size; b++) {
+                    auto byte_val = write_fn(val, b);
+                    char hex[5];
+                    snprintf(hex, sizeof(hex), "\\x%02x", static_cast<unsigned>(byte_val));
+                    buf += hex;
+                }
+                buf += "\"\n";
+            };
+
+            emit("_le", [](std::uint64_t v, size_t b) -> std::uint8_t {
+                return static_cast<std::uint8_t>((v >> (b * 8)) & 0xff);
+            });
+            emit("_be", [&](std::uint64_t v, size_t b) -> std::uint8_t {
+                return static_cast<std::uint8_t>((v >> ((byte_size - 1 - b) * 8)) & 0xff);
+            });
+            buf += "\n";
+        }
+
+        // Collect field sizes from the root struct
+        std::vector<MutableField> fields;
+        collect_mutable_fields(ctx, access, root_type, 0, "", fields);
+        for (auto& f : fields) {
+            field_sizes.insert(f.size);
+        }
+
+        // Emit boundary values for each field size
+        buf += "# Boundary values by field size\n";
+        for (size_t sz : field_sizes) {
+            if (sz == 0 || sz > 8) continue;
+            const size_t bits = sz * 8;
+            const std::uint64_t max_val = (bits >= 64) ? ~std::uint64_t(0)
+                                                        : ((std::uint64_t(1) << bits) - 1);
+            // All zeros
+            buf += std::format("# zeros_{}\n\"", sz);
+            for (size_t b = 0; b < sz; b++) buf += "\\x00";
+            buf += "\"\n";
+
+            // All ones (max unsigned)
+            buf += std::format("# max_{}\n\"", sz);
+            for (size_t b = 0; b < sz; b++) {
+                char hex[5];
+                snprintf(hex, sizeof(hex), "\\x%02x",
+                         static_cast<unsigned>((max_val >> (b * 8)) & 0xff));
+                buf += hex;
+            }
+            buf += "\"\n";
+
+            // 0x80... (sign bit / midpoint)
+            if (sz >= 1) {
+                const std::uint64_t mid = std::uint64_t(1) << (bits - 1);
+                buf += std::format("# mid_{}_le\n\"", sz);
+                for (size_t b = 0; b < sz; b++) {
+                    char hex[5];
+                    snprintf(hex, sizeof(hex), "\\x%02x",
+                             static_cast<unsigned>((mid >> (b * 8)) & 0xff));
+                    buf += hex;
+                }
+                buf += "\"\n";
+            }
+        }
+
+        auto w = out->write_file_all(futils::view::rvec(buf));
+        if (!w) {
+            return ebmgen::unexpect_error("Failed to write dict file '{}': {}",
+                                           dict_path, w.error().error<std::string>());
+        }
+        futils::wrap::cerr_wrap() << "Dictionary written to: " << dict_path
+                                  << " (" << buf.size() << " bytes)\n";
+        return {};
     }
 
 }  // namespace ebm2rmw

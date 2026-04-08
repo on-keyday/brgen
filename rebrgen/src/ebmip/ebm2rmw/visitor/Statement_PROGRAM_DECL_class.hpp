@@ -724,11 +724,27 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
     // --- Compile STRUCT_UNION selectors ---
     compile_all_selectors(ctx, layout_ctx);
 
+    // --- Generate fuzz dictionary (if requested) ---
+    if (!ctx.flags().fuzz_dict.empty()) {
+        InitialContext ictx{.visitor = ctx.visitor};
+        LayoutAccess dict_access(ictx);
+        auto* layout = dict_access.get_struct_layout_detail(entry_stmt.id);
+        if (layout) {
+            auto dict_res = generate_fuzz_dict(ictx, dict_access, layout->type,
+                                                ctx.flags().fuzz_dict);
+            if (!dict_res) {
+                futils::wrap::cerr_wrap() << "Warning: dict generation failed: "
+                                          << dict_res.error().error<std::string>() << "\n";
+            }
+        }
+    }
+
     // --- Early exit if nothing to do ---
     const bool has_modifications =
         !ctx.flags().modify_fields.empty() || !ctx.flags().modify_json.empty();
     if (ctx.flags().binary_file.empty() && !has_modifications &&
-        !ctx.flags().fuzz_generate && !ctx.flags().fuzz_mutate) {
+        !ctx.flags().fuzz_generate && !ctx.flags().fuzz_mutate &&
+        !ctx.flags().fuzz_roundtrip) {
         futils::wrap::cerr_wrap() << "No binary file specified, skipping execution.\n";
         return res;
     }
@@ -764,6 +780,16 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
     }
     else {
         MAYBE_VOID(_, zero_init_struct(ctx, runtime, entry_stmt.id, entry_str));
+    }
+
+    // --- Fuzz roundtrip mode (decode → encode, no modifications) ---
+    if (ctx.flags().fuzz_roundtrip) {
+        if (!entry_encode_fn_ptr) {
+            return unexpect_error("Fuzz roundtrip requires an encode function (none found for '{}').",
+                                  entry_str);
+        }
+        MAYBE_VOID(_, encode_output(ctx, runtime, *entry_encode_fn_ptr));
+        return res;
     }
 
     // --- Fuzz mutate mode ---
