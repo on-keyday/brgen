@@ -179,6 +179,38 @@ namespace ebm2rmw {
     }
 
     // -------------------------------------------------------------------------
+    // compile_vector_length_exprs: compile length_expr for all VECTOR types
+    // so that fuzz_fill_struct can evaluate them to determine vector sizes.
+    // -------------------------------------------------------------------------
+    void compile_vector_length_exprs(Context_Statement_PROGRAM_DECL& ctx,
+                                      TypeLayoutContext& layout_ctx) {
+        auto& types = ctx.module().module().types;
+        for (auto& type : types) {
+            if (type.body.kind != ebm::TypeKind::VECTOR) continue;
+            auto* length_expr = type.body.length_expr();
+            if (!length_expr || is_nil(*length_expr)) continue;
+
+            // Create a synthetic function key from the expression ref
+            // (reinterpret as StatementRef for the function map key)
+            auto fn_key = from_any_ref<ebm::StatementRef>(to_any_ref(*length_expr));
+            if (ctx.config().env.has_function(fn_key)) {
+                layout_ctx.add_vector_length_fn(type.id, fn_key);
+                continue;
+            }
+            auto fn_guard = ctx.config().env.new_function(fn_key);
+            auto compile_res = ctx.visit(*length_expr);
+            if (!compile_res) {
+                futils::wrap::cerr_wrap()
+                    << "Warning: failed to compile VECTOR length_expr for type "
+                    << get_id(type.id) << ": "
+                    << compile_res.error().error<std::string>() << "\n";
+                continue;
+            }
+            layout_ctx.add_vector_length_fn(type.id, fn_key);
+        }
+    }
+
+    // -------------------------------------------------------------------------
     // decode_binary: decode a binary file into the runtime
     // -------------------------------------------------------------------------
     expected<void> decode_binary(Context_Statement_PROGRAM_DECL& ctx,
@@ -709,6 +741,9 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
 
     // --- Compile STRUCT_UNION selectors ---
     compile_all_selectors(ctx, layout_ctx);
+
+    // --- Compile VECTOR length expressions ---
+    compile_vector_length_exprs(ctx, layout_ctx);
 
     // --- Generate fuzz dictionary (if requested) ---
     if (!ctx.flags().fuzz_dict.empty()) {

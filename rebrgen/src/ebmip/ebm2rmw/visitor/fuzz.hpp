@@ -5,6 +5,7 @@
 #include "interpret.hpp"
 #include "layout.hpp"
 #include <chrono>
+#include <cmath>
 #include <filesystem>
 #include <random>
 #include <set>
@@ -55,14 +56,22 @@ namespace ebm2rmw {
             return static_cast<size_t>(rng() % n);
         }
 
-        // Geometric-ish distribution: biased toward small values, bounded by max
+        // Log-uniform distribution: covers [0, max] with bias toward smaller values
+        // but still produces large values regularly.
+        // ~12% chance of a boundary value (0, 1, max/2, max).
         size_t next_vector_length(size_t max) {
             if (max == 0) return 0;
-            size_t len = 0;
-            while (len < max && (rng() % 3) != 0) {
-                ++len;
+            if ((rng() & 7) == 0) {
+                // Boundary values
+                const size_t boundaries[] = {0, 1, max / 2, max};
+                return boundaries[rng() % 4];
             }
-            return len;
+            // Log-uniform: uniform in log space → exponential spread
+            // exp(uniform(0, log(max+1))) - 1, but using integer math
+            double log_max = std::log(static_cast<double>(max + 1));
+            double u = static_cast<double>(rng() & 0xFFFFFFFF) / static_cast<double>(0xFFFFFFFF);
+            auto result = static_cast<size_t>(std::exp(u * log_max));
+            return std::min(result, max);
         }
     };
 
@@ -125,6 +134,10 @@ namespace ebm2rmw {
                 const auto& elem_layout = *elem_res;
                 if (elem_layout.size == 0) break;
                 const size_t count = rng.next_vector_length(max_vec_len);
+                if (count == 0) {
+                    runtime.vector_init(obj);  // ensure arena entry exists even for empty vectors
+                    break;
+                }
                 for (size_t i = 0; i < count; i++) {
                     auto new_elem_res = runtime.vector_alloc_back(
                         ctx, obj, elem_layout.size, elem_layout.type, nullptr);
@@ -157,10 +170,172 @@ namespace ebm2rmw {
         }
     }
 
-    // Two-pass struct fill.
-    // Pass 1 fills non-STRUCT_UNION fields (including discriminant fields).
-    // Pass 2 uses the compiled selector to determine which STRUCT_UNION variant is
-    // active, then fills only that variant's data.
+    // =========================================================================
+    // length_expr field resolver: walk the expression tree to find which
+    // struct field(s) a VECTOR's length_expr references, so we can write
+    // back a value that makes the encoder happy.
+    // =========================================================================
+
+    // Info about a field referenced by length_expr
+    struct LengthFieldInfo {
+        size_t offset = 0;   // byte offset within the struct
+        size_t size = 0;     // byte size of the field
+    };
+
+    // Recursively walk an expression tree rooted at `expr_ref` to find
+    // the first MEMBER_ACCESS → IDENTIFIER → FIELD_DECL leaf that refers
+    // to a scalar field in the struct.  Returns the field's byte offset
+    // and size inside `struct_obj`, or nullopt if the pattern is too complex.
+    inline std::optional<LengthFieldInfo> find_length_field(
+        InitialContext& ctx, LayoutAccess& access,
+        ebm::ExpressionRef expr_ref, ebm::TypeRef struct_type) {
+        auto* expr = ctx.module().get_expression(expr_ref);
+        if (!expr) return std::nullopt;
+
+        switch (expr->body.kind) {
+            case ebm::ExpressionKind::MEMBER_ACCESS: {
+                // Check if the base is SELF (direct field ref like self.length)
+                auto* base_ptr = expr->body.base();
+                auto* member_ptr = expr->body.member();
+                if (!base_ptr || !member_ptr) return std::nullopt;
+
+                auto* base_expr = ctx.module().get_expression(*base_ptr);
+                if (!base_expr) return std::nullopt;
+
+                if (base_expr->body.kind == ebm::ExpressionKind::SELF) {
+                    // Direct field: self.field_name
+                    auto* member_expr = ctx.module().get_expression(*member_ptr);
+                    if (!member_expr) return std::nullopt;
+                    auto* field_id = member_expr->body.id();
+                    if (!field_id) return std::nullopt;
+                    auto field_ref = from_weak(*field_id);
+
+                    // Look up field in the struct layout
+                    auto* sl = access.get_struct_layout_detail(struct_type);
+                    if (!sl) return std::nullopt;
+                    for (const auto& fl : sl->fields) {
+                        if (fl.field == field_ref) {
+                            return LengthFieldInfo{fl.offset, fl.type.size};
+                        }
+                    }
+                    return std::nullopt;
+                }
+
+                if (base_expr->body.kind == ebm::ExpressionKind::MEMBER_ACCESS) {
+                    // Nested: self.header.length — recurse on base to get
+                    // the outer struct field, then resolve the inner field
+                    auto* member_expr = ctx.module().get_expression(*member_ptr);
+                    if (!member_expr) return std::nullopt;
+                    auto* inner_field_id = member_expr->body.id();
+                    if (!inner_field_id) return std::nullopt;
+                    auto inner_field_ref = from_weak(*inner_field_id);
+
+                    // Get the base field info (e.g., self.header)
+                    auto base_info = find_length_field(ctx, access, *base_ptr, struct_type);
+                    if (!base_info) return std::nullopt;
+
+                    // Now resolve the inner field's offset within the nested struct.
+                    // We need the type of the base expression to find the inner layout.
+                    auto base_type = base_expr->body.type;
+                    auto* inner_sl = access.get_struct_layout_detail(base_type);
+                    if (!inner_sl) return std::nullopt;
+                    for (const auto& fl : inner_sl->fields) {
+                        if (fl.field == inner_field_ref) {
+                            return LengthFieldInfo{
+                                base_info->offset + fl.offset,
+                                fl.type.size};
+                        }
+                    }
+                    return std::nullopt;
+                }
+                return std::nullopt;
+            }
+            case ebm::ExpressionKind::BINARY_OP: {
+                // e.g. self.length - 8 → recurse on left and right to find the field
+                auto* left = expr->body.left();
+                auto* right = expr->body.right();
+                if (left) {
+                    auto res = find_length_field(ctx, access, *left, struct_type);
+                    if (res) return res;
+                }
+                if (right) {
+                    auto res = find_length_field(ctx, access, *right, struct_type);
+                    if (res) return res;
+                }
+                return std::nullopt;
+            }
+            case ebm::ExpressionKind::TYPE_CAST: {
+                auto* desc = expr->body.type_cast_desc();
+                if (!desc) return std::nullopt;
+                return find_length_field(ctx, access, desc->source_expr, struct_type);
+            }
+            default:
+                return std::nullopt;
+        }
+    }
+
+    // After choosing a target vector count and filling the VECTOR, adjust the
+    // length field so that the encoder's length_expr check passes.
+    //
+    // Strategy:
+    //   1. find_length_field() walks the expression tree to locate the scalar
+    //      field (byte offset + size) that drives the vector length.
+    //   2. Binary-search: try candidate values for that field, evaluate
+    //      length_expr via the compiled function, pick the value whose result
+    //      equals the target count.
+    //   3. If binary search fails within a few iterations, try a linear
+    //      scan near the target for small fields.
+    inline void fuzz_adjust_length_field(
+        InitialContext& ctx, RuntimeEnv& runtime,
+        ObjectRef struct_obj, ebm::TypeRef vec_type,
+        ebm::StatementRef length_fn, size_t target_count,
+        LayoutAccess& access) {
+        ebm::ExpressionRef length_expr{};
+        if (auto* type_entry = ctx.module().get_type(vec_type)) {
+            if (auto* le = type_entry->body.length_expr()) {
+                length_expr = *le;
+            }
+        }
+        auto field_info = find_length_field(ctx, access, length_expr, struct_obj.type);
+        if (!field_info || field_info->size == 0 || field_info->size > 8) return;
+
+        // Helper: write a value to the length field bytes and evaluate
+        auto try_value = [&](std::uint64_t val) -> std::optional<std::uint64_t> {
+            auto field_bytes = struct_obj.raw_object.substr(field_info->offset, field_info->size);
+            // Write LE bytes (the interpreter reads them this way)
+            for (size_t i = 0; i < field_info->size; i++) {
+                field_bytes[i] = static_cast<std::uint8_t>((val >> (i * 8)) & 0xff);
+            }
+            auto res = runtime.eval_vector_length(ctx, length_fn, struct_obj);
+            if (!res) return std::nullopt;
+            return *res;
+        };
+
+        const std::uint64_t max_field_val = (field_info->size >= 8)
+            ? ~std::uint64_t(0)
+            : (std::uint64_t(1) << (field_info->size * 8)) - 1;
+
+        // Try simple linear probe: target_count, target_count+1, ...
+        // (covers identity case: field == count)
+        // and target_count + small_offset (covers field - constant case)
+        for (std::uint64_t probe = target_count; probe <= std::min(target_count + 256, max_field_val); probe++) {
+            auto result = try_value(probe);
+            if (result && *result == target_count) return;  // found it
+        }
+        // Also try below target (in case of multiplication or other patterns)
+        for (std::uint64_t probe = (target_count > 0 ? target_count - 1 : 0);
+             probe > 0 && probe >= (target_count > 256 ? target_count - 256 : 0); probe--) {
+            auto result = try_value(probe);
+            if (result && *result == target_count) return;
+        }
+        // Give up — leave current value; encode may fail but fuzzer continues
+    }
+
+    // Three-pass struct fill.
+    // Pass 1: Fill non-VECTOR, non-STRUCT_UNION fields (populates discriminants, length fields).
+    // Pass 2: Fill VECTOR fields using compiled length_expr (if available) to determine
+    //         the element count from the already-filled length field value.
+    // Pass 3: Fill STRUCT_UNION fields using compiled selector function.
     inline void fuzz_fill_struct(InitialContext& ctx, FuzzRng& rng, RuntimeEnv& runtime,
                                  ObjectRef struct_obj, size_t max_vec_len, LayoutAccess& access) {
         auto* struct_layout = access.get_struct_layout_detail(struct_obj.type);
@@ -172,9 +347,10 @@ namespace ebm2rmw {
             return;
         }
 
-        // Pass 1: non-STRUCT_UNION fields (populates discriminants)
+        // Pass 1: non-VECTOR, non-STRUCT_UNION fields (populates discriminants and length fields)
         for (const auto& fl : struct_layout->fields) {
-            if (ctx.get_kind(fl.type.type) == ebm::TypeKind::STRUCT_UNION) continue;
+            const auto kind = ctx.get_kind(fl.type.type);
+            if (kind == ebm::TypeKind::STRUCT_UNION || kind == ebm::TypeKind::VECTOR) continue;
             if (fl.offset + fl.type.size > struct_obj.raw_object.size()) continue;
             fuzz_fill_object(ctx, rng, runtime,
                              ObjectRef(fl.type.type,
@@ -182,7 +358,50 @@ namespace ebm2rmw {
                              max_vec_len, access);
         }
 
-        // Pass 2: STRUCT_UNION fields — use selector if available
+        // Pass 2: VECTOR fields — determine element count, then fill.
+        // Strategy: pick a random count (bounded by max_vec_len), fill the vector,
+        // then use a binary-search approach to find the length field value that makes
+        // the compiled length_expr evaluate to exactly that count. Write it back.
+        for (const auto& fl : struct_layout->fields) {
+            if (ctx.get_kind(fl.type.type) != ebm::TypeKind::VECTOR) continue;
+            if (fl.offset + fl.type.size > struct_obj.raw_object.size()) continue;
+
+            auto elem_res = access.get_vector_element_type(fl.type.type);
+            if (!elem_res) continue;
+            const auto& elem_layout = *elem_res;
+            if (elem_layout.size == 0) continue;
+
+            ObjectRef field_obj(fl.type.type,
+                                struct_obj.raw_object.substr(fl.offset, fl.type.size));
+
+            // Choose a random vector count
+            size_t count = rng.next_vector_length(max_vec_len);
+
+            // If we have a compiled length_expr, adjust the length field so the
+            // encoder's check (length_expr == vector.size()) passes.
+            // Skip adjustment when --skip-write-size-check is set — intentionally
+            // produce mismatched length/data for fuzzing decoders.
+            if (!ctx.flags().skip_write_size_check) {
+                auto* length_fn = access.get_vector_length_fn(fl.type.type);
+                if (length_fn) {
+                    fuzz_adjust_length_field(ctx, runtime, struct_obj, fl.type.type,
+                                              *length_fn, count, access);
+                }
+            }
+
+            if (count == 0) {
+                runtime.vector_init(field_obj);  // ensure arena entry exists
+            } else {
+                for (size_t i = 0; i < count; i++) {
+                    auto new_elem_res = runtime.vector_alloc_back(
+                        ctx, field_obj, elem_layout.size, elem_layout.type, nullptr);
+                    if (!new_elem_res) break;
+                    fuzz_fill_object(ctx, rng, runtime, *new_elem_res, max_vec_len, access);
+                }
+            }
+        }
+
+        // Pass 3: STRUCT_UNION fields — use selector if available
         for (const auto& fl : struct_layout->fields) {
             if (ctx.get_kind(fl.type.type) != ebm::TypeKind::STRUCT_UNION) continue;
             if (fl.offset + fl.type.size > struct_obj.raw_object.size()) continue;
