@@ -4,6 +4,8 @@
 #include "../codegen.hpp"
 #include "interpret.hpp"
 #include "layout.hpp"
+#include <chrono>
+#include <filesystem>
 #include <random>
 #include <set>
 
@@ -135,22 +137,10 @@ namespace ebm2rmw {
                 fuzz_fill_struct(ctx, rng, runtime, obj, max_vec_len, access);
                 break;
             }
-            case ebm::TypeKind::VARIANT: {
-                // No discriminant selector: pick a random variant to fill
-                auto* union_layout = access.get_union_layout(obj.type);
-                if (!union_layout || union_layout->variants.empty()) break;
-                const size_t variant_idx = rng.next_choice(union_layout->variants.size());
-                const auto& variant = union_layout->variants[variant_idx];
-                if (variant.size == 0 || variant.size > obj.raw_object.size()) break;
-                fuzz_fill_object(ctx, rng, runtime,
-                                 ObjectRef(variant.type, obj.raw_object.substr(0, variant.size)),
-                                 max_vec_len, access);
-                break;
-            }
+            case ebm::TypeKind::VARIANT:
             case ebm::TypeKind::STRUCT_UNION: {
-                // When called directly (not via fuzz_fill_struct) we lack the parent
-                // struct needed to evaluate the selector, so pick a random variant.
-                // fuzz_fill_struct handles STRUCT_UNION fields properly.
+                // Pick a random variant. For STRUCT_UNION called directly (not via
+                // fuzz_fill_struct) we lack the parent needed for selector evaluation.
                 auto* union_layout = access.get_union_layout(obj.type);
                 if (!union_layout || union_layout->variants.empty()) break;
                 const size_t variant_idx = rng.next_choice(union_layout->variants.size());
@@ -220,6 +210,30 @@ namespace ebm2rmw {
                              ObjectRef(variant.type, field_obj.raw_object.substr(0, variant.size)),
                              max_vec_len, access);
         }
+    }
+
+    // =========================================================================
+    // Common fuzz helpers
+    // =========================================================================
+
+    inline std::uint64_t resolve_fuzz_seed(std::uint64_t seed) {
+        if (seed == 0) {
+            seed = static_cast<std::uint64_t>(
+                std::chrono::steady_clock::now().time_since_epoch().count());
+        }
+        return seed;
+    }
+
+    inline expected<std::filesystem::path> prepare_corpus_dir(std::string_view dir_flag) {
+        if (dir_flag.empty()) return std::filesystem::path{};
+        std::filesystem::path corpus_dir{dir_flag};
+        std::error_code ec;
+        std::filesystem::create_directories(corpus_dir, ec);
+        if (ec) {
+            return ebmgen::unexpect_error("Failed to create corpus dir '{}': {}",
+                                           dir_flag, ec.message());
+        }
+        return corpus_dir;
     }
 
     // =========================================================================

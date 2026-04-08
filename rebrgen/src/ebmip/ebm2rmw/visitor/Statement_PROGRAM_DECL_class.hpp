@@ -35,8 +35,6 @@
 #include "fuzz.hpp"
 #include "optimize.hpp"
 #include "wrap/cout.h"
-#include <chrono>
-#include <filesystem>
 
 namespace ebm2rmw {
 
@@ -445,11 +443,11 @@ namespace ebm2rmw {
     }
 
     // -------------------------------------------------------------------------
-    // encode_output: encode the runtime object and write output
+    // run_encode: encode the runtime object into runtime.output_buf
     // -------------------------------------------------------------------------
-    expected<void> encode_output(Context_Statement_PROGRAM_DECL& ctx,
-                                 RuntimeEnv& runtime,
-                                 ebm::StatementRef entry_encode_fn) {
+    expected<void> run_encode(Context_Statement_PROGRAM_DECL& ctx,
+                               RuntimeEnv& runtime,
+                               ebm::StatementRef entry_encode_fn) {
         InitialContext ictx{.visitor = ctx.visitor};
         if (!ctx.config().env.has_function(entry_encode_fn)) {
             futils::wrap::cerr_wrap() << "Warning: encode function not compiled, skipping.\n";
@@ -468,6 +466,16 @@ namespace ebm2rmw {
         MAYBE_VOID(_, runtime.interpret_encode(ictx, encode_params));
         futils::wrap::cerr_wrap() << "Encode complete. Output size: "
                                   << runtime.output_buf.size() << " bytes\n";
+        return {};
+    }
+
+    // -------------------------------------------------------------------------
+    // encode_output: encode + dump hex + write to --output-file
+    // -------------------------------------------------------------------------
+    expected<void> encode_output(Context_Statement_PROGRAM_DECL& ctx,
+                                 RuntimeEnv& runtime,
+                                 ebm::StatementRef entry_encode_fn) {
+        MAYBE_VOID(_, run_encode(ctx, runtime, entry_encode_fn));
         if (ctx.flags().dump_output) {
             std::string hex_output;
             futils::number::hex::to_hex(hex_output, futils::view::rvec(runtime.output_buf));
@@ -518,10 +526,17 @@ namespace ebm2rmw {
         }
         else if (!ctx.flags().output_file.empty() && ctx.flags().fuzz_count == 1) {
             auto out_file = futils::file::File::create(ctx.flags().output_file);
-            if (out_file) {
-                out_file->write_file_all(futils::view::rvec(buf));
-                futils::wrap::cerr_wrap() << "Output written to: " << ctx.flags().output_file << "\n";
+            if (!out_file) {
+                futils::wrap::cerr_wrap() << "Warning: failed to create output file: "
+                                          << out_file.error().error<std::string>() << "\n";
+                return;
             }
+            if (auto w = out_file->write_file_all(futils::view::rvec(buf)); !w) {
+                futils::wrap::cerr_wrap() << "Warning: failed to write output file: "
+                                          << w.error().error<std::string>() << "\n";
+                return;
+            }
+            futils::wrap::cerr_wrap() << "Output written to: " << ctx.flags().output_file << "\n";
         }
         else if (ctx.flags().dump_output) {
             std::string hex;
@@ -544,23 +559,10 @@ namespace ebm2rmw {
                                   ctx.flags().entry_point);
         }
 
-        std::uint64_t seed = ctx.flags().fuzz_seed;
-        if (seed == 0) {
-            seed = static_cast<std::uint64_t>(
-                std::chrono::steady_clock::now().time_since_epoch().count());
-        }
+        const std::uint64_t seed = resolve_fuzz_seed(ctx.flags().fuzz_seed);
         futils::wrap::cerr_wrap() << "Fuzz seed: " << seed << "\n";
 
-        std::filesystem::path corpus_dir;
-        if (!ctx.flags().fuzz_corpus_dir.empty()) {
-            corpus_dir = ctx.flags().fuzz_corpus_dir;
-            std::error_code ec;
-            std::filesystem::create_directories(corpus_dir, ec);
-            if (ec) {
-                return unexpect_error("Failed to create corpus dir '{}': {}",
-                                      ctx.flags().fuzz_corpus_dir, ec.message());
-            }
-        }
+        MAYBE(corpus_dir, prepare_corpus_dir(ctx.flags().fuzz_corpus_dir));
 
         const size_t count = ctx.flags().fuzz_count;
         const size_t max_vec_len = ctx.flags().fuzz_max_vector_len;
@@ -579,7 +581,7 @@ namespace ebm2rmw {
             fuzz_fill_object(ictx, rng, iter_runtime, self_obj, max_vec_len, access);
 
             if (!ctx.flags().skip_encode) {
-                auto enc_res = encode_output(ctx, iter_runtime, entry_encode_fn);
+                auto enc_res = run_encode(ctx, iter_runtime, entry_encode_fn);
                 if (!enc_res) {
                     futils::wrap::cerr_wrap()
                         << "Warning [iter " << i << ", seed=" << iter_seed
@@ -619,23 +621,10 @@ namespace ebm2rmw {
         }
         futils::wrap::cerr_wrap() << "Found " << fields.size() << " mutable leaf fields.\n";
 
-        std::uint64_t seed = ctx.flags().fuzz_seed;
-        if (seed == 0) {
-            seed = static_cast<std::uint64_t>(
-                std::chrono::steady_clock::now().time_since_epoch().count());
-        }
+        const std::uint64_t seed = resolve_fuzz_seed(ctx.flags().fuzz_seed);
         futils::wrap::cerr_wrap() << "Mutate seed: " << seed << "\n";
 
-        std::filesystem::path corpus_dir;
-        if (!ctx.flags().fuzz_corpus_dir.empty()) {
-            corpus_dir = ctx.flags().fuzz_corpus_dir;
-            std::error_code ec;
-            std::filesystem::create_directories(corpus_dir, ec);
-            if (ec) {
-                return unexpect_error("Failed to create corpus dir '{}': {}",
-                                      ctx.flags().fuzz_corpus_dir, ec.message());
-            }
-        }
+        MAYBE(corpus_dir, prepare_corpus_dir(ctx.flags().fuzz_corpus_dir));
 
         const size_t count = ctx.flags().fuzz_count;
         const size_t mutations_per = ctx.flags().fuzz_mutations;
@@ -645,19 +634,16 @@ namespace ebm2rmw {
             const std::uint64_t iter_seed = seed + i;
             FuzzRng rng(iter_seed);
 
-            // Copy the decoded state
             RuntimeEnv iter_runtime;
             iter_runtime.decoded_self_bytes = base_runtime.decoded_self_bytes;
             iter_runtime.decoded_self_type = base_runtime.decoded_self_type;
 
-            // Apply N random mutations
             for (size_t m = 0; m < mutations_per; m++) {
                 const size_t field_idx = rng.next_choice(fields.size());
                 apply_mutation(rng, iter_runtime.decoded_self_bytes, fields[field_idx]);
             }
 
-            // Encode
-            auto enc_res = encode_output(ctx, iter_runtime, entry_encode_fn);
+            auto enc_res = run_encode(ctx, iter_runtime, entry_encode_fn);
             if (!enc_res) {
                 futils::wrap::cerr_wrap()
                     << "Warning [iter " << i << ", seed=" << iter_seed
