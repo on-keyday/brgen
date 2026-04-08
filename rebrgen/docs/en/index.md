@@ -13,3 +13,4 @@ Welcome to the RE:brgen project documentation. This document provides a comprehe
 7.  [Script Reference](script_reference.md)
 8.  [Inconsistencies and Notes for Review](inconsistencies_notes.md)
 9.  [Current Project Status (2026-02)](current_status.md)
+10. [Structured Fuzzing with ebm2rmw](structured_fuzzing.md)
