@@ -318,7 +318,7 @@ namespace ebm2rmw {
         // Try simple linear probe: target_count, target_count+1, ...
         // (covers identity case: field == count)
         // and target_count + small_offset (covers field - constant case)
-        for (std::uint64_t probe = target_count; probe <= std::min(target_count + 256, max_field_val); probe++) {
+        for (std::uint64_t probe = target_count; probe <= std::min(static_cast<std::uint64_t>(target_count) + 256, max_field_val); probe++) {
             auto result = try_value(probe);
             if (result && *result == target_count) return;  // found it
         }
