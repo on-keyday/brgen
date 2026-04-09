@@ -121,6 +121,15 @@ def source_emsdk():
 
 PARALLEL_BUILD = os.getenv("PARALLEL_BUILD", build_config.get("PARALLEL_BUILD", ""))
 
+USE_CCACHE = os.getenv("USE_CCACHE", build_config.get("USE_CCACHE", ""))
+ccache_args = []
+if USE_CCACHE:
+    import shutil
+    if shutil.which("ccache"):
+        ccache_args = ["-D", "CMAKE_C_COMPILER_LAUNCHER=ccache", "-D", "CMAKE_CXX_COMPILER_LAUNCHER=ccache"]
+        print("Using ccache")
+    else:
+        print("USE_CCACHE is set but ccache is not found in PATH")
 
 if BUILD_MODE == "native":
     subprocess.run(
@@ -139,7 +148,7 @@ if BUILD_MODE == "native":
             ".",
             f"-B",
             f"./built/{BUILD_MODE}/{BUILD_TYPE}",
-        ],
+        ] + ccache_args,
         check=True,
         stdout=sys.stdout,
         stderr=sys.stderr,
@@ -189,7 +198,7 @@ elif BUILD_MODE == "web":
             ".",
             f"-B",
             f"./built/{BUILD_MODE}/{BUILD_TYPE}",
-        ],
+        ] + ccache_args,
         shell=os.name == "nt",
         check=True,
         stdout=sys.stdout,
