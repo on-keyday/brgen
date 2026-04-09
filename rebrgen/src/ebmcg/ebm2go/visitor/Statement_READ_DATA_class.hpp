@@ -226,7 +226,7 @@ DEFINE_VISITOR(Statement_READ_DATA) {
                     if (ctx.config().io_strategy.is_bytes_io()) {
                         w.writeln("if ", io_, ".Len() < ", size_str, " {");
                         ctx.config().imports.insert("fmt");
-                        w.indent_writeln("return fmt.Errorf(\"Too larget length requested: %d < %d\",", io_, ".Len(), int64(", size_str, "))");
+                        w.indent_writeln("return fmt.Errorf(\"Too large length requested: %d < %d\",", io_, ".Len(), int64(", size_str, "))");
                         w.writeln("}");
                         w.write(read_full(true));
                     }
@@ -247,7 +247,7 @@ DEFINE_VISITOR(Statement_READ_DATA) {
                             w.write(err_return);
                             w.writeln("if (endOffset - current) < int64(", size_str, ") {");
                             ctx.config().imports.insert("fmt");
-                            w.indent_writeln("return fmt.Errorf(\"Too larget length requested: %d < %d\",endOffset - current, int64(", size_str, "))");
+                            w.indent_writeln("return fmt.Errorf(\"Too large length requested: %d < %d\",endOffset - current, int64(", size_str, "))");
                             w.writeln("}");
                             w.write(read_full(true));
                         }

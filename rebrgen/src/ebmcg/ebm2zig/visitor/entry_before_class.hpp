@@ -66,6 +66,24 @@ DEFINE_VISITOR(entry_before) {
     config.conditional_loop_keyword = "while";
     config.infinity_loop_keyword = "";  // empty => default visitor generates `while (true) {`
 
+    // CAN_READ_STREAM: Zig's anytype reader has no peek/available.
+    // Set on_can_read_stream_loop flag before loop body so that DECODER_RETURN
+    // variable decls generate catch-break pattern instead of `try`.
+    config.before_loop_wrapper = [&](Context_Statement_LOOP_STATEMENT& lctx) -> expected<Result> {
+        auto cond = lctx.loop.condition();
+        if (cond && lctx.is(ebm::ExpressionKind::CAN_READ_STREAM, cond->cond)) {
+            lctx.config().on_can_read_stream_loop = true;
+        }
+        return CodeWriter{};
+    };
+    config.after_loop_body_wrapper = [&](Context_Statement_LOOP_STATEMENT& lctx) -> expected<Result> {
+        auto cond = lctx.loop.condition();
+        if (cond && lctx.is(ebm::ExpressionKind::CAN_READ_STREAM, cond->cond)) {
+            lctx.config().on_can_read_stream_loop = false;
+        }
+        return CodeWriter{};
+    };
+
     // Append: ArrayListUnmanaged requires allocator
     config.append_visitor = [&](Context_Statement_APPEND& actx) -> expected<Result> {
         MAYBE(target, ctx.visit(actx.target));
@@ -184,7 +202,8 @@ DEFINE_VISITOR(entry_before) {
     config.enum_decl_visitor = [&](Context_Statement_ENUM_DECL& ectx) -> expected<Result> {
         CodeWriter w;
         auto name = ectx.identifier();
-        if (is_nil(ectx.enum_decl.base_type)) {
+        bool has_base = !is_nil(ectx.enum_decl.base_type);
+        if (!has_base) {
             w.writeln("pub const ", name, " = enum {");
         }
         else {
@@ -196,6 +215,16 @@ DEFINE_VISITOR(entry_before) {
             for (auto& member_ref : ectx.enum_decl.members.container) {
                 MAYBE(member, ectx.visit(member_ref));
                 w.write(member.to_writer());
+            }
+            // Make enum non-exhaustive so @enumFromInt doesn't panic on unknown values,
+            // but only if the enum doesn't already cover all possible values of the base type
+            if (has_base) {
+                auto member_count = ectx.enum_decl.members.container.size();
+                MAYBE(type_bits, get_type_size_bit(ectx, ectx.enum_decl.base_type));
+                // If member_count < 2^type_bits, not all values are covered
+                if (type_bits < 64 && member_count < (size_t(1) << type_bits)) {
+                    w.writeln("_,");
+                }
             }
         }
         w.writeln("};");
@@ -728,8 +757,8 @@ DEFINE_VISITOR(entry_before) {
         }
         CodeWriter w;
         if (cand == BytesType::array) {
-            w.writeln("try ", io_, ".writeAll(&", target.to_writer(), ");");
             MAYBE(size_str, get_size_str(wctx, wctx.write_data.size));
+            w.writeln("try ", io_, ".writeAll(", target.to_writer(), "[0..", size_str, "]);");
             ebm2zig::append_abs_offset(wctx, wctx.write_data.io_ref, w, size_str);
         }
         else {
@@ -749,8 +778,8 @@ DEFINE_VISITOR(entry_before) {
         }
         CodeWriter w;
         if (cand == BytesType::array) {
-            w.writeln("try ", io_, ".readNoEof(&", target.to_writer(), ");");
             MAYBE(size_str, get_size_str(rctx, rctx.read_data.size));
+            w.writeln("try ", io_, ".readNoEof(", target.to_writer(), "[0..", size_str, "]);");
             ebm2zig::append_abs_offset(rctx, rctx.read_data.io_ref, w, size_str);
         }
         else {

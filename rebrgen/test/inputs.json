@@ -96,6 +96,14 @@
         "hex": true
     },
     {
+        "name": "ipv6_invalid_test",
+        "binary": "$WORK_DIR/test/binary_data/ipv6_invalid.dat",
+        "format_name": "TestPacket",
+        "source": "$WORK_DIR/src/test/ipv6.bgn",
+        "failure_case": true,
+        "hex": true
+    },
+    {
         "name": "capnproto_test",
         "binary": "$WORK_DIR/test/binary_data/capnproto.dat",
         "format_name": "CapnProtoTest",

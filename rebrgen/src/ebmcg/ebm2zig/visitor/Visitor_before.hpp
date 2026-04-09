@@ -12,3 +12,4 @@ std::unordered_map<ebm::TypeRef,bool> allocation_detector_cache;
 std::unordered_map<ebm::StatementRef,bool> needs_allocation;
 bool current_param_needs_allocation = false;
 bool current_argument_needs_allocation = false;
+bool on_can_read_stream_loop = false;
