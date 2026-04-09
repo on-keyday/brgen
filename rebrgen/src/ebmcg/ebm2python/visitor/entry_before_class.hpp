@@ -260,19 +260,38 @@ DEFINE_VISITOR(entry_before) {
     config.read_data_custom = [](Context_Statement_READ_DATA& ctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
         if (ctx.read_data.lowered_statement()) return pass;
+        if (is_bytes_type(ctx, ctx.read_data.data_type)) return pass;  // bytes IO handled by default path
         MAYBE(target, ctx.visit(ctx.read_data.target));
         MAYBE(fmt, type_to_struct_format(ctx, ctx.read_data.data_type, ctx.read_data.attribute, ctx.read_data.size));
         MAYBE(size_str, get_size_str(ctx, ctx.read_data.size));
         auto io_ = ctx.identifier(ctx.read_data.io_ref);
         return CODELINE(target.to_writer(), " = struct.unpack(", fmt, ", ", io_, ".read(", size_str, "))[0]");
     };
+    config.read_data_bytes_io_wrapper = [](Context_Statement_READ_DATA& ctx, BytesType cand, Result target, std::string io_) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        // lowered がある場合 (bit_fields等) は lowered に委譲
+        if (ctx.read_data.lowered_statement()) return pass;
+        MAYBE(size_str, get_size_str(ctx, ctx.read_data.size));
+        if (auto dyn = ctx.read_data.size.ref(); dyn && ctx.is(ebm::ExpressionKind::GET_REMAINING_BYTES, *dyn)) {
+            return CODELINE(target.to_writer(), " = ", io_, ".read()");
+        }
+        return CODELINE(target.to_writer(), " = ", io_, ".read(", size_str, ")");
+    };
     config.write_data_custom = [](Context_Statement_WRITE_DATA& ctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
         if (ctx.write_data.lowered_statement()) return pass;
+        if (is_bytes_type(ctx, ctx.write_data.data_type)) return pass;  // bytes IO handled by default path
         MAYBE(target, ctx.visit(ctx.write_data.target));
         MAYBE(fmt, type_to_struct_format(ctx, ctx.write_data.data_type, ctx.write_data.attribute, ctx.write_data.size));
         auto io_ = ctx.identifier(ctx.write_data.io_ref);
         return CODELINE(io_, ".write(struct.pack(", fmt, ", ", target.to_writer(), "))");
+    };
+    config.write_data_bytes_io_wrapper = [](Context_Statement_WRITE_DATA& ctx, BytesType cand, Result target, std::string io_) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        // lowered がある場合は lowered に委譲
+        if (ctx.write_data.lowered_statement()) return pass;
+        MAYBE(size_str, get_size_str(ctx, ctx.write_data.size));
+        return CODELINE(io_, ".write(", target.to_writer(), "[:", size_str, "])");
     };
     return pass;
 }

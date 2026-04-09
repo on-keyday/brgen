@@ -103,7 +103,7 @@ namespace ebmgen {
         return make_assert_statement(condition, if_stmt);
     }
 
-    expected<void> EncoderConverter::encode_array_type(ebm::IOData& io_desc, const std::shared_ptr<ast::ArrayType>& aty, ebm::ExpressionRef base_ref, const std::shared_ptr<ast::Field>& field) {
+    expected<void> EncoderConverter::encode_array_type(ebm::IOData& io_desc, const std::shared_ptr<ast::ArrayType>& aty, ebm::ExpressionRef base_ref, const std::shared_ptr<ast::Field>& field, std::vector<ebm::StatementRef>& pre_statements) {
         EBMA_CONVERT_TYPE(element_type, aty->element_type);
         const auto elem_body = ctx.repository().get_type(element_type);
         const auto is_byte = elem_body->body.kind == ebm::TypeKind::UINT && elem_body->body.size()->value() == 8;
@@ -165,6 +165,16 @@ namespace ebmgen {
                 length = len_init;
             }
         }
+        // For byte arrays, the size is already set correctly and no element-by-element
+        // loop is needed. Code generators handle bytes IO as a primitive bulk operation.
+        // If a LENGTH_CHECK exists, it is emitted as a pre-statement (before the WRITE_DATA).
+        if (is_byte) {
+            if (!is_nil(assert_)) {
+                pre_statements.push_back(assert_);
+            }
+            return {};
+        }
+
         EBM_COUNTER_LOOP_START(counter);
         EBM_INDEX(indexed, element_type, base_ref, counter);
         MAYBE(encode_info, encode_field_type(aty->element_type, indexed, nullptr, from_weak(io_desc.field)));
@@ -295,6 +305,7 @@ namespace ebmgen {
 
         EBMA_CONVERT_TYPE(typ_ref, typ, field);
         ebm::IOData io_desc = make_io_data(cur_encdec.encoder_input_def, field_ref, base_ref, typ_ref, ebm::IOAttribute{}, ebm::Size{});
+        std::vector<ebm::StatementRef> pre_statements;
 
         if (auto ity = ast::as<ast::IntType>(typ)) {
             MAYBE_VOID(ok, encode_int_type(io_desc, ast::cast_to<ast::IntType>(typ), base_ref));
@@ -309,7 +320,7 @@ namespace ebmgen {
             MAYBE_VOID(ok, encode_enum_type(io_desc, ast::cast_to<ast::EnumType>(typ), base_ref, field));
         }
         else if (auto aty = ast::as<ast::ArrayType>(typ)) {
-            MAYBE_VOID(ok, encode_array_type(io_desc, ast::cast_to<ast::ArrayType>(typ), base_ref, field));
+            MAYBE_VOID(ok, encode_array_type(io_desc, ast::cast_to<ast::ArrayType>(typ), base_ref, field, pre_statements));
         }
         else if (auto sty = ast::as<ast::StructType>(typ)) {
             MAYBE_VOID(ok, encode_struct_type(io_desc, ast::cast_to<ast::StructType>(typ), base_ref, field));
@@ -318,6 +329,18 @@ namespace ebmgen {
             return unexpect_error("Unsupported type for encoding: {}", node_type_to_string(typ->node_type));
         }
         assert(io_desc.size.unit != ebm::SizeUnit::UNKNOWN);
+        if (!pre_statements.empty()) {
+            // Wrap pre-statements (e.g. LENGTH_CHECK) + WRITE_DATA in a BLOCK.
+            // This occurs for byte arrays with expression-length validation.
+            EBM_WRITE_DATA(write_ref, io_desc);
+            ebm::Block block;
+            block.container.reserve(pre_statements.size() + 1);
+            for (auto& stmt : pre_statements) {
+                append(block, stmt);
+            }
+            append(block, write_ref);
+            return make_block(std::move(block));
+        }
         return make_write_data(io_desc);
     }
 
