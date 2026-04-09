@@ -4628,6 +4628,7 @@ namespace ebm {
     struct EBM_API LengthCheck{
         ExpressionRef target;
         ExpressionRef expected_length;
+        WeakStatementRef related_field;
         WeakStatementRef related_function;
         LoweredStatementRef lowered_statement;
         LengthCheckType length_check_type{};
@@ -4638,6 +4639,7 @@ namespace ebm {
         constexpr void visit(Visitor&& v) {
             v(v, "target",(*this).target);
             v(v, "expected_length",(*this).expected_length);
+            v(v, "related_field",(*this).related_field);
             v(v, "related_function",(*this).related_function);
             v(v, "lowered_statement",(*this).lowered_statement);
             v(v, "length_check_type",(*this).length_check_type);
@@ -4646,6 +4648,7 @@ namespace ebm {
         constexpr void visit(Visitor&& v) const {
             v(v, "target",(*this).target);
             v(v, "expected_length",(*this).expected_length);
+            v(v, "related_field",(*this).related_field);
             v(v, "related_function",(*this).related_function);
             v(v, "lowered_statement",(*this).lowered_statement);
             v(v, "length_check_type",(*this).length_check_type);
@@ -4659,6 +4662,7 @@ namespace ebm {
         static constexpr void visit_static(Visitor&& v) {
             v(v, "target",visitor_tag<decltype(std::declval<LengthCheck>().target),false>{});
             v(v, "expected_length",visitor_tag<decltype(std::declval<LengthCheck>().expected_length),false>{});
+            v(v, "related_field",visitor_tag<decltype(std::declval<LengthCheck>().related_field),false>{});
             v(v, "related_function",visitor_tag<decltype(std::declval<LengthCheck>().related_function),false>{});
             v(v, "lowered_statement",visitor_tag<decltype(std::declval<LengthCheck>().lowered_statement),false>{});
             v(v, "length_check_type",visitor_tag<decltype(std::declval<LengthCheck>().length_check_type),false>{});

@@ -1693,6 +1693,14 @@ namespace ebm {
         else {
             return false;
         }
+        if (auto got = j.at("related_field")) {
+            if(!futils::json::convert_from_json(*got, obj.related_field)) {
+                return false;
+            }
+        }
+        else {
+            return false;
+        }
         if (auto got = j.at("related_function")) {
             if(!futils::json::convert_from_json(*got, obj.related_function)) {
                 return false;

@@ -22760,6 +22760,9 @@ namespace ebm {
         if (auto err = (*this).expected_length.encode(w)) {
             return err;
         }
+        if (auto err = (*this).related_field.encode(w)) {
+            return err;
+        }
         if (auto err = (*this).related_function.encode(w)) {
             return err;
         }
@@ -22777,6 +22780,9 @@ namespace ebm {
             return err;
         }
         if (auto err = (*this).expected_length.decode(r)) {
+            return err;
+        }
+        if (auto err = (*this).related_field.decode(r)) {
             return err;
         }
         if (auto err = (*this).related_function.decode(r)) {
