@@ -28,7 +28,15 @@
 DEFINE_VISITOR(Expression_CAN_READ_STREAM) {
     auto io_ = ctx.identifier(ctx.io_ref);
     MAYBE(num_bytes_, get_size_str(ctx, ctx.num_bytes));
-    auto& flags = ctx.config().function_markers[get_id(ctx.config().current_function)];
-    add_flag(flags, ebm2rust::FunctionFlags::HasFillBuf);
+    // fill_buf requires `use std::io::BufRead;` regardless of io_ref kind
+    ctx.config().use_statements.insert("use std::io::BufRead;");
+    // Only mark function as needing BufRead parameter if fill_buf is called
+    // on the function parameter (PARAMETER_DECL), not on a local sub_byte_range
+    // Cursor (VARIABLE_DECL) which already implements BufRead.
+    MAYBE(io_stmt, ctx.get(ctx.io_ref));
+    if (io_stmt.body.kind == ebm::StatementKind::PARAMETER_DECL) {
+        auto& flags = ctx.config().function_markers[get_id(ctx.config().current_function)];
+        add_flag(flags, ebm2rust::FunctionFlags::HasFillBuf);
+    }
     return CODE("(", io_, ".fill_buf()?.len() >= ", num_bytes_, ")");
 }
