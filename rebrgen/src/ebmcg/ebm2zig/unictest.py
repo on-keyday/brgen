@@ -61,11 +61,10 @@ pub fn main() !void {{
     // Decode
     var target: generated.{TEST_TARGET_FORMAT} = .{{}};
     var read_stream = std.io.fixedBufferStream(input_data);
-    target.decode(allocator, read_stream.reader()) catch |err| {{
+    target.decode(read_stream.reader(), allocator) catch |err| {{
         std.debug.print("Decode error: {{}}\\n", .{{err}});
         std.process.exit(10);
     }};
-    defer target.deinit(allocator);
 
     // Encode
     var output_buf = std.ArrayList(u8).init(allocator);

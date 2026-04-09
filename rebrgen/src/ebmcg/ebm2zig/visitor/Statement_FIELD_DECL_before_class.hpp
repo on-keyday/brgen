@@ -46,9 +46,9 @@ DEFINE_VISITOR(Statement_FIELD_DECL_before) {
         }
         auto variant_name = ctx.config().variant_prefix + std::format("{}", get_id(ctx.field_decl.field_type));
 
-        // Generate the variant as an extern union
+        // Generate the variant as a bare union
         CodeWriter w;
-        w.writeln("const ", variant_name, " = extern union {");
+        w.writeln("const ", variant_name, " = union {");
         {
             auto scope = w.indent_scope();
             for (auto& member : struct_members) {

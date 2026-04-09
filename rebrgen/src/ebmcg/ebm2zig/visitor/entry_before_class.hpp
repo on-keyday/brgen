@@ -139,11 +139,11 @@ DEFINE_VISITOR(entry_before) {
     };
 
     // === Struct declaration ===
-    // Zig: const Name = struct { ... };
+    // Zig: pub const Name = struct { ... };
     config.struct_definition_start_wrapper = [](Context_Statement_STRUCT_DECL& sctx) -> expected<Result> {
         CodeWriter w;
         auto name = sctx.identifier();
-        w.writeln_with_loc(to_any_ref(sctx.item_id), "const ", name, " = struct {");
+        w.writeln_with_loc(to_any_ref(sctx.item_id), "pub const ", name, " = struct {");
         return w;
     };
 
@@ -153,16 +153,16 @@ DEFINE_VISITOR(entry_before) {
     };
 
     // === Enum declaration ===
-    // Zig: const Name = enum(BaseType) { member1 = val1, ... };
+    // Zig: pub const Name = enum(BaseType) { member1 = val1, ... };
     config.enum_decl_visitor = [&](Context_Statement_ENUM_DECL& ectx) -> expected<Result> {
         CodeWriter w;
         auto name = ectx.identifier();
         if (is_nil(ectx.enum_decl.base_type)) {
-            w.writeln("const ", name, " = enum {");
+            w.writeln("pub const ", name, " = enum {");
         }
         else {
             MAYBE(type, ctx.visit(ectx.enum_decl.base_type));
-            w.writeln("const ", name, " = enum(", type.to_writer(), ") {");
+            w.writeln("pub const ", name, " = enum(", type.to_writer(), ") {");
         }
         {
             auto scope = w.indent_scope();
@@ -175,10 +175,19 @@ DEFINE_VISITOR(entry_before) {
         return w;
     };
 
-    // Enum member: name = value,
+    // Enum member: name = value, (only when base type exists; otherwise just name,)
     config.enum_member_decl_visitor = [&](Context_Statement_ENUM_MEMBER_DECL& mctx) -> expected<Result> {
         auto member_name = mctx.identifier();
+        if (is_nil(mctx.enum_member_decl.value)) {
+            return CODELINE(member_name, ",");
+        }
         MAYBE(value_expr, ctx.visit(mctx.enum_member_decl.value));
+        // Check if the parent enum has a base type
+        MAYBE(parent_enum, mctx.get_field<"enum_decl">(mctx.enum_member_decl.enum_decl));
+        if (is_nil(parent_enum.base_type)) {
+            // No base type: Zig inferred enums cannot have explicit values
+            return CODELINE(member_name, ",");
+        }
         return CODELINE(member_name, " = ", value_expr.to_writer(), ",");
     };
 
@@ -191,9 +200,8 @@ DEFINE_VISITOR(entry_before) {
             // For state variables, we pass a pointer to allow modification
             return CODE(ctx.identifier(), ": *", typ.to_writer());
         }
-        if (ctx.get_kind(ctx.param_decl.param_type) == ebm::TypeKind::DECODER_INPUT &&
-            ctx.config().current_param_needs_allocation) {
-            // For encoder/decoder input types, we use anytype pattern
+        if (ctx.get_kind(ctx.param_decl.param_type) == ebm::TypeKind::DECODER_INPUT) {
+            // All decode functions get an allocator parameter for dynamic allocation
             return CODE(ctx.identifier(), ": ", typ.to_writer(), ", allocator: std.mem.Allocator");
         }
         return CODE(ctx.identifier(), ": ", typ.to_writer());
@@ -220,8 +228,8 @@ DEFINE_VISITOR(entry_before) {
             return CODE("&", target.to_writer());
         }
         auto kind = ctx.get_kind(ctx.type);
-        if (kind == ebm::TypeKind::DECODER_INPUT && ctx.config().current_argument_needs_allocation) {
-            // For decoder input types, we pass the allocator as well
+        if (kind == ebm::TypeKind::DECODER_INPUT) {
+            // All decode calls pass through the allocator
             return CODE(target.to_writer(), ", allocator");
         }
         return target;
@@ -313,18 +321,61 @@ DEFINE_VISITOR(entry_before) {
             // Free function: pub fn name(params...) RetType {
             w.writeln("pub fn ", func_name, "(", params, ") ", ret_str, " {");
         }
+        // Suppress unused allocator parameter warning for all decode functions
+        // Using &allocator avoids "pointless discard" when allocator IS used
+        if (fctx.func_decl.kind == ebm::FunctionKind::DECODE) {
+            auto scope = w.indent_scope();
+            w.writeln("_ = &allocator;");
+        }
         return w;
     };
 
     // === Field declaration ===
-    // Zig struct fields: name: Type,
+    // Zig struct fields: name: Type = default,
     config.field_decl_visitor = [&](Context_Statement_FIELD_DECL& fctx) -> expected<Result> {
         if (fctx.field_decl.is_state_variable()) {
             return CodeWriter{};
         }
         auto name = fctx.identifier();
         MAYBE(type, ctx.visit(fctx.field_decl.field_type));
-        return CODELINE(name, ": ", type.to_writer(), ",");
+        // Determine default value based on type kind
+        auto type_kind = fctx.get_kind(fctx.field_decl.field_type);
+        std::string default_val = " = undefined";
+        if (type_kind) {
+            switch (*type_kind) {
+                case ebm::TypeKind::UINT:
+                case ebm::TypeKind::INT:
+                case ebm::TypeKind::USIZE:
+                    default_val = " = 0";
+                    break;
+                case ebm::TypeKind::BOOL:
+                    default_val = " = false";
+                    break;
+                case ebm::TypeKind::FLOAT:
+                    default_val = " = 0.0";
+                    break;
+                case ebm::TypeKind::VECTOR:
+                    default_val = " = &.{}";
+                    break;
+                case ebm::TypeKind::ARRAY:
+                    default_val = " = std.mem.zeroes(" + type.to_string() + ")";
+                    break;
+                case ebm::TypeKind::STRUCT:
+                    default_val = " = .{}";
+                    break;
+                case ebm::TypeKind::OPTIONAL:
+                case ebm::TypeKind::PTR:
+                    default_val = " = null";
+                    break;
+                case ebm::TypeKind::ENUM:
+                    default_val = " = undefined";
+                    break;
+                default:
+                    default_val = " = undefined";
+                    break;
+            }
+        }
+        return CODELINE(name, ": ", type.to_writer(), default_val, ",");
     };
 
     // === Type cast ===
@@ -349,8 +400,8 @@ DEFINE_VISITOR(entry_before) {
             case ebm::CastType::SIGNED_TO_UNSIGNED:
             case ebm::CastType::UNSIGNED_TO_SIGNED:
             case ebm::CastType::LARGE_INT_TO_SMALL_INT:
-                // Zig: @as(TargetType, expr) - works for widening, narrowing, signed/unsigned
-                return CODE("@as(", target_type.to_writer(), ",", source_expr.to_writer(), ")");
+                // Zig: @as(TargetType, @intCast(source)) for integer width/sign conversions
+                return CODE("@as(", target_type.to_writer(), ", @intCast(", source_expr.to_writer(), "))");
             case ebm::CastType::FLOAT_TO_INT_BIT:
             case ebm::CastType::INT_TO_FLOAT_BIT:
                 // Zig: @bitCast(expr) for reinterpret casts
@@ -362,9 +413,8 @@ DEFINE_VISITOR(entry_before) {
                 // Zig: expr != 0
                 return CODE("(", source_expr.to_writer(), " != 0)");
             default:
-                // For other casts, use @intCast as a general fallback
-                // This covers VECTOR_TO_ARRAY, ARRAY_TO_VECTOR, STRUCT_TO_RECURSIVE_STRUCT, etc.
-                return CODE("@intCast(", source_expr.to_writer(), ")");
+                // For other casts, use @as(TargetType, @intCast(source)) as a general fallback
+                return CODE("@as(", target_type.to_writer(), ", @intCast(", source_expr.to_writer(), "))");
         }
     };
 
