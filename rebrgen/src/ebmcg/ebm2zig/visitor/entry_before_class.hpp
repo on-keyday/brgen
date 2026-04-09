@@ -66,8 +66,12 @@ DEFINE_VISITOR(entry_before) {
     config.conditional_loop_keyword = "while";
     config.infinity_loop_keyword = "";  // empty => default visitor generates `while (true) {`
 
-    // Append
-    config.append_function = "append";
+    // Append: ArrayListUnmanaged requires allocator
+    config.append_visitor = [&](Context_Statement_APPEND& actx) -> expected<Result> {
+        MAYBE(target, ctx.visit(actx.target));
+        MAYBE(value, ctx.visit(actx.value));
+        return CODELINE("try ", target.to_writer(), ".append(allocator, ", value.to_writer(), ");");
+    };
 
     // Enum member access: Zig uses .member (dot prefix)
     config.enum_member_accessor = ".";
@@ -95,7 +99,7 @@ DEFINE_VISITOR(entry_before) {
     config.default_value_option.object_init = "{}";
     config.default_value_option.pointer_init = "null";
     config.default_value_option.optional_init = "null";
-    config.default_value_option.vector_init = "&.{}";
+    config.default_value_option.vector_init = ".{}";
 
     // Enum member separator (comma in Zig)
     config.enum_member_separator = ",";
@@ -103,6 +107,29 @@ DEFINE_VISITOR(entry_before) {
 
     config.alt_binary_op[ebm::BinaryOp::logical_and] = "and";
     config.alt_binary_op[ebm::BinaryOp::logical_or] = "or";
+
+    // Zig shift operators require RHS to be the log2 type of LHS (e.g. u6 for u64)
+    // ebmgen inserts TYPE_CAST on the RHS to match LHS type, but Zig needs a different type.
+    // Strip the outer TYPE_CAST and use @intCast to let Zig infer the correct shift amount type.
+    config.binary_op_custom = [&](Context_Expression_BINARY_OP& bctx) -> expected<Result> {
+        if (bctx.bop != ebm::BinaryOp::left_shift && bctx.bop != ebm::BinaryOp::right_shift) {
+            return pass;
+        }
+        MAYBE(left, ctx.visit(bctx.left));
+        // Check if RHS is a TYPE_CAST and unwrap it
+        auto rhs_kind = bctx.get_kind(bctx.right);
+        Result right_inner;
+        if (rhs_kind && *rhs_kind == ebm::ExpressionKind::TYPE_CAST) {
+            MAYBE(rhs_cast, bctx.get_field<"type_cast_desc.source_expr">(bctx.right));
+            MAYBE(inner, ctx.visit(rhs_cast));
+            right_inner = std::move(inner);
+        } else {
+            MAYBE(rhs, ctx.visit(bctx.right));
+            right_inner = std::move(rhs);
+        }
+        auto op = to_string(bctx.bop);
+        return CODE("(", left.to_writer(), " ", op, " @intCast(", right_inner.to_writer(), "))");
+    };
 
     // === Type wrappers ===
 
@@ -132,18 +159,18 @@ DEFINE_VISITOR(entry_before) {
         return CODE("[", std::to_string(ctx.length.value()), "]", elem_type.to_writer());
     };
 
-    // Vector/slice type: []T
+    // Vector type: std.ArrayListUnmanaged(T)
     config.vector_type_wrapper = [](Context_Type_VECTOR& ctx) -> expected<Result> {
         MAYBE(elem_type, ctx.visit(ctx.element_type));
-        return CODE("[]", elem_type.to_writer());
+        return CODE("std.ArrayListUnmanaged(", elem_type.to_writer(), ")");
     };
 
     // === Struct declaration ===
-    // Zig: const Name = struct { ... };
+    // Zig: pub const Name = struct { ... };
     config.struct_definition_start_wrapper = [](Context_Statement_STRUCT_DECL& sctx) -> expected<Result> {
         CodeWriter w;
         auto name = sctx.identifier();
-        w.writeln_with_loc(to_any_ref(sctx.item_id), "const ", name, " = struct {");
+        w.writeln_with_loc(to_any_ref(sctx.item_id), "pub const ", name, " = struct {");
         return w;
     };
 
@@ -153,16 +180,16 @@ DEFINE_VISITOR(entry_before) {
     };
 
     // === Enum declaration ===
-    // Zig: const Name = enum(BaseType) { member1 = val1, ... };
+    // Zig: pub const Name = enum(BaseType) { member1 = val1, ... };
     config.enum_decl_visitor = [&](Context_Statement_ENUM_DECL& ectx) -> expected<Result> {
         CodeWriter w;
         auto name = ectx.identifier();
         if (is_nil(ectx.enum_decl.base_type)) {
-            w.writeln("const ", name, " = enum {");
+            w.writeln("pub const ", name, " = enum {");
         }
         else {
             MAYBE(type, ctx.visit(ectx.enum_decl.base_type));
-            w.writeln("const ", name, " = enum(", type.to_writer(), ") {");
+            w.writeln("pub const ", name, " = enum(", type.to_writer(), ") {");
         }
         {
             auto scope = w.indent_scope();
@@ -175,10 +202,19 @@ DEFINE_VISITOR(entry_before) {
         return w;
     };
 
-    // Enum member: name = value,
+    // Enum member: name = value, (only when base type exists; otherwise just name,)
     config.enum_member_decl_visitor = [&](Context_Statement_ENUM_MEMBER_DECL& mctx) -> expected<Result> {
         auto member_name = mctx.identifier();
+        if (is_nil(mctx.enum_member_decl.value)) {
+            return CODELINE(member_name, ",");
+        }
         MAYBE(value_expr, ctx.visit(mctx.enum_member_decl.value));
+        // Check if the parent enum has a base type
+        MAYBE(parent_enum, mctx.get_field<"enum_decl">(mctx.enum_member_decl.enum_decl));
+        if (is_nil(parent_enum.base_type)) {
+            // No base type: Zig inferred enums cannot have explicit values
+            return CODELINE(member_name, ",");
+        }
         return CODELINE(member_name, " = ", value_expr.to_writer(), ",");
     };
 
@@ -191,12 +227,17 @@ DEFINE_VISITOR(entry_before) {
             // For state variables, we pass a pointer to allow modification
             return CODE(ctx.identifier(), ": *", typ.to_writer());
         }
-        if (ctx.get_kind(ctx.param_decl.param_type) == ebm::TypeKind::DECODER_INPUT &&
-            ctx.config().current_param_needs_allocation) {
-            // For encoder/decoder input types, we use anytype pattern
-            return CODE(ctx.identifier(), ": ", typ.to_writer(), ", allocator: std.mem.Allocator");
+        CodeWriter w;
+        w.write(ctx.identifier(), ": ", typ.to_writer());
+        // Add absolute offset pointer parameter when IO needs offset tracking
+        if (ebm2zig::has_absolute_offset(ctx, ctx.item_id)) {
+            w.write(", ", ebm2zig::abs_offset_param(ctx.identifier()), ": *usize");
         }
-        return CODE(ctx.identifier(), ": ", typ.to_writer());
+        if (ctx.get_kind(ctx.param_decl.param_type) == ebm::TypeKind::DECODER_INPUT) {
+            // All decode functions get an allocator parameter for dynamic allocation
+            w.write(", allocator: std.mem.Allocator");
+        }
+        return w;
     };
 
     config.call_custom = [](Context_Expression_CALL& ctx) -> expected<Result> {
@@ -220,11 +261,20 @@ DEFINE_VISITOR(entry_before) {
             return CODE("&", target.to_writer());
         }
         auto kind = ctx.get_kind(ctx.type);
-        if (kind == ebm::TypeKind::DECODER_INPUT && ctx.config().current_argument_needs_allocation) {
-            // For decoder input types, we pass the allocator as well
-            return CODE(target.to_writer(), ", allocator");
+        if (kind != ebm::TypeKind::ENCODER_INPUT &&
+            kind != ebm::TypeKind::DECODER_INPUT) {
+            return target;
         }
-        return target;
+        CodeWriter w;
+        w.write(target.to_writer());
+        // Pass absolute offset pointer to callees that need it
+        if (ctx.get_field<ebm2zig::has_absolute_offset_type>(ctx.type) == true) {
+            w.write(", ", ebm2zig::abs_offset_param(target.to_string()));
+        }
+        if (kind == ebm::TypeKind::DECODER_INPUT) {
+            w.write(", allocator");
+        }
+        return w;
     };
 
     // === Function declaration ===
@@ -296,7 +346,13 @@ DEFINE_VISITOR(entry_before) {
 
         // Prefix setter functions with set_ to avoid name collision with getters
         if (is_setter_func(fctx.func_decl.kind)) {
-            func_name = "set_" + func_name;
+            if (func_name.starts_with("@\"") && func_name.ends_with("\"")) {
+                // Escaped name: @"error" -> @"set_error"
+                func_name = "@\"set_" + func_name.substr(2);
+            }
+            else {
+                func_name = "set_" + func_name;
+            }
         }
 
         if (!is_nil(fctx.func_decl.parent_format)) {
@@ -313,18 +369,121 @@ DEFINE_VISITOR(entry_before) {
             // Free function: pub fn name(params...) RetType {
             w.writeln("pub fn ", func_name, "(", params, ") ", ret_str, " {");
         }
+        // When has_absolute_offset, generate a public wrapper that initializes offset locally
+        // and delegates to the _impl function (which takes the offset pointer as parameter).
+        bool has_abs_offset = (fctx.func_decl.kind == ebm::FunctionKind::ENCODE ||
+                               fctx.func_decl.kind == ebm::FunctionKind::DECODE) &&
+                              !fctx.func_decl.params.container.empty() &&
+                              ebm2zig::has_absolute_offset(fctx, fctx.func_decl.params.container[0]);
+        if (has_abs_offset) {
+            // Build a public wrapper: encode/decode that inits offset and calls _impl
+            auto io_param_name = ctx.identifier(fctx.func_decl.params.container[0]);
+            auto offset_param = ebm2zig::abs_offset_param(io_param_name);
+            CodeWriter wrapper;
+            if (!is_nil(fctx.func_decl.parent_format)) {
+                auto struct_name = ctx.identifier(fctx.func_decl.parent_format);
+                CodeWriter pub_params;
+                pub_params.write("self: *", struct_name, ", ", io_param_name, ": anytype");
+                if (fctx.func_decl.kind == ebm::FunctionKind::DECODE) {
+                    pub_params.write(", allocator: std.mem.Allocator");
+                }
+                wrapper.writeln("pub fn ", func_name, "(", pub_params, ") ", ret_str, " {");
+            }
+            {
+                auto scope = wrapper.indent_scope();
+                wrapper.writeln("var ", offset_param, ": usize = 0;");
+                // Call the _impl function
+                CodeWriter call_args;
+                call_args.write(io_param_name, ", &", offset_param);
+                if (fctx.func_decl.kind == ebm::FunctionKind::DECODE) {
+                    call_args.write(", allocator");
+                }
+                wrapper.writeln("return self.", func_name, "_impl(", call_args, ");");
+            }
+            wrapper.writeln("}");
+            // Now emit the _impl function definition
+            func_name = func_name + "_impl";
+            wrapper.writeln("");
+            w = std::move(wrapper);
+            if (!is_nil(fctx.func_decl.parent_format)) {
+                auto struct_name = ctx.identifier(fctx.func_decl.parent_format);
+                CodeWriter all_params;
+                all_params.write("self: *", struct_name);
+                if (!params.empty()) {
+                    all_params.write(", ", params);
+                }
+                w.writeln("pub fn ", func_name, "(", all_params, ") ", ret_str, " {");
+            }
+        }
+        {
+            auto scope = w.indent_scope();
+            // Suppress unused allocator parameter warning for all decode functions
+            // Using &allocator avoids "pointless discard" when allocator IS used
+            if (fctx.func_decl.kind == ebm::FunctionKind::DECODE) {
+                w.writeln("_ = &allocator;");
+            }
+            if (has_abs_offset) {
+                auto io_param_name = ctx.identifier(fctx.func_decl.params.container[0]);
+                w.writeln("_ = &", ebm2zig::abs_offset_param(io_param_name), ";");
+            }
+            // Suppress unused state variable parameter warnings
+            for (auto& param_ref : fctx.func_decl.params.container) {
+                auto param = fctx.get_field<"param_decl">(param_ref);
+                if (param && param->is_state_variable()) {
+                    auto param_name = ctx.identifier(param_ref);
+                    w.writeln("_ = &", param_name, ";");
+                }
+            }
+        }
         return w;
     };
 
     // === Field declaration ===
-    // Zig struct fields: name: Type,
+    // Zig struct fields: name: Type = default,
     config.field_decl_visitor = [&](Context_Statement_FIELD_DECL& fctx) -> expected<Result> {
         if (fctx.field_decl.is_state_variable()) {
             return CodeWriter{};
         }
         auto name = fctx.identifier();
         MAYBE(type, ctx.visit(fctx.field_decl.field_type));
-        return CODELINE(name, ": ", type.to_writer(), ",");
+        // Determine default value based on type kind
+        auto type_kind = fctx.get_kind(fctx.field_decl.field_type);
+        std::string default_val = " = undefined";
+        if (type_kind) {
+            switch (*type_kind) {
+                case ebm::TypeKind::UINT:
+                case ebm::TypeKind::INT:
+                case ebm::TypeKind::USIZE:
+                    default_val = " = 0";
+                    break;
+                case ebm::TypeKind::BOOL:
+                    default_val = " = false";
+                    break;
+                case ebm::TypeKind::FLOAT:
+                    default_val = " = 0.0";
+                    break;
+                case ebm::TypeKind::VECTOR:
+                    default_val = " = .{}";
+                    break;
+                case ebm::TypeKind::ARRAY:
+                    default_val = " = std.mem.zeroes(" + type.to_string() + ")";
+                    break;
+                case ebm::TypeKind::STRUCT:
+                    default_val = " = .{}";
+                    break;
+                case ebm::TypeKind::OPTIONAL:
+                case ebm::TypeKind::PTR:
+                    default_val = " = null";
+                    break;
+                case ebm::TypeKind::ENUM:
+                    default_val = " = undefined";
+                    break;
+                default:
+                    default_val = " = undefined";
+                    break;
+            }
+        }
+        return CODELINE(name, ": ", type.to_writer(), default_val, ",");
     };
 
     // === Type cast ===
@@ -349,8 +508,8 @@ DEFINE_VISITOR(entry_before) {
             case ebm::CastType::SIGNED_TO_UNSIGNED:
             case ebm::CastType::UNSIGNED_TO_SIGNED:
             case ebm::CastType::LARGE_INT_TO_SMALL_INT:
-                // Zig: @as(TargetType, expr) - works for widening, narrowing, signed/unsigned
-                return CODE("@as(", target_type.to_writer(), ",", source_expr.to_writer(), ")");
+                // Zig: @as(TargetType, @intCast(source)) for integer width/sign conversions
+                return CODE("@as(", target_type.to_writer(), ", @intCast(", source_expr.to_writer(), "))");
             case ebm::CastType::FLOAT_TO_INT_BIT:
             case ebm::CastType::INT_TO_FLOAT_BIT:
                 // Zig: @bitCast(expr) for reinterpret casts
@@ -362,9 +521,8 @@ DEFINE_VISITOR(entry_before) {
                 // Zig: expr != 0
                 return CODE("(", source_expr.to_writer(), " != 0)");
             default:
-                // For other casts, use @intCast as a general fallback
-                // This covers VECTOR_TO_ARRAY, ARRAY_TO_VECTOR, STRUCT_TO_RECURSIVE_STRUCT, etc.
-                return CODE("@intCast(", source_expr.to_writer(), ")");
+                // For other casts, use @as(TargetType, @intCast(source)) as a general fallback
+                return CODE("@as(", target_type.to_writer(), ", @intCast(", source_expr.to_writer(), "))");
         }
     };
 
@@ -391,9 +549,15 @@ DEFINE_VISITOR(entry_before) {
     };
 
     // === Array size ===
-    // Zig uses .len as a field, not a method call: x.len (not x.len())
+    // For arrays: .len; for ArrayListUnmanaged: .items.len
     config.array_size_visitor = [&](Context_Expression_ARRAY_SIZE& actx) -> expected<Result> {
         MAYBE(array, ctx.visit(actx.array_expr));
+        // Check the type of the array expression, not the result type (which is USIZE)
+        MAYBE(array_expr_obj, actx.get(actx.array_expr));
+        auto array_type_kind = actx.get_kind(array_expr_obj.body.type);
+        if (array_type_kind && *array_type_kind == ebm::TypeKind::VECTOR) {
+            return CODE(array.to_writer(), ".items.len");
+        }
         return CODE(array.to_writer(), ".len");
     };
 
@@ -439,38 +603,189 @@ DEFINE_VISITOR(entry_before) {
     };
 
     // === Init check ===
-    // For now, no-op for all init check types.
-    // Zig variant types are flat structs, so no type assertion or allocation is needed.
+    // Zig bare unions require setting the active field before accessing it.
+    // For union_init_decode/union_set: assign the default value to activate the correct union field.
+    // For union_init_encode/union_get: verify the active field (assertion).
+    // For field_init_*: no-op (Zig structs have defaults).
     config.init_check_visitor = [&](Context_Statement_INIT_CHECK& ictx) -> expected<Result> {
+        if (ictx.init_check.init_check_type == ebm::InitCheckType::field_init_encode ||
+            ictx.init_check.init_check_type == ebm::InitCheckType::field_init_decode) {
+            return CodeWriter{};
+        }
+        if (ictx.init_check.init_check_type == ebm::InitCheckType::union_init_decode ||
+            ictx.init_check.init_check_type == ebm::InitCheckType::union_set) {
+            // Set the active union field by assigning default value
+            MAYBE(field_txt, ictx.visit(ictx.init_check.target_field));
+            // expect_value is a DEFAULT_VALUE expression whose type points to the union member struct
+            MAYBE(expect_expr, ictx.get(ictx.init_check.expect_value));
+            // Get the struct declaration from the type, then use its identifier as the union field name
+            auto struct_ref = ictx.get_field<"body.id">(expect_expr.body.type);
+            if (struct_ref) {
+                // Union field names use tmp{id} format (see Statement_FIELD_DECL_before_class.hpp)
+                auto member_name = std::format("tmp{}", get_id(*struct_ref));
+                return CODELINE(field_txt.to_writer(), " = .{ .", member_name, " = .{} };");
+            }
+            return CodeWriter{};
+        }
+        if (ictx.init_check.init_check_type == ebm::InitCheckType::union_init_encode ||
+            ictx.init_check.init_check_type == ebm::InitCheckType::union_get) {
+            // For encode/get, we just skip (Zig runtime safety will catch wrong access)
+            return CodeWriter{};
+        }
         return CodeWriter{};
+    };
+
+    // === Index access ===
+    // ArrayListUnmanaged requires .items[i] instead of [i]
+    config.index_access_custom = [&](Context_Expression_INDEX_ACCESS& ictx) -> expected<Result> {
+        MAYBE(base_str, ctx.visit(ictx.base));
+        MAYBE(index_str, ctx.visit(ictx.index));
+        // Check if the base expression's type is VECTOR
+        MAYBE(base_expr, ictx.get(ictx.base));
+        auto base_type_kind = ictx.get_kind(base_expr.body.type);
+        if (base_type_kind && *base_type_kind == ebm::TypeKind::VECTOR) {
+            return CODE(base_str.to_writer(), ".items[", index_str.to_writer(), "]");
+        }
+        return pass;  // use default behavior for non-vector types
+    };
+
+    // === Native endian check ===
+    // Zig: @import("builtin").cpu.arch.endian() == .little
+    config.native_endian_check = "(@import(\"builtin\").cpu.arch.endian() == .little)";
+
+    // === GET_STREAM_OFFSET ===
+    // Return a manual counter variable that tracks bytes read/written.
+    // The counter is declared in function_definition_start_wrapper and incremented
+    // in read_data_bytes_io_wrapper / write_data_bytes_io_wrapper.
+    config.get_stream_offset_custom = [&](Context_Expression_GET_STREAM_OFFSET& gso_ctx) -> expected<Result> {
+        auto io_name = gso_ctx.identifier(gso_ctx.io_ref);
+        return CODE(ebm2zig::abs_offset_deref(io_name));
+    };
+
+    // === GET_REMAINING_BYTES ===
+    // For read_data_bytes_io_wrapper, when size references GET_REMAINING_BYTES,
+    // we need to read all remaining data from the stream.
+    // Handle this by checking if size.ref() is GET_REMAINING_BYTES in read_data_bytes_io_wrapper.
+
+    // === SUB_BYTE_RANGE ===
+    // Creates a sub-stream of fixed length for IO operations.
+    // INPUT: read length bytes from parent, create fixedBufferStream, do IO on it
+    // OUTPUT: create a buffer, do IO on it, assert length, write to parent
+    config.sub_byte_range_visitor = [&](Context_Statement_SUB_BYTE_RANGE& sctx) -> expected<Result> {
+        auto io_ = sctx.identifier(sctx.sub_byte_range.io_ref);
+        auto parent_io_ = sctx.identifier(sctx.sub_byte_range.parent_io_ref);
+        auto child_has_abs = ebm2zig::has_absolute_offset(sctx, sctx.sub_byte_range.io_ref);
+        MAYBE(length_expr, sctx.sub_byte_range.length());
+        MAYBE(length_str, sctx.visit(length_expr));
+        CodeWriter w;
+        // Inherit parent's absolute offset pointer into child IO scope (same pointer, shared tracking)
+        if (child_has_abs) {
+            w.writeln("const ", ebm2zig::abs_offset_param(io_), ": *usize = ", ebm2zig::abs_offset_param(parent_io_), ";");
+        }
+        // Use page_allocator as fallback when allocator param is not available (encode functions)
+        auto alloc_name = (sctx.sub_byte_range.stream_type == ebm::StreamType::INPUT) ? "allocator" : "std.heap.page_allocator";
+        if (sctx.sub_byte_range.stream_type == ebm::StreamType::INPUT) {
+            w.writeln("{");
+            {
+                auto scope = w.indent_scope();
+                w.writeln("const sub_len = @as(usize, @intCast(", length_str.to_writer(), "));");
+                w.writeln("const sub_buf = try ", alloc_name, ".alloc(u8, sub_len);");
+                w.writeln("defer ", alloc_name, ".free(sub_buf);");
+                w.writeln("try ", parent_io_, ".readNoEof(sub_buf);");
+                w.writeln("var sub_stream = std.io.fixedBufferStream(sub_buf);");
+                w.writeln("var ", io_, " = sub_stream.reader();");
+                w.writeln("_ = &", io_, ";");
+                MAYBE(do_io, sctx.visit(sctx.sub_byte_range.io_statement));
+                w.write(do_io.to_writer());
+            }
+            w.writeln("}");
+        }
+        else {
+            w.writeln("{");
+            {
+                auto scope = w.indent_scope();
+                w.writeln("const sub_len = @as(usize, @intCast(", length_str.to_writer(), "));");
+                w.writeln("const sub_buf = try ", alloc_name, ".alloc(u8, sub_len);");
+                w.writeln("defer ", alloc_name, ".free(sub_buf);");
+                w.writeln("var sub_stream = std.io.fixedBufferStream(sub_buf);");
+                w.writeln("var ", io_, " = sub_stream.writer();");
+                w.writeln("_ = &", io_, ";");
+                MAYBE(do_io, sctx.visit(sctx.sub_byte_range.io_statement));
+                w.write(do_io.to_writer());
+                w.writeln("try ", parent_io_, ".writeAll(sub_buf);");
+            }
+            w.writeln("}");
+        }
+        return w;
     };
 
     // === IO hooks ===
 
     // WRITE_DATA: bytes 型 I/O (VECTORIZED_IO/lowered fallback は default で処理)
     config.write_data_bytes_io_wrapper = [&](Context_Statement_WRITE_DATA& wctx, BytesType cand, Result target, std::string io_) -> expected<Result> {
+        if (wctx.write_data.lowered_statement()) {
+            return pass;
+        }
         CodeWriter w;
         if (cand == BytesType::array) {
             w.writeln("try ", io_, ".writeAll(&", target.to_writer(), ");");
+            MAYBE(size_str, get_size_str(wctx, wctx.write_data.size));
+            ebm2zig::append_abs_offset(wctx, wctx.write_data.io_ref, w, size_str);
         }
         else {
-            // vector/slice
-            w.writeln("try ", io_, ".writeAll(", target.to_writer(), ");");
+            // ArrayListUnmanaged: write .items slice
+            w.writeln("try ", io_, ".writeAll(", target.to_writer(), ".items);");
+            ebm2zig::append_abs_offset(wctx, wctx.write_data.io_ref, w, target.to_string() + ".items.len");
         }
         return w;
     };
 
     // READ_DATA: bytes 型 I/O (VECTORIZED_IO/lowered fallback は default で処理)
     config.read_data_bytes_io_wrapper = [&](Context_Statement_READ_DATA& rctx, BytesType cand, Result target, std::string io_) -> expected<Result> {
+        // If there's a lowered statement (e.g. offset-based read, ARRAY_FOR_EACH),
+        // delegate to the default lowered fallback
+        if (rctx.read_data.lowered_statement()) {
+            return pass;
+        }
         CodeWriter w;
         if (cand == BytesType::array) {
             w.writeln("try ", io_, ".readNoEof(&", target.to_writer(), ");");
+            MAYBE(size_str, get_size_str(rctx, rctx.read_data.size));
+            ebm2zig::append_abs_offset(rctx, rctx.read_data.io_ref, w, size_str);
         }
         else {
-            // vector/slice: need to allocate first
-            MAYBE(size_str, get_size_str(rctx, rctx.read_data.size));
-            w.writeln(target.to_writer(), " = try allocator.alloc(u8, ", size_str, ");");
-            w.writeln("try ", io_, ".readNoEof(", target.to_writer(), ");");
+            // Check if size references GET_REMAINING_BYTES (read all remaining data)
+            auto size_ref = rctx.read_data.size.ref();
+            if (size_ref && rctx.is(ebm::ExpressionKind::GET_REMAINING_BYTES, *size_ref)) {
+                // Read all remaining bytes from the stream into ArrayListUnmanaged
+                w.writeln("{");
+                {
+                    auto scope = w.indent_scope();
+                    w.writeln("while (true) {");
+                    {
+                        auto inner = w.indent_scope();
+                        w.writeln("const byte = ", io_, ".readByte() catch |err| switch (err) {");
+                        {
+                            auto sw = w.indent_scope();
+                            w.writeln("error.EndOfStream => break,");
+                            w.writeln("else => return err,");
+                        }
+                        w.writeln("};");
+                        w.writeln("try ", target.to_writer(), ".append(allocator, byte);");
+                    }
+                    w.writeln("}");
+                }
+                w.writeln("}");
+                // For GET_REMAINING_BYTES, offset += items.len after the loop
+                ebm2zig::append_abs_offset(rctx, rctx.read_data.io_ref, w, target.to_string() + ".items.len");
+            }
+            else {
+                // ArrayListUnmanaged: resize then read into items
+                MAYBE(size_str, get_size_str(rctx, rctx.read_data.size));
+                w.writeln("try ", target.to_writer(), ".resize(allocator, ", size_str, ");");
+                w.writeln("try ", io_, ".readNoEof(", target.to_writer(), ".items);");
+                ebm2zig::append_abs_offset(rctx, rctx.read_data.io_ref, w, size_str);
+            }
         }
         return w;
     };

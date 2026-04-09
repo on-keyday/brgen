@@ -25,6 +25,28 @@
 DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
     using namespace CODEGEN_NAMESPACE;
 
+    // Check if member is a property (getter function)
+    auto prop = ctx.get_field<"body.id.property_decl">(ctx.member);
+    if (prop) {
+        MAYBE(getter_decl, ctx.get_field<"func_decl">(prop->getter_function.id));
+        MAYBE(base, ctx.visit(ctx.base));
+        MAYBE(ident, ctx.identifier(ctx.member));
+        std::string args;
+        for (auto& param : getter_decl.params.container) {
+            auto param_name = ctx.identifier(param);
+            if (!args.empty()) {
+                args += ", ";
+            }
+            args += param_name;
+        }
+        if (prop->merge_mode != ebm::MergeMode::STRICT_TYPE) {
+            // Returns ?T, unwrap with .?
+            return CODE(base.to_writer(), ".", ident, "(", args, ").?");
+        }
+        // Returns ?*T, unwrap with .?.*
+        return CODE(base.to_writer(), ".", ident, "(", args, ").?.*");
+    }
+
     // Check if the member field belongs to a variant member struct
     // If so, insert the intermediate union field access: base.tmpN.member
     MAYBE(member_body, ctx.get_field<"body.id">(ctx.member));

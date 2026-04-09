@@ -148,14 +148,29 @@ DEFINE_VISITOR(entry_before) {
         if (ctx.read_data.lowered_statement()) {
             return pass;
         }
-        MAYBE(size, get_size_str(ctx, ctx.read_data.size));
         CodeWriter w;
         if (cand == BytesType::array) {
-            w.writeln(io_name, ".read_exact(&mut ", target.to_writer(), ")?;");
+            // GET_REMAINING_BYTES の場合は read_to_end を使う
+            if (auto dyn = ctx.read_data.size.ref(); dyn && ctx.is(ebm::ExpressionKind::GET_REMAINING_BYTES, *dyn)) {
+                w.writeln(io_name, ".read_to_end(&mut ", target.to_writer(), ".to_vec())?;");
+            }
+            else {
+                w.writeln(io_name, ".read_exact(&mut ", target.to_writer(), ")?;");
+            }
         }
         else {
-            w.writeln(target.to_writer(), ".resize(", size, " as usize,0);");
-            w.writeln(io_name, ".read_exact(&mut ", target.to_writer(), ")?;");
+            // GET_REMAINING_BYTES の場合は read_to_end を使う
+            if (auto dyn = ctx.read_data.size.ref(); dyn && ctx.is(ebm::ExpressionKind::GET_REMAINING_BYTES, *dyn)) {
+                w.writeln(io_name, ".read_to_end(&mut ", target.to_writer(), ")?;");
+            }
+            else {
+                MAYBE(size, get_size_str(ctx, ctx.read_data.size));
+                w.writeln("{");
+                w.writeln("let _sz = ", size, " as usize;");
+                w.writeln(target.to_writer(), ".resize(_sz,0);");
+                w.writeln(io_name, ".read_exact(&mut ", target.to_writer(), ")?;");
+                w.writeln("}");
+            }
         }
         return w;
     };
@@ -188,7 +203,7 @@ DEFINE_VISITOR(entry_before) {
         }
         MAYBE(size, get_size_str(ctx, ctx.write_data.size));
         CodeWriter w;
-        w.writeln(io_name, ".write_all(&", target.to_writer(), "[..", size, "]", ")?;");
+        w.writeln(io_name, ".write_all(&", target.to_writer(), "[..", size, " as usize]", ")?;");
         return w;
     };
     return pass;

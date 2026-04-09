@@ -1,0 +1,36 @@
+#pragma once
+
+#include <string>
+#include "ebm/extended_binary_module.hpp"
+
+namespace ebm2zig {
+
+// Check if an IO parameter requires absolute offset tracking
+constexpr auto has_absolute_offset_type = "io_input_desc.has_absolute_offset";
+
+constexpr bool has_absolute_offset(auto&& ctx, ebm::StatementRef io_ref) {
+    auto stmt = ctx.template get_field<"param_decl.param_type">(io_ref);
+    if (!stmt) {
+        stmt = ctx.template get_field<"var_decl.var_type">(io_ref);
+    }
+    return ctx.template get_field<has_absolute_offset_type>(stmt) == true;
+}
+
+// Absolute offset parameter name: {io_name}_abs_offset
+inline std::string abs_offset_param(const std::string& io_name) {
+    return io_name + "_abs_offset";
+}
+
+// Dereference of absolute offset pointer: {io_name}_abs_offset.*
+inline std::string abs_offset_deref(const std::string& io_name) {
+    return io_name + "_abs_offset.*";
+}
+
+// Emit offset increment after IO operation
+inline void append_abs_offset(auto&& ctx, ebm::StatementRef io_ref, auto& w, auto&& size_expr) {
+    if (has_absolute_offset(ctx, io_ref)) {
+        w.writeln(abs_offset_deref(ctx.identifier(io_ref)), " += @as(usize, @intCast(", size_expr, "));");
+    }
+}
+
+}  // namespace ebm2zig

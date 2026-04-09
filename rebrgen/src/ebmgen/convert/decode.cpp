@@ -200,11 +200,13 @@ namespace ebmgen {
                 else if (field->follow == ast::Follow::end ||
                          (field->arguments && field->arguments->sub_byte_length)  // this means that the field is a sub-byte field
                 ) {
-                    const auto single_byte = get_size(8);
-                    EBM_CAN_READ_STREAM(can_read, io_desc.io_ref, ebm::StreamType::INPUT, single_byte);
-                    MAYBE(element_decoder, underlying_decoder(std::nullopt));
-                    EBM_WHILE_LOOP(loop, can_read, element_decoder);
-                    cond_loop = loop;
+                    if (!is_byte) {
+                        const auto single_byte = get_size(8);
+                        EBM_CAN_READ_STREAM(can_read, io_desc.io_ref, ebm::StreamType::INPUT, single_byte);
+                        MAYBE(element_decoder, underlying_decoder(std::nullopt));
+                        EBM_WHILE_LOOP(loop, can_read, element_decoder);
+                        cond_loop = loop;
+                    }
 
                     EBM_GET_REMAINING_BYTES(remain_size, ebm::StreamType::INPUT, io_desc.io_ref);
                     MAYBE_VOID(ok, set_dynamic_size(remain_size));
@@ -213,11 +215,14 @@ namespace ebmgen {
                     auto tail = field->belong_struct.lock()->fixed_tail_size / 8;
                     EBMU_INT_LITERAL(last, tail);
                     EBM_GET_REMAINING_BYTES(remain_bytes, ebm::StreamType::INPUT, io_desc.io_ref);
-                    EBMU_BOOL_TYPE(bool_type);
-                    EBM_BINARY_OP(cond, ebm::BinaryOp::greater, bool_type, remain_bytes, last);
-                    MAYBE(element_decoder, underlying_decoder(std::nullopt));
-                    EBM_WHILE_LOOP(loop, cond, element_decoder);
-                    cond_loop = loop;
+
+                    if (!is_byte) {
+                        EBMU_BOOL_TYPE(bool_type);
+                        EBM_BINARY_OP(cond, ebm::BinaryOp::greater, bool_type, remain_bytes, last);
+                        MAYBE(element_decoder, underlying_decoder(std::nullopt));
+                        EBM_WHILE_LOOP(loop, cond, element_decoder);
+                        cond_loop = loop;
+                    }
 
                     EBMU_COUNTER_TYPE(counter_type);
                     EBM_BINARY_OP(remain_size, ebm::BinaryOp::sub, counter_type, remain_bytes, last);
@@ -307,6 +312,13 @@ namespace ebmgen {
         }
         if (length && cond_loop) {
             return unexpect_error("Both length and cond_loop are set, which is not allowed; maybe BUG");
+        }
+        // For byte arrays (is_byte == true), the size is already set correctly
+        // and no element-by-element loop is needed. Code generators handle
+        // bytes IO as a primitive bulk operation.
+        // Exception: Follow::constant sets cond_loop with DYNAMIC size (peek-until-marker loop).
+        if (is_byte && !cond_loop) {
+            return {};
         }
         if (cond_loop) {
             io_desc.attribute.has_lowered_statement(true);
