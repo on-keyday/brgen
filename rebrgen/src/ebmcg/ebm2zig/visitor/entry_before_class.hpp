@@ -104,6 +104,29 @@ DEFINE_VISITOR(entry_before) {
     config.alt_binary_op[ebm::BinaryOp::logical_and] = "and";
     config.alt_binary_op[ebm::BinaryOp::logical_or] = "or";
 
+    // Zig shift operators require RHS to be the log2 type of LHS (e.g. u6 for u64)
+    // ebmgen inserts TYPE_CAST on the RHS to match LHS type, but Zig needs a different type.
+    // Strip the outer TYPE_CAST and use @intCast to let Zig infer the correct shift amount type.
+    config.binary_op_custom = [&](Context_Expression_BINARY_OP& bctx) -> expected<Result> {
+        if (bctx.bop != ebm::BinaryOp::left_shift && bctx.bop != ebm::BinaryOp::right_shift) {
+            return pass;
+        }
+        MAYBE(left, ctx.visit(bctx.left));
+        // Check if RHS is a TYPE_CAST and unwrap it
+        auto rhs_kind = bctx.get_kind(bctx.right);
+        Result right_inner;
+        if (rhs_kind && *rhs_kind == ebm::ExpressionKind::TYPE_CAST) {
+            MAYBE(rhs_cast, bctx.get_field<"type_cast_desc.source_expr">(bctx.right));
+            MAYBE(inner, ctx.visit(rhs_cast));
+            right_inner = std::move(inner);
+        } else {
+            MAYBE(rhs, ctx.visit(bctx.right));
+            right_inner = std::move(rhs);
+        }
+        auto op = to_string(bctx.bop);
+        return CODE("(", left.to_writer(), " ", op, " @intCast(", right_inner.to_writer(), "))");
+    };
+
     // === Type wrappers ===
 
     // Optional type: ?T
