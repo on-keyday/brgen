@@ -140,16 +140,16 @@
       "skipFiles": ["<node_internals>/**"]
     },
     {
-      "type": "go",
+      "type": "cppvsdbg",
       "request": "launch",
-      "cwd": "C:\\Users\\ukfco\\AppData\\Local\\Temp\\unictest\\tr-32959c280b\\r-299e371876\\t-612820af34",
-      "name": "Debug ebm2go unictest (NetlinkTest)",
-      "program": "C:/Users/ukfco/AppData/Local/Temp/unictest/tr-32959c280b/r-299e371876/t-612820af34/go_proj",
+      "cwd": "C:\\Users\\ukfco\\AppData\\Local\\Temp\\unictest\\tr-a24c190fbf\\r-ae32a16166\\t-b991d59b6b",
+      "name": "Debug ebm2zig unictest (TestPacket)",
+      "program": "C:/Users/ukfco/AppData/Local/Temp/unictest/tr-a24c190fbf/r-ae32a16166/t-b991d59b6b/zig_proj/test_runner.exe",
       "args": [
-        "C:/Users/ukfco/AppData/Local/Temp/unictest/tr-32959c280b/r-299e371876/t-612820af34/input.bin",
-        "C:/Users/ukfco/AppData/Local/Temp/unictest/tr-32959c280b/r-299e371876/t-612820af34/output.bin"
+        "C:/Users/ukfco/AppData/Local/Temp/unictest/tr-a24c190fbf/r-ae32a16166/t-b991d59b6b/input.bin",
+        "C:/Users/ukfco/AppData/Local/Temp/unictest/tr-a24c190fbf/r-ae32a16166/t-b991d59b6b/output.bin"
       ],
-      "stopOnEntry": true
+      "stopAtEntry": true
     },
     {
       "name": "Debug ebm2c",
