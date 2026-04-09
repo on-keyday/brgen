@@ -33,11 +33,24 @@ inline bool is_zig_primitive(const std::string& name) {
     }
     // Other primitives and keywords
     static const std::unordered_set<std::string> primitives = {
+        // Primitive types
         "bool", "true", "false", "null", "undefined",
         "f16", "f32", "f64", "f80", "f128",
         "usize", "isize", "comptime_int", "comptime_float",
         "anytype", "anyframe", "anyerror", "anyopaque",
         "void", "noreturn", "type", "error",
+        // Zig keywords
+        "align", "allowzero", "and", "asm",
+        "break", "catch", "comptime", "const", "continue",
+        "defer", "else", "enum", "errdefer", "export", "extern",
+        "fn", "for", "if", "inline",
+        "linksection", "noalias", "nosuspend",
+        "opaque", "or", "orelse",
+        "packed", "pub",
+        "resume", "return",
+        "struct", "suspend", "switch",
+        "test", "threadlocal", "try",
+        "union", "unreachable", "var", "volatile", "while",
     };
     return primitives.contains(name);
 }

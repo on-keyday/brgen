@@ -331,7 +331,13 @@ DEFINE_VISITOR(entry_before) {
 
         // Prefix setter functions with set_ to avoid name collision with getters
         if (is_setter_func(fctx.func_decl.kind)) {
-            func_name = "set_" + func_name;
+            if (func_name.starts_with("@\"") && func_name.ends_with("\"")) {
+                // Escaped name: @"error" -> @"set_error"
+                func_name = "@\"set_" + func_name.substr(2);
+            }
+            else {
+                func_name = "set_" + func_name;
+            }
         }
 
         if (!is_nil(fctx.func_decl.parent_format)) {
@@ -348,11 +354,21 @@ DEFINE_VISITOR(entry_before) {
             // Free function: pub fn name(params...) RetType {
             w.writeln("pub fn ", func_name, "(", params, ") ", ret_str, " {");
         }
-        // Suppress unused allocator parameter warning for all decode functions
-        // Using &allocator avoids "pointless discard" when allocator IS used
-        if (fctx.func_decl.kind == ebm::FunctionKind::DECODE) {
+        {
             auto scope = w.indent_scope();
-            w.writeln("_ = &allocator;");
+            // Suppress unused allocator parameter warning for all decode functions
+            // Using &allocator avoids "pointless discard" when allocator IS used
+            if (fctx.func_decl.kind == ebm::FunctionKind::DECODE) {
+                w.writeln("_ = &allocator;");
+            }
+            // Suppress unused state variable parameter warnings
+            for (auto& param_ref : fctx.func_decl.params.container) {
+                auto param = fctx.get_field<"param_decl">(param_ref);
+                if (param && param->is_state_variable()) {
+                    auto param_name = ctx.identifier(param_ref);
+                    w.writeln("_ = &", param_name, ";");
+                }
+            }
         }
         return w;
     };
@@ -471,8 +487,10 @@ DEFINE_VISITOR(entry_before) {
     // For arrays: .len; for ArrayListUnmanaged: .items.len
     config.array_size_visitor = [&](Context_Expression_ARRAY_SIZE& actx) -> expected<Result> {
         MAYBE(array, ctx.visit(actx.array_expr));
-        auto type_kind = actx.get_kind(actx.type);
-        if (type_kind && *type_kind == ebm::TypeKind::VECTOR) {
+        // Check the type of the array expression, not the result type (which is USIZE)
+        MAYBE(array_expr_obj, actx.get(actx.array_expr));
+        auto array_type_kind = actx.get_kind(array_expr_obj.body.type);
+        if (array_type_kind && *array_type_kind == ebm::TypeKind::VECTOR) {
             return CODE(array.to_writer(), ".items.len");
         }
         return CODE(array.to_writer(), ".len");
@@ -520,11 +538,60 @@ DEFINE_VISITOR(entry_before) {
     };
 
     // === Init check ===
-    // For now, no-op for all init check types.
-    // Zig variant types are flat structs, so no type assertion or allocation is needed.
+    // Zig bare unions require setting the active field before accessing it.
+    // For union_init_decode/union_set: assign the default value to activate the correct union field.
+    // For union_init_encode/union_get: verify the active field (assertion).
+    // For field_init_*: no-op (Zig structs have defaults).
     config.init_check_visitor = [&](Context_Statement_INIT_CHECK& ictx) -> expected<Result> {
+        if (ictx.init_check.init_check_type == ebm::InitCheckType::field_init_encode ||
+            ictx.init_check.init_check_type == ebm::InitCheckType::field_init_decode) {
+            return CodeWriter{};
+        }
+        if (ictx.init_check.init_check_type == ebm::InitCheckType::union_init_decode ||
+            ictx.init_check.init_check_type == ebm::InitCheckType::union_set) {
+            // Set the active union field by assigning default value
+            MAYBE(field_txt, ictx.visit(ictx.init_check.target_field));
+            // expect_value is a DEFAULT_VALUE expression whose type points to the union member struct
+            MAYBE(expect_expr, ictx.get(ictx.init_check.expect_value));
+            // Get the struct declaration from the type, then use its identifier as the union field name
+            auto struct_ref = ictx.get_field<"body.id">(expect_expr.body.type);
+            if (struct_ref) {
+                // Union field names use tmp{id} format (see Statement_FIELD_DECL_before_class.hpp)
+                auto member_name = std::format("tmp{}", get_id(*struct_ref));
+                return CODELINE(field_txt.to_writer(), " = .{ .", member_name, " = .{} };");
+            }
+            return CodeWriter{};
+        }
+        if (ictx.init_check.init_check_type == ebm::InitCheckType::union_init_encode ||
+            ictx.init_check.init_check_type == ebm::InitCheckType::union_get) {
+            // For encode/get, we just skip (Zig runtime safety will catch wrong access)
+            return CodeWriter{};
+        }
         return CodeWriter{};
     };
+
+    // === Index access ===
+    // ArrayListUnmanaged requires .items[i] instead of [i]
+    config.index_access_custom = [&](Context_Expression_INDEX_ACCESS& ictx) -> expected<Result> {
+        MAYBE(base_str, ctx.visit(ictx.base));
+        MAYBE(index_str, ctx.visit(ictx.index));
+        // Check if the base expression's type is VECTOR
+        MAYBE(base_expr, ictx.get(ictx.base));
+        auto base_type_kind = ictx.get_kind(base_expr.body.type);
+        if (base_type_kind && *base_type_kind == ebm::TypeKind::VECTOR) {
+            return CODE(base_str.to_writer(), ".items[", index_str.to_writer(), "]");
+        }
+        return pass;  // use default behavior for non-vector types
+    };
+
+    // === Native endian check ===
+    // Zig: @import("builtin").cpu.arch.endian() == .little
+    config.native_endian_check = "(@import(\"builtin\").cpu.arch.endian() == .little)";
+
+    // === GET_REMAINING_BYTES ===
+    // For read_data_bytes_io_wrapper, when size references GET_REMAINING_BYTES,
+    // we need to read all remaining data from the stream.
+    // Handle this by checking if size.ref() is GET_REMAINING_BYTES in read_data_bytes_io_wrapper.
 
     // === IO hooks ===
 
@@ -548,10 +615,35 @@ DEFINE_VISITOR(entry_before) {
             w.writeln("try ", io_, ".readNoEof(&", target.to_writer(), ");");
         }
         else {
-            // ArrayListUnmanaged: resize then read into items
-            MAYBE(size_str, get_size_str(rctx, rctx.read_data.size));
-            w.writeln("try ", target.to_writer(), ".resize(allocator, ", size_str, ");");
-            w.writeln("try ", io_, ".readNoEof(", target.to_writer(), ".items);");
+            // Check if size references GET_REMAINING_BYTES (read all remaining data)
+            auto size_ref = rctx.read_data.size.ref();
+            if (size_ref && rctx.is(ebm::ExpressionKind::GET_REMAINING_BYTES, *size_ref)) {
+                // Read all remaining bytes from the stream into ArrayListUnmanaged
+                w.writeln("{");
+                {
+                    auto scope = w.indent_scope();
+                    w.writeln("while (true) {");
+                    {
+                        auto inner = w.indent_scope();
+                        w.writeln("const byte = ", io_, ".readByte() catch |err| switch (err) {");
+                        {
+                            auto sw = w.indent_scope();
+                            w.writeln("error.EndOfStream => break,");
+                            w.writeln("else => return err,");
+                        }
+                        w.writeln("};");
+                        w.writeln("try ", target.to_writer(), ".append(allocator, byte);");
+                    }
+                    w.writeln("}");
+                }
+                w.writeln("}");
+            }
+            else {
+                // ArrayListUnmanaged: resize then read into items
+                MAYBE(size_str, get_size_str(rctx, rctx.read_data.size));
+                w.writeln("try ", target.to_writer(), ".resize(allocator, ", size_str, ");");
+                w.writeln("try ", io_, ".readNoEof(", target.to_writer(), ".items);");
+            }
         }
         return w;
     };

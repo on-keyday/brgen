@@ -32,12 +32,20 @@ DEFINE_VISITOR(Statement_VARIABLE_DECL_after) {
     if (ctx.var_decl.is_reference() || !ctx.result.has_value()) {
         return pass;
     }
-    if (ctx.var_decl.decl_kind() == ebm::VariableDeclKind::MUTABLE) {
-        // Suppress "never mutated" error for var declarations
-        auto name = ctx.identifier();
-        auto& w = ctx.result.value().to_writer();
-        w.writeln("_ = &", name, ";");
+    // Skip if variable_decl_custom converted this to `try expr;` (no actual variable declared)
+    auto type_kind = ctx.get_kind(ctx.var_decl.var_type);
+    if (type_kind && (*type_kind == ebm::TypeKind::ENCODER_RETURN || *type_kind == ebm::TypeKind::DECODER_RETURN)) {
+        return pass;
     }
+    // Skip top-level constants (CONSTANT kind) — `_ = &name;` is invalid at top level
+    if (ctx.var_decl.decl_kind() == ebm::VariableDeclKind::CONSTANT) {
+        return pass;
+    }
+    // Suppress Zig's "unused variable" and "never mutated" errors
+    // _ = &name; works for both var and const (pointer-taking is never "pointless")
+    auto name = ctx.identifier();
+    auto& w = ctx.result.value().to_writer();
+    w.writeln("_ = &", name, ";");
     return pass;
 }
 
