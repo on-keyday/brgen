@@ -66,8 +66,12 @@ DEFINE_VISITOR(entry_before) {
     config.conditional_loop_keyword = "while";
     config.infinity_loop_keyword = "";  // empty => default visitor generates `while (true) {`
 
-    // Append
-    config.append_function = "append";
+    // Append: ArrayListUnmanaged requires allocator
+    config.append_visitor = [&](Context_Statement_APPEND& actx) -> expected<Result> {
+        MAYBE(target, ctx.visit(actx.target));
+        MAYBE(value, ctx.visit(actx.value));
+        return CODELINE("try ", target.to_writer(), ".append(allocator, ", value.to_writer(), ");");
+    };
 
     // Enum member access: Zig uses .member (dot prefix)
     config.enum_member_accessor = ".";
@@ -95,7 +99,7 @@ DEFINE_VISITOR(entry_before) {
     config.default_value_option.object_init = "{}";
     config.default_value_option.pointer_init = "null";
     config.default_value_option.optional_init = "null";
-    config.default_value_option.vector_init = "&.{}";
+    config.default_value_option.vector_init = ".{}";
 
     // Enum member separator (comma in Zig)
     config.enum_member_separator = ",";
@@ -155,10 +159,10 @@ DEFINE_VISITOR(entry_before) {
         return CODE("[", std::to_string(ctx.length.value()), "]", elem_type.to_writer());
     };
 
-    // Vector/slice type: []T
+    // Vector type: std.ArrayListUnmanaged(T)
     config.vector_type_wrapper = [](Context_Type_VECTOR& ctx) -> expected<Result> {
         MAYBE(elem_type, ctx.visit(ctx.element_type));
-        return CODE("[]", elem_type.to_writer());
+        return CODE("std.ArrayListUnmanaged(", elem_type.to_writer(), ")");
     };
 
     // === Struct declaration ===
@@ -378,7 +382,7 @@ DEFINE_VISITOR(entry_before) {
                     default_val = " = 0.0";
                     break;
                 case ebm::TypeKind::VECTOR:
-                    default_val = " = &.{}";
+                    default_val = " = .{}";
                     break;
                 case ebm::TypeKind::ARRAY:
                     default_val = " = std.mem.zeroes(" + type.to_string() + ")";
@@ -464,9 +468,13 @@ DEFINE_VISITOR(entry_before) {
     };
 
     // === Array size ===
-    // Zig uses .len as a field, not a method call: x.len (not x.len())
+    // For arrays: .len; for ArrayListUnmanaged: .items.len
     config.array_size_visitor = [&](Context_Expression_ARRAY_SIZE& actx) -> expected<Result> {
         MAYBE(array, ctx.visit(actx.array_expr));
+        auto type_kind = actx.get_kind(actx.type);
+        if (type_kind && *type_kind == ebm::TypeKind::VECTOR) {
+            return CODE(array.to_writer(), ".items.len");
+        }
         return CODE(array.to_writer(), ".len");
     };
 
@@ -527,8 +535,8 @@ DEFINE_VISITOR(entry_before) {
             w.writeln("try ", io_, ".writeAll(&", target.to_writer(), ");");
         }
         else {
-            // vector/slice
-            w.writeln("try ", io_, ".writeAll(", target.to_writer(), ");");
+            // ArrayListUnmanaged: write .items slice
+            w.writeln("try ", io_, ".writeAll(", target.to_writer(), ".items);");
         }
         return w;
     };
@@ -540,10 +548,10 @@ DEFINE_VISITOR(entry_before) {
             w.writeln("try ", io_, ".readNoEof(&", target.to_writer(), ");");
         }
         else {
-            // vector/slice: need to allocate first
+            // ArrayListUnmanaged: resize then read into items
             MAYBE(size_str, get_size_str(rctx, rctx.read_data.size));
-            w.writeln(target.to_writer(), " = try allocator.alloc(u8, ", size_str, ");");
-            w.writeln("try ", io_, ".readNoEof(", target.to_writer(), ");");
+            w.writeln("try ", target.to_writer(), ".resize(allocator, ", size_str, ");");
+            w.writeln("try ", io_, ".readNoEof(", target.to_writer(), ".items);");
         }
         return w;
     };
