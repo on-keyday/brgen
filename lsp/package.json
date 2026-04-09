@@ -64,6 +64,6 @@
     "@types/node": "^25.3.3",
     "@types/vscode": "^1.83.0",
     "ast2ts": "file:../astlib/ast2ts/out",
-    "typescript": "^5.2.2"
+    "typescript": "^6.0.0"
   }
 }
