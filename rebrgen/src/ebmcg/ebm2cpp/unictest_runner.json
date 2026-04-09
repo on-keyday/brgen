@@ -1,0 +1,22 @@
+{
+    "name": "ebm2cpp",
+    "source_setup_command": [
+        "python",
+        "$WORK_DIR/script/unictest_setup.py",
+        "setup",
+        "ebm2cpp"
+    ],
+    "run_command": [
+        "python",
+        "$WORK_DIR/script/unictest_setup.py",
+        "test",
+        "ebm2cpp"
+    ],
+    "options": [
+        {
+            "name": "default",
+            "setup_options": [],
+            "run_options": []
+        }
+    ]
+}

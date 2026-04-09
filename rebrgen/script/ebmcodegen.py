@@ -9,9 +9,13 @@ sys.path.append(os.path.dirname(__file__))
 from ebmtemplate import get_mode_dir
 from util import execute
 
+TOOL_PATH = "tool/ebmcodegen"
+if os.name == "nt":
+    TOOL_PATH += ".exe"
+TOOL_PATH = os.path.abspath(TOOL_PATH)
+
 
 def do_default_dummy_header(lang_name: str, mode: str):
-    TOOL_PATH = "tool/ebmcodegen"
     isInterpreter = mode == "interpret" or mode == "interpret-class"
     isClassBased = mode == "codegen-class" or mode == "interpret-class"
 
@@ -53,8 +57,6 @@ def do_default_dummy_header(lang_name: str, mode: str):
     else:
         print(f"No dummy header needed for non-class-based mode for {lang_name}")
 
-
-TOOL_PATH = "tool/ebmcodegen"
 
 
 def do_setup(lang_name: str, mode: str, file_extension: str):
