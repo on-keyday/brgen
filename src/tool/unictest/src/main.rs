@@ -50,6 +50,12 @@ struct Args {
 
     #[arg(long, help("parallel test execution limit. default is unlimited"))]
     parallel_limit: Option<usize>,
+
+    #[arg(long, help("enable fuzz mode: generate random inputs via ebm2rmw and test for crashes"))]
+    fuzz: bool,
+
+    #[arg(long, help("seed for fuzz input generation (0 or unset = auto from time)"), requires("fuzz"))]
+    fuzz_seed: Option<u64>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -528,6 +534,8 @@ async fn run_setup(
     binary_cache: &mut InputBinaryCache,
     current_dir: &String,
     parsed: &Args,
+    fuzz_mode: bool,
+    fuzz_seed: u64,
 ) -> anyhow::Result<(Vec<PrepareInfo>, Vec<SetupFailureInfo>)> {
     let mut handles: Vec<_> = Vec::new();
     let verbose = parsed.verbose;
@@ -604,6 +612,8 @@ async fn run_setup(
                     "UNICTEST_OPTION_SET_SETUP_OPTIONS",
                     &matrix.option_set.setup_options.join(","),
                 )
+                .env("UNICTEST_FUZZ_MODE", if fuzz_mode { "1" } else { "0" })
+                .env("UNICTEST_FUZZ_SEED", fuzz_seed.to_string())
                 .output()
                 .await?;
             send.send((
@@ -665,6 +675,8 @@ async fn run_tests(
     inputs: Vec<TestInput>,
     binary_cache: &mut InputBinaryCache,
     current_dir: &String,
+    fuzz_mode: bool,
+    fuzz_seed: u64,
 ) -> anyhow::Result<Vec<TestCaseResult>> {
     let mut test_handles = Vec::new();
     let verbose = parsed.verbose;
@@ -780,6 +792,8 @@ async fn run_tests(
                             "UNICTEST_OPTION_SET_RUN_OPTIONS",
                             &option_set.run_options.join(","),
                         )
+                        .env("UNICTEST_FUZZ_MODE", if fuzz_mode { "1" } else { "0" })
+                        .env("UNICTEST_FUZZ_SEED", fuzz_seed.to_string())
                         .output()
                         .await?;
                     result_info2.output = Some(output);
@@ -844,9 +858,17 @@ async fn run_tests(
             }
         };
         let output = result.output.as_ref().unwrap();
-        let is_passed = (output.status.success() && !result.failure_case)
-            || (output.status.code() == Some(CONFIRMED_DECODER_FAILURE_EXIT_CODE)
-                && result.failure_case);
+        let is_passed = if fuzz_mode {
+            // In fuzz mode: success or decode error are both acceptable
+            // (random input may not be valid for the format).
+            // Only crashes and encode errors are failures.
+            output.status.success()
+                || output.status.code() == Some(CONFIRMED_DECODER_FAILURE_EXIT_CODE)
+        } else {
+            (output.status.success() && !result.failure_case)
+                || (output.status.code() == Some(CONFIRMED_DECODER_FAILURE_EXIT_CODE)
+                    && result.failure_case)
+        };
 
         println!(
             "{}: Test completed runner name={}, source={}, format={}, input={}",
@@ -861,7 +883,17 @@ async fn run_tests(
             result.input_name
         );
         print_output(output, parsed.print_stdout);
-        let message = if output.status.success() && result.failure_case {
+        let message = if fuzz_mode {
+            if output.status.success() {
+                "fuzz: roundtrip succeeded"
+            } else if output.status.code() == Some(CONFIRMED_DECODER_FAILURE_EXIT_CODE) {
+                "fuzz: decode error (acceptable)"
+            } else if output.status.code() == Some(UNEXPECTED_ENCODER_FAILURE_EXIT_CODE) {
+                "fuzz: unexpected encode error"
+            } else {
+                "fuzz: crash or internal error"
+            }
+        } else if output.status.success() && result.failure_case {
             "expected failure, but succeeded"
         } else if output.status.code() == Some(CONFIRMED_DECODER_FAILURE_EXIT_CODE)
             && !result.failure_case
@@ -1025,6 +1057,9 @@ async fn main() -> anyhow::Result<()> {
         println!("----------------------------------------");
     }
 
+    let fuzz_mode = parsed.fuzz;
+    let fuzz_seed = parsed.fuzz_seed.unwrap_or(0);
+
     let (setup_infos, fail_count2) = run_setup(
         &sema,
         runner_source_map,
@@ -1032,6 +1067,8 @@ async fn main() -> anyhow::Result<()> {
         &mut binary_cache,
         &current_dir,
         &parsed,
+        fuzz_mode,
+        fuzz_seed,
     )
     .await?;
     setup_failures.extend(fail_count2);
@@ -1046,6 +1083,8 @@ async fn main() -> anyhow::Result<()> {
         inputs,
         &mut binary_cache,
         &current_dir,
+        fuzz_mode,
+        fuzz_seed,
     )
     .await?;
 

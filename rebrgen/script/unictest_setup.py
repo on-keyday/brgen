@@ -13,6 +13,9 @@ env = os.environ.copy()
 
 unictest_env_vars = {k: v for k, v in env.items() if k.startswith("UNICTEST_")}
 
+fuzz_mode = unictest_env_vars.get("UNICTEST_FUZZ_MODE", "0") == "1"
+fuzz_seed = unictest_env_vars.get("UNICTEST_FUZZ_SEED", "0")
+
 for e in list(unictest_env_vars.keys()):
     print(f"{e}={unictest_env_vars[e]}")
 
@@ -102,10 +105,42 @@ if mode == "setup":
 
 elif mode == "test":
     task_dir = unictest_env_vars["UNICTEST_WORK_DIR"]
-    original_input_file = unictest_env_vars["UNICTEST_BINARY_FILE"]
     test_format_name = unictest_env_vars["UNICTEST_INPUT_FORMAT"]
-    with open(original_input_file, "rb") as f:
-        input_data = f.read()
+
+    if fuzz_mode:
+        # In fuzz mode, generate a random binary input via ebm2rmw
+        ebm2rmw = (pl.Path(original_workdir) / "tool/ebm2rmw").as_posix()
+        if os.name == "nt":
+            ebm2rmw += ".exe"
+        ebm_input_file = (pl.Path(runner_dir) / "runner_input.ebm").as_posix()
+        fuzz_binary_file = (pl.Path(task_dir) / "fuzz_input.bin").as_posix()
+        cmd = [
+            ebm2rmw,
+            "-i", ebm_input_file,
+            "--fuzz-generate",
+            "--fuzz-seed", fuzz_seed,
+            "--fuzz-count", "1",
+            "--entry-point", test_format_name,
+            "--output-file", fuzz_binary_file,
+        ]
+        print(f"\nRunning fuzz generator: {' '.join(cmd)}")
+        fuzz_gen_result = sp.run(cmd, timeout=60, capture_output=True)
+        # Print stderr from ebm2rmw (contains seed info, warnings)
+        if fuzz_gen_result.stderr:
+            sys.stderr.buffer.write(fuzz_gen_result.stderr)
+        if not pl.Path(fuzz_binary_file).exists():
+            # Fuzz generator couldn't produce a valid input for this format/seed
+            # This is acceptable - exit with decoder failure code
+            print(f"Fuzz generator produced no output (format may be too constrained for seed {fuzz_seed})")
+            sys.exit(10)
+        with open(fuzz_binary_file, "rb") as f:
+            input_data = f.read()
+        print(f"Fuzz binary generated: {fuzz_binary_file} ({len(input_data)} bytes)")
+    else:
+        original_input_file = unictest_env_vars["UNICTEST_BINARY_FILE"]
+        with open(original_input_file, "rb") as f:
+            input_data = f.read()
+
     input_file = pl.Path(task_dir) / "input.bin"
     with open(input_file, "wb") as f:
         f.write(input_data)
@@ -133,32 +168,41 @@ elif mode == "test":
     except sp.CalledProcessError as e:
         print(f"Test script failed with return code: {e.returncode}")
         sys.exit(e.returncode)
-    if not output_file.exists():
-        print(f"Output file not created: {output_file.as_posix()}")
-        sys.exit(1)
-    with open(output_file, "rb") as f:
-        output_data = f.read()
-    # do compare and binary diff if not match
-    if output_data != input_data:
-        print("Output data does not match input data!")
-        a = hexdump(input_data)
-        b = hexdump(output_data)
-        print("Hex dump of input data:")
-        print(a)
-        print("Hex dump of output data:")
-        print(b)
-        print("Diff between input and output data:")
-        diff = difflib.unified_diff(
-            a.splitlines(keepends=True),
-            b.splitlines(keepends=True),
-            fromfile="input_data",
-            tofile="output_data",
-        )
-        for line in diff:
-            print(line, end="")
-        sys.exit(1)
+
+    if fuzz_mode:
+        # In fuzz mode, skip output comparison - the exit code from the
+        # test script is what matters (unictest binary handles judgment)
+        if output_file.exists():
+            print("Fuzz test completed, output file created.")
+        else:
+            print("Fuzz test completed, no output file (decode may have failed).")
     else:
-        print("Output data matches input data.")
+        if not output_file.exists():
+            print(f"Output file not created: {output_file.as_posix()}")
+            sys.exit(1)
+        with open(output_file, "rb") as f:
+            output_data = f.read()
+        # do compare and binary diff if not match
+        if output_data != input_data:
+            print("Output data does not match input data!")
+            a = hexdump(input_data)
+            b = hexdump(output_data)
+            print("Hex dump of input data:")
+            print(a)
+            print("Hex dump of output data:")
+            print(b)
+            print("Diff between input and output data:")
+            diff = difflib.unified_diff(
+                a.splitlines(keepends=True),
+                b.splitlines(keepends=True),
+                fromfile="input_data",
+                tofile="output_data",
+            )
+            for line in diff:
+                print(line, end="")
+            sys.exit(1)
+        else:
+            print("Output data matches input data.")
 else:
     print(f"Unknown mode: {mode}")
     sys.exit(1)
