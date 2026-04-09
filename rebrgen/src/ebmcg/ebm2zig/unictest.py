@@ -67,9 +67,9 @@ pub fn main() !void {{
     }};
 
     // Encode
-    var output_buf = std.ArrayList(u8).init(allocator);
-    defer output_buf.deinit();
-    target.encode(output_buf.writer()) catch |err| {{
+    var output_buf: std.ArrayList(u8) = .{{}};
+    defer output_buf.deinit(allocator);
+    target.encode(output_buf.writer(allocator)) catch |err| {{
         std.debug.print("Encode error: {{}}\\n", .{{err}});
         std.process.exit(20);
     }};
