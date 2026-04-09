@@ -1096,6 +1096,23 @@ DEFINE_VISITOR(entry_before) {
                 return "";
             }
         }
+        if (lctx.length_check.length_check_type == ebm::LengthCheckType::ENCODE_VECTOR_LENGTH) {
+            // target is ARRAY_SIZE expr (visit produces "len(field)"), expected_length is the length expr
+            MAYBE(target, lctx.visit(lctx.length_check.target));
+            MAYBE(expected, lctx.visit(lctx.length_check.expected_length));
+            MAYBE(layer_str, get_identifier_layer_str(lctx, from_weak(lctx.length_check.related_field)));
+            layer_str = "\\\"" + layer_str + "\\\"";
+            lctx.config().imports.insert("fmt");
+            std::string nil_prefix;
+            if (lctx.config().io_strategy.is_append()) {
+                nil_prefix = "nil, ";
+            }
+            CodeWriter w;
+            w.writeln("if ", target.to_writer(), " != int(", expected.to_writer(), ") {");
+            w.indent_writeln("return ", nil_prefix, "fmt.Errorf(\"size mismatch when writing field ", layer_str, ": expected %d, got %d\", int(", expected.to_writer(), "), ", target.to_writer(), ")");
+            w.writeln("}");
+            return w;
+        }
         return pass;
     };
     // Native endian: binary.NativeEndian.Uint16(append(make([]byte,0,2),1,0)) == 1.

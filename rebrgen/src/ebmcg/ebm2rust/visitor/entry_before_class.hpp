@@ -195,6 +195,28 @@ DEFINE_VISITOR(entry_before) {
         use_w.write(std::move(result));
         return Result(std::move(use_w));
     };
+    config.length_check_custom = [](Context_Statement_LENGTH_CHECK& lctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        if (lctx.length_check.length_check_type == ebm::LengthCheckType::SETTER_VECTOR_LENGTH) {
+            auto size = lctx.get_field<"type_cast_desc.source_expr.type.size.optional">(lctx.length_check.expected_length);
+            if (size && size->value() >= 64) {
+                // for large vectors, skip length check to avoid large memory allocation
+                return "";
+            }
+        }
+        if (lctx.length_check.length_check_type == ebm::LengthCheckType::ENCODE_VECTOR_LENGTH) {
+            // target is ARRAY_SIZE expr (visit produces ".len()"), expected_length is the length expr
+            MAYBE(target, lctx.visit(lctx.length_check.target));
+            MAYBE(expected, lctx.visit(lctx.length_check.expected_length));
+            MAYBE(layer_str, get_identifier_layer_str(lctx, from_weak(lctx.length_check.related_field)));
+            CodeWriter w;
+            w.writeln("if ", target.to_writer(), " != ", expected.to_writer(), " as usize {");
+            w.indent_writeln("return Err(anyhow::anyhow!(\"size mismatch when writing field \\\"", layer_str, "\\\": expected {}, got {}\", ", expected.to_writer(), ", ", target.to_writer(), "));");
+            w.writeln("}");
+            return w;
+        }
+        return pass;
+    };
     config.write_data_bytes_io_wrapper = [](Context_Statement_WRITE_DATA& ctx, BytesType cand, Result target, std::string io_name) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
         // lowered statement がある場合は default の lowered fallback に委ねる

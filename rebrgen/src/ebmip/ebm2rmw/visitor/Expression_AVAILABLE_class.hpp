@@ -15,6 +15,7 @@
       type: const ebm::TypeRef&
       kind: const ebm::ExpressionKind&
       lowered_expr: const ebm::LoweredExpressionRef&
+        id: ExpressionRef
       target_expr: const ebm::ExpressionRef&
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/

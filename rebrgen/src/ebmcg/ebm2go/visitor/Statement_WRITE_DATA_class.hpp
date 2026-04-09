@@ -103,14 +103,7 @@ DEFINE_VISITOR(Statement_WRITE_DATA) {
         if (ctx.config().io_strategy.is_reader_writer()) {
             // io.Writer mode: write data to writer
             if (cand == BytesType::vector) {
-                auto ref = wctx.write_data.size.ref();
-                if (ref && !ctx.is(ebm::ExpressionKind::ARRAY_SIZE, *ref)) {
-                    // check length consistency
-                    ctx.config().imports.insert("fmt");
-                    w.writeln("if len(", target.to_writer(), ") != int(", size_str, ") {");
-                    w.indent_writeln("return fmt.Errorf(\"size mismatch when writing field ", layer_str, ": expected %d, got %d\", int(", size_str, "), len(", target.to_writer(), "))");
-                    w.writeln("}");
-                }
+                // Length consistency check is handled by LENGTH_CHECK node
                 w.writeln("if _, err := ", io_, ".Write(", target.to_writer(), "); err != nil {");
                 w.indent_writeln("return err");
                 w.writeln("}");
@@ -141,18 +134,7 @@ DEFINE_VISITOR(Statement_WRITE_DATA) {
                 }
                 w.writeln("}");
             }
-            auto ref = wctx.write_data.size.ref();
-            if (ref && !ctx.is(ebm::ExpressionKind::ARRAY_SIZE, *ref)) {
-                // check length consistency
-                w.writeln("if len(", target.to_writer(), ") != int(", size_str, ") {");
-                ctx.config().imports.insert("fmt");
-                std::string nil;
-                if (ctx.config().io_strategy.is_append()) {
-                    nil = "nil,";
-                }
-                w.indent_writeln("return ", nil, "fmt.Errorf(\"size mismatch when writing field ", layer_str, ": expected %d, got %d\", int(", size_str, "), len(", target.to_writer(), "))");
-                w.writeln("}");
-            }
+            // Length consistency check is handled by LENGTH_CHECK node
             if (ctx.config().io_strategy.is_append()) {
                 w.writeln(io_, " = append(", io_, ",", target.to_writer(), "...)");
             }

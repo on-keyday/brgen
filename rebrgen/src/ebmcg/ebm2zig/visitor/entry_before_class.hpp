@@ -631,6 +631,29 @@ DEFINE_VISITOR(entry_before) {
         return CODELINE("return error.ValidationFailed; // ", escaped);
     };
 
+    // LENGTH_CHECK: emit a proper size mismatch error instead of the default assertion.
+    config.length_check_custom = [&](Context_Statement_LENGTH_CHECK& lctx) -> expected<Result> {
+        if (lctx.length_check.length_check_type == ebm::LengthCheckType::SETTER_VECTOR_LENGTH) {
+            auto size = lctx.get_field<"type_cast_desc.source_expr.type.size.optional">(lctx.length_check.expected_length);
+            if (size && size->value() >= 64) {
+                // for large vectors, skip length check to avoid large memory allocation
+                return "";
+            }
+        }
+        if (lctx.length_check.length_check_type == ebm::LengthCheckType::ENCODE_VECTOR_LENGTH) {
+            // target is ARRAY_SIZE expr (visit produces .len or .items.len), expected_length is the length expr
+            MAYBE(target, lctx.visit(lctx.length_check.target));
+            MAYBE(expected, lctx.visit(lctx.length_check.expected_length));
+            MAYBE(layer_str, get_identifier_layer_str(lctx, from_weak(lctx.length_check.related_field)));
+            CodeWriter w;
+            w.writeln("if (", target.to_writer(), " != @as(usize, @intCast(", expected.to_writer(), "))) {");
+            w.indent_writeln("return error.ValidationFailed; // size mismatch when writing field ", layer_str);
+            w.writeln("}");
+            return w;
+        }
+        return pass;
+    };
+
     // === Init check ===
     // Zig bare unions require setting the active field before accessing it.
     // For union_init_decode/union_set: assign the default value to activate the correct union field.

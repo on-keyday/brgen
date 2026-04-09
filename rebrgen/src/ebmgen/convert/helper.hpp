@@ -414,9 +414,9 @@ namespace ebmgen {
 #define EBM_ENDIAN_CONVERT(ref_name, kind, endian, src, target, lowered) \
     EBM_AST_STATEMENT(ref_name, make_endian_convert, kind, endian, src, target, lowered)
 
-    ebm::StatementBody make_length_check(ebm::LengthCheckType type, ebm::ExpressionRef target, ebm::ExpressionRef expected_length, ebm::StatementRef related_function, ebm::StatementRef lowered_statement);
-#define EBM_LENGTH_CHECK(ref_name, type, target, expected_length, related_function, lowered_statement) \
-    EBM_AST_STATEMENT(ref_name, make_length_check, type, target, expected_length, related_function, lowered_statement)
+    ebm::StatementBody make_length_check(ebm::LengthCheckType type, ebm::ExpressionRef target, ebm::ExpressionRef expected_length, ebm::StatementRef related_field, ebm::StatementRef related_function, ebm::StatementRef lowered_statement);
+#define EBM_LENGTH_CHECK(ref_name, type, target, expected_length, related_field, related_function, lowered_statement) \
+    EBM_AST_STATEMENT(ref_name, make_length_check, type, target, expected_length, related_field, related_function, lowered_statement)
 
 #define COMMON_BUFFER_SETUP(IO_MACRO, io_stmt, io_ref, field_ref, annot)                       \
     EBMU_U8_N_ARRAY(u8_n_array, n, annot);                                                     \

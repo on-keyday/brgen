@@ -173,7 +173,7 @@ namespace ebmgen {
             EBM_SETTER_STATUS(status, setter_return_type, ebm::SetterStatus::FAILED);
             EBM_RETURN(return_stmt, status, func_ref);
             EBM_IF_STATEMENT(length_check_statement, check_len, return_stmt, {});
-            EBM_LENGTH_CHECK(length_check, ebm::LengthCheckType::SETTER_VECTOR_LENGTH, to_set_len, limit, func_ref, length_check_statement);
+            EBM_LENGTH_CHECK(length_check, ebm::LengthCheckType::SETTER_VECTOR_LENGTH, to_set_len, limit, array_info.array_field_ref, func_ref, length_check_statement);
             // constructs:
             // length_field = (cast)value.length;
             EBM_CAST(casted_len, array_info.length_type, usize_type, to_set_len);

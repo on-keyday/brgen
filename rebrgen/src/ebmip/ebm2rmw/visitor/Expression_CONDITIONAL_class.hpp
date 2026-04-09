@@ -17,6 +17,7 @@
       condition: const ebm::ExpressionRef&
       else_: const ebm::ExpressionRef&
       lowered_expr: const ebm::LoweredExpressionRef&
+        id: ExpressionRef
       then: const ebm::ExpressionRef&
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/

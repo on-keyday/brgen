@@ -159,7 +159,7 @@ namespace ebmgen {
                 EBMU_BOOL_TYPE(bool_type);
                 EBM_BINARY_OP(eq, ebm::BinaryOp::equal, bool_type, array_size, len_init);
                 MAYBE(assert_stmt, assert_statement(ctx, eq));
-                EBM_LENGTH_CHECK(check, ebm::LengthCheckType::ENCODE_VECTOR_LENGTH, array_size, len_init, ctx.state().get_current_function_id(), assert_stmt);
+                EBM_LENGTH_CHECK(check, ebm::LengthCheckType::ENCODE_VECTOR_LENGTH, array_size, len_init, from_weak(io_desc.field), ctx.state().get_current_function_id(), assert_stmt);
                 assert_ = check;
                 MAYBE_VOID(ok, set_dynamic_size(len_init));
                 length = len_init;

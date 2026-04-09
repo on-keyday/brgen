@@ -16,6 +16,7 @@
       length_check: const ebm::LengthCheck&
         target: ExpressionRef
         expected_length: ExpressionRef
+        related_field: WeakStatementRef
         related_function: WeakStatementRef
         lowered_statement: LoweredStatementRef
         length_check_type: LengthCheckType

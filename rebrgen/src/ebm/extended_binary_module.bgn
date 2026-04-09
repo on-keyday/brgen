@@ -667,6 +667,7 @@ enum LengthCheckType:
 format LengthCheck: # marker statement for length check context (e.g., vector length check, string length check)
     target :ExpressionRef # Expression to check length of (e.g., vector or string)
     expected_length :ExpressionRef # Expected length expression
+    related_field :WeakStatementRef # Reference to the field that this check relates to (for error messages)
     related_function :WeakStatementRef # Reference to the related function declaration
     lowered_statement :LoweredStatementRef # Optional lowered statement for the length check (e.g., for vector length check)
     length_check_type :LengthCheckType # Type of length check
