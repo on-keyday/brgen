@@ -227,11 +227,17 @@ DEFINE_VISITOR(entry_before) {
             // For state variables, we pass a pointer to allow modification
             return CODE(ctx.identifier(), ": *", typ.to_writer());
         }
+        CodeWriter w;
+        w.write(ctx.identifier(), ": ", typ.to_writer());
+        // Add absolute offset pointer parameter when IO needs offset tracking
+        if (ebm2zig::has_absolute_offset(ctx, ctx.item_id)) {
+            w.write(", ", ebm2zig::abs_offset_param(ctx.identifier()), ": *usize");
+        }
         if (ctx.get_kind(ctx.param_decl.param_type) == ebm::TypeKind::DECODER_INPUT) {
             // All decode functions get an allocator parameter for dynamic allocation
-            return CODE(ctx.identifier(), ": ", typ.to_writer(), ", allocator: std.mem.Allocator");
+            w.write(", allocator: std.mem.Allocator");
         }
-        return CODE(ctx.identifier(), ": ", typ.to_writer());
+        return w;
     };
 
     config.call_custom = [](Context_Expression_CALL& ctx) -> expected<Result> {
@@ -255,11 +261,20 @@ DEFINE_VISITOR(entry_before) {
             return CODE("&", target.to_writer());
         }
         auto kind = ctx.get_kind(ctx.type);
-        if (kind == ebm::TypeKind::DECODER_INPUT) {
-            // All decode calls pass through the allocator
-            return CODE(target.to_writer(), ", allocator");
+        if (kind != ebm::TypeKind::ENCODER_INPUT &&
+            kind != ebm::TypeKind::DECODER_INPUT) {
+            return target;
         }
-        return target;
+        CodeWriter w;
+        w.write(target.to_writer());
+        // Pass absolute offset pointer to callees that need it
+        if (ctx.get_field<ebm2zig::has_absolute_offset_type>(ctx.type) == true) {
+            w.write(", ", ebm2zig::abs_offset_param(target.to_string()));
+        }
+        if (kind == ebm::TypeKind::DECODER_INPUT) {
+            w.write(", allocator");
+        }
+        return w;
     };
 
     // === Function declaration ===
@@ -354,12 +369,62 @@ DEFINE_VISITOR(entry_before) {
             // Free function: pub fn name(params...) RetType {
             w.writeln("pub fn ", func_name, "(", params, ") ", ret_str, " {");
         }
+        // When has_absolute_offset, generate a public wrapper that initializes offset locally
+        // and delegates to the _impl function (which takes the offset pointer as parameter).
+        bool has_abs_offset = (fctx.func_decl.kind == ebm::FunctionKind::ENCODE ||
+                               fctx.func_decl.kind == ebm::FunctionKind::DECODE) &&
+                              !fctx.func_decl.params.container.empty() &&
+                              ebm2zig::has_absolute_offset(fctx, fctx.func_decl.params.container[0]);
+        if (has_abs_offset) {
+            // Build a public wrapper: encode/decode that inits offset and calls _impl
+            auto io_param_name = ctx.identifier(fctx.func_decl.params.container[0]);
+            auto offset_param = ebm2zig::abs_offset_param(io_param_name);
+            CodeWriter wrapper;
+            if (!is_nil(fctx.func_decl.parent_format)) {
+                auto struct_name = ctx.identifier(fctx.func_decl.parent_format);
+                CodeWriter pub_params;
+                pub_params.write("self: *", struct_name, ", ", io_param_name, ": anytype");
+                if (fctx.func_decl.kind == ebm::FunctionKind::DECODE) {
+                    pub_params.write(", allocator: std.mem.Allocator");
+                }
+                wrapper.writeln("pub fn ", func_name, "(", pub_params, ") ", ret_str, " {");
+            }
+            {
+                auto scope = wrapper.indent_scope();
+                wrapper.writeln("var ", offset_param, ": usize = 0;");
+                // Call the _impl function
+                CodeWriter call_args;
+                call_args.write(io_param_name, ", &", offset_param);
+                if (fctx.func_decl.kind == ebm::FunctionKind::DECODE) {
+                    call_args.write(", allocator");
+                }
+                wrapper.writeln("return self.", func_name, "_impl(", call_args, ");");
+            }
+            wrapper.writeln("}");
+            // Now emit the _impl function definition
+            func_name = func_name + "_impl";
+            wrapper.writeln("");
+            w = std::move(wrapper);
+            if (!is_nil(fctx.func_decl.parent_format)) {
+                auto struct_name = ctx.identifier(fctx.func_decl.parent_format);
+                CodeWriter all_params;
+                all_params.write("self: *", struct_name);
+                if (!params.empty()) {
+                    all_params.write(", ", params);
+                }
+                w.writeln("pub fn ", func_name, "(", all_params, ") ", ret_str, " {");
+            }
+        }
         {
             auto scope = w.indent_scope();
             // Suppress unused allocator parameter warning for all decode functions
             // Using &allocator avoids "pointless discard" when allocator IS used
             if (fctx.func_decl.kind == ebm::FunctionKind::DECODE) {
                 w.writeln("_ = &allocator;");
+            }
+            if (has_abs_offset) {
+                auto io_param_name = ctx.identifier(fctx.func_decl.params.container[0]);
+                w.writeln("_ = &", ebm2zig::abs_offset_param(io_param_name), ";");
             }
             // Suppress unused state variable parameter warnings
             for (auto& param_ref : fctx.func_decl.params.container) {
@@ -588,31 +653,105 @@ DEFINE_VISITOR(entry_before) {
     // Zig: @import("builtin").cpu.arch.endian() == .little
     config.native_endian_check = "(@import(\"builtin\").cpu.arch.endian() == .little)";
 
+    // === GET_STREAM_OFFSET ===
+    // Return a manual counter variable that tracks bytes read/written.
+    // The counter is declared in function_definition_start_wrapper and incremented
+    // in read_data_bytes_io_wrapper / write_data_bytes_io_wrapper.
+    config.get_stream_offset_custom = [&](Context_Expression_GET_STREAM_OFFSET& gso_ctx) -> expected<Result> {
+        auto io_name = gso_ctx.identifier(gso_ctx.io_ref);
+        return CODE(ebm2zig::abs_offset_deref(io_name));
+    };
+
     // === GET_REMAINING_BYTES ===
     // For read_data_bytes_io_wrapper, when size references GET_REMAINING_BYTES,
     // we need to read all remaining data from the stream.
     // Handle this by checking if size.ref() is GET_REMAINING_BYTES in read_data_bytes_io_wrapper.
 
+    // === SUB_BYTE_RANGE ===
+    // Creates a sub-stream of fixed length for IO operations.
+    // INPUT: read length bytes from parent, create fixedBufferStream, do IO on it
+    // OUTPUT: create a buffer, do IO on it, assert length, write to parent
+    config.sub_byte_range_visitor = [&](Context_Statement_SUB_BYTE_RANGE& sctx) -> expected<Result> {
+        auto io_ = sctx.identifier(sctx.sub_byte_range.io_ref);
+        auto parent_io_ = sctx.identifier(sctx.sub_byte_range.parent_io_ref);
+        auto child_has_abs = ebm2zig::has_absolute_offset(sctx, sctx.sub_byte_range.io_ref);
+        MAYBE(length_expr, sctx.sub_byte_range.length());
+        MAYBE(length_str, sctx.visit(length_expr));
+        CodeWriter w;
+        // Inherit parent's absolute offset pointer into child IO scope (same pointer, shared tracking)
+        if (child_has_abs) {
+            w.writeln("const ", ebm2zig::abs_offset_param(io_), ": *usize = ", ebm2zig::abs_offset_param(parent_io_), ";");
+        }
+        // Use page_allocator as fallback when allocator param is not available (encode functions)
+        auto alloc_name = (sctx.sub_byte_range.stream_type == ebm::StreamType::INPUT) ? "allocator" : "std.heap.page_allocator";
+        if (sctx.sub_byte_range.stream_type == ebm::StreamType::INPUT) {
+            w.writeln("{");
+            {
+                auto scope = w.indent_scope();
+                w.writeln("const sub_len = @as(usize, @intCast(", length_str.to_writer(), "));");
+                w.writeln("const sub_buf = try ", alloc_name, ".alloc(u8, sub_len);");
+                w.writeln("defer ", alloc_name, ".free(sub_buf);");
+                w.writeln("try ", parent_io_, ".readNoEof(sub_buf);");
+                w.writeln("var sub_stream = std.io.fixedBufferStream(sub_buf);");
+                w.writeln("var ", io_, " = sub_stream.reader();");
+                w.writeln("_ = &", io_, ";");
+                MAYBE(do_io, sctx.visit(sctx.sub_byte_range.io_statement));
+                w.write(do_io.to_writer());
+            }
+            w.writeln("}");
+        }
+        else {
+            w.writeln("{");
+            {
+                auto scope = w.indent_scope();
+                w.writeln("const sub_len = @as(usize, @intCast(", length_str.to_writer(), "));");
+                w.writeln("const sub_buf = try ", alloc_name, ".alloc(u8, sub_len);");
+                w.writeln("defer ", alloc_name, ".free(sub_buf);");
+                w.writeln("var sub_stream = std.io.fixedBufferStream(sub_buf);");
+                w.writeln("var ", io_, " = sub_stream.writer();");
+                w.writeln("_ = &", io_, ";");
+                MAYBE(do_io, sctx.visit(sctx.sub_byte_range.io_statement));
+                w.write(do_io.to_writer());
+                w.writeln("try ", parent_io_, ".writeAll(sub_buf);");
+            }
+            w.writeln("}");
+        }
+        return w;
+    };
+
     // === IO hooks ===
 
     // WRITE_DATA: bytes 型 I/O (VECTORIZED_IO/lowered fallback は default で処理)
     config.write_data_bytes_io_wrapper = [&](Context_Statement_WRITE_DATA& wctx, BytesType cand, Result target, std::string io_) -> expected<Result> {
+        if (wctx.write_data.lowered_statement()) {
+            return pass;
+        }
         CodeWriter w;
         if (cand == BytesType::array) {
             w.writeln("try ", io_, ".writeAll(&", target.to_writer(), ");");
+            MAYBE(size_str, get_size_str(wctx, wctx.write_data.size));
+            ebm2zig::append_abs_offset(wctx, wctx.write_data.io_ref, w, size_str);
         }
         else {
             // ArrayListUnmanaged: write .items slice
             w.writeln("try ", io_, ".writeAll(", target.to_writer(), ".items);");
+            ebm2zig::append_abs_offset(wctx, wctx.write_data.io_ref, w, target.to_string() + ".items.len");
         }
         return w;
     };
 
     // READ_DATA: bytes 型 I/O (VECTORIZED_IO/lowered fallback は default で処理)
     config.read_data_bytes_io_wrapper = [&](Context_Statement_READ_DATA& rctx, BytesType cand, Result target, std::string io_) -> expected<Result> {
+        // If there's a lowered statement (e.g. offset-based read, ARRAY_FOR_EACH),
+        // delegate to the default lowered fallback
+        if (rctx.read_data.lowered_statement()) {
+            return pass;
+        }
         CodeWriter w;
         if (cand == BytesType::array) {
             w.writeln("try ", io_, ".readNoEof(&", target.to_writer(), ");");
+            MAYBE(size_str, get_size_str(rctx, rctx.read_data.size));
+            ebm2zig::append_abs_offset(rctx, rctx.read_data.io_ref, w, size_str);
         }
         else {
             // Check if size references GET_REMAINING_BYTES (read all remaining data)
@@ -637,12 +776,15 @@ DEFINE_VISITOR(entry_before) {
                     w.writeln("}");
                 }
                 w.writeln("}");
+                // For GET_REMAINING_BYTES, offset += items.len after the loop
+                ebm2zig::append_abs_offset(rctx, rctx.read_data.io_ref, w, target.to_string() + ".items.len");
             }
             else {
                 // ArrayListUnmanaged: resize then read into items
                 MAYBE(size_str, get_size_str(rctx, rctx.read_data.size));
                 w.writeln("try ", target.to_writer(), ".resize(allocator, ", size_str, ");");
                 w.writeln("try ", io_, ".readNoEof(", target.to_writer(), ".items);");
+                ebm2zig::append_abs_offset(rctx, rctx.read_data.io_ref, w, size_str);
             }
         }
         return w;
