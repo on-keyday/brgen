@@ -8,12 +8,9 @@
 
 namespace brgen::middle {
 
-    // Raw generic formats (those still holding type_parameters after monomorphize)
-    // have fields whose types reference unresolved type parameters, so size /
-    // alignment / non-dynamic analysis on them produces meaningless results.
-    // The concrete instances live in monomorphized clones; the raw generic
-    // is kept for tooling (hover, reference) only and must be skipped by
-    // every size-ish analysis pass.
+    // Raw generic formats reference unresolved type parameters, so any
+    // size/alignment analysis on them is meaningless. Concrete sizes live
+    // in the monomorphized clones.
     static bool is_raw_generic_format(const std::shared_ptr<ast::Node>& n) {
         auto fmt = ast::as<ast::Format>(n);
         return fmt && !fmt->type_parameters.empty();

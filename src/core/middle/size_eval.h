@@ -46,10 +46,8 @@ namespace brgen::middle {
         return *bit_sz / 8;
     }
 
-    // Resolve `sizeof(target)` when possible. A `TypeLiteral` target is
-    // unwrapped to its inner type (expr_type of TypeLiteral is meta_type and
-    // has no bit_size, so going through expr_type would always fail). Returns
-    // true if evaluated_value was filled in by this call.
+    // TypeLiteral is unwrapped because its expr_type is meta_type with no
+    // bit_size — reading through expr_type would always fail.
     inline bool evaluate_sizeof_node(ast::SizeOf* s) {
         if (!s || s->evaluated_value || !s->target) return false;
         std::shared_ptr<ast::Type> target_type;
@@ -66,9 +64,6 @@ namespace brgen::middle {
         return true;
     }
 
-    // Resolve an ArrayType's length to a concrete `length_value` when the
-    // length expression is constant and the evaluator can fold it. Safe to
-    // call multiple times; early-returns if already resolved.
     inline bool evaluate_array_length(ast::ArrayType* arr_type) {
         if (!arr_type || arr_type->length_value || !arr_type->length) return false;
         if (arr_type->length->constant_level != ast::ConstantLevel::constant) return false;

@@ -17,9 +17,8 @@ namespace brgen::middle {
         using ParamMap = std::map<std::shared_ptr<ast::Ident>, std::shared_ptr<ast::Type>>;
         using GenericIdentMap = std::map<std::shared_ptr<ast::GenericType>, std::shared_ptr<ast::IdentType>>;
 
-        // Collect every Node strong-reachable from `root`. ast::traverse only
-        // descends into shared_ptr / vector<shared_ptr> fields, never weak_ptr,
-        // so the result is exactly the "inside" of the subtree rooted at `root`.
+        // ast::traverse follows only strong refs, so this yields exactly the
+        // subtree owned by `root` (weak back-edges stop the walk).
         void collect_inside(const std::shared_ptr<ast::Node>& root,
                             std::unordered_set<const ast::Node*>& out) {
             if (!root) return;
@@ -88,9 +87,13 @@ namespace brgen::middle {
             }
         }
 
+        using InsideSet = std::unordered_set<const ast::Node*>;
+        using InsideCache = std::map<const ast::Format*, InsideSet>;
+
         std::shared_ptr<ast::Format> instantiate(
             const std::shared_ptr<ast::Format>& target,
             const std::shared_ptr<ast::GenericType>& gt,
+            InsideCache& inside_cache,
             LocationError* warnings) {
             assert(target);
             auto const& type_arguments = gt->type_arguments;
@@ -110,8 +113,11 @@ namespace brgen::middle {
                 param_map[tp->ident] = type_arguments[i];
             }
 
-            std::unordered_set<const ast::Node*> inside;
-            collect_inside(target, inside);
+            auto [it, inserted] = inside_cache.try_emplace(target.get());
+            if (inserted) {
+                collect_inside(target, it->second);
+            }
+            const InsideSet& inside = it->second;
 
             NodeMap nm;
             ScopeMap sm;
@@ -131,10 +137,6 @@ namespace brgen::middle {
             return clone;
         }
 
-        // Build the replacement IdentType for a freshly instantiated clone.
-        // It borrows the reference ident from the GenericType's base_type so
-        // scope/name info survives, and its `base` is rebound to the cloned
-        // Format's body struct_type.
         std::shared_ptr<ast::IdentType> build_clone_ident(
             const std::shared_ptr<ast::GenericType>& gt,
             const std::shared_ptr<ast::Format>& clone_fmt) {
@@ -147,17 +149,12 @@ namespace brgen::middle {
             return new_it;
         }
 
-        // Replace every GenericType shared_ptr field under `root` with the
-        // pre-computed IdentType in `mapping`.
         void rewrite_generic_types(const std::shared_ptr<ast::Node>& root,
                                    const GenericIdentMap& mapping) {
             if (!root) return;
             ast::traverse(root, [&](auto& sub) {
                 using U = std::decay_t<decltype(sub)>;
                 using Elem = typename U::element_type;
-                // Only fields typed as shared_ptr<Type> or shared_ptr<Node>
-                // can hold either a GenericType or an IdentType, so limit the
-                // replacement to those slots.
                 if constexpr (std::is_same_v<Elem, ast::Type> ||
                               std::is_same_v<Elem, ast::Node>) {
                     if (ast::as<ast::GenericType>(sub)) {
@@ -165,7 +162,7 @@ namespace brgen::middle {
                         auto it = mapping.find(gt);
                         if (it != mapping.end()) {
                             sub = ast::cast_to<Elem>(it->second);
-                            return;  // replaced; don't descend into the old subtree
+                            return;
                         }
                     }
                 }
@@ -173,23 +170,9 @@ namespace brgen::middle {
             });
         }
 
-        // Post-order rewrite of references that still point at the original
-        // (generic) Format after instantiation:
-        //
-        // * MemberAccess whose target type unwraps to a clone struct_type:
-        //     re-lookup the member by name in the clone and rewrite `base`,
-        //     `expr_type` and `member->expr_type` so downstream / LSP see
-        //     the substituted types instead of the raw type-parameter ones.
-        //     MemberAccess::base is a weak_ptr<Ident> and is not visited by
-        //     ast::traverse, so it must be handled here explicitly.
-        //
-        // * Index: typing set `expr_type` to the element_type read from the
-        //     raw ArrayType at the time. If its expr's expr_type has since
-        //     been rewritten to a clone-substituted ArrayType, re-derive the
-        //     element type from the updated source.
-        //
-        // Post-order: descend into children first so Index sees the updated
-        // expr->expr_type produced by the MemberAccess rewrite below it.
+        // Post-order so Index sees updated expr->expr_type from child
+        // MemberAccess rewrites. MemberAccess::base is a weak_ptr<Ident>
+        // that ast::traverse skips, so it's rebound explicitly here.
         void rewrite_clone_refs(const std::shared_ptr<ast::Node>& root,
                                 const std::unordered_set<const ast::StructType*>& clone_structs,
                                 std::unordered_set<const ast::Node*>& visited) {
@@ -235,10 +218,8 @@ namespace brgen::middle {
             }
         }
 
-        // Walk every Format under `root` and replace depends entries that
-        // point to a rewritten GenericType's base_type IdentType with the new
-        // clone IdentType. Format.depends is vector<weak_ptr<IdentType>> and
-        // is not followed by ast::traverse, so we handle it here explicitly.
+        // Format::depends is vector<weak_ptr<IdentType>> which ast::traverse
+        // does not follow, so rebind it here.
         void rewrite_format_depends(const std::shared_ptr<ast::Node>& root,
                                     const std::map<ast::IdentType*, std::shared_ptr<ast::IdentType>>& ident_map,
                                     std::unordered_set<const ast::Node*>& visited) {
@@ -288,10 +269,11 @@ namespace brgen::middle {
         std::map<ast::IdentType*, std::shared_ptr<ast::IdentType>> old_ident_to_new;
         std::vector<std::shared_ptr<ast::Format>> new_formats;
 
+        InsideCache inside_cache;
         for (auto& gt : generics) {
             auto target = resolve_target_format(gt, warnings);
             if (!target) continue;
-            auto clone = instantiate(target, gt, warnings);
+            auto clone = instantiate(target, gt, inside_cache, warnings);
             if (!clone) continue;
             auto new_it = build_clone_ident(gt, clone);
             gt_to_new_ident[gt] = new_it;

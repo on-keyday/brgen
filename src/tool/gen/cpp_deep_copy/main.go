@@ -138,14 +138,12 @@ func generateSingleDeepCopy(w *gen.Writer, def *gen.Struct) {
 	w.Printf("if(!node){\n")
 	w.Printf("return nullptr;\n")
 	w.Printf("}\n")
-	if def.Name != "Scope" {
-		w.Printf("if(auto r = subst(node)) { return r; }\n")
-	}
 	if def.Name == "Scope" {
 		w.Printf("if(auto it = scope_map.find(node);it !=scope_map.end()){\n")
 		w.Printf("return it->second;\n")
 		w.Printf("}\n")
 	} else {
+		w.Printf("if(auto r = subst(node)) { return r; }\n")
 		w.Printf("if(auto it = node_map.find(node);it !=node_map.end()){\n")
 		w.Printf("return ast::cast_to<%s>(it->second);\n", def.Name)
 		w.Printf("}\n")

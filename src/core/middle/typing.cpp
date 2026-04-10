@@ -925,12 +925,8 @@ namespace brgen::middle {
             return nullptr;
         }
 
-        // Walk `ty`, replacing any IdentType that references one of `fmt`'s
-        // type parameters with the corresponding entry in `args`. Compound
-        // types are cloned shallowly so the raw generic's AST is left intact.
-        // The clone carries the substituted element through MemberAccess /
-        // Index chains so downstream typing sees a concrete type instead of
-        // the unresolved T, which would otherwise trip binop type checks.
+        // Compound types are shallow-cloned so the raw generic's AST stays
+        // untouched; callers typically use this at use sites, not in storage.
         std::shared_ptr<ast::Type> substitute_type_via_param_map(
             const std::shared_ptr<ast::Type>& ty,
             ast::Format* fmt,
@@ -962,10 +958,6 @@ namespace brgen::middle {
             return ty;
         }
 
-        // Resolve the type parameters of a GenericType instance and
-        // substitute them inside `ty`. Used when accessing a field through a
-        // generic (`v.data` where `v :Vector[u8]`) so the expression type at
-        // the use site is the concrete substituted type.
         std::shared_ptr<ast::Type> substitute_type_params_via_generic(
             const std::shared_ptr<ast::Type>& ty,
             const std::shared_ptr<ast::GenericType>& gt) {
