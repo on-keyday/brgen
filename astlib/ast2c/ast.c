@@ -3296,18 +3296,25 @@ int ast2c_GenericType_parse(ast2c_Ast* ast,ast2c_GenericType* s,ast2c_json_handl
 	void* obj_body = h->object_get(h, obj, "body");
 	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
 	s->bit_size = NULL;
-	s->belong = NULL;
+	s->base_type = NULL;
+	s->type_arguments = NULL;
 	void* is_explicit = h->object_get(h, obj_body, "is_explicit");
 	void* non_dynamic_allocation = h->object_get(h, obj_body, "non_dynamic_allocation");
 	void* bit_alignment = h->object_get(h, obj_body, "bit_alignment");
 	void* bit_size = h->object_get(h, obj_body, "bit_size");
-	void* belong = h->object_get(h, obj_body, "belong");
+	void* base_type = h->object_get(h, obj_body, "base_type");
+	void* type_arguments = h->object_get(h, obj_body, "type_arguments");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_GenericType::loc is null"); } return 0; }
 	if (!is_explicit) { if(h->error) { h->error(h,is_explicit, "ast2c_GenericType::is_explicit is null"); } return 0; }
 	if (!non_dynamic_allocation) { if(h->error) { h->error(h,non_dynamic_allocation, "ast2c_GenericType::non_dynamic_allocation is null"); } return 0; }
 	if (!bit_alignment) { if(h->error) { h->error(h,bit_alignment, "ast2c_GenericType::bit_alignment is null"); } return 0; }
 	if (!bit_size) { if(h->error) { h->error(h,bit_size, "ast2c_GenericType::bit_size is null"); } return 0; }
-	if (!belong) { if(h->error) { h->error(h,belong, "ast2c_GenericType::belong is null"); } return 0; }
+	if (!base_type) { if(h->error) { h->error(h,base_type, "ast2c_GenericType::base_type is null"); } return 0; }
+	if (!type_arguments) { if(h->error) { h->error(h,type_arguments, "ast2c_GenericType::type_arguments is null"); } return 0; }
+	if(!h->array_size(h, type_arguments,&s->type_arguments_size)) {
+		if(h->error) { h->error(h,type_arguments, "failed to get array size of ast2c_GenericType::type_arguments"); }
+		return NULL;
+	}
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_GenericType::loc"); }
 		goto error;

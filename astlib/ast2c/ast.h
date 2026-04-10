@@ -1294,7 +1294,9 @@ struct ast2c_GenericType {
 	int non_dynamic_allocation;
 	ast2c_BitAlignment bit_alignment;
 	uint64_t* bit_size;
-	ast2c_Member* belong;
+	ast2c_IdentType* base_type;
+	ast2c_Type** type_arguments;
+	size_t type_arguments_size;
 };
 
 // returns 1 if succeed 0 if failed

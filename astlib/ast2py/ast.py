@@ -627,7 +627,8 @@ class OptionalType(Type):
 
 
 class GenericType(Type):
-    belong: Optional[Member]
+    base_type: Optional[IdentType]
+    type_arguments: List[Type]
 
 
 class IntLiteral(Literal):
@@ -2010,11 +2011,12 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].bit_size = x if isinstance(x,int) else raiseError(TypeError('type mismatch at GenericType::bit_size'))
                 else:
                     node[i].bit_size = None
-                if ast.node[i].body["belong"] is not None:
-                    x = node[ast.node[i].body["belong"]]
-                    node[i].belong = x if isinstance(x,Member) else raiseError(TypeError('type mismatch at GenericType::belong'))
+                if ast.node[i].body["base_type"] is not None:
+                    x = node[ast.node[i].body["base_type"]]
+                    node[i].base_type = x if isinstance(x,IdentType) else raiseError(TypeError('type mismatch at GenericType::base_type'))
                 else:
-                    node[i].belong = None
+                    node[i].base_type = None
+                node[i].type_arguments = [(node[x] if isinstance(node[x],Type) else raiseError(TypeError('type mismatch at GenericType::type_arguments'))) for x in ast.node[i].body["type_arguments"]]
             case NodeType.INT_LITERAL:
                 if ast.node[i].body["expr_type"] is not None:
                     x = node[ast.node[i].body["expr_type"]]
@@ -2758,7 +2760,12 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
               if f(f,x.base_type) == False:
                   return
         case x if isinstance(x,GenericType):
-            pass
+          if x.base_type is not None:
+              if f(f,x.base_type) == False:
+                  return
+          for i in range(len(x.type_arguments)):
+              if f(f,x.type_arguments[i]) == False:
+                  return
         case x if isinstance(x,IntLiteral):
           if x.expr_type is not None:
               if f(f,x.expr_type) == False:

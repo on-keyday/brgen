@@ -881,7 +881,8 @@ factory OptionalType.fromJson(Map<String, dynamic> json) => _$OptionalTypeFromJs
 }
 @JsonSerializable()
 class GenericType extends Type {
-    Member? belong;
+    IdentType? baseType;
+    List<Type>? typeArguments = [];
 factory GenericType.fromJson(Map<String, dynamic> json) => _$GenericTypeFromJson(json);
 }
 @JsonSerializable()

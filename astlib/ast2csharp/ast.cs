@@ -718,7 +718,8 @@ public class GenericType : Type{
 	public bool NonDynamicAllocation{get;set;}
 	public BitAlignment BitAlignment{get;set;}
 	public ulong? BitSize{get;set;}
-	public Member? Belong{get;set;}
+	public IdentType? BaseType{get;set;}
+	public List<Type>? TypeArguments{get;set;}
 }
 public class IntLiteral : Literal{
 	public Loc Loc{get;set;}
@@ -1583,7 +1584,8 @@ public static class Ast {
                node.NonDynamicAllocation = ast.Node[i].Body[non_dynamic_allocation];
                node.BitAlignment = ast.Node[i].Body[bit_alignment];
                node.BitSize = ast.Node[i].Body[bit_size];
-               node.Belong = ast.Node[i].Body[belong];
+               node.BaseType = ast.Node[i].Body[base_type];
+               node.TypeArguments = ast.Node[i].Body[type_arguments];
            case NodeType.IntLiteral:
                var node = nodes[i] as IntLiteral;
                node.Loc = ast.Node[i].Body[loc];

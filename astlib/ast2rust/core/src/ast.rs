@@ -7879,7 +7879,8 @@ pub struct GenericType {
 	pub non_dynamic_allocation: bool,
 	pub bit_alignment: BitAlignment,
 	pub bit_size: Option<u64>,
-	pub belong: Option<MemberWeak>,
+	pub base_type: Option<Rc<RefCell<IdentType>>>,
+	pub type_arguments: Vec<Type>,
 }
 
 impl From<&Rc<RefCell<GenericType>>> for NodeType {
@@ -10146,7 +10147,8 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment::ByteAligned,
 				bit_size: None,
-				belong: None,
+				base_type: None,
+				type_arguments: Vec::new(),
 				})))
 			},
 			NodeType::IntLiteral => {
@@ -14372,20 +14374,43 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 						false=>return Err(Error::MismatchJSONType(bit_size_body.into(),JSONType::Number)),
 					},
 				};
-				let belong_body = match raw_node.body.get("belong") {
+				let base_type_body = match raw_node.body.get("base_type") {
 					Some(v)=>v,
-					None=>return Err(Error::MissingField(node_type,"belong")),
+					None=>return Err(Error::MissingField(node_type,"base_type")),
 				};
- 				if !belong_body.is_null() {
-					let belong_body = match belong_body.as_u64() {
+ 				if !base_type_body.is_null() {
+					let base_type_body = match base_type_body.as_u64() {
 						Some(v)=>v,
-						None=>return Err(Error::MismatchJSONType(belong_body.into(),JSONType::Number)),
+						None=>return Err(Error::MismatchJSONType(base_type_body.into(),JSONType::Number)),
 					};
-					let belong_body = match nodes.get(belong_body as usize) {
+					let base_type_body = match nodes.get(base_type_body as usize) {
 						Some(v)=>v,
-						None => return Err(Error::IndexOutOfBounds(belong_body as usize)),
+						None => return Err(Error::IndexOutOfBounds(base_type_body as usize)),
 					};
-					node.borrow_mut().belong = Some(belong_body.try_into()?);
+					let base_type_body = match base_type_body {
+						Node::IdentType(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),base_type_body.into())),
+					};
+					node.borrow_mut().base_type = Some(base_type_body.clone());
+				}
+				let type_arguments_body = match raw_node.body.get("type_arguments") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"type_arguments")),
+				};
+				let type_arguments_body = match type_arguments_body.as_array(){
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(type_arguments_body.into(),JSONType::Array)),
+				};
+				for link in type_arguments_body {
+					let link = match link.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
+					};
+					let type_arguments_body = match nodes.get(link as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(link as usize)),
+					};
+					node.borrow_mut().type_arguments.push(type_arguments_body.try_into()?);
 				}
 			},
 			NodeType::IntLiteral => {
@@ -16501,7 +16526,18 @@ where
 				}
 			}
 		},
-		Node::GenericType(_)=>{},
+		Node::GenericType(node)=>{
+			if let Some(node) = &node.borrow().base_type{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
+			for node in &node.borrow().type_arguments{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
+		},
 		Node::IntLiteral(node)=>{
 			if let Some(node) = &node.borrow().expr_type{
 				if !f.visit(&node.into()){

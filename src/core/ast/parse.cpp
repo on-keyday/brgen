@@ -1245,6 +1245,27 @@ namespace brgen::ast {
                     fmt->depends.push_back(id);
                 }
             }
+
+            // generic type instantiation: `X[T, ...]`
+            s.skip_space();
+            if (auto lb = s.consume_token("[")) {
+                auto generic = std::make_shared<GenericType>(lb->loc, true);
+                generic->base_type = std::move(id);
+                for (;;) {
+                    s.skip_white();
+                    if (s.consume_token("]")) {
+                        break;
+                    }
+                    generic->type_arguments.push_back(parse_type(true));
+                    s.skip_white();
+                    if (s.expect_token("]")) {
+                        continue;
+                    }
+                    s.must_consume_token(",", "to separate type arguments");
+                }
+                return generic;
+            }
+
             return id;
         }
 

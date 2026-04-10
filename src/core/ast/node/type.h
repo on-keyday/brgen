@@ -597,7 +597,8 @@ namespace brgen::ast {
 
     struct GenericType : Type {
         define_node_type(NodeType::generic_type);
-        std::weak_ptr<Member> belong;
+        std::shared_ptr<IdentType> base_type;
+        std::vector<std::shared_ptr<Type>> type_arguments;
 
         GenericType(lexer::Loc l, bool is_explicit = false)
             : Type(l, NodeType::generic_type) {
@@ -610,7 +611,8 @@ namespace brgen::ast {
 
         void dump(auto&& field_) {
             Type::dump(field_);
-            sdebugf(belong);
+            sdebugf(base_type);
+            sdebugf(type_arguments);
         }
     };
 

@@ -3204,7 +3204,8 @@ type GenericType struct {
 	NonDynamicAllocation bool
 	BitAlignment         BitAlignment
 	BitSize              *uint64
-	Belong               Member
+	BaseType             *IdentType
+	TypeArguments        []Type
 }
 
 func (n *GenericType) isType() {}
@@ -5150,7 +5151,8 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				NonDynamicAllocation bool         `json:"non_dynamic_allocation"`
 				BitAlignment         BitAlignment `json:"bit_alignment"`
 				BitSize              *uint64      `json:"bit_size"`
-				Belong               *uintptr     `json:"belong"`
+				BaseType             *uintptr     `json:"base_type"`
+				TypeArguments        []uintptr    `json:"type_arguments"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -5159,8 +5161,12 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.NonDynamicAllocation = tmp.NonDynamicAllocation
 			v.BitAlignment = tmp.BitAlignment
 			v.BitSize = tmp.BitSize
-			if tmp.Belong != nil {
-				v.Belong = n.node[*tmp.Belong].(Member)
+			if tmp.BaseType != nil {
+				v.BaseType = n.node[*tmp.BaseType].(*IdentType)
+			}
+			v.TypeArguments = make([]Type, len(tmp.TypeArguments))
+			for j, k := range tmp.TypeArguments {
+				v.TypeArguments[j] = n.node[k].(Type)
 			}
 		case NodeTypeIntLiteral:
 			v := n.node[i].(*IntLiteral)
@@ -6198,6 +6204,16 @@ func Walk(n Node, f Visitor) {
 			}
 		}
 	case *GenericType:
+		if v.BaseType != nil {
+			if !f.Visit(f, v.BaseType) {
+				return
+			}
+		}
+		for _, w := range v.TypeArguments {
+			if !f.Visit(f, w) {
+				return
+			}
+		}
 	case *IntLiteral:
 		if v.ExprType != nil {
 			if !f.Visit(f, v.ExprType) {

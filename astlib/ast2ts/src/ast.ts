@@ -1059,7 +1059,8 @@ export function isOptionalType(obj: any): obj is OptionalType {
 }
 
 export interface GenericType extends Type {
-	belong: Member|null;
+	base_type: IdentType|null;
+	type_arguments: Type[];
 }
 
 export function isGenericType(obj: any): obj is GenericType {
@@ -2085,7 +2086,8 @@ export function parseAST(obj: JsonAst): ParseResult {
 				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
-				belong: null,
+				base_type: null,
+				type_arguments: [],
 			}
 			c.node.push(n);
 			break;
@@ -4342,14 +4344,24 @@ export function parseAST(obj: JsonAst): ParseResult {
 				throw new Error('invalid node list at GenericType::bit_size');
 			}
 			n.bit_size = on.body.bit_size;
-			if (on.body?.belong !== null && typeof on.body?.belong !== 'number') {
-				throw new Error('invalid node list at GenericType::belong');
+			if (on.body?.base_type !== null && typeof on.body?.base_type !== 'number') {
+				throw new Error('invalid node list at GenericType::base_type');
 			}
-			const tmpbelong = on.body.belong === null ? null : c.node[on.body.belong];
-			if (!(tmpbelong === null || isMember(tmpbelong))) {
-				throw new Error('invalid node list at GenericType::belong');
+			const tmpbase_type = on.body.base_type === null ? null : c.node[on.body.base_type];
+			if (!(tmpbase_type === null || isIdentType(tmpbase_type))) {
+				throw new Error('invalid node list at GenericType::base_type');
 			}
-			n.belong = tmpbelong;
+			n.base_type = tmpbase_type;
+			for (const o of on.body.type_arguments) {
+				if (typeof o !== 'number') {
+					throw new Error('invalid node list at GenericType::type_arguments');
+				}
+				const tmptype_arguments = c.node[o];
+				if (!isType(tmptype_arguments)) {
+					throw new Error('invalid node list at GenericType::type_arguments');
+				}
+				n.type_arguments.push(tmptype_arguments);
+			}
 			break;
 		}
 		case "int_literal": {
@@ -5479,7 +5491,7 @@ export function getChildCount(node: Node): number {
 	    return 0;
      }
      const n :GenericType = node as GenericType;
-		return 0;
+		return  + (n.base_type === null ? 0 : 1) + n.type_arguments.length;
 	}
 	case "int_literal": {
      if (!isIntLiteral(node)) {
@@ -6625,6 +6637,18 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 				break;
 			}
 			const n :GenericType = node as GenericType;
+			if (n.base_type !== null) {
+				const result = fn(fn, n.base_type);
+				if (result === false) {
+					return;
+				}
+			}
+			for (const e of n.type_arguments) {
+				const result = fn(fn, e);
+				if (result === false) {
+					return;
+				}
+			}
 			break;
 		}
 		case "int_literal": {
@@ -7998,6 +8022,18 @@ export async function walkAsync(node: Node, fn: VisitFnAsync<Node>) {
 				break;
 			}
 			const n :GenericType = node as GenericType;
+			if (n.base_type !== null) {
+				const result = await fn(fn, n.base_type);
+				if (result === false) {
+					return;
+				}
+			}
+			for (const e of n.type_arguments) {
+				const result = await fn(fn, e);
+				if (result === false) {
+					return;
+				}
+			}
 			break;
 		}
 		case "int_literal": {

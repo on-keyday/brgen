@@ -1,21 +1,26 @@
-# Phase 1a: type parameter declaration only
+# Phase 1: type parameter declaration and usage
 # Checks:
 #   - `format Foo[T]` parses
 #   - `format Bar[T, U]` parses (multiple parameters)
 #   - type parameter idents land in Format.type_parameters and in the body scope
 #   - usage is IdentUsage::define_type_parameter
+#   - `x :T` resolves T via scope lookup
+#   - `f :Foo[u8]` parses as GenericType { base_type: Foo, type_arguments: [u8] }
 # Not yet covered (later phases):
-#   - using T in field type position
 #   - instantiation / monomorphization
-#   - type checking
+#   - type checking of type arguments vs parameter count
 
 format Foo[T]:
     x :T
     y :u16
 
 format Bar[T, U]:
-    a :u32
-    b :u8
+    a :T
+    b :U
 
 format Plain:
     z :u8
+
+format UsesFoo:
+    f :Foo[u8]
+    g :Bar[u16, u32]
