@@ -115,6 +115,17 @@ ToDo リストです(2025/11/04)
   - array 型とかのユーザー定義型的なのをどうにかする
   - ターゲット言語に合わせてどうするか(事前展開 or ターゲット言語の generics に直すか)
   - 定数引数?
+  - **方針(2026-04-10 検討)**: brgen middle pass で **pre-monomorphize** する方向で行く。EBM・全 ebm2\* は無改修を目標
+    - 決定打はサイズ計算の symbolic 化回避。型変数を middle pass に入れないことで、既存のサイズ計算・依存解決・状態変数解析を無改修で通せる
+    - Go に const generics が無いのでどのみち monomorphize が必要、という事情もある
+    - 後から C++/Rust だけ native template 出力したくなったら、EBM に `TemplateDecl` を上積みして fallback として pre-monomorphize を残せばよい(Phase 1 の作業は無駄にならない)
+  - Phase 1 スコープ:
+    - `format Foo[T]` 宣言のみ許可。fn 内 generic は禁止
+    - 型制約は `T: format` のみ。`sizeof(T)` や type-level match は Phase 2 送り
+    - 構文は `Foo[T]`。配列リテラルが存在しないので衝突無し。typing.cpp の既存 rewrite 機構(`ident_to_type_literal` / `call_to_cast` / `typing_index`)と同じ理屈で expr 位置はほぼ無改修
+    - 型位置は `parse_type` (parse.cpp:1159) の IdentType 生成後に 10 行程度足して `[...]` を受ける
+    - middle pass の最初で instantiation 閉包計算 → deep copy + substitute → 具象 format に展開
+    - AST ノード追加は `./build.bat generate` で astlib 側は自動追従
 
 - カスタムフォーマットとかでエンコードしたバイナリ列の取得とかデコードしたバイト列から構造体にするみたいなのを簡単にする構文を導入する?
 - slice 構文の導入?
