@@ -3460,18 +3460,20 @@ func (n *Field) GetLoc() Loc {
 }
 
 type Format struct {
-	Loc            Loc
-	Comment        Node
-	Belong         Member
-	BelongStruct   *StructType
-	Ident          *Ident
-	Body           *IndentBlock
-	EncodeFn       *Function
-	DecodeFn       *Function
-	CastFns        []*Function
-	Depends        []*IdentType
-	StateVariables []*Field
-	TypeParameters []*TypeParameter
+	Loc              Loc
+	Comment          Node
+	Belong           Member
+	BelongStruct     *StructType
+	Ident            *Ident
+	Body             *IndentBlock
+	EncodeFn         *Function
+	DecodeFn         *Function
+	CastFns          []*Function
+	Depends          []*IdentType
+	StateVariables   []*Field
+	TypeParameters   []*TypeParameter
+	GenericBase      *Format
+	GenericArguments []Type
 }
 
 func (n *Format) isMember() {}
@@ -5345,17 +5347,19 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeFormat:
 			v := n.node[i].(*Format)
 			var tmp struct {
-				Comment        *uintptr  `json:"comment"`
-				Belong         *uintptr  `json:"belong"`
-				BelongStruct   *uintptr  `json:"belong_struct"`
-				Ident          *uintptr  `json:"ident"`
-				Body           *uintptr  `json:"body"`
-				EncodeFn       *uintptr  `json:"encode_fn"`
-				DecodeFn       *uintptr  `json:"decode_fn"`
-				CastFns        []uintptr `json:"cast_fns"`
-				Depends        []uintptr `json:"depends"`
-				StateVariables []uintptr `json:"state_variables"`
-				TypeParameters []uintptr `json:"type_parameters"`
+				Comment          *uintptr  `json:"comment"`
+				Belong           *uintptr  `json:"belong"`
+				BelongStruct     *uintptr  `json:"belong_struct"`
+				Ident            *uintptr  `json:"ident"`
+				Body             *uintptr  `json:"body"`
+				EncodeFn         *uintptr  `json:"encode_fn"`
+				DecodeFn         *uintptr  `json:"decode_fn"`
+				CastFns          []uintptr `json:"cast_fns"`
+				Depends          []uintptr `json:"depends"`
+				StateVariables   []uintptr `json:"state_variables"`
+				TypeParameters   []uintptr `json:"type_parameters"`
+				GenericBase      *uintptr  `json:"generic_base"`
+				GenericArguments []uintptr `json:"generic_arguments"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -5396,6 +5400,13 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.TypeParameters = make([]*TypeParameter, len(tmp.TypeParameters))
 			for j, k := range tmp.TypeParameters {
 				v.TypeParameters[j] = n.node[k].(*TypeParameter)
+			}
+			if tmp.GenericBase != nil {
+				v.GenericBase = n.node[*tmp.GenericBase].(*Format)
+			}
+			v.GenericArguments = make([]Type, len(tmp.GenericArguments))
+			for j, k := range tmp.GenericArguments {
+				v.GenericArguments[j] = n.node[k].(Type)
 			}
 		case NodeTypeState:
 			v := n.node[i].(*State)
@@ -6304,6 +6315,11 @@ func Walk(n Node, f Visitor) {
 			}
 		}
 		for _, w := range v.TypeParameters {
+			if !f.Visit(f, w) {
+				return
+			}
+		}
+		for _, w := range v.GenericArguments {
 			if !f.Visit(f, w) {
 				return
 			}

@@ -45,6 +45,8 @@ PARALLEL_BUILD = os.getenv("PARALLEL_BUILD", build_config.get("PARALLEL_BUILD", 
 CXX_COMPILER = os.getenv("FUTILS_CXX_COMPILER") or "clang++"
 C_COMPILER = os.getenv("FUTILS_C_COMPILER") or "clang"
 
+TARGET = os.getenv("TARGET", "")
+
 IS_MACOS = platform.system() == "Darwin"
 S2J_LIB = "0" if IS_MACOS else "1"
 
@@ -192,9 +194,11 @@ def build_native():
         stdout=sys.stdout,
         stderr=sys.stderr,
     )
-    ninja_cmd = ["ninja", "-C", BUILD_DIR]
+    ninja_cmd = ["ninja", "-C", BUILD_DIR] 
     if PARALLEL_BUILD:
         ninja_cmd += ["-j", str(PARALLEL_BUILD)]
+    if TARGET:
+        ninja_cmd += [TARGET]
     subprocess.run(ninja_cmd, check=True, stdout=sys.stdout, stderr=sys.stderr)
     subprocess.run(
         ["ninja", "-C", BUILD_DIR, "install"],
@@ -215,6 +219,8 @@ def build_wasm():
         if os.name == "nt":
             # Windows: source emsdk inline via PowerShell for each command
             parallel = f" -j {PARALLEL_BUILD}" if PARALLEL_BUILD else ""
+            if TARGET:
+                parallel += f" {TARGET}"
             cmd_run(
                 f'emcmake cmake -G Ninja "-DCMAKE_BUILD_TYPE={BUILD_TYPE}"'
                 f' "-DCMAKE_INSTALL_PREFIX={INSTALL_PREFIX}/web/dev/src" -S . -B {BUILD_DIR}',
@@ -245,6 +251,8 @@ def build_wasm():
             ninja_cmd = ["ninja", "-C", BUILD_DIR]
             if PARALLEL_BUILD:
                 ninja_cmd += ["-j", str(PARALLEL_BUILD)]
+            if TARGET:
+                ninja_cmd += [TARGET]
             subprocess.run(ninja_cmd, check=True, stdout=sys.stdout, stderr=sys.stderr)
             subprocess.run(
                 ["ninja", "-C", BUILD_DIR, "install"],

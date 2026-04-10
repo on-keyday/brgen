@@ -5,7 +5,9 @@
 #include "replacer.h"
 #include "../ast/tool/extract_config.h"
 #include "../ast/tool/eval.h"
+#include "size_eval.h"
 #include <core/ast/tool/compare.h>
+#include <algorithm>
 #include <list>
 #include <memory>
 #include <set>
@@ -25,40 +27,6 @@ namespace brgen::middle {
                 return ident->base.lock();
             }
             return typ;
-        }
-
-        static std::optional<size_t> try_compute_bit_size(const std::shared_ptr<ast::Type>& type, std::set<ast::Type*>& visited) {
-            if (!type) return std::nullopt;
-            if (type->bit_size) return type->bit_size;
-            if (!visited.insert(type.get()).second) return std::nullopt;
-            if (auto ident = ast::as<ast::IdentType>(type)) {
-                return try_compute_bit_size(ident->base.lock(), visited);
-            }
-            if (auto st = ast::as<ast::StructType>(type)) {
-                size_t total = 0;
-                for (auto& m : st->fields) {
-                    auto f = ast::as<ast::Field>(m);
-                    if (!f || !f->field_type) return std::nullopt;
-                    auto sz = try_compute_bit_size(f->field_type, visited);
-                    if (!sz) return std::nullopt;
-                    total += *sz;
-                }
-                return total;
-            }
-            if (auto arr = ast::as<ast::ArrayType>(type)) {
-                if (!arr->length_value || !arr->element_type) return std::nullopt;
-                auto elem_sz = try_compute_bit_size(arr->element_type, visited);
-                if (!elem_sz) return std::nullopt;
-                return *arr->length_value * *elem_sz;
-            }
-            return std::nullopt;
-        }
-
-        static std::optional<size_t> try_compute_byte_size(const std::shared_ptr<ast::Type>& type) {
-            std::set<ast::Type*> visited;
-            auto bit_sz = try_compute_bit_size(type, visited);
-            if (!bit_sz || *bit_sz % 8 != 0) return std::nullopt;
-            return *bit_sz / 8;
         }
 
         bool equal_type(const std::shared_ptr<ast::Type>& left, const std::shared_ptr<ast::Type>& right) {
@@ -931,7 +899,8 @@ namespace brgen::middle {
             return nullptr;
         }
 
-        std::shared_ptr<ast::StructType> lookup_struct(const std::shared_ptr<ast::Type>& typ) {
+        std::shared_ptr<ast::StructType> lookup_struct(const std::shared_ptr<ast::Type>& typ,
+                                                        std::shared_ptr<ast::GenericType>* via_generic = nullptr) {
             auto t = typ;
             if (auto ident = ast::as<ast::IdentType>(t)) {
                 auto b = ident->base.lock();
@@ -941,10 +910,73 @@ namespace brgen::middle {
                 }
                 t = b;
             }
+            if (auto gt = ast::as<ast::GenericType>(t)) {
+                if (via_generic) {
+                    *via_generic = ast::cast_to<ast::GenericType>(t);
+                }
+                if (gt->base_type) {
+                    auto b = gt->base_type->base.lock();
+                    if (b) t = b;
+                }
+            }
             if (ast::as<ast::StructType>(t)) {
                 return ast::cast_to<ast::StructType>(t);
             }
             return nullptr;
+        }
+
+        // Walk `ty`, replacing any IdentType that references one of `fmt`'s
+        // type parameters with the corresponding entry in `args`. Compound
+        // types are cloned shallowly so the raw generic's AST is left intact.
+        // The clone carries the substituted element through MemberAccess /
+        // Index chains so downstream typing sees a concrete type instead of
+        // the unresolved T, which would otherwise trip binop type checks.
+        std::shared_ptr<ast::Type> substitute_type_via_param_map(
+            const std::shared_ptr<ast::Type>& ty,
+            ast::Format* fmt,
+            const std::vector<std::shared_ptr<ast::Type>>& args) {
+            if (!ty) return ty;
+            if (auto it = ast::as<ast::IdentType>(ty); it && it->ident) {
+                auto def_raw = ast::as<ast::Ident>(it->ident->base.lock());
+                if (def_raw) {
+                    for (size_t i = 0; i < fmt->type_parameters.size(); ++i) {
+                        auto& tp = fmt->type_parameters[i];
+                        if (tp && tp->ident.get() == def_raw) {
+                            return args[i];
+                        }
+                    }
+                }
+                return ty;
+            }
+            if (auto arr = ast::as<ast::ArrayType>(ty)) {
+                auto new_elem = substitute_type_via_param_map(arr->element_type, fmt, args);
+                if (new_elem.get() == arr->element_type.get()) return ty;
+                auto new_arr = std::make_shared<ast::ArrayType>(
+                    arr->loc, std::shared_ptr<ast::Expr>(arr->length), arr->end_loc,
+                    std::shared_ptr<ast::Type>(new_elem));
+                new_arr->length_value = arr->length_value;
+                new_arr->bit_alignment = arr->bit_alignment;
+                new_arr->non_dynamic_allocation = arr->non_dynamic_allocation;
+                return new_arr;
+            }
+            return ty;
+        }
+
+        // Resolve the type parameters of a GenericType instance and
+        // substitute them inside `ty`. Used when accessing a field through a
+        // generic (`v.data` where `v :Vector[u8]`) so the expression type at
+        // the use site is the concrete substituted type.
+        std::shared_ptr<ast::Type> substitute_type_params_via_generic(
+            const std::shared_ptr<ast::Type>& ty,
+            const std::shared_ptr<ast::GenericType>& gt) {
+            if (!ty || !gt || !gt->base_type) return ty;
+            auto struct_base = gt->base_type->base.lock();
+            auto st = ast::as<ast::StructType>(struct_base);
+            if (!st) return ty;
+            auto fmt = ast::as<ast::Format>(st->base.lock());
+            if (!fmt) return ty;
+            if (fmt->type_parameters.size() != gt->type_arguments.size()) return ty;
+            return substitute_type_via_param_map(ty, fmt, gt->type_arguments);
         }
 
         std::shared_ptr<ast::EnumType> lookup_enum(const std::shared_ptr<ast::Type>& typ) {
@@ -1149,10 +1181,11 @@ namespace brgen::middle {
                 return;
             }
             std::shared_ptr<ast::Member> stmt;
+            std::shared_ptr<ast::GenericType> via_generic;
             if (auto union_ = lookup_union(selector->target->expr_type)) {
                 error(selector->target->loc, "union type is not supported yet").report();
             }
-            else if (auto type = lookup_struct(selector->target->expr_type)) {
+            else if (auto type = lookup_struct(selector->target->expr_type, &via_generic)) {
                 stmt = type->lookup(selector->member->ident);
                 if (!stmt) {
                     warnings.warning(selector->member->loc, "member ", selector->member->ident, " is not defined");
@@ -1170,8 +1203,12 @@ namespace brgen::middle {
                 return;
             }
             if (auto field = ast::as<ast::Field>(stmt)) {
-                selector->expr_type = field->field_type;
-                selector->member->expr_type = field->field_type;
+                auto ft = field->field_type;
+                if (via_generic) {
+                    ft = substitute_type_params_via_generic(ft, via_generic);
+                }
+                selector->expr_type = ft;
+                selector->member->expr_type = ft;
                 selector->base = stmt->ident;
             }
             else if (auto fn = ast::as<ast::Function>(stmt)) {
@@ -1558,16 +1595,7 @@ namespace brgen::middle {
             }
             if (auto s = ast::as<ast::SizeOf>(expr)) {
                 typing_expr(s->target, false);
-                auto target_type = s->target->expr_type;
-                if (auto type_lit = ast::as<ast::TypeLiteral>(s->target)) {
-                    target_type = type_lit->type_literal;
-                }
-                auto byte_size = try_compute_byte_size(target_type);
-                if (byte_size) {
-                    s->evaluated_value = *byte_size;
-                    s->constant_level = ast::ConstantLevel::constant;
-                }
-                else {
+                if (!evaluate_sizeof_node(s)) {
                     s->constant_level = ast::ConstantLevel::variable;
                 }
             }
@@ -1850,15 +1878,7 @@ namespace brgen::middle {
             if (ast::is_any_range(arr_type->length)) {
                 arr_type->length->constant_level = ast::ConstantLevel::variable;
             }
-            // if a->length->constant_level == constant,
-            // and eval result has integer type, then a->length_value is set and a->has_const_length is true
-            if (arr_type->length && arr_type->length->constant_level == ast::ConstantLevel::constant) {
-                ast::tool::Evaluator eval;
-                eval.ident_mode = ast::tool::EvalIdentMode::resolve_ident;
-                if (auto val = eval.eval_as<ast::tool::EResultType::integer>(arr_type->length)) {
-                    arr_type->length_value = val->get<ast::tool::EResultType::integer>();
-                }
-            }
+            evaluate_array_length(arr_type);
             // TODO(on-keyday): future, separate phase of typing to disable warning effectively
             if (arr_type->length && arr_type->length->expr_type) {
                 for (auto it = warnings.locations.begin(); it != warnings.locations.end();) {
@@ -1975,6 +1995,15 @@ namespace brgen::middle {
                     return;
                 }
                 do_traverse();
+                if (auto fmt = ast::as<ast::Format>(node)) {
+                    auto& d = fmt->depends;
+                    d.erase(std::remove_if(d.begin(), d.end(), [](const std::weak_ptr<ast::IdentType>& w) {
+                        auto it = w.lock();
+                        if (!it || !it->ident) return false;
+                        auto base_ident = ast::as<ast::Ident>(it->ident->base.lock());
+                        return base_ident && base_ident->usage == ast::IdentUsage::define_type_parameter;
+                    }), d.end());
+                }
                 if (auto arr_type = ast::as<ast::ArrayType>(node)) {
                     typing_array_type(arr_type);
                 }

@@ -8842,6 +8842,8 @@ pub struct Format {
 	pub depends: Vec<Weak<RefCell<IdentType>>>,
 	pub state_variables: Vec<Weak<RefCell<Field>>>,
 	pub type_parameters: Vec<Rc<RefCell<TypeParameter>>>,
+	pub generic_base: Option<Weak<RefCell<Format>>>,
+	pub generic_arguments: Vec<Type>,
 }
 
 impl From<&Rc<RefCell<Format>>> for NodeType {
@@ -10248,6 +10250,8 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 				depends: Vec::new(),
 				state_variables: Vec::new(),
 				type_parameters: Vec::new(),
+				generic_base: None,
+				generic_arguments: Vec::new(),
 				})))
 			},
 			NodeType::State => {
@@ -15206,6 +15210,44 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 					};
 					node.borrow_mut().type_parameters.push(type_parameters_body.clone());
 				}
+				let generic_base_body = match raw_node.body.get("generic_base") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"generic_base")),
+				};
+ 				if !generic_base_body.is_null() {
+					let generic_base_body = match generic_base_body.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(generic_base_body.into(),JSONType::Number)),
+					};
+					let generic_base_body = match nodes.get(generic_base_body as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(generic_base_body as usize)),
+					};
+					let generic_base_body = match generic_base_body {
+						Node::Format(node)=>node,
+						x =>return Err(Error::MismatchNodeType(x.into(),generic_base_body.into())),
+					};
+					node.borrow_mut().generic_base = Some(Rc::downgrade(&generic_base_body));
+				}
+				let generic_arguments_body = match raw_node.body.get("generic_arguments") {
+					Some(v)=>v,
+					None=>return Err(Error::MissingField(node_type,"generic_arguments")),
+				};
+				let generic_arguments_body = match generic_arguments_body.as_array(){
+					Some(v)=>v,
+					None=>return Err(Error::MismatchJSONType(generic_arguments_body.into(),JSONType::Array)),
+				};
+				for link in generic_arguments_body {
+					let link = match link.as_u64() {
+						Some(v)=>v,
+						None=>return Err(Error::MismatchJSONType(link.into(),JSONType::Number)),
+					};
+					let generic_arguments_body = match nodes.get(link as usize) {
+						Some(v)=>v,
+						None => return Err(Error::IndexOutOfBounds(link as usize)),
+					};
+					node.borrow_mut().generic_arguments.push(generic_arguments_body.try_into()?);
+				}
 			},
 			NodeType::State => {
 				let node = nodes[i].clone();
@@ -16636,6 +16678,11 @@ where
 				}
 			}
 			for node in &node.borrow().type_parameters{
+				if !f.visit(&node.into()){
+					return;
+				}
+			}
+			for node in &node.borrow().generic_arguments{
 				if !f.visit(&node.into()){
 					return;
 				}

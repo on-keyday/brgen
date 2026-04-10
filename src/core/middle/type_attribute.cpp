@@ -4,14 +4,29 @@
 #include <set>
 #include <core/ast/tool/eval.h>
 #include <core/ast/node/ast_enum.h>
+#include "size_eval.h"
 
 namespace brgen::middle {
+
+    // Raw generic formats (those still holding type_parameters after monomorphize)
+    // have fields whose types reference unresolved type parameters, so size /
+    // alignment / non-dynamic analysis on them produces meaningless results.
+    // The concrete instances live in monomorphized clones; the raw generic
+    // is kept for tooling (hover, reference) only and must be skipped by
+    // every size-ish analysis pass.
+    static bool is_raw_generic_format(const std::shared_ptr<ast::Node>& n) {
+        auto fmt = ast::as<ast::Format>(n);
+        return fmt && !fmt->type_parameters.empty();
+    }
 
     struct TypeAttribute {
         void mark_recursive_reference(const std::shared_ptr<ast::Node>& node) {
             std::set<ast::StructType*> typ;
             std::set<ast::Type*> tracked;
             auto traverse_fn = [&](auto&& f, const std::shared_ptr<ast::Node>& n) -> void {
+                if (is_raw_generic_format(n)) {
+                    return;
+                }
                 if (auto t = ast::as<ast::StructType>(n); t) {
                     if (tracked.find(t) != tracked.end()) {
                         return;
@@ -45,6 +60,9 @@ namespace brgen::middle {
         void detect_non_dynamic_type(const std::shared_ptr<ast::Node>& node) {
             std::set<ast::Type*> tracked;
             auto trv = [&](auto&& f, const std::shared_ptr<ast::Node>& n) -> void {
+                if (is_raw_generic_format(n)) {
+                    return;
+                }
                 if (auto ty = ast::as<ast::Type>(n)) {
                     if (tracked.find(ty) != tracked.end()) {
                         return;  // already detected
@@ -389,6 +407,9 @@ namespace brgen::middle {
         void analyze_bit_size_and_alignment_internal(const std::shared_ptr<ast::Node>& node, AnalyzeMode mode) {
             std::set<ast::Type*> tracked;
             auto trv = [&](auto&& f, const std::shared_ptr<ast::Node>& n) -> void {
+                if (is_raw_generic_format(n)) {
+                    return;
+                }
                 if (auto ty = ast::as<ast::Type>(n); ty) {
                     if (tracked.find(ty) != tracked.end()) {
                         return;  // already detected
@@ -520,19 +541,23 @@ namespace brgen::middle {
         TypeAttribute().detect_non_dynamic_type(node);
     }
 
+    // Post-order so SizeOf nodes nested inside an ArrayType's length
+    // expression are resolved before the array length evaluator consumes
+    // them. Idempotent: both helpers early-return when already resolved.
     void evaluate_sizeof(const std::shared_ptr<ast::Node>& node) {
         auto trv = [&](auto&& self, const std::shared_ptr<ast::Node>& n) -> void {
-            if (auto s = ast::as<ast::SizeOf>(n)) {
-                if (!s->evaluated_value && s->target && s->target->expr_type &&
-                    s->target->expr_type->bit_size &&
-                    *s->target->expr_type->bit_size % 8 == 0) {
-                    s->evaluated_value = *s->target->expr_type->bit_size / 8;
-                    s->constant_level = ast::ConstantLevel::constant;
-                }
-            }
+            if (!n) return;
             ast::traverse(n, [&](auto&& child) {
                 self(self, child);
             });
+            if (auto s = ast::as<ast::SizeOf>(n)) {
+                evaluate_sizeof_node(s);
+                return;
+            }
+            if (auto a = ast::as<ast::ArrayType>(n)) {
+                evaluate_array_length(a);
+                return;
+            }
         };
         trv(trv, node);
     }

@@ -24,3 +24,41 @@ format Plain:
 format UsesFoo:
     f :Foo[u8]
     g :Bar[u16, u32]
+    x :Foo[u32]
+    z :Foo[Plain]
+    b :Bar[Plain,u64]
+    b2 :Bar[u64,Plain]
+    match z.x.z:
+        32 => field :u8
+    match b.a.z:
+        64 => field :u64
+
+
+format Vector[T]:
+    len :u16
+    len % sizeof(T) == 0
+    data :[len / sizeof(T)]T
+
+format Place[T]:
+    place :[sizeof(T)]u8
+
+format UsesVector:
+    v :Vector[u8]
+    match v.data.length:
+        0 => field :u8
+        ..:
+            x ::= v.data[0] 
+            x == 1
+
+    place :Place[u32]
+
+format Vector2[T]:
+    length :u16
+    length % sizeof(T) == 0
+    length >= 0 && length <= 0xfffe
+    data :[length / sizeof(T)]T
+
+format CipherSuites:
+    cipher_suites :Vector2[u16]
+    cipher_suites.length >= 2
+

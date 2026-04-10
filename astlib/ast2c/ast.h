@@ -1427,6 +1427,9 @@ struct ast2c_Format {
 	size_t state_variables_size;
 	ast2c_TypeParameter** type_parameters;
 	size_t type_parameters_size;
+	ast2c_Format* generic_base;
+	ast2c_Type** generic_arguments;
+	size_t generic_arguments_size;
 };
 
 // returns 1 if succeed 0 if failed

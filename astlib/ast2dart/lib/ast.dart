@@ -951,6 +951,8 @@ class Format extends Member {
     List<IdentType>? depends = [];
     List<Field>? stateVariables = [];
     List<TypeParameter>? typeParameters = [];
+    Format? genericBase;
+    List<Type>? genericArguments = [];
 factory Format.fromJson(Map<String, dynamic> json) => _$FormatFromJson(json);
 }
 @JsonSerializable()

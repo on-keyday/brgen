@@ -1156,6 +1156,8 @@ export interface Format extends Member {
 	depends: IdentType[];
 	state_variables: Field[];
 	type_parameters: TypeParameter[];
+	generic_base: Format|null;
+	generic_arguments: Type[];
 }
 
 export function isFormat(obj: any): obj is Format {
@@ -2214,6 +2216,8 @@ export function parseAST(obj: JsonAst): ParseResult {
 				depends: [],
 				state_variables: [],
 				type_parameters: [],
+				generic_base: null,
+				generic_arguments: [],
 			}
 			c.node.push(n);
 			break;
@@ -4757,6 +4761,24 @@ export function parseAST(obj: JsonAst): ParseResult {
 				}
 				n.type_parameters.push(tmptype_parameters);
 			}
+			if (on.body?.generic_base !== null && typeof on.body?.generic_base !== 'number') {
+				throw new Error('invalid node list at Format::generic_base');
+			}
+			const tmpgeneric_base = on.body.generic_base === null ? null : c.node[on.body.generic_base];
+			if (!(tmpgeneric_base === null || isFormat(tmpgeneric_base))) {
+				throw new Error('invalid node list at Format::generic_base');
+			}
+			n.generic_base = tmpgeneric_base;
+			for (const o of on.body.generic_arguments) {
+				if (typeof o !== 'number') {
+					throw new Error('invalid node list at Format::generic_arguments');
+				}
+				const tmpgeneric_arguments = c.node[o];
+				if (!isType(tmpgeneric_arguments)) {
+					throw new Error('invalid node list at Format::generic_arguments');
+				}
+				n.generic_arguments.push(tmpgeneric_arguments);
+			}
 			break;
 		}
 		case "state": {
@@ -5554,7 +5576,7 @@ export function getChildCount(node: Node): number {
 	    return 0;
      }
      const n :Format = node as Format;
-		return  + (n.comment === null ? 0 : 1) + (n.ident === null ? 0 : 1) + (n.body === null ? 0 : 1) + n.type_parameters.length;
+		return  + (n.comment === null ? 0 : 1) + (n.ident === null ? 0 : 1) + (n.body === null ? 0 : 1) + n.type_parameters.length + n.generic_arguments.length;
 	}
 	case "state": {
      if (!isState(node)) {
@@ -6809,6 +6831,12 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 				}
 			}
 			for (const e of n.type_parameters) {
+				const result = fn(fn, e);
+				if (result === false) {
+					return;
+				}
+			}
+			for (const e of n.generic_arguments) {
 				const result = fn(fn, e);
 				if (result === false) {
 					return;
@@ -8194,6 +8222,12 @@ export async function walkAsync(node: Node, fn: VisitFnAsync<Node>) {
 				}
 			}
 			for (const e of n.type_parameters) {
+				const result = await fn(fn, e);
+				if (result === false) {
+					return;
+				}
+			}
+			for (const e of n.generic_arguments) {
 				const result = await fn(fn, e);
 				if (result === false) {
 					return;

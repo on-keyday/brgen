@@ -23,6 +23,11 @@ namespace brgen::ast {
         std::vector<std::weak_ptr<IdentType>> depends;
         std::vector<std::weak_ptr<Field>> state_variables;
         std::vector<std::shared_ptr<TypeParameter>> type_parameters;
+        // Set on a monomorphized clone: points at the raw generic Format the
+        // clone was instantiated from, plus the concrete type arguments used.
+        // Empty on raw / non-generic formats.
+        std::weak_ptr<Format> generic_base;
+        std::vector<std::shared_ptr<Type>> generic_arguments;
 
         Format(lexer::Loc l)
             : Member(l, NodeType::format) {}
@@ -40,6 +45,8 @@ namespace brgen::ast {
             sdebugf(depends);
             sdebugf(state_variables);
             sdebugf(type_parameters);
+            sdebugf(generic_base);
+            sdebugf(generic_arguments);
         }
     };
 

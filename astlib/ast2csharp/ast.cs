@@ -801,6 +801,8 @@ public class Format : Member{
 	public List<IdentType>? Depends{get;set;}
 	public List<Field>? StateVariables{get;set;}
 	public List<TypeParameter>? TypeParameters{get;set;}
+	public Format? GenericBase{get;set;}
+	public List<Type>? GenericArguments{get;set;}
 }
 public class State : Member{
 	public Loc Loc{get;set;}
@@ -1667,6 +1669,8 @@ public static class Ast {
                node.Depends = ast.Node[i].Body[depends];
                node.StateVariables = ast.Node[i].Body[state_variables];
                node.TypeParameters = ast.Node[i].Body[type_parameters];
+               node.GenericBase = ast.Node[i].Body[generic_base];
+               node.GenericArguments = ast.Node[i].Body[generic_arguments];
            case NodeType.State:
                var node = nodes[i] as State;
                node.Loc = ast.Node[i].Body[loc];

@@ -688,6 +688,8 @@ class Format(Member):
     depends: List[IdentType]
     state_variables: List[Field]
     type_parameters: List[TypeParameter]
+    generic_base: Optional[Format]
+    generic_arguments: List[Type]
 
 
 class State(Member):
@@ -2191,6 +2193,12 @@ def ast2node(ast :JsonAst) -> Program:
                 node[i].depends = [(node[x] if isinstance(node[x],IdentType) else raiseError(TypeError('type mismatch at Format::depends'))) for x in ast.node[i].body["depends"]]
                 node[i].state_variables = [(node[x] if isinstance(node[x],Field) else raiseError(TypeError('type mismatch at Format::state_variables'))) for x in ast.node[i].body["state_variables"]]
                 node[i].type_parameters = [(node[x] if isinstance(node[x],TypeParameter) else raiseError(TypeError('type mismatch at Format::type_parameters'))) for x in ast.node[i].body["type_parameters"]]
+                if ast.node[i].body["generic_base"] is not None:
+                    x = node[ast.node[i].body["generic_base"]]
+                    node[i].generic_base = x if isinstance(x,Format) else raiseError(TypeError('type mismatch at Format::generic_base'))
+                else:
+                    node[i].generic_base = None
+                node[i].generic_arguments = [(node[x] if isinstance(node[x],Type) else raiseError(TypeError('type mismatch at Format::generic_arguments'))) for x in ast.node[i].body["generic_arguments"]]
             case NodeType.STATE:
                 if ast.node[i].body["comment"] is not None:
                     x = node[ast.node[i].body["comment"]]
@@ -2825,6 +2833,9 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
                   return
           for i in range(len(x.type_parameters)):
               if f(f,x.type_parameters[i]) == False:
+                  return
+          for i in range(len(x.generic_arguments)):
+              if f(f,x.generic_arguments[i]) == False:
                   return
         case x if isinstance(x,State):
           if x.comment is not None:

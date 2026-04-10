@@ -3666,6 +3666,8 @@ int ast2c_Format_parse(ast2c_Ast* ast,ast2c_Format* s,ast2c_json_handlers* h, vo
 	s->depends = NULL;
 	s->state_variables = NULL;
 	s->type_parameters = NULL;
+	s->generic_base = NULL;
+	s->generic_arguments = NULL;
 	void* comment = h->object_get(h, obj_body, "comment");
 	void* belong = h->object_get(h, obj_body, "belong");
 	void* belong_struct = h->object_get(h, obj_body, "belong_struct");
@@ -3677,6 +3679,8 @@ int ast2c_Format_parse(ast2c_Ast* ast,ast2c_Format* s,ast2c_json_handlers* h, vo
 	void* depends = h->object_get(h, obj_body, "depends");
 	void* state_variables = h->object_get(h, obj_body, "state_variables");
 	void* type_parameters = h->object_get(h, obj_body, "type_parameters");
+	void* generic_base = h->object_get(h, obj_body, "generic_base");
+	void* generic_arguments = h->object_get(h, obj_body, "generic_arguments");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_Format::loc is null"); } return 0; }
 	if (!comment) { if(h->error) { h->error(h,comment, "ast2c_Format::comment is null"); } return 0; }
 	if (!belong) { if(h->error) { h->error(h,belong, "ast2c_Format::belong is null"); } return 0; }
@@ -3703,6 +3707,12 @@ int ast2c_Format_parse(ast2c_Ast* ast,ast2c_Format* s,ast2c_json_handlers* h, vo
 	if (!type_parameters) { if(h->error) { h->error(h,type_parameters, "ast2c_Format::type_parameters is null"); } return 0; }
 	if(!h->array_size(h, type_parameters,&s->type_parameters_size)) {
 		if(h->error) { h->error(h,type_parameters, "failed to get array size of ast2c_Format::type_parameters"); }
+		return NULL;
+	}
+	if (!generic_base) { if(h->error) { h->error(h,generic_base, "ast2c_Format::generic_base is null"); } return 0; }
+	if (!generic_arguments) { if(h->error) { h->error(h,generic_arguments, "ast2c_Format::generic_arguments is null"); } return 0; }
+	if(!h->array_size(h, generic_arguments,&s->generic_arguments_size)) {
+		if(h->error) { h->error(h,generic_arguments, "failed to get array size of ast2c_Format::generic_arguments"); }
 		return NULL;
 	}
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
