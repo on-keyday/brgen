@@ -1,0 +1,21 @@
+# Phase 1a: type parameter declaration only
+# Checks:
+#   - `format Foo[T]` parses
+#   - `format Bar[T, U]` parses (multiple parameters)
+#   - type parameter idents land in Format.type_parameters and in the body scope
+#   - usage is IdentUsage::define_type_parameter
+# Not yet covered (later phases):
+#   - using T in field type position
+#   - instantiation / monomorphization
+#   - type checking
+
+format Foo[T]:
+    x :T
+    y :u16
+
+format Bar[T, U]:
+    a :u32
+    b :u8
+
+format Plain:
+    z :u8

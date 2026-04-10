@@ -77,6 +77,7 @@ State,
 Enum,
 EnumMember,
 Function,
+TypeParameter,
 }
 public enum TokenTag {
 Indent,
@@ -160,6 +161,7 @@ DefineEnumMember,
 DefineFn,
 DefineCastFn,
 DefineArg,
+DefineTypeParameter,
 ReferenceType,
 ReferenceMember,
 ReferenceMemberType,
@@ -797,6 +799,7 @@ public class Format : Member{
 	public List<Function>? CastFns{get;set;}
 	public List<IdentType>? Depends{get;set;}
 	public List<Field>? StateVariables{get;set;}
+	public List<TypeParameter>? TypeParameters{get;set;}
 }
 public class State : Member{
 	public Loc Loc{get;set;}
@@ -839,6 +842,13 @@ public class Function : Member{
 	public IndentBlock? Body{get;set;}
 	public FunctionType? FuncType{get;set;}
 	public bool IsCast{get;set;}
+}
+public class TypeParameter : Member{
+	public Loc Loc{get;set;}
+	public Node? Comment{get;set;}
+	public Member? Belong{get;set;}
+	public StructType? BelongStruct{get;set;}
+	public Ident? Ident{get;set;}
 }
 public class Scope {
 	public Scope? Prev{get;set;}
@@ -1125,6 +1135,9 @@ public static class Ast {
                break;
            case NodeType.Function:
                nodes[i] = new Function() { Loc = ast.Node[i].Loc };
+               break;
+           case NodeType.TypeParameter:
+               nodes[i] = new TypeParameter() { Loc = ast.Node[i].Loc };
                break;
            }
        }
@@ -1651,6 +1664,7 @@ public static class Ast {
                node.CastFns = ast.Node[i].Body[cast_fns];
                node.Depends = ast.Node[i].Body[depends];
                node.StateVariables = ast.Node[i].Body[state_variables];
+               node.TypeParameters = ast.Node[i].Body[type_parameters];
            case NodeType.State:
                var node = nodes[i] as State;
                node.Loc = ast.Node[i].Body[loc];
@@ -1693,6 +1707,13 @@ public static class Ast {
                node.Body = ast.Node[i].Body[body];
                node.FuncType = ast.Node[i].Body[func_type];
                node.IsCast = ast.Node[i].Body[is_cast];
+           case NodeType.TypeParameter:
+               var node = nodes[i] as TypeParameter;
+               node.Loc = ast.Node[i].Body[loc];
+               node.Comment = ast.Node[i].Body[comment];
+               node.Belong = ast.Node[i].Body[belong];
+               node.BelongStruct = ast.Node[i].Body[belong_struct];
+               node.Ident = ast.Node[i].Body[ident];
   }
 }
 }

@@ -84,6 +84,7 @@ const char* ast2c_NodeType_to_string(ast2c_NodeType val) {
 	case AST2C_NODETYPE_ENUM: return "enum";
 	case AST2C_NODETYPE_ENUM_MEMBER: return "enum_member";
 	case AST2C_NODETYPE_FUNCTION: return "function";
+	case AST2C_NODETYPE_TYPE_PARAMETER: return "type_parameter";
 	default: return NULL;
 	}
 }
@@ -381,6 +382,10 @@ int ast2c_NodeType_from_string(const char* str, ast2c_NodeType* out) {
 	}
 	if (strcmp(str, "function") == 0) {
 		*out = AST2C_NODETYPE_FUNCTION;
+		return 1;
+	}
+	if (strcmp(str, "type_parameter") == 0) {
+		*out = AST2C_NODETYPE_TYPE_PARAMETER;
 		return 1;
 	}
 	return 0;
@@ -747,6 +752,7 @@ const char* ast2c_IdentUsage_to_string(ast2c_IdentUsage val) {
 	case AST2C_IDENTUSAGE_DEFINE_FN: return "define_fn";
 	case AST2C_IDENTUSAGE_DEFINE_CAST_FN: return "define_cast_fn";
 	case AST2C_IDENTUSAGE_DEFINE_ARG: return "define_arg";
+	case AST2C_IDENTUSAGE_DEFINE_TYPE_PARAMETER: return "define_type_parameter";
 	case AST2C_IDENTUSAGE_REFERENCE_TYPE: return "reference_type";
 	case AST2C_IDENTUSAGE_REFERENCE_MEMBER: return "reference_member";
 	case AST2C_IDENTUSAGE_REFERENCE_MEMBER_TYPE: return "reference_member_type";
@@ -809,6 +815,10 @@ int ast2c_IdentUsage_from_string(const char* str, ast2c_IdentUsage* out) {
 	}
 	if (strcmp(str, "define_arg") == 0) {
 		*out = AST2C_IDENTUSAGE_DEFINE_ARG;
+		return 1;
+	}
+	if (strcmp(str, "define_type_parameter") == 0) {
+		*out = AST2C_IDENTUSAGE_DEFINE_TYPE_PARAMETER;
 		return 1;
 	}
 	if (strcmp(str, "reference_type") == 0) {
@@ -3648,6 +3658,7 @@ int ast2c_Format_parse(ast2c_Ast* ast,ast2c_Format* s,ast2c_json_handlers* h, vo
 	s->cast_fns = NULL;
 	s->depends = NULL;
 	s->state_variables = NULL;
+	s->type_parameters = NULL;
 	void* comment = h->object_get(h, obj_body, "comment");
 	void* belong = h->object_get(h, obj_body, "belong");
 	void* belong_struct = h->object_get(h, obj_body, "belong_struct");
@@ -3658,6 +3669,7 @@ int ast2c_Format_parse(ast2c_Ast* ast,ast2c_Format* s,ast2c_json_handlers* h, vo
 	void* cast_fns = h->object_get(h, obj_body, "cast_fns");
 	void* depends = h->object_get(h, obj_body, "depends");
 	void* state_variables = h->object_get(h, obj_body, "state_variables");
+	void* type_parameters = h->object_get(h, obj_body, "type_parameters");
 	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_Format::loc is null"); } return 0; }
 	if (!comment) { if(h->error) { h->error(h,comment, "ast2c_Format::comment is null"); } return 0; }
 	if (!belong) { if(h->error) { h->error(h,belong, "ast2c_Format::belong is null"); } return 0; }
@@ -3679,6 +3691,11 @@ int ast2c_Format_parse(ast2c_Ast* ast,ast2c_Format* s,ast2c_json_handlers* h, vo
 	if (!state_variables) { if(h->error) { h->error(h,state_variables, "ast2c_Format::state_variables is null"); } return 0; }
 	if(!h->array_size(h, state_variables,&s->state_variables_size)) {
 		if(h->error) { h->error(h,state_variables, "failed to get array size of ast2c_Format::state_variables"); }
+		return NULL;
+	}
+	if (!type_parameters) { if(h->error) { h->error(h,type_parameters, "ast2c_Format::type_parameters is null"); } return 0; }
+	if(!h->array_size(h, type_parameters,&s->type_parameters_size)) {
+		if(h->error) { h->error(h,type_parameters, "failed to get array size of ast2c_Format::type_parameters"); }
 		return NULL;
 	}
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
@@ -3859,6 +3876,37 @@ int ast2c_Function_parse(ast2c_Ast* ast,ast2c_Function* s,ast2c_json_handlers* h
 	if (!is_cast) { if(h->error) { h->error(h,is_cast, "ast2c_Function::is_cast is null"); } return 0; }
 	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
 		if(h->error) { h->error(h,loc, "failed to parse ast2c_Function::loc"); }
+		goto error;
+	}
+	return 1;
+error:
+	return 0;
+}
+
+// returns 1 if succeed 0 if failed
+int ast2c_TypeParameter_parse(ast2c_Ast* ast,ast2c_TypeParameter* s,ast2c_json_handlers* h, void* obj) {
+	if (!ast||!s||!h||!obj) {
+		if(h->error) { h->error(h,NULL, "invalid argument"); }
+		return 0;
+	}
+	void* loc = h->object_get(h, obj, "loc");
+	void* obj_body = h->object_get(h, obj, "body");
+	if (!obj_body) { if(h->error) { h->error(h,obj_body, "RawNode::obj_body is null"); } return 0; }
+	s->comment = NULL;
+	s->belong = NULL;
+	s->belong_struct = NULL;
+	s->ident = NULL;
+	void* comment = h->object_get(h, obj_body, "comment");
+	void* belong = h->object_get(h, obj_body, "belong");
+	void* belong_struct = h->object_get(h, obj_body, "belong_struct");
+	void* ident = h->object_get(h, obj_body, "ident");
+	if (!loc) { if(h->error) { h->error(h,loc, "ast2c_TypeParameter::loc is null"); } return 0; }
+	if (!comment) { if(h->error) { h->error(h,comment, "ast2c_TypeParameter::comment is null"); } return 0; }
+	if (!belong) { if(h->error) { h->error(h,belong, "ast2c_TypeParameter::belong is null"); } return 0; }
+	if (!belong_struct) { if(h->error) { h->error(h,belong_struct, "ast2c_TypeParameter::belong_struct is null"); } return 0; }
+	if (!ident) { if(h->error) { h->error(h,ident, "ast2c_TypeParameter::ident is null"); } return 0; }
+	if(!ast2c_Loc_parse(&s->loc,h,loc)) {
+		if(h->error) { h->error(h,loc, "failed to parse ast2c_TypeParameter::loc"); }
 		goto error;
 	}
 	return 1;

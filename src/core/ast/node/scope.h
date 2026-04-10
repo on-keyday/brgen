@@ -40,7 +40,8 @@ namespace brgen::ast {
         bool is_type_ident(const std::shared_ptr<Ident>& ident) {
             return ident && (ident->usage == IdentUsage::define_format ||
                              ident->usage == IdentUsage::define_enum ||
-                             ident->usage == IdentUsage::define_state);
+                             ident->usage == IdentUsage::define_state ||
+                             ident->usage == IdentUsage::define_type_parameter);
         }
 
         std::optional<std::shared_ptr<Ident>> lookup_backward(auto&& fn, ast::Ident* self = nullptr, bool may_forward = false, bool only_type_allowed = false) {

@@ -79,6 +79,7 @@ namespace brgen::ast {
         enum_,
         enum_member,
         function,
+        type_parameter,
 
         type = 0x040000,
         int_type,
@@ -175,6 +176,7 @@ namespace brgen::ast {
         {NodeType::identity, "identity"},
         {NodeType::or_cond, "or_cond"},
         {NodeType::sizeof_, "sizeof_"},
+        {NodeType::type_parameter, "type_parameter"},
     };
 
     constexpr std::array<std::pair<NodeType, const char*>, std::size(node_type_str_array)> sorted_node_type_str_array = [] {

@@ -12,6 +12,7 @@ namespace brgen::ast {
     struct Function;
     struct IdentType;
     struct Field;
+    struct TypeParameter;
 
     struct Format : Member {
         define_node_type(NodeType::format);
@@ -21,6 +22,7 @@ namespace brgen::ast {
         std::vector<std::weak_ptr<Function>> cast_fns;
         std::vector<std::weak_ptr<IdentType>> depends;
         std::vector<std::weak_ptr<Field>> state_variables;
+        std::vector<std::shared_ptr<TypeParameter>> type_parameters;
 
         Format(lexer::Loc l)
             : Member(l, NodeType::format) {}
@@ -37,6 +39,22 @@ namespace brgen::ast {
             sdebugf(cast_fns);
             sdebugf(depends);
             sdebugf(state_variables);
+            sdebugf(type_parameters);
+        }
+    };
+
+    struct TypeParameter : Member {
+        define_node_type(NodeType::type_parameter);
+
+        TypeParameter(lexer::Loc l)
+            : Member(l, NodeType::type_parameter) {}
+
+        // for decode
+        TypeParameter()
+            : Member({}, NodeType::type_parameter) {}
+
+        void dump(auto&& field_) {
+            Member::dump(field_);
         }
     };
 

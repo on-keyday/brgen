@@ -78,6 +78,7 @@ class NodeType(PyEnum):
     ENUM = "enum"
     ENUM_MEMBER = "enum_member"
     FUNCTION = "function"
+    TYPE_PARAMETER = "type_parameter"
 
 
 class TokenTag(PyEnum):
@@ -165,6 +166,7 @@ class IdentUsage(PyEnum):
     DEFINE_FN = "define_fn"
     DEFINE_CAST_FN = "define_cast_fn"
     DEFINE_ARG = "define_arg"
+    DEFINE_TYPE_PARAMETER = "define_type_parameter"
     REFERENCE_TYPE = "reference_type"
     REFERENCE_MEMBER = "reference_member"
     REFERENCE_MEMBER_TYPE = "reference_member_type"
@@ -684,6 +686,7 @@ class Format(Member):
     cast_fns: List[Function]
     depends: List[IdentType]
     state_variables: List[Field]
+    type_parameters: List[TypeParameter]
 
 
 class State(Member):
@@ -710,6 +713,10 @@ class Function(Member):
     body: Optional[IndentBlock]
     func_type: Optional[FunctionType]
     is_cast: bool
+
+
+class TypeParameter(Member):
+    pass
 
 
 class Scope:
@@ -1062,6 +1069,8 @@ def ast2node(ast :JsonAst) -> Program:
                 node.append(EnumMember())
             case NodeType.FUNCTION:
                 node.append(Function())
+            case NodeType.TYPE_PARAMETER:
+                node.append(TypeParameter())
             case _:
                 raise TypeError('unknown node type')
     scope = [Scope() for _ in range(len(ast.scope))]
@@ -2179,6 +2188,7 @@ def ast2node(ast :JsonAst) -> Program:
                 node[i].cast_fns = [(node[x] if isinstance(node[x],Function) else raiseError(TypeError('type mismatch at Format::cast_fns'))) for x in ast.node[i].body["cast_fns"]]
                 node[i].depends = [(node[x] if isinstance(node[x],IdentType) else raiseError(TypeError('type mismatch at Format::depends'))) for x in ast.node[i].body["depends"]]
                 node[i].state_variables = [(node[x] if isinstance(node[x],Field) else raiseError(TypeError('type mismatch at Format::state_variables'))) for x in ast.node[i].body["state_variables"]]
+                node[i].type_parameters = [(node[x] if isinstance(node[x],TypeParameter) else raiseError(TypeError('type mismatch at Format::type_parameters'))) for x in ast.node[i].body["type_parameters"]]
             case NodeType.STATE:
                 if ast.node[i].body["comment"] is not None:
                     x = node[ast.node[i].body["comment"]]
@@ -2317,6 +2327,27 @@ def ast2node(ast :JsonAst) -> Program:
                     node[i].func_type = None
                 x = ast.node[i].body["is_cast"]
                 node[i].is_cast = x if isinstance(x,bool)  else raiseError(TypeError('type mismatch at Function::is_cast'))
+            case NodeType.TYPE_PARAMETER:
+                if ast.node[i].body["comment"] is not None:
+                    x = node[ast.node[i].body["comment"]]
+                    node[i].comment = x if isinstance(x,Node) else raiseError(TypeError('type mismatch at TypeParameter::comment'))
+                else:
+                    node[i].comment = None
+                if ast.node[i].body["belong"] is not None:
+                    x = node[ast.node[i].body["belong"]]
+                    node[i].belong = x if isinstance(x,Member) else raiseError(TypeError('type mismatch at TypeParameter::belong'))
+                else:
+                    node[i].belong = None
+                if ast.node[i].body["belong_struct"] is not None:
+                    x = node[ast.node[i].body["belong_struct"]]
+                    node[i].belong_struct = x if isinstance(x,StructType) else raiseError(TypeError('type mismatch at TypeParameter::belong_struct'))
+                else:
+                    node[i].belong_struct = None
+                if ast.node[i].body["ident"] is not None:
+                    x = node[ast.node[i].body["ident"]]
+                    node[i].ident = x if isinstance(x,Ident) else raiseError(TypeError('type mismatch at TypeParameter::ident'))
+                else:
+                    node[i].ident = None
             case _:
                 raise TypeError('unknown node type')
     for i in range(len(ast.scope)):
@@ -2785,6 +2816,9 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
           if x.body is not None:
               if f(f,x.body) == False:
                   return
+          for i in range(len(x.type_parameters)):
+              if f(f,x.type_parameters[i]) == False:
+                  return
         case x if isinstance(x,State):
           if x.comment is not None:
               if f(f,x.comment) == False:
@@ -2845,4 +2879,11 @@ def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:
                   return
           if x.func_type is not None:
               if f(f,x.func_type) == False:
+                  return
+        case x if isinstance(x,TypeParameter):
+          if x.comment is not None:
+              if f(f,x.comment) == False:
+                  return
+          if x.ident is not None:
+              if f(f,x.ident) == False:
                   return

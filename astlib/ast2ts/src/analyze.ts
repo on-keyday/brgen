@@ -315,6 +315,8 @@ export const analyzeHover = async (prevNode :ast2ts.ParseResult, pos :number) =>
                     return makeHover(ident.ident,"enum");
                 case ast2ts.IdentUsage.define_state:
                     return makeHover(ident.ident,"state");
+                case ast2ts.IdentUsage.define_type_parameter:
+                    return makeHover(ident.ident,"type parameter");
                 case ast2ts.IdentUsage.reference_type:
                     if(ast2ts.isIdent(ident.base)){
                         ident = ident.base;
@@ -765,6 +767,7 @@ export const analyzeSourceCode  = async (prevSemanticTokens :SemTokensStub|null,
                     case ast2ts.IdentUsage.define_state:
                     case ast2ts.IdentUsage.reference_type:
                     case ast2ts.IdentUsage.define_cast_fn:
+                    case ast2ts.IdentUsage.define_type_parameter:
                     case ast2ts.IdentUsage.maybe_type:
                         locList.push({loc: node.loc,length: node.ident.length,index:7});
                         break;

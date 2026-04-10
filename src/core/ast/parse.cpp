@@ -1154,7 +1154,7 @@ namespace brgen::ast {
             <array type> ::= "[" <expr>? "]" <type>
             <int literal type> ::= <int literal>
             <str literal type> ::= <str literal>
-            <ident type> ::= <ident>
+            <ident type> ::= <ident> ("." <ident>)* ( "[" <type> "]" )?
         */
         std::shared_ptr<Type> parse_type(bool as_argument) {
             if (auto arr_begin = s.consume_token("[")) {
@@ -1465,9 +1465,34 @@ namespace brgen::ast {
             else {
                 ident_parse();
             }
+            // optional generic type parameter list: `format Foo[T, U]:`
+            std::vector<std::shared_ptr<Ident>> type_param_idents;
+            s.skip_space();
+            if (s.consume_token("[")) {
+                for (;;) {
+                    s.skip_white();
+                    if (auto t = s.consume_token("]")) {
+                        break;
+                    }
+                    auto name = parse_ident_no_scope("type parameter name expected");
+                    name->usage = IdentUsage::define_type_parameter;
+                    auto tp = std::make_shared<TypeParameter>(name->loc);
+                    tp->ident = name;
+                    tp->belong = fmt;
+                    name->base = tp;
+                    type_param_idents.push_back(name);
+                    fmt->type_parameters.push_back(std::move(tp));
+                    s.skip_white();
+                    if (s.expect_token("]")) {
+                        continue;
+                    }
+                    s.must_consume_token(",", "to separate type parameters");
+                }
+                s.skip_space();
+            }
             {
                 auto m_scope = state.enter_member(fmt);
-                fmt->body = parse_indent_block(fmt, "to start `format` body");
+                fmt->body = parse_indent_block(fmt, "to start `format` body", &type_param_idents);
             }
             // because fmt->ident->expr_type = fmt->body->struct_type
             // makes circular reference, so not use it

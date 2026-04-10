@@ -1289,7 +1289,8 @@ namespace brgen::middle {
                 ident->constant_level = base->constant_level;
                 if (base->usage == ast::IdentUsage::define_enum ||
                     base->usage == ast::IdentUsage::define_format ||
-                    base->usage == ast::IdentUsage::define_state) {
+                    base->usage == ast::IdentUsage::define_state ||
+                    base->usage == ast::IdentUsage::define_type_parameter) {
                     assert(ident->expr_type == nullptr);
                     ident->usage = ast::IdentUsage::reference_type;
                 }
@@ -1653,6 +1654,7 @@ namespace brgen::middle {
                 else if (auto state_ = ast::as<ast::State>(member)) {
                     s->base = state_->body->struct_type;
                 }
+                // TypeParameter: leave s->base unset; phase 1b has no substitution yet
             };
             if (s->ident->usage == ast::IdentUsage::reference_type) {
                 auto ident = ast::as<ast::Ident>(s->ident->base.lock());
