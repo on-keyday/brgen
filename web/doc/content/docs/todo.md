@@ -120,6 +120,20 @@ ToDo リストです(2025/11/04)
 - slice 構文の導入?
   - slice ってのをどう扱うか
 
+- 構造体リテラル式(struct literal)の導入
+  - `fn` 内で `Foo{field: value, ...}` の形式で format 型の値を構築できるようにする
+  - 主な用途: テストケースの記述、デフォルト値ファクトリ
+  - 意味論: brgen の既存哲学(ユーザが全フィールドを明示、consistency は encode 時検証)を踏襲。逆推論や solver は導入しない
+    - arp.bgn のように 1 個の length が複数配列を制御するケース、tcp_segment.bgn のように length が式に埋め込まれるケースを考えると、逆推論は一般には不可能
+    - length 系フィールドは `.length` 構文で参照すれば verbose さを緩和できる
+  - 固定値フィールド(`magic :u32(0xCAFEBABE)` 等)はリテラルでは省略可とし、自動で埋める。明示した場合は期待値との一致チェック
+  - 段階的実装案:
+    1. プリミティブと固定長配列のみ対応
+    2. 可変長配列対応(length との整合性は既存 encode 時検証に委ねる)
+    3. ネスト format の再帰的リテラル
+    4. fn の引数/戻り値で format 型を扱えるようにして、ライブラリ化
+  - 実装箇所: brgen 本体のパーサ・AST・typing、rebrgen 側は EBM に StructLiteral 式を追加して各 ebm2* で言語別の初期化構文を生成
+
 # Done リスト
 
 - float 型(f32 と f64、f80 や f128 なども?)
