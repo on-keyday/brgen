@@ -1254,6 +1254,14 @@ namespace brgen::ast {
                 for (;;) {
                     s.skip_white();
                     if (s.consume_token("]")) {
+                        if (generic->type_arguments.empty()) {
+                            if (state.error_tolerant) {
+                                (void)state.errors.error(lb->loc, "empty type argument list");
+                            }
+                            else {
+                                s.report_error(lb->loc, "empty type argument list");
+                            }
+                        }
                         break;
                     }
                     generic->type_arguments.push_back(parse_type(true));

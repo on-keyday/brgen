@@ -126,6 +126,15 @@ namespace brgen::middle {
             MonoSubst subst{.inside = &inside, .param_map = &param_map};
             auto clone = ast::deep_copy(target, nm, sm, subst);
             assert(clone);
+            // Remove type-parameter idents from the cloned scope before clearing,
+            // otherwise the scope holds dangling weak_ptrs to destroyed Idents.
+            if (clone->body && clone->body->scope) {
+                auto& objs = clone->body->scope->objects;
+                objs.erase(std::remove_if(objs.begin(), objs.end(), [](const auto& w) {
+                    auto id = w.lock();
+                    return !id || id->usage == ast::IdentUsage::define_type_parameter;
+                }), objs.end());
+            }
             clone->type_parameters.clear();
             clone->generic_base = target;
             clone->generic_arguments = type_arguments;
@@ -156,8 +165,10 @@ namespace brgen::middle {
         }
 
         void rewrite_generic_types(const std::shared_ptr<ast::Node>& root,
-                                   const GenericIdentMap& mapping) {
+                                   const GenericIdentMap& mapping,
+                                   std::unordered_set<const ast::Node*>& visited) {
             if (!root) return;
+            if (!visited.insert(root.get()).second) return;
             ast::traverse(root, [&](auto& sub) {
                 using U = std::decay_t<decltype(sub)>;
                 using Elem = typename U::element_type;
@@ -172,7 +183,7 @@ namespace brgen::middle {
                         }
                     }
                 }
-                rewrite_generic_types(sub, mapping);
+                rewrite_generic_types(sub, mapping, visited);
             });
         }
 
@@ -345,6 +356,14 @@ namespace brgen::middle {
             }
         }
 
+        if (!generics.empty() && warnings) {
+            for (auto& gt : generics) {
+                warnings->warning(gt->loc,
+                                  "monomorphize: maximum instantiation depth (",
+                                  nums(max_rounds), ") exceeded; this GenericType was not resolved");
+            }
+        }
+
         if (all_new_formats.empty()) {
             return;
         }
@@ -359,7 +378,10 @@ namespace brgen::middle {
             rewrite_format_depends(program, old_ident_to_new, visited);
         }
 
-        rewrite_generic_types(program, gt_to_new_ident);
+        {
+            std::unordered_set<const ast::Node*> visited;
+            rewrite_generic_types(program, gt_to_new_ident, visited);
+        }
 
         {
             std::unordered_set<const ast::StructType*> clone_structs;
