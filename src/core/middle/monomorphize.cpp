@@ -140,9 +140,15 @@ namespace brgen::middle {
         std::shared_ptr<ast::IdentType> build_clone_ident(
             const std::shared_ptr<ast::GenericType>& gt,
             const std::shared_ptr<ast::Format>& clone_fmt) {
-            assert(gt && gt->base_type && clone_fmt && clone_fmt->body && clone_fmt->body->struct_type);
+            assert(gt && gt->base_type && gt->base_type->ident && clone_fmt && clone_fmt->ident && clone_fmt->body && clone_fmt->body->struct_type);
+            // LSP hover chases Ident.base; point it at the clone, not the raw template.
+            auto& src_ident = gt->base_type->ident;
+            auto new_ident = std::make_shared<ast::Ident>(src_ident->loc, std::string(src_ident->ident));
+            new_ident->usage = ast::IdentUsage::reference_type;
+            new_ident->scope = src_ident->scope;
+            new_ident->base = clone_fmt->ident;
             std::shared_ptr<ast::Type> base_type = clone_fmt->body->struct_type;
-            auto new_it = std::make_shared<ast::IdentType>(gt->loc, gt->base_type->ident, std::move(base_type));
+            auto new_it = std::make_shared<ast::IdentType>(gt->loc, std::move(new_ident), std::move(base_type));
             new_it->bit_size = clone_fmt->body->struct_type->bit_size;
             new_it->bit_alignment = clone_fmt->body->struct_type->bit_alignment;
             new_it->non_dynamic_allocation = clone_fmt->body->struct_type->non_dynamic_allocation;
@@ -243,8 +249,19 @@ namespace brgen::middle {
         void collect_generic_types(const std::shared_ptr<ast::Node>& root,
                                    std::vector<std::shared_ptr<ast::GenericType>>& out,
                                    std::unordered_set<const ast::Node*>& visited) {
-            if (!root) return;
-            if (!visited.insert(root.get()).second) return;
+            if (!root) {
+                return;
+            }
+            if (!visited.insert(root.get()).second) {
+                return;
+            }
+            // Skip raw generic templates: their GenericTypes reference unbound T
+            // and alias Format::depends weak_ptrs that monomorphize would corrupt.
+            if (auto fmt = ast::as<ast::Format>(root)) {
+                if (!fmt->type_parameters.empty()) {
+                    return;
+                }
+            }
             if (auto gt = ast::as<ast::GenericType>(root)) {
                 out.push_back(ast::cast_to<ast::GenericType>(root));
             }
@@ -258,27 +275,83 @@ namespace brgen::middle {
     void monomorphize(const std::shared_ptr<ast::Program>& program, LocationError* warnings) {
         if (!program) return;
 
+        GenericIdentMap gt_to_new_ident;
+        std::map<ast::IdentType*, std::shared_ptr<ast::IdentType>> old_ident_to_new;
+        std::vector<std::shared_ptr<ast::Format>> all_new_formats;
+        InsideCache inside_cache;
+
+        // Dedup cache: (target format, type arg pointers) → already-built IdentType.
+        using InstKey = std::pair<const ast::Format*, std::vector<const ast::Type*>>;
+        std::map<InstKey, std::shared_ptr<ast::IdentType>> inst_cache;
+
+        auto make_key = [](const ast::Format* target, const std::shared_ptr<ast::GenericType>& gt) {
+            std::vector<const ast::Type*> arg_ptrs;
+            arg_ptrs.reserve(gt->type_arguments.size());
+            for (auto& a : gt->type_arguments) {
+                arg_ptrs.push_back(a.get());
+            }
+            return InstKey{target, std::move(arg_ptrs)};
+        };
+
+        // Round 1: collect from the whole program.
         std::vector<std::shared_ptr<ast::GenericType>> generics;
         {
             std::unordered_set<const ast::Node*> visited;
             collect_generic_types(program, generics, visited);
         }
-        if (generics.empty()) return;
 
-        GenericIdentMap gt_to_new_ident;
-        std::map<ast::IdentType*, std::shared_ptr<ast::IdentType>> old_ident_to_new;
-        std::vector<std::shared_ptr<ast::Format>> new_formats;
+        // Fix-point loop: instantiate GenericTypes, then scan newly created
+        // clones for further GenericTypes born from substitution (e.g.
+        // Bar[Foo[u8]] produces a clone containing Foo[Foo[u8]]).
+        constexpr size_t max_rounds = 32;
+        for (size_t round = 0; !generics.empty() && round < max_rounds; ++round) {
+            std::vector<std::shared_ptr<ast::Format>> round_formats;
 
-        InsideCache inside_cache;
-        for (auto& gt : generics) {
-            auto target = resolve_target_format(gt, warnings);
-            if (!target) continue;
-            auto clone = instantiate(target, gt, inside_cache, warnings);
-            if (!clone) continue;
-            auto new_it = build_clone_ident(gt, clone);
-            gt_to_new_ident[gt] = new_it;
-            old_ident_to_new[gt->base_type.get()] = new_it;
-            new_formats.push_back(clone);
+            for (auto& gt : generics) {
+                auto target = resolve_target_format(gt, warnings);
+                if (!target) {
+                    continue;
+                }
+
+                auto key = make_key(target.get(), gt);
+                if (auto cached = inst_cache.find(key); cached != inst_cache.end()) {
+                    // Reuse existing clone for this (target, args) pair.
+                    gt_to_new_ident[gt] = cached->second;
+                    old_ident_to_new[gt->base_type.get()] = cached->second;
+                    continue;
+                }
+
+                auto clone = instantiate(target, gt, inside_cache, warnings);
+                if (!clone) {
+                    continue;
+                }
+                auto new_it = build_clone_ident(gt, clone);
+                gt_to_new_ident[gt] = new_it;
+                old_ident_to_new[gt->base_type.get()] = new_it;
+                inst_cache[key] = new_it;
+                round_formats.push_back(clone);
+            }
+
+            all_new_formats.insert(all_new_formats.end(),
+                                   round_formats.begin(), round_formats.end());
+
+            // Scan this round's clones for new GenericTypes.
+            generics.clear();
+            {
+                std::unordered_set<const ast::Node*> visited;
+                for (auto& f : round_formats) {
+                    collect_generic_types(f, generics, visited);
+                }
+            }
+        }
+
+        if (all_new_formats.empty()) {
+            return;
+        }
+
+        // Append clones first so rewrite passes cover them too.
+        for (auto& f : all_new_formats) {
+            program->elements.push_back(f);
         }
 
         {
@@ -290,17 +363,13 @@ namespace brgen::middle {
 
         {
             std::unordered_set<const ast::StructType*> clone_structs;
-            for (auto& f : new_formats) {
+            for (auto& f : all_new_formats) {
                 if (f->body && f->body->struct_type) {
                     clone_structs.insert(f->body->struct_type.get());
                 }
             }
             std::unordered_set<const ast::Node*> visited;
             rewrite_clone_refs(program, clone_structs, visited);
-        }
-
-        for (auto& f : new_formats) {
-            program->elements.push_back(f);
         }
     }
 

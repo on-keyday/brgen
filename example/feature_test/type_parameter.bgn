@@ -15,7 +15,7 @@ format Foo[T]:
     y :u16
 
 format Bar[T, U]:
-    a :T
+    a :Foo[T]
     b :U
 
 format Plain:
@@ -30,8 +30,11 @@ format UsesFoo:
     b2 :Bar[u64,Plain]
     match z.x.z:
         32 => field :u8
-    match b.a.z:
+    match b.a.x.z:
         64 => field :u64
+    b3 :Bar[Foo[u8], Bar[u16, u32]]
+    match b3.a.x.x:
+        16 => field :u8
 
 
 format Vector[T]:
@@ -61,4 +64,129 @@ format Vector2[T]:
 format CipherSuites:
     cipher_suites :Vector2[u16]
     cipher_suites.length >= 2
+
+format Root:
+    x :Vector2
+
+
+# --- conditional fields with type parameters ---
+format Optional[T]:
+    present :u8
+    if present != 0:
+        value :T
+
+format UsesOptional:
+    a :Optional[u32]
+    b :Optional[Foo[u8]]
+    if a.present != 0:
+        match u8(a.value):
+            0 => tag :u8
+
+# --- sizeof with type parameters ---
+format Padded[T]:
+    data :T
+    pad :[8 - sizeof(T)]u8
+
+format UsesPadded:
+    p1 :Padded[u8]
+    p2 :Padded[u32]
+
+sizeof(<Padded[u8]>) == 8
+sizeof(<Padded[u32]>) == 8
+
+# --- match on type parameter field ---
+format Tagged[T]:
+    tag :u8
+    match tag:
+        0 => value :T
+        .. => fallback :u8
+
+format UsesTagged:
+    a :Tagged[u16]
+    b :Tagged[Foo[u8]]
+
+# --- array of generic format ---
+format ArrayOf[T]:
+    count :u8
+    items :[count]T
+
+format UsesArrayOf:
+    arr :ArrayOf[u16]
+    match arr.count:
+        0 => empty :u8
+
+# --- nested generic with sizeof ---
+format SizedPair[T, U]:
+    first :T
+    second :U
+
+sizeof(<SizedPair[u8, u16]>) == 3
+sizeof(<SizedPair[u32, u32]>) == 8
+
+# --- local variable binding with generic field access ---
+format UsesLocalBinding:
+    f :Foo[u32]
+    val ::= f.x
+    val > 0
+
+# --- multiple levels of nesting ---
+format Deep:
+    x :Foo[Foo[Foo[u8]]]
+    match x.x.x.x:
+        0 => z :u8
+
+# --- enum as type argument ---
+enum Color:
+    :u8
+    red = 0
+    green = 1
+    blue = 2
+
+format WithEnum:
+    f :Foo[Color]
+    match f.x:
+        Color.red => r :u8
+        Color.green => g :u8
+
+# --- arithmetic constraints on generic fields ---
+format Bounded[T]:
+    header :u16
+    payload :T
+    header >= u16(sizeof(T))
+
+format UsesBounded:
+    b :Bounded[u32]
+    b.header >= 4
+
+# --- if/else with generic types on both branches ---
+format Either[T, U]:
+    selector :u8
+    if selector == 0:
+        left :T
+    else:
+        right :U
+
+format UsesEither:
+    e :Either[u16, u32]
+    e2 :Either[Foo[u8], Plain]
+
+# --- generic format used as array element ---
+format PacketList[T]:
+    count :u8
+    packets :[count]Foo[T]
+
+format UsesPacketList:
+    pl :PacketList[u32]
+    match pl.count:
+        0 => none :u8
+
+# --- chained generic: one generic wrapping another ---
+format Wrapper[T]:
+    inner :Optional[T]
+
+format UsesWrapper:
+    w :Wrapper[u16]
+    if w.inner.present != 0:
+        match u8(w.inner.value):
+            0 => x :u8
 

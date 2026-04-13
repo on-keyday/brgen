@@ -53,6 +53,11 @@ export const typeToString = (type :ast2ts.Type|null|undefined) :string => {
         }
         return name + " ("+typeToString(type.base)+")";
     }
+    if(ast2ts.isGenericType(type)) {
+        const base = type.base_type?.ident?.ident || "(null)";
+        const args = type.type_arguments.map((a)=>typeToString(a)).join(", ");
+        return base + "[" + args + "]";
+    }
     if(ast2ts.isStructUnionType(type)) {
         return "struct union (size: "+bitSize(type.bit_size)+")";
     }
@@ -278,7 +283,7 @@ export const analyzeHover = async (prevNode :ast2ts.ParseResult, pos :number) =>
                     }
                     return makeHover(ident.ident,"enum member");
                 case ast2ts.IdentUsage.define_format:
-                    if(ast2ts.isFormat(ident.base)){          
+                    if(ast2ts.isFormat(ident.base)){
                         const convertIdentType = (ident :ast2ts.IdentType) => {
                             if(ident.import_ref !== null) {
                                 if(ast2ts.isIdent(ident.import_ref.target)){
@@ -289,25 +294,38 @@ export const analyzeHover = async (prevNode :ast2ts.ParseResult, pos :number) =>
                                 }
                             }
                             return ident.ident?.ident||"(null)";
-                        }              
-                        return makeHover(ident.ident,
+                        }
+                        const fmt = ident.base;
+                        let suffix = "";
+                        let genericLine = "";
+                        if(fmt.type_parameters.length > 0) {
+                            const params = fmt.type_parameters.map((tp)=>tp.ident?.ident||"(null)").join(", ");
+                            suffix = `[${params}]`;
+                            genericLine = `+ generic template (type parameters: ${params})\n    `;
+                        }
+                        else if(fmt.generic_base !== null) {
+                            const argList = fmt.generic_arguments.map(typeToString).join(", ");
+                            suffix = `[${argList}]`;
+                            genericLine = `+ instantiated from ${fmt.generic_base?.ident?.ident||"(null)"} with [${argList}]\n    `;
+                        }
+                        return makeHover(ident.ident + suffix,
                         `
-+ format 
-    + size: ${bitSize(ident.base.body?.struct_type?.bit_size)}
-    + fixed header size: ${bitSize(ident.base.body?.struct_type?.fixed_header_size)}
-    + fixed tail size: ${bitSize(ident.base.body?.struct_type?.fixed_tail_size)}
-    + algin: ${ident.base.body?.struct_type?.bit_alignment||"unknown"}
-    ${ident.base.body?.struct_type?.non_dynamic_allocation?"+ non_dynamic\n    ":""}${ident.base.body?.struct_type?.recursive?"+ recursive\n":""}
-    ${ident.base.depends.length > 0 ?`+ depends: ${ident.base.depends.map((x)=>convertIdentType(x)).filter((elem, index, self) => self.indexOf(elem) === index).join(", ")}\n`:""}
-    ${ident.base.state_variables.length > 0 ?`+ state variables: ${ident.base.state_variables.map((x)=>x.ident?.ident||"(null)").filter((elem, index, self) => self.indexOf(elem) === index).join(", ")}\n`:""}
-    ${ident.base.encode_fn?"+ custom encode\n":""}
-    ${ident.base.decode_fn?"+ custom decode\n":""}
-    ${(ident.base.body?.metadata.length??0) > 0 ?`+ metadata: ${ident.base.body?.metadata.map((x)=>x.name).join(", ")}\n`:""}
-    ${(ident.base.cast_fns.length || 0) > 0 ?`+ cast functions: ${ident.base.cast_fns.map((x)=> typeToString(x.return_type) ).join(", ")}\n`:""}
-    + block trait: ${ident.base.body?.block_traits && ast2ts.BlockTraitToString(ident.base.body?.block_traits) || "none"}
-`, collectComments(ident.base));
++ format
+    ${genericLine}+ size: ${bitSize(fmt.body?.struct_type?.bit_size)}
+    + fixed header size: ${bitSize(fmt.body?.struct_type?.fixed_header_size)}
+    + fixed tail size: ${bitSize(fmt.body?.struct_type?.fixed_tail_size)}
+    + algin: ${fmt.body?.struct_type?.bit_alignment||"unknown"}
+    ${fmt.body?.struct_type?.non_dynamic_allocation?"+ non_dynamic\n    ":""}${fmt.body?.struct_type?.recursive?"+ recursive\n":""}
+    ${fmt.depends.length > 0 ?`+ depends: ${fmt.depends.map((x)=>convertIdentType(x)).filter((elem, index, self) => self.indexOf(elem) === index).join(", ")}\n`:""}
+    ${fmt.state_variables.length > 0 ?`+ state variables: ${fmt.state_variables.map((x)=>x.ident?.ident||"(null)").filter((elem, index, self) => self.indexOf(elem) === index).join(", ")}\n`:""}
+    ${fmt.encode_fn?"+ custom encode\n":""}
+    ${fmt.decode_fn?"+ custom decode\n":""}
+    ${(fmt.body?.metadata.length??0) > 0 ?`+ metadata: ${fmt.body?.metadata.map((x)=>x.name).join(", ")}\n`:""}
+    ${(fmt.cast_fns.length || 0) > 0 ?`+ cast functions: ${fmt.cast_fns.map((x)=> typeToString(x.return_type) ).join(", ")}\n`:""}
+    + block trait: ${fmt.body?.block_traits && ast2ts.BlockTraitToString(fmt.body?.block_traits) || "none"}
+`, collectComments(fmt));
                     }
-                    return makeHover(ident.ident,"format"); 
+                    return makeHover(ident.ident,"format");
                 case ast2ts.IdentUsage.define_enum:
                     if(ast2ts.isEnum(ident.base)){
                         return makeHover(ident.ident,`enum (size: ${bitSize(ident.base.base_type?.bit_size)}, align: ${ident.base?.base_type?.bit_alignment || "unknown"})`);

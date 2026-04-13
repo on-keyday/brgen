@@ -900,7 +900,7 @@ namespace brgen::middle {
         }
 
         std::shared_ptr<ast::StructType> lookup_struct(const std::shared_ptr<ast::Type>& typ,
-                                                        std::shared_ptr<ast::GenericType>* via_generic = nullptr) {
+                                                       std::shared_ptr<ast::GenericType>* via_generic = nullptr) {
             auto t = typ;
             if (auto ident = ast::as<ast::IdentType>(t)) {
                 auto b = ident->base.lock();
@@ -954,6 +954,40 @@ namespace brgen::middle {
                 new_arr->bit_alignment = arr->bit_alignment;
                 new_arr->non_dynamic_allocation = arr->non_dynamic_allocation;
                 return new_arr;
+            }
+            if (auto gt = ast::as<ast::GenericType>(ty)) {
+                std::vector<std::shared_ptr<ast::Type>> new_args;
+                new_args.reserve(gt->type_arguments.size());
+                bool changed = false;
+                for (auto& a : gt->type_arguments) {
+                    auto na = substitute_type_via_param_map(a, fmt, args);
+                    if (na.get() != a.get()) {
+                        changed = true;
+                    }
+                    new_args.push_back(std::move(na));
+                }
+                if (!changed) {
+                    return ty;
+                }
+                auto new_gt = std::make_shared<ast::GenericType>(gt->loc);
+                // Fresh IdentType: monomorphize keys its rebind table on IdentType*,
+                // and the raw template's base_type is the same pointer stored in Format::depends.
+                if (gt->base_type) {
+                    auto& src = gt->base_type;
+                    auto new_base = std::make_shared<ast::IdentType>(
+                        src->loc, src->ident, std::shared_ptr<ast::Type>{});
+                    new_base->base = src->base;
+                    new_base->import_ref = src->import_ref;
+                    new_base->bit_size = src->bit_size;
+                    new_base->bit_alignment = src->bit_alignment;
+                    new_base->non_dynamic_allocation = src->non_dynamic_allocation;
+                    new_gt->base_type = std::move(new_base);
+                }
+                new_gt->type_arguments = std::move(new_args);
+                new_gt->bit_alignment = gt->bit_alignment;
+                new_gt->bit_size = gt->bit_size;
+                new_gt->non_dynamic_allocation = gt->non_dynamic_allocation;
+                return new_gt;
             }
             return ty;
         }
@@ -1990,11 +2024,12 @@ namespace brgen::middle {
                 if (auto fmt = ast::as<ast::Format>(node)) {
                     auto& d = fmt->depends;
                     d.erase(std::remove_if(d.begin(), d.end(), [](const std::weak_ptr<ast::IdentType>& w) {
-                        auto it = w.lock();
-                        if (!it || !it->ident) return false;
-                        auto base_ident = ast::as<ast::Ident>(it->ident->base.lock());
-                        return base_ident && base_ident->usage == ast::IdentUsage::define_type_parameter;
-                    }), d.end());
+                                auto it = w.lock();
+                                if (!it || !it->ident) return false;
+                                auto base_ident = ast::as<ast::Ident>(it->ident->base.lock());
+                                return base_ident && base_ident->usage == ast::IdentUsage::define_type_parameter;
+                            }),
+                            d.end());
                 }
                 if (auto arr_type = ast::as<ast::ArrayType>(node)) {
                     typing_array_type(arr_type);

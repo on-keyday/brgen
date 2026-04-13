@@ -1249,7 +1249,7 @@ namespace brgen::ast {
             // generic type instantiation: `X[T, ...]`
             s.skip_space();
             if (auto lb = s.consume_token("[")) {
-                auto generic = std::make_shared<GenericType>(lb->loc, true);
+                auto generic = std::make_shared<GenericType>(id->loc, true);
                 generic->base_type = std::move(id);
                 for (;;) {
                     s.skip_white();
