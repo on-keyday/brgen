@@ -17,6 +17,69 @@ namespace brgen::middle {
         using ParamMap = std::map<std::shared_ptr<ast::Ident>, std::shared_ptr<ast::Type>>;
         using GenericIdentMap = std::map<std::shared_ptr<ast::GenericType>, std::shared_ptr<ast::IdentType>>;
 
+        std::string mangle_name(const std::string& base,
+                                const std::vector<std::shared_ptr<ast::Type>>& args);
+
+        std::string type_name(const std::shared_ptr<ast::Type>& t) {
+            if (!t) {
+                return "unknown";
+            }
+            if (auto it = ast::as<ast::IntType>(t)) {
+                std::string s;
+                s += it->is_signed ? 'i' : 'u';
+                if (it->endian == ast::Endian::little) {
+                    s += 'l';
+                }
+                else if (it->endian == ast::Endian::big) {
+                    s += 'b';
+                }
+                s += std::to_string(it->bit_size ? *it->bit_size : 0);
+                return s;
+            }
+            if (ast::as<ast::BoolType>(t)) {
+                return "bool";
+            }
+            if (auto ft = ast::as<ast::FloatType>(t)) {
+                std::string s = "f";
+                if (ft->endian == ast::Endian::little) {
+                    s += 'l';
+                }
+                else if (ft->endian == ast::Endian::big) {
+                    s += 'b';
+                }
+                s += std::to_string(ft->bit_size ? *ft->bit_size : 0);
+                return s;
+            }
+            if (auto id = ast::as<ast::IdentType>(t)) {
+                if (id->ident) {
+                    return std::string(id->ident->ident);
+                }
+            }
+            if (auto et = ast::as<ast::EnumType>(t)) {
+                if (auto m = ast::as<ast::Enum>(et->base.lock())) {
+                    if (m->ident) {
+                        return std::string(m->ident->ident);
+                    }
+                }
+            }
+            if (auto gt = ast::as<ast::GenericType>(t)) {
+                if (gt->base_type && gt->base_type->ident) {
+                    return mangle_name(std::string(gt->base_type->ident->ident), gt->type_arguments);
+                }
+            }
+            return "T";
+        }
+
+        std::string mangle_name(const std::string& base,
+                                const std::vector<std::shared_ptr<ast::Type>>& args) {
+            std::string result = base;
+            for (auto& a : args) {
+                result += "_";
+                result += type_name(a);
+            }
+            return result;
+        }
+
         // ast::traverse follows only strong refs, so this yields exactly the
         // subtree owned by `root` (weak back-edges stop the walk).
         void collect_inside(const std::shared_ptr<ast::Node>& root,
@@ -136,6 +199,10 @@ namespace brgen::middle {
                 }), objs.end());
             }
             clone->type_parameters.clear();
+            if (clone->ident) {
+                clone->ident->ident = mangle_name(
+                    std::string(target->ident->ident), type_arguments);
+            }
             clone->generic_base = target;
             clone->generic_arguments = type_arguments;
             for (auto& ta : type_arguments) {
@@ -304,6 +371,11 @@ namespace brgen::middle {
             return InstKey{target, std::move(arg_ptrs)};
         };
 
+        // Secondary dedup by mangled name: catches structurally equal but
+        // pointer-distinct type arguments (e.g. two separate IntType(u8)).
+        using NameKey = std::pair<const ast::Format*, std::string>;
+        std::map<NameKey, std::shared_ptr<ast::IdentType>> name_cache;
+
         // Round 1: collect from the whole program.
         std::vector<std::shared_ptr<ast::GenericType>> generics;
         {
@@ -326,9 +398,16 @@ namespace brgen::middle {
 
                 auto key = make_key(target.get(), gt);
                 if (auto cached = inst_cache.find(key); cached != inst_cache.end()) {
-                    // Reuse existing clone for this (target, args) pair.
                     gt_to_new_ident[gt] = cached->second;
                     old_ident_to_new[gt->base_type.get()] = cached->second;
+                    continue;
+                }
+
+                auto name_key = NameKey{target.get(), mangle_name("", gt->type_arguments)};
+                if (auto cached = name_cache.find(name_key); cached != name_cache.end()) {
+                    gt_to_new_ident[gt] = cached->second;
+                    old_ident_to_new[gt->base_type.get()] = cached->second;
+                    inst_cache[key] = cached->second;
                     continue;
                 }
 
@@ -340,6 +419,7 @@ namespace brgen::middle {
                 gt_to_new_ident[gt] = new_it;
                 old_ident_to_new[gt->base_type.get()] = new_it;
                 inst_cache[key] = new_it;
+                name_cache[name_key] = new_it;
                 round_formats.push_back(clone);
             }
 

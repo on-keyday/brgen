@@ -8,6 +8,41 @@
 
 namespace brgen::middle {
 
+    inline ast::ConstantLevel decide_constant_level(ast::ConstantLevel a, ast::ConstantLevel b) {
+        if (a == ast::ConstantLevel::unknown || b == ast::ConstantLevel::unknown) {
+            return ast::ConstantLevel::unknown;
+        }
+        if (a == ast::ConstantLevel::constant && b == ast::ConstantLevel::constant) {
+            return ast::ConstantLevel::constant;
+        }
+        if (a == ast::ConstantLevel::variable || b == ast::ConstantLevel::variable) {
+            return ast::ConstantLevel::variable;
+        }
+        return ast::ConstantLevel::immutable_variable;
+    }
+
+    // Re-propagate constant_level bottom-up for expression nodes whose
+    // children may have been promoted (e.g. SizeOf → constant after
+    // monomorphization).
+    inline void propagate_constant_level(const std::shared_ptr<ast::Node>& n) {
+        if (auto b = ast::as<ast::Binary>(n)) {
+            if (b->left && b->right) {
+                b->constant_level = decide_constant_level(
+                    b->left->constant_level, b->right->constant_level);
+            }
+        }
+        else if (auto u = ast::as<ast::Unary>(n)) {
+            if (u->expr) {
+                u->constant_level = u->expr->constant_level;
+            }
+        }
+        else if (auto p = ast::as<ast::Paren>(n)) {
+            if (p->expr) {
+                p->constant_level = p->expr->constant_level;
+            }
+        }
+    }
+
     inline std::optional<size_t> try_compute_bit_size(const std::shared_ptr<ast::Type>& type, std::set<ast::Type*>& visited) {
         if (!type) return std::nullopt;
         if (type->bit_size) return type->bit_size;

@@ -540,6 +540,13 @@ namespace ebmgen {
         ebm::Block program_body_block;
         const auto _scope = ctx.state().set_current_block(&program_body_block);
         for (auto& p : node->elements) {
+            // Skip raw generic format templates — they have been monomorphized
+            // into concrete clones that appear separately in program->elements.
+            if (auto fmt = ast::as<ast::Format>(p)) {
+                if (!fmt->type_parameters.empty()) {
+                    continue;
+                }
+            }
             EBMA_CONVERT_STATEMENT(stmt_ref, p);
             append(program_body_block, stmt_ref);
         }
@@ -553,6 +560,10 @@ namespace ebmgen {
             return *v;
         }
         if (auto locked_base = node->base.lock()) {
+            if (auto fmt = ast::as<ast::Format>(locked_base); fmt && !fmt->type_parameters.empty()) {
+                return unexpect_error("cannot convert raw generic format '{}'; use with type arguments",
+                                      fmt->ident ? fmt->ident->ident : "<anonymous>");
+            }
             if (ast::as<ast::Format>(locked_base) || ast::as<ast::State>(locked_base)) {
                 EBMA_CONVERT_STATEMENT(name_ref, locked_base);  // Convert the struct declaration
                 ctx.state().add_visited_node(node, name_ref);

@@ -551,6 +551,7 @@ namespace brgen::middle {
                 evaluate_sizeof_node(s);
                 return;
             }
+            propagate_constant_level(n);
             if (auto a = ast::as<ast::ArrayType>(n)) {
                 evaluate_array_length(a);
                 return;

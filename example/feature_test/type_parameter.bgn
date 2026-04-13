@@ -65,8 +65,6 @@ format CipherSuites:
     cipher_suites :Vector2[u16]
     cipher_suites.length >= 2
 
-format Root:
-    x :Vector2
 
 
 # --- conditional fields with type parameters ---
