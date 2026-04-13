@@ -122,6 +122,7 @@ typedef struct ast2c_State ast2c_State;
 typedef struct ast2c_Enum ast2c_Enum;
 typedef struct ast2c_EnumMember ast2c_EnumMember;
 typedef struct ast2c_Function ast2c_Function;
+typedef struct ast2c_TypeParameter ast2c_TypeParameter;
 typedef struct ast2c_Scope ast2c_Scope;
 typedef struct ast2c_Pos ast2c_Pos;
 typedef struct ast2c_Loc ast2c_Loc;
@@ -209,6 +210,7 @@ enum ast2c_NodeType {
 	AST2C_NODETYPE_ENUM = 2228228,
 	AST2C_NODETYPE_ENUM_MEMBER = 2228229,
 	AST2C_NODETYPE_FUNCTION = 2228230,
+	AST2C_NODETYPE_TYPE_PARAMETER = 2228231,
 };
 const char* ast2c_NodeType_to_string(ast2c_NodeType);
 int ast2c_NodeType_from_string(const char*,ast2c_NodeType*);
@@ -304,11 +306,12 @@ enum ast2c_IdentUsage {
 	AST2C_IDENTUSAGE_DEFINE_FN = 10,
 	AST2C_IDENTUSAGE_DEFINE_CAST_FN = 11,
 	AST2C_IDENTUSAGE_DEFINE_ARG = 12,
-	AST2C_IDENTUSAGE_REFERENCE_TYPE = 13,
-	AST2C_IDENTUSAGE_REFERENCE_MEMBER = 14,
-	AST2C_IDENTUSAGE_REFERENCE_MEMBER_TYPE = 15,
-	AST2C_IDENTUSAGE_MAYBE_TYPE = 16,
-	AST2C_IDENTUSAGE_REFERENCE_BUILTIN_FN = 17,
+	AST2C_IDENTUSAGE_DEFINE_TYPE_PARAMETER = 13,
+	AST2C_IDENTUSAGE_REFERENCE_TYPE = 14,
+	AST2C_IDENTUSAGE_REFERENCE_MEMBER = 15,
+	AST2C_IDENTUSAGE_REFERENCE_MEMBER_TYPE = 16,
+	AST2C_IDENTUSAGE_MAYBE_TYPE = 17,
+	AST2C_IDENTUSAGE_REFERENCE_BUILTIN_FN = 18,
 };
 const char* ast2c_IdentUsage_to_string(ast2c_IdentUsage);
 int ast2c_IdentUsage_from_string(const char*,ast2c_IdentUsage*);
@@ -1291,7 +1294,9 @@ struct ast2c_GenericType {
 	int non_dynamic_allocation;
 	ast2c_BitAlignment bit_alignment;
 	uint64_t* bit_size;
-	ast2c_Member* belong;
+	ast2c_IdentType* base_type;
+	ast2c_Type** type_arguments;
+	size_t type_arguments_size;
 };
 
 // returns 1 if succeed 0 if failed
@@ -1420,6 +1425,11 @@ struct ast2c_Format {
 	size_t depends_size;
 	ast2c_Field** state_variables;
 	size_t state_variables_size;
+	ast2c_TypeParameter** type_parameters;
+	size_t type_parameters_size;
+	ast2c_Format* generic_base;
+	ast2c_Type** generic_arguments;
+	size_t generic_arguments_size;
 };
 
 // returns 1 if succeed 0 if failed
@@ -1488,6 +1498,18 @@ struct ast2c_Function {
 
 // returns 1 if succeed 0 if failed
 int ast2c_Function_parse(ast2c_Ast* ,ast2c_Function*,ast2c_json_handlers*,void*);
+
+struct ast2c_TypeParameter {
+	const ast2c_NodeType node_type;
+	ast2c_Loc loc;
+	ast2c_Node* comment;
+	ast2c_Member* belong;
+	ast2c_StructType* belong_struct;
+	ast2c_Ident* ident;
+};
+
+// returns 1 if succeed 0 if failed
+int ast2c_TypeParameter_parse(ast2c_Ast* ,ast2c_TypeParameter*,ast2c_json_handlers*,void*);
 
 struct ast2c_Scope {
 	const ast2c_NodeType node_type;

@@ -532,11 +532,12 @@ enum class IdentUsage {
     define_fn = 10,
     define_cast_fn = 11,
     define_arg = 12,
-    reference_type = 13,
-    reference_member = 14,
-    reference_member_type = 15,
-    maybe_type = 16,
-    reference_builtin_fn = 17,
+    define_type_parameter = 13,
+    reference_type = 14,
+    reference_member = 15,
+    reference_member_type = 16,
+    maybe_type = 17,
+    reference_builtin_fn = 18,
 };
 constexpr const char* to_string(IdentUsage e) {
     switch(e) {
@@ -553,6 +554,7 @@ constexpr const char* to_string(IdentUsage e) {
     case IdentUsage::define_fn: return "define_fn";
     case IdentUsage::define_cast_fn: return "define_cast_fn";
     case IdentUsage::define_arg: return "define_arg";
+    case IdentUsage::define_type_parameter: return "define_type_parameter";
     case IdentUsage::reference_type: return "reference_type";
     case IdentUsage::reference_member: return "reference_member";
     case IdentUsage::reference_member_type: return "reference_member_type";
@@ -576,6 +578,7 @@ template<>constexpr std::optional<IdentUsage> from_string<IdentUsage>(std::strin
     if(str == "define_fn") return IdentUsage::define_fn;
     if(str == "define_cast_fn") return IdentUsage::define_cast_fn;
     if(str == "define_arg") return IdentUsage::define_arg;
+    if(str == "define_type_parameter") return IdentUsage::define_type_parameter;
     if(str == "reference_type") return IdentUsage::reference_type;
     if(str == "reference_member") return IdentUsage::reference_member;
     if(str == "reference_member_type") return IdentUsage::reference_member_type;
@@ -584,9 +587,9 @@ template<>constexpr std::optional<IdentUsage> from_string<IdentUsage>(std::strin
     return std::nullopt;
 }
 template<>constexpr size_t enum_elem_count<IdentUsage>() {
-    return 18;
+    return 19;
 }
-template<>constexpr std::array<std::pair<IdentUsage,std::string_view>,18> make_enum_array<IdentUsage>() {
+template<>constexpr std::array<std::pair<IdentUsage,std::string_view>,19> make_enum_array<IdentUsage>() {
     return {
         std::pair{IdentUsage::unknown,"unknown"},
         std::pair{IdentUsage::bad_ident,"bad_ident"},
@@ -601,6 +604,7 @@ template<>constexpr std::array<std::pair<IdentUsage,std::string_view>,18> make_e
         std::pair{IdentUsage::define_fn,"define_fn"},
         std::pair{IdentUsage::define_cast_fn,"define_cast_fn"},
         std::pair{IdentUsage::define_arg,"define_arg"},
+        std::pair{IdentUsage::define_type_parameter,"define_type_parameter"},
         std::pair{IdentUsage::reference_type,"reference_type"},
         std::pair{IdentUsage::reference_member,"reference_member"},
         std::pair{IdentUsage::reference_member_type,"reference_member_type"},
@@ -608,7 +612,7 @@ template<>constexpr std::array<std::pair<IdentUsage,std::string_view>,18> make_e
         std::pair{IdentUsage::reference_builtin_fn,"reference_builtin_fn"},
     };
 }
-template<>constexpr std::array<std::pair<IdentUsage,std::string_view>,18> make_enum_name_array<IdentUsage>() {
+template<>constexpr std::array<std::pair<IdentUsage,std::string_view>,19> make_enum_name_array<IdentUsage>() {
     return {
         std::pair{IdentUsage::unknown,"unknown"},
         std::pair{IdentUsage::bad_ident,"bad_ident"},
@@ -623,6 +627,7 @@ template<>constexpr std::array<std::pair<IdentUsage,std::string_view>,18> make_e
         std::pair{IdentUsage::define_fn,"define_fn"},
         std::pair{IdentUsage::define_cast_fn,"define_cast_fn"},
         std::pair{IdentUsage::define_arg,"define_arg"},
+        std::pair{IdentUsage::define_type_parameter,"define_type_parameter"},
         std::pair{IdentUsage::reference_type,"reference_type"},
         std::pair{IdentUsage::reference_member,"reference_member"},
         std::pair{IdentUsage::reference_member_type,"reference_member_type"},

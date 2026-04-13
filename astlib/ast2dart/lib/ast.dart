@@ -147,6 +147,8 @@ Enum,
 EnumMember,
 @JsonValue('function')
 Function,
+@JsonValue('type_parameter')
+TypeParameter,
 }
 enum TokenTag {
 @JsonValue('indent')
@@ -305,6 +307,8 @@ DefineFn,
 DefineCastFn,
 @JsonValue('define_arg')
 DefineArg,
+@JsonValue('define_type_parameter')
+DefineTypeParameter,
 @JsonValue('reference_type')
 ReferenceType,
 @JsonValue('reference_member')
@@ -877,7 +881,8 @@ factory OptionalType.fromJson(Map<String, dynamic> json) => _$OptionalTypeFromJs
 }
 @JsonSerializable()
 class GenericType extends Type {
-    Member? belong;
+    IdentType? baseType;
+    List<Type>? typeArguments = [];
 factory GenericType.fromJson(Map<String, dynamic> json) => _$GenericTypeFromJson(json);
 }
 @JsonSerializable()
@@ -945,6 +950,9 @@ class Format extends Member {
     List<Func>? castFns = [];
     List<IdentType>? depends = [];
     List<Field>? stateVariables = [];
+    List<TypeParameter>? typeParameters = [];
+    Format? genericBase;
+    List<Type>? genericArguments = [];
 factory Format.fromJson(Map<String, dynamic> json) => _$FormatFromJson(json);
 }
 @JsonSerializable()
@@ -976,6 +984,10 @@ class Func extends Member {
     FunctionType? funcType;
     bool isCast = false;
 factory Func.fromJson(Map<String, dynamic> json) => _$FuncFromJson(json);
+}
+@JsonSerializable()
+class TypeParameter extends Member {
+factory TypeParameter.fromJson(Map<String, dynamic> json) => _$TypeParameterFromJson(json);
 }
 @JsonSerializable()
 class Scope {

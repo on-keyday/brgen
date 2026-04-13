@@ -2,10 +2,10 @@
 
 export namespace ast2ts {
 
-export type NodeType = "program" | "comment" | "comment_group" | "field_argument" | "expr" | "binary" | "unary" | "cond" | "ident" | "call" | "if" | "member_access" | "paren" | "index" | "match" | "range" | "identity" | "tmp_var" | "import" | "cast" | "available" | "specify_order" | "explicit_error" | "io_operation" | "or_cond" | "sizeof_" | "bad_expr" | "stmt" | "loop" | "indent_block" | "scoped_statement" | "match_branch" | "union_candidate" | "return" | "break" | "continue" | "assert" | "implicit_yield" | "metadata" | "type" | "int_type" | "float_type" | "ident_type" | "int_literal_type" | "str_literal_type" | "regex_literal_type" | "void_type" | "bool_type" | "array_type" | "function_type" | "struct_type" | "struct_union_type" | "union_type" | "range_type" | "enum_type" | "meta_type" | "optional_type" | "generic_type" | "literal" | "int_literal" | "bool_literal" | "str_literal" | "regex_literal" | "char_literal" | "type_literal" | "special_literal" | "member" | "field" | "format" | "state" | "enum" | "enum_member" | "function";
+export type NodeType = "program" | "comment" | "comment_group" | "field_argument" | "expr" | "binary" | "unary" | "cond" | "ident" | "call" | "if" | "member_access" | "paren" | "index" | "match" | "range" | "identity" | "tmp_var" | "import" | "cast" | "available" | "specify_order" | "explicit_error" | "io_operation" | "or_cond" | "sizeof_" | "bad_expr" | "stmt" | "loop" | "indent_block" | "scoped_statement" | "match_branch" | "union_candidate" | "return" | "break" | "continue" | "assert" | "implicit_yield" | "metadata" | "type" | "int_type" | "float_type" | "ident_type" | "int_literal_type" | "str_literal_type" | "regex_literal_type" | "void_type" | "bool_type" | "array_type" | "function_type" | "struct_type" | "struct_union_type" | "union_type" | "range_type" | "enum_type" | "meta_type" | "optional_type" | "generic_type" | "literal" | "int_literal" | "bool_literal" | "str_literal" | "regex_literal" | "char_literal" | "type_literal" | "special_literal" | "member" | "field" | "format" | "state" | "enum" | "enum_member" | "function" | "type_parameter";
 
 export function isNodeType(obj: any): obj is NodeType {
-	return obj && typeof obj === 'string' && (obj === "program" || obj === "comment" || obj === "comment_group" || obj === "field_argument" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "identity" || obj === "tmp_var" || obj === "import" || obj === "cast" || obj === "available" || obj === "specify_order" || obj === "explicit_error" || obj === "io_operation" || obj === "or_cond" || obj === "sizeof_" || obj === "bad_expr" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "scoped_statement" || obj === "match_branch" || obj === "union_candidate" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "metadata" || obj === "type" || obj === "int_type" || obj === "float_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "regex_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "struct_union_type" || obj === "union_type" || obj === "range_type" || obj === "enum_type" || obj === "meta_type" || obj === "optional_type" || obj === "generic_type" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "regex_literal" || obj === "char_literal" || obj === "type_literal" || obj === "special_literal" || obj === "member" || obj === "field" || obj === "format" || obj === "state" || obj === "enum" || obj === "enum_member" || obj === "function")
+	return obj && typeof obj === 'string' && (obj === "program" || obj === "comment" || obj === "comment_group" || obj === "field_argument" || obj === "expr" || obj === "binary" || obj === "unary" || obj === "cond" || obj === "ident" || obj === "call" || obj === "if" || obj === "member_access" || obj === "paren" || obj === "index" || obj === "match" || obj === "range" || obj === "identity" || obj === "tmp_var" || obj === "import" || obj === "cast" || obj === "available" || obj === "specify_order" || obj === "explicit_error" || obj === "io_operation" || obj === "or_cond" || obj === "sizeof_" || obj === "bad_expr" || obj === "stmt" || obj === "loop" || obj === "indent_block" || obj === "scoped_statement" || obj === "match_branch" || obj === "union_candidate" || obj === "return" || obj === "break" || obj === "continue" || obj === "assert" || obj === "implicit_yield" || obj === "metadata" || obj === "type" || obj === "int_type" || obj === "float_type" || obj === "ident_type" || obj === "int_literal_type" || obj === "str_literal_type" || obj === "regex_literal_type" || obj === "void_type" || obj === "bool_type" || obj === "array_type" || obj === "function_type" || obj === "struct_type" || obj === "struct_union_type" || obj === "union_type" || obj === "range_type" || obj === "enum_type" || obj === "meta_type" || obj === "optional_type" || obj === "generic_type" || obj === "literal" || obj === "int_literal" || obj === "bool_literal" || obj === "str_literal" || obj === "regex_literal" || obj === "char_literal" || obj === "type_literal" || obj === "special_literal" || obj === "member" || obj === "field" || obj === "format" || obj === "state" || obj === "enum" || obj === "enum_member" || obj === "function" || obj === "type_parameter")
 }
 
 export const TokenTag = {
@@ -111,6 +111,7 @@ export const IdentUsage = {
 	define_fn: "define_fn",
 	define_cast_fn: "define_cast_fn",
 	define_arg: "define_arg",
+	define_type_parameter: "define_type_parameter",
 	reference_type: "reference_type",
 	reference_member: "reference_member",
 	reference_member_type: "reference_member_type",
@@ -121,7 +122,7 @@ export const IdentUsage = {
 export type IdentUsage = (typeof IdentUsage)[keyof typeof IdentUsage];
 
 export function isIdentUsage(obj: any): obj is IdentUsage {
-	return obj && typeof obj === 'string' && (obj === "unknown" || obj === "bad_ident" || obj === "reference" || obj === "define_variable" || obj === "define_const" || obj === "define_field" || obj === "define_format" || obj === "define_state" || obj === "define_enum" || obj === "define_enum_member" || obj === "define_fn" || obj === "define_cast_fn" || obj === "define_arg" || obj === "reference_type" || obj === "reference_member" || obj === "reference_member_type" || obj === "maybe_type" || obj === "reference_builtin_fn")
+	return obj && typeof obj === 'string' && (obj === "unknown" || obj === "bad_ident" || obj === "reference" || obj === "define_variable" || obj === "define_const" || obj === "define_field" || obj === "define_format" || obj === "define_state" || obj === "define_enum" || obj === "define_enum_member" || obj === "define_fn" || obj === "define_cast_fn" || obj === "define_arg" || obj === "define_type_parameter" || obj === "reference_type" || obj === "reference_member" || obj === "reference_member_type" || obj === "maybe_type" || obj === "reference_builtin_fn")
 }
 
 export const Endian = {
@@ -395,6 +396,7 @@ export function isNode(obj: any): obj is Node {
 	if (isEnum(obj)) return true;
 	if (isEnumMember(obj)) return true;
 	if (isFunction(obj)) return true;
+	if (isTypeParameter(obj)) return true;
 	return false;
 }
 
@@ -457,6 +459,7 @@ export function isStmt(obj: any): obj is Stmt {
 	if (isEnum(obj)) return true;
 	if (isEnumMember(obj)) return true;
 	if (isFunction(obj)) return true;
+	if (isTypeParameter(obj)) return true;
 	return false;
 }
 
@@ -517,6 +520,7 @@ export function isMember(obj: any): obj is Member {
 	if (isEnum(obj)) return true;
 	if (isEnumMember(obj)) return true;
 	if (isFunction(obj)) return true;
+	if (isTypeParameter(obj)) return true;
 	return false;
 }
 
@@ -1055,7 +1059,8 @@ export function isOptionalType(obj: any): obj is OptionalType {
 }
 
 export interface GenericType extends Type {
-	belong: Member|null;
+	base_type: IdentType|null;
+	type_arguments: Type[];
 }
 
 export function isGenericType(obj: any): obj is GenericType {
@@ -1150,6 +1155,9 @@ export interface Format extends Member {
 	cast_fns: Function[];
 	depends: IdentType[];
 	state_variables: Field[];
+	type_parameters: TypeParameter[];
+	generic_base: Format|null;
+	generic_arguments: Type[];
 }
 
 export function isFormat(obj: any): obj is Format {
@@ -1196,6 +1204,13 @@ export interface Function extends Member {
 
 export function isFunction(obj: any): obj is Function {
 	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "function"
+}
+
+export interface TypeParameter extends Member {
+}
+
+export function isTypeParameter(obj: any): obj is TypeParameter {
+	return obj && typeof obj === 'object' && typeof obj?.node_type === 'string' && obj.node_type === "type_parameter"
 }
 
 export interface Scope {
@@ -2073,7 +2088,8 @@ export function parseAST(obj: JsonAst): ParseResult {
 				non_dynamic_allocation: false,
 				bit_alignment: BitAlignment.byte_aligned,
 				bit_size: null,
-				belong: null,
+				base_type: null,
+				type_arguments: [],
 			}
 			c.node.push(n);
 			break;
@@ -2199,6 +2215,9 @@ export function parseAST(obj: JsonAst): ParseResult {
 				cast_fns: [],
 				depends: [],
 				state_variables: [],
+				type_parameters: [],
+				generic_base: null,
+				generic_arguments: [],
 			}
 			c.node.push(n);
 			break;
@@ -2261,6 +2280,18 @@ export function parseAST(obj: JsonAst): ParseResult {
 				body: null,
 				func_type: null,
 				is_cast: false,
+			}
+			c.node.push(n);
+			break;
+		}
+		case "type_parameter": {
+			const n :TypeParameter = {
+				node_type: "type_parameter",
+				loc: on.loc,
+				comment: null,
+				belong: null,
+				belong_struct: null,
+				ident: null,
 			}
 			c.node.push(n);
 			break;
@@ -4317,14 +4348,24 @@ export function parseAST(obj: JsonAst): ParseResult {
 				throw new Error('invalid node list at GenericType::bit_size');
 			}
 			n.bit_size = on.body.bit_size;
-			if (on.body?.belong !== null && typeof on.body?.belong !== 'number') {
-				throw new Error('invalid node list at GenericType::belong');
+			if (on.body?.base_type !== null && typeof on.body?.base_type !== 'number') {
+				throw new Error('invalid node list at GenericType::base_type');
 			}
-			const tmpbelong = on.body.belong === null ? null : c.node[on.body.belong];
-			if (!(tmpbelong === null || isMember(tmpbelong))) {
-				throw new Error('invalid node list at GenericType::belong');
+			const tmpbase_type = on.body.base_type === null ? null : c.node[on.body.base_type];
+			if (!(tmpbase_type === null || isIdentType(tmpbase_type))) {
+				throw new Error('invalid node list at GenericType::base_type');
 			}
-			n.belong = tmpbelong;
+			n.base_type = tmpbase_type;
+			for (const o of on.body.type_arguments) {
+				if (typeof o !== 'number') {
+					throw new Error('invalid node list at GenericType::type_arguments');
+				}
+				const tmptype_arguments = c.node[o];
+				if (!isType(tmptype_arguments)) {
+					throw new Error('invalid node list at GenericType::type_arguments');
+				}
+				n.type_arguments.push(tmptype_arguments);
+			}
 			break;
 		}
 		case "int_literal": {
@@ -4710,6 +4751,34 @@ export function parseAST(obj: JsonAst): ParseResult {
 				}
 				n.state_variables.push(tmpstate_variables);
 			}
+			for (const o of on.body.type_parameters) {
+				if (typeof o !== 'number') {
+					throw new Error('invalid node list at Format::type_parameters');
+				}
+				const tmptype_parameters = c.node[o];
+				if (!isTypeParameter(tmptype_parameters)) {
+					throw new Error('invalid node list at Format::type_parameters');
+				}
+				n.type_parameters.push(tmptype_parameters);
+			}
+			if (on.body?.generic_base !== null && typeof on.body?.generic_base !== 'number') {
+				throw new Error('invalid node list at Format::generic_base');
+			}
+			const tmpgeneric_base = on.body.generic_base === null ? null : c.node[on.body.generic_base];
+			if (!(tmpgeneric_base === null || isFormat(tmpgeneric_base))) {
+				throw new Error('invalid node list at Format::generic_base');
+			}
+			n.generic_base = tmpgeneric_base;
+			for (const o of on.body.generic_arguments) {
+				if (typeof o !== 'number') {
+					throw new Error('invalid node list at Format::generic_arguments');
+				}
+				const tmpgeneric_arguments = c.node[o];
+				if (!isType(tmpgeneric_arguments)) {
+					throw new Error('invalid node list at Format::generic_arguments');
+				}
+				n.generic_arguments.push(tmpgeneric_arguments);
+			}
 			break;
 		}
 		case "state": {
@@ -4964,6 +5033,42 @@ export function parseAST(obj: JsonAst): ParseResult {
 				throw new Error('invalid node list at Function::is_cast');
 			}
 			n.is_cast = on.body.is_cast;
+			break;
+		}
+		case "type_parameter": {
+			const n :TypeParameter = cnode as TypeParameter;
+			if (on.body?.comment !== null && typeof on.body?.comment !== 'number') {
+				throw new Error('invalid node list at TypeParameter::comment');
+			}
+			const tmpcomment = on.body.comment === null ? null : c.node[on.body.comment];
+			if (!(tmpcomment === null || isNode(tmpcomment))) {
+				throw new Error('invalid node list at TypeParameter::comment');
+			}
+			n.comment = tmpcomment;
+			if (on.body?.belong !== null && typeof on.body?.belong !== 'number') {
+				throw new Error('invalid node list at TypeParameter::belong');
+			}
+			const tmpbelong = on.body.belong === null ? null : c.node[on.body.belong];
+			if (!(tmpbelong === null || isMember(tmpbelong))) {
+				throw new Error('invalid node list at TypeParameter::belong');
+			}
+			n.belong = tmpbelong;
+			if (on.body?.belong_struct !== null && typeof on.body?.belong_struct !== 'number') {
+				throw new Error('invalid node list at TypeParameter::belong_struct');
+			}
+			const tmpbelong_struct = on.body.belong_struct === null ? null : c.node[on.body.belong_struct];
+			if (!(tmpbelong_struct === null || isStructType(tmpbelong_struct))) {
+				throw new Error('invalid node list at TypeParameter::belong_struct');
+			}
+			n.belong_struct = tmpbelong_struct;
+			if (on.body?.ident !== null && typeof on.body?.ident !== 'number') {
+				throw new Error('invalid node list at TypeParameter::ident');
+			}
+			const tmpident = on.body.ident === null ? null : c.node[on.body.ident];
+			if (!(tmpident === null || isIdent(tmpident))) {
+				throw new Error('invalid node list at TypeParameter::ident');
+			}
+			n.ident = tmpident;
 			break;
 		}
 		}
@@ -5408,7 +5513,7 @@ export function getChildCount(node: Node): number {
 	    return 0;
      }
      const n :GenericType = node as GenericType;
-		return 0;
+		return  + (n.base_type === null ? 0 : 1) + n.type_arguments.length;
 	}
 	case "int_literal": {
      if (!isIntLiteral(node)) {
@@ -5471,7 +5576,7 @@ export function getChildCount(node: Node): number {
 	    return 0;
      }
      const n :Format = node as Format;
-		return  + (n.comment === null ? 0 : 1) + (n.ident === null ? 0 : 1) + (n.body === null ? 0 : 1);
+		return  + (n.comment === null ? 0 : 1) + (n.ident === null ? 0 : 1) + (n.body === null ? 0 : 1) + n.type_parameters.length + n.generic_arguments.length;
 	}
 	case "state": {
      if (!isState(node)) {
@@ -5500,6 +5605,13 @@ export function getChildCount(node: Node): number {
      }
      const n :Function = node as Function;
 		return  + (n.comment === null ? 0 : 1) + (n.ident === null ? 0 : 1) + n.parameters.length + (n.return_type === null ? 0 : 1) + (n.body === null ? 0 : 1) + (n.func_type === null ? 0 : 1);
+	}
+	case "type_parameter": {
+     if (!isTypeParameter(node)) {
+	    return 0;
+     }
+     const n :TypeParameter = node as TypeParameter;
+		return  + (n.comment === null ? 0 : 1) + (n.ident === null ? 0 : 1);
 	}
 	}
 	return 0;
@@ -6547,6 +6659,18 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 				break;
 			}
 			const n :GenericType = node as GenericType;
+			if (n.base_type !== null) {
+				const result = fn(fn, n.base_type);
+				if (result === false) {
+					return;
+				}
+			}
+			for (const e of n.type_arguments) {
+				const result = fn(fn, e);
+				if (result === false) {
+					return;
+				}
+			}
 			break;
 		}
 		case "int_literal": {
@@ -6706,6 +6830,18 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 					return;
 				}
 			}
+			for (const e of n.type_parameters) {
+				const result = fn(fn, e);
+				if (result === false) {
+					return;
+				}
+			}
+			for (const e of n.generic_arguments) {
+				const result = fn(fn, e);
+				if (result === false) {
+					return;
+				}
+			}
 			break;
 		}
 		case "state": {
@@ -6844,6 +6980,25 @@ export function walk(node: Node, fn: VisitFn<Node>) {
 			}
 			if (n.func_type !== null) {
 				const result = fn(fn, n.func_type);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "type_parameter": {
+			if (!isTypeParameter(node)) {
+				break;
+			}
+			const n :TypeParameter = node as TypeParameter;
+			if (n.comment !== null) {
+				const result = fn(fn, n.comment);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.ident !== null) {
+				const result = fn(fn, n.ident);
 				if (result === false) {
 					return;
 				}
@@ -7895,6 +8050,18 @@ export async function walkAsync(node: Node, fn: VisitFnAsync<Node>) {
 				break;
 			}
 			const n :GenericType = node as GenericType;
+			if (n.base_type !== null) {
+				const result = await fn(fn, n.base_type);
+				if (result === false) {
+					return;
+				}
+			}
+			for (const e of n.type_arguments) {
+				const result = await fn(fn, e);
+				if (result === false) {
+					return;
+				}
+			}
 			break;
 		}
 		case "int_literal": {
@@ -8054,6 +8221,18 @@ export async function walkAsync(node: Node, fn: VisitFnAsync<Node>) {
 					return;
 				}
 			}
+			for (const e of n.type_parameters) {
+				const result = await fn(fn, e);
+				if (result === false) {
+					return;
+				}
+			}
+			for (const e of n.generic_arguments) {
+				const result = await fn(fn, e);
+				if (result === false) {
+					return;
+				}
+			}
 			break;
 		}
 		case "state": {
@@ -8192,6 +8371,25 @@ export async function walkAsync(node: Node, fn: VisitFnAsync<Node>) {
 			}
 			if (n.func_type !== null) {
 				const result = await fn(fn, n.func_type);
+				if (result === false) {
+					return;
+				}
+			}
+			break;
+		}
+		case "type_parameter": {
+			if (!isTypeParameter(node)) {
+				break;
+			}
+			const n :TypeParameter = node as TypeParameter;
+			if (n.comment !== null) {
+				const result = await fn(fn, n.comment);
+				if (result === false) {
+					return;
+				}
+			}
+			if (n.ident !== null) {
+				const result = await fn(fn, n.ident);
 				if (result === false) {
 					return;
 				}

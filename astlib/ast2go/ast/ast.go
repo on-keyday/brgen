@@ -83,6 +83,7 @@ const (
 	NodeTypeEnum             NodeType = 2228228
 	NodeTypeEnumMember       NodeType = 2228229
 	NodeTypeFunction         NodeType = 2228230
+	NodeTypeTypeParameter    NodeType = 2228231
 )
 
 func (n NodeType) String() string {
@@ -233,6 +234,8 @@ func (n NodeType) String() string {
 		return "enum_member"
 	case NodeTypeFunction:
 		return "function"
+	case NodeTypeTypeParameter:
+		return "type_parameter"
 	default:
 		return fmt.Sprintf("NodeType(%d)", n)
 	}
@@ -390,6 +393,8 @@ func (n *NodeType) UnmarshalJSON(data []byte) error {
 		*n = NodeTypeEnumMember
 	case "function":
 		*n = NodeTypeFunction
+	case "type_parameter":
+		*n = NodeTypeTypeParameter
 	default:
 		return fmt.Errorf("unknown NodeType: %q", tmp)
 	}
@@ -666,6 +671,10 @@ func (n *EnumMember) GetNodeType() NodeType {
 
 func (n *Function) GetNodeType() NodeType {
 	return NodeTypeFunction
+}
+
+func (n *TypeParameter) GetNodeType() NodeType {
+	return NodeTypeTypeParameter
 }
 
 type TokenTag int
@@ -1066,11 +1075,12 @@ const (
 	IdentUsageDefineFn            IdentUsage = 10
 	IdentUsageDefineCastFn        IdentUsage = 11
 	IdentUsageDefineArg           IdentUsage = 12
-	IdentUsageReferenceType       IdentUsage = 13
-	IdentUsageReferenceMember     IdentUsage = 14
-	IdentUsageReferenceMemberType IdentUsage = 15
-	IdentUsageMaybeType           IdentUsage = 16
-	IdentUsageReferenceBuiltinFn  IdentUsage = 17
+	IdentUsageDefineTypeParameter IdentUsage = 13
+	IdentUsageReferenceType       IdentUsage = 14
+	IdentUsageReferenceMember     IdentUsage = 15
+	IdentUsageReferenceMemberType IdentUsage = 16
+	IdentUsageMaybeType           IdentUsage = 17
+	IdentUsageReferenceBuiltinFn  IdentUsage = 18
 )
 
 func (n IdentUsage) String() string {
@@ -1101,6 +1111,8 @@ func (n IdentUsage) String() string {
 		return "define_cast_fn"
 	case IdentUsageDefineArg:
 		return "define_arg"
+	case IdentUsageDefineTypeParameter:
+		return "define_type_parameter"
 	case IdentUsageReferenceType:
 		return "reference_type"
 	case IdentUsageReferenceMember:
@@ -1148,6 +1160,8 @@ func (n *IdentUsage) UnmarshalJSON(data []byte) error {
 		*n = IdentUsageDefineCastFn
 	case "define_arg":
 		*n = IdentUsageDefineArg
+	case "define_type_parameter":
+		*n = IdentUsageDefineTypeParameter
 	case "reference_type":
 		*n = IdentUsageReferenceType
 	case "reference_member":
@@ -3190,7 +3204,8 @@ type GenericType struct {
 	NonDynamicAllocation bool
 	BitAlignment         BitAlignment
 	BitSize              *uint64
-	Belong               Member
+	BaseType             *IdentType
+	TypeArguments        []Type
 }
 
 func (n *GenericType) isType() {}
@@ -3445,17 +3460,20 @@ func (n *Field) GetLoc() Loc {
 }
 
 type Format struct {
-	Loc            Loc
-	Comment        Node
-	Belong         Member
-	BelongStruct   *StructType
-	Ident          *Ident
-	Body           *IndentBlock
-	EncodeFn       *Function
-	DecodeFn       *Function
-	CastFns        []*Function
-	Depends        []*IdentType
-	StateVariables []*Field
+	Loc              Loc
+	Comment          Node
+	Belong           Member
+	BelongStruct     *StructType
+	Ident            *Ident
+	Body             *IndentBlock
+	EncodeFn         *Function
+	DecodeFn         *Function
+	CastFns          []*Function
+	Depends          []*IdentType
+	StateVariables   []*Field
+	TypeParameters   []*TypeParameter
+	GenericBase      *Format
+	GenericArguments []Type
 }
 
 func (n *Format) isMember() {}
@@ -3631,6 +3649,40 @@ func (n *Function) isStmt() {}
 func (n *Function) isNode() {}
 
 func (n *Function) GetLoc() Loc {
+	return n.Loc
+}
+
+type TypeParameter struct {
+	Loc          Loc
+	Comment      Node
+	Belong       Member
+	BelongStruct *StructType
+	Ident        *Ident
+}
+
+func (n *TypeParameter) isMember() {}
+
+func (n *TypeParameter) GetComment() Node {
+	return n.Comment
+}
+
+func (n *TypeParameter) GetBelong() Member {
+	return n.Belong
+}
+
+func (n *TypeParameter) GetBelongStruct() *StructType {
+	return n.BelongStruct
+}
+
+func (n *TypeParameter) GetIdent() *Ident {
+	return n.Ident
+}
+
+func (n *TypeParameter) isStmt() {}
+
+func (n *TypeParameter) isNode() {}
+
+func (n *TypeParameter) GetLoc() Loc {
 	return n.Loc
 }
 
@@ -3868,6 +3920,8 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			n.node[i] = &EnumMember{Loc: raw.Loc}
 		case NodeTypeFunction:
 			n.node[i] = &Function{Loc: raw.Loc}
+		case NodeTypeTypeParameter:
+			n.node[i] = &TypeParameter{Loc: raw.Loc}
 		default:
 			return nil, fmt.Errorf("unknown node type: %q", raw.NodeType)
 		}
@@ -5099,7 +5153,8 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				NonDynamicAllocation bool         `json:"non_dynamic_allocation"`
 				BitAlignment         BitAlignment `json:"bit_alignment"`
 				BitSize              *uint64      `json:"bit_size"`
-				Belong               *uintptr     `json:"belong"`
+				BaseType             *uintptr     `json:"base_type"`
+				TypeArguments        []uintptr    `json:"type_arguments"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -5108,8 +5163,12 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.NonDynamicAllocation = tmp.NonDynamicAllocation
 			v.BitAlignment = tmp.BitAlignment
 			v.BitSize = tmp.BitSize
-			if tmp.Belong != nil {
-				v.Belong = n.node[*tmp.Belong].(Member)
+			if tmp.BaseType != nil {
+				v.BaseType = n.node[*tmp.BaseType].(*IdentType)
+			}
+			v.TypeArguments = make([]Type, len(tmp.TypeArguments))
+			for j, k := range tmp.TypeArguments {
+				v.TypeArguments[j] = n.node[k].(Type)
 			}
 		case NodeTypeIntLiteral:
 			v := n.node[i].(*IntLiteral)
@@ -5288,16 +5347,19 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 		case NodeTypeFormat:
 			v := n.node[i].(*Format)
 			var tmp struct {
-				Comment        *uintptr  `json:"comment"`
-				Belong         *uintptr  `json:"belong"`
-				BelongStruct   *uintptr  `json:"belong_struct"`
-				Ident          *uintptr  `json:"ident"`
-				Body           *uintptr  `json:"body"`
-				EncodeFn       *uintptr  `json:"encode_fn"`
-				DecodeFn       *uintptr  `json:"decode_fn"`
-				CastFns        []uintptr `json:"cast_fns"`
-				Depends        []uintptr `json:"depends"`
-				StateVariables []uintptr `json:"state_variables"`
+				Comment          *uintptr  `json:"comment"`
+				Belong           *uintptr  `json:"belong"`
+				BelongStruct     *uintptr  `json:"belong_struct"`
+				Ident            *uintptr  `json:"ident"`
+				Body             *uintptr  `json:"body"`
+				EncodeFn         *uintptr  `json:"encode_fn"`
+				DecodeFn         *uintptr  `json:"decode_fn"`
+				CastFns          []uintptr `json:"cast_fns"`
+				Depends          []uintptr `json:"depends"`
+				StateVariables   []uintptr `json:"state_variables"`
+				TypeParameters   []uintptr `json:"type_parameters"`
+				GenericBase      *uintptr  `json:"generic_base"`
+				GenericArguments []uintptr `json:"generic_arguments"`
 			}
 			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
 				return nil, err
@@ -5334,6 +5396,17 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			v.StateVariables = make([]*Field, len(tmp.StateVariables))
 			for j, k := range tmp.StateVariables {
 				v.StateVariables[j] = n.node[k].(*Field)
+			}
+			v.TypeParameters = make([]*TypeParameter, len(tmp.TypeParameters))
+			for j, k := range tmp.TypeParameters {
+				v.TypeParameters[j] = n.node[k].(*TypeParameter)
+			}
+			if tmp.GenericBase != nil {
+				v.GenericBase = n.node[*tmp.GenericBase].(*Format)
+			}
+			v.GenericArguments = make([]Type, len(tmp.GenericArguments))
+			for j, k := range tmp.GenericArguments {
+				v.GenericArguments[j] = n.node[k].(Type)
 			}
 		case NodeTypeState:
 			v := n.node[i].(*State)
@@ -5481,6 +5554,29 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 				v.FuncType = n.node[*tmp.FuncType].(*FunctionType)
 			}
 			v.IsCast = tmp.IsCast
+		case NodeTypeTypeParameter:
+			v := n.node[i].(*TypeParameter)
+			var tmp struct {
+				Comment      *uintptr `json:"comment"`
+				Belong       *uintptr `json:"belong"`
+				BelongStruct *uintptr `json:"belong_struct"`
+				Ident        *uintptr `json:"ident"`
+			}
+			if err := json.Unmarshal(raw.Body, &tmp); err != nil {
+				return nil, err
+			}
+			if tmp.Comment != nil {
+				v.Comment = n.node[*tmp.Comment].(Node)
+			}
+			if tmp.Belong != nil {
+				v.Belong = n.node[*tmp.Belong].(Member)
+			}
+			if tmp.BelongStruct != nil {
+				v.BelongStruct = n.node[*tmp.BelongStruct].(*StructType)
+			}
+			if tmp.Ident != nil {
+				v.Ident = n.node[*tmp.Ident].(*Ident)
+			}
 		default:
 			return nil, fmt.Errorf("unknown node type: %q", raw.NodeType)
 		}
@@ -6119,6 +6215,16 @@ func Walk(n Node, f Visitor) {
 			}
 		}
 	case *GenericType:
+		if v.BaseType != nil {
+			if !f.Visit(f, v.BaseType) {
+				return
+			}
+		}
+		for _, w := range v.TypeArguments {
+			if !f.Visit(f, w) {
+				return
+			}
+		}
 	case *IntLiteral:
 		if v.ExprType != nil {
 			if !f.Visit(f, v.ExprType) {
@@ -6205,6 +6311,16 @@ func Walk(n Node, f Visitor) {
 		}
 		if v.Body != nil {
 			if !f.Visit(f, v.Body) {
+				return
+			}
+		}
+		for _, w := range v.TypeParameters {
+			if !f.Visit(f, w) {
+				return
+			}
+		}
+		for _, w := range v.GenericArguments {
+			if !f.Visit(f, w) {
 				return
 			}
 		}
@@ -6304,6 +6420,17 @@ func Walk(n Node, f Visitor) {
 		}
 		if v.FuncType != nil {
 			if !f.Visit(f, v.FuncType) {
+				return
+			}
+		}
+	case *TypeParameter:
+		if v.Comment != nil {
+			if !f.Visit(f, v.Comment) {
+				return
+			}
+		}
+		if v.Ident != nil {
+			if !f.Visit(f, v.Ident) {
 				return
 			}
 		}

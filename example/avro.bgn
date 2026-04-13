@@ -48,8 +48,7 @@ format Long:
             shift = shift + 7
         value = (v >> 1) ^ -(v & 1)
 
-# TODO(on-keyday): generics?
-format Array:
+format Array[Item]:
     length :Long
     items :[length]Item
 

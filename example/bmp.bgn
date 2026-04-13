@@ -19,14 +19,14 @@ format BMPFileHeader:
 
 format BMPInfoHeader:
     biSize :ul32
-    biWidth :sl32
-    biHeight :sl32
+    biWidth :il32
+    biHeight :il32
     biPlanes :ul16
     biBitCount :ul16
     biCompression :BMPCompression
     biSizeImage :ul32
-    biXPelsPerMeter :sl32
-    biYPelsPerMeter :sl32
+    biXPelsPerMeter :il32
+    biYPelsPerMeter :il32
     biClrUsed :ul32
     biClrImportant :ul32
 

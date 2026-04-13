@@ -94,6 +94,7 @@ enum IdentUsage:
     define_fn
     define_cast_fn
     define_arg
+    define_type_parameter
     reference_type
     reference_member
     reference_member_type

@@ -26,7 +26,8 @@ namespace brgen::middle {
                     if (p->arguments.size() < 1) {
                         error(p->loc, "invalid ", ident->ident, "; must have at least one argument").report();
                     }
-                    if (!ast::as<ast::MemberAccess>(p->arguments[0]) && !ast::as<ast::Ident>(p->arguments[0])) {
+                    if (ident->ident != "sizeof" &&
+                        !ast::as<ast::MemberAccess>(p->arguments[0]) && !ast::as<ast::Ident>(p->arguments[0])) {
                         error(p->arguments[0]->loc, "invalid target of ", ident->ident, "; must be an ident or member access").report();
                     }
                     ident->usage = ast::IdentUsage::reference_builtin_fn;

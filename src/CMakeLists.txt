@@ -4,12 +4,13 @@ cmake_minimum_required(VERSION 3.22.1)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tool")
 
-add_library(core STATIC 
+add_library(core STATIC
     "core/ast/parse.cpp"
     "core/ast/stream.cpp"
     "core/middle/typing.cpp"
     "core/middle/type_attribute.cpp"
     "core/middle/analyze_block_trait.cpp"
+    "core/middle/monomorphize.cpp"
 )
 
 # Setting C++ targets
@@ -137,8 +138,8 @@ endif()
 
 # Setting shared library version src2json
 if(S2J_LIB)
-add_library(s2j SHARED 
-    "tool/src2json/src2json.cpp" 
+add_library(s2j SHARED
+    "tool/src2json/src2json.cpp"
     "tool/src2json/entry.cpp"
     # to avoid link error in PIC format platform, use source directly
     "core/ast/parse.cpp"
@@ -146,6 +147,7 @@ add_library(s2j SHARED
     "core/middle/typing.cpp"
     "core/middle/type_attribute.cpp"
     "core/middle/analyze_block_trait.cpp"
+    "core/middle/monomorphize.cpp"
 )
 target_compile_definitions(s2j PRIVATE SRC2JSON_DLL)
 target_link_libraries(s2j futils)

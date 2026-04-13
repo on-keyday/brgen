@@ -135,10 +135,7 @@ format Cookie:
     cookie :[length]u8
 
 format SignatureSchemeList:
-    length :u16
-    length % 2 == 0
-    length >= 2 && length <= 0xfffe
-    supported_signature_algorithms :[length/2]SignatureScheme
+    supported_signature_algorithms :Vector[SignatureScheme]
 
 format DistinguishedName:
     length :u16
@@ -305,6 +302,7 @@ format HandshakeHeader:
     length :u24
     
 enum CipherSuite:
+    :u16
     TLS_NULL_WITH_NULL_NULL = 0x0000
     TLS_AES_128_GCM_SHA256 = 0x1301
     TLS_AES_256_GCM_SHA384 = 0x1302
@@ -312,11 +310,15 @@ enum CipherSuite:
     TLS_AES_128_CCM_SHA256 = 0x1304
     TLS_AES_128_CCM_8_SHA256 = 0x1305
 
-format CipherSuites:
+format Vector[T]:
     length :u16
-    length % 2 == 0
-    length >= 2 && length <= 0xfffe
-    cipher_suites :[length/2]CipherSuite
+    length % sizeof(T) == 0
+    length >= 0 && length <= 0xfffe
+    data :[length / sizeof(T)]T
+
+format CipherSuites:
+    cipher_suites :Vector[CipherSuite]
+    cipher_suites.length >= 2
 
 format LegacySessionID:
     length :u8

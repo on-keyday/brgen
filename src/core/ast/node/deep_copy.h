@@ -9,472 +9,514 @@ namespace brgen::ast {
     struct NullBackTracer {
         constexpr void operator()(auto&& a, auto&& b, const char* which, size_t index) {}
     };
-    template <class T, class NodeM, class ScopeM>
-    std::shared_ptr<T> deep_copy(const std::shared_ptr<T>& node, NodeM&& node_map, ScopeM&& scope_map);
+    struct NullSubst {
+        template <class T>
+        constexpr std::shared_ptr<T> operator()(const std::shared_ptr<T>&) const {
+            return nullptr;
+        }
+    };
+    template <class T, class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<T> deep_copy(const std::shared_ptr<T>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{});
 
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<Node> deep_copy(const std::shared_ptr<Node>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<Node> deep_copy(const std::shared_ptr<Node>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
+        if (!node) return nullptr;
+        if (auto r = subst(node)) {
+            return r;
+        }
         if (ast::as<Program>(node)) {
-            return deep_copy(ast::cast_to<Program>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Program>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Comment>(node)) {
-            return deep_copy(ast::cast_to<Comment>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Comment>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<CommentGroup>(node)) {
-            return deep_copy(ast::cast_to<CommentGroup>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<CommentGroup>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<FieldArgument>(node)) {
-            return deep_copy(ast::cast_to<FieldArgument>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<FieldArgument>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Binary>(node)) {
-            return deep_copy(ast::cast_to<Binary>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Binary>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Unary>(node)) {
-            return deep_copy(ast::cast_to<Unary>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Unary>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Cond>(node)) {
-            return deep_copy(ast::cast_to<Cond>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Cond>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Ident>(node)) {
-            return deep_copy(ast::cast_to<Ident>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Ident>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Call>(node)) {
-            return deep_copy(ast::cast_to<Call>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Call>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<If>(node)) {
-            return deep_copy(ast::cast_to<If>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<If>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<MemberAccess>(node)) {
-            return deep_copy(ast::cast_to<MemberAccess>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<MemberAccess>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Paren>(node)) {
-            return deep_copy(ast::cast_to<Paren>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Paren>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Index>(node)) {
-            return deep_copy(ast::cast_to<Index>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Index>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Match>(node)) {
-            return deep_copy(ast::cast_to<Match>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Match>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Range>(node)) {
-            return deep_copy(ast::cast_to<Range>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Range>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Identity>(node)) {
-            return deep_copy(ast::cast_to<Identity>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Identity>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<TmpVar>(node)) {
-            return deep_copy(ast::cast_to<TmpVar>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<TmpVar>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Import>(node)) {
-            return deep_copy(ast::cast_to<Import>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Import>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Cast>(node)) {
-            return deep_copy(ast::cast_to<Cast>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Cast>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Available>(node)) {
-            return deep_copy(ast::cast_to<Available>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Available>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<SpecifyOrder>(node)) {
-            return deep_copy(ast::cast_to<SpecifyOrder>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<SpecifyOrder>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<ExplicitError>(node)) {
-            return deep_copy(ast::cast_to<ExplicitError>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<ExplicitError>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<IOOperation>(node)) {
-            return deep_copy(ast::cast_to<IOOperation>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<IOOperation>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<OrCond>(node)) {
-            return deep_copy(ast::cast_to<OrCond>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<OrCond>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<SizeOf>(node)) {
-            return deep_copy(ast::cast_to<SizeOf>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<SizeOf>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<BadExpr>(node)) {
-            return deep_copy(ast::cast_to<BadExpr>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<BadExpr>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Loop>(node)) {
-            return deep_copy(ast::cast_to<Loop>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Loop>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<IndentBlock>(node)) {
-            return deep_copy(ast::cast_to<IndentBlock>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<IndentBlock>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<ScopedStatement>(node)) {
-            return deep_copy(ast::cast_to<ScopedStatement>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<ScopedStatement>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<MatchBranch>(node)) {
-            return deep_copy(ast::cast_to<MatchBranch>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<MatchBranch>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<UnionCandidate>(node)) {
-            return deep_copy(ast::cast_to<UnionCandidate>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<UnionCandidate>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Return>(node)) {
-            return deep_copy(ast::cast_to<Return>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Return>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Break>(node)) {
-            return deep_copy(ast::cast_to<Break>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Break>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Continue>(node)) {
-            return deep_copy(ast::cast_to<Continue>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Continue>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Assert>(node)) {
-            return deep_copy(ast::cast_to<Assert>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Assert>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<ImplicitYield>(node)) {
-            return deep_copy(ast::cast_to<ImplicitYield>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<ImplicitYield>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Metadata>(node)) {
-            return deep_copy(ast::cast_to<Metadata>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Metadata>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<IntType>(node)) {
-            return deep_copy(ast::cast_to<IntType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<IntType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<FloatType>(node)) {
-            return deep_copy(ast::cast_to<FloatType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<FloatType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<IdentType>(node)) {
-            return deep_copy(ast::cast_to<IdentType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<IdentType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<IntLiteralType>(node)) {
-            return deep_copy(ast::cast_to<IntLiteralType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<IntLiteralType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<StrLiteralType>(node)) {
-            return deep_copy(ast::cast_to<StrLiteralType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<StrLiteralType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<RegexLiteralType>(node)) {
-            return deep_copy(ast::cast_to<RegexLiteralType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<RegexLiteralType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<VoidType>(node)) {
-            return deep_copy(ast::cast_to<VoidType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<VoidType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<BoolType>(node)) {
-            return deep_copy(ast::cast_to<BoolType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<BoolType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<ArrayType>(node)) {
-            return deep_copy(ast::cast_to<ArrayType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<ArrayType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<FunctionType>(node)) {
-            return deep_copy(ast::cast_to<FunctionType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<FunctionType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<StructType>(node)) {
-            return deep_copy(ast::cast_to<StructType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<StructType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<StructUnionType>(node)) {
-            return deep_copy(ast::cast_to<StructUnionType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<StructUnionType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<UnionType>(node)) {
-            return deep_copy(ast::cast_to<UnionType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<UnionType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<RangeType>(node)) {
-            return deep_copy(ast::cast_to<RangeType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<RangeType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<EnumType>(node)) {
-            return deep_copy(ast::cast_to<EnumType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<EnumType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<MetaType>(node)) {
-            return deep_copy(ast::cast_to<MetaType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<MetaType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<OptionalType>(node)) {
-            return deep_copy(ast::cast_to<OptionalType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<OptionalType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<GenericType>(node)) {
-            return deep_copy(ast::cast_to<GenericType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<GenericType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<IntLiteral>(node)) {
-            return deep_copy(ast::cast_to<IntLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<IntLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<BoolLiteral>(node)) {
-            return deep_copy(ast::cast_to<BoolLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<BoolLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<StrLiteral>(node)) {
-            return deep_copy(ast::cast_to<StrLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<StrLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<RegexLiteral>(node)) {
-            return deep_copy(ast::cast_to<RegexLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<RegexLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<CharLiteral>(node)) {
-            return deep_copy(ast::cast_to<CharLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<CharLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<TypeLiteral>(node)) {
-            return deep_copy(ast::cast_to<TypeLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<TypeLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<SpecialLiteral>(node)) {
-            return deep_copy(ast::cast_to<SpecialLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<SpecialLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Field>(node)) {
-            return deep_copy(ast::cast_to<Field>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Field>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Format>(node)) {
-            return deep_copy(ast::cast_to<Format>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Format>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<State>(node)) {
-            return deep_copy(ast::cast_to<State>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<State>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Enum>(node)) {
-            return deep_copy(ast::cast_to<Enum>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Enum>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<EnumMember>(node)) {
-            return deep_copy(ast::cast_to<EnumMember>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<EnumMember>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Function>(node)) {
-            return deep_copy(ast::cast_to<Function>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Function>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        }
+        if (ast::as<TypeParameter>(node)) {
+            return deep_copy(ast::cast_to<TypeParameter>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         return nullptr;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<Expr> deep_copy(const std::shared_ptr<Expr>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<Expr> deep_copy(const std::shared_ptr<Expr>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
+        if (!node) return nullptr;
+        if (auto r = subst(node)) {
+            return r;
+        }
         if (ast::as<Binary>(node)) {
-            return deep_copy(ast::cast_to<Binary>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Binary>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Unary>(node)) {
-            return deep_copy(ast::cast_to<Unary>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Unary>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Cond>(node)) {
-            return deep_copy(ast::cast_to<Cond>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Cond>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Ident>(node)) {
-            return deep_copy(ast::cast_to<Ident>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Ident>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Call>(node)) {
-            return deep_copy(ast::cast_to<Call>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Call>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<If>(node)) {
-            return deep_copy(ast::cast_to<If>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<If>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<MemberAccess>(node)) {
-            return deep_copy(ast::cast_to<MemberAccess>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<MemberAccess>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Paren>(node)) {
-            return deep_copy(ast::cast_to<Paren>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Paren>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Index>(node)) {
-            return deep_copy(ast::cast_to<Index>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Index>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Match>(node)) {
-            return deep_copy(ast::cast_to<Match>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Match>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Range>(node)) {
-            return deep_copy(ast::cast_to<Range>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Range>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Identity>(node)) {
-            return deep_copy(ast::cast_to<Identity>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Identity>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<TmpVar>(node)) {
-            return deep_copy(ast::cast_to<TmpVar>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<TmpVar>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Import>(node)) {
-            return deep_copy(ast::cast_to<Import>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Import>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Cast>(node)) {
-            return deep_copy(ast::cast_to<Cast>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Cast>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Available>(node)) {
-            return deep_copy(ast::cast_to<Available>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Available>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<SpecifyOrder>(node)) {
-            return deep_copy(ast::cast_to<SpecifyOrder>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<SpecifyOrder>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<ExplicitError>(node)) {
-            return deep_copy(ast::cast_to<ExplicitError>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<ExplicitError>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<IOOperation>(node)) {
-            return deep_copy(ast::cast_to<IOOperation>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<IOOperation>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<OrCond>(node)) {
-            return deep_copy(ast::cast_to<OrCond>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<OrCond>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<SizeOf>(node)) {
-            return deep_copy(ast::cast_to<SizeOf>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<SizeOf>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<BadExpr>(node)) {
-            return deep_copy(ast::cast_to<BadExpr>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<BadExpr>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<IntLiteral>(node)) {
-            return deep_copy(ast::cast_to<IntLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<IntLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<BoolLiteral>(node)) {
-            return deep_copy(ast::cast_to<BoolLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<BoolLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<StrLiteral>(node)) {
-            return deep_copy(ast::cast_to<StrLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<StrLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<RegexLiteral>(node)) {
-            return deep_copy(ast::cast_to<RegexLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<RegexLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<CharLiteral>(node)) {
-            return deep_copy(ast::cast_to<CharLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<CharLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<TypeLiteral>(node)) {
-            return deep_copy(ast::cast_to<TypeLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<TypeLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<SpecialLiteral>(node)) {
-            return deep_copy(ast::cast_to<SpecialLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<SpecialLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         return nullptr;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<Stmt> deep_copy(const std::shared_ptr<Stmt>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<Stmt> deep_copy(const std::shared_ptr<Stmt>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
+        if (!node) return nullptr;
+        if (auto r = subst(node)) {
+            return r;
+        }
         if (ast::as<Loop>(node)) {
-            return deep_copy(ast::cast_to<Loop>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Loop>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<IndentBlock>(node)) {
-            return deep_copy(ast::cast_to<IndentBlock>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<IndentBlock>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<ScopedStatement>(node)) {
-            return deep_copy(ast::cast_to<ScopedStatement>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<ScopedStatement>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<MatchBranch>(node)) {
-            return deep_copy(ast::cast_to<MatchBranch>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<MatchBranch>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<UnionCandidate>(node)) {
-            return deep_copy(ast::cast_to<UnionCandidate>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<UnionCandidate>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Return>(node)) {
-            return deep_copy(ast::cast_to<Return>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Return>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Break>(node)) {
-            return deep_copy(ast::cast_to<Break>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Break>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Continue>(node)) {
-            return deep_copy(ast::cast_to<Continue>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Continue>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Assert>(node)) {
-            return deep_copy(ast::cast_to<Assert>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Assert>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<ImplicitYield>(node)) {
-            return deep_copy(ast::cast_to<ImplicitYield>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<ImplicitYield>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Metadata>(node)) {
-            return deep_copy(ast::cast_to<Metadata>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Metadata>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Field>(node)) {
-            return deep_copy(ast::cast_to<Field>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Field>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Format>(node)) {
-            return deep_copy(ast::cast_to<Format>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Format>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<State>(node)) {
-            return deep_copy(ast::cast_to<State>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<State>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Enum>(node)) {
-            return deep_copy(ast::cast_to<Enum>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Enum>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<EnumMember>(node)) {
-            return deep_copy(ast::cast_to<EnumMember>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<EnumMember>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Function>(node)) {
-            return deep_copy(ast::cast_to<Function>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Function>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        }
+        if (ast::as<TypeParameter>(node)) {
+            return deep_copy(ast::cast_to<TypeParameter>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         return nullptr;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<Type> deep_copy(const std::shared_ptr<Type>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<Type> deep_copy(const std::shared_ptr<Type>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
+        if (!node) return nullptr;
+        if (auto r = subst(node)) {
+            return r;
+        }
         if (ast::as<IntType>(node)) {
-            return deep_copy(ast::cast_to<IntType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<IntType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<FloatType>(node)) {
-            return deep_copy(ast::cast_to<FloatType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<FloatType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<IdentType>(node)) {
-            return deep_copy(ast::cast_to<IdentType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<IdentType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<IntLiteralType>(node)) {
-            return deep_copy(ast::cast_to<IntLiteralType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<IntLiteralType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<StrLiteralType>(node)) {
-            return deep_copy(ast::cast_to<StrLiteralType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<StrLiteralType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<RegexLiteralType>(node)) {
-            return deep_copy(ast::cast_to<RegexLiteralType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<RegexLiteralType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<VoidType>(node)) {
-            return deep_copy(ast::cast_to<VoidType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<VoidType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<BoolType>(node)) {
-            return deep_copy(ast::cast_to<BoolType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<BoolType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<ArrayType>(node)) {
-            return deep_copy(ast::cast_to<ArrayType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<ArrayType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<FunctionType>(node)) {
-            return deep_copy(ast::cast_to<FunctionType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<FunctionType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<StructType>(node)) {
-            return deep_copy(ast::cast_to<StructType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<StructType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<StructUnionType>(node)) {
-            return deep_copy(ast::cast_to<StructUnionType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<StructUnionType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<UnionType>(node)) {
-            return deep_copy(ast::cast_to<UnionType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<UnionType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<RangeType>(node)) {
-            return deep_copy(ast::cast_to<RangeType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<RangeType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<EnumType>(node)) {
-            return deep_copy(ast::cast_to<EnumType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<EnumType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<MetaType>(node)) {
-            return deep_copy(ast::cast_to<MetaType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<MetaType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<OptionalType>(node)) {
-            return deep_copy(ast::cast_to<OptionalType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<OptionalType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<GenericType>(node)) {
-            return deep_copy(ast::cast_to<GenericType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<GenericType>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         return nullptr;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<Literal> deep_copy(const std::shared_ptr<Literal>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<Literal> deep_copy(const std::shared_ptr<Literal>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
+        if (!node) return nullptr;
+        if (auto r = subst(node)) {
+            return r;
+        }
         if (ast::as<IntLiteral>(node)) {
-            return deep_copy(ast::cast_to<IntLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<IntLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<BoolLiteral>(node)) {
-            return deep_copy(ast::cast_to<BoolLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<BoolLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<StrLiteral>(node)) {
-            return deep_copy(ast::cast_to<StrLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<StrLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<RegexLiteral>(node)) {
-            return deep_copy(ast::cast_to<RegexLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<RegexLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<CharLiteral>(node)) {
-            return deep_copy(ast::cast_to<CharLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<CharLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<TypeLiteral>(node)) {
-            return deep_copy(ast::cast_to<TypeLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<TypeLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<SpecialLiteral>(node)) {
-            return deep_copy(ast::cast_to<SpecialLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<SpecialLiteral>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         return nullptr;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<Member> deep_copy(const std::shared_ptr<Member>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<Member> deep_copy(const std::shared_ptr<Member>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
+        if (!node) return nullptr;
+        if (auto r = subst(node)) {
+            return r;
+        }
         if (ast::as<Field>(node)) {
-            return deep_copy(ast::cast_to<Field>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Field>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Format>(node)) {
-            return deep_copy(ast::cast_to<Format>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Format>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<State>(node)) {
-            return deep_copy(ast::cast_to<State>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<State>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Enum>(node)) {
-            return deep_copy(ast::cast_to<Enum>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Enum>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<EnumMember>(node)) {
-            return deep_copy(ast::cast_to<EnumMember>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<EnumMember>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         if (ast::as<Function>(node)) {
-            return deep_copy(ast::cast_to<Function>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+            return deep_copy(ast::cast_to<Function>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        }
+        if (ast::as<TypeParameter>(node)) {
+            return deep_copy(ast::cast_to<TypeParameter>(node), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         }
         return nullptr;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<Program> deep_copy(const std::shared_ptr<Program>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<Program> deep_copy(const std::shared_ptr<Program>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<Program>(it->second);
@@ -482,21 +524,24 @@ namespace brgen::ast {
         auto new_node = std::make_shared<Program>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->struct_type = deep_copy(node->struct_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->struct_type = deep_copy(node->struct_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         for (auto& i : node->elements) {
-            new_node->elements.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
+            new_node->elements.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst)));
         }
-        new_node->global_scope = deep_copy(node->global_scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->global_scope = deep_copy(node->global_scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         for (auto& i : node->metadata) {
-            new_node->metadata.push_back(deep_copy(i.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
+            new_node->metadata.push_back(deep_copy(i.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst)));
         }
-        new_node->endian = deep_copy(node->endian.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->endian = deep_copy(node->endian.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<Comment> deep_copy(const std::shared_ptr<Comment>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<Comment> deep_copy(const std::shared_ptr<Comment>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<Comment>(it->second);
@@ -507,10 +552,13 @@ namespace brgen::ast {
         new_node->comment = node->comment;
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<CommentGroup> deep_copy(const std::shared_ptr<CommentGroup>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<CommentGroup> deep_copy(const std::shared_ptr<CommentGroup>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<CommentGroup>(it->second);
@@ -519,14 +567,17 @@ namespace brgen::ast {
         node_map[node] = new_node;
         new_node->loc = node->loc;
         for (auto& i : node->comments) {
-            new_node->comments.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
+            new_node->comments.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst)));
         }
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<FieldArgument> deep_copy(const std::shared_ptr<FieldArgument>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<FieldArgument> deep_copy(const std::shared_ptr<FieldArgument>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<FieldArgument>(it->second);
@@ -534,34 +585,37 @@ namespace brgen::ast {
         auto new_node = std::make_shared<FieldArgument>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->raw_arguments = deep_copy(node->raw_arguments, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->raw_arguments = deep_copy(node->raw_arguments, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->end_loc = node->end_loc;
         for (auto& i : node->collected_arguments) {
-            new_node->collected_arguments.push_back(deep_copy(i.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
+            new_node->collected_arguments.push_back(deep_copy(i.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst)));
         }
         for (auto& i : node->arguments) {
-            new_node->arguments.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
+            new_node->arguments.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst)));
         }
         for (auto& i : node->assigns) {
-            new_node->assigns.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
+            new_node->assigns.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst)));
         }
-        new_node->alignment = deep_copy(node->alignment, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->alignment = deep_copy(node->alignment, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->alignment_value = node->alignment_value;
-        new_node->sub_byte_length = deep_copy(node->sub_byte_length, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->sub_byte_begin = deep_copy(node->sub_byte_begin, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->peek = deep_copy(node->peek, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->sub_byte_length = deep_copy(node->sub_byte_length, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->sub_byte_begin = deep_copy(node->sub_byte_begin, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->peek = deep_copy(node->peek, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->peek_value = node->peek_value;
-        new_node->type_map = deep_copy(node->type_map, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->type_map = deep_copy(node->type_map, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         for (auto& i : node->metadata) {
-            new_node->metadata.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
+            new_node->metadata.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst)));
         }
         new_node->argument_mapping = node->argument_mapping;
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<Binary> deep_copy(const std::shared_ptr<Binary>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<Binary> deep_copy(const std::shared_ptr<Binary>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<Binary>(it->second);
@@ -569,17 +623,20 @@ namespace brgen::ast {
         auto new_node = std::make_shared<Binary>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->constant_level = node->constant_level;
         new_node->op = node->op;
-        new_node->left = deep_copy(node->left, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->right = deep_copy(node->right, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->left = deep_copy(node->left, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->right = deep_copy(node->right, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<Unary> deep_copy(const std::shared_ptr<Unary>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<Unary> deep_copy(const std::shared_ptr<Unary>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<Unary>(it->second);
@@ -587,16 +644,19 @@ namespace brgen::ast {
         auto new_node = std::make_shared<Unary>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->constant_level = node->constant_level;
         new_node->op = node->op;
-        new_node->expr = deep_copy(node->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr = deep_copy(node->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<Cond> deep_copy(const std::shared_ptr<Cond>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<Cond> deep_copy(const std::shared_ptr<Cond>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<Cond>(it->second);
@@ -604,18 +664,21 @@ namespace brgen::ast {
         auto new_node = std::make_shared<Cond>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->constant_level = node->constant_level;
-        new_node->cond = deep_copy(node->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->then = deep_copy(node->then, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->cond = deep_copy(node->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->then = deep_copy(node->then, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->els_loc = node->els_loc;
-        new_node->els = deep_copy(node->els, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->els = deep_copy(node->els, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<Ident> deep_copy(const std::shared_ptr<Ident>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<Ident> deep_copy(const std::shared_ptr<Ident>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<Ident>(it->second);
@@ -623,18 +686,21 @@ namespace brgen::ast {
         auto new_node = std::make_shared<Ident>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->constant_level = node->constant_level;
         new_node->ident = node->ident;
         new_node->usage = node->usage;
-        new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->scope = deep_copy(node->scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->scope = deep_copy(node->scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<Call> deep_copy(const std::shared_ptr<Call>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<Call> deep_copy(const std::shared_ptr<Call>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<Call>(it->second);
@@ -642,20 +708,23 @@ namespace brgen::ast {
         auto new_node = std::make_shared<Call>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->constant_level = node->constant_level;
-        new_node->callee = deep_copy(node->callee, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->raw_arguments = deep_copy(node->raw_arguments, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->callee = deep_copy(node->callee, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->raw_arguments = deep_copy(node->raw_arguments, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         for (auto& i : node->arguments) {
-            new_node->arguments.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
+            new_node->arguments.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst)));
         }
         new_node->end_loc = node->end_loc;
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<If> deep_copy(const std::shared_ptr<If>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<If> deep_copy(const std::shared_ptr<If>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<If>(it->second);
@@ -663,19 +732,22 @@ namespace brgen::ast {
         auto new_node = std::make_shared<If>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->constant_level = node->constant_level;
-        new_node->struct_union_type = deep_copy(node->struct_union_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->cond_scope = deep_copy(node->cond_scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->cond = deep_copy(node->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->then = deep_copy(node->then, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->els = deep_copy(node->els, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->struct_union_type = deep_copy(node->struct_union_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->cond_scope = deep_copy(node->cond_scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->cond = deep_copy(node->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->then = deep_copy(node->then, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->els = deep_copy(node->els, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<MemberAccess> deep_copy(const std::shared_ptr<MemberAccess>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<MemberAccess> deep_copy(const std::shared_ptr<MemberAccess>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<MemberAccess>(it->second);
@@ -683,17 +755,20 @@ namespace brgen::ast {
         auto new_node = std::make_shared<MemberAccess>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->constant_level = node->constant_level;
-        new_node->target = deep_copy(node->target, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->member = deep_copy(node->member, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->target = deep_copy(node->target, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->member = deep_copy(node->member, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<Paren> deep_copy(const std::shared_ptr<Paren>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<Paren> deep_copy(const std::shared_ptr<Paren>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<Paren>(it->second);
@@ -701,16 +776,19 @@ namespace brgen::ast {
         auto new_node = std::make_shared<Paren>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->constant_level = node->constant_level;
-        new_node->expr = deep_copy(node->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr = deep_copy(node->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->end_loc = node->end_loc;
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<Index> deep_copy(const std::shared_ptr<Index>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<Index> deep_copy(const std::shared_ptr<Index>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<Index>(it->second);
@@ -718,17 +796,20 @@ namespace brgen::ast {
         auto new_node = std::make_shared<Index>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->constant_level = node->constant_level;
-        new_node->expr = deep_copy(node->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->index = deep_copy(node->index, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr = deep_copy(node->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->index = deep_copy(node->index, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->end_loc = node->end_loc;
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<Match> deep_copy(const std::shared_ptr<Match>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<Match> deep_copy(const std::shared_ptr<Match>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<Match>(it->second);
@@ -736,21 +817,24 @@ namespace brgen::ast {
         auto new_node = std::make_shared<Match>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->constant_level = node->constant_level;
-        new_node->struct_union_type = deep_copy(node->struct_union_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->cond_scope = deep_copy(node->cond_scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->cond = deep_copy(node->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->struct_union_type = deep_copy(node->struct_union_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->cond_scope = deep_copy(node->cond_scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->cond = deep_copy(node->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         for (auto& i : node->branch) {
-            new_node->branch.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
+            new_node->branch.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst)));
         }
         new_node->trial_match = node->trial_match;
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<Range> deep_copy(const std::shared_ptr<Range>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<Range> deep_copy(const std::shared_ptr<Range>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<Range>(it->second);
@@ -758,17 +842,20 @@ namespace brgen::ast {
         auto new_node = std::make_shared<Range>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->constant_level = node->constant_level;
         new_node->op = node->op;
-        new_node->start = deep_copy(node->start, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->end = deep_copy(node->end, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->start = deep_copy(node->start, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->end = deep_copy(node->end, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<Identity> deep_copy(const std::shared_ptr<Identity>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<Identity> deep_copy(const std::shared_ptr<Identity>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<Identity>(it->second);
@@ -776,15 +863,18 @@ namespace brgen::ast {
         auto new_node = std::make_shared<Identity>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->constant_level = node->constant_level;
-        new_node->expr = deep_copy(node->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr = deep_copy(node->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<TmpVar> deep_copy(const std::shared_ptr<TmpVar>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<TmpVar> deep_copy(const std::shared_ptr<TmpVar>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<TmpVar>(it->second);
@@ -792,15 +882,18 @@ namespace brgen::ast {
         auto new_node = std::make_shared<TmpVar>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->constant_level = node->constant_level;
         new_node->tmp_var = node->tmp_var;
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<Import> deep_copy(const std::shared_ptr<Import>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<Import> deep_copy(const std::shared_ptr<Import>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<Import>(it->second);
@@ -808,17 +901,20 @@ namespace brgen::ast {
         auto new_node = std::make_shared<Import>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->constant_level = node->constant_level;
         new_node->path = node->path;
-        new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->import_desc = deep_copy(node->import_desc, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->import_desc = deep_copy(node->import_desc, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<Cast> deep_copy(const std::shared_ptr<Cast>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<Cast> deep_copy(const std::shared_ptr<Cast>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<Cast>(it->second);
@@ -826,18 +922,21 @@ namespace brgen::ast {
         auto new_node = std::make_shared<Cast>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->constant_level = node->constant_level;
-        new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         for (auto& i : node->arguments) {
-            new_node->arguments.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
+            new_node->arguments.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst)));
         }
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<Available> deep_copy(const std::shared_ptr<Available>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<Available> deep_copy(const std::shared_ptr<Available>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<Available>(it->second);
@@ -845,17 +944,20 @@ namespace brgen::ast {
         auto new_node = std::make_shared<Available>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->constant_level = node->constant_level;
-        new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->target = deep_copy(node->target, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->expected_type = deep_copy(node->expected_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->target = deep_copy(node->target, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->expected_type = deep_copy(node->expected_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<SpecifyOrder> deep_copy(const std::shared_ptr<SpecifyOrder>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<SpecifyOrder> deep_copy(const std::shared_ptr<SpecifyOrder>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<SpecifyOrder>(it->second);
@@ -863,18 +965,21 @@ namespace brgen::ast {
         auto new_node = std::make_shared<SpecifyOrder>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->constant_level = node->constant_level;
-        new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->order_type = node->order_type;
-        new_node->order = deep_copy(node->order, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->order = deep_copy(node->order, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->order_value = node->order_value;
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<ExplicitError> deep_copy(const std::shared_ptr<ExplicitError>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<ExplicitError> deep_copy(const std::shared_ptr<ExplicitError>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<ExplicitError>(it->second);
@@ -882,16 +987,19 @@ namespace brgen::ast {
         auto new_node = std::make_shared<ExplicitError>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->constant_level = node->constant_level;
-        new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->message = deep_copy(node->message, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->message = deep_copy(node->message, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<IOOperation> deep_copy(const std::shared_ptr<IOOperation>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<IOOperation> deep_copy(const std::shared_ptr<IOOperation>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<IOOperation>(it->second);
@@ -899,19 +1007,22 @@ namespace brgen::ast {
         auto new_node = std::make_shared<IOOperation>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->constant_level = node->constant_level;
-        new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->method = node->method;
         for (auto& i : node->arguments) {
-            new_node->arguments.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
+            new_node->arguments.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst)));
         }
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<OrCond> deep_copy(const std::shared_ptr<OrCond>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<OrCond> deep_copy(const std::shared_ptr<OrCond>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<OrCond>(it->second);
@@ -919,18 +1030,21 @@ namespace brgen::ast {
         auto new_node = std::make_shared<OrCond>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->constant_level = node->constant_level;
-        new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         for (auto& i : node->conds) {
-            new_node->conds.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
+            new_node->conds.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst)));
         }
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<SizeOf> deep_copy(const std::shared_ptr<SizeOf>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<SizeOf> deep_copy(const std::shared_ptr<SizeOf>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<SizeOf>(it->second);
@@ -938,16 +1052,20 @@ namespace brgen::ast {
         auto new_node = std::make_shared<SizeOf>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->constant_level = node->constant_level;
-        new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->target = deep_copy(node->target, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->target = deep_copy(node->target, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->evaluated_value = node->evaluated_value;
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<BadExpr> deep_copy(const std::shared_ptr<BadExpr>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<BadExpr> deep_copy(const std::shared_ptr<BadExpr>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<BadExpr>(it->second);
@@ -955,16 +1073,19 @@ namespace brgen::ast {
         auto new_node = std::make_shared<BadExpr>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->constant_level = node->constant_level;
         new_node->content = node->content;
-        new_node->bad_expr = deep_copy(node->bad_expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->bad_expr = deep_copy(node->bad_expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<Loop> deep_copy(const std::shared_ptr<Loop>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<Loop> deep_copy(const std::shared_ptr<Loop>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<Loop>(it->second);
@@ -972,17 +1093,20 @@ namespace brgen::ast {
         auto new_node = std::make_shared<Loop>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->cond_scope = deep_copy(node->cond_scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->init = deep_copy(node->init, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->cond = deep_copy(node->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->step = deep_copy(node->step, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->body = deep_copy(node->body, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->cond_scope = deep_copy(node->cond_scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->init = deep_copy(node->init, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->cond = deep_copy(node->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->step = deep_copy(node->step, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->body = deep_copy(node->body, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<IndentBlock> deep_copy(const std::shared_ptr<IndentBlock>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<IndentBlock> deep_copy(const std::shared_ptr<IndentBlock>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<IndentBlock>(it->second);
@@ -990,21 +1114,24 @@ namespace brgen::ast {
         auto new_node = std::make_shared<IndentBlock>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->struct_type = deep_copy(node->struct_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->struct_type = deep_copy(node->struct_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         for (auto& i : node->elements) {
-            new_node->elements.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
+            new_node->elements.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst)));
         }
-        new_node->scope = deep_copy(node->scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->scope = deep_copy(node->scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         for (auto& i : node->metadata) {
-            new_node->metadata.push_back(deep_copy(i.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
+            new_node->metadata.push_back(deep_copy(i.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst)));
         }
         new_node->block_traits = node->block_traits;
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<ScopedStatement> deep_copy(const std::shared_ptr<ScopedStatement>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<ScopedStatement> deep_copy(const std::shared_ptr<ScopedStatement>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<ScopedStatement>(it->second);
@@ -1012,15 +1139,18 @@ namespace brgen::ast {
         auto new_node = std::make_shared<ScopedStatement>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->struct_type = deep_copy(node->struct_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->statement = deep_copy(node->statement, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->scope = deep_copy(node->scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->struct_type = deep_copy(node->struct_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->statement = deep_copy(node->statement, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->scope = deep_copy(node->scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<MatchBranch> deep_copy(const std::shared_ptr<MatchBranch>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<MatchBranch> deep_copy(const std::shared_ptr<MatchBranch>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<MatchBranch>(it->second);
@@ -1028,16 +1158,19 @@ namespace brgen::ast {
         auto new_node = std::make_shared<MatchBranch>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->belong = deep_copy(node->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->cond = deep_copy(node->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->belong = deep_copy(node->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->cond = deep_copy(node->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->sym_loc = node->sym_loc;
-        new_node->then = deep_copy(node->then, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->then = deep_copy(node->then, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<UnionCandidate> deep_copy(const std::shared_ptr<UnionCandidate>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<UnionCandidate> deep_copy(const std::shared_ptr<UnionCandidate>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<UnionCandidate>(it->second);
@@ -1045,14 +1178,17 @@ namespace brgen::ast {
         auto new_node = std::make_shared<UnionCandidate>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->cond = deep_copy(node->cond.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->field = deep_copy(node->field.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->cond = deep_copy(node->cond.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->field = deep_copy(node->field.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<Return> deep_copy(const std::shared_ptr<Return>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<Return> deep_copy(const std::shared_ptr<Return>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<Return>(it->second);
@@ -1060,14 +1196,17 @@ namespace brgen::ast {
         auto new_node = std::make_shared<Return>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->expr = deep_copy(node->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->related_function = deep_copy(node->related_function.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr = deep_copy(node->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->related_function = deep_copy(node->related_function.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<Break> deep_copy(const std::shared_ptr<Break>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<Break> deep_copy(const std::shared_ptr<Break>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<Break>(it->second);
@@ -1075,13 +1214,16 @@ namespace brgen::ast {
         auto new_node = std::make_shared<Break>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->related_loop = deep_copy(node->related_loop.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->related_loop = deep_copy(node->related_loop.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<Continue> deep_copy(const std::shared_ptr<Continue>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<Continue> deep_copy(const std::shared_ptr<Continue>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<Continue>(it->second);
@@ -1089,13 +1231,16 @@ namespace brgen::ast {
         auto new_node = std::make_shared<Continue>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->related_loop = deep_copy(node->related_loop.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->related_loop = deep_copy(node->related_loop.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<Assert> deep_copy(const std::shared_ptr<Assert>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<Assert> deep_copy(const std::shared_ptr<Assert>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<Assert>(it->second);
@@ -1103,14 +1248,17 @@ namespace brgen::ast {
         auto new_node = std::make_shared<Assert>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->cond = deep_copy(node->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->cond = deep_copy(node->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->is_io_related = node->is_io_related;
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<ImplicitYield> deep_copy(const std::shared_ptr<ImplicitYield>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<ImplicitYield> deep_copy(const std::shared_ptr<ImplicitYield>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<ImplicitYield>(it->second);
@@ -1118,13 +1266,16 @@ namespace brgen::ast {
         auto new_node = std::make_shared<ImplicitYield>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->expr = deep_copy(node->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr = deep_copy(node->expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<Metadata> deep_copy(const std::shared_ptr<Metadata>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<Metadata> deep_copy(const std::shared_ptr<Metadata>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<Metadata>(it->second);
@@ -1132,17 +1283,20 @@ namespace brgen::ast {
         auto new_node = std::make_shared<Metadata>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->base = deep_copy(node->base, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->name = node->name;
         for (auto& i : node->values) {
-            new_node->values.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
+            new_node->values.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst)));
         }
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<IntType> deep_copy(const std::shared_ptr<IntType>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<IntType> deep_copy(const std::shared_ptr<IntType>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<IntType>(it->second);
@@ -1159,10 +1313,13 @@ namespace brgen::ast {
         new_node->is_common_supported = node->is_common_supported;
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<FloatType> deep_copy(const std::shared_ptr<FloatType>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<FloatType> deep_copy(const std::shared_ptr<FloatType>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<FloatType>(it->second);
@@ -1178,10 +1335,13 @@ namespace brgen::ast {
         new_node->is_common_supported = node->is_common_supported;
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<IdentType> deep_copy(const std::shared_ptr<IdentType>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<IdentType> deep_copy(const std::shared_ptr<IdentType>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<IdentType>(it->second);
@@ -1193,15 +1353,18 @@ namespace brgen::ast {
         new_node->non_dynamic_allocation = node->non_dynamic_allocation;
         new_node->bit_alignment = node->bit_alignment;
         new_node->bit_size = node->bit_size;
-        new_node->import_ref = deep_copy(node->import_ref, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->ident = deep_copy(node->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->import_ref = deep_copy(node->import_ref, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->ident = deep_copy(node->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<IntLiteralType> deep_copy(const std::shared_ptr<IntLiteralType>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<IntLiteralType> deep_copy(const std::shared_ptr<IntLiteralType>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<IntLiteralType>(it->second);
@@ -1213,13 +1376,16 @@ namespace brgen::ast {
         new_node->non_dynamic_allocation = node->non_dynamic_allocation;
         new_node->bit_alignment = node->bit_alignment;
         new_node->bit_size = node->bit_size;
-        new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<StrLiteralType> deep_copy(const std::shared_ptr<StrLiteralType>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<StrLiteralType> deep_copy(const std::shared_ptr<StrLiteralType>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<StrLiteralType>(it->second);
@@ -1231,14 +1397,17 @@ namespace brgen::ast {
         new_node->non_dynamic_allocation = node->non_dynamic_allocation;
         new_node->bit_alignment = node->bit_alignment;
         new_node->bit_size = node->bit_size;
-        new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->strong_ref = deep_copy(node->strong_ref, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->strong_ref = deep_copy(node->strong_ref, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<RegexLiteralType> deep_copy(const std::shared_ptr<RegexLiteralType>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<RegexLiteralType> deep_copy(const std::shared_ptr<RegexLiteralType>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<RegexLiteralType>(it->second);
@@ -1250,14 +1419,17 @@ namespace brgen::ast {
         new_node->non_dynamic_allocation = node->non_dynamic_allocation;
         new_node->bit_alignment = node->bit_alignment;
         new_node->bit_size = node->bit_size;
-        new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->strong_ref = deep_copy(node->strong_ref, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->strong_ref = deep_copy(node->strong_ref, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<VoidType> deep_copy(const std::shared_ptr<VoidType>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<VoidType> deep_copy(const std::shared_ptr<VoidType>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<VoidType>(it->second);
@@ -1271,10 +1443,13 @@ namespace brgen::ast {
         new_node->bit_size = node->bit_size;
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<BoolType> deep_copy(const std::shared_ptr<BoolType>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<BoolType> deep_copy(const std::shared_ptr<BoolType>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<BoolType>(it->second);
@@ -1288,10 +1463,13 @@ namespace brgen::ast {
         new_node->bit_size = node->bit_size;
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<ArrayType> deep_copy(const std::shared_ptr<ArrayType>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<ArrayType> deep_copy(const std::shared_ptr<ArrayType>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<ArrayType>(it->second);
@@ -1304,16 +1482,19 @@ namespace brgen::ast {
         new_node->bit_alignment = node->bit_alignment;
         new_node->bit_size = node->bit_size;
         new_node->end_loc = node->end_loc;
-        new_node->element_type = deep_copy(node->element_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->length = deep_copy(node->length, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->element_type = deep_copy(node->element_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->length = deep_copy(node->length, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->length_value = node->length_value;
         new_node->is_bytes = node->is_bytes;
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<FunctionType> deep_copy(const std::shared_ptr<FunctionType>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<FunctionType> deep_copy(const std::shared_ptr<FunctionType>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<FunctionType>(it->second);
@@ -1325,16 +1506,19 @@ namespace brgen::ast {
         new_node->non_dynamic_allocation = node->non_dynamic_allocation;
         new_node->bit_alignment = node->bit_alignment;
         new_node->bit_size = node->bit_size;
-        new_node->return_type = deep_copy(node->return_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->return_type = deep_copy(node->return_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         for (auto& i : node->parameters) {
-            new_node->parameters.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
+            new_node->parameters.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst)));
         }
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<StructType> deep_copy(const std::shared_ptr<StructType>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<StructType> deep_copy(const std::shared_ptr<StructType>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<StructType>(it->second);
@@ -1347,19 +1531,22 @@ namespace brgen::ast {
         new_node->bit_alignment = node->bit_alignment;
         new_node->bit_size = node->bit_size;
         for (auto& i : node->fields) {
-            new_node->fields.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
+            new_node->fields.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst)));
         }
-        new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->recursive = node->recursive;
         new_node->fixed_header_size = node->fixed_header_size;
         new_node->fixed_tail_size = node->fixed_tail_size;
-        new_node->type_map = deep_copy(node->type_map, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->type_map = deep_copy(node->type_map, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<StructUnionType> deep_copy(const std::shared_ptr<StructUnionType>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<StructUnionType> deep_copy(const std::shared_ptr<StructUnionType>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<StructUnionType>(it->second);
@@ -1371,24 +1558,27 @@ namespace brgen::ast {
         new_node->non_dynamic_allocation = node->non_dynamic_allocation;
         new_node->bit_alignment = node->bit_alignment;
         new_node->bit_size = node->bit_size;
-        new_node->cond = deep_copy(node->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->cond = deep_copy(node->cond, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         for (auto& i : node->conds) {
-            new_node->conds.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
+            new_node->conds.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst)));
         }
         for (auto& i : node->structs) {
-            new_node->structs.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
+            new_node->structs.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst)));
         }
-        new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         for (auto& i : node->union_fields) {
-            new_node->union_fields.push_back(deep_copy(i.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
+            new_node->union_fields.push_back(deep_copy(i.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst)));
         }
         new_node->exhaustive = node->exhaustive;
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<UnionType> deep_copy(const std::shared_ptr<UnionType>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<UnionType> deep_copy(const std::shared_ptr<UnionType>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<UnionType>(it->second);
@@ -1400,22 +1590,25 @@ namespace brgen::ast {
         new_node->non_dynamic_allocation = node->non_dynamic_allocation;
         new_node->bit_alignment = node->bit_alignment;
         new_node->bit_size = node->bit_size;
-        new_node->cond = deep_copy(node->cond.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->cond = deep_copy(node->cond.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         for (auto& i : node->candidates) {
-            new_node->candidates.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
+            new_node->candidates.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst)));
         }
-        new_node->base_type = deep_copy(node->base_type.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->common_type = deep_copy(node->common_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->base_type = deep_copy(node->base_type.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->common_type = deep_copy(node->common_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->is_strict_common_type = node->is_strict_common_type;
         for (auto& i : node->member_candidates) {
-            new_node->member_candidates.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
+            new_node->member_candidates.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst)));
         }
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<RangeType> deep_copy(const std::shared_ptr<RangeType>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<RangeType> deep_copy(const std::shared_ptr<RangeType>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<RangeType>(it->second);
@@ -1427,14 +1620,17 @@ namespace brgen::ast {
         new_node->non_dynamic_allocation = node->non_dynamic_allocation;
         new_node->bit_alignment = node->bit_alignment;
         new_node->bit_size = node->bit_size;
-        new_node->base_type = deep_copy(node->base_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->range = deep_copy(node->range.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->base_type = deep_copy(node->base_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->range = deep_copy(node->range.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<EnumType> deep_copy(const std::shared_ptr<EnumType>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<EnumType> deep_copy(const std::shared_ptr<EnumType>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<EnumType>(it->second);
@@ -1446,13 +1642,16 @@ namespace brgen::ast {
         new_node->non_dynamic_allocation = node->non_dynamic_allocation;
         new_node->bit_alignment = node->bit_alignment;
         new_node->bit_size = node->bit_size;
-        new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->base = deep_copy(node->base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<MetaType> deep_copy(const std::shared_ptr<MetaType>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<MetaType> deep_copy(const std::shared_ptr<MetaType>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<MetaType>(it->second);
@@ -1466,10 +1665,13 @@ namespace brgen::ast {
         new_node->bit_size = node->bit_size;
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<OptionalType> deep_copy(const std::shared_ptr<OptionalType>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<OptionalType> deep_copy(const std::shared_ptr<OptionalType>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<OptionalType>(it->second);
@@ -1481,13 +1683,16 @@ namespace brgen::ast {
         new_node->non_dynamic_allocation = node->non_dynamic_allocation;
         new_node->bit_alignment = node->bit_alignment;
         new_node->bit_size = node->bit_size;
-        new_node->base_type = deep_copy(node->base_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->base_type = deep_copy(node->base_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<GenericType> deep_copy(const std::shared_ptr<GenericType>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<GenericType> deep_copy(const std::shared_ptr<GenericType>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<GenericType>(it->second);
@@ -1499,13 +1704,19 @@ namespace brgen::ast {
         new_node->non_dynamic_allocation = node->non_dynamic_allocation;
         new_node->bit_alignment = node->bit_alignment;
         new_node->bit_size = node->bit_size;
-        new_node->belong = deep_copy(node->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->base_type = deep_copy(node->base_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        for (auto& i : node->type_arguments) {
+            new_node->type_arguments.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst)));
+        }
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<IntLiteral> deep_copy(const std::shared_ptr<IntLiteral>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<IntLiteral> deep_copy(const std::shared_ptr<IntLiteral>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<IntLiteral>(it->second);
@@ -1513,15 +1724,18 @@ namespace brgen::ast {
         auto new_node = std::make_shared<IntLiteral>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->constant_level = node->constant_level;
         new_node->value = node->value;
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<BoolLiteral> deep_copy(const std::shared_ptr<BoolLiteral>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<BoolLiteral> deep_copy(const std::shared_ptr<BoolLiteral>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<BoolLiteral>(it->second);
@@ -1529,15 +1743,18 @@ namespace brgen::ast {
         auto new_node = std::make_shared<BoolLiteral>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->constant_level = node->constant_level;
         new_node->value = node->value;
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<StrLiteral> deep_copy(const std::shared_ptr<StrLiteral>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<StrLiteral> deep_copy(const std::shared_ptr<StrLiteral>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<StrLiteral>(it->second);
@@ -1545,17 +1762,20 @@ namespace brgen::ast {
         auto new_node = std::make_shared<StrLiteral>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->constant_level = node->constant_level;
         new_node->value = node->value;
         new_node->binary_value = node->binary_value;
         new_node->length = node->length;
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<RegexLiteral> deep_copy(const std::shared_ptr<RegexLiteral>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<RegexLiteral> deep_copy(const std::shared_ptr<RegexLiteral>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<RegexLiteral>(it->second);
@@ -1563,15 +1783,18 @@ namespace brgen::ast {
         auto new_node = std::make_shared<RegexLiteral>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->constant_level = node->constant_level;
         new_node->value = node->value;
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<CharLiteral> deep_copy(const std::shared_ptr<CharLiteral>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<CharLiteral> deep_copy(const std::shared_ptr<CharLiteral>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<CharLiteral>(it->second);
@@ -1579,16 +1802,19 @@ namespace brgen::ast {
         auto new_node = std::make_shared<CharLiteral>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->constant_level = node->constant_level;
         new_node->value = node->value;
         new_node->code = node->code;
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<TypeLiteral> deep_copy(const std::shared_ptr<TypeLiteral>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<TypeLiteral> deep_copy(const std::shared_ptr<TypeLiteral>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<TypeLiteral>(it->second);
@@ -1596,16 +1822,19 @@ namespace brgen::ast {
         auto new_node = std::make_shared<TypeLiteral>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->constant_level = node->constant_level;
-        new_node->type_literal = deep_copy(node->type_literal, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->type_literal = deep_copy(node->type_literal, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->end_loc = node->end_loc;
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<SpecialLiteral> deep_copy(const std::shared_ptr<SpecialLiteral>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<SpecialLiteral> deep_copy(const std::shared_ptr<SpecialLiteral>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<SpecialLiteral>(it->second);
@@ -1613,15 +1842,18 @@ namespace brgen::ast {
         auto new_node = std::make_shared<SpecialLiteral>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->expr_type = deep_copy(node->expr_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->constant_level = node->constant_level;
         new_node->kind = node->kind;
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<Field> deep_copy(const std::shared_ptr<Field>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<Field> deep_copy(const std::shared_ptr<Field>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<Field>(it->second);
@@ -1629,13 +1861,15 @@ namespace brgen::ast {
         auto new_node = std::make_shared<Field>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->belong = deep_copy(node->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->belong_struct = deep_copy(node->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->ident = deep_copy(node->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->comment = deep_copy(node->comment, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->belong = deep_copy(node->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->belong_struct = deep_copy(node->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->ident = deep_copy(node->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->colon_loc = node->colon_loc;
         new_node->is_state_variable = node->is_state_variable;
-        new_node->field_type = deep_copy(node->field_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->arguments = deep_copy(node->arguments, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->field_type = deep_copy(node->field_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->arguments = deep_copy(node->arguments, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->follow_comment = deep_copy(node->follow_comment, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->offset_bit = node->offset_bit;
         new_node->offset_recent = node->offset_recent;
         new_node->tail_offset_bit = node->tail_offset_bit;
@@ -1644,13 +1878,16 @@ namespace brgen::ast {
         new_node->eventual_bit_alignment = node->eventual_bit_alignment;
         new_node->follow = node->follow;
         new_node->eventual_follow = node->eventual_follow;
-        new_node->next = deep_copy(node->next.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->next = deep_copy(node->next.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<Format> deep_copy(const std::shared_ptr<Format>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<Format> deep_copy(const std::shared_ptr<Format>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<Format>(it->second);
@@ -1658,27 +1895,38 @@ namespace brgen::ast {
         auto new_node = std::make_shared<Format>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->belong = deep_copy(node->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->belong_struct = deep_copy(node->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->ident = deep_copy(node->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->body = deep_copy(node->body, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->encode_fn = deep_copy(node->encode_fn.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->decode_fn = deep_copy(node->decode_fn.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->comment = deep_copy(node->comment, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->belong = deep_copy(node->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->belong_struct = deep_copy(node->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->ident = deep_copy(node->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->body = deep_copy(node->body, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->encode_fn = deep_copy(node->encode_fn.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->decode_fn = deep_copy(node->decode_fn.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         for (auto& i : node->cast_fns) {
-            new_node->cast_fns.push_back(deep_copy(i.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
+            new_node->cast_fns.push_back(deep_copy(i.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst)));
         }
         for (auto& i : node->depends) {
-            new_node->depends.push_back(deep_copy(i.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
+            new_node->depends.push_back(deep_copy(i.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst)));
         }
         for (auto& i : node->state_variables) {
-            new_node->state_variables.push_back(deep_copy(i.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
+            new_node->state_variables.push_back(deep_copy(i.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst)));
+        }
+        for (auto& i : node->type_parameters) {
+            new_node->type_parameters.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst)));
+        }
+        new_node->generic_base = deep_copy(node->generic_base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        for (auto& i : node->generic_arguments) {
+            new_node->generic_arguments.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst)));
         }
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<State> deep_copy(const std::shared_ptr<State>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<State> deep_copy(const std::shared_ptr<State>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<State>(it->second);
@@ -1686,16 +1934,20 @@ namespace brgen::ast {
         auto new_node = std::make_shared<State>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->belong = deep_copy(node->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->belong_struct = deep_copy(node->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->ident = deep_copy(node->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->body = deep_copy(node->body, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->comment = deep_copy(node->comment, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->belong = deep_copy(node->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->belong_struct = deep_copy(node->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->ident = deep_copy(node->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->body = deep_copy(node->body, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<Enum> deep_copy(const std::shared_ptr<Enum>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<Enum> deep_copy(const std::shared_ptr<Enum>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<Enum>(it->second);
@@ -1703,22 +1955,26 @@ namespace brgen::ast {
         auto new_node = std::make_shared<Enum>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->belong = deep_copy(node->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->belong_struct = deep_copy(node->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->ident = deep_copy(node->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->scope = deep_copy(node->scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->comment = deep_copy(node->comment, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->belong = deep_copy(node->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->belong_struct = deep_copy(node->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->ident = deep_copy(node->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->scope = deep_copy(node->scope, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->colon_loc = node->colon_loc;
-        new_node->base_type = deep_copy(node->base_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->base_type = deep_copy(node->base_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         for (auto& i : node->members) {
-            new_node->members.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
+            new_node->members.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst)));
         }
-        new_node->enum_type = deep_copy(node->enum_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->enum_type = deep_copy(node->enum_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<EnumMember> deep_copy(const std::shared_ptr<EnumMember>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<EnumMember> deep_copy(const std::shared_ptr<EnumMember>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<EnumMember>(it->second);
@@ -1726,18 +1982,22 @@ namespace brgen::ast {
         auto new_node = std::make_shared<EnumMember>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->belong = deep_copy(node->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->belong_struct = deep_copy(node->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->ident = deep_copy(node->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->raw_expr = deep_copy(node->raw_expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->value = deep_copy(node->value, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->str_literal = deep_copy(node->str_literal, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->comment = deep_copy(node->comment, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->belong = deep_copy(node->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->belong_struct = deep_copy(node->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->ident = deep_copy(node->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->raw_expr = deep_copy(node->raw_expr, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->value = deep_copy(node->value, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->str_literal = deep_copy(node->str_literal, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<Function> deep_copy(const std::shared_ptr<Function>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<Function> deep_copy(const std::shared_ptr<Function>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
         }
         if (auto it = node_map.find(node); it != node_map.end()) {
             return ast::cast_to<Function>(it->second);
@@ -1745,20 +2005,41 @@ namespace brgen::ast {
         auto new_node = std::make_shared<Function>();
         node_map[node] = new_node;
         new_node->loc = node->loc;
-        new_node->belong = deep_copy(node->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->belong_struct = deep_copy(node->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->ident = deep_copy(node->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->comment = deep_copy(node->comment, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->belong = deep_copy(node->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->belong_struct = deep_copy(node->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->ident = deep_copy(node->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         for (auto& i : node->parameters) {
-            new_node->parameters.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
+            new_node->parameters.push_back(deep_copy(i, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst)));
         }
-        new_node->return_type = deep_copy(node->return_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->body = deep_copy(node->body, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->func_type = deep_copy(node->func_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->return_type = deep_copy(node->return_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->body = deep_copy(node->body, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->func_type = deep_copy(node->func_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->is_cast = node->is_cast;
         return new_node;
     }
-    template <class NodeM, class ScopeM>
-    std::shared_ptr<Scope> deep_copy(const std::shared_ptr<Scope>& node, NodeM&& node_map, ScopeM&& scope_map) {
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<TypeParameter> deep_copy(const std::shared_ptr<TypeParameter>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
+        if (!node) {
+            return nullptr;
+        }
+        if (auto r = subst(node)) {
+            return r;
+        }
+        if (auto it = node_map.find(node); it != node_map.end()) {
+            return ast::cast_to<TypeParameter>(it->second);
+        }
+        auto new_node = std::make_shared<TypeParameter>();
+        node_map[node] = new_node;
+        new_node->loc = node->loc;
+        new_node->comment = deep_copy(node->comment, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->belong = deep_copy(node->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->belong_struct = deep_copy(node->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->ident = deep_copy(node->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        return new_node;
+    }
+    template <class NodeM, class ScopeM, class Subst = NullSubst>
+    std::shared_ptr<Scope> deep_copy(const std::shared_ptr<Scope>& node, NodeM&& node_map, ScopeM&& scope_map, Subst&& subst = Subst{}) {
         if (!node) {
             return nullptr;
         }
@@ -1767,13 +2048,13 @@ namespace brgen::ast {
         }
         auto new_node = std::make_shared<Scope>();
         scope_map[node] = new_node;
-        new_node->prev = deep_copy(node->prev.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->next = deep_copy(node->next, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
-        new_node->branch = deep_copy(node->branch, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->prev = deep_copy(node->prev.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->next = deep_copy(node->next, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
+        new_node->branch = deep_copy(node->branch, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         for (auto& i : node->objects) {
-            new_node->objects.push_back(deep_copy(i.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map)));
+            new_node->objects.push_back(deep_copy(i.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst)));
         }
-        new_node->owner = deep_copy(node->owner.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map));
+        new_node->owner = deep_copy(node->owner.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->branch_root = node->branch_root;
         return new_node;
     }
@@ -2264,6 +2545,13 @@ namespace brgen::ast {
             }
             return deep_equal(ast::cast_to<Function>(a), ast::cast_to<Function>(b), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace));
         }
+        if (ast::as<TypeParameter>(a)) {
+            if (!ast::as<TypeParameter>(b)) {
+                trace(a, b, "Node::node_type", -1);
+                return false;
+            }
+            return deep_equal(ast::cast_to<TypeParameter>(a), ast::cast_to<TypeParameter>(b), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace));
+        }
         return false;
     }
     template <class NodeM, class ScopeM, class BackTracer = NullBackTracer>
@@ -2604,6 +2892,13 @@ namespace brgen::ast {
             }
             return deep_equal(ast::cast_to<Function>(a), ast::cast_to<Function>(b), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace));
         }
+        if (ast::as<TypeParameter>(a)) {
+            if (!ast::as<TypeParameter>(b)) {
+                trace(a, b, "Stmt::node_type", -1);
+                return false;
+            }
+            return deep_equal(ast::cast_to<TypeParameter>(a), ast::cast_to<TypeParameter>(b), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace));
+        }
         return false;
     }
     template <class NodeM, class ScopeM, class BackTracer = NullBackTracer>
@@ -2847,6 +3142,13 @@ namespace brgen::ast {
                 return false;
             }
             return deep_equal(ast::cast_to<Function>(a), ast::cast_to<Function>(b), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace));
+        }
+        if (ast::as<TypeParameter>(a)) {
+            if (!ast::as<TypeParameter>(b)) {
+                trace(a, b, "Member::node_type", -1);
+                return false;
+            }
+            return deep_equal(ast::cast_to<TypeParameter>(a), ast::cast_to<TypeParameter>(b), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace));
         }
         return false;
     }
@@ -3903,6 +4205,10 @@ namespace brgen::ast {
         }
         if (!deep_equal(a->target, b->target, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
             trace(a->target, b->target, "SizeOf::target", -1);
+            return false;
+        }
+        if (a->evaluated_value != b->evaluated_value) {
+            trace(a->evaluated_value, b->evaluated_value, "SizeOf::evaluated_value", -1);
             return false;
         }
         return true;
@@ -5153,9 +5459,16 @@ namespace brgen::ast {
             trace(a->bit_size, b->bit_size, "GenericType::bit_size", -1);
             return false;
         }
-        if (!deep_equal(a->belong.lock(), b->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
-            trace(a->belong.lock(), b->belong.lock(), "GenericType::belong", -1);
+        if (!deep_equal(a->base_type, b->base_type, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->base_type, b->base_type, "GenericType::base_type", -1);
             return false;
+        }
+        if (a->type_arguments.size() != b->type_arguments.size()) return false;
+        for (size_t i = 0; i < a->type_arguments.size(); i++) {
+            if (!deep_equal(a->type_arguments[i], b->type_arguments[i], std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+                trace(a->type_arguments[i], b->type_arguments[i], "GenericType::type_arguments", i);
+                return false;
+            }
         }
         return true;
     }
@@ -5425,6 +5738,10 @@ namespace brgen::ast {
             trace(a->loc, b->loc, "Field::loc", -1);
             return false;
         }
+        if (!deep_equal(a->comment, b->comment, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->comment, b->comment, "Field::comment", -1);
+            return false;
+        }
         if (!deep_equal(a->belong.lock(), b->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
             trace(a->belong.lock(), b->belong.lock(), "Field::belong", -1);
             return false;
@@ -5451,6 +5768,10 @@ namespace brgen::ast {
         }
         if (!deep_equal(a->arguments, b->arguments, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
             trace(a->arguments, b->arguments, "Field::arguments", -1);
+            return false;
+        }
+        if (!deep_equal(a->follow_comment, b->follow_comment, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->follow_comment, b->follow_comment, "Field::follow_comment", -1);
             return false;
         }
         if (a->offset_bit != b->offset_bit) {
@@ -5510,6 +5831,10 @@ namespace brgen::ast {
             trace(a->loc, b->loc, "Format::loc", -1);
             return false;
         }
+        if (!deep_equal(a->comment, b->comment, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->comment, b->comment, "Format::comment", -1);
+            return false;
+        }
         if (!deep_equal(a->belong.lock(), b->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
             trace(a->belong.lock(), b->belong.lock(), "Format::belong", -1);
             return false;
@@ -5555,6 +5880,24 @@ namespace brgen::ast {
                 return false;
             }
         }
+        if (a->type_parameters.size() != b->type_parameters.size()) return false;
+        for (size_t i = 0; i < a->type_parameters.size(); i++) {
+            if (!deep_equal(a->type_parameters[i], b->type_parameters[i], std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+                trace(a->type_parameters[i], b->type_parameters[i], "Format::type_parameters", i);
+                return false;
+            }
+        }
+        if (!deep_equal(a->generic_base.lock(), b->generic_base.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->generic_base.lock(), b->generic_base.lock(), "Format::generic_base", -1);
+            return false;
+        }
+        if (a->generic_arguments.size() != b->generic_arguments.size()) return false;
+        for (size_t i = 0; i < a->generic_arguments.size(); i++) {
+            if (!deep_equal(a->generic_arguments[i], b->generic_arguments[i], std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+                trace(a->generic_arguments[i], b->generic_arguments[i], "Format::generic_arguments", i);
+                return false;
+            }
+        }
         return true;
     }
     template <class NodeM, class ScopeM, class BackTracer = NullBackTracer>
@@ -5574,6 +5917,10 @@ namespace brgen::ast {
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "State::loc", -1);
+            return false;
+        }
+        if (!deep_equal(a->comment, b->comment, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->comment, b->comment, "State::comment", -1);
             return false;
         }
         if (!deep_equal(a->belong.lock(), b->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
@@ -5611,6 +5958,10 @@ namespace brgen::ast {
         node_map[a] = b;
         if (a->loc != b->loc) {
             trace(a->loc, b->loc, "Enum::loc", -1);
+            return false;
+        }
+        if (!deep_equal(a->comment, b->comment, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->comment, b->comment, "Enum::comment", -1);
             return false;
         }
         if (!deep_equal(a->belong.lock(), b->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
@@ -5669,6 +6020,10 @@ namespace brgen::ast {
             trace(a->loc, b->loc, "EnumMember::loc", -1);
             return false;
         }
+        if (!deep_equal(a->comment, b->comment, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->comment, b->comment, "EnumMember::comment", -1);
+            return false;
+        }
         if (!deep_equal(a->belong.lock(), b->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
             trace(a->belong.lock(), b->belong.lock(), "EnumMember::belong", -1);
             return false;
@@ -5714,6 +6069,10 @@ namespace brgen::ast {
             trace(a->loc, b->loc, "Function::loc", -1);
             return false;
         }
+        if (!deep_equal(a->comment, b->comment, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->comment, b->comment, "Function::comment", -1);
+            return false;
+        }
         if (!deep_equal(a->belong.lock(), b->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
             trace(a->belong.lock(), b->belong.lock(), "Function::belong", -1);
             return false;
@@ -5747,6 +6106,43 @@ namespace brgen::ast {
         }
         if (a->is_cast != b->is_cast) {
             trace(a->is_cast, b->is_cast, "Function::is_cast", -1);
+            return false;
+        }
+        return true;
+    }
+    template <class NodeM, class ScopeM, class BackTracer = NullBackTracer>
+    constexpr bool deep_equal(const std::shared_ptr<TypeParameter>& a, const std::shared_ptr<TypeParameter>& b, NodeM&& node_map, ScopeM&& scope_map, BackTracer&& trace = BackTracer{}) {
+        if (!a && !b) return true;
+        if (!a || !b) {
+            trace(a, b, "TypeParameter", -1);
+            return false;
+        }
+        if (auto it = node_map.find(a); it != node_map.end()) {
+            if (it->second != b) {
+                trace(a, b, "TypeParameter", -1);
+                return false;
+            }
+            return true;
+        }
+        node_map[a] = b;
+        if (a->loc != b->loc) {
+            trace(a->loc, b->loc, "TypeParameter::loc", -1);
+            return false;
+        }
+        if (!deep_equal(a->comment, b->comment, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->comment, b->comment, "TypeParameter::comment", -1);
+            return false;
+        }
+        if (!deep_equal(a->belong.lock(), b->belong.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->belong.lock(), b->belong.lock(), "TypeParameter::belong", -1);
+            return false;
+        }
+        if (!deep_equal(a->belong_struct.lock(), b->belong_struct.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->belong_struct.lock(), b->belong_struct.lock(), "TypeParameter::belong_struct", -1);
+            return false;
+        }
+        if (!deep_equal(a->ident, b->ident, std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<BackTracer>(trace))) {
+            trace(a->ident, b->ident, "TypeParameter::ident", -1);
             return false;
         }
         return true;

@@ -95,6 +95,7 @@ namespace brgen::ast {
             CASE(Enum)
             CASE(EnumMember)
             CASE(Function)
+            CASE(TypeParameter)
 
             // type
             CASE(Type)

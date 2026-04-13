@@ -17,6 +17,7 @@
 #include <core/middle/typing.h>
 #include <core/middle/type_attribute.h>
 #include <core/middle/analyze_block_trait.h>
+#include <core/middle/monomorphize.h>
 #include "../common/print.h"
 #include "tool/common/send.h"
 #include <core/ast/node_type_list.h>
@@ -51,6 +52,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
     bool not_resolve_state_dependency = false;
     bool not_resolve_metadata = false;
     bool not_analyze_block_trait = false;
+    bool not_monomorphize = false;
 
     bool unresolved_type_as_error = false;
 
@@ -128,6 +130,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
         ctx.VarBool(&not_resolve_io_operation, "not-resolve-io-operation", "not resolve io operation");
         ctx.VarBool(&not_resolve_state_dependency, "not-resolve-state-dependency", "not resolve state dependency");
         ctx.VarBool(&not_analyze_block_trait, "not-analyze-block-trait", "not analyze block trait");
+        ctx.VarBool(&not_monomorphize, "not-monomorphize", "not monomorphize generic formats");
 
         ctx.VarBool(&unresolved_type_as_error, "unresolved-type-as-error", "unresolved type as error");
 
@@ -511,6 +514,19 @@ int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& f
         may_cancel_task();
     }
 
+    if (!flags.not_monomorphize) {
+        brgen::LocationError warns;
+        brgen::middle::monomorphize(*p, &warns);
+        if (warns.locations.size() > 0) {
+            if (!flags.omit_json_warning) {
+                json_out_err.locations.insert(json_out_err.locations.end(), warns.locations.begin(), warns.locations.end());
+            }
+            auto tmp = brgen::to_source_error(files)(std::move(warns));
+            print_errors(tmp);
+        }
+        may_cancel_task();
+    }
+
     if (!flags.disable_unused_warning) {
         brgen::LocationError warns;
         brgen::middle::collect_unused_warnings(*p, warns);
@@ -535,6 +551,11 @@ int parse_and_analyze(std::shared_ptr<brgen::ast::Program>* p, brgen::FileSet& f
     }
 
     if (!flags.not_analyze_size_alignment) {
+        // Resolve primitive `sizeof(T)` and constant array lengths first so
+        // monomorphized clones (whose SizeOf / ArrayType.length_value were
+        // copied in the uninitialized state) feed correct sizes into the
+        // struct rollup below.
+        brgen::middle::evaluate_sizeof(*p);
         brgen::middle::analyze_bit_size_and_alignment(*p);
         brgen::middle::evaluate_sizeof(*p);
         may_cancel_task();
