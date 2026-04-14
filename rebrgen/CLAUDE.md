@@ -325,6 +325,7 @@ The codebase uses macros extensively for error handling (like `MAYBE`). This is 
 - `docs/en/current_status.md` - Project status snapshot with per-generator analysis (AI-oriented, may be stale)
 - `docs/en/` - English documentation (may be stale; prefer web/doc for up-to-date reference)
 - `docs/ja/` - Japanese documentation
+- `docs/decisions/` - Architecture Decision Records (ADR). Template: `docs/decisions/TEMPLATE.md`
 - `.clinerules/` - Legacy development notes (mostly superseded by docs/)
 - See section 15 in `src/ebmgen/GEMINI.md` for full documentation structure
 
