@@ -666,18 +666,7 @@ namespace brgen::middle {
         }
 
         auto decide_constant_level(ast::ConstantLevel a, ast::ConstantLevel b) {
-            if (a == ast::ConstantLevel::unknown || b == ast::ConstantLevel::unknown) {
-                return ast::ConstantLevel::unknown;
-            }
-            if (a == ast::ConstantLevel::constant && b == ast::ConstantLevel::constant) {
-                return ast::ConstantLevel::constant;
-            }
-            if (a == ast::ConstantLevel::variable || b == ast::ConstantLevel::variable) {
-                return ast::ConstantLevel::variable;
-            }
-            assert(a == ast::ConstantLevel::immutable_variable ||
-                   b == ast::ConstantLevel::immutable_variable);
-            return ast::ConstantLevel::immutable_variable;
+            return middle::decide_constant_level(a, b);
         }
 
         void typing_binary(const std::shared_ptr<ast::Binary>& b) {

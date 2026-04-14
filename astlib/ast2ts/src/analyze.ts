@@ -740,6 +740,11 @@ export const analyzeSourceCode  = async (prevSemanticTokens :SemTokensStub|null,
             if(line<0||col<0){
                 console.log(`line: ${line} col: ${col} ident: ${node.ident}`)
             }
+            // Clamp ident length to source span so that monomorphized clones
+            // (whose ident string is longer than the original source text)
+            // do not paint beyond the actual token.
+            const srcSpan = node.loc.pos.end - node.loc.pos.begin;
+            const identLen = srcSpan > 0 ? Math.min(node.ident.length, srcSpan) : node.ident.length;
             let n = node;
             console.log(`ident: ${n.ident} ${n.usage}`)
             let counter = 0;
@@ -774,12 +779,12 @@ export const analyzeSourceCode  = async (prevSemanticTokens :SemTokensStub|null,
                         break;
                     case ast2ts.IdentUsage.define_variable:
                         break;
-                    case ast2ts.IdentUsage.define_field:   
+                    case ast2ts.IdentUsage.define_field:
                     case ast2ts.IdentUsage.define_const:
                     case ast2ts.IdentUsage.define_enum_member:
                     case ast2ts.IdentUsage.define_arg:
-                        locList.push({loc: node.loc,length: node.ident.length,index:6});
-                        break;   
+                        locList.push({loc: node.loc,length: identLen,index:6});
+                        break;
                     case ast2ts.IdentUsage.define_format:
                     case ast2ts.IdentUsage.define_enum:
                     case ast2ts.IdentUsage.define_state:
@@ -787,13 +792,13 @@ export const analyzeSourceCode  = async (prevSemanticTokens :SemTokensStub|null,
                     case ast2ts.IdentUsage.define_cast_fn:
                     case ast2ts.IdentUsage.define_type_parameter:
                     case ast2ts.IdentUsage.maybe_type:
-                        locList.push({loc: node.loc,length: node.ident.length,index:7});
+                        locList.push({loc: node.loc,length: identLen,index:7});
                         break;
                     case ast2ts.IdentUsage.define_fn:
-                        locList.push({loc: node.loc,length: node.ident.length,index:8});
+                        locList.push({loc: node.loc,length: identLen,index:8});
                         break;
                     case ast2ts.IdentUsage.reference_builtin_fn:
-                        locList.push({loc: node.loc,length: node.ident.length,index:9});
+                        locList.push({loc: node.loc,length: identLen,index:9});
                         break;
                 }
                 break;

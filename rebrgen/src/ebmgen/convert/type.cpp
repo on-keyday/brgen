@@ -145,7 +145,8 @@ namespace ebmgen {
                     body = ctx.repository().get_type(converted_type)->body;  // Copy the body from the converted type
                 }
                 else {
-                    return unexpect_error("IdentType has no base type");
+                    return unexpect_error("IdentType has no base type (ident: {})",
+                                          n->ident ? n->ident->ident : "<null>");
                 }
             }
             else if constexpr (std::is_same_v<T, std::shared_ptr<ast::ArrayType>>) {

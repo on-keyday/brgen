@@ -1,0 +1,42 @@
+format Foo[T]:
+    x :T
+    y :u16
+
+format Bar[T, U]:
+    a :Foo[T]
+    b :U
+
+format Plain:
+    z :u8
+
+format UsesFoo:
+    f :Foo[u8]
+    g :Bar[u16, u32]
+    x :Foo[u32]
+
+format Optional[T]:
+    present :u8
+    if present != 0:
+        value :T
+
+format UsesOptional:
+    a :Optional[u32]
+
+format Tagged[T]:
+    tag :u8
+    match tag:
+        0 => value :T
+        .. => fallback :u8
+
+format UsesTagged:
+    a :Tagged[u16]
+
+format ArrayOf[T]:
+    count :u8
+    items :[count]T
+
+format UsesArrayOf:
+    arr :ArrayOf[u16]
+
+format Deep:
+    x :Foo[Foo[Foo[u8]]]
