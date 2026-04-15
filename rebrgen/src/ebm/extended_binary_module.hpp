@@ -2099,10 +2099,11 @@ namespace ebm {
         }
     };
     struct EBM_API FunctionAttribute{
-        ::futils::binary::flags_t<std::uint8_t, 1, 1, 6> flags_2_;
+        ::futils::binary::flags_t<std::uint8_t, 1, 1, 1, 5> flags_2_;
         bits_flag_alias_method(flags_2_,0,is_user_defined);
         bits_flag_alias_method(flags_2_,1,has_wrapper);
-        bits_flag_alias_method(flags_2_,2,reserved);
+        bits_flag_alias_method(flags_2_,2,is_mutable);
+        bits_flag_alias_method(flags_2_,3,reserved);
         ::futils::error::Error<> encode(::futils::binary::writer& w) const ;
         ::futils::error::Error<> decode(::futils::binary::reader& r);
         static constexpr size_t fixed_header_size = 1;
@@ -2111,12 +2112,14 @@ namespace ebm {
         constexpr void visit(Visitor&& v) {
             v(v, "is_user_defined",(*this).is_user_defined());
             v(v, "has_wrapper",(*this).has_wrapper());
+            v(v, "is_mutable",(*this).is_mutable());
             v(v, "reserved",(*this).reserved());
         }
         template<typename Visitor>
         constexpr void visit(Visitor&& v) const {
             v(v, "is_user_defined",(*this).is_user_defined());
             v(v, "has_wrapper",(*this).has_wrapper());
+            v(v, "is_mutable",(*this).is_mutable());
             v(v, "reserved",(*this).reserved());
         }
         template<typename T,bool rvalue = false>
@@ -2128,6 +2131,7 @@ namespace ebm {
         static constexpr void visit_static(Visitor&& v) {
             v(v, "is_user_defined",visitor_tag<decltype(std::declval<FunctionAttribute>().is_user_defined()),true>{});
             v(v, "has_wrapper",visitor_tag<decltype(std::declval<FunctionAttribute>().has_wrapper()),true>{});
+            v(v, "is_mutable",visitor_tag<decltype(std::declval<FunctionAttribute>().is_mutable()),true>{});
             v(v, "reserved",visitor_tag<decltype(std::declval<FunctionAttribute>().reserved()),true>{});
         }
     };

@@ -25,6 +25,7 @@
         attribute: FunctionAttribute
           is_user_defined: bool
           has_wrapper: bool
+          is_mutable: bool
           reserved: std::uint8_t
         wrapper_function: *StatementRef
         body: StatementRef
