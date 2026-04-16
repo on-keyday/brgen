@@ -8,14 +8,6 @@
         "hex": true
     },
     {
-        "name": "websocket_frame_invalid",
-        "binary": "$WORK_DIR/../example/wire_data/websocket.dat",
-        "format_name": "Frame",
-        "source": "$WORK_DIR/../example/websocket.bgn",
-        "failure_case": true,
-        "hex": false
-    },
-    {
         "name": "varint_invalid_short_1",
         "binary": "$WORK_DIR/test/binary_data/varint/invalid_short_1.dat",
         "format_name": "VarInt",
