@@ -19,7 +19,7 @@ format IPv8Header:
                  # because all of the middle-boxes assume that 
                  # version is 4 for IPv4 and 6 for IPv6, 
                  # and drop the packet if version is not 4 or 6
-    ihl :u4 dscp :u6 ecn :u2 len :u16
+    ihl :u4 tos :u8 len :u16
     id :u16 reserved :u1 dont_fragment :u1 more_fragment :u1 fragOffset :u13
     ttl :u8 proto :u8 checksum :u16
     srcAddr :IPv8Address
@@ -29,7 +29,10 @@ format IPv8Header:
              # and drop the packet if ihl is not 5, or calculate checksum only for the first 20 bytes, 
              # which is not the whole header in ipv8
              # this is why ipv8 seems impossible to be deployed in the real world
-    options :[u8(ihl)*4-28]u8
+    options :[u8(ihl)*4-28]u8 # and even if the middle-boxes do not drop the packet, they will not be able to parse the header correctly, 
+                               # because they assume that the header is 20 bytes for IPv4 and 40 bytes for IPv6, 
+                               # but in IPv8, the header is at least 28 bytes.
+                               # Even if the middle-boxes can interpret the options, the inherent 8-byte discrepancy inevitably leads to inconsistent interpretations.
     # by the way, where is the OAuth token field???
     # the author says "Every manageable element in an IPv8 network is authorised via OAuth2 JWT tokens served from a local cache."
 
