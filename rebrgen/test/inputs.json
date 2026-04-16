@@ -182,5 +182,37 @@
         "source": "$WORK_DIR/../example/quic_varint.bgn",
         "failure_case": false,
         "hex": true
+    },
+    {
+        "name": "tcp_truncated_mid_srcport",
+        "binary": "$WORK_DIR/test/binary_data/tcp_truncated_mid_srcport.dat",
+        "format_name": "TCPSegment",
+        "source": "$WORK_DIR/../example/tcp_segment.bgn",
+        "failure_case": true,
+        "hex": true
+    },
+    {
+        "name": "tcp_truncated_mid_seqnum",
+        "binary": "$WORK_DIR/test/binary_data/tcp_truncated_mid_seqnum.dat",
+        "format_name": "TCPSegment",
+        "source": "$WORK_DIR/../example/tcp_segment.bgn",
+        "failure_case": true,
+        "hex": true
+    },
+    {
+        "name": "websocket_truncated_mid_u64",
+        "binary": "$WORK_DIR/test/binary_data/websocket_truncated_mid_u64.dat",
+        "format_name": "Frame",
+        "source": "$WORK_DIR/../example/websocket.bgn",
+        "failure_case": true,
+        "hex": true
+    },
+    {
+        "name": "dns_packet_truncated_mid_id",
+        "binary": "$WORK_DIR/test/binary_data/dns_packet_truncated_mid_id.dat",
+        "format_name": "DNSPacketTest",
+        "source": "$WORK_DIR/src/test/dns_packet.bgn",
+        "failure_case": true,
+        "hex": true
     }
 ]

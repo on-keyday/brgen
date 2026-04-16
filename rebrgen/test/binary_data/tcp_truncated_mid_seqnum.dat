@@ -1,0 +1,4 @@
+# TCP truncated mid-u32: srcPort + dstPort OK, seqNum (u32) has only 2 of 4 bytes
+fe c2 # src port
+01 bb # dst port
+69 81 # partial seq number (u32 needs 4 bytes)

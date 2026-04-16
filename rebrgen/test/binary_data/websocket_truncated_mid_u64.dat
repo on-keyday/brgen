@@ -1,0 +1,7 @@
+# WebSocket frame truncated mid-u64 ExtendedPayloadLength
+# 0x81 = FIN=1, RSV=0, Opcode=1 (TextFrame)
+# 0x7F = Mask=0, PayloadLength=127 -> triggers u64 extended length
+# Then only 3 of 8 bytes for the u64
+81
+7F
+00 00 00
