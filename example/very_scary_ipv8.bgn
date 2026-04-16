@@ -20,7 +20,7 @@ format IPv8Header:
                  # version is 4 for IPv4 and 6 for IPv6, 
                  # and drop the packet if version is not 4 or 6
     ihl :u4 tos :u8 len :u16
-    id :u16 reserved :u1 dont_fragment :u1 more_fragment :u1 fragOffset :u13
+    id :u16 flags :u3 fragOffset :u13
     ttl :u8 proto :u8 checksum :u16
     srcAddr :IPv8Address
     dstAddr :IPv8Address
