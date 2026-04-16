@@ -1,0 +1,12 @@
+# TCP Segment with invalid dataOffset < 5 (must be >= 5)
+fe c2 # src port
+01 bb # dst port
+69 81 43 41 # seq number
+c1 cb 78 b6 # ack number
+# dataOffset nibble | reserved nibble
+# high nibble=3 (< 5) → assertion failure
+30
+10 # flags
+00 1c # window size
+17 3c # checksum
+00 00 # urgent pointer

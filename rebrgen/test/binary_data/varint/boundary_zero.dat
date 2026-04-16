@@ -1,0 +1,2 @@
+# QUIC VarInt boundary: value=0 (smallest, prefix=0b00, 1 byte)
+00

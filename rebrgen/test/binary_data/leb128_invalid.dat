@@ -1,0 +1,3 @@
+# Leb128Test expects 14 Varint fields. Provide only a continuation byte (0x80)
+# then EOF: decoder reads continuation bit, expects next byte, but stream ends.
+80

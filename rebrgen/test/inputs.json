@@ -118,5 +118,69 @@
         "source": "$WORK_DIR/src/test/native_endian_test.bgn",
         "failure_case": false,
         "hex": true
+    },
+    {
+        "name": "simple_vector_test",
+        "binary": "$WORK_DIR/test/binary_data/simple_vector.dat",
+        "format_name": "SimpleVector",
+        "source": "$WORK_DIR/src/test/simple_vector.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "simple_vector_empty",
+        "binary": "$WORK_DIR/test/binary_data/simple_vector_empty.dat",
+        "format_name": "SimpleVector",
+        "source": "$WORK_DIR/src/test/simple_vector.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "dns_label_invalid",
+        "binary": "$WORK_DIR/test/binary_data/dns_label_invalid.dat",
+        "format_name": "DNSLabelTest",
+        "source": "$WORK_DIR/src/test/dns_label.bgn",
+        "failure_case": true,
+        "hex": true
+    },
+    {
+        "name": "leb128_invalid",
+        "binary": "$WORK_DIR/test/binary_data/leb128_invalid.dat",
+        "format_name": "Leb128Test",
+        "source": "$WORK_DIR/src/test/leb128_test.bgn",
+        "failure_case": true,
+        "hex": true
+    },
+    {
+        "name": "tcp_invalid_data_offset",
+        "binary": "$WORK_DIR/test/binary_data/tcp_invalid_data_offset.dat",
+        "format_name": "TCPSegment",
+        "source": "$WORK_DIR/../example/tcp_segment.bgn",
+        "failure_case": true,
+        "hex": true
+    },
+    {
+        "name": "varint_boundary_zero",
+        "binary": "$WORK_DIR/test/binary_data/varint/boundary_zero.dat",
+        "format_name": "VarInt",
+        "source": "$WORK_DIR/../example/quic_varint.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "varint_boundary_max_6bit",
+        "binary": "$WORK_DIR/test/binary_data/varint/boundary_max_6bit.dat",
+        "format_name": "VarInt",
+        "source": "$WORK_DIR/../example/quic_varint.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "varint_boundary_max_62bit",
+        "binary": "$WORK_DIR/test/binary_data/varint/boundary_max_62bit.dat",
+        "format_name": "VarInt",
+        "source": "$WORK_DIR/../example/quic_varint.bgn",
+        "failure_case": false,
+        "hex": true
     }
 ]

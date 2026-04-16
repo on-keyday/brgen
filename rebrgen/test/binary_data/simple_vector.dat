@@ -1,0 +1,6 @@
+# SimpleVector: len :u8, data :[len]u16 (big-endian)
+# len=3, data=[0x1234, 0x5678, 0x9ABC]
+03
+12 34
+56 78
+9A BC

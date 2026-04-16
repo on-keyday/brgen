@@ -1,0 +1,3 @@
+# DNSLabel invalid: prefix=0b01 triggers "unexpected label" error branch
+# byte 0x40 = 01 000000 in binary, prefix=0b01 (not 0b00 nor 0b11)
+40

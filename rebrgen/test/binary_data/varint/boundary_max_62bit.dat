@@ -1,0 +1,2 @@
+# QUIC VarInt: max 62-bit value=0x3FFFFFFFFFFFFFFF (prefix=0b11, 8 bytes)
+FF FF FF FF FF FF FF FF
