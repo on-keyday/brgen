@@ -53,7 +53,7 @@ src/
 │   ├── body_subset.cpp               # 自動生成（編集禁止）
 │   └── class_based.cpp               # クラスベースフックシステム生成ロジック
 │
-├── ebmcg/                            # ebmコードジェネレーター
+├── ebmcg/                            # default codegen visitor を継承する generator (CodeWriter 中心)
 │   ├── ebm2c/                        # 言語及び実装hook一覧は`python script/ebmtemplate.py list all` で確認可能
 │   ├── ebm2go/
 │   ├── ebm2python/
@@ -61,9 +61,10 @@ src/
 │   ├── ebm2rust/
 |   ...
 │
-└── ebmip/                            # ebmインタープリター
-    ├── ebm2rmw/                      # 言語及び実装hook一覧は`python script/ebmtemplate_ip.py list all` で確認可能
-    ...
+└── ebmip/                            # default codegen visitor が不適な generator (interpreter, serialization, 可視化等)
+    ├── ebm2rmw/                      # interpreter。言語及び実装hook一覧は`python script/ebmtemplate_ip.py list all` で確認可能
+    ├── ebm2json/                     # EBM シリアライズ出力
+    ...                               # ADR 0005 参照
 ```
 
 各 `ebm2<lang>/` の構成:
