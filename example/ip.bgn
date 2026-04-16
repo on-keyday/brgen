@@ -6,6 +6,7 @@ format IPv4Header:
     ttl :u8 proto :ProtocolNumber checksum :u16
     srcAddr :[4]u8
     dstAddr :[4]u8
+    ihl >= 5
     options :[u8(ihl)*4-20]u8
 
 format IPv4Packet:
