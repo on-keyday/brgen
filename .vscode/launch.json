@@ -173,6 +173,20 @@
       "console": "integratedTerminal"
       //"preLaunchTask": "build",
       //"symbolSearchPath": "lib\\"
+    },
+    {
+      "name": "Debug ebm2cpp",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceRoot}/rebrgen/tool/ebm2cpp",
+      "args": [
+        "-i",
+        "${workspaceRoot}/rebrgen/save/dns_packet.ebm"
+      ],
+      "stopAtEntry": false,
+      "cwd": "${workspaceRoot}/rebrgen",
+      "environment": [],
+      "console": "integratedTerminal"
     }
   ]
 }

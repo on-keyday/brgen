@@ -156,6 +156,17 @@
       //"symbolSearchPath": "lib\\"
     },
     {
+      "name": "Debug ebm2cpp",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceRoot}/tool/ebm2cpp",
+      "args": ["-i", "${workspaceRoot}/save/dns_packet.ebm"],
+      "stopAtEntry": false,
+      "cwd": "${workspaceRoot}",
+      "environment": [],
+      "console": "integratedTerminal"
+    },
+    {
       "name": "Debug ebm2rmw",
       "type": "cppvsdbg",
       "request": "launch",
