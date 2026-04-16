@@ -224,15 +224,25 @@ namespace ebm2ascii {
             std::uint64_t remaining = f.bit_width;
             while (remaining > 0) {
                 std::uint64_t in_row = std::min<std::uint64_t>(remaining, width_bits - col);
-                // Build cell content
-                std::string cell_label = (remaining == f.bit_width)
-                                             ? std::format("{} ({})", f.name, f.type_repr)
-                                             : std::format("..{}", f.name);
                 // Cell width in chars: in_row * 2 - 1 (each bit = 2 chars, minus final '|' which is cell delimiter)
                 std::uint32_t cell_chars = (std::uint32_t)in_row * 2 - 1;
-                // Center label (truncate if too long)
-                if (cell_label.size() > cell_chars) {
-                    cell_label = cell_label.substr(0, cell_chars);
+                // Choose label with fallback: "name (type)" → "name" → truncated name
+                std::string cell_label;
+                if (remaining == f.bit_width) {
+                    auto full = std::format("{} ({})", f.name, f.type_repr);
+                    if (full.size() <= cell_chars) {
+                        cell_label = std::move(full);
+                    }
+                    else if (f.name.size() <= cell_chars) {
+                        cell_label = f.name;
+                    }
+                    else {
+                        cell_label = f.name.substr(0, cell_chars);
+                    }
+                }
+                else {
+                    auto cont = std::format("..{}", f.name);
+                    cell_label = cont.size() <= cell_chars ? cont : cont.substr(0, cell_chars);
                 }
                 std::uint32_t pad = (cell_chars - (std::uint32_t)cell_label.size()) / 2;
                 for (std::uint32_t i = 0; i < pad; ++i) row += " ";
