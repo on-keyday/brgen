@@ -47,11 +47,12 @@
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 
 #include "../codegen.hpp"
+#include "ebmcodegen/stub/context.hpp"
 DEFINE_VISITOR(Statement_STRUCT_DECL) {
     using namespace CODEGEN_NAMESPACE;
     /*here to write the hook*/
-    if (ctx.config().struct_decl_visitor) {
-        return ctx.config().struct_decl_visitor(ctx);
+    if (ctx.config().struct_decl_custom) {
+        CALL_OR_PASS(uniq, ctx.config().struct_decl_custom(ctx));
     }
 
     CodeWriter w;
@@ -64,55 +65,18 @@ DEFINE_VISITOR(Statement_STRUCT_DECL) {
         w.writeln(ctx.config().struct_keyword, " ", name, " ", ctx.config().begin_block);
     }
 
-    auto do_methods = [&]() -> expected<void> {
-        if (auto props = ctx.struct_decl.properties()) {
-            for (const auto& prop_ref : props->container) {
-                MAYBE(prop, ctx.visit(prop_ref));
-                w.writeln(prop.to_writer());
-            }
-        }
-
-        if (auto enc = ctx.struct_decl.encode_fn()) {
-            if (ctx.config().struct_encode_start_wrapper) {
-                MAYBE(encode_fn, ctx.config().struct_encode_start_wrapper(ctx, *enc));
-                w.writeln(std::move(encode_fn.to_writer()));
-            }
-            else {
-                MAYBE(encode_fn, ctx.visit(*enc));
-                w.writeln(std::move(encode_fn.to_writer()));
-            }
-        }
-        if (auto dec = ctx.struct_decl.decode_fn()) {
-            if (ctx.config().struct_decode_start_wrapper) {
-                MAYBE(decode_fn, ctx.config().struct_decode_start_wrapper(ctx, *dec));
-                w.writeln(std::move(decode_fn.to_writer()));
-            }
-            else {
-                MAYBE(decode_fn, ctx.visit(*dec));
-                w.writeln(std::move(decode_fn.to_writer()));
-            }
-        }
-        if (auto methods = ctx.struct_decl.methods()) {
-            for (const auto& method_ref : methods->container) {
-                MAYBE(method, ctx.visit(method_ref));
-                w.writeln(method.to_writer());
-            }
-        }
-
-        return {};
-    };
     {
         auto scope = w.indent_scope();
         MAYBE(block, ctx.visit(ctx.struct_decl.fields));
         w.write(block.to_writer());
         if (ctx.config().methods_inner_class) {
-            MAYBE_VOID(_1, do_methods());
+            MAYBE_VOID(_1, emit_struct_methods(ctx, w));
         }
     }
     w.writeln(ctx.config().end_block, ctx.config().endof_struct_definition);
 
     if (!ctx.config().methods_inner_class) {
-        MAYBE_VOID(_2, do_methods());
+        MAYBE_VOID(_2, emit_struct_methods(ctx, w));
     }
 
     if (ctx.config().struct_definition_end_wrapper) {

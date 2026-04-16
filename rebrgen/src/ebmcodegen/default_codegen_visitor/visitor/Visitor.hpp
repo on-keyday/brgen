@@ -6,7 +6,6 @@
   Available variables:
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
-#include <functional>
 bool use_brace_for_condition = true;
 bool use_elif = false;
 bool auto_output_root = true;
@@ -18,7 +17,7 @@ std::string void_type = "";  // for compatibility
 std::string setter_status_ok = "";
 std::string setter_status_failure = "";
 std::string struct_keyword = "struct";
-std::function<expected<Result>(Context_Statement_STRUCT_DECL& ctx)> struct_decl_visitor;
+std::function<expected<Result>(Context_Statement_STRUCT_DECL& ctx)> struct_decl_custom;
 std::function<expected<Result>(Context_Statement_STRUCT_DECL& ctx)> struct_definition_start_wrapper;
 std::function<expected<Result>(Context_Statement_STRUCT_DECL& ctx, ebm::StatementRef encode)> struct_encode_start_wrapper;
 std::function<expected<Result>(Context_Statement_STRUCT_DECL& ctx, ebm::StatementRef decode)> struct_decode_start_wrapper;
@@ -78,6 +77,7 @@ std::string decoder_return_type = "DecoderReturn";
 std::string encoder_input_type = "EncoderInput";
 std::string decoder_input_type = "DecoderInput";
 std::function<expected<Result>(Context_Expression_GET_STREAM_OFFSET& ctx)> get_stream_offset_custom;
+std::function<expected<Result>(Context_Expression_GET_REMAINING_BYTES& ctx)> get_remaining_bytes_custom;
 std::string property_setter_return_type = "bool";
 bool forward_type_in_function_decl = false;
 std::string function_return_type_separator = "->";
