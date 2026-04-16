@@ -12,6 +12,7 @@
 #include "core/ast/node/translated.h"
 #include "core/ast/node/type.h"
 #include "ebmgen/common.hpp"
+#include "helper/scoped.h"
 #include "reloc_ptr.hpp"
 #include <wrap/cout.h>
 
@@ -292,10 +293,35 @@ namespace ebmgen {
         bool needs_propagate_io_input_desc = false;
         std::unordered_map<ebm::TypeRef, std::vector<ebm::TypeRef>> propagated_io_input_desc_hierarchy;
         std::unordered_set<ebm::TypeRef> recursive_io_input_descs;
+        bool function_has_modified_self = false;
 
         void debug_visited(const char* action, const std::shared_ptr<ast::Node>& node, ebm::StatementRef ref, GenerateType typ) const;
 
        public:
+        [[nodiscard]] auto enter_function_has_modified_self() {
+            auto old = function_has_modified_self;
+            function_has_modified_self = false;
+            return futils::helper::defer([this, old]() {
+                function_has_modified_self = old;
+            });
+        }
+
+        void mark_function_has_modified_self() {
+            function_has_modified_self = true;
+        }
+
+        [[nodiscard]] bool has_modified_self() const {
+            return function_has_modified_self;
+        }
+
+        [[nodiscard]] auto set_self_ref(ebm::ExpressionRef self_ref) {
+            auto old = this->self_ref;
+            this->self_ref = self_ref;
+            return futils::helper::defer([this, old]() {
+                this->self_ref = old;
+            });
+        }
+
         [[nodiscard]] auto set_current_block(ebm::Block* block) {
             auto old = current_block;
             current_block = block;

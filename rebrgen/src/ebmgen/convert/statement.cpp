@@ -778,6 +778,7 @@ namespace ebmgen {
                     append(derived_fn.params, typ == GenerateType::Encode ? st.enc_var_def : st.dec_var_def);
                 }
                 const auto _func = ctx.state().set_current_function_id(fn_ref, coder_return);
+                const auto _mut = ctx.state().enter_function_has_modified_self();
                 EBMA_CONVERT_STATEMENT(body, node->body);
                 ebm::Block fn_body_block;
                 fn_body_block.container.reserve(2);
@@ -788,6 +789,7 @@ namespace ebmgen {
                 append(fn_body_block, ret_stmt);
                 EBM_BLOCK(fn_body_ref, std::move(fn_body_block));
                 derived_fn.body = fn_body_ref;
+                derived_fn.attribute.is_mutable(ctx.state().has_modified_self());
             }
             derived_fn.kind = typ == GenerateType::Encode ? ebm::FunctionKind::ENCODE : ebm::FunctionKind::DECODE;
             ebm::StatementBody b;
@@ -874,6 +876,7 @@ namespace ebmgen {
         }
         const auto _mode = ctx.state().set_current_generate_type(typ);
         const auto _func = ctx.state().set_current_function_id(func_id, func_decl.return_type);
+        const auto _mut = ctx.state().enter_function_has_modified_self();
         for (auto& param : node->parameters) {
             EBMA_ADD_IDENTIFIER(param_name_ref, param->ident->ident);
             EBMA_CONVERT_TYPE(param_type_ref, param->field_type);
@@ -892,6 +895,7 @@ namespace ebmgen {
             EBM_BLOCK(fn_body_ref, std::move(fn_body_block));
             fn_body = fn_body_ref;
         }
+        func_decl.attribute.is_mutable(ctx.state().has_modified_self());
         func_decl.body = fn_body;
         return func_decl;
     }
@@ -983,10 +987,11 @@ namespace ebmgen {
     expected<ebm::StatementBody> convert_field_serialize(ConverterContext& ctx, const std::shared_ptr<ast::Field>& node, ebm::StatementRef id) {
         ebm::StatementBody body;
         const bool is_enc = ctx.state().get_current_generate_type() == GenerateType::Encode;
+        if (!is_enc) {
+            ctx.state().mark_function_has_modified_self();
+        }
         MAYBE(def_ref, ctx.state().is_visited(node, GenerateType::Normal));
         MAYBE(def_id, ctx.state().get_self_ref_for_id(def_ref));
-        // auto def = ctx.repository().get_statement(def_ref)->body.field_decl();
-        // EBM_IDENTIFIER(def_id, def_ref, def->field_type);
         std::optional<ebm::StatementRef> assert_stmt;
         std::optional<ebm::SubByteRange> sub_range;
         ebm::StatementRef sub_range_id = id;
@@ -1185,6 +1190,30 @@ namespace ebmgen {
         return {};
     }
 
+    expected<bool> has_self(ConverterContext& ctx, ebm::ExpressionRef expr_ref) {
+        MAYBE(got, ctx.repository().get_expression(expr_ref));
+        if (got.body.kind == ebm::ExpressionKind::SELF) {
+            return true;
+        }
+        else if (got.body.kind == ebm::ExpressionKind::MEMBER_ACCESS) {
+            MAYBE(base, got.body.base());
+            return has_self(ctx, base);
+        }
+        else if (got.body.kind == ebm::ExpressionKind::INDEX_ACCESS) {
+            MAYBE(base, got.body.base());
+            return has_self(ctx, base);
+        }
+        return false;
+    }
+
+    expected<void> may_mark_self_modified(ConverterContext& ctx, ebm::ExpressionRef target_ref) {
+        MAYBE(target_has_self, has_self(ctx, target_ref));
+        if (target_has_self) {
+            ctx.state().mark_function_has_modified_self();
+        }
+        return {};
+    }
+
     expected<void> StatementConverter::convert_statement_impl(const std::shared_ptr<ast::Binary>& node, ebm::StatementRef id, ebm::StatementBody& body) {
         auto assign_with_op = convert_assignment_binary_op(node->op);
         if (node->op == ast::BinaryOp::assign) {
@@ -1193,6 +1222,7 @@ namespace ebmgen {
             body.target(target_ref);
             EBMA_CONVERT_EXPRESSION(value_ref, node->right);
             body.value(value_ref);
+            MAYBE_VOID(ok, may_mark_self_modified(ctx, target_ref));
         }
         else if (node->op == ast::BinaryOp::append_assign) {
             body.kind = ebm::StatementKind::APPEND;
@@ -1204,6 +1234,7 @@ namespace ebmgen {
             EBMA_CONVERT_EXPRESSION(value_ref, node->right);
             body.target(target_ref);
             body.value(value_ref);
+            MAYBE_VOID(ok, may_mark_self_modified(ctx, target_ref));
             return {};
         }
         else if (node->op == ast::BinaryOp::define_assign || node->op == ast::BinaryOp::const_assign) {
@@ -1252,6 +1283,7 @@ namespace ebmgen {
             got.body.type = left_body.body.type;
             body.target(target_ref);
             body.value(calc);
+            MAYBE_VOID(ok, may_mark_self_modified(ctx, target_ref));
         }
         else {
             body.kind = ebm::StatementKind::EXPRESSION;

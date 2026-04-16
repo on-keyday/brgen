@@ -247,6 +247,7 @@ namespace ebmgen {
             func_decl.parent_format = field.parent_struct;
             func_decl.return_type = setter_return_type;
             func_decl.name = field.name;
+            func_decl.attribute.is_mutable(true);
             func_decl.property(to_weak(array_info->second.array_field_ref));
             MAYBE(new_fn_id, ctx.repository().new_statement_id());
 

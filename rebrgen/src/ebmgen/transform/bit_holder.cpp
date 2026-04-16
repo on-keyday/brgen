@@ -84,6 +84,7 @@ namespace ebmgen {
         setter_decl.parent_format = to_weak(parent_ref);
         getter_decl.kind = ebm::FunctionKind::COMPOSITE_GETTER;
         setter_decl.kind = ebm::FunctionKind::COMPOSITE_SETTER;
+        setter_decl.attribute.is_mutable(true);
         MAYBE(field_self_id, tctx.context().state().get_self_ref_for_id(field_ref));
         MAYBE(original_field, tctx.expression_repository().get(field_self_id));
         // MAYBE(base_, self_expr.body.base());  // must be MEMBER_ACCESS

@@ -117,6 +117,10 @@ namespace ebmgen {
             wrapper_func.return_type = return_type;
             wrapper_func.kind = target.kind;
             wrapper_func.parent_format = parent_format;
+            // Inherit is_mutable from the impl: a wrapper that calls a self-mutating
+            // method must itself be considered self-mutating, otherwise const-aware
+            // languages (C++) would emit incompatible signatures.
+            wrapper_func.attribute.is_mutable(func.attribute.is_mutable());
             append(wrapper_func.params, stream_param);
             wrapper_func.body = body_ref;
 

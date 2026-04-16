@@ -18,6 +18,7 @@ namespace ebmgen {
                 MAYBE(setter_id, ctx.repository().new_statement_id());
                 getter.kind = ebm::FunctionKind::PROPERTY_GETTER;
                 setter.kind = ebm::FunctionKind::PROPERTY_SETTER;
+                setter.attribute.is_mutable(true);
                 setter.property(to_weak(s.id));
                 getter.property(to_weak(s.id));
                 getter.name = prop->name;
