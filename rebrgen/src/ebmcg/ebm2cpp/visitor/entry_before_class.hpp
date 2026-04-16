@@ -174,6 +174,11 @@ DEFINE_VISITOR(entry_before) {
     // Error handling hooks
     config.error_return_visitor = [](Context_Statement_ERROR_RETURN& ctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
+        // Propagate the original error value instead of replacing it with a generic message.
+        if (!is_nil(ctx.value)) {
+            MAYBE(val, ctx.visit(ctx.value));
+            return CODELINE("return ", val.to_writer(), ";");
+        }
         return CODELINE("return ::futils::error::Error<>(\"error\", ::futils::error::Category::lib);");
     };
 
@@ -260,6 +265,13 @@ DEFINE_VISITOR(entry_before) {
         return CODE(io_, ".remain().size()");
     };
 
+    // GET_STREAM_OFFSET: current byte offset in the stream
+    config.get_stream_offset_custom = [](Context_Expression_GET_STREAM_OFFSET& ctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        auto io_ = ctx.identifier(ctx.io_ref);
+        return CODE(io_, ".offset()");
+    };
+
     // SUB_BYTE_RANGE: create a sub-reader/writer over a byte range
     config.sub_byte_range_visitor = [](Context_Statement_SUB_BYTE_RANGE& ctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
@@ -282,12 +294,12 @@ DEFINE_VISITOR(entry_before) {
             w.writeln("}");
         }
         else {
-            // OUTPUT: write to a temporary buffer then to parent
+            // OUTPUT: write to a resizable temporary buffer then to parent
             w.writeln("{");
             {
                 auto scope = w.indent_scope();
                 w.writeln("std::string _sub_buf;");
-                w.writeln("::futils::binary::writer ", io_, "{_sub_buf};");
+                w.writeln("::futils::binary::writer ", io_, "{::futils::binary::resizable_buffer_writer<std::string>(), &_sub_buf, _sub_buf};");
                 w.write(do_io.to_writer());
                 w.writeln("if (!", parent_io_, ".write(_sub_buf)) {");
                 {
@@ -509,7 +521,8 @@ DEFINE_VISITOR(entry_before) {
         MAYBE(size_str, get_size_str(ctx, ctx.read_data.size));
         CodeWriter w;
         if (cand == BytesType::array) {
-            w.writeln("if (!", io_name, ".read(", target.to_writer(), ")) {");
+            // Read only size_str bytes; the backing std::array may be larger (e.g. alignment padding).
+            w.writeln("if (!", io_name, ".read(::futils::view::wvec(", target.to_writer(), ".data(), ", size_str, "))) {");
             {
                 auto scope = w.indent_scope();
                 MAYBE(layer_str, get_identifier_layer_str(ctx, from_weak(ctx.read_data.field)));
@@ -543,8 +556,16 @@ DEFINE_VISITOR(entry_before) {
         if (ctx.write_data.lowered_statement()) {
             return pass;
         }
+        MAYBE(size_str, get_size_str(ctx, ctx.write_data.size));
         CodeWriter w;
-        w.writeln("if (!", io_name, ".write(", target.to_writer(), ")) {");
+        if (cand == BytesType::array) {
+            // For fixed-size array, write only the first size_str bytes (not the entire array)
+            // because sub-byte IO buffers may be larger than the actual write size (e.g. QUIC varint).
+            w.writeln("if (!", io_name, ".write(::futils::view::rvec(", target.to_writer(), ".data(), ", size_str, "))) {");
+        }
+        else {
+            w.writeln("if (!", io_name, ".write(", target.to_writer(), ")) {");
+        }
         {
             auto scope = w.indent_scope();
             MAYBE(layer_str, get_identifier_layer_str(ctx, from_weak(ctx.write_data.field)));
