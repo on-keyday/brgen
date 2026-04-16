@@ -1,0 +1,33 @@
+# DO NOT IMPLEMENT THIS PROTOCOL IN THE REAL WORLD
+# This is a critical commentary on IPv8, a horrifying joke protocol designed by an unknown individual with no prior work experience at the IETF.
+# This is scary joke (please to be joke) protocol
+# it is designed to be impossible to be deployed in the real world,
+# but the author says it is possible to be implemented in the real world with 100% compatible with IPv4, 
+# and it is designed to be a nightmare for middle-boxes.
+# the author also says eBGP8 will be designed based on this protocol, 
+# and it will be a nightmare for network operators.
+config.url = "https://www.ietf.org/archive/id/draft-thain-ipv8-00.html"
+
+format IPv8Address:
+    asn_prefix :[4]u8
+    host_id :[4]u8
+
+
+format IPv8Header:
+    version :u4 
+    version == 8
+    ihl :u4 dscp :u6 ecn :u2 len :u16
+    id :u16 reserved :u1 dont_fragment :u1 more_fragment :u1 fragOffset :u13
+    ttl :u8 proto :u8 checksum :u16
+    srcAddr :IPv8Address
+    dstAddr :IPv8Address
+    ihl >= 7 # why this is joke, 
+             # because almost all of middle-boxes assume that ihl is 5
+             # and drop the packet if ihl is not 5, or calculate checksum only for the first 20 bytes, 
+             # which is not the whole header in ipv8
+             # this is why ipv8 seems impossible to be deployed in the real world
+    options :[u8(ihl)*4-28]u8
+    # by the way, where is the OAuth token field???
+    # the author says "Every manageable element in an IPv8 network is authorised via OAuth2 JWT tokens served from a local cache."
+
+# and scarry, draft-01 is already published in a day after 00...
