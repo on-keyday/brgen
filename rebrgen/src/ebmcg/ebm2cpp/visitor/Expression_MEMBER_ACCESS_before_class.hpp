@@ -51,10 +51,7 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
             args += param_name;
         }
         // For STRICT_TYPE properties, unwrap the optional with .value()
-        if (prop_decl.merge_mode == ebm::MergeMode::STRICT_TYPE) {
-            return CODE("*", main.to_writer(), "(", args, ")");
-        }
-        return CODE(main.to_writer(), "(", args, ")");
+        return CODE("*", main.to_writer(), "(", args, ")");
     }
 
     return pass;

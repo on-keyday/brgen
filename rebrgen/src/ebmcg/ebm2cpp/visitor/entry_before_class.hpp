@@ -17,8 +17,11 @@
 
 #include "../codegen.hpp"
 #include "ebm/extended_binary_module.hpp"
+#include "ebmcodegen/stub/dependency.hpp"
+#include "ebmcodegen/stub/util.hpp"
 DEFINE_VISITOR(entry_before) {
     using namespace CODEGEN_NAMESPACE;
+    using OutputPhase = std::remove_reference_t<decltype(ctx.config())>::OutputPhase;
     auto& config = ctx.config();
 
     // C++ type naming: std::uint8_t, std::int32_t, etc.
@@ -193,6 +196,7 @@ DEFINE_VISITOR(entry_before) {
         if (ctx.field_decl.is_state_variable()) {
             return {};
         }
+        MAYBE(struct_unions, struct_union_members(ctx, ctx.field_decl.field_type));
         auto name = ctx.identifier();
         MAYBE(type, ctx.visit(ctx.field_decl.field_type));
         auto type_ref = ctx.field_decl.field_type;
@@ -213,16 +217,22 @@ DEFINE_VISITOR(entry_before) {
             default:
                 break;
         }
-        return CODELINE(type.to_writer(), " ", name, init, ctx.config().endof_statement);
+        return CODELINE(SEPARATED(CODELINE(), struct_unions.size(), [&](size_t i) { return struct_unions[i].second.to_writer(); }), type.to_writer(), " ", name, init, ctx.config().endof_statement);
     };
 
     // Enum declaration: use enum class with base type
     config.enum_decl_visitor = [](Context_Statement_ENUM_DECL& ctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
         auto name = ctx.identifier();
-        MAYBE(base_type, ctx.visit(ctx.enum_decl.base_type));
         CodeWriter w;
-        w.writeln("enum class ", name, " : ", base_type.to_writer(), " {");
+        if (is_nil(ctx.enum_decl.base_type)) {
+            // No base type specified (e.g. state enums) — default to int
+            w.writeln("enum class ", name, " : int {");
+        }
+        else {
+            MAYBE(base_type, ctx.visit(ctx.enum_decl.base_type));
+            w.writeln("enum class ", name, " : ", base_type.to_writer(), " {");
+        }
         {
             auto scope = w.indent_scope();
             MAYBE(block, ctx.visit(ctx.enum_decl.members));
@@ -234,6 +244,62 @@ DEFINE_VISITOR(entry_before) {
 
     // Don't use base type for field types (use enum class name directly)
     config.use_base_type_of_enum = false;
+
+    // CAN_READ_STREAM: check if reader has at least num_bytes remaining
+    config.can_read_stream_visitor = [](Context_Expression_CAN_READ_STREAM& ctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        auto io_ = ctx.identifier(ctx.io_ref);
+        MAYBE(size_str, get_size_str(ctx, ctx.num_bytes));
+        return CODE(io_, ".remain().size() >= ", size_str);
+    };
+
+    // GET_REMAINING_BYTES: number of bytes left in the reader
+    config.get_remaining_bytes_custom = [](Context_Expression_GET_REMAINING_BYTES& ctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        auto io_ = ctx.identifier(ctx.io_ref);
+        return CODE(io_, ".remain().size()");
+    };
+
+    // SUB_BYTE_RANGE: create a sub-reader/writer over a byte range
+    config.sub_byte_range_visitor = [](Context_Statement_SUB_BYTE_RANGE& ctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        auto io_ = ctx.identifier(ctx.sub_byte_range.io_ref);
+        auto parent_io_ = ctx.identifier(ctx.sub_byte_range.parent_io_ref);
+        MAYBE(length, ctx.sub_byte_range.length());
+        MAYBE(length_str, ctx.visit(length));
+        MAYBE(do_io, ctx.visit(ctx.sub_byte_range.io_statement));
+        CodeWriter w;
+        if (ctx.sub_byte_range.stream_type == ebm::StreamType::INPUT) {
+            // Create sub-reader from parent reader's current position
+            w.writeln("{");
+            {
+                auto scope = w.indent_scope();
+                w.writeln("auto _sub_view = ", parent_io_, ".remain().substr(0, ", length_str.to_writer(), ");");
+                w.writeln("::futils::binary::reader ", io_, "{_sub_view};");
+                w.write(do_io.to_writer());
+                w.writeln(parent_io_, ".offset(", length_str.to_writer(), ");");
+            }
+            w.writeln("}");
+        }
+        else {
+            // OUTPUT: write to a temporary buffer then to parent
+            w.writeln("{");
+            {
+                auto scope = w.indent_scope();
+                w.writeln("std::string _sub_buf;");
+                w.writeln("::futils::binary::writer ", io_, "{_sub_buf};");
+                w.write(do_io.to_writer());
+                w.writeln("if (!", parent_io_, ".write(_sub_buf)) {");
+                {
+                    auto scope2 = w.indent_scope();
+                    w.writeln("return ::futils::error::Error<>(\"encode: sub_byte_range write failed\", ::futils::error::Category::lib);");
+                }
+                w.writeln("}");
+            }
+            w.writeln("}");
+        }
+        return w;
+    };
 
     // INIT_CHECK: C++ unions don't have tags, so union_init checks are no-ops.
     // For recursive struct init, check for nullptr and allocate.
@@ -302,7 +368,13 @@ DEFINE_VISITOR(entry_before) {
             w.writeln("if (!std::holds_alternative<", expect_type.to_writer(), ">(", target.to_writer(), ")) {");
             {
                 auto scope = w.indent_scope();
-                w.writeln("return std::nullopt;");
+                MAYBE(kind, ctx.get_field<"func_decl.return_type.kind">(ctx.init_check.related_function));
+                if (kind == ebm::TypeKind::OPTIONAL) {
+                    w.writeln("return std::nullopt;");
+                }
+                else {
+                    w.writeln("return nullptr;");
+                }
             }
             w.writeln("}");
         }
@@ -333,17 +405,7 @@ DEFINE_VISITOR(entry_before) {
     config.struct_union_type_custom = [](Context_Type_STRUCT_UNION& ctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
         // Emit struct definitions for each member type as toplevel
-        for (auto& m : ctx.struct_union_desc.variant_desc.members.container) {
-            MAYBE(type_info, ctx.get(m));
-            if (type_info.body.kind == ebm::TypeKind::STRUCT) {
-                auto struct_ref = type_info.body.id();
-                if (struct_ref) {
-                    // Visit the struct declaration to generate its definition
-                    MAYBE(struct_def, ctx.visit(struct_ref->id));
-                    ctx.config().decl_toplevel.push_back(struct_def.to_writer());
-                }
-            }
-        }
+
         // Build std::variant<T1, T2, ...>
         CodeWriter w;
         w.write("std::variant<");
@@ -358,10 +420,12 @@ DEFINE_VISITOR(entry_before) {
         return Result(std::move(w));
     };
 
-    // Program declaration: add #pragma once and includes
-    config.program_decl_start_wrapper = [](Context_Statement_PROGRAM_DECL& ctx) -> expected<Result> {
+    // Program declaration: forward reference resolution with sorted struct output
+    config.program_decl_custom = [](Context_Statement_PROGRAM_DECL& ctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
         CodeWriter w;
+
+        // Phase 0: Header prologue
         w.writeln("// Code generated by ebm2cpp");
         w.writeln("#pragma once");
         w.writeln("#include <cstdint>");
@@ -378,6 +442,61 @@ DEFINE_VISITOR(entry_before) {
         w.writeln("#include <view/iovec.h>");
         w.writeln("#include <binary/number.h>");
         w.writeln("#include <error/error.h>");
+        w.writeln("");
+
+        // Phase 1: Enum definitions + top-level constants + struct forward declarations
+        for (const auto& stmt : ctx.module().module().statements) {
+            auto enum_decl = stmt.body.enum_decl();
+            if (enum_decl) {
+                MAYBE(enum_code, ctx.visit(stmt));
+                w.writeln(enum_code.to_writer());
+            }
+        }
+        w.writeln("");
+
+        // Top-level CONSTANT variable declarations (e.g. AF_INET ::= u16(2))
+        // Walk all statements globally because constants may live in imported modules' PROGRAM_DECLs.
+        for (const auto& stmt : ctx.module().module().statements) {
+            auto var_decl = stmt.body.var_decl();
+            if (!var_decl || var_decl->decl_kind() != ebm::VariableDeclKind::CONSTANT) {
+                continue;
+            }
+            MAYBE(var_code, ctx.visit(stmt.id));
+            w.writeln(var_code.to_writer());
+        }
+        w.writeln("");
+
+        MAYBE(sorted, sorted_struct(ctx));
+        for (auto& stmt_ref : sorted) {
+            auto name = ctx.identifier(stmt_ref);
+            w.writeln("struct ", name, ";");
+        }
+        w.writeln("");
+
+        // Phase 2: Struct definitions with method signatures only (no bodies)
+        ctx.config().output_phase = OutputPhase::DeclarationOnly;
+        for (auto& stmt_ref : sorted) {
+            MAYBE(struct_code, ctx.visit(stmt_ref));
+            for (auto& toplevel : ctx.config().decl_toplevel) {
+                w.writeln(toplevel);
+            }
+            ctx.config().decl_toplevel.clear();
+            w.writeln(struct_code.to_writer());
+        }
+        w.writeln("");
+
+        // Phase 3: Out-of-class method definitions (full bodies)
+        ctx.config().output_phase = OutputPhase::FunctionBodyOnly;
+        for (auto& stmt_ref : sorted) {
+            MAYBE(func_code, ctx.visit(stmt_ref));
+            auto code = func_code.to_writer();
+            if (!code.empty()) {
+                w.write(code);
+                w.writeln("");
+            }
+        }
+
+        ctx.config().output_phase = OutputPhase::Normal;
         return w;
     };
 
@@ -435,30 +554,107 @@ DEFINE_VISITOR(entry_before) {
         return w;
     };
 
-    // Struct declaration: C++ struct with forward declaration
+    // Struct declaration: phase-aware
     config.struct_definition_start_wrapper = [](Context_Statement_STRUCT_DECL& ctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
         auto name = ctx.identifier();
         CodeWriter w;
-        w.writeln("struct ", name, ";");
+        if (ctx.config().output_phase == OutputPhase::Normal) {
+            // Normal mode: emit forward declaration + definition
+            w.writeln("struct ", name, ";");
+        }
+        // DeclarationOnly or Normal: start struct definition
         w.writeln("struct ", name, " {");
         return w;
     };
 
-    // Function declaration: C++ member functions with const/non-const
-    config.function_definition_start_wrapper = [](Result return_type, std::string_view name, CodeWriter params, Context_Statement_FUNCTION_DECL& ctx) -> expected<Result> {
+    // Struct: in FunctionBodyOnly phase, skip struct definition and only emit methods
+    config.struct_decl_custom = [](Context_Statement_STRUCT_DECL& ctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
+        if (ctx.config().output_phase != OutputPhase::FunctionBodyOnly) {
+            return pass;  // use default STRUCT_DECL visitor
+        }
+        // Phase 3: emit out-of-class method definitions only
         CodeWriter w;
-        bool is_const = ctx.func_decl.kind == ebm::FunctionKind::ENCODE ||
-                        ctx.func_decl.kind == ebm::FunctionKind::METHOD ||
-                        is_getter_func(ctx.func_decl.kind);
+        MAYBE_VOID(ok, emit_struct_methods(ctx, w));
+        return w;
+    };
 
-        if (is_const) {
-            w.writeln(return_type.to_writer(), " ", name, "(", params, ") const {");
+    // Helper: format return type for a function declaration.
+    // When the method is const (not mutable) AND returns a pointer type,
+    // wrap the pointee with const (T* -> const T*) so that &member from within
+    // the const method type-checks.
+    auto format_return_type = [](Context_Statement_FUNCTION_DECL& ctx, Result ret_type) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        MAYBE(ret_type_info, ctx.get(ctx.func_decl.return_type));
+        if (!ctx.func_decl.attribute.is_mutable() && ret_type_info.body.kind == ebm::TypeKind::PTR) {
+            return CODE("const ", ret_type.to_writer());
         }
-        else {
-            w.writeln(return_type.to_writer(), " ", name, "(", params, ") {");
+        return ret_type;
+    };
+
+    // Function declaration: phase-aware
+    config.function_decl_custom = [format_return_type](Context_Statement_FUNCTION_DECL& ctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        auto phase = ctx.config().output_phase;
+        if (phase == OutputPhase::Normal) {
+            return pass;  // use default visitor flow (function_definition_start_wrapper handles it)
         }
+        auto name = ctx.identifier();
+        MAYBE(ret_type_raw, ctx.visit(ctx.func_decl.return_type));
+        MAYBE(ret_type, format_return_type(ctx, ret_type_raw));
+        CodeWriter params;
+        for (const auto& param_ref : ctx.func_decl.params.container) {
+            MAYBE(param, ctx.visit(param_ref));
+            if (!params.empty()) {
+                params.write(", ");
+            }
+            params.write(param.to_writer());
+        }
+        std::string prefix;
+        if (ctx.func_decl.kind == ebm::FunctionKind::VECTOR_SETTER) {
+            prefix = "set_";
+        }
+        std::string const_suffix = ctx.func_decl.attribute.is_mutable() ? "" : " const";
+        CodeWriter w;
+        if (phase == OutputPhase::DeclarationOnly) {
+            // Emit signature only (no body)
+            w.writeln(ret_type.to_writer(), " ", prefix, name, "(", params, ")", const_suffix, ";");
+            // Also emit wrapper signature so it gets declared in the struct
+            if (auto wrapper_ref = ctx.func_decl.wrapper_function()) {
+                MAYBE(wrapper_sig, ctx.visit(*wrapper_ref));
+                w.write(wrapper_sig.to_writer());
+            }
+            return w;
+        }
+        // FunctionBodyOnly: emit out-of-class definition
+        auto struct_name = ctx.identifier(from_weak(ctx.func_decl.parent_format));
+        w.writeln(ret_type.to_writer(), " ", struct_name, "::", prefix, name, "(", params, ")", const_suffix, " {");
+        {
+            auto scope = w.indent_scope();
+            MAYBE(body, ctx.visit(ctx.func_decl.body));
+            w.write(body.to_writer());
+        }
+        w.writeln("}");
+        if (auto wrapper_ref = ctx.func_decl.wrapper_function()) {
+            w.writeln();
+            MAYBE(wrapper, ctx.visit(*wrapper_ref));
+            w.write(wrapper.to_writer());
+        }
+        return w;
+    };
+
+    // Function definition start: used in Normal phase (default visitor path)
+    config.function_definition_start_wrapper = [format_return_type](Result return_type, std::string_view name, CodeWriter params, Context_Statement_FUNCTION_DECL& ctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        MAYBE(ret_type, format_return_type(ctx, return_type));
+        std::string prefix;
+        if (ctx.func_decl.kind == ebm::FunctionKind::VECTOR_SETTER) {
+            prefix = "set_";
+        }
+        std::string const_suffix = ctx.func_decl.attribute.is_mutable() ? "" : " const";
+        CodeWriter w;
+        w.writeln(ret_type.to_writer(), " ", prefix, name, "(", params, ")", const_suffix, " {");
         return w;
     };
 
