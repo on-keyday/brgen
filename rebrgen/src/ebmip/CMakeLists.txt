@@ -1,2 +1,3 @@
 add_subdirectory(ebm2rmw)
 add_subdirectory(ebm2json)
+add_subdirectory(ebm2ascii)

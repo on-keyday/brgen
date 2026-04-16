@@ -1,0 +1,22 @@
+{
+    "name": "ebm2ascii",
+    "source_setup_command": [
+        "python",
+        "$WORK_DIR/script/unictest_setup.py",
+        "setup",
+        "ebm2ascii"
+    ],
+    "run_command": [
+        "python",
+        "$WORK_DIR/script/unictest_setup.py",
+        "test",
+        "ebm2ascii"
+    ],
+    "options": [
+        {
+            "name": "default",
+            "setup_options": [],
+            "run_options": []
+        }
+    ]
+}
