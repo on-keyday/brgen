@@ -49,11 +49,39 @@ namespace ebm2ascii {
         }
         expected<TypeInfo> visit(Context_Type_ENUM& ctx) {
             auto name = ctx.identifier(ctx.id);
-            return TypeInfo{0, name, true, ""};  // size unknown here; treat as variable for MVP
+            if (auto* stmt = visitor.module_.get_statement(ctx.id)) {
+                if (auto* ed = stmt->body.enum_decl()) {
+                    MAYBE(base, ctx.visit<TypeInfo>(*this, ed->base_type));
+                    if (!base.is_variable && base.bit_width > 0) {
+                        return TypeInfo{base.bit_width, std::format("{}({})", name, base.repr), false, ""};
+                    }
+                }
+            }
+            return TypeInfo{0, name, true, ""};
         }
         expected<TypeInfo> visit(Context_Type_STRUCT& ctx) {
             auto name = ctx.identifier(ctx.id);
-            return TypeInfo{0, name, true, ""};  // struct ref; size TBD at inline time
+            if (auto* stmt = visitor.module_.get_statement(ctx.id)) {
+                if (auto* sd = stmt->body.struct_decl()) {
+                    if (sd->is_fixed_size()) {
+                        if (auto* sz = sd->size()) {
+                            if (auto* v = sz->size()) {
+                                std::uint64_t bits = 0;
+                                if (sz->unit == ebm::SizeUnit::BIT_FIXED) {
+                                    bits = v->value();
+                                }
+                                else if (sz->unit == ebm::SizeUnit::BYTE_FIXED) {
+                                    bits = v->value() * 8;
+                                }
+                                if (bits > 0) {
+                                    return TypeInfo{bits, name, false, ""};
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return TypeInfo{0, name, true, ""};
         }
         expected<TypeInfo> visit(Context_Type_RECURSIVE_STRUCT& ctx) {
             auto name = ctx.identifier(ctx.id);
