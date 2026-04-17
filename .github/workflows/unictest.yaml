@@ -9,9 +9,27 @@ permissions:
   contents: read
 
 jobs:
-  unictest-linux:
+  list-runners:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      runners: ${{ steps.list.outputs.runners }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: List runners
+        id: list
+        working-directory: rebrgen
+        run: echo "runners=$(python script/list_unictest_runners.py)" >> "$GITHUB_OUTPUT"
+
+  unictest-shard:
+    needs: list-runners
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: ${{ fromJSON(needs.list-runners.outputs.runners) }}
     steps:
       - name: Timeline
         uses: Kesin11/actions-timeline@e018cfefea60b4f44266998551211a35a58b8097 # v3.0.0
@@ -50,12 +68,34 @@ jobs:
           cd rebrgen
           chmod -R +x tool/
           cp build_config.template.json build_config.json
-          python script/unictest.py --print-stdout --output-json test_results.json || true
-          cd ..
-          mkdir -p test_results
-          mv rebrgen/test_results.json test_results/
-          cp script/unictest_result.html test_results/index.html
+          python script/unictest.py --print-stdout --target-runner ${{ matrix.runner }} --parallel-limit 0 --output-json test_results.json || true
+      - name: Upload shard result
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v8.0.0
+        with:
+          name: unictest-shard-${{ matrix.runner }}
+          path: rebrgen/test_results.json
 
+  unictest-merge:
+    needs: unictest-shard
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Timeline
+        uses: Kesin11/actions-timeline@e018cfefea60b4f44266998551211a35a58b8097 # v3.0.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Download shard results
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: unictest-shard-*
+          path: shards
+      - name: Merge results
+        run: |
+          mkdir -p test_results
+          python rebrgen/script/merge_unictest_results.py shards test_results/test_results.json
+          cp script/unictest_result.html test_results/index.html
       - name: Upload test results
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v8.0.0
         with:
