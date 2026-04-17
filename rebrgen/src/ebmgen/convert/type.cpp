@@ -168,6 +168,7 @@ namespace ebmgen {
                         // use for encode mode currently
                         const auto _mode = ctx.state().set_current_generate_type(GenerateType::Encode);
                         EBMA_CONVERT_EXPRESSION(length_expr, n->length);
+                        body.length_expr(length_expr);
                     }
                     else {
                         EBMA_CONVERT_EXPRESSION(length_expr, n->length);
