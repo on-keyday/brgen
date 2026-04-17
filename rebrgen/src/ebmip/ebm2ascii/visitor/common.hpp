@@ -72,6 +72,11 @@ namespace ebm2ascii {
         expected<std::string> visit(Context_Expression_IDENTIFIER& ctx) {
             return ctx.identifier(ctx.id);
         }
+        expected<std::string> visit(Context_Expression_ENUM_MEMBER& ctx) {
+            auto parent = ctx.identifier(ctx.enum_decl);
+            MAYBE(member, ctx.identifier(ctx.member));
+            return std::format("{}.{}", parent, member);
+        }
 
         template <typename Ctx>
         expected<std::string> visit(Ctx&& ctx) {
