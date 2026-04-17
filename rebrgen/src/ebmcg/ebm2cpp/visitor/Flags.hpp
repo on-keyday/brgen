@@ -26,3 +26,4 @@
 /*here to write the hook*/
 
 FILE_EXTENSIONS(".cpp");
+WEB_UI_NAME("cpp4");
