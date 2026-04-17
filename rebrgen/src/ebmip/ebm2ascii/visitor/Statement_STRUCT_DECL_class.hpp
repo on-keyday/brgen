@@ -7,6 +7,7 @@
 
 #include "../codegen.hpp"
 #include "common.hpp"
+#include "ebmcodegen/stub/make_visitor.hpp"
 
 DEFINE_VISITOR(Statement_STRUCT_DECL) {
     using namespace CODEGEN_NAMESPACE;
@@ -28,6 +29,25 @@ DEFINE_VISITOR(Statement_STRUCT_DECL) {
         .total_bits = extractor.bit_offset,
         .has_variable = extractor.has_variable,
     };
+
+    // Collect ASSERT statements from decode_fn, recursing through nested
+    // control-flow blocks via on_default_traverse_children.
+    if (auto* decode_ref = ctx.struct_decl.decode_fn()) {
+        ExprStringer stringer{ctx.visitor};
+        auto collector = ebmcodegen::util::make_visitor<void>(ctx.visitor)
+                             .name("AssertCollector")
+                             .not_before_or_after()
+                             .not_context("Expression")
+                             .not_context("Type")
+                             .on([&](auto&&, Context_Statement_ASSERT& ac) -> expected<void> {
+                                 MAYBE(cond_str, ac.visit<std::string>(stringer, ac.assert_desc.condition.cond));
+                                 d.constraints.push_back(std::move(cond_str));
+                                 return {};
+                             })
+                             .on_default_traverse_children()
+                             .build();
+        MAYBE_VOID(_, ctx.visit<void>(collector, *decode_ref));
+    }
 
     // Render pass: dispatch on --format flag
     auto& root = ctx.visitor.wm.root;

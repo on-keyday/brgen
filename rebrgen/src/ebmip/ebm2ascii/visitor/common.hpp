@@ -27,6 +27,7 @@ namespace ebm2ascii {
         std::vector<Field> fields;
         std::uint64_t total_bits = 0;
         bool has_variable = false;
+        std::vector<std::string> constraints;
     };
 
     struct TypeAnalyzer {
@@ -133,6 +134,20 @@ namespace ebm2ascii {
         expected<std::string> visit(Context_Expression_UNARY_OP& ctx) {
             MAYBE(right, ctx.visit<std::string>(*this, ctx.operand));
             return std::format("{}{}", to_string(ctx.uop), right);
+        }
+        expected<std::string> visit(Context_Expression_SELF&) {
+            return std::string{};
+        }
+        expected<std::string> visit(Context_Expression_MEMBER_ACCESS& ctx) {
+            MAYBE(base, ctx.visit<std::string>(*this, ctx.base));
+            MAYBE(member, ctx.identifier(ctx.member));
+            if (base.empty()) {
+                return member;
+            }
+            return std::format("{}.{}", base, member);
+        }
+        expected<std::string> visit(Context_Expression_IDENTIFIER& ctx) {
+            return ctx.identifier(ctx.id);
         }
 
         template <typename Ctx>
@@ -389,6 +404,13 @@ namespace ebm2ascii {
             out += std::format("\n(Total: {} bits)\n", d.total_bits);
         }
 
+        if (!d.constraints.empty()) {
+            out += "\nConstraints:\n";
+            for (const auto& c : d.constraints) {
+                out += std::format("  - {}\n", c);
+            }
+        }
+
         return out;
     }
 
@@ -407,6 +429,12 @@ namespace ebm2ascii {
         }
         else {
             out += std::format("\n_Total: {} bits._\n", d.total_bits);
+        }
+        if (!d.constraints.empty()) {
+            out += "\n**Constraints:**\n";
+            for (const auto& c : d.constraints) {
+                out += std::format("- `{}`\n", c);
+            }
         }
         return out;
     }
