@@ -30,6 +30,62 @@ namespace ebm2ascii {
         std::vector<std::string> constraints;
     };
 
+    // Minimal Expression → string renderer for simple literal / identifier /
+    // member-access contexts. Not comprehensive — unhandled expression kinds
+    // fall through the generic visit below.
+    struct ExprStringer {
+        TRAVERSAL_VISITOR_BASE_WITHOUT_FUNC(ExprStringer, BaseVisitor);
+
+        expected<std::string> visit(Context_Expression_LITERAL_INT& ctx) {
+            return std::format("{}", ctx.int_value.value());
+        }
+        expected<std::string> visit(Context_Expression_LITERAL_INT64& ctx) {
+            return std::format("{}", ctx.int64_value);
+        }
+        expected<std::string> visit(Context_Expression_LITERAL_BOOL& ctx) {
+            return ctx.bool_value ? std::string("true") : std::string("false");
+        }
+        expected<std::string> visit(Context_Expression_BINARY_OP& ctx) {
+            MAYBE(left, ctx.visit<std::string>(*this, ctx.left));
+            MAYBE(right, ctx.visit<std::string>(*this, ctx.right));
+            return std::format("{} {} {}", left, to_string(ctx.bop), right);
+        }
+        expected<std::string> visit(Context_Expression_UNARY_OP& ctx) {
+            MAYBE(right, ctx.visit<std::string>(*this, ctx.operand));
+            return std::format("{}{}", to_string(ctx.uop), right);
+        }
+        expected<std::string> visit(Context_Expression_TYPE_CAST& ctx) {
+            MAYBE(inner, ctx.visit<std::string>(*this, ctx.type_cast_desc.source_expr));
+            return inner;  // drop the cast wrapper for display purposes
+        }
+        expected<std::string> visit(Context_Expression_SELF&) {
+            return std::string{};
+        }
+        expected<std::string> visit(Context_Expression_MEMBER_ACCESS& ctx) {
+            MAYBE(base, ctx.visit<std::string>(*this, ctx.base));
+            MAYBE(member, ctx.identifier(ctx.member));
+            if (base.empty()) {
+                return member;
+            }
+            return std::format("{}.{}", base, member);
+        }
+        expected<std::string> visit(Context_Expression_IDENTIFIER& ctx) {
+            return ctx.identifier(ctx.id);
+        }
+
+        template <typename Ctx>
+        expected<std::string> visit(Ctx&& ctx) {
+            if (ctx.is_before_or_after()) {
+                return pass;
+            }
+            if (ctx.context_name.contains("Statement") ||
+                ctx.context_name.contains("Type")) {
+                return {};
+            }
+            return traverse_children<std::string>(*this, std::forward<Ctx>(ctx));
+        }
+    };
+
     struct TypeAnalyzer {
         TRAVERSAL_VISITOR_BASE_WITHOUT_FUNC(TypeAnalyzer, BaseVisitor);
 
@@ -96,7 +152,14 @@ namespace ebm2ascii {
         }
         expected<TypeInfo> visit(Context_Type_VECTOR& ctx) {
             MAYBE(elem, ctx.visit<TypeInfo>(*this, ctx.element_type));
-            return TypeInfo{0, std::format("[]{}", elem.repr), true, ""};
+            std::string length_str;
+            if (!is_nil(ctx.length_expr)) {
+                ExprStringer s{visitor};
+                if (auto ls = ctx.visit<std::string>(s, ctx.length_expr); ls) {
+                    length_str = std::move(*ls);
+                }
+            }
+            return TypeInfo{0, std::format("[]{}", elem.repr), true, std::move(length_str)};
         }
 
         template <typename Ctx>
@@ -109,57 +172,6 @@ namespace ebm2ascii {
                 return {};
             }
             return traverse_children<TypeInfo>(*this, std::forward<Ctx>(ctx));
-        }
-    };
-
-    // Minimal Expression → string renderer for simple literal / enum value contexts.
-    // Not comprehensive — falls back to "<expr>" for unhandled expression kinds.
-    struct ExprStringer {
-        TRAVERSAL_VISITOR_BASE_WITHOUT_FUNC(ExprStringer, BaseVisitor);
-
-        expected<std::string> visit(Context_Expression_LITERAL_INT& ctx) {
-            return std::format("{}", ctx.int_value.value());
-        }
-        expected<std::string> visit(Context_Expression_LITERAL_INT64& ctx) {
-            return std::format("{}", ctx.int64_value);
-        }
-        expected<std::string> visit(Context_Expression_LITERAL_BOOL& ctx) {
-            return ctx.bool_value ? std::string("true") : std::string("false");
-        }
-        expected<std::string> visit(Context_Expression_BINARY_OP& ctx) {
-            MAYBE(left, ctx.visit<std::string>(*this, ctx.left));
-            MAYBE(right, ctx.visit<std::string>(*this, ctx.right));
-            return std::format("{} {} {}", left, to_string(ctx.bop), right);
-        }
-        expected<std::string> visit(Context_Expression_UNARY_OP& ctx) {
-            MAYBE(right, ctx.visit<std::string>(*this, ctx.operand));
-            return std::format("{}{}", to_string(ctx.uop), right);
-        }
-        expected<std::string> visit(Context_Expression_SELF&) {
-            return std::string{};
-        }
-        expected<std::string> visit(Context_Expression_MEMBER_ACCESS& ctx) {
-            MAYBE(base, ctx.visit<std::string>(*this, ctx.base));
-            MAYBE(member, ctx.identifier(ctx.member));
-            if (base.empty()) {
-                return member;
-            }
-            return std::format("{}.{}", base, member);
-        }
-        expected<std::string> visit(Context_Expression_IDENTIFIER& ctx) {
-            return ctx.identifier(ctx.id);
-        }
-
-        template <typename Ctx>
-        expected<std::string> visit(Ctx&& ctx) {
-            if (ctx.is_before_or_after()) {
-                return pass;
-            }
-            if (ctx.context_name.contains("Statement") ||
-                ctx.context_name.contains("Type")) {
-                return {};
-            }
-            return traverse_children<std::string>(*this, std::forward<Ctx>(ctx));
         }
     };
 
@@ -420,7 +432,13 @@ namespace ebm2ascii {
         out += "| Offset (bit) | Width (bit) | Name | Type |\n";
         out += "|---:|---:|---|---|\n";
         for (const auto& f : d.fields) {
-            std::string width_cell = f.bit_width == 0 ? "var" : std::format("{}", f.bit_width);
+            std::string width_cell;
+            if (f.bit_width == 0) {
+                width_cell = f.length_expr.empty() ? std::string("var") : std::format("var ({})", f.length_expr);
+            }
+            else {
+                width_cell = std::format("{}", f.bit_width);
+            }
             std::string offset_cell = std::format("{}", f.bit_offset);
             out += std::format("| {} | {} | `{}` | `{}` |\n", offset_cell, width_cell, f.name, f.type_repr);
         }
