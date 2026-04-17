@@ -301,3 +301,58 @@ MAYBE(sorted, sorted_struct(ctx));  // ctx は PROGRAM_DECL等のcontext
 - フィールドの型がVARIANT → 各メンバに依存
 
 循環参照（RECURSIVE_STRUCT）は追跡しない（ポインタで解決されるため）。
+
+---
+
+## make_visitor（アドホック再帰 visitor）
+
+`src/ebmcodegen/stub/make_visitor.hpp` のフルーエントビルダ。**特定の Context_* だけ拾い、それ以外は自動で子孫へ降りる** visitor をその場で組めるやつ。
+
+### いつ使うか
+
+- **特定ノードだけ集めて歩きたい** — STRUCT_DECL の decode_fn を辿って ASSERT 条件を抽出、FUNCTION_DECL 配下を走って READ_DATA/WRITE_DATA を収集、など。
+- **入れ子 block / if / match / loop が絡む** — `on_default_traverse_children()` が StatementRef コンテナも自動で辿る。自前で BLOCK/IF/LOOP ハンドラを書かなくて済む。
+- **DEFINE_VISITOR の常設フックに置くほどじゃない** — 言語固有の一時的な解析や pre-pass。
+
+### 使わない場面
+
+- フックがメインの出力生成に直結するなら普通に `DEFINE_VISITOR(...)` + `visitor/*_class.hpp` で書く。make_visitor は常設フックの代替ではない。
+- ExprStringer / TypeStringer のように Result 型が `std::string` などで単発的に木をたどるだけなら `TRAVERSAL_VISITOR_BASE_WITHOUT_FUNC` の方が軽い。
+
+### 書き方
+
+```cpp
+#include "ebmcodegen/stub/make_visitor.hpp"
+
+std::vector<std::string> constraints;
+ExprStringer stringer{ctx.visitor};
+
+auto collector = ebmcodegen::util::make_visitor<void>(ctx.visitor)
+    .name("AssertCollector")           // ログ用（省略可）
+    .not_before_or_after()              // before/after コンテキスト除外
+    .not_context("Expression")          // 名前に "Expression" を含むコンテキスト除外
+    .not_context("Type")
+    .on([&](auto&&, Context_Statement_ASSERT& ac) -> expected<void> {
+        MAYBE(cond, ac.visit<std::string>(stringer, ac.assert_desc.condition.cond));
+        constraints.push_back(std::move(cond));
+        return {};
+    })
+    .on_default_traverse_children()     // ← 必ず最後。未ヒットは自動で子へ
+    .build();
+
+MAYBE_VOID(_, ctx.visit<void>(collector, some_statement_ref));
+```
+
+### ポイント
+
+- `.on([&](auto&& self, Context_X& ctx) -> expected<R> { ... })` で拾いたい型を列挙。`self` は再帰呼び出し用（`ctx.visit<R>(self, ref)` で子を明示的にたどる）。
+- `.on_default_traverse_children()` は**ビルダの最後**にだけ置ける（内部 static_assert）。未ハンドルは自動で traverse_children 相当。
+- `.not_context("...")` は名前部分一致のフィルタ。Expression / Type を一括除外する常套句。
+- `.not_before_or_after()` を付けないと before/after 相当のコンテキストまで自前で処理することになり事故の元。特に理由がなければ付ける。
+- 戻り値型 `R` は `make_visitor<R>(...)` のテンプレート引数。`void` / `std::string` / 任意の型を置ける。
+
+### 実例
+
+- `src/ebmgen/transform/array_setter.cpp` — ASSIGNMENT ノードを拾って array setter 検出
+- `src/ebmcg/ebm2zig/visitor/entry_before_class.hpp` — FUNCTION_DECL / READ_DATA を拾って allocation 要否判定
+- `src/ebmip/ebm2ascii/visitor/Statement_STRUCT_DECL_class.hpp` — ASSERT を拾って制約一覧
