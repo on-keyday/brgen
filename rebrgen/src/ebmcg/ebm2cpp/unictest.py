@@ -41,6 +41,12 @@ def main():
         # Fallback: look for utils relative to brgen
         futils_dir = os.path.join(original_work_dir, "..", "..", "utils_backup")
 
+    # Resolve against original_work_dir when relative, since this script runs in
+    # a temp work dir where the relative path no longer points at futils.
+    if not os.path.isabs(futils_dir) and original_work_dir:
+        futils_dir = os.path.join(original_work_dir, futils_dir)
+    futils_dir = os.path.abspath(futils_dir)
+
     futils_include = os.path.join(futils_dir, "src", "include")
     if not os.path.isdir(futils_include):
         futils_include = os.path.join(futils_dir, "include")
