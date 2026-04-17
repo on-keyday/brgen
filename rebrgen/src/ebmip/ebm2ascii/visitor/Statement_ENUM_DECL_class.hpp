@@ -1,0 +1,41 @@
+/*DO NOT EDIT BELOW SECTION MANUALLY*/
+/*license*/
+/*
+  Name: Statement_ENUM_DECL_class
+*/
+/*DO NOT EDIT ABOVE SECTION MANUALLY*/
+
+#include "../codegen.hpp"
+#include "common.hpp"
+
+DEFINE_VISITOR(Statement_ENUM_DECL) {
+    using namespace CODEGEN_NAMESPACE;
+    if (is_nil(ctx.enum_decl.name)) {
+        return {};
+    }
+
+    EnumDiagram e;
+    e.name = ctx.identifier();
+
+    if (!is_nil(ctx.enum_decl.base_type)) {
+        TypeAnalyzer analyzer{ctx.visitor};
+        MAYBE(info, ctx.visit<TypeInfo>(analyzer, ctx.enum_decl.base_type));
+        e.base_repr = info.repr;
+    }
+
+    ExprStringer stringer{ctx.visitor};
+    for (auto& member_ref : ctx.enum_decl.members.container) {
+        MAYBE(stmt, ctx.get(member_ref));
+        MAYBE(md, stmt.body.enum_member_decl());
+        MAYBE(value, ctx.visit<std::string>(stringer, md.value));
+        e.entries.push_back(EnumEntry{
+            .name = ctx.identifier(member_ref),
+            .value = std::move(value),
+        });
+    }
+
+    auto& root = ctx.visitor.wm.root;
+    std::string_view fmt = ctx.flags().format;
+    root.writeln(fmt == "table" ? render_enum_table(e) : render_enum_ascii(e));
+    return {};
+}

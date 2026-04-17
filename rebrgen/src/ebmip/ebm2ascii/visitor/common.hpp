@@ -111,6 +111,81 @@ namespace ebm2ascii {
         }
     };
 
+    // Minimal Expression → string renderer for simple literal / enum value contexts.
+    // Not comprehensive — falls back to "<expr>" for unhandled expression kinds.
+    struct ExprStringer {
+        TRAVERSAL_VISITOR_BASE_WITHOUT_FUNC(ExprStringer, BaseVisitor);
+
+        expected<std::string> visit(Context_Expression_LITERAL_INT& ctx) {
+            return std::format("{}", ctx.int_value.value());
+        }
+        expected<std::string> visit(Context_Expression_LITERAL_INT64& ctx) {
+            return std::format("{}", ctx.int64_value);
+        }
+        expected<std::string> visit(Context_Expression_LITERAL_BOOL& ctx) {
+            return ctx.bool_value ? std::string("true") : std::string("false");
+        }
+        expected<std::string> visit(Context_Expression_BINARY_OP& ctx) {
+            MAYBE(left, ctx.visit<std::string>(*this, ctx.left));
+            MAYBE(right, ctx.visit<std::string>(*this, ctx.right));
+            return std::format("{} {} {}", left, to_string(ctx.bop), right);
+        }
+        expected<std::string> visit(Context_Expression_UNARY_OP& ctx) {
+            MAYBE(right, ctx.visit<std::string>(*this, ctx.operand));
+            return std::format("{}{}", to_string(ctx.uop), right);
+        }
+
+        template <typename Ctx>
+        expected<std::string> visit(Ctx&& ctx) {
+            if (ctx.is_before_or_after()) {
+                return pass;
+            }
+            if (ctx.context_name.contains("Statement") ||
+                ctx.context_name.contains("Type")) {
+                return {};
+            }
+            return traverse_children<std::string>(*this, std::forward<Ctx>(ctx));
+        }
+    };
+
+    struct EnumEntry {
+        std::string name;
+        std::string value;
+    };
+
+    struct EnumDiagram {
+        std::string name;
+        std::string base_repr;  // e.g. "u8"; empty if no base type resolvable
+        std::vector<EnumEntry> entries;
+    };
+
+    inline std::string render_enum_ascii(const EnumDiagram& e) {
+        std::string out;
+        out += std::format("Enum: {}", e.name);
+        if (!e.base_repr.empty()) {
+            out += std::format(" ({})", e.base_repr);
+        }
+        out += "\n";
+        for (const auto& m : e.entries) {
+            out += std::format("  {} = {}\n", m.name, m.value);
+        }
+        return out;
+    }
+
+    inline std::string render_enum_table(const EnumDiagram& e) {
+        std::string out;
+        out += std::format("### Enum: {}", e.name);
+        if (!e.base_repr.empty()) {
+            out += std::format(" (`{}`)", e.base_repr);
+        }
+        out += "\n\n";
+        out += "| Name | Value |\n|---|---:|\n";
+        for (const auto& m : e.entries) {
+            out += std::format("| `{}` | {} |\n", m.name, m.value);
+        }
+        return out;
+    }
+
     struct FieldExtractor {
         TRAVERSAL_VISITOR_BASE_WITHOUT_FUNC(FieldExtractor, BaseVisitor);
 

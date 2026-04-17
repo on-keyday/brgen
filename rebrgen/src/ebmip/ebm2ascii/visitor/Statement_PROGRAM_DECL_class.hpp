@@ -11,7 +11,8 @@
 DEFINE_VISITOR(Statement_PROGRAM_DECL) {
     using namespace CODEGEN_NAMESPACE;
     for (auto& b : ctx.block.container) {
-        if (ctx.is(ebm::StatementKind::STRUCT_DECL, b)) {
+        if (ctx.is(ebm::StatementKind::STRUCT_DECL, b) ||
+            ctx.is(ebm::StatementKind::ENUM_DECL, b)) {
             MAYBE_VOID(_, ctx.visit(b));
         }
     }
