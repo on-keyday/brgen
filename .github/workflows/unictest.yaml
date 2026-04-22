@@ -60,7 +60,7 @@ jobs:
           echo "runner dir not found for ${{ matrix.runner }}" >&2; exit 1
       - name: Install runner toolchain via mise
         if: hashFiles(format('{0}/mise.toml', steps.runner.outputs.path)) != ''
-        uses: jdx/mise-action@v2
+        uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
         with:
           working_directory: ${{ steps.runner.outputs.path }}
       - name: Download rebrgen tool
