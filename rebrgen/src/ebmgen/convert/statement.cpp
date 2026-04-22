@@ -722,18 +722,19 @@ namespace ebmgen {
         MAYBE(dec_type, get_type(node->decode_fn.lock(), GenerateType::Decode));
         EBM_IDENTIFIER(encode, enc_id, enc_type);
         EBM_IDENTIFIER(decode, dec_id, dec_type);
-        EBM_DEFINE_PARAMETER(writer, {}, encoder_input, false);
-        EBM_DEFINE_PARAMETER(reader, {}, decoder_input, false);
+        EBM_DEFINE_PARAMETER(writer, {}, encoder_input, false, enc_id);
+        EBM_DEFINE_PARAMETER(reader, {}, decoder_input, false, dec_id);
         // TODO: strictly analyze state variable usage in ast
         StateVariables state_vars;
         for (auto& v : node->state_variables) {
             auto locked = v.lock();
             EBMA_CONVERT_TYPE(var_type, locked->field_type);
             EBMA_ADD_IDENTIFIER(var_name, locked->ident->ident);
-            EBM_DEFINE_PARAMETER(enc_var, var_name, var_type, true);
-            EBM_DEFINE_PARAMETER(dec_var, var_name, var_type, true);
-            EBM_DEFINE_PARAMETER(prop_getter, var_name, var_type, true);
-            EBM_DEFINE_PARAMETER(prop_setter, var_name, var_type, true);
+            EBM_DEFINE_PARAMETER(enc_var, var_name, var_type, true, enc_id);
+            EBM_DEFINE_PARAMETER(dec_var, var_name, var_type, true, dec_id);
+            // related_function will be set later
+            EBM_DEFINE_PARAMETER(prop_getter, var_name, var_type, true, {});
+            EBM_DEFINE_PARAMETER(prop_setter, var_name, var_type, true, {});
             state_vars.emplace_back(StateVariable{
                 .enc_var_def = enc_var_def,
                 .enc_var_expr = enc_var,
@@ -880,7 +881,7 @@ namespace ebmgen {
         for (auto& param : node->parameters) {
             EBMA_ADD_IDENTIFIER(param_name_ref, param->ident->ident);
             EBMA_CONVERT_TYPE(param_type_ref, param->field_type);
-            EBM_DEFINE_PARAMETER(param_ref, param_name_ref, param_type_ref, false);
+            EBM_DEFINE_PARAMETER(param_ref, param_name_ref, param_type_ref, false, func_id);
             append(func_decl.params, param_ref_def);
             ctx.state().add_visited_node(param, param_ref_def);
         }

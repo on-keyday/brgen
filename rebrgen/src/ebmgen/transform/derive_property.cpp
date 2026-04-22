@@ -42,10 +42,14 @@ namespace ebmgen {
 
                     for (auto& v : copy_state_vars) {
                         append(getter.params, v.prop_get_var_def);
+                        // at here, fill prop_get_var_def's related_function field with getter_id
+                        MAYBE(var_stmt, ctx.repository().get_statement(v.prop_get_var_def));
+                        MAYBE(param_decl, var_stmt.body.param_decl());
+                        param_decl.related_function = to_weak(getter_id);
                     }
                 }
                 // setter return value and arguments
-                EBM_DEFINE_PARAMETER(arg, {}, prop->property_type, false);
+                EBM_DEFINE_PARAMETER(arg, {}, prop->property_type, false, setter_id);
                 {
                     ebm::TypeBody set_return;
                     set_return.kind = ebm::TypeKind::PROPERTY_SETTER_RETURN;
@@ -55,6 +59,10 @@ namespace ebmgen {
 
                     for (auto& v : copy_state_vars) {
                         append(setter.params, v.prop_set_var_def);
+                        // at here, fill prop_set_var_def's related_function field with setter_id
+                        MAYBE(var_stmt, ctx.repository().get_statement(v.prop_set_var_def));
+                        MAYBE(param_decl, var_stmt.body.param_decl());
+                        param_decl.related_function = to_weak(setter_id);
                     }
                 }
                 // getter match

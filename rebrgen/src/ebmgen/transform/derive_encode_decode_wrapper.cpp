@@ -121,6 +121,7 @@ namespace ebmgen {
             // method must itself be considered self-mutating, otherwise const-aware
             // languages (C++) would emit incompatible signatures.
             wrapper_func.attribute.is_mutable(func.attribute.is_mutable());
+            wrapper_func.attribute.is_wrapper(true);
             append(wrapper_func.params, stream_param);
             wrapper_func.body = body_ref;
 

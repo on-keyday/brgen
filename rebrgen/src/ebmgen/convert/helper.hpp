@@ -85,7 +85,7 @@ namespace ebmgen {
 
     ebm::StatementBody make_variable_decl(ebm::IdentifierRef name, ebm::TypeRef type, ebm::ExpressionRef initial_ref, ebm::VariableDeclKind decl_kind, bool is_reference);
 
-    ebm::StatementBody make_parameter_decl(ebm::IdentifierRef name, ebm::TypeRef type, bool is_state_variable);
+    ebm::StatementBody make_parameter_decl(ebm::IdentifierRef name, ebm::TypeRef type, bool is_state_variable, ebm::StatementRef related_function);
 
     ebm::ExpressionBody make_identifier_expr(ebm::StatementRef id, ebm::TypeRef type);
 
@@ -108,12 +108,12 @@ namespace ebmgen {
 #define EBM_DEFINE_ANONYMOUS_VARIABLE(ref_name, typ, initial_ref) \
     EBM_DEFINE_VARIABLE(ref_name, {}, typ, initial_ref, ebm::VariableDeclKind::MUTABLE, false)
 
-#define EBM_DEFINE_PARAMETER(ref_name, id, typ, is_state_variable)                                       \
-    EBM_AST_VARIABLE_REF(ref_name) {                                                                     \
-        MAYBE(new_id_, ctx.repository().new_statement_id());                                             \
-        EBMA_ADD_STATEMENT(new_var_ref_ebm, new_id_, (make_parameter_decl(id, typ, is_state_variable))); \
-        EBM_IDENTIFIER(new_expr_ref_ebm, new_var_ref_ebm, typ);                                          \
-        EBM_AST_VARIABLE_REF_SET(ref_name, new_expr_ref_ebm, new_var_ref_ebm);                           \
+#define EBM_DEFINE_PARAMETER(ref_name, id, typ, is_state_variable, related_function)                                       \
+    EBM_AST_VARIABLE_REF(ref_name) {                                                                                       \
+        MAYBE(new_id_, ctx.repository().new_statement_id());                                                               \
+        EBMA_ADD_STATEMENT(new_var_ref_ebm, new_id_, (make_parameter_decl(id, typ, is_state_variable, related_function))); \
+        EBM_IDENTIFIER(new_expr_ref_ebm, new_var_ref_ebm, typ);                                                            \
+        EBM_AST_VARIABLE_REF_SET(ref_name, new_expr_ref_ebm, new_var_ref_ebm);                                             \
     }
 
     ebm::ExpressionBody make_cast(ebm::TypeRef to_typ, ebm::TypeRef from_typ, ebm::ExpressionRef expr, ebm::CastType cast_kind);

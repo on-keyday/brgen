@@ -23,13 +23,14 @@ namespace ebmgen {
         return body;
     }
 
-    ebm::StatementBody make_parameter_decl(ebm::IdentifierRef name, ebm::TypeRef type, bool is_state_variable) {
+    ebm::StatementBody make_parameter_decl(ebm::IdentifierRef name, ebm::TypeRef type, bool is_state_variable, ebm::StatementRef related_function) {
         ebm::StatementBody body;
         body.kind = ebm::StatementKind::PARAMETER_DECL;
         ebm::ParameterDecl param_decl;
         param_decl.name = name;
         param_decl.param_type = type;
         param_decl.is_state_variable(is_state_variable);
+        param_decl.related_function = to_weak(related_function);
         body.param_decl(std::move(param_decl));
         return body;
     }

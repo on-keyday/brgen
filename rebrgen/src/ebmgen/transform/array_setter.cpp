@@ -252,7 +252,7 @@ namespace ebmgen {
             MAYBE(new_fn_id, ctx.repository().new_statement_id());
 
             // INVALIDATES above references ^^^^^
-            EBM_DEFINE_PARAMETER(param, {}, array_info->second.vector_type, false);
+            EBM_DEFINE_PARAMETER(param, {}, array_info->second.vector_type, false, new_fn_id);
             append(func_decl.params, param_def);
             MAYBE(state_params, ctx.state().get_format_encode_decode(from_weak(func_decl.parent_format)));
             for (auto& param : state_params.state_variables) {

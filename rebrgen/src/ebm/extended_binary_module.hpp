@@ -2031,7 +2031,6 @@ namespace ebm {
     struct ExpressionBody;
     struct Expression;
     struct IfStatement;
-    struct ParameterDecl;
     struct PropertyMemberDecl;
     struct Block;
     struct CompositeFieldDecl;
@@ -2045,6 +2044,7 @@ namespace ebm {
     struct MatchBranch;
     struct FunctionDecl;
     struct VariableDecl;
+    struct ParameterDecl;
     struct FieldDecl;
     struct EnumDecl;
     struct EnumMemberDecl;
@@ -2099,11 +2099,12 @@ namespace ebm {
         }
     };
     struct EBM_API FunctionAttribute{
-        ::futils::binary::flags_t<std::uint8_t, 1, 1, 1, 5> flags_2_;
+        ::futils::binary::flags_t<std::uint8_t, 1, 1, 1, 1, 4> flags_2_;
         bits_flag_alias_method(flags_2_,0,is_user_defined);
         bits_flag_alias_method(flags_2_,1,has_wrapper);
         bits_flag_alias_method(flags_2_,2,is_mutable);
-        bits_flag_alias_method(flags_2_,3,reserved);
+        bits_flag_alias_method(flags_2_,3,is_wrapper);
+        bits_flag_alias_method(flags_2_,4,reserved);
         ::futils::error::Error<> encode(::futils::binary::writer& w) const ;
         ::futils::error::Error<> decode(::futils::binary::reader& r);
         static constexpr size_t fixed_header_size = 1;
@@ -2113,6 +2114,7 @@ namespace ebm {
             v(v, "is_user_defined",(*this).is_user_defined());
             v(v, "has_wrapper",(*this).has_wrapper());
             v(v, "is_mutable",(*this).is_mutable());
+            v(v, "is_wrapper",(*this).is_wrapper());
             v(v, "reserved",(*this).reserved());
         }
         template<typename Visitor>
@@ -2120,6 +2122,7 @@ namespace ebm {
             v(v, "is_user_defined",(*this).is_user_defined());
             v(v, "has_wrapper",(*this).has_wrapper());
             v(v, "is_mutable",(*this).is_mutable());
+            v(v, "is_wrapper",(*this).is_wrapper());
             v(v, "reserved",(*this).reserved());
         }
         template<typename T,bool rvalue = false>
@@ -2132,6 +2135,7 @@ namespace ebm {
             v(v, "is_user_defined",visitor_tag<decltype(std::declval<FunctionAttribute>().is_user_defined()),true>{});
             v(v, "has_wrapper",visitor_tag<decltype(std::declval<FunctionAttribute>().has_wrapper()),true>{});
             v(v, "is_mutable",visitor_tag<decltype(std::declval<FunctionAttribute>().is_mutable()),true>{});
+            v(v, "is_wrapper",visitor_tag<decltype(std::declval<FunctionAttribute>().is_wrapper()),true>{});
             v(v, "reserved",visitor_tag<decltype(std::declval<FunctionAttribute>().reserved()),true>{});
         }
     };
@@ -3505,42 +3509,6 @@ namespace ebm {
             v(v, "else_block",visitor_tag<decltype(std::declval<IfStatement>().else_block),false>{});
         }
     };
-    struct EBM_API ParameterDecl{
-        IdentifierRef name;
-        TypeRef param_type;
-        ::futils::binary::flags_t<std::uint8_t, 1, 7> flags_70_;
-        bits_flag_alias_method(flags_70_,0,is_state_variable);
-        bits_flag_alias_method(flags_70_,1,reserved);
-        ::futils::error::Error<> encode(::futils::binary::writer& w) const ;
-        ::futils::error::Error<> decode(::futils::binary::reader& r);
-        constexpr static const char* visitor_name = "ParameterDecl";
-        template<typename Visitor>
-        constexpr void visit(Visitor&& v) {
-            v(v, "name",(*this).name);
-            v(v, "param_type",(*this).param_type);
-            v(v, "is_state_variable",(*this).is_state_variable());
-            v(v, "reserved",(*this).reserved());
-        }
-        template<typename Visitor>
-        constexpr void visit(Visitor&& v) const {
-            v(v, "name",(*this).name);
-            v(v, "param_type",(*this).param_type);
-            v(v, "is_state_variable",(*this).is_state_variable());
-            v(v, "reserved",(*this).reserved());
-        }
-        template<typename T,bool rvalue = false>
-        struct visitor_tag {
-            using type = T;
-            static constexpr bool is_rvalue = rvalue;
-        };
-        template<typename Visitor>
-        static constexpr void visit_static(Visitor&& v) {
-            v(v, "name",visitor_tag<decltype(std::declval<ParameterDecl>().name),false>{});
-            v(v, "param_type",visitor_tag<decltype(std::declval<ParameterDecl>().param_type),false>{});
-            v(v, "is_state_variable",visitor_tag<decltype(std::declval<ParameterDecl>().is_state_variable()),true>{});
-            v(v, "reserved",visitor_tag<decltype(std::declval<ParameterDecl>().reserved()),true>{});
-        }
-    };
     struct EBM_API PropertyMemberDecl{
         ExpressionRef setter_condition;
         ExpressionRef getter_condition;
@@ -3718,18 +3686,18 @@ namespace ebm {
         TypeRef data_type;
         IOAttribute attribute;
         Size size;
-        struct EBM_API union_struct_73{
+        struct EBM_API union_struct_72{
             LoweredIOStatement lowered_statement;
         };
-        std::variant<std::monostate, union_struct_73> union_variant_72;
+        std::variant<std::monostate, union_struct_72> union_variant_71;
         const LoweredIOStatement* lowered_statement() const;
         LoweredIOStatement* lowered_statement();
         bool lowered_statement(LoweredIOStatement&& v);
         bool lowered_statement(const LoweredIOStatement& v);
-        struct EBM_API union_struct_76{
+        struct EBM_API union_struct_75{
             Size offset;
         };
-        std::variant<std::monostate, union_struct_76> union_variant_75;
+        std::variant<std::monostate, union_struct_75> union_variant_74;
         const Size* offset() const;
         Size* offset();
         bool offset(Size&& v);
@@ -3805,19 +3773,23 @@ namespace ebm {
     };
     struct EBM_API LoopStatement{
         LoopType loop_type{};
-        struct EBM_API union_struct_79{
+        struct EBM_API union_struct_78{
         };
-        struct EBM_API union_struct_80{
+        struct EBM_API union_struct_79{
             Condition condition;
         };
-        struct EBM_API union_struct_81{
+        struct EBM_API union_struct_80{
             StatementRef item_var;
             ExpressionRef collection;
         };
-        struct EBM_API union_struct_82{
+        struct EBM_API union_struct_81{
             StatementRef init;
             Condition condition;
             StatementRef increment;
+        };
+        struct EBM_API union_struct_82{
+            StatementRef item_var;
+            ExpressionRef collection;
         };
         struct EBM_API union_struct_83{
             StatementRef item_var;
@@ -3831,11 +3803,7 @@ namespace ebm {
             StatementRef item_var;
             ExpressionRef collection;
         };
-        struct EBM_API union_struct_86{
-            StatementRef item_var;
-            ExpressionRef collection;
-        };
-        std::variant<std::monostate, union_struct_79, union_struct_80, union_struct_81, union_struct_82, union_struct_83, union_struct_84, union_struct_85, union_struct_86> union_variant_78;
+        std::variant<std::monostate, union_struct_78, union_struct_79, union_struct_80, union_struct_81, union_struct_82, union_struct_83, union_struct_84, union_struct_85> union_variant_77;
         const ExpressionRef* collection() const;
         ExpressionRef* collection();
         bool collection(ExpressionRef&& v);
@@ -3907,9 +3875,9 @@ namespace ebm {
     };
     struct EBM_API MatchStatement{
         ExpressionRef target;
-        ::futils::binary::flags_t<std::uint8_t, 1, 7> flags_87_;
-        bits_flag_alias_method(flags_87_,0,is_exhaustive);
-        bits_flag_alias_method(flags_87_,1,reserved);
+        ::futils::binary::flags_t<std::uint8_t, 1, 7> flags_86_;
+        bits_flag_alias_method(flags_86_,0,is_exhaustive);
+        bits_flag_alias_method(flags_86_,1,reserved);
         Block branches;
         LoweredStatementRef lowered_if_statement;
         ::futils::error::Error<> encode(::futils::binary::writer& w) const ;
@@ -3978,19 +3946,19 @@ namespace ebm {
         Block params;
         WeakStatementRef parent_format;
         FunctionKind kind{};
-        struct EBM_API union_struct_90{
+        struct EBM_API union_struct_89{
             WeakStatementRef property;
         };
-        std::variant<std::monostate, union_struct_90> union_variant_89;
+        std::variant<std::monostate, union_struct_89> union_variant_88;
         const WeakStatementRef* property() const;
         WeakStatementRef* property();
         bool property(WeakStatementRef&& v);
         bool property(const WeakStatementRef& v);
         FunctionAttribute attribute;
-        struct EBM_API union_struct_93{
+        struct EBM_API union_struct_92{
             StatementRef wrapper_function;
         };
-        std::variant<std::monostate, union_struct_93> union_variant_92;
+        std::variant<std::monostate, union_struct_92> union_variant_91;
         const StatementRef* wrapper_function() const;
         StatementRef* wrapper_function();
         bool wrapper_function(StatementRef&& v);
@@ -4045,10 +4013,10 @@ namespace ebm {
         IdentifierRef name;
         TypeRef var_type;
         ExpressionRef initial_value;
-        ::futils::binary::flags_t<std::uint8_t, 2, 1, 5> flags_94_;
-        bits_flag_alias_method_with_enum(flags_94_,0,decl_kind,VariableDeclKind);
-        bits_flag_alias_method(flags_94_,1,is_reference);
-        bits_flag_alias_method(flags_94_,2,reserved);
+        ::futils::binary::flags_t<std::uint8_t, 2, 1, 5> flags_93_;
+        bits_flag_alias_method_with_enum(flags_93_,0,decl_kind,VariableDeclKind);
+        bits_flag_alias_method(flags_93_,1,is_reference);
+        bits_flag_alias_method(flags_93_,2,reserved);
         ::futils::error::Error<> encode(::futils::binary::writer& w) const ;
         ::futils::error::Error<> decode(::futils::binary::reader& r);
         constexpr static const char* visitor_name = "VariableDecl";
@@ -4083,6 +4051,46 @@ namespace ebm {
             v(v, "decl_kind",visitor_tag<decltype(std::declval<VariableDecl>().decl_kind()),true>{});
             v(v, "is_reference",visitor_tag<decltype(std::declval<VariableDecl>().is_reference()),true>{});
             v(v, "reserved",visitor_tag<decltype(std::declval<VariableDecl>().reserved()),true>{});
+        }
+    };
+    struct EBM_API ParameterDecl{
+        IdentifierRef name;
+        TypeRef param_type;
+        ::futils::binary::flags_t<std::uint8_t, 1, 7> flags_94_;
+        bits_flag_alias_method(flags_94_,0,is_state_variable);
+        bits_flag_alias_method(flags_94_,1,reserved);
+        WeakStatementRef related_function;
+        ::futils::error::Error<> encode(::futils::binary::writer& w) const ;
+        ::futils::error::Error<> decode(::futils::binary::reader& r);
+        constexpr static const char* visitor_name = "ParameterDecl";
+        template<typename Visitor>
+        constexpr void visit(Visitor&& v) {
+            v(v, "name",(*this).name);
+            v(v, "param_type",(*this).param_type);
+            v(v, "is_state_variable",(*this).is_state_variable());
+            v(v, "reserved",(*this).reserved());
+            v(v, "related_function",(*this).related_function);
+        }
+        template<typename Visitor>
+        constexpr void visit(Visitor&& v) const {
+            v(v, "name",(*this).name);
+            v(v, "param_type",(*this).param_type);
+            v(v, "is_state_variable",(*this).is_state_variable());
+            v(v, "reserved",(*this).reserved());
+            v(v, "related_function",(*this).related_function);
+        }
+        template<typename T,bool rvalue = false>
+        struct visitor_tag {
+            using type = T;
+            static constexpr bool is_rvalue = rvalue;
+        };
+        template<typename Visitor>
+        static constexpr void visit_static(Visitor&& v) {
+            v(v, "name",visitor_tag<decltype(std::declval<ParameterDecl>().name),false>{});
+            v(v, "param_type",visitor_tag<decltype(std::declval<ParameterDecl>().param_type),false>{});
+            v(v, "is_state_variable",visitor_tag<decltype(std::declval<ParameterDecl>().is_state_variable()),true>{});
+            v(v, "reserved",visitor_tag<decltype(std::declval<ParameterDecl>().reserved()),true>{});
+            v(v, "related_function",visitor_tag<decltype(std::declval<ParameterDecl>().related_function),false>{});
         }
     };
     struct EBM_API FieldDecl{

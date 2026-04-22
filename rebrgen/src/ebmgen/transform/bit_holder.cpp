@@ -96,7 +96,7 @@ namespace ebmgen {
         // EBMU_INT_LITERAL(offset_expr, offset);
         // EBMU_INT_LITERAL(size_expr, current_size);
         // EBMU_INT_LITERAL(total_size_expr, total_size);
-        EBM_DEFINE_PARAMETER(input_param, {}, original_field_type, false);
+        EBM_DEFINE_PARAMETER(input_param, {}, original_field_type, false, setter_id);
         append(setter_decl.params, input_param_def);
         MAYBE(setter_return_type, get_single_type(ebm::TypeKind::PROPERTY_SETTER_RETURN, ctx));
         setter_decl.return_type = setter_return_type;

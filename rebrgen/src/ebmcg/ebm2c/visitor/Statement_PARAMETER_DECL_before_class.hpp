@@ -18,6 +18,7 @@
         param_type: TypeRef
         is_state_variable: bool
         reserved: std::uint8_t
+        related_function: WeakStatementRef
       main_logic: ebmcodegen::util::MainLogicWrapper<Result>
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
