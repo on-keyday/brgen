@@ -1,0 +1,87 @@
+config.url = "https://www.3gpp.org/DynaReport/36331.htm"
+
+# 3GPP MIB (Master Information Block) formats.
+# LTE:  TS 36.331, BCCH-BCH-Message, 24 bits total (3 octets after PER encoding)
+# 5G NR: TS 38.331, BCCH-BCH-MIB,    23 bits + 1 spare = 24 bits
+#
+# Both are broadcast on PBCH and describe cell-wide configuration.
+# Original ASN.1 uses PER (Packed Encoding Rules); here we describe the
+# resulting bit layout directly. Fields do NOT align to byte boundaries,
+# which is the typical 3GPP pattern that motivates arbitrary bit-field support.
+
+# --- LTE MIB (TS 36.331 Rel-8, MasterInformationBlock) ---
+
+enum LteDlBandwidth:
+    :u3
+    n6 = 0    # 1.4 MHz
+    n15 = 1   # 3  MHz
+    n25 = 2   # 5  MHz
+    n50 = 3   # 10 MHz
+    n75 = 4   # 15 MHz
+    n100 = 5  # 20 MHz
+
+enum PhichDuration:
+    :u1
+    normal = 0
+    extended = 1
+
+enum PhichResource:
+    :u2
+    oneSixth = 0
+    half = 1
+    one = 2
+    two = 3
+
+format PhichConfig:
+    phich_duration :PhichDuration
+    phich_resource :PhichResource
+
+# Bit layout: [dl_bw:3][phich_dur:1][phich_res:2][sfn:8][spare:10] = 24 bits.
+# systemFrameNumber here is the 8 MSBs of the 10-bit SFN;
+# the 2 LSBs are derived from the PBCH scrambling sequence.
+format LteMib:
+    dl_bandwidth :LteDlBandwidth
+    phich_config :PhichConfig
+    system_frame_number :u8
+    spare :u10
+
+# --- 5G NR MIB (TS 38.331, MIB) ---
+
+enum NrSubCarrierSpacingCommon:
+    :u1
+    scs15or60 = 0
+    scs30or120 = 1
+
+enum NrDmrsTypeAPosition:
+    :u1
+    pos2 = 0
+    pos3 = 1
+
+enum NrCellBarred:
+    :u1
+    barred = 0
+    notBarred = 1
+
+enum NrIntraFreqReselection:
+    :u1
+    allowed = 0
+    notAllowed = 1
+
+format NrPdcchConfigSib1:
+    control_resource_set_zero :u4
+    search_space_zero :u4
+
+# Bit layout:
+# [sfn:6][scs:1][ssb_off:4][dmrs:1][pdcch_sib1:8][barred:1][reselect:1][spare:1] = 23 bits
+# Plus 1 explicit spare bit = 24 bits total.
+# systemFrameNumber here is the 6 MSBs of the 10-bit SFN; the 4 LSBs come
+# from the PBCH transport block outside this IE.
+format NrMib:
+    system_frame_number :u6
+    subcarrier_spacing_common :NrSubCarrierSpacingCommon
+    ssb_subcarrier_offset :u4
+    dmrs_typeA_position :NrDmrsTypeAPosition
+    pdcch_config_sib1 :NrPdcchConfigSib1
+    cell_barred :NrCellBarred
+    intra_freq_reselection :NrIntraFreqReselection
+    spare :u1

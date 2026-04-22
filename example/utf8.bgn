@@ -1,0 +1,43 @@
+fn isUTF8(data :[]u8) -> bool:
+    for i := u64(0); i < data.length; :
+        match data[i]:
+            0x00..=0x7f => i += 1
+            0xc2..=0xdf:
+                i + 1 < data.length
+                data[i + 1] == (0x80..=0xBF)
+                i += 2
+            0xE0:
+                i + 2 < data.length
+                data[i + 1] == (0xA0..=0xBF) # Overlong (U+0800未満) を排除
+                data[i + 2] == (0x80..=0xBF)
+                i += 3
+            0xE1..=0xEC, 0xEE..=0xEF:
+                i + 2 < data.length 
+                data[i + 1] == (0x80..=0xBF)
+                data[i + 2] == (0x80..=0xBF)
+                i += 3
+            0xED:
+                i + 2 < data.length 
+                data[i + 1] == (0x80..=0x9F) # サロゲート領域 (U+D800-DFFF) を排除
+                data[i + 2] == (0x80..=0xBF)
+                i += 3
+            0xF0:
+                i + 3 < data.length
+                data[i + 1] == (0x90..=0xBF) # Overlong (U+FFFF以下) を排除
+                data[i + 2] == (0x80..=0xBF)
+                data[i + 3] == (0x80..=0xBF)
+                i += 4
+            0xF1..=0xF3:
+                i + 3 < data.length
+                data[i + 1] == (0x80..=0xBF)
+                data[i + 2] == (0x80..=0xBF)
+                data[i + 3] == (0x80..=0xBF)
+                i += 4
+            0xF4:
+                i + 3 < data.length
+                data[i + 1] == (0x80..=0x8F) # Unicode上限 (U+10FFFF) 超過を排除
+                data[i + 2] == (0x80..=0xBF)
+                data[i + 3] == (0x80..=0xBF)
+                i += 4
+            .. => return false # 不正な開始バイト (0x80..0xC1, 0xF5..0xFF)
+    return true

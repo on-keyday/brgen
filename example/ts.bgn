@@ -17,18 +17,10 @@ format TransportPacketHeader: # big endian
         adaptation_field :[adaptation_field_length]u8
 
 
+
 format ProgramAssociationTable:
-    table_id :u8
-    section_syntax_indicator :u1
-    zero :u1(0)
-    reserved1 :u2
-    section_length :u12
-    transport_stream_id :u16
-    version_number :u5
-    current_next_indicator :u1
-    section_number :u8
-    last_section_number :u8
-    association_infos :[..]AssociationInfo(input = input.subrange(section_length))
+    psi_table :PSITable
+    association_infos :[..]AssociationInfo(input = input.subrange(psi_table.section_length))
     crc_32 :u32
 
 format AssociationInfo:
