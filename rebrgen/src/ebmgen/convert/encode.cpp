@@ -21,6 +21,91 @@ namespace ebmgen {
         }
     }
 
+    expected<ebm::StatementRef> EncoderConverter::encode_multi_byte_int_with_fixed_array(ebm::StatementRef io_ref, ebm::StatementRef field_ref, size_t n, ebm::IOAttribute endian, ebm::ExpressionRef from, ebm::TypeRef cast_from) {
+        COMMON_BUFFER_SETUP(EBM_WRITE_DATA, write_ref, io_ref, field_ref, ebm::ArrayAnnotation::write_temporary);
+        EBM_CAST(casted, value_type, cast_from, from);  // if value_type == cast_from, then this is a no-op
+        MAYBE(fixed_size, make_fixed_size(n, ebm::SizeUnit::BYTE_FIXED));
+        ebm::ReserveData reserve_data;
+        reserve_data.write_data = to_weak(write_ref);
+        reserve_data.size = fixed_size;
+        EBM_RESERVE_DATA(reserve, reserve_data);
+
+        if (n == 1) {  // special case for 1 byte
+            EBM_INDEX(array_index, u8_t, buffer, zero);
+            EBM_ASSIGNMENT(assign, array_index, casted);
+            ebm::Block block;
+            block.container.reserve(4);
+            append(block, buffer_def);
+            append(block, reserve);
+            append(block, assign);
+            append(block, write_ref);
+            EBM_BLOCK(block_ref, std::move(block));
+            return block_ref;
+        }
+
+        EBMU_COUNTER_TYPE(counter_type);
+
+        EBMU_INT_LITERAL(eight, 8);
+        EBMU_INT_LITERAL(xFF, 0xff);
+
+        // casted = value_type(from)
+        // buffer = [0] * n
+        // for counter in 0..len:
+        //   if little endian
+        //     shift_index = counter
+        //   else
+        //     // len - 1 can be constant
+        //     shift_index = len - 1 - counter
+        //   buffer[counter] = (casted >> (8 * shift_index)) & 0xff
+        // write(buffer)
+        auto do_assign = [&](size_t index, size_t shift_index) -> expected<ebm::StatementRef> {
+            EBMU_INT_LITERAL(shift, shift_index * 8);
+            EBM_BINARY_OP(shifted, ebm::BinaryOp::right_shift, value_type, casted, shift);
+            EBM_BINARY_OP(masked, ebm::BinaryOp::bit_and, value_type, shifted, xFF);
+            EBM_CAST(casted2, u8_t, value_type, masked);
+            EBMU_INT_LITERAL(idx, index);
+            EBM_INDEX(array_index, u8_t, buffer, idx);
+            EBM_ASSIGNMENT(res, array_index, casted2);
+            return res;
+        };
+
+        ebm::Block encode_loop;
+
+        auto do_it = add_endian_specific(
+            ctx, endian,
+            [&] -> expected<ebm::StatementRef> {
+                for (size_t i = 0; i < n; i++) {
+                    MAYBE(elem, do_assign(i, i));
+                    append(encode_loop, elem);
+                }
+                EBM_BLOCK(enc_block, std::move(encode_loop));
+                EBM_ENDIAN_CONVERT(conv, ebm::StatementKind::INT_TO_ARRAY, ebm::Endian::little, casted, buffer, enc_block);
+                return conv;
+            },
+            [&] -> expected<ebm::StatementRef> {
+                for (size_t i = 0; i < n; i++) {
+                    size_t shift_idx = n - 1 - i;
+                    MAYBE(elem, do_assign(i, shift_idx));
+                    append(encode_loop, elem);
+                }
+                EBM_BLOCK(enc_block, std::move(encode_loop));
+                EBM_ENDIAN_CONVERT(conv, ebm::StatementKind::INT_TO_ARRAY, ebm::Endian::big, casted, buffer, enc_block);
+                return conv;
+            });
+        if (!do_it) {
+            return unexpect_error(std::move(do_it.error()));
+        }
+
+        ebm::Block block;
+        block.container.reserve(4);
+        append(block, buffer_def);
+        append(block, reserve);
+        append(block, *do_it);
+        append(block, write_ref);
+        EBM_BLOCK(block_ref, std::move(block));
+        return block_ref;
+    }
+
     expected<void> EncoderConverter::encode_int_type(ebm::IOData& io_desc, const std::shared_ptr<ast::IntType>& ity, ebm::ExpressionRef base_ref) {
         MAYBE(attr, ctx.state().get_io_attribute(ebm::Endian(ity->endian), ity->is_signed));
         io_desc.attribute = attr;
@@ -344,88 +429,4 @@ namespace ebmgen {
         return make_write_data(io_desc);
     }
 
-    expected<ebm::StatementRef> EncoderConverter::encode_multi_byte_int_with_fixed_array(ebm::StatementRef io_ref, ebm::StatementRef field_ref, size_t n, ebm::IOAttribute endian, ebm::ExpressionRef from, ebm::TypeRef cast_from) {
-        COMMON_BUFFER_SETUP(EBM_WRITE_DATA, write_ref, io_ref, field_ref, ebm::ArrayAnnotation::write_temporary);
-        EBM_CAST(casted, value_type, cast_from, from);  // if value_type == cast_from, then this is a no-op
-        MAYBE(fixed_size, make_fixed_size(n, ebm::SizeUnit::BYTE_FIXED));
-        ebm::ReserveData reserve_data;
-        reserve_data.write_data = to_weak(write_ref);
-        reserve_data.size = fixed_size;
-        EBM_RESERVE_DATA(reserve, reserve_data);
-
-        if (n == 1) {  // special case for 1 byte
-            EBM_INDEX(array_index, u8_t, buffer, zero);
-            EBM_ASSIGNMENT(assign, array_index, casted);
-            ebm::Block block;
-            block.container.reserve(4);
-            append(block, buffer_def);
-            append(block, reserve);
-            append(block, assign);
-            append(block, write_ref);
-            EBM_BLOCK(block_ref, std::move(block));
-            return block_ref;
-        }
-
-        EBMU_COUNTER_TYPE(counter_type);
-
-        EBMU_INT_LITERAL(eight, 8);
-        EBMU_INT_LITERAL(xFF, 0xff);
-
-        // casted = value_type(from)
-        // buffer = [0] * n
-        // for counter in 0..len:
-        //   if little endian
-        //     shift_index = counter
-        //   else
-        //     // len - 1 can be constant
-        //     shift_index = len - 1 - counter
-        //   buffer[counter] = (casted >> (8 * shift_index)) & 0xff
-        // write(buffer)
-        auto do_assign = [&](size_t index, size_t shift_index) -> expected<ebm::StatementRef> {
-            EBMU_INT_LITERAL(shift, shift_index * 8);
-            EBM_BINARY_OP(shifted, ebm::BinaryOp::right_shift, value_type, casted, shift);
-            EBM_BINARY_OP(masked, ebm::BinaryOp::bit_and, value_type, shifted, xFF);
-            EBM_CAST(casted2, u8_t, value_type, masked);
-            EBMU_INT_LITERAL(idx, index);
-            EBM_INDEX(array_index, u8_t, buffer, idx);
-            EBM_ASSIGNMENT(res, array_index, casted2);
-            return res;
-        };
-
-        ebm::Block encode_loop;
-
-        auto do_it = add_endian_specific(
-            ctx, endian,
-            [&] -> expected<ebm::StatementRef> {
-                for (size_t i = 0; i < n; i++) {
-                    MAYBE(elem, do_assign(i, i));
-                    append(encode_loop, elem);
-                }
-                EBM_BLOCK(enc_block, std::move(encode_loop));
-                EBM_ENDIAN_CONVERT(conv, ebm::StatementKind::INT_TO_ARRAY, ebm::Endian::little, casted, buffer, enc_block);
-                return conv;
-            },
-            [&] -> expected<ebm::StatementRef> {
-                for (size_t i = 0; i < n; i++) {
-                    size_t shift_idx = n - 1 - i;
-                    MAYBE(elem, do_assign(i, shift_idx));
-                    append(encode_loop, elem);
-                }
-                EBM_BLOCK(enc_block, std::move(encode_loop));
-                EBM_ENDIAN_CONVERT(conv, ebm::StatementKind::INT_TO_ARRAY, ebm::Endian::big, casted, buffer, enc_block);
-                return conv;
-            });
-        if (!do_it) {
-            return unexpect_error(std::move(do_it.error()));
-        }
-
-        ebm::Block block;
-        block.container.reserve(4);
-        append(block, buffer_def);
-        append(block, reserve);
-        append(block, *do_it);
-        append(block, write_ref);
-        EBM_BLOCK(block_ref, std::move(block));
-        return block_ref;
-    }
 }  // namespace ebmgen
