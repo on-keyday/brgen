@@ -210,6 +210,31 @@ def do_setup(lang_name: str, mode: str, file_extension: str):
     else:
         print(f"Test script already exists: {TEST_SCRIPT_PATH}")
 
+    # add dependency setup script if not exists.
+    DEP_SETUP_PATH = os.path.join(OUTPUT_DIR, "dependency_setup.py")
+    if not os.path.exists(DEP_SETUP_PATH):
+        with open(DEP_SETUP_PATH, "w") as f:
+            f.write("#!/usr/bin/env python3\n")
+            f.write(f"# Install toolchain/system dependencies for ebm2{lang_name} unictest.\n")
+            f.write("# Invoked by CI before running unictest for this runner.\n")
+            f.write("#\n")
+            f.write("# Pick one (or combine) as needed:\n")
+            f.write("#   - mise:   write mise.toml next to this file, then\n")
+            f.write("#             subprocess.check_call([\"mise\", \"install\"], cwd=HERE)\n")
+            f.write("#   - apt:    subprocess.check_call([\"sudo\", \"apt-get\", \"install\", \"-y\", \"<pkg>\"])\n")
+            f.write("#   - curl:   download a release tarball and extract\n")
+            f.write("#\n")
+            f.write("# Replace the placeholder body when real dependencies appear.\n")
+            f.write("import pathlib\n\n")
+            f.write("HERE = pathlib.Path(__file__).parent\n\n\n")
+            f.write("def main() -> None:\n")
+            f.write(f"    print(\"dependency setup not implemented for ebm2{lang_name}\")\n\n\n")
+            f.write("if __name__ == \"__main__\":\n")
+            f.write("    main()\n")
+        print(f"Created dependency setup: {DEP_SETUP_PATH}")
+    else:
+        print(f"Dependency setup already exists: {DEP_SETUP_PATH}")
+
     with open(TEST_CONFIG_PATH, "r") as f:
         test_config = json.load(f)
 
