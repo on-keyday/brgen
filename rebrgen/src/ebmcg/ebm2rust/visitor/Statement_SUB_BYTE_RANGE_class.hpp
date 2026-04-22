@@ -30,12 +30,39 @@
 #include "../codegen.hpp"
 DEFINE_VISITOR(Statement_SUB_BYTE_RANGE) {
     auto io_ = ctx.identifier(ctx.sub_byte_range.io_ref);
-    MAYBE(do_io, ctx.visit(ctx.sub_byte_range.io_statement));
-
-    CodeWriter w;
     auto parent_io_ = ctx.identifier(ctx.sub_byte_range.parent_io_ref);
     MAYBE(length, ctx.sub_byte_range.length());
     MAYBE(length_str, ctx.visit(length));
+
+    CodeWriter w;
+
+    // direct-decode mode + INPUT: parent `&'a [u8]` からサブスライスを借用して
+    // 子 scope では新しいローカル offset (`<io>_off`) で回す。中身の Cow<'a,[T]> は親
+    // lifetime をそのまま継承できる (reborrow)。
+    const bool direct_input = ctx.config().in_direct_decode &&
+                              ctx.sub_byte_range.stream_type == ebm::StreamType::INPUT;
+    if (direct_input) {
+        const std::string parent_off_ref = ebm2rust::offset_ref(parent_io_);
+        const std::string child_off_var = ebm2rust::offset_var(io_);
+        // `<io>_off` を `&mut usize` として扱えるよう、一旦ローカル `_base` に実体を置いて借用する。
+        // こうすることで CAN_READ_STREAM / READ_DATA / call の扱いが関数パラメータと同じになる。
+        const std::string child_off_base = child_off_var + "_base";
+        // 切り詰めデータで slice indexing が panic しないよう、先に bounds check で Err を返す。
+        w.writeln("let _sz = ", length_str.to_writer(), " as usize;");
+        w.writeln("if ", parent_io_, ".len() - ", parent_off_ref, " < _sz {");
+        w.indent_writeln("return Err(anyhow::anyhow!(\"unexpected EOF: sub_byte_range needs {} bytes from ", parent_io_, "\", _sz));");
+        w.writeln("}");
+        w.writeln("let ", io_, ": &'a [u8] = &", parent_io_, "[", parent_off_ref, "..", parent_off_ref, " + _sz];");
+        w.writeln(parent_off_ref, " += _sz;");
+        w.writeln("let mut ", child_off_base, ": usize = 0;");
+        w.writeln("let ", child_off_var, ": &mut usize = &mut ", child_off_base, ";");
+
+        MAYBE(do_io, ctx.visit(ctx.sub_byte_range.io_statement));
+        w.write(do_io.to_writer());
+        return w;
+    }
+
+    MAYBE(do_io, ctx.visit(ctx.sub_byte_range.io_statement));
 
     if (ctx.sub_byte_range.stream_type == ebm::StreamType::INPUT) {
         w.writeln("let mut ", io_, " = Vec::new();");

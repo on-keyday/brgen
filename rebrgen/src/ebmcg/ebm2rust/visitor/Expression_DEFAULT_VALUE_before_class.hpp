@@ -28,8 +28,9 @@ DEFINE_VISITOR(Expression_DEFAULT_VALUE_before) {
         return CODE("[Default::default();", std::format("{}", length.value()), "]");
     }
     if (typ.body.kind == ebm::TypeKind::STRUCT || typ.body.kind == ebm::TypeKind::RECURSIVE_STRUCT) {
-        MAYBE(ident, ctx.visit(ctx.type));
-        return CODE(ident.to_writer(), " { ..Default::default() }");
+        // Default::default() に委ねる: 左辺の型注釈から型推論されるため struct 名を
+        // ここで書く必要がない。書くと `StructName<'a>` の `<'a>` が式位置で構文エラーになる。
+        return CODE("Default::default()");
     }
     return pass;
 }

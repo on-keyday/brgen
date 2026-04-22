@@ -14,3 +14,9 @@ std::set<std::string> use_statements;
 std::unordered_set<size_t> can_move_exprs;
 size_t parent_format_stmt_id = 0;
 std::map<std::uint64_t, bool> variant_mutable_contexts;  // variant arm TypeRef ID → is_mutable
+
+// zero-copy direct decode state
+// When true, decoder is lowered against a `&'a [u8]` input + `*offset` cursor
+// instead of `std::io::Read`. Bulk byte vectors use `Cow::Borrowed(&data[..])`.
+// offset 変数名は `<io>_off` で io 名から機械的に導出する (ebm2rust::offset_var helper 参照)。
+bool in_direct_decode = false;

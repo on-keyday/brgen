@@ -27,6 +27,13 @@
 DEFINE_VISITOR(Expression_AS_ARG_before) {
     auto typ = ctx.get_kind(ctx.type);
     MAYBE(expr, ctx.get(ctx.as_arg.target_expr));
+    // direct-decode mode: DECODER_INPUT は `<var>, <var>_off` を生成する (offset 引数自動付与)。
+    // `<var>_off` は関数パラメータ/ SUB_BYTE_RANGE ローカルどちらでも `&mut usize` 型として存在するので
+    // 自動 reborrow が効く。
+    if (ctx.config().in_direct_decode && typ == ebm::TypeKind::DECODER_INPUT) {
+        MAYBE(var, ctx.main_logic());
+        return CODE(var.to_writer(), ", ", ebm2rust::offset_var(var.to_string()));
+    }
     if (ctx.as_arg.is_inout()) {
         MAYBE(var, ctx.main_logic())
         return CODE("&mut ", var.to_writer());

@@ -24,6 +24,9 @@
 /*here to write the hook*/
 #include "../codegen.hpp"
 DEFINE_VISITOR(Type_DECODER_INPUT) {
+    if (ctx.config().in_direct_decode) {
+        return Result("&'a [u8]");
+    }
     auto flags = ctx.config().function_markers[get_id(ctx.config().current_function)];
     if (has_flag(flags, ebm2rust::FunctionFlags::HasFillBuf)) {
         return Result("&mut impl std::io::BufRead");

@@ -35,9 +35,12 @@ DEFINE_VISITOR(Statement_INIT_CHECK) {
     MAYBE(variant_index, get_struct_union_index(ctx, target_expr.body.type, expect_expr.body.type));
 
     MAYBE(target, ctx.visit(ctx.init_check.target_field));
-    MAYBE(target_type_rust, ctx.visit(target_expr.body.type));
 
-    auto alt = CODE(target_type_rust.to_writer(), "::V", std::to_string(variant_index));
+    // Build variant name directly (not via type visit) so we don't inherit
+    // lifetime annotations like `Variant30<'a>` that are invalid in
+    // pattern/expression positions. The bare identifier works in all positions.
+    auto enum_name = ctx.config().variant_prefix + std::format("{}", get_id(target_expr.body.type));
+    auto alt = CODE(enum_name, "::V", std::to_string(variant_index));
     auto default_ = CODE(alt, "(Default::default())");
 
     bool is_mutable = (ctx.init_check.init_check_type == ebm::InitCheckType::union_init_decode ||

@@ -28,6 +28,11 @@
 DEFINE_VISITOR(Expression_CAN_READ_STREAM) {
     auto io_ = ctx.identifier(ctx.io_ref);
     MAYBE(num_bytes_, get_size_str(ctx, ctx.num_bytes));
+    // direct-decode mode: io_ は parameter (&'a [u8]) でも sub_byte_range で借用した
+    // サブスライスでも常に `&[u8]` 扱い。`len() - *<io>_off >= num_bytes` で判定する。
+    if (ctx.config().in_direct_decode) {
+        return CODE("(", io_, ".len() - ", ebm2rust::offset_ref(io_), " >= ", num_bytes_, " as usize)");
+    }
     // fill_buf requires `use std::io::BufRead;` regardless of io_ref kind
     ctx.config().use_statements.insert("use std::io::BufRead;");
     // Only mark function as needing BufRead parameter if fill_buf is called

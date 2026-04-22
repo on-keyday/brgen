@@ -94,11 +94,71 @@ DEFINE_VISITOR(entry_before) {
         using namespace CODEGEN_NAMESPACE;
         return CODE("Option<Box<", name.to_writer(), ">>");
     };
-    config.vector_type_wrapper = [](Context_Type_VECTOR& ctx) -> expected<Result> {
+    const bool zero_copy = ctx.flags().zero_copy;
+    if (zero_copy) {
+        config.use_statements.insert("use std::borrow::Cow;");
+    }
+    config.vector_type_wrapper = [zero_copy](Context_Type_VECTOR& ctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
         MAYBE(elem, ctx.visit(ctx.element_type));
+        if (zero_copy) {
+            return CODE("Cow<'a, [", elem.to_writer(), "]>");
+        }
         return CODE("Vec<", elem.to_writer(), ">");
     };
+    if (zero_copy) {
+        // direct-decode mode: nested decode() 呼び出しを decode_direct(..., <io>_off) に書き換え。
+        // offset 引数自体は Expression_AS_ARG_before 側で DECODER_INPUT に対して自動付与する。
+        config.call_custom = [](Context_Expression_CALL& ctx) -> expected<Result> {
+            using namespace CODEGEN_NAMESPACE;
+            if (!ctx.config().in_direct_decode) {
+                return pass;
+            }
+            auto fn = ctx.get_field<"member.body.id.func_decl">(ctx.call_desc.callee);
+            if (!fn || fn->kind != ebm::FunctionKind::DECODE) {
+                return pass;
+            }
+            MAYBE(callee_expr, ctx.get(ctx.call_desc.callee));
+            MAYBE(base_ref, callee_expr.body.base());
+            MAYBE(member_ref, callee_expr.body.member());
+            MAYBE(base, ctx.visit(base_ref));
+            MAYBE(method_name, ctx.identifier(member_ref));
+            CodeWriter w;
+            w.write(base.to_writer(), ".", method_name, "_direct(");
+            bool first = true;
+            for (auto& arg : ctx.call_desc.arguments.container) {
+                MAYBE(arg_str, ctx.visit(arg));
+                if (!first) {
+                    w.write(", ");
+                }
+                first = false;
+                w.write(arg_str.to_writer());
+            }
+            w.write(")");
+            return Result(std::move(w));
+        };
+        config.struct_type_custom = [](Context_Type_STRUCT& ctx) -> expected<Result> {
+            using namespace CODEGEN_NAMESPACE;
+            auto name = ctx.identifier(ctx.id);
+            return Result(name + "<'a>");
+        };
+        config.struct_union_type_custom = [](Context_Type_STRUCT_UNION& ctx) -> expected<Result> {
+            using namespace CODEGEN_NAMESPACE;
+            auto enum_name = ctx.config().variant_prefix + std::format("{}", get_id(ctx.item_id));
+            return Result(enum_name + "<'a>");
+        };
+        config.recursive_struct_type_wrapper = [](Result name) -> expected<Result> {
+            using namespace CODEGEN_NAMESPACE;
+            return CODE("Option<Box<", name.to_writer(), "<'a>>>");
+        };
+        // Cow<'a,[T]> needs .to_mut() before push
+        config.append_visitor = [](Context_Statement_APPEND& ctx) -> expected<Result> {
+            using namespace CODEGEN_NAMESPACE;
+            MAYBE(target_str, ctx.visit(ctx.target));
+            MAYBE(value_str, ctx.visit(ctx.value));
+            return CODELINE(target_str.to_writer(), ".to_mut().", ctx.config().append_function, "(", value_str.to_writer(), ")", ctx.config().endof_statement);
+        };
+    }
 
     config.make_pointer_wrapper = [](Result elem) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
@@ -142,34 +202,85 @@ DEFINE_VISITOR(entry_before) {
         auto len = ctx.length.value();
         return CODE("[", type.to_writer(), "; ", std::to_string(len), "]");
     };
-    config.read_data_bytes_io_wrapper = [](Context_Statement_READ_DATA& ctx, BytesType cand, Result target, std::string io_name) -> expected<Result> {
+    config.read_data_bytes_io_wrapper = [zero_copy](Context_Statement_READ_DATA& ctx, BytesType cand, Result target, std::string io_name) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
         // lowered statement がある場合は default の lowered fallback に委ねる
         if (ctx.read_data.lowered_statement()) {
             return pass;
         }
+        const bool direct = ctx.config().in_direct_decode;
+        const std::string off_ref = direct ? ebm2rust::offset_ref(io_name) : std::string();
         CodeWriter w;
+        // direct mode の bounds check helper: 切り詰めデータで `&io[off..off+n]` が panic しないよう
+        // 事前に残量を比較し Err を返す。offset <= len の不変条件を前提に引き算を使う。
+        auto emit_direct_bounds_check = [&](std::string_view need_var) {
+            w.writeln("if ", io_name, ".len() - ", off_ref, " < ", need_var, " {");
+            w.indent_writeln("return Err(anyhow::anyhow!(\"unexpected EOF: need {} bytes from ", io_name, "\", ", need_var, "));");
+            w.writeln("}");
+        };
         if (cand == BytesType::array) {
-            // GET_REMAINING_BYTES の場合は read_to_end を使う
+            // fixed-size array ([u8; N]) is not Cow-wrapped; zero_copy doesn't affect this branch
             if (auto dyn = ctx.read_data.size.ref(); dyn && ctx.is(ebm::ExpressionKind::GET_REMAINING_BYTES, *dyn)) {
-                w.writeln(io_name, ".read_to_end(&mut ", target.to_writer(), ".to_vec())?;");
+                if (direct) {
+                    // 残り全部: fixed-size array なのでこのケースは稀だが fallback
+                    w.writeln("{");
+                    w.writeln("let _n = ", target.to_writer(), ".len();");
+                    emit_direct_bounds_check("_n");
+                    w.writeln(target.to_writer(), ".copy_from_slice(&", io_name, "[", off_ref, "..", off_ref, "+_n]);");
+                    w.writeln(off_ref, " += _n;");
+                    w.writeln("}");
+                }
+                else {
+                    w.writeln(io_name, ".read_to_end(&mut ", target.to_writer(), ".to_vec())?;");
+                }
             }
             else {
-                w.writeln(io_name, ".read_exact(&mut ", target.to_writer(), ")?;");
+                if (direct) {
+                    w.writeln("{");
+                    w.writeln("let _n = ", target.to_writer(), ".len();");
+                    emit_direct_bounds_check("_n");
+                    w.writeln(target.to_writer(), ".copy_from_slice(&", io_name, "[", off_ref, "..", off_ref, "+_n]);");
+                    w.writeln(off_ref, " += _n;");
+                    w.writeln("}");
+                }
+                else {
+                    w.writeln(io_name, ".read_exact(&mut ", target.to_writer(), ")?;");
+                }
             }
         }
         else {
-            // GET_REMAINING_BYTES の場合は read_to_end を使う
+            // When zero_copy, vector target is Cow<'a,[u8]>; mutate through .to_mut()
+            auto mut_target = zero_copy
+                                  ? std::string(target.to_string()) + ".to_mut()"
+                                  : std::string(target.to_string());
             if (auto dyn = ctx.read_data.size.ref(); dyn && ctx.is(ebm::ExpressionKind::GET_REMAINING_BYTES, *dyn)) {
-                w.writeln(io_name, ".read_to_end(&mut ", target.to_writer(), ")?;");
+                if (direct) {
+                    // Cow::Borrowed で残り全部: true zero-copy (remaining なので bounds check 不要)
+                    w.writeln(target.to_writer(), " = Cow::Borrowed(&", io_name, "[", off_ref, "..]);");
+                    w.writeln(off_ref, " = ", io_name, ".len();");
+                }
+                else {
+                    w.writeln(io_name, ".read_to_end(", (zero_copy ? "" : "&mut "), mut_target, ")?;");
+                }
             }
             else {
                 MAYBE(size, get_size_str(ctx, ctx.read_data.size));
-                w.writeln("{");
-                w.writeln("let _sz = ", size, " as usize;");
-                w.writeln(target.to_writer(), ".resize(_sz,0);");
-                w.writeln(io_name, ".read_exact(&mut ", target.to_writer(), ")?;");
-                w.writeln("}");
+                if (direct) {
+                    // Cow::Borrowed で slice: true zero-copy
+                    w.writeln("{");
+                    w.writeln("let _sz = ", size, " as usize;");
+                    emit_direct_bounds_check("_sz");
+                    w.writeln(target.to_writer(), " = Cow::Borrowed(&", io_name, "[", off_ref, "..", off_ref, "+_sz]);");
+                    w.writeln(off_ref, " += _sz;");
+                    w.writeln("}");
+                }
+                else {
+                    w.writeln("{");
+                    w.writeln("let _sz = ", size, " as usize;");
+                    w.writeln(mut_target, ".resize(_sz,0);");
+                    w.writeln(io_name, ".read_exact(", (zero_copy ? "" : "&mut "), mut_target, ")?;");
+                    w.writeln("}");
+                }
             }
         }
         return w;

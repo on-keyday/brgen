@@ -12,8 +12,13 @@ def main():
     INPUT_FILE = sys.argv[2]
     OUTPUT_FILE = sys.argv[3]
     TEST_TARGET_FORMAT = sys.argv[4]
+    OPTION_SET_NAME = sys.argv[5]
+    assert OPTION_SET_NAME in (
+        "std-io",
+        "zero-copy",
+    ), "Expected OPTION_SET_NAME to be 'std-io' or 'zero-copy'"
 
-    print(f"Testing {TEST_TARGET_FILE} with {INPUT_FILE} and {OUTPUT_FILE}")
+    print(f"Testing {TEST_TARGET_FILE} with {INPUT_FILE} and {OUTPUT_FILE} (option_set={OPTION_SET_NAME})")
 
     proj_dir = pathlib.Path("cargo_proj")
     src_dir = proj_dir / "src"
@@ -35,6 +40,23 @@ def main():
             f_dst.write(f_src.read())
 
     # Create main.rs to run the test
+    # For zero-copy option-set: use decode_direct(&data, &mut offset) against the raw slice.
+    # For std-io option-set: use conventional Cursor+decode.
+    if OPTION_SET_NAME == "zero-copy":
+        decode_block = f"""    let mut target = test_runner::{TEST_TARGET_FORMAT}::default();
+    let mut __offset: usize = 0;
+    if let Err(e) = target.decode_direct(&input_data, &mut __offset) {{
+        eprintln!("Decode error: {{:?}}", e);
+        std::process::exit(10);
+    }}"""
+    else:
+        decode_block = f"""    let mut reader = Cursor::new(&input_data);
+    let mut target = test_runner::{TEST_TARGET_FORMAT}::default();
+    if let Err(e) = target.decode(&mut reader) {{
+        eprintln!("Decode error: {{:?}}", e);
+        std::process::exit(10);
+    }}"""
+
     with open(src_dir / "main.rs", "w") as f:
         f.write(
             f"""
@@ -60,21 +82,15 @@ fn main() {{
             std::process::exit(1);
         }}
     }};
-    let mut reader = Cursor::new(&input_data);
 
-
-    let mut target = test_runner::{TEST_TARGET_FORMAT}::default();
-    if let Err(e) = target.decode(&mut reader) {{
-        eprintln!("Decode error: {{:?}}", e);
-        std::process::exit(10);
-    }}
+{decode_block}
 
     let mut output_buf = Vec::new();
     if let Err(e) = target.encode(&mut Cursor::new(&mut output_buf)) {{
         eprintln!("Encode error: {{:?}}", e);
         std::process::exit(20);
     }}
-    
+
     if let Err(e) = fs::write(output_path, &output_buf) {{
         eprintln!("Failed to write output file '{{}}': {{}}", output_path, e);
         std::process::exit(1);

@@ -20,4 +20,14 @@ namespace ebm2rust {
     constexpr bool has_flag(FunctionFlags flags, FunctionFlags flag) {
         return (static_cast<std::uint64_t>(flags) & static_cast<std::uint64_t>(flag)) != 0;
     }
+
+    // zero-copy direct-decode mode helpers. Offset は io 変数名から機械的に導出する
+    // (Go 版 offset_var/offset_ref と同じ発想) ので config state を持たなくて済む。
+    inline std::string offset_var(const std::string& io) {
+        return io + "_off";
+    }
+
+    inline std::string offset_ref(const std::string& io) {
+        return "*" + io + "_off";
+    }
 }  // namespace ebm2rust

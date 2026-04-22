@@ -26,6 +26,7 @@
           is_user_defined: bool
           has_wrapper: bool
           is_mutable: bool
+          is_wrapper: bool
           reserved: std::uint8_t
         wrapper_function: *StatementRef
         body: StatementRef
@@ -144,6 +145,58 @@ DEFINE_VISITOR(Statement_FUNCTION_DECL) {
         ctx.config().function_markers[get_id(*wrapper_ref)] = ctx.config().function_markers[get_id(ctx.item_id)];
         MAYBE(wrapper_code, ctx.visit(*wrapper_ref));
         w.write(wrapper_code.to_writer());
+    }
+
+    // Emit {name}_direct companion for zero-copy mode: same body re-traversed with
+    // in_direct_decode=true so that READ_DATA lowers to slice ops and the decoder
+    // input is typed as `&'a [u8]` + an extra `<io>_off: &mut usize` parameter.
+    // wrapper / _impl 両方で emit する: wrapper は decode_direct を、_impl は
+    // decode_impl_direct を生成し、Expression_AS_ARG 側で原名に対する offset 引数を
+    // 自動付与して呼ぶ (Go 版の offset_var/as_arg_visitor と同じ発想)。
+    if (ctx.flags().zero_copy && ctx.func_decl.kind == ebm::FunctionKind::DECODE) {
+        auto prev_direct = ctx.config().in_direct_decode;
+        ctx.config().in_direct_decode = true;
+        const auto restore_direct = futils::helper::defer([&]() {
+            ctx.config().in_direct_decode = prev_direct;
+        });
+        MAYBE(direct_body, ctx.visit(ctx.func_decl.body));
+
+        w.write("pub fn ", name, "_direct(");
+        bool dfirst = true;
+        if (!is_nil(ctx.func_decl.parent_format)) {
+            w.write("&mut self");
+            dfirst = false;
+        }
+        std::string io_param_name;  // reader param の名前 (offset 名導出に使う)
+        for (auto& param_ref : ctx.func_decl.params.container) {
+            MAYBE(param_stmt, ctx.get(param_ref));
+            if (param_stmt.body.kind == ebm::StatementKind::PARAMETER_DECL) {
+                auto param_name = ctx.identifier(param_ref);
+                MAYBE(param_decl, param_stmt.body.param_decl());
+                MAYBE(param_type_str, ctx.visit(param_decl.param_type));
+                if (!dfirst) {
+                    w.write(", ");
+                }
+                w.write(param_name, ": ");
+                if (param_decl.is_state_variable()) {
+                    w.write("&mut ");
+                }
+                w.write(param_type_str.to_writer());
+                // 最初の DECODER_INPUT param を reader とみなす
+                if (io_param_name.empty() &&
+                    ctx.get_kind(param_decl.param_type) == ebm::TypeKind::DECODER_INPUT) {
+                    io_param_name = param_name;
+                    w.write(", ", ebm2rust::offset_var(param_name), ": &mut usize");
+                }
+                dfirst = false;
+            }
+        }
+        w.writeln(") -> ", return_type_str.to_writer(), " {");
+        {
+            auto s = w.indent_scope();
+            w.write(direct_body.to_writer());
+        }
+        w.writeln("}");
     }
 
     return w;

@@ -46,10 +46,12 @@ DEFINE_VISITOR(Statement_FIELD_DECL) {
             ctx.config().decl_toplevel.push_back(member.second.to_writer());
         }
         auto enum_name = "Variant" + std::format("{}", get_id(ctx.field_decl.field_type));
+        const bool zero_copy = ctx.flags().zero_copy;
+        const std::string lifetime = zero_copy ? "<'a>" : "";
 
         CodeWriter w;
         w.writeln("#[derive(Debug, Clone, PartialEq, Eq, Default)]");  // Add common derives including Default
-        w.writeln("pub enum ", enum_name, " {");
+        w.writeln("pub enum ", enum_name, lifetime, " {");
         auto scope = w.indent_scope();
         int i = 0;
         w.writeln("#[default]");
@@ -65,7 +67,7 @@ DEFINE_VISITOR(Statement_FIELD_DECL) {
 
         // Generate impl with #[inline(always)] accessors to avoid long-lived &mut borrows
         CodeWriter impl_w;
-        impl_w.writeln("impl ", enum_name, " {");
+        impl_w.writeln("impl", lifetime, " ", enum_name, lifetime, " {");
         {
             auto impl_scope = impl_w.indent_scope();
             int j = 0;

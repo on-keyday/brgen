@@ -11,5 +11,19 @@
         "$WORK_DIR/script/unictest_setup.py",
         "test",
         "ebm2rust"
+    ],
+    "option_sets": [
+        {
+            "name": "std-io",
+            "setup_options": [],
+            "run_options": []
+        },
+        {
+            "name": "zero-copy",
+            "setup_options": [
+                "--zero-copy"
+            ],
+            "run_options": []
+        }
     ]
 }

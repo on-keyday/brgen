@@ -50,21 +50,29 @@
 #include "../codegen.hpp"
 DEFINE_VISITOR(Statement_STRUCT_DECL) {
     auto name = ctx.identifier();
+    const bool zero_copy = ctx.flags().zero_copy;
+    const std::string lifetime = zero_copy ? "<'a>" : "";
     CodeWriter w;
     w.writeln("#[derive(Debug, Clone, PartialEq, Eq, Default)]");  // Add common derives
-    w.writeln("pub struct ", name, " {");
+    w.writeln("pub struct ", name, lifetime, " {");
     {
         auto scope = w.indent_scope();
         for (auto& field : ctx.struct_decl.fields.container) {
             MAYBE(field_str, ctx.visit(field));
             w.write(field_str.to_writer());
         }
+        // zero-copy: 全構造体に PhantomData フィールドを入れて `'a` が未使用エラー
+        // (E0392) にならないようにする。実フィールド側が Cow<'a,...> を持つ場合でも
+        // 冗長だが無害。
+        if (zero_copy) {
+            w.writeln("pub _phantom: std::marker::PhantomData<&'a ()>,");
+        }
     }
     w.writeln("}");
 
     w.writeln();  // Add a newline for separation
     if (ctx.struct_decl.has_encode_decode() || ctx.struct_decl.has_functions() || ctx.struct_decl.has_properties()) {
-        w.writeln("impl ", name, " {");
+        w.writeln("impl", lifetime, " ", name, lifetime, " {");
         {
             auto impl_scope = w.indent_scope();
 
