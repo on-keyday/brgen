@@ -10,12 +10,30 @@
 #
 # Replace the placeholder body when real dependencies appear.
 import pathlib
+import subprocess
 
 HERE = pathlib.Path(__file__).parent
+# build_config.template.json sets FUTILS_DIR to "../utils/" (relative to
+# rebrgen). unictest.py resolves that to rebrgen/../utils, so futils must
+# live there for the generated C++ to compile.
+UTILS_TARGET = HERE.parents[2].parent / "utils"
 
 
 def main() -> None:
-    print("dependency setup not implemented for ebm2cpp")
+    if UTILS_TARGET.exists():
+        print(f"ebm2cpp: utils already present at {UTILS_TARGET}")
+        return
+    print(f"ebm2cpp: cloning futils into {UTILS_TARGET}")
+    subprocess.check_call(
+        [
+            "git",
+            "clone",
+            "--depth",
+            "1",
+            "https://github.com/on-keyday/utils.git",
+            str(UTILS_TARGET),
+        ]
+    )
 
 
 if __name__ == "__main__":
