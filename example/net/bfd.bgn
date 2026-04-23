@@ -1,0 +1,67 @@
+# source: RFC 5880 §4.1, §4.2 (fetched 2026-04-23)
+# scope: BFD Control packet mandatory section + optional Authentication Section outer header
+# out-of-scope: per-Auth-Type data interpretation (Simple Password / Keyed MD5 / SHA1 payload layout)
+# note: bit widths derived directly from RFC 5880 §4.1 ASCII diagram; Vers=3, Diag=5, Sta=2
+config.url = "https://datatracker.ietf.org/doc/html/rfc5880"
+
+enum BFDState:
+    :u2
+    AdminDown = 0
+    Down = 1
+    Init = 2
+    Up = 3
+
+enum BFDDiag:
+    :u5
+    no_diagnostic = 0
+    control_detection_time_expired = 1
+    echo_function_failed = 2
+    neighbor_signaled_session_down = 3
+    forwarding_plane_reset = 4
+    path_down = 5
+    concatenated_path_down = 6
+    administratively_down = 7
+    reverse_concatenated_path_down = 8
+
+enum BFDAuthType:
+    :u8
+    reserved = 0
+    simple_password = 1
+    keyed_md5 = 2
+    meticulous_keyed_md5 = 3
+    keyed_sha1 = 4
+    meticulous_keyed_sha1 = 5
+
+format BFDControl:
+    # §4.1 first 32-bit word: |Vers(3)|Diag(5)|Sta(2)|P|F|C|A|D|M|Detect Mult(8)|Length(8)|
+    vers :u3
+    vers == 1  # §4.1: "This document defines protocol version 1"
+    diag :BFDDiag
+    state_ :BFDState
+    poll :u1
+    final :u1
+    control_plane_independent :u1
+    auth_present :u1
+    demand :u1
+    multipoint :u1
+    multipoint == 0  # §4.1: "MUST be zero on both transmit and receipt"
+    detect_mult :u8
+    length :u8
+    length >= 24
+    my_discriminator :u32
+    your_discriminator :u32
+    desired_min_tx_interval :u32
+    required_min_rx_interval :u32
+    required_min_echo_rx_interval :u32
+    # §4.2 optional Authentication Section
+    if auth_present == 1:
+        length > 24
+        auth :BFDAuthSection(input = input.subrange(length - 24))
+
+format BFDAuthSection:
+    # §4.2 common header: Auth Type(8), Auth Len(8), Authentication Data(variable)
+    # Auth Len includes the 2-byte header itself
+    auth_type :BFDAuthType
+    auth_len :u8
+    auth_len >= 2
+    auth_data :[auth_len - 2]u8

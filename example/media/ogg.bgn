@@ -1,0 +1,40 @@
+# source: RFC 3533 §6 (fetched 2026-04-23)
+# scope: Ogg page header + segment_table
+# out-of-scope: logical stream multiplex/demultiplex, codec-specific granule_position interpretation, CRC verification
+# note: all multi-byte fields are little-endian per RFC 3533 §6
+config.url = "https://datatracker.ietf.org/doc/html/rfc3533"
+input.endian = config.endian.little
+
+fn sumOfArray(data :[]u8) -> u16:
+    sum := u16(0)
+    for d in data:
+        sum += u16(d)
+    return sum
+
+format OggPage:
+    # §6 page header (27 bytes + segment_table)
+    capture_pattern :"OggS"
+    stream_structure_version :u8
+    stream_structure_version == 0
+    # header_type_flag: byte-level bit flags
+    #   0x01 = fresh packet continued from previous page
+    #   0x02 = first page of logical bitstream (bos)
+    #   0x04 = last page of logical bitstream (eos)
+    # Other bits reserved; accessor fns provided below.
+    header_type :u8
+    granule_position :i64  # §6: "-1 in two's complement" is a valid sentinel, so signed
+    bitstream_serial_number :u32
+    page_sequence_number :u32
+    crc_checksum :u32
+    number_page_segments :u8
+    segment_table :[number_page_segments]u8
+    page_body :[sumOfArray(segment_table)]u8
+
+    fn continued() -> bool:
+        return (header_type & 0x01) != 0
+
+    fn bos() -> bool:
+        return (header_type & 0x02) != 0
+
+    fn eos() -> bool:
+        return (header_type & 0x04) != 0

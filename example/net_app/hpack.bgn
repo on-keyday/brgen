@@ -1,0 +1,126 @@
+# source: RFC 7541 §5.1 (Integer Representation), §6.1-6.3 (Field Representations) (fetched 2026-04-23)
+# scope: HPACK prefix-N integer encoding with continuation octets, and the five field representations discriminated by leading bit pattern
+# out-of-scope: literal name/value octet strings (Huffman-encoded or raw) that follow literal representations; dynamic table mechanics; §5.2 string literal format
+# note: IETF MSB-first bit order (default). Leading bits identify the field type; remaining N bits start a prefix-N integer.
+config.url = "https://datatracker.ietf.org/doc/html/rfc7541"
+
+format HPackIntContByte:
+    # §5.1 continuation octet: |M(1)|partial(7)|
+    # M=1 means another continuation follows; M=0 terminates. Low 7 bits are LSB-first-accumulated partial value.
+    more :u1
+    partial :u7
+
+format HPackIntegerTail:
+    # §5.1 decoder loop: read continuation octets until one has M=0.
+    bytes :[]HPackIntContByte
+
+    fn decode():
+        for:
+            b := input.get(HPackIntContByte)
+            bytes[bytes.length] = b
+            if b.more == 0:
+                break
+
+    fn encode():
+        for i in bytes.length:
+            output.put(bytes[i])
+            if i == bytes.length - 1:
+                bytes[i].more == 0
+
+    # Accumulated value of the continuation portion per §5.1:
+    #   sum = Σ (bytes[i].partial << (7 * i))  for i in [0, bytes.length)
+    fn sum() -> u64:
+        v := u64(0)
+        shift := u64(0)
+        for i in bytes.length:
+            v = v + (u64(bytes[i].partial) << shift)
+            shift = shift + 7
+        return v
+
+# ---- §6 Field Representations ----
+# Each starts with an octet whose high (8-N) bits identify the field type and low N bits start a prefix-N integer.
+# Discriminators are disjoint, so the first byte uniquely determines the representation.
+
+format IndexedHeaderField:
+    # §6.1: |1|Index(7+)|, N=7
+    flag :u1
+    flag == 1
+    initial :u7
+    if initial == 0b1111111:
+        tail :HPackIntegerTail
+
+    fn value() -> u64:
+        if available(tail):
+            return u64(initial) + <HPackIntegerTail>(tail).sum()
+        else:
+            return u64(initial)
+
+format LiteralIncrementalIndexing:
+    # §6.2.1: |0|1|Index(6+)|, N=6
+    # Index==0 means "new name follows as literal"; otherwise refers to an existing index.
+    flag :u2
+    flag == 0b01
+    initial :u6
+    if initial == 0b111111:
+        tail :HPackIntegerTail
+    # (name (optional) + value literal strings follow per §5.2 - out-of-scope)
+
+    fn value() -> u64:
+        if available(tail):
+            return u64(initial) + <HPackIntegerTail>(tail).sum()
+        else:
+            return u64(initial)
+
+format LiteralWithoutIndexing:
+    # §6.2.2: |0|0|0|0|Index(4+)|, N=4
+    flag :u4
+    flag == 0b0000
+    initial :u4
+    if initial == 0b1111:
+        tail :HPackIntegerTail
+
+    fn value() -> u64:
+        if available(tail):
+            return u64(initial) + <HPackIntegerTail>(tail).sum()
+        else:
+            return u64(initial)
+
+format LiteralNeverIndexed:
+    # §6.2.3: |0|0|0|1|Index(4+)|, N=4
+    flag :u4
+    flag == 0b0001
+    initial :u4
+    if initial == 0b1111:
+        tail :HPackIntegerTail
+
+    fn value() -> u64:
+        if available(tail):
+            return u64(initial) + <HPackIntegerTail>(tail).sum()
+        else:
+            return u64(initial)
+
+format DynamicTableSizeUpdate:
+    # §6.3: |0|0|1|Max size(5+)|, N=5
+    flag :u3
+    flag == 0b001
+    initial :u5
+    if initial == 0b11111:
+        tail :HPackIntegerTail
+
+    fn value() -> u64:
+        if available(tail):
+            return u64(initial) + <HPackIntegerTail>(tail).sum()
+        else:
+            return u64(initial)
+
+
+format HPACKField:
+    match:
+        .. => indexed :IndexedHeaderField
+        .. => literal_incremental :LiteralIncrementalIndexing
+        .. => literal_without_index :LiteralWithoutIndexing
+        .. => literal_never_indexed :LiteralNeverIndexed
+        .. => dynamic_table_update :DynamicTableSizeUpdate
+        .. => error("unexpected state")
+
+
