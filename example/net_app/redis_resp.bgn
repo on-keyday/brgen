@@ -10,11 +10,11 @@ fn parseDecimal(s :[]u8) -> i64:
     result := i64(0)
     negative := false
     start := u64(0)
-    if s.length > 0 && s[0] == 0x2D:  # '-'
+    if s.length > 0 && s[0] == '-':  # '-'
         negative = true
         start = 1
     for i := start; i < s.length; i += 1:
-        result = result * 10 + i64(s[i] - 0x30)
+        result = result * 10 + i64(s[i] - '0')
     if negative:
         return -result
     else:
