@@ -24,7 +24,7 @@ DEFINE_VISITOR(Statement_CONTINUE) {
     while (!is_nil(loop_ref)) {
         MAYBE(loop_stmt, ctx.get(loop_ref));
         MAYBE(loop, loop_stmt.body.loop());
-        if (auto iter = loop.increment()) {
+        if (auto iter = loop.increment(); iter && !is_nil(*iter)) {
             MAYBE(step, ctx.visit(*iter));
             w.write(step.to_writer());
             break;

@@ -37,7 +37,7 @@ DEFINE_VISITOR(Statement_LOOP_STATEMENT) {
         return ctx.visit(loop.lowered_statement.id);
     }
     CodeWriter w;
-    if (auto init = loop.init(); init && init->id.value() != 0) {
+    if (auto init = loop.init(); init && !is_nil(*init)) {
         MAYBE(init_s, ctx.visit(*init));
         w.write(init_s.to_writer());
     }
@@ -83,7 +83,7 @@ DEFINE_VISITOR(Statement_LOOP_STATEMENT) {
         MAYBE(body, ctx.visit(loop.body));
         bool empty_body = body.to_writer().empty();
         w.write(body.to_writer());
-        if (auto iter = loop.increment()) {
+        if (auto iter = loop.increment(); iter && !is_nil(*iter)) {
             MAYBE(step, ctx.visit(*iter));
             w.write(step.to_writer());
             empty_body = empty_body && step.to_writer().empty();
