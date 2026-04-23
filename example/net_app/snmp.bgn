@@ -1,0 +1,77 @@
+# source: RFC 3416 §3 (SNMPv2c PDU format), X.690 BER encoding, RFC 1157 (SNMPv1 message wrapper) (fetched 2026-04-23)
+# scope: SNMP outer BER SEQUENCE envelope; version/PDU-type/error-status enumerations from RFC 3416
+# out-of-scope: full DER decomposition of community OCTET STRING, PDU body (request-id INTEGER, error-status INTEGER, error-index INTEGER, variable-bindings SEQUENCE OF VarBind); OID parsing; typed variable values (Counter32, Gauge32, TimeTicks, IpAddress, etc.). Pending asn1.bgn primitive extension.
+# note: SNMP messages are ASN.1 BER-encoded with SEQUENCE (universal tag 0x30) at top level. PDU types are IMPLICIT-tagged with context-specific (not application) tags [0]-[8].
+config.url = "https://datatracker.ietf.org/doc/html/rfc3416"
+
+enum SnmpVersion:
+    :u8
+    v1 = 0
+    v2c = 1
+    v3 = 3
+
+enum SnmpPduTag:
+    # §3 PDU CHOICE implicit tag values (as encoded after the context-specific/constructed class bits)
+    :u8
+    get_request = 0
+    get_next_request = 1
+    response = 2
+    set_request = 3
+    # tag 4: reserved (was SNMPv1 Trap-PDU from RFC 1157, replaced in v2c)
+    get_bulk_request = 5
+    inform_request = 6
+    snmpv2_trap = 7
+    report = 8
+
+enum SnmpErrorStatus:
+    # §3 PDU error-status enumeration
+    :u8
+    noError = 0
+    tooBig = 1
+    noSuchName = 2
+    badValue = 3
+    readOnly = 4
+    genErr = 5
+    noAccess = 6
+    wrongType = 7
+    wrongLength = 8
+    wrongEncoding = 9
+    wrongValue = 10
+    noCreation = 11
+    inconsistentValue = 12
+    resourceUnavailable = 13
+    commitFailed = 14
+    undoFailed = 15
+    authorizationError = 16
+    notWritable = 17
+    inconsistentName = 18
+
+format SnmpBerLength:
+    # X.690 §8.1.3 length encoding: short form (bit 7 = 0) or long form (bit 7 = 1, bits 0-6 = count of length octets)
+    first :u8
+    if (first & 0x80) == 0:
+        ..
+    else:
+        num_octets ::= first & 0x7f
+        octets :[num_octets]u8
+
+    fn value() -> u64:
+        if (first & 0x80) == 0:
+            return u64(first)
+        else:
+            v := u64(0)
+            for i in <[]u8>(octets).length:
+                v = (v << 8) | u64(<[]u8>(octets)[i])
+            return v
+
+format SnmpMessage:
+    # Outer BER SEQUENCE: {version INTEGER, community OCTET STRING, pdu PDUs}
+    sequence_tag :u8
+    sequence_tag == 0x30                     # UNIVERSAL 16 (SEQUENCE), constructed
+    total_length :SnmpBerLength
+    body :[total_length.value()]u8
+    # FIXME: body decomposition requires BER identifier primitives to split into:
+    #   1) INTEGER (tag 0x02) holding SnmpVersion
+    #   2) OCTET STRING (tag 0x04) holding community string
+    #   3) CHOICE with context-specific+constructed tag encoding SnmpPduTag
+    # Pending asn1.bgn TLV model extension with class/PC/tag-number decomposition.

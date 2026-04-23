@@ -1,0 +1,66 @@
+# source: MS-SMB2 §2.2.1.1 (SYNC header), §2.2.1.2 (ASYNC header), §2.2.1 Command values (fetched 2026-04-23)
+# scope: SMB2 packet header (64 bytes), both SYNC and ASYNC forms, discriminated by SMB2_FLAGS_ASYNC_COMMAND bit; Command enumeration
+# out-of-scope: per-command request/response bodies (NEGOTIATE/CREATE/READ/etc.), compound chain resolution via NextCommand offset, message signing verification
+# note: All multi-byte integers are little-endian (Microsoft convention). NextCommand holds an offset to the next SMB2 header in a compound chain (0 if not compounded or last).
+config.url = "https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-smb2/ea4560b7-90da-4803-82b5-344754b92a79"
+input.endian = config.endian.little
+
+enum SMB2Command:
+    :u16
+    NEGOTIATE = 0x0000
+    SESSION_SETUP = 0x0001
+    LOGOFF = 0x0002
+    TREE_CONNECT = 0x0003
+    TREE_DISCONNECT = 0x0004
+    CREATE = 0x0005
+    CLOSE = 0x0006
+    FLUSH = 0x0007
+    READ = 0x0008
+    WRITE = 0x0009
+    LOCK = 0x000A
+    IOCTL = 0x000B
+    CANCEL = 0x000C
+    ECHO = 0x000D
+    QUERY_DIRECTORY = 0x000E
+    CHANGE_NOTIFY = 0x000F
+    QUERY_INFO = 0x0010
+    SET_INFO = 0x0011
+    OPLOCK_BREAK = 0x0012
+    SERVER_TO_CLIENT_NOTIFICATION = 0x0013
+
+format SMB2Header:
+    # §2.2.1 common header; ASYNC/SYNC variant selected by Flags bit 1 (SMB2_FLAGS_ASYNC_COMMAND = 0x00000002)
+    protocol_id :"\xfeSMB"                 # 0xFE 'S' 'M' 'B' on wire
+    structure_size :u16
+    structure_size == 64
+    credit_charge :u16                     # SMB 2.0.2: reserved (0); later dialects: credit charge
+    channel_sequence_or_status :u32        # Request: ChannelSequence(2)+Reserved(2) in 3.x, Status(4) in 2.0.2/2.1. Response: always Status.
+    command :SMB2Command
+    credit_request_response :u16
+    flags :u32                             # SMB2_FLAGS_* bit field
+    next_command :u32                      # offset (from this header start) to next SMB2 header in compound chain; 0 if none
+    message_id :u64
+    if (flags & 0x00000002) != 0:
+        # ASYNC form (§2.2.1.2)
+        async_id :u64
+    else:
+        # SYNC form (§2.2.1.1)
+        reserved :u32
+        tree_id :u32
+    session_id :u64
+    signature :[16]u8                      # 0 if not signed; otherwise per §3.1.5.1
+
+    fn is_response() -> bool:
+        return (flags & 0x00000001) != 0   # SMB2_FLAGS_SERVER_TO_REDIR
+
+    fn is_async() -> bool:
+        return (flags & 0x00000002) != 0   # SMB2_FLAGS_ASYNC_COMMAND
+
+    fn is_related() -> bool:
+        return (flags & 0x00000004) != 0   # SMB2_FLAGS_RELATED_OPERATIONS (compound chain)
+
+    fn is_signed() -> bool:
+        return (flags & 0x00000008) != 0   # SMB2_FLAGS_SIGNED
+
+    fn is_dfs_op() -> bool:
+        return (flags & 0x10000000) != 0   # SMB2_FLAGS_DFS_OPERATIONS

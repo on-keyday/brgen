@@ -1,0 +1,51 @@
+# source: POSIX cpio newc (New ASCII / SVR4) format via systutorials cpio(5) man page, corroborated by kernel.org initramfs_buffer.rst (fetched 2026-04-23)
+# scope: cpio newc (magic "070701") and newc-with-CRC (magic "070702") 110-byte fixed header + filename + data with 4-byte-alignment padding
+# out-of-scope: legacy binary format (magic 0x71C7 / "070707"), old portable ASCII format; CRC-32 verification for the 070702 variant
+# note: ALL numeric header fields are stored as 8-character ASCII hex digits ('0'-'9', 'a'-'f'). No endianness applies to the hex-string form, but the magic alone is a 6-char ASCII string. Archive terminates with a trailer entry (filename "TRAILER!!!", filesize 0).
+
+config.url = "https://www.systutorials.com/docs/linux/man/5-cpio/"
+
+fn parseHex(s :[]u8) -> u32:
+    # Parse 8-character (or fewer) ASCII hex into u32.
+    result := u32(0)
+    for i in s.length:
+        c := s[i]
+        digit := u32(0)
+        if c >= '0' && c <= '9':
+            digit = u32(c - '0')
+        else:
+            if c >= 'a' && c <= 'f':
+                digit = u32(c - 'a') + 10
+            else:
+                if c >= 'A' && c <= 'F':
+                    digit = u32(c - 'A') + 10
+        result = (result << 4) | digit
+    return result
+
+format CpioNewcHeader:
+    # 110-byte fixed ASCII header (all numeric fields stored as 8-char hex strings)
+    magic :[6]u8                  # "070701" (newc) or "070702" (newc+CRC)
+    ino :[8]u8                    # inode number
+    mode :[8]u8                   # file mode + type bits
+    uid :[8]u8
+    gid :[8]u8
+    nlink :[8]u8                  # link count
+    mtime :[8]u8                  # modification time (seconds since epoch)
+    filesize :[8]u8               # file data size in bytes
+    devmajor :[8]u8
+    devminor :[8]u8
+    rdevmajor :[8]u8              # for device files
+    rdevminor :[8]u8
+    namesize :[8]u8               # pathname length INCLUDING terminating NUL
+    check :[8]u8                  # 0 for newc; byte-sum of file data for newc+CRC
+
+format CpioNewcEntry:
+    # One cpio entry: header + filename (NUL-terminated, 4-byte-aligned) + data (4-byte-aligned)
+    header :CpioNewcHeader
+    # Filename: namesize bytes (includes the NUL terminator), then padding to make (header + filename) a multiple of 4 bytes from start of archive.
+    # Header is 110 bytes, so (110 + namesize) is padded up to a multiple of 4.
+    # Equivalent padding count = (4 - (110 + namesize) % 4) % 4 = (2 - namesize % 4) & 3 (since 110 % 4 == 2)
+    filename :[parseHex(header.namesize)]u8
+    name_padding :[(4 - (110 + parseHex(header.namesize)) % 4) % 4]u8
+    data :[parseHex(header.filesize)]u8
+    data_padding :[(4 - parseHex(header.filesize) % 4) % 4]u8
