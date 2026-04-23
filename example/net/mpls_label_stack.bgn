@@ -1,0 +1,32 @@
+# source: RFC 3032 §2.1 MPLS Label Stack Encoding (fetched 2026-04-23)
+# scope: single MPLS label stack entry (4 bytes) and a sequence thereof terminated by S=1
+# out-of-scope: label values semantics (reserved labels 0-15 per §2.1), payload dispatched below the stack (IPv4/IPv6/Ethernet/MPLS-in-MPLS)
+# note: The Exp field (3 bits) was renamed "Traffic Class (TC)" by RFC 5462 but the on-wire layout is unchanged.
+config.url = "https://datatracker.ietf.org/doc/html/rfc3032"
+
+format MplsLabelEntry:
+    # §2.1: |Label(20)|TC(3)|S(1)|TTL(8)| = 32 bits
+    label :u20
+    tc :u3          # Traffic Class (Exp in original RFC 3032)
+    s :u1           # Bottom-of-Stack: 1 = last entry, 0 = more entries follow
+    ttl :u8
+
+format MplsLabelStack:
+    # §2.1: "The top of the label stack appears earliest in the packet, and the bottom appears latest."
+    # Entries continue until one is seen with S=1.
+    entries :[]MplsLabelEntry
+
+    fn decode():
+        for:
+            e := input.get(MplsLabelEntry)
+            entries[entries.length] = e
+            if e.s == 1:
+                break
+
+    fn encode():
+        for i in entries.length:
+            output.put(entries[i])
+            if i == entries.length - 1:
+                entries[i].s == 1
+            else:
+                entries[i].s == 0

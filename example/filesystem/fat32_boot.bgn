@@ -1,0 +1,46 @@
+# source: Wikipedia "Design of the FAT file system" (cross-referenced against Microsoft FAT specification), verified against broad implementation consensus (fetched 2026-04-23)
+# scope: FAT32 Volume Boot Record (boot sector) including BPB and FAT32-specific EBPB, boot code placeholder, final 0xAA55 signature
+# out-of-scope: FSInfo sector structure, directory entry layout, long filename (LFN) entries, cluster chain semantics, FAT table format; FAT12/FAT16 variants (the truncated-BPB forms differ after offset 0x024)
+# note: All multi-byte integers are little-endian. Root entry count, 16-bit total sectors, and 16-bit sectors-per-FAT MUST be 0 for FAT32 (the 32-bit successor fields apply instead).
+config.url = "https://en.wikipedia.org/wiki/Design_of_the_FAT_file_system"
+input.endian = config.endian.little
+
+format Fat32BootSector:
+    # §DOS BPB + FAT32 EBPB + boot code + signature, total 512 bytes
+    bs_jmp_boot :[3]u8                # typically 0xEB 0x?? 0x90 (short jmp + nop)
+    bs_oem_name :[8]u8                # ASCII, space-padded
+    # --- BPB (common across FAT12/16/32) ---
+    bpb_bytes_per_sec :u16            # typically 512; also valid: 1024/2048/4096
+    bpb_sec_per_clus :u8              # power of 2, 1..128
+    bpb_rsvd_sec_cnt :u16             # reserved sectors at volume start; typically 32 for FAT32
+    bpb_num_fats :u8                  # typically 2
+    bpb_root_ent_cnt :u16             # MUST be 0 for FAT32
+    bpb_root_ent_cnt == 0
+    bpb_tot_sec16 :u16                # MUST be 0 for FAT32 (use bpb_tot_sec32)
+    bpb_tot_sec16 == 0
+    bpb_media :u8                     # typically 0xF8 (fixed) or 0xF0 (removable)
+    bpb_fat_sz16 :u16                 # MUST be 0 for FAT32 (use bpb_fat_sz32)
+    bpb_fat_sz16 == 0
+    bpb_sec_per_trk :u16              # CHS geometry
+    bpb_num_heads :u16                # CHS geometry
+    bpb_hidd_sec :u32                 # sectors preceding this volume
+    bpb_tot_sec32 :u32                # total sector count
+    # --- FAT32-specific EBPB (starts at offset 0x024) ---
+    bpb_fat_sz32 :u32                 # sectors per FAT
+    bpb_ext_flags :u16                # mirroring and active-FAT bits
+    bpb_fs_ver :u16                   # currently 0x0000
+    bpb_root_clus :u32                # first cluster of root directory (typically 2)
+    bpb_fs_info :u16                  # sector number of FSInfo; typically 1
+    bpb_bk_boot_sec :u16              # sector number of backup boot sector; typically 6
+    bpb_reserved :[12]u8
+    bs_drv_num :u8                    # 0x80 for fixed disks
+    bs_reserved1 :u8                  # reserved for Windows NT flags
+    bs_boot_sig :u8                   # 0x29 when the following three fields are present
+    bs_vol_id :u32                    # volume serial number
+    bs_vol_lab :[11]u8                # volume label, ASCII space-padded
+    bs_fil_sys_type :[8]u8            # "FAT32   "
+    # Boot code: 420 bytes occupying offsets 0x05A..0x1FD
+    boot_code :[420]u8
+    # Boot signature at offset 0x1FE: 0x55 0xAA on wire (little-endian u16 = 0xAA55)
+    boot_signature :u16
+    boot_signature == 0xAA55

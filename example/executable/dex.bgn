@@ -1,0 +1,38 @@
+# source: Android source.android.com/docs/core/runtime/dex-format header_item (fetched 2026-04-23)
+# scope: DEX file 112-byte header_item; endian_tag sentinel enum; magic string
+# out-of-scope: string_ids/type_ids/proto_ids/field_ids/method_ids/class_defs ID table payloads; map_list structure; per-class class_data_item; instruction stream encoding
+# note: All multi-byte integers are little-endian per the Android runtime convention. The magic string's middle 3 bytes encode the DEX version (e.g., "035" for early Android, "039" for recent). The checksum covers bytes after signature; signature covers bytes after signature itself.
+config.url = "https://source.android.com/docs/core/runtime/dex-format"
+input.endian = config.endian.little
+
+enum DexEndianTag:
+    :u32
+    little_endian = 0x12345678
+    big_endian_swapped = 0x78563412
+
+format DexHeader:
+    # header_item: 0x70 (112) bytes
+    magic :[8]u8                 # "dex\n" + 3-digit version + "\0" e.g. "dex\n035\0"
+    checksum :u32                # Adler-32 of rest of file (after this field)
+    signature :[20]u8            # SHA-1 of rest of file (after signature)
+    file_size :u32               # total file size in bytes
+    header_size :u32             # size of this header (0x70)
+    header_size == 0x70
+    endian_tag :DexEndianTag
+    link_size :u32               # size of link section (0 if statically linked)
+    link_off :u32                # file offset to link section
+    map_off :u32                 # file offset to map_list; must be non-zero
+    string_ids_size :u32         # count of strings in string_ids list
+    string_ids_off :u32          # file offset to string_ids list
+    type_ids_size :u32
+    type_ids_off :u32
+    proto_ids_size :u32
+    proto_ids_off :u32
+    field_ids_size :u32
+    field_ids_off :u32
+    method_ids_size :u32
+    method_ids_off :u32
+    class_defs_size :u32
+    class_defs_off :u32
+    data_size :u32               # size of data section (must be even multiple of sizeof(uint))
+    data_off :u32                # file offset to data section

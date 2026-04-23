@@ -1,0 +1,37 @@
+# source: Unix ar(5) archive format, common implementation consensus (System V / BSD / GNU variants share the base 60-byte header layout) (fetched 2026-04-23)
+# scope: Unix ar archive: 8-byte global signature "!<arch>\n" + sequence of {60-byte ASCII header, file data, optional 1-byte padding if data length is odd}
+# out-of-scope: BSD-style long filenames (prefixed with "#1/<decimal>") and GNU-style long filenames (indexed via special "//" member); symbol index member ("/") of System V / GNU ranlib archives
+# note: All header fields are ASCII text, space-padded. No endianness applies. Each file data is padded with a single '\n' (0x0A) when the size is odd so the next header starts on an even offset.
+
+config.url = "https://en.wikipedia.org/wiki/Ar_(Unix)"
+
+fn parseDecimal(s :[]u8) -> u64:
+    # Parse space-padded ASCII decimal (stops at first space or non-digit).
+    result := u64(0)
+    for i in s.length:
+        c := s[i]
+        if c >= '0' && c <= '9':
+            result = result * 10 + u64(c - '0')
+    return result
+
+format ArFileHeader:
+    # 60-byte ASCII header per file member
+    identifier :[16]u8                # filename, space-padded; for System V, may end with '/'
+    mtime :[12]u8                     # ASCII decimal seconds since epoch
+    owner_id :[6]u8                   # ASCII decimal uid
+    group_id :[6]u8                   # ASCII decimal gid
+    mode :[8]u8                       # ASCII octal file mode
+    size :[10]u8                      # ASCII decimal file size
+    end_magic :[2]u8                  # "\x60\n" (0x60 0x0A)
+    end_magic == "\x60\n"
+
+format ArFileEntry:
+    header :ArFileHeader
+    data :[parseDecimal(header.size)]u8
+    # If size is odd, a single '\n' byte pads the data to an even boundary.
+    # Padding count: 0 or 1 byte.
+    padding :[parseDecimal(header.size) % 2]u8
+
+format ArArchive:
+    signature :"!<arch>\n"            # 8-byte global magic
+    entries :[..]ArFileEntry
