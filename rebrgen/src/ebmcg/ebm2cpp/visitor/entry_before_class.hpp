@@ -399,15 +399,16 @@ DEFINE_VISITOR(entry_before) {
         if (!is_nil(ctx.variant_desc.common_type)) {
             return ctx.visit(ctx.variant_desc.common_type);
         }
-        // Build std::variant<T1, T2, ...>
+        // Build std::variant<std::monostate, T1, T2, ...>
+        // std::monostate is prepended so the variant is always default-constructible,
+        // regardless of whether the first alternative is. Access is type-based
+        // (std::holds_alternative<T> / std::get<T>), so the index shift is harmless.
         CodeWriter w;
-        w.write("std::variant<");
-        bool first = true;
+        w.write("std::variant<std::monostate");
         for (auto& m : ctx.variant_desc.members.container) {
-            if (!first) w.write(", ");
+            w.write(", ");
             MAYBE(type, ctx.visit(m));
             w.write(type.to_writer());
-            first = false;
         }
         w.write(">");
         return Result(std::move(w));
@@ -418,15 +419,14 @@ DEFINE_VISITOR(entry_before) {
         using namespace CODEGEN_NAMESPACE;
         // Emit struct definitions for each member type as toplevel
 
-        // Build std::variant<T1, T2, ...>
+        // Build std::variant<std::monostate, T1, T2, ...>
+        // See variant_type_custom above for the rationale.
         CodeWriter w;
-        w.write("std::variant<");
-        bool first = true;
+        w.write("std::variant<std::monostate");
         for (auto& m : ctx.struct_union_desc.variant_desc.members.container) {
-            if (!first) w.write(", ");
+            w.write(", ");
             MAYBE(type, ctx.visit(m));
             w.write(type.to_writer());
-            first = false;
         }
         w.write(">");
         return Result(std::move(w));
