@@ -1,17 +1,91 @@
+# source: ITU-T X.690 Basic Encoding Rules (BER/CER/DER) §8.1 (Identifier octets), §8.1.3 (Length octets)
+# scope: UNIVERSAL tag enum, identifier octet decomposition (Class + P/C + Tag number with long-form), length encoding (short/long form), generic TLV
+# out-of-scope: per-tag value decoding (INTEGER encoding, OID encoding, OCTET STRING, SEQUENCE OF recursion), indefinite-length form, CER canonical rules
+# note: ASN.1 BER is big-endian for multi-byte tag numbers and length values. Short-form length encodes 0-127 in one byte; long-form encodes >127 by signalling the number of subsequent length octets.
+
+enum AsnClass:
+    :u2
+    universal = 0
+    application = 1
+    context_specific = 2
+    private = 3
+
 enum Tag:
+    # UNIVERSAL class tag numbers per X.680 / X.690. Values beyond 30 require long-form tag.
     :u8
-    RESERVED
-    BOOLEAN 
-    INTEGER
-    BIT_STRING
-    OCTET_STRING
-    NULL
-    OBJECT_IDENTIFIER
+    RESERVED = 0
+    BOOLEAN = 1
+    INTEGER = 2
+    BIT_STRING = 3
+    OCTET_STRING = 4
+    NULL = 5
+    OBJECT_IDENTIFIER = 6
+    OBJECT_DESCRIPTOR = 7
+    EXTERNAL = 8
+    REAL = 9
+    ENUMERATED = 10
+    EMBEDDED_PDV = 11
+    UTF8_STRING = 12
+    RELATIVE_OID = 13
+    # 14, 15 reserved
+    SEQUENCE = 16
+    SET = 17
+    NUMERIC_STRING = 18
+    PRINTABLE_STRING = 19
+    T61_STRING = 20
+    VIDEOTEX_STRING = 21
+    IA5_STRING = 22
+    UTC_TIME = 23
+    GENERALIZED_TIME = 24
+    GRAPHIC_STRING = 25
+    VISIBLE_STRING = 26
+    GENERAL_STRING = 27
+    UNIVERSAL_STRING = 28
+    CHARACTER_STRING = 29
+    BMP_STRING = 30
+    LONG_FORM_TAG = 31                # signals that a multi-byte tag number follows
 
-# c ::=config.import("./arp.bgn")
+format LongFormTagByte:
+    # §8.1.2.4: subsequent tag number octets when short-form tag number is 31.
+    # MSB = continuation flag; low 7 bits contribute to the tag number, BIG-ENDIAN-accumulated (first byte = most significant).
+    more :u1
+    partial :u7
 
+format LongFormTag:
+    # §8.1.2.4: a sequence of LongFormTagByte terminated by one with more == 0.
+    bytes :[]LongFormTagByte
+
+    fn decode():
+        for:
+            b := input.get(LongFormTagByte)
+            bytes[bytes.length] = b
+            if b.more == 0:
+                break
+
+    fn encode():
+        for i in bytes.length:
+            output.put(bytes[i])
+            if i == bytes.length - 1:
+                bytes[i].more == 0
+
+    fn value() -> u64:
+        # BIG-ENDIAN-accumulated per §8.1.2.4: each successive byte shifts the accumulator left by 7.
+        v := u64(0)
+        for i in bytes.length:
+            v = (v << 7) | u64(bytes[i].partial)
+        return v
+
+format Identifier:
+    # §8.1 BER identifier octet: |Class(2)|P/C(1)|TagNumber(5)|
+    # If TagNumber == 31, a LongFormTag follows with the actual tag number (§8.1.2.4 long-form).
+    class_ :AsnClass
+    constructed :u1                   # 0 = primitive, 1 = constructed
+    tag_number :u5
+    if tag_number == 0b11111:
+        extended :LongFormTag
 
 format Len:
+    # §8.1.3 length octets (short form bit 7 = 0, long form bit 7 = 1 with count of subsequent octets in low 7 bits).
     len :u64
 
     fn size() -> u8:
@@ -48,12 +122,12 @@ format Len:
                 len = len << 8
                 v ::= input.get()
                 len = len | u64(v)
-                len_of_len = len_of_len - 1            
-            
+                len_of_len = len_of_len - 1
+
     fn u64() -> u64: # cast operator
         return len
 
-format TLV: # tag length value
+format TLV: # tag length value (UNIVERSAL-class convenience; use Identifier for cross-class)
     tag: Tag
     len: Len
     value  :[len.len]u8
@@ -61,5 +135,3 @@ format TLV: # tag length value
 format Integer:
     tlv :TLV
     tlv.tag == Tag.INTEGER
-
-

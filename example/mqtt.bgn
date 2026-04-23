@@ -1,3 +1,8 @@
+# source: MQTT v3.1.1 OASIS specification §2.2 (Fixed Header), §2.2.3 (Remaining Length), §3.1 (CONNECT) (fetched 2026-04-23)
+# scope: Fixed Header with properly encoded Remaining Length (1-4 byte variable-byte integer), CONNECT Variable Header, MQTTString primitive
+# out-of-scope: per-packet-type payload layouts beyond CONNECT (PUBLISH/SUBSCRIBE/UNSUBSCRIBE payloads, CONNACK variable header, PUBACK+MsgID variants); MQTT v5.0 Properties (§2.2.2 v5) prepended after variable header; TLS framing
+# note: All multi-byte integers in MQTT are big-endian. Strings are UTF-8 with u16 length prefix. Reserved flag bits in the fixed-header first byte's low 4 bits MUST equal the per-packet-type pattern (0x2 for PUBREL/SUBSCRIBE/UNSUBSCRIBE, 0x0 for others; per-QoS fields for PUBLISH).
+config.url = "https://docs.oasis-open.org/mqtt/mqtt/v3.1.1/mqtt-v3.1.1.html"
 
 enum PacketType:
     :u4
@@ -16,21 +21,72 @@ enum PacketType:
     pingreq
     pingresp
     disconnect
-    auth
+    auth                              # MQTT v5.0 only
+
+format MQTTRemainingLengthByte:
+    # §2.2.3: |continuation(1)|value(7)| per byte. Low 7 bits are value chunk, high bit = "more bytes follow".
+    continuation :u1
+    value :u7
+
+format MQTTRemainingLength:
+    # §2.2.3: 1-4 bytes, LSB-accumulated 7-bit chunks. Max encoded value = 268,435,455 (256 MB - 1).
+    bytes :[]MQTTRemainingLengthByte
+
+    fn decode():
+        for:
+            b := input.get(MQTTRemainingLengthByte)
+            bytes[bytes.length] = b
+            if b.continuation == 0:
+                break
+
+    fn encode():
+        for i in bytes.length:
+            output.put(bytes[i])
+            if i == bytes.length - 1:
+                bytes[i].continuation == 0
+
+    fn value() -> u32:
+        v := u32(0)
+        shift := u32(0)
+        for i in bytes.length:
+            v = v | (u32(bytes[i].value) << shift)
+            shift = shift + 7
+        return v
 
 format FixedHeader:
-    packet_type: PacketType
+    # §2.2 Fixed Header byte 0: |PacketType(4)|Flags(4)|
+    packet_type :PacketType
     if packet_type == PacketType.publish:
-        dup : u1
-        qos : u2
-        retain : u1
-    elif packet_type == PacketType.pubrel || packet_type == PacketType.unsubscribe:
-        reserved :u4(0x2)
+        # §2.2.2 PUBLISH flag layout: |DUP(1)|QoS(2)|RETAIN(1)|
+        dup :u1
+        qos :u2
+        retain :u1
+    elif packet_type == PacketType.pubrel || packet_type == PacketType.subscribe || packet_type == PacketType.unsubscribe:
+        reserved :u4(0x2)             # MUST be 0x2 per §2.2.2
     else:
-        reserved : u4(0x0)
-    remaining_length : u8
+        reserved :u4(0x0)             # MUST be 0x0 for all other control packet types
+    remaining_length :MQTTRemainingLength
 
+format MQTTString:
+    # §1.5.3 UTF-8 encoded string: u16 big-endian length prefix + length bytes of UTF-8 data.
+    length :u16
+    data :[length]u8
+
+format MQTTConnectVariableHeader:
+    # §3.1.2 CONNECT variable header (10 bytes fixed + keep_alive)
+    protocol_name :MQTTString         # "MQTT" for v3.1.1, "MQIsdp" for v3.1 (historical)
+    protocol_level :u8                # 0x04 for v3.1.1, 0x05 for v5.0
+    # Connect Flags byte (§3.1.2.3): |UserName(1)|Password(1)|WillRetain(1)|WillQoS(2)|WillFlag(1)|CleanSession(1)|Reserved(1)|
+    username_flag :u1
+    password_flag :u1
+    will_retain :u1
+    will_qos :u2
+    will_flag :u1
+    clean_session :u1                 # MQTT v5.0 renamed this bit to "Clean Start"
+    connect_flags_reserved :u1
+    connect_flags_reserved == 0
+    keep_alive :u16                   # in seconds; 0 = no keep-alive
 
 format MQTTPacket:
     header :FixedHeader
-    input.remain == u64(header.remaining_length)
+    input.remain == u64(header.remaining_length.value())
