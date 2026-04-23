@@ -1,0 +1,77 @@
+# source: Redis Serialization Protocol (RESP) v2 specification at redis.io/docs/latest/develop/reference/protocol-spec/ (fetched 2026-04-23)
+# scope: RESP2 data types: Simple String, Error, Integer, Bulk String (including null bulk), Array (including null array), with nested array support
+# out-of-scope: RESP3 (typed map/set/attribute/push/big-number types), inline commands, pipelining semantics
+# note: RESP2 is text-framed with CRLF terminators. Bulk String data is binary-safe. Length prefixes are ASCII decimal (possibly with leading '-' for null or negative).
+
+config.url = "https://redis.io/docs/latest/develop/reference/protocol-spec/"
+
+fn parseDecimal(s :[]u8) -> i64:
+    # Parse ASCII signed decimal integer. Assumes s contains only '-' (optional leading) and '0'-'9'.
+    result := i64(0)
+    negative := false
+    start := u64(0)
+    if s.length > 0 && s[0] == 0x2D:  # '-'
+        negative = true
+        start = 1
+    for i := start; i < s.length; i += 1:
+        result = result * 10 + i64(s[i] - 0x30)
+    if negative:
+        return -result
+    else:
+        return result
+
+format RespLine:
+    # Single line of ASCII content terminated by CRLF. The trailing CRLF is consumed but not stored.
+    data :[..]u8
+    :"\r\n"
+
+format RespSimpleString:
+    # `+<string>\r\n` e.g. "+OK\r\n"
+    body :RespLine
+
+format RespError:
+    # `-<message>\r\n` e.g. "-ERR unknown command\r\n"
+    body :RespLine
+
+format RespInteger:
+    # `:<signed decimal>\r\n` e.g. ":1000\r\n", ":-42\r\n"
+    body :RespLine
+
+    fn value() -> i64:
+        return parseDecimal(body.data)
+
+format RespBulkString:
+    # `$<length>\r\n<data>\r\n`  (length in ASCII decimal; -1 = null, no payload follows)
+    length_line :RespLine
+    if parseDecimal(length_line.data) >= 0:
+        data :[parseDecimal(length_line.data)]u8
+        :"\r\n"
+
+    fn length() -> i64:
+        return parseDecimal(length_line.data)
+
+    fn is_null() -> bool:
+        return parseDecimal(length_line.data) < 0
+
+format RespArray:
+    # `*<count>\r\n<element-1>...<element-N>`  (count in ASCII decimal; -1 = null, no elements)
+    count_line :RespLine
+    if parseDecimal(count_line.data) >= 0:
+        items :[parseDecimal(count_line.data)]RespValue
+
+    fn count() -> i64:
+        return parseDecimal(count_line.data)
+
+    fn is_null() -> bool:
+        return parseDecimal(count_line.data) < 0
+
+format RespValue:
+    # Dispatched by the first-byte type marker.
+    marker :u8
+    match marker:
+        '+' => simple_string :RespSimpleString
+        '-' => error_msg :RespError
+        ':' => integer :RespInteger
+        '$' => bulk_string :RespBulkString
+        '*' => array :RespArray
+        .. => error("unknown RESP2 type marker")

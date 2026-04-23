@@ -1,0 +1,102 @@
+# source: RFC 4511 §4.1.1 LDAPMessage, §4.1.9 LDAPResult, X.690 BER encoding (fetched 2026-04-23)
+# scope: LDAPMessage outer envelope as BER TLV; ProtocolOp application tag enumeration; complete ResultCode enum
+# out-of-scope: full DER decoding of each protocolOp variant (bindRequest/searchRequest/etc.) - requires extending asn1.bgn TLV model with identifier octet decomposition (class/P-C bit/tag number)
+# note: All LDAP messages are ASN.1 BER-encoded. Multi-byte length fields use the long-form encoding defined in X.690 §8.1.3.
+config.url = "https://datatracker.ietf.org/doc/html/rfc4511"
+
+# §4.1.9 LDAP ResultCode (ENUMERATED)
+enum LdapResultCode:
+    :u8
+    success = 0
+    operationsError = 1
+    protocolError = 2
+    timeLimitExceeded = 3
+    sizeLimitExceeded = 4
+    compareFalse = 5
+    compareTrue = 6
+    authMethodNotSupported = 7
+    strongerAuthRequired = 8
+    referral = 10
+    adminLimitExceeded = 11
+    unavailableCriticalExtension = 12
+    confidentialityRequired = 13
+    saslBindInProgress = 14
+    noSuchAttribute = 16
+    undefinedAttributeType = 17
+    inappropriateMatching = 18
+    constraintViolation = 19
+    attributeOrValueExists = 20
+    invalidAttributeSyntax = 21
+    noSuchObject = 32
+    aliasProblem = 33
+    invalidDNSyntax = 34
+    aliasDereferencingProblem = 36
+    inappropriateAuthentication = 48
+    invalidCredentials = 49
+    insufficientAccessRights = 50
+    busy = 51
+    unavailable = 52
+    unwillingToPerform = 53
+    loopDetect = 54
+    namingViolation = 64
+    objectClassViolation = 65
+    notAllowedOnNonLeaf = 66
+    notAllowedOnRDN = 67
+    entryAlreadyExists = 68
+    objectClassModsProhibited = 69
+    affectsMultipleDSAs = 71
+    other = 80
+
+# §4.1.1 protocolOp CHOICE: each variant uses implicit [APPLICATION n] tagging.
+# Tag numbers are assigned in the order defined in RFC 4511 §4.1.1.
+enum LdapProtocolOpTag:
+    :u8
+    bindRequest = 0
+    bindResponse = 1
+    unbindRequest = 2
+    searchRequest = 3
+    searchResEntry = 4
+    searchResDone = 5
+    modifyRequest = 6
+    modifyResponse = 7
+    addRequest = 8
+    addResponse = 9
+    delRequest = 10
+    delResponse = 11
+    modDNRequest = 12
+    modDNResponse = 13
+    compareRequest = 14
+    compareResponse = 15
+    abandonRequest = 16
+    searchResRef = 19
+    extendedReq = 23
+    extendedResp = 24
+    intermediateResponse = 25
+
+# X.690 §8.1.3 BER length encoding: short form (bit 7 = 0, length in bits 0-6) or long form (bit 7 = 1, bits 0-6 give count of subsequent length octets).
+format LdapBerLength:
+    first :u8
+    if (first & 0x80) == 0:
+        .. # short form: first byte is the length directly
+    else:
+        num_octets ::= first & 0x7f
+        octets :[num_octets]u8
+
+    fn value() -> u64:
+        if (first & 0x80) == 0:
+            return u64(first)
+        else:
+            v := u64(0)
+            for i in <[]u8>(octets).length:
+                v = (v << 8) | u64(<[]u8>(octets)[i])
+            return v
+
+format LdapMessage:
+    # §4.1.1: LDAPMessage ::= SEQUENCE { messageID, protocolOp, controls [0] OPTIONAL }
+    # BER-encoded as SEQUENCE (tag 0x30). Body is a sequence of DER-encoded children.
+    sequence_tag :u8
+    sequence_tag == 0x30              # UNIVERSAL 16 (SEQUENCE), constructed
+    total_length :LdapBerLength
+    body :[total_length.value()]u8
+    # FIXME: body decomposition requires BER identifier decoding (class/PC/tag) to split into messageID INTEGER, protocolOp, optional Controls.
+    # Leaving body as opaque bytes here; full parse deferred until asn1.bgn exposes a proper Tag+Length+Value primitive over the implicit-tagged application types.
