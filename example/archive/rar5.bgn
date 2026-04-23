@@ -1,0 +1,67 @@
+# source: RAR 5.0 archive format from rarlab.com/technote.htm (fetched 2026-04-23)
+# scope: RAR 5.0 archive signature + generic block header (CRC32 + vint-encoded size/type/flags + optional extra/data sizes); vint primitive; block type enumeration
+# out-of-scope: per-block-type body layout (main archive header fields, file header extended encoding, service header payload, encryption parameters); recovery record; quick open info
+# note: All vint fields use little-endian 7-bit-per-byte accumulation with MSB = continuation flag. CRC32 field is a fixed 4-byte value, stored little-endian.
+config.url = "https://www.rarlab.com/technote.htm"
+input.endian = config.endian.little
+
+enum Rar5HeaderType:
+    :u8                                  # the vint value fits in u8 for defined types
+    # type 0 unused
+    main_archive = 1
+    file_header = 2
+    service_header = 3
+    archive_encryption = 4
+    end_of_archive = 5
+
+format Rar5Vint:
+    # Variable-length unsigned integer: each byte's low 7 bits contribute (LSB-first accumulation),
+    # MSB = continuation flag. Up to 10 bytes for 64-bit values.
+    bytes :[]Rar5VintByte
+
+    fn decode():
+        for:
+            b := input.get(Rar5VintByte)
+            bytes[bytes.length] = b
+            if b.more == 0:
+                break
+
+    fn encode():
+        for i in bytes.length:
+            output.put(bytes[i])
+            if i == bytes.length - 1:
+                bytes[i].more == 0
+
+    fn value() -> u64:
+        v := u64(0)
+        shift := u64(0)
+        for i in bytes.length:
+            v = v | (u64(bytes[i].partial) << shift)
+            shift = shift + 7
+        return v
+
+format Rar5VintByte:
+    more :u1                             # 1 = another byte follows, 0 = last byte
+    partial :u7
+
+format Rar5Signature:
+    # 8 bytes: 0x52 0x61 0x72 0x21 0x1A 0x07 0x01 0x00
+    signature :"Rar!\x1a\x07\x01\x00"
+
+format Rar5BlockHeader:
+    # Generic header common to all block types (§ RAR5 archive format, Generic Header section)
+    header_crc32 :u32                    # CRC-32 over the header contents (from header_size onward)
+    header_size :Rar5Vint                # size from header_type field through end of header (excluding CRC and this size's own bytes)
+    header_type :Rar5Vint                # see Rar5HeaderType
+    header_flags :Rar5Vint               # bit flags: 0x0001=extra area present, 0x0002=data area follows, 0x0004=skip if unknown, 0x0008=data continues from previous volume, 0x0010=data continues in next volume, 0x0020=block depends on preceding file, 0x0040=preserve child block
+    # Optional fields controlled by header_flags bits 0x0001 and 0x0002:
+    if (header_flags.value() & 0x0001) != 0:
+        extra_area_size :Rar5Vint
+    if (header_flags.value() & 0x0002) != 0:
+        data_size :Rar5Vint
+    # Type-specific fields + extra area + data area follow (out-of-scope here).
+
+format Rar5Archive:
+    signature :Rar5Signature
+    blocks :[..]Rar5BlockHeader
+    # Each block's body (after the generic header) is type-specific and occupies the remainder of the header_size span plus optional extra_area_size and data_size bytes.

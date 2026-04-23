@@ -1,0 +1,35 @@
+# source: C706 (DCE RPC) §12.6.4.3 bind PDU (fetched 2026-04-23)
+# scope: DCE RPC bind PDU body (after the 16-byte common CO header): xmit/recv fragment maxima, association group id, presentation context list
+# out-of-scope: auth_verifier trailer (present iff auth_length != 0 in the CO header), the bind_ack / bind_nak / alter_context response formats
+# note: Byte order is determined at runtime by the CO header's packed_drep. This file declares LE as the default (consistent with dcerpc.bgn). Uses the Microsoft convention where p_syntax_id_t is 20 bytes total (16-byte UUID + 4-byte version).
+config.url = "https://pubs.opengroup.org/onlinepubs/9629399/chap12.htm"
+input.endian = config.endian.little
+
+format DceRpcSyntaxId:
+    # §12.6.2.2 p_syntax_id_t: 20 bytes
+    if_uuid :[16]u8                       # RFC 4122 / DCE UUID, stored in native byte order per DREP
+    if_version :u32                       # high 16 bits = major, low 16 bits = minor
+
+format DceRpcContextElem:
+    # §12.6.3.1 p_cont_elem_t
+    p_cont_id :u16                        # presentation context identifier (chosen by client)
+    n_transfer_syn :u8                    # count of transfer syntaxes to follow
+    reserved :u8
+    abstract_syntax :DceRpcSyntaxId       # interface UUID + version the client wants to use
+    transfer_syntaxes :[n_transfer_syn]DceRpcSyntaxId  # candidate transfer syntaxes
+
+format DceRpcContextList:
+    # §12.6.3.1 p_cont_list_t
+    n_context_elem :u8
+    reserved :u8
+    reserved2 :u16
+    elements :[n_context_elem]DceRpcContextElem
+
+format DceRpcBindBody:
+    # §12.6.4.3 bind PDU body (follows the 16-byte CO common header; also reused by alter_context PDU)
+    max_xmit_frag :u16                    # max fragment size client can transmit
+    max_recv_frag :u16                    # max fragment size client can receive
+    assoc_group_id :u32                   # 0 on initial bind; non-zero to join existing association group
+    p_context_elem :DceRpcContextList
+    # If the CO header's auth_length != 0, an auth_verifier_co_t trailer follows at the end of the fragment.
+    # That trailer is positioned via frag_length - auth_length, not inline here.

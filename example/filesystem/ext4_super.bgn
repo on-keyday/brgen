@@ -1,0 +1,71 @@
+# source: ext4 Disk Layout (archive.kernel.org/oldwiki/ext4.wiki.kernel.org/index.php/Ext4_Disk_Layout.html) verified against linux kernel fs/ext4/ext4.h struct ext4_super_block (fetched 2026-04-23)
+# scope: ext4 super block first 0xC8 bytes (through s_last_mounted); located at byte offset 1024 from partition start (or at offset 0 of block group 0 if block size is 1024)
+# out-of-scope: dynamic rev fields (s_algorithm_usage_bitmap onward), journal sub-header (s_journal_uuid / s_journal_inum / s_journal_dev / s_last_orphan), feature-flag extensions, encryption metadata, checksum tail (~920 more bytes through offset 0x400). Full layout: linux/fs/ext4/ext4.h struct ext4_super_block.
+# note: All multi-byte integers are little-endian. Super block is 1024 bytes total (0x400); this file stops at the volume-name/last-mounted boundary as a useful stopping point for tooling. Magic s_magic must be 0xEF53 for a valid filesystem.
+config.url = "https://archive.kernel.org/oldwiki/ext4.wiki.kernel.org/index.php/Ext4_Disk_Layout.html"
+input.endian = config.endian.little
+
+enum Ext4State:
+    :u16
+    valid = 0x0001                      # cleanly unmounted
+    error = 0x0002                      # errors detected
+    orphan_file = 0x0004                # orphan file inode list exists
+
+enum Ext4ErrorsBehavior:
+    :u16
+    continue_ = 1                       # continue on error
+    remount_ro = 2                      # remount read-only
+    panic = 3                           # cause kernel panic
+
+enum Ext4CreatorOS:
+    :u32
+    linux = 0
+    hurd = 1
+    masix = 2
+    freebsd = 3
+    lites = 4
+
+enum Ext4RevLevel:
+    :u32
+    good_old = 0                        # original format
+    dynamic = 1                         # v2 format with dynamic inode sizes
+
+format Ext4SuperBlock:
+    # Offsets below are relative to start of super block.
+    s_inodes_count :u32                 # 0x00: total inode count
+    s_blocks_count_lo :u32              # 0x04: total block count (low 32 bits; high bits in s_blocks_count_hi if 64bit feature)
+    s_r_blocks_count_lo :u32            # 0x08: reserved blocks count (low 32)
+    s_free_blocks_count_lo :u32         # 0x0C: free blocks (low 32)
+    s_free_inodes_count :u32            # 0x10
+    s_first_data_block :u32             # 0x14: first data block (0 for >1KB block size, else 1)
+    s_log_block_size :u32               # 0x18: block size = 2^(10 + this)
+    s_log_cluster_size :u32             # 0x1C: cluster size exponent (bigalloc feature)
+    s_blocks_per_group :u32             # 0x20
+    s_clusters_per_group :u32           # 0x24
+    s_inodes_per_group :u32             # 0x28
+    s_mtime :u32                        # 0x2C: last mount time (seconds since epoch)
+    s_wtime :u32                        # 0x30: last write time
+    s_mnt_count :u16                    # 0x34: mounts since last fsck
+    s_max_mnt_count :u16                # 0x36: max mounts before fsck required
+    s_magic :u16                        # 0x38: MUST be 0xEF53
+    s_magic == 0xEF53
+    s_state :u16                        # 0x3A: Ext4State bitmask
+    s_errors :u16                       # 0x3C: Ext4ErrorsBehavior
+    s_minor_rev_level :u16              # 0x3E
+    s_lastcheck :u32                    # 0x40: last fsck time
+    s_checkinterval :u32                # 0x44: max seconds between fscks
+    s_creator_os :Ext4CreatorOS         # 0x48
+    s_rev_level :Ext4RevLevel           # 0x4C
+    s_def_resuid :u16                   # 0x50: default uid for reserved blocks
+    s_def_resgid :u16                   # 0x52: default gid for reserved blocks
+    # Dynamic rev level fields (valid when s_rev_level >= 1):
+    s_first_ino :u32                    # 0x54: first non-reserved inode
+    s_inode_size :u16                   # 0x58: inode structure size
+    s_block_group_nr :u16               # 0x5A: block group that hosts this super block
+    s_feature_compat :u32               # 0x5C: compatible feature set bitmap
+    s_feature_incompat :u32             # 0x60: incompatible feature set (mount refused if unknown)
+    s_feature_ro_compat :u32            # 0x64: read-only compatible feature set
+    s_uuid :[16]u8                      # 0x68: 128-bit filesystem UUID
+    s_volume_name :[16]u8               # 0x78: volume label, null-padded
+    s_last_mounted :[64]u8              # 0x88: directory where last mounted, null-padded
+    # Remaining 1024-0xC8 = 824 bytes of the super block are out-of-scope here (see FIXME in header).
