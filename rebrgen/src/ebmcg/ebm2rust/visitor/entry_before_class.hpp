@@ -90,75 +90,155 @@ DEFINE_VISITOR(entry_before) {
         using namespace CODEGEN_NAMESPACE;
         return CODE("Option<&", elem.to_writer(), ">");
     };
-    config.recursive_struct_type_wrapper = [](Result name) -> expected<Result> {
+    const bool zero_copy = ctx.flags().zero_copy;
+    // ctx を受け取らない hook は flag を capture して中で分岐する。
+    config.recursive_struct_type_wrapper = [zero_copy](Result name) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
+        if (zero_copy) {
+            return CODE("Option<Box<", name.to_writer(), "<'a>>>");
+        }
         return CODE("Option<Box<", name.to_writer(), ">>");
     };
-    const bool zero_copy = ctx.flags().zero_copy;
     if (zero_copy) {
         config.use_statements.insert("use std::borrow::Cow;");
     }
-    config.vector_type_wrapper = [zero_copy](Context_Type_VECTOR& ctx) -> expected<Result> {
+    config.vector_type_wrapper = [](Context_Type_VECTOR& ctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
         MAYBE(elem, ctx.visit(ctx.element_type));
-        if (zero_copy) {
+        if (ctx.flags().zero_copy) {
             return CODE("Cow<'a, [", elem.to_writer(), "]>");
         }
         return CODE("Vec<", elem.to_writer(), ">");
     };
-    if (zero_copy) {
-        // direct-decode mode: nested decode() 呼び出しを decode_direct(..., <io>_off) に書き換え。
-        // offset 引数自体は Expression_AS_ARG_before 側で DECODER_INPUT に対して自動付与する。
-        config.call_custom = [](Context_Expression_CALL& ctx) -> expected<Result> {
-            using namespace CODEGEN_NAMESPACE;
-            if (!ctx.config().in_direct_decode) {
-                return pass;
+    // nested decode() → decode_direct(..., <io>_off) rewrite. offset 引数自体は
+    // param_visitor/as_arg_visitor 側で DECODER_INPUT に対して自動付与する。
+    config.call_custom = [](Context_Expression_CALL& ctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        if (!ctx.config().in_direct_decode) {
+            return pass;
+        }
+        auto fn = ctx.get_field<"member.body.id.func_decl">(ctx.call_desc.callee);
+        if (!fn || fn->kind != ebm::FunctionKind::DECODE) {
+            return pass;
+        }
+        MAYBE(callee_expr, ctx.get(ctx.call_desc.callee));
+        MAYBE(base_ref, callee_expr.body.base());
+        MAYBE(member_ref, callee_expr.body.member());
+        MAYBE(base, ctx.visit(base_ref));
+        MAYBE(method_name, ctx.identifier(member_ref));
+        CodeWriter w;
+        w.write(base.to_writer(), ".", method_name, "_direct(");
+        bool first = true;
+        for (auto& arg : ctx.call_desc.arguments.container) {
+            MAYBE(arg_str, ctx.visit(arg));
+            if (!first) {
+                w.write(", ");
             }
-            auto fn = ctx.get_field<"member.body.id.func_decl">(ctx.call_desc.callee);
-            if (!fn || fn->kind != ebm::FunctionKind::DECODE) {
-                return pass;
-            }
-            MAYBE(callee_expr, ctx.get(ctx.call_desc.callee));
-            MAYBE(base_ref, callee_expr.body.base());
-            MAYBE(member_ref, callee_expr.body.member());
-            MAYBE(base, ctx.visit(base_ref));
-            MAYBE(method_name, ctx.identifier(member_ref));
-            CodeWriter w;
-            w.write(base.to_writer(), ".", method_name, "_direct(");
-            bool first = true;
-            for (auto& arg : ctx.call_desc.arguments.container) {
-                MAYBE(arg_str, ctx.visit(arg));
-                if (!first) {
-                    w.write(", ");
-                }
-                first = false;
-                w.write(arg_str.to_writer());
-            }
-            w.write(")");
-            return Result(std::move(w));
-        };
-        config.struct_type_custom = [](Context_Type_STRUCT& ctx) -> expected<Result> {
-            using namespace CODEGEN_NAMESPACE;
-            auto name = ctx.identifier(ctx.id);
-            return Result(name + "<'a>");
-        };
-        config.struct_union_type_custom = [](Context_Type_STRUCT_UNION& ctx) -> expected<Result> {
-            using namespace CODEGEN_NAMESPACE;
-            auto enum_name = ctx.config().variant_prefix + std::format("{}", get_id(ctx.item_id));
-            return Result(enum_name + "<'a>");
-        };
-        config.recursive_struct_type_wrapper = [](Result name) -> expected<Result> {
-            using namespace CODEGEN_NAMESPACE;
-            return CODE("Option<Box<", name.to_writer(), "<'a>>>");
-        };
-        // Cow<'a,[T]> needs .to_mut() before push
-        config.append_visitor = [](Context_Statement_APPEND& ctx) -> expected<Result> {
-            using namespace CODEGEN_NAMESPACE;
-            MAYBE(target_str, ctx.visit(ctx.target));
-            MAYBE(value_str, ctx.visit(ctx.value));
+            first = false;
+            w.write(arg_str.to_writer());
+        }
+        w.write(")");
+        return Result(std::move(w));
+    };
+    config.struct_type_custom = [](Context_Type_STRUCT& ctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        if (!ctx.flags().zero_copy) return pass;
+        auto name = ctx.identifier(ctx.id);
+        return Result(name + "<'a>");
+    };
+    config.struct_union_type_custom = [](Context_Type_STRUCT_UNION& ctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        if (!ctx.flags().zero_copy) return pass;
+        auto enum_name = ctx.config().variant_prefix + std::format("{}", get_id(ctx.item_id));
+        return Result(enum_name + "<'a>");
+    };
+    // append_visitor は _visitor 系で MAYBE 経由で dispatch されるため
+    // `pass` を返すと default にフォールバックせずエラー扱いになる。
+    // よって default の `<target>.push(<value>)` も自分で emit する必要がある。
+    // zero_copy のときだけ Cow<'a,[T]>.to_mut() を挟む。
+    config.append_visitor = [](Context_Statement_APPEND& ctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        MAYBE(target_str, ctx.visit(ctx.target));
+        MAYBE(value_str, ctx.visit(ctx.value));
+        if (ctx.flags().zero_copy) {
             return CODELINE(target_str.to_writer(), ".to_mut().", ctx.config().append_function, "(", value_str.to_writer(), ")", ctx.config().endof_statement);
-        };
-    }
+        }
+        return CODELINE(target_str.to_writer(), ".", ctx.config().append_function, "(", value_str.to_writer(), ")", ctx.config().endof_statement);
+    };
+    // function signature を emit する。self の mut/immut 判定は
+    // FunctionAttribute.is_mutable() を使う (kind 列挙より正確)。
+    // in_direct_decode なら _direct suffix を付けた companion を出す。
+    config.function_definition_start_wrapper = [](Result ret_type, std::string_view name_sv, CodeWriter params, Context_Statement_FUNCTION_DECL& fctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        std::string name(name_sv);
+        if (fctx.func_decl.kind == ebm::FunctionKind::PROPERTY_SETTER ||
+            fctx.func_decl.kind == ebm::FunctionKind::VECTOR_SETTER) {
+            if (name.starts_with("r#")) {
+                name = name.substr(2);
+            }
+            name = "set_" + name;
+        }
+        if (fctx.config().in_direct_decode) {
+            name += "_direct";
+        }
+        CodeWriter w;
+        w.write("pub fn ", name, "(");
+        bool first = true;
+        if (!is_nil(fctx.func_decl.parent_format)) {
+            if (fctx.func_decl.attribute.is_mutable()) {
+                w.write("&mut self");
+            }
+            else {
+                w.write("&self");
+            }
+            first = false;
+        }
+        if (!params.empty()) {
+            if (!first) {
+                w.write(", ");
+            }
+            w.write(params);
+        }
+        w.writeln(") -> ", ret_type.to_writer(), " {");
+        return Result(std::move(w));
+    };
+    // zero_copy モードでは decode_fn を 2 度 visit する: 通常の decode() と、
+    // in_direct_decode=true で再 visit する decode_direct()。Go 版の
+    // struct_decode_start_wrapper と同じ発想 (io_mode ごとに visit を繰り返す)。
+    config.struct_decode_start_wrapper = [](Context_Statement_STRUCT_DECL& sctx, ebm::StatementRef decode_fn) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        CodeWriter w;
+        MAYBE(dec, sctx.visit(decode_fn));
+        w.write(std::move(dec.to_writer()));
+        if (sctx.flags().zero_copy) {
+            auto prev = sctx.config().in_direct_decode;
+            sctx.config().in_direct_decode = true;
+            const auto restore = futils::helper::defer([&]() {
+                sctx.config().in_direct_decode = prev;
+            });
+            MAYBE(dec_direct, sctx.visit(decode_fn));
+            w.write(std::move(dec_direct.to_writer()));
+        }
+        return Result(std::move(w));
+    };
+    // direct-decode mode での DECODER_INPUT param に offset 引数を自動付与する。
+    // `<name>_off` は as_arg_visitor 側でも同じ規則で呼び出し時に自動付与される。
+    config.param_visitor = [](Context_Statement_PARAMETER_DECL& ctx, Result type) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        auto name = ctx.identifier();
+        CodeWriter w;
+        if (ctx.param_decl.is_state_variable()) {
+            w.write(name, ": &mut ", type.to_writer());
+        }
+        else {
+            w.write(name, ": ", type.to_writer());
+        }
+        if (ctx.config().in_direct_decode &&
+            ctx.get_kind(ctx.param_decl.param_type) == ebm::TypeKind::DECODER_INPUT) {
+            w.write(", ", ebm2rust::offset_var(name), ": &mut usize");
+        }
+        return Result(std::move(w));
+    };
 
     config.make_pointer_wrapper = [](Result elem) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;

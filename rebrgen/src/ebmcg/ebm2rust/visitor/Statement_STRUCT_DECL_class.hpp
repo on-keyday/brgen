@@ -48,6 +48,7 @@
 
 /*here to write the hook*/
 #include "../codegen.hpp"
+#include "ebmcodegen/stub/util.hpp"
 DEFINE_VISITOR(Statement_STRUCT_DECL) {
     auto name = ctx.identifier();
     const bool zero_copy = ctx.flags().zero_copy;
@@ -75,29 +76,7 @@ DEFINE_VISITOR(Statement_STRUCT_DECL) {
         w.writeln("impl", lifetime, " ", name, lifetime, " {");
         {
             auto impl_scope = w.indent_scope();
-
-            if (auto prop_block = ctx.struct_decl.properties()) {
-                for (auto& prop_ref : prop_block->container) {
-                    MAYBE(prop_stmt, ctx.get(prop_ref));
-                    MAYBE(prop_str, ctx.visit(prop_ref));
-                    w.write(prop_str.to_writer());
-                }
-            }
-
-            if (auto fns = ctx.struct_decl.methods()) {
-                for (auto& method_ref : fns->container) {
-                    MAYBE(method_str, ctx.visit(method_ref));
-                    w.write(method_str.to_writer());
-                }
-            }
-            if (auto enc_fn = ctx.struct_decl.encode_fn()) {
-                MAYBE(encode_fn_str, ctx.visit(*enc_fn));
-                w.write(encode_fn_str.to_writer());
-            }
-            if (auto dec_fn = ctx.struct_decl.decode_fn()) {
-                MAYBE(decode_fn_str, ctx.visit(*dec_fn));
-                w.write(decode_fn_str.to_writer());
-            }
+            MAYBE_VOID(_, ebmcodegen::util::emit_struct_methods(ctx, w));
         }
         w.writeln("}");
     }
