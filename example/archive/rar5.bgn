@@ -5,8 +5,8 @@
 config.url = "https://www.rarlab.com/technote.htm"
 input.endian = config.endian.little
 
-enum Rar5HeaderType:
-    :u8                                  # the vint value fits in u8 for defined types
+enum Rar5HeaderType:  
+    :u8                                 # the vint value fits in u8 for defined types
     # type 0 unused
     main_archive = 1
     file_header = 2
