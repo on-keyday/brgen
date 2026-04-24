@@ -1,0 +1,16 @@
+# source: RFC 1939 §3 (POP3, fetched 2026-04-24)
+# scope: POP3 command line + single-line response framing
+# out-of-scope: multi-line response continuations (LIST / RETR / TOP / UIDL) — lines separated by CRLF, terminated by "CRLF . CRLF" with dot-stuffing on data lines that start with "."; APOP digest computation; STLS upgrade; SASL AUTH exchange
+# note: ASCII with CRLF termination. Maximum line length 512 octets including CRLF. Commands case-insensitive. Response indicator is "+OK" or "-ERR" as the first token — consumers dispatch externally on the leading byte ('+' vs '-').
+config.url = "https://datatracker.ietf.org/doc/html/rfc1939"
+
+format Pop3CommandLine:
+    # §3: command = keyword [ SP argument [ SP argument ] ] CRLF
+    content :[..]u8
+    :"\r\n"
+
+format Pop3ResponseLine:
+    # §3.9: response = indicator [ SP text ] CRLF
+    # indicator: "+OK" (success) or "-ERR" (failure); the leading sign byte is a quick dispatcher.
+    content :[..]u8                  # whole line excluding trailing CRLF
+    :"\r\n"

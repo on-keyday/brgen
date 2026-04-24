@@ -1,0 +1,20 @@
+# source: RFC 9051 §2 + §4 (IMAP4rev2, fetched 2026-04-24)
+# scope: IMAP command line framing (tag + command) + tagged reply envelope; response-type dispatcher hint
+# out-of-scope: per-command argument grammar (SELECT mailbox / FETCH sequence set + attributes / SEARCH criteria / APPEND literals); literal string sequences `{N}` CRLF + N bytes + continuation negotiation; quoted-string / atom / nstring ABNF of IMAP's formal syntax; UNICODE / UTF-8 normalization per IMAP4rev2 §5.1; SASL continuation exchange; CONDSTORE / QRESYNC / other extensions
+# note: IMAP is line-terminated ASCII plus length-prefixed literal segments `{N}` that carry 8-bit binary. Lines terminate with CRLF. Tags are client-chosen alphanumeric strings and MUST be unique per open command (though server accepts reuse).
+config.url = "https://datatracker.ietf.org/doc/html/rfc9051"
+
+format Imap4CommandLine:
+    # §2.2.1: command = tag SP command-name [ SP command-args ] CRLF
+    tag :[..]u8                      # alphanumeric (e.g. "A001", "a1")
+    :" "
+    rest :[..]u8                     # command name + optional args
+    :"\r\n"
+
+format Imap4ResponseLine:
+    # §2.2.2: three response types, dispatched on the first byte of the line:
+    #   '*' = untagged response (server data / OK / NO / BAD / BYE / <type> <data>)
+    #   '+' = continuation request (prompts client for literal data or SASL continuation)
+    #   anything else = tagged response (first whitespace-separated token is the tag, then OK / NO / BAD + text)
+    content :[..]u8                  # whole line excluding trailing CRLF
+    :"\r\n"

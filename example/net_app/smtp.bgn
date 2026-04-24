@@ -1,0 +1,18 @@
+# source: RFC 5321 §4 (SMTP, fetched 2026-04-24)
+# scope: SMTP command line + reply line framing (line-oriented ASCII terminated by CRLF); §4.2 reply-code classification helper
+# out-of-scope: per-command argument grammar (MAIL FROM:<addr>, RCPT TO:<addr>, AUTH mechanism, SIZE extension params, etc.); multi-line reply termination (requires observing position-4 delimiter across lines — requires state); DATA body dot-stuffing and "CRLF . CRLF" terminator; TLS upgrade negotiation
+# note: SMTP is strict 7-bit ASCII with CRLF line terminators (maximum 512 octets per line including CRLF). Commands are case-insensitive; reply codes are three ASCII digits. Per-position-4 delimiter: SP means final reply line, HYPHEN means continuation — this has to be observed by consumers across successive reply lines.
+config.url = "https://datatracker.ietf.org/doc/html/rfc5321"
+
+format SmtpCommandLine:
+    # §4.1.1: command = keyword [ SP parameters ] CRLF
+    # Parser reads up to CRLF; splitting the keyword vs parameters boundary is deferred to consumers.
+    content :[..]u8
+    :"\r\n"
+
+format SmtpReplyLine:
+    # §4.2: reply = 3DIGIT ( SP / "-" ) [ text ] CRLF
+    code :[3]u8                      # three ASCII digits, e.g. "250", "550"
+    delimiter :u8                    # ' ' = final reply line; '-' = continuation; consumers loop until SP
+    text :[..]u8                     # human-readable reason
+    :"\r\n"
