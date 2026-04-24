@@ -322,6 +322,7 @@ export const analyzeHover = async (prevNode :ast2ts.ParseResult, pos :number) =>
     ${fmt.decode_fn?"+ custom decode\n":""}
     ${(fmt.body?.metadata.length??0) > 0 ?`+ metadata: ${fmt.body?.metadata.map((x)=>x.name).join(", ")}\n`:""}
     ${(fmt.cast_fns.length || 0) > 0 ?`+ cast functions: ${fmt.cast_fns.map((x)=> typeToString(x.return_type) ).join(", ")}\n`:""}
+    ${fmt.body?.struct_type?.type_map ? `+ type mapped: ${typeToString(fmt.body.struct_type.type_map.type_literal)}`: ""}
     + block trait: ${fmt.body?.block_traits && ast2ts.BlockTraitToString(fmt.body?.block_traits) || "none"}
 `, collectComments(fmt));
                     }

@@ -281,6 +281,8 @@ DEFINE_VISITOR(Statement_READ_DATA) {
         if (auto dyn_size = rctx.read_data.size.ref(); dyn_size && ctx.is(ebm::ExpressionKind::GET_REMAINING_BYTES, *dyn_size)) {
             // until eof
             w.writeln(target.to_writer(), " = ", io_, "[", offset_ref(io_), ":]");
+            w.writeln(offset_ref(io_), " += len(", target.to_writer(), ")");
+            append_abs_offset(rctx, rctx.read_data.io_ref, w, CODE("len(", target.to_writer(), ")"));
         }
         else {
             ctx.config().imports.insert("errors");
