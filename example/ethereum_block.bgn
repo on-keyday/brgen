@@ -1,0 +1,57 @@
+# source: Ethereum Yellow Paper + EIP-1559 (base fee) + EIP-4895 (withdrawals) + EIP-4844 (blobs)
+# scope: Ethereum block header field catalog as an RLP-encoded list; RLP primitive item encoding framing (single byte / short string / long string / short list / long list first-byte dispatch)
+# out-of-scope: RLP decoding of big-integer fields (difficulty, number, gasLimit, gasUsed, timestamp, baseFeePerGas, blobGasUsed, excessBlobGas) into their canonical numeric values — requires procedural variable-length integer parsing stripping leading zero bytes; transaction / withdrawal bodies in a block envelope (which is itself an RLP list of [header, transactions, uncles] in PoW-era or [header, transactions, withdrawals] post-Shanghai); ommer (uncle) header list contents; MPT (Merkle Patricia Trie) node encoding used for the state / transactions / receipts roots; POW / POS consensus transitions
+# note: Ethereum uses BIG-ENDIAN minimal-byte encoding for integers inside RLP: no leading zero bytes in the variable-length byte strings. The block header itself is an RLP LIST whose field count depends on the fork (legacy: 15 fields; post-London +1; post-Shanghai +2; post-Cancun +3). This file captures the RLP framing bytes and enumerates the header fields structurally rather than declaratively parsing them.
+
+enum RlpItemKind:
+    :u8
+    # Dispatch by first byte of an RLP item per the yellow paper §B Recursive Length Prefix Encoding.
+    # Byte values 0x00-0x7F: self-representing single byte (string of length 1 whose value is < 0x80)
+    # 0x80-0xB7: short string, length = byte - 0x80 (range 0..55)
+    # 0xB8-0xBF: long string, next (byte - 0xB7) bytes form BE length, then length bytes of string
+    # 0xC0-0xF7: short list, length = byte - 0xC0 (range 0..55) — sum of RLP-encoded items
+    # 0xF8-0xFF: long list, next (byte - 0xF7) bytes form BE length
+    # Enum entries below cover the FOUR category boundary-start values; actual first-byte must be
+    # interpreted by range rather than equality.
+    short_string_start = 0x80
+    long_string_start = 0xB8
+    short_list_start = 0xC0
+    long_list_start = 0xF8
+
+format RlpListPrefix:
+    # First byte of an RLP-encoded list. For short lists (length 0..55), encoded as (0xC0 + length)
+    # in a single byte — this format captures only the header byte; the per-item contents follow.
+    first_byte :u8
+    # first_byte >= 0xC0 enforces "this is a list"; detailed length decoding needs procedural logic.
+
+# Ethereum block header field list (in RLP order) per the Yellow Paper + successive hard forks.
+# Each field is encoded as a nested RLP item inside the outer list.
+#
+# Pre-Merge / pre-London block header (15 items):
+#   parent_hash, uncle_hash, beneficiary, state_root, transactions_root, receipts_root,
+#   logs_bloom, difficulty, number, gas_limit, gas_used, timestamp, extra_data, mix_hash, nonce
+#
+# Post-London adds: +base_fee_per_gas (16th item)
+# Post-Shanghai adds: +withdrawals_root (17th)
+# Post-Cancun adds: +blob_gas_used, +excess_blob_gas, +parent_beacon_block_root (18th-20th)
+
+EMPTY_UNCLE_HASH ::= "\x1d\xcc\x4d\xe8\xde\xc7\x5d\x7a\xab\x85\xb5\x67\xb6\xcc\xd4\x1a\xd3\x12\x45\x1b\x94\x8a\x74\x13\xf0\xa1\x42\xfd\x40\xd4\x93\x47"
+
+format EthereumBlockHeaderFixedSizeFields:
+    # The fixed-size hash/address/bloom fields of a block header. Stored inside RLP encoding as
+    # 32-byte / 20-byte / 256-byte string items (prefixed with their own RLP length bytes), so
+    # the physical wire bytes are NOT a flat concatenation of this format's fields — this structure
+    # captures the semantic contents that fill the RLP list slots.
+    parent_hash :[32]u8
+    ommers_hash :[32]u8                  # uncle list hash; post-Merge always equals EMPTY_UNCLE_HASH
+    beneficiary :[20]u8                  # miner / fee recipient / coinbase
+    state_root :[32]u8
+    transactions_root :[32]u8
+    receipts_root :[32]u8
+    logs_bloom :[256]u8
+    # Variable-length integer fields (difficulty, number, gas_limit, gas_used, timestamp,
+    # base_fee_per_gas, blob_gas_used, excess_blob_gas) + extra_data are out-of-scope for a
+    # declarative representation; they are RLP big-integer / byte-string items with per-block
+    # lengths.
+    mix_hash :[32]u8                     # post-Merge holds prev_randao from the consensus layer
+    nonce :[8]u8                         # post-Merge always 8 zero bytes

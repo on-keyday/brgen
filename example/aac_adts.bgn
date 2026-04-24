@@ -1,0 +1,30 @@
+# source: MultimediaWiki ADTS (https://wiki.multimedia.cx/index.php/ADTS), cross-checked with ISO/IEC 13818-7 §6.2
+# scope: AAC ADTS (Audio Data Transport Stream) 56-bit header (fixed 28 bits + variable 28 bits) + optional 16-bit CRC
+# out-of-scope: AAC raw data block (RDB) structure — syntactic elements id_syn_ele (SCE / CPE / CCE / LFE / DSE / PCE / FIL / END) with CABAC-style Huffman coded payload; AAC-LC / HE-AAC / AAC-LD / AAC-ELD profile-specific decoding; Program Config Element (PCE) when channel_configuration == 0; sampling frequency index table (0=96000, 1=88200, 2=64000, 3=48000, 4=44100, ..., 11=8000, 12=7350, 13-14=reserved, 15=forbidden)
+# note: ADTS is a BIG-ENDIAN MSB-first bit stream. sync_word is 0xFFF (12 bits) at the start of every frame. MPEG version selects MPEG-4 (0) or MPEG-2 (1). profile is Audio Object Type minus 1 for MPEG-4. Protection bit is INVERTED: protection_absent == 1 means NO CRC, 0 means CRC present.
+
+format AdtsHeader:
+    # 56-bit header (fixed + variable). Declared as MSB-first bit fields mapping directly to spec order.
+    sync_word :u12                       # MUST be 0xFFF
+    sync_word == 0xFFF
+    mpeg_version :u1                     # 0 = MPEG-4, 1 = MPEG-2
+    layer :u2                            # MUST be 0
+    layer == 0
+    protection_absent :u1                # 1 = no CRC, 0 = 16-bit CRC follows header
+
+    profile :u2                          # 0=Main, 1=LC, 2=SSR, 3=LTP (MPEG-4 AOT - 1)
+    sampling_frequency_index :u4         # index into sampling-rate table
+    private_bit :u1
+    channel_configuration :u3            # 0 means PCE carries channel config
+    original_copy :u1
+    home :u1
+
+    copyright_id_bit :u1
+    copyright_id_start :u1
+    aac_frame_length :u13                # total frame bytes INCLUDING header + CRC + payload
+    buffer_fullness :u11                 # 0x7FF = variable bitrate
+    num_raw_data_blocks_minus1 :u2       # 0 = 1 RDB per frame (most common)
+
+format AdtsCrc:
+    # Present only when header.protection_absent == 0.
+    crc :u16

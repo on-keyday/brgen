@@ -1,0 +1,33 @@
+# source: Noise Protocol Framework specification rev 34 (https://noiseprotocol.org/noise.html)
+# scope: Per-message wire components that ALL Noise protocol messages share — DH public key slots and AEAD-sealed payload with 16-byte authentication tag; optional application-layer 16-bit length prefix
+# out-of-scope: Handshake pattern semantics (XX / IK / NK / KK / NN / XK etc. token sequences: e, s, ee, es, se, ss, psk); cipher suite selection (ChaCha20-Poly1305 / AES-256-GCM); hash function (SHA-256 / SHA-512 / BLAKE2s / BLAKE2b); key derivation HKDF chains; rekey / nonce rollover; 448 (Curve448) vs 25519 (Curve25519) DH key size variants; noise PSK modes (PSK0..PSK4)
+# note: Noise itself does NOT specify a wire length field between messages. Applications layer a framing convention on top — WireGuard uses fixed-per-type sizes (see example/wireguard.bgn), while TLS-over-Noise and the reference Noise Socket spec use a 16-bit BIG-ENDIAN length prefix. For handshake messages, public-key and encrypted-payload field sizes depend on the active handshake pattern and the cipher/DH suite in use.
+config.url = "https://noiseprotocol.org/noise.html"
+
+# Concrete sizes for the common Noise_XX_25519_ChaChaPoly_SHA256 suite:
+#   DH public key: 32 bytes (Curve25519)
+#   AEAD tag:      16 bytes (ChaCha20-Poly1305)
+
+NOISE_DH25519_PUBLIC_KEY_LEN ::= 32
+NOISE_AEAD_TAG_LEN ::= 16
+
+format NoisePublicKey25519:
+    # Plain (unencrypted) DH public key slot, used when a pattern emits an ephemeral 'e' before
+    # any shared secret has been mixed into the cipher state.
+    key :[32]u8
+
+format NoiseEncryptedStatic25519:
+    # Static 32-byte DH public key sent under AEAD protection (pattern token 's' after first DH op).
+    ciphertext :[32]u8
+    tag :[16]u8
+
+format NoiseTransportMessage:
+    # Post-handshake transport message: application payload under AEAD. Noise itself imposes
+    # an upper bound of 65535 bytes on the plaintext (§3 sec "Message length").
+    ciphertext :[..]u8                       # application payload encrypted, followed immediately by tag
+    tag :[16]u8
+
+format NoiseLengthPrefixedFrame:
+    # Typical application framing (e.g. Noise Socket, TLS-over-Noise profiles).
+    length :ub16                             # BIG-ENDIAN 16-bit byte count of following message
+    payload :[length]u8

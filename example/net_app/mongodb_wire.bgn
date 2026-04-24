@@ -1,0 +1,48 @@
+# source: MongoDB Wire Protocol (https://www.mongodb.com/docs/manual/reference/mongodb-wire-protocol/)
+# scope: MongoDB wire-protocol common 16-byte message header + current OP_MSG envelope (flag bits + section chain + optional checksum)
+# out-of-scope: BSON document encoding (see example/bson.bgn for document-level framing); per-command body grammar (hello / isMaster / find / aggregate / update / delete / insert / killCursors / getMore response shapes); OP_COMPRESSED envelope wrapping a compressed payload; legacy deprecated opcodes OP_QUERY (2004) / OP_REPLY (1) / OP_UPDATE (2001) / OP_INSERT (2002) / OP_GET_MORE (2005) / OP_DELETE (2006) / OP_KILL_CURSORS (2007) — removed in MongoDB 5.1 except OP_QUERY kept for the handshake `hello` command; SASL authentication exchanges
+# note: MongoDB is LITTLE-ENDIAN throughout. Only OP_MSG (opCode 2013) is used by MongoDB 5.1+; legacy opcodes coexist in older servers. Messages with `moreToCome` flag do NOT require a response, enabling streaming pipelines.
+config.url = "https://www.mongodb.com/docs/manual/reference/mongodb-wire-protocol/"
+input.endian = config.endian.little
+
+enum MongoOpCode:
+    :i32
+    op_reply = 1                         # deprecated
+    op_update = 2001                     # deprecated
+    op_insert = 2002                     # deprecated
+    op_query = 2004                      # deprecated but kept for hello/isMaster handshake
+    op_get_more = 2005                   # deprecated
+    op_delete = 2006                     # deprecated
+    op_kill_cursors = 2007               # deprecated
+    op_compressed = 2012
+    op_msg = 2013                        # current (since MongoDB 3.6)
+
+format MongoMsgHeader:
+    # 16 bytes common to every wire-protocol message (request and response).
+    message_length :i32                  # total size including this header
+    request_id :i32                      # sender-chosen; server echoes in response_to
+    response_to :i32                     # zero in fresh requests; populated in responses
+    op_code :MongoOpCode
+
+format MongoOpMsgSectionBody:
+    # OP_MSG section kind 0 — single BSON document. Document self-delimits via its own int32 size.
+    kind :u8                             # == 0
+    kind == 0
+    # The BSON document follows; parse with example/bson.bgn BsonDocument.
+
+format MongoOpMsgSectionDocumentSequence:
+    # OP_MSG section kind 1 — "document sequence" used primarily for bulk writes.
+    kind :u8                             # == 1
+    kind == 1
+    size :i32                            # byte count of the remainder of THIS section (including the int32 itself)
+    identifier :[..]u8                   # null-terminated cstring field-path identifier (e.g. "documents", "updates", "deletes")
+    null :"\0"
+    # (size - 4 - len(identifier) - 1) bytes of concatenated BSON documents follow.
+
+format MongoOpMsg:
+    # OP_MSG body (after the 16-byte header). flagBits + sections + optional checksum.
+    flag_bits :u32                       # bit 0 checksumPresent, bit 1 moreToCome, bit 16 exhaustAllowed
+    # Sections chain — each 1-byte kind dispatches to body / document-sequence / (future) kinds.
+    # Consumers iterate until messageLength bytes consumed (minus the optional trailing 4-byte
+    # CRC32C when flag bit 0 is set).
+    sections :[..]u8                     # raw remainder; per-section parsing dispatches on kind byte
