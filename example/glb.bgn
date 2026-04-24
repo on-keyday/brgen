@@ -1,0 +1,32 @@
+# source: glTF 2.0 §4.4 GLB File Format Specification (https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html)
+# scope: GLB (glTF Binary) container — 12-byte header + one-or-more chunks (JSON + optional BIN)
+# out-of-scope: glTF JSON schema (scene / node / mesh / accessor / bufferView / buffer structure); BIN chunk content (raw interleaved or separately-packed vertex / index / image data referenced by bufferViews); 3rd-party extension chunks beyond JSON + BIN; KHR_draco_mesh_compression / KHR_mesh_quantization and other decode-time transforms
+# note: All integers are little-endian. Each chunk is padded to 4-byte alignment: JSON chunks with trailing 0x20 (space), BIN chunks with trailing 0x00.
+config.url = "https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html"
+input.endian = config.endian.little
+
+GLB_MAGIC ::= 0x46546C67                        # "glTF" read as LE u32
+GLB_CHUNK_JSON ::= 0x4E4F534A                   # "JSON" read as LE u32
+GLB_CHUNK_BIN ::= 0x004E4942                    # "BIN\0" read as LE u32
+
+format GlbHeader:
+    # 12 bytes fixed at file start.
+    magic :u32(GLB_MAGIC)
+    version :u32                                # currently 2
+    version == 2
+    length :u32                                 # total file byte count including this header and all chunks
+
+format GlbChunkHeader:
+    # 8-byte chunk prefix. chunkLength excludes this header.
+    chunk_length :u32
+    chunk_type :u32                             # GLB_CHUNK_JSON / GLB_CHUNK_BIN / extension-defined
+
+format GlbChunk:
+    header :GlbChunkHeader
+    data :[header.chunk_length]u8               # JSON bytes (padded with 0x20) or BIN bytes (padded with 0x00)
+
+format GlbFile:
+    header :GlbHeader
+    # Chunks follow, bounded by header.length - 12 total bytes. First chunk MUST be JSON;
+    # second chunk (if present) MUST be BIN. Additional chunks are reserved for extensions.
+    chunks :[..]GlbChunk(input = input.subrange(header.length - 12))

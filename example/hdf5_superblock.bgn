@@ -1,0 +1,57 @@
+# source: HDF5 File Format Specification (https://docs.hdfgroup.org/hdf5/develop/_f_m_t3.html, §III HDF5 File Format specification)
+# scope: HDF5 format signature + Superblock v0/v1 (legacy layout) and v2/v3 (1.10+ current layout). All four versions share the 8-byte signature as their immediate prefix.
+# out-of-scope: root group symbol table entry body (version 0/1 only; variable size based on size_of_offsets); driver info block contents; B-tree / B+tree node layouts (BTHD, BTIN nodes); fractal heap direct/indirect block structure; object header versions + object header message catalog (datatype, dataspace, attribute, link info, fill value, filter pipeline, etc.); superblock extension contents (superblock-extension object header reachable via v2/v3 superblock extension address)
+# note: HDF5 uses little-endian by default but the actual superblock signature is byte-sequence (endian-independent). The `size_of_offsets` / `size_of_lengths` fields declared in the superblock determine the width of all subsequent offset / length fields in the file (typically 8 bytes on 64-bit platforms, 4 bytes on 32-bit). This file models the fixed-width prefix of each superblock version; reading the trailing address / offset fields requires parameterizing on `size_of_offsets` from the superblock.
+config.url = "https://docs.hdfgroup.org/hdf5/develop/_f_m_t3.html"
+input.endian = config.endian.little
+
+format Hdf5Signature:
+    # 8 bytes at the very start of an HDF5 file (or embedded at known super-block address in files
+    # where user-block-size > 0).
+    bytes :"\x89HDF\r\n\x1a\n"
+
+format Hdf5SuperblockV0Prefix:
+    # Superblock version 0 (default pre-1.8). Fields up through end-of-fixed-size portion, before
+    # the variable-size offsets/lengths that depend on size_of_offsets / size_of_lengths.
+    signature :Hdf5Signature
+    superblock_version :u8                      # 0
+    free_space_version :u8                      # 0
+    root_group_symbol_table_version :u8         # 0
+    reserved0 :u8                               # 0
+    shared_header_message_format_version :u8    # 0
+    size_of_offsets :u8                         # typically 8
+    size_of_lengths :u8                         # typically 8
+    reserved1 :u8                               # 0
+    group_leaf_node_k :u16                      # minimum 1; default 4
+    group_internal_node_k :u16                  # default 16
+    file_consistency_flags :u32
+    # base_address / free_space_info_addr / end_of_file_addr / driver_info_block_addr follow
+    # with width = size_of_offsets. Root group symbol table entry follows after that.
+
+format Hdf5SuperblockV1Prefix:
+    # Superblock version 1 adds "indexed storage internal node K" after consistency flags.
+    signature :Hdf5Signature
+    superblock_version :u8                      # 1
+    free_space_version :u8
+    root_group_symbol_table_version :u8
+    reserved0 :u8
+    shared_header_message_format_version :u8
+    size_of_offsets :u8
+    size_of_lengths :u8
+    reserved1 :u8
+    group_leaf_node_k :u16
+    group_internal_node_k :u16
+    file_consistency_flags :u32
+    indexed_storage_internal_node_k :u16
+    reserved2 :u16
+
+format Hdf5SuperblockV2Prefix:
+    # Superblock version 2 (HDF5 1.10+) — compact, CRC-checksummed.
+    signature :Hdf5Signature
+    superblock_version :u8                      # 2
+    size_of_offsets :u8
+    size_of_lengths :u8
+    file_consistency_flags :u8
+    # base_address / superblock_extension_addr / end_of_file_addr / root_group_object_header_addr
+    # follow, each of width size_of_offsets. Trailing 4-byte checksum is a Jenkins Lookup3 of the
+    # superblock bytes up to (but not including) the checksum itself.

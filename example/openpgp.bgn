@@ -1,0 +1,69 @@
+# source: RFC 9580 §4 (OpenPGP Message Format, fetched 2026-04-24)
+# scope: OpenPGP packet framing — Old and New format packet headers with their respective length encodings; packet-type tag enumeration
+# out-of-scope: per-tag packet body structure (Public-Key packet: algorithm + MPI series, Signature packet: hashed/unhashed subpackets + MPI, Literal Data packet: format byte + filename + date + content, etc.); MPI (Multi-Precision Integer) big-endian encoding (u16 bit count + ceil(bits/8) bytes); S2K specifier; AEAD payload integrity tags; partial body length continuation loop
+# note: All multi-byte length fields are big-endian. Bit 7 of the first header byte is always 1 (MSB-first bit 7 in the traditional byte-level sense); bit 6 selects Old format (0) or New format (1). The packet tag ID is 4 bits in Old format (bits 5-2) or 6 bits in New format (bits 5-0).
+config.url = "https://datatracker.ietf.org/doc/html/rfc9580"
+
+enum OpenPgpPacketTag:
+    :u8
+    # §5 tag assignments (shared across old/new-format encodings)
+    reserved = 0
+    pkesk = 1                                    # Public-Key Encrypted Session Key
+    signature = 2
+    skesk = 3                                    # Symmetric-Key Encrypted Session Key
+    onepass_signature = 4
+    secret_key = 5
+    public_key = 6
+    secret_subkey = 7
+    compressed_data = 8
+    symmetrically_encrypted_data = 9             # deprecated, prefer 18
+    marker = 10
+    literal_data = 11
+    trust = 12
+    user_id = 13
+    public_subkey = 14
+    user_attribute = 17
+    seipd = 18                                   # Symmetrically Encrypted Integrity Protected Data
+    modification_detection_code = 19             # deprecated, folded into SEIPD v2
+    aead_encrypted_data = 20
+    padding = 21                                 # new in RFC 9580
+
+format OpenPgpOldFormatHeader:
+    # §4.2.1 Old-format packet header: bit 7 = 1, bit 6 = 0, bits 5-2 = 4-bit tag, bits 1-0 = length_type.
+    always_one :u1                               # MUST be 1
+    always_one == 1
+    old_format_marker :u1                        # MUST be 0 for old format
+    old_format_marker == 0
+    tag :u4                                      # 4-bit packet tag (only values 0..15)
+    length_type :u2                              # 0..3; dispatches length field width
+
+    # Body length dispatch. length_type == 3 means "indeterminate" — body extends to end of data, no length field.
+    if length_type == 0:
+        length_1 :u8
+    if length_type == 1:
+        length_2 :u16
+    if length_type == 2:
+        length_4 :u32
+
+format OpenPgpNewFormatHeader:
+    # §4.2.2 New-format packet header: bit 7 = 1, bit 6 = 1, bits 5-0 = 6-bit tag.
+    always_one :u1                               # MUST be 1
+    always_one == 1
+    new_format_marker :u1                        # MUST be 1 for new format
+    new_format_marker == 1
+    tag :u6                                      # 6-bit packet tag
+
+    # §4.2.2 Length encoding:
+    #   first_len_byte < 192    → 1-byte length = first_len_byte (range 0..191)
+    #   192..=223               → 2-byte length = ((first_len_byte - 192) << 8) + second + 192 (range 192..8383)
+    #   224..=254               → partial body length: 1 << (first_len_byte & 0x1F); more partials / final length follow
+    #   255                     → 4-byte big-endian length follows (range 0..2^32-1)
+    first_len_byte :u8
+
+    if first_len_byte >= 192 && first_len_byte <= 223:
+        second_len_byte :u8
+
+    if first_len_byte == 255:
+        long_length :u32
+    # For 224..=254 (partial body length), consumers loop: read 2^(first_len_byte & 0x1F) bytes,
+    # then read another new-format length prefix; the final length uses one of the deterministic forms above.

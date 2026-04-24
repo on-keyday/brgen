@@ -1,0 +1,28 @@
+# source: FITS Standard version 4.0 / NASA FITS Primer (https://fits.gsfc.nasa.gov/fits_primer.html)
+# scope: FITS physical block framing — 80-character ASCII "card image" records organized into 2880-byte logical blocks
+# out-of-scope: full mandatory/optional keyword catalog (SIMPLE / BITPIX / NAXIS / NAXISn / BSCALE / BZERO / DATE / EXTEND / XTENSION / PCOUNT / GCOUNT / TFIELDS / TBCOL*/TFORM*/TTYPE* etc.); card-image value-field grammar (fixed-format numeric at columns 11-30, logical T/F, quoted string with continuation); ASCII / Binary / Image extension HDU structures; data encoding per BITPIX (BITPIX > 0 = integer network-byte-order / BITPIX < 0 = IEEE 754 floating point)
+# note: FITS headers are strict ASCII — no multi-byte integer considerations at the header level. Numeric DATA blocks following a header use BIG-ENDIAN network byte order per FITS Standard §3.3. Every header and every data unit is padded to a multiple of 2880 bytes (the FITS logical record size; historically chosen to be divisible by 80-card records × 36 = 2880).
+config.url = "https://fits.gsfc.nasa.gov/fits_primer.html"
+
+FITS_BLOCK_SIZE ::= 2880
+FITS_CARD_SIZE ::= 80
+
+format FitsCard:
+    # §4 Card image — exactly 80 ASCII characters. Layout by column:
+    #   cols 1-8  : Keyword (left-justified, trailing blank-padded, uppercase letters/digits/hyphen/underscore)
+    #   cols 9-10 : "= " for keyword=value cards; two blanks for COMMENT/HISTORY/END
+    #   cols 11-80: Value + optional "/ comment"
+    # The END card has the literal text "END" in columns 1-3 followed by 77 blanks.
+    content :[80]u8
+
+format FitsHeaderBlock:
+    # A single 2880-byte physical block contains exactly 36 cards.
+    cards :[36]FitsCard
+
+format FitsLogicalBlock:
+    # §3.1 Logical Record = 2880 bytes. Used for both header padding and data unit alignment.
+    bytes :[2880]u8
+
+# FITS files are inherently sequences of variable-numbers-of-header-blocks + variable-numbers-of-data-blocks
+# per HDU. Representing that boundary needs stateful scanning of card images for the END keyword; this
+# format set only captures the fixed record sizes that compose any FITS file.
