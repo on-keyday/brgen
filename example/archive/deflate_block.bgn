@@ -1,0 +1,38 @@
+# source: RFC 1951 (DEFLATE Compressed Data Format, fetched 2026-04-24) §3.2 Compressed block format
+# scope: DEFLATE block header framing (BFINAL + BTYPE) + Stored block envelope (LEN / NLEN / raw data) + Dynamic block meta-header (HLIT / HDIST / HCLEN)
+# out-of-scope: Huffman code-length alphabet (3-bit codes in fixed order), literal/length alphabet Huffman codes, distance alphabet Huffman codes, actual literal/match/end-of-block encoded symbols — all are variable-width Huffman codes that require procedural bit-stream decoding. Fixed Huffman block body uses RFC-specified fixed tables and has no framing after the header; dynamic Huffman block body is likewise all Huffman-encoded payload.
+# note: DEFLATE is LSB-first bit packing within bytes + little-endian multi-byte integers (LE × LSB-first quadrant). Non-Huffman fields pack LSB-first; Huffman codes themselves pack starting with the MOST significant bit of the code (per RFC 1951 §3.1.1). Stored block transitions discard any partial bits of the current byte before reading LEN.
+config.url = "https://datatracker.ietf.org/doc/html/rfc1951"
+input.endian = config.endian.little
+input.bit_order = config.bit_order.lsb
+
+enum DeflateBlockType:
+    :u2
+    stored = 0                       # no compression; align to byte, then LEN + NLEN + raw data
+    fixed_huffman = 1                # fixed Huffman tables per RFC 1951 §3.2.6
+    dynamic_huffman = 2              # Huffman tables included in header per §3.2.7
+    reserved = 3                     # MUST NOT be used (decoder MUST error)
+
+format DeflateBlockHeader:
+    # §3.2.3: 3 bits — BFINAL (1 bit) + BTYPE (2 bits), LSB-first within the byte.
+    bfinal :u1
+    btype :DeflateBlockType
+
+format DeflateStoredBlockBody:
+    # §3.2.4: After the 3-bit header of a BTYPE=00 block, the remaining bits of the current byte are discarded.
+    # This alignment step is procedural (depends on bit-stream cursor state) and is implicit here:
+    # consumers MUST realign to the next byte boundary before reading LEN.
+    len :u16                         # number of data bytes
+    nlen :u16                        # one's complement of len (i.e. nlen == ~len); integrity check
+    data :[len]u8                    # raw literal bytes
+
+format DeflateDynamicBlockMetaHeader:
+    # §3.2.7: After the 3-bit header of a BTYPE=10 block, the dynamic-Huffman meta-header follows immediately.
+    # HLIT + 257 literal/length codes; HDIST + 1 distance codes; HCLEN + 4 code-length-alphabet codes.
+    hlit :u5                         # 0..29 → literal/length alphabet size - 257
+    hdist :u5                        # 0..31 → distance alphabet size - 1
+    hclen :u4                        # 0..15 → code length alphabet size - 4
+    # What follows — (hclen + 4) × 3 bits of code-length-alphabet code lengths in the fixed order
+    # [16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15], then Huffman-encoded literal/length alphabet
+    # code lengths, then Huffman-encoded distance alphabet code lengths — is out-of-scope here because
+    # it is all variable-width Huffman-coded data.

@@ -1,0 +1,40 @@
+# source: Snappy framing format specification (https://github.com/google/snappy/blob/main/framing_format.txt, fetched 2026-04-24)
+# scope: Snappy frame framing — chunk type byte + 24-bit LE length + payload; chunk type enumeration (StreamIdentifier, CompressedData, UncompressedData, Padding, Reserved skippable/unskippable ranges); CRC-32C masking convention
+# out-of-scope: Snappy block format proper (tag-byte literals/copies, copy offset/length encoding); CRC-32C computation itself; maximum-chunk-size validation (65536 bytes uncompressed per spec)
+# note: All multi-byte integers are little-endian. Chunk length field is 24-bit LE (3 bytes), not inclusive of the 4-byte chunk header (type + length). Uncompressed-data / compressed-data payload begins with a 4-byte masked CRC-32C.
+config.url = "https://github.com/google/snappy/blob/main/framing_format.txt"
+input.endian = config.endian.little
+
+SNAPPY_STREAM_IDENT_PAYLOAD ::= "sNaPpY"
+
+enum SnappyChunkType:
+    :u8
+    compressed_data = 0x00           # payload: 4-byte masked CRC-32C + snappy-compressed data
+    uncompressed_data = 0x01         # payload: 4-byte masked CRC-32C + raw data
+    padding = 0xfe                   # payload: arbitrary padding bytes (ignored)
+    stream_identifier = 0xff         # payload: 6-byte "sNaPpY"
+
+format SnappyChunkHeader:
+    # 4 bytes total: 1-byte type + 3-byte little-endian length
+    chunk_type :u8
+    length :u24
+
+format SnappyDataChunkPayload:
+    # For chunk_type == 0x00 (compressed) or 0x01 (uncompressed).
+    # Masked CRC-32C = rotate_left(crc32c(data), 15) + 0xa282ead8 (mod 2^32).
+    masked_crc32c :u32
+    data :[..]u8                     # length = outer chunk length - 4
+
+format SnappyChunk:
+    header :SnappyChunkHeader
+    # Semantics:
+    # - 0x00..0x7f (except 0x00): reserved unskippable — decoder MUST error
+    # - 0x80..0xfd: reserved skippable — decoder MUST skip and continue
+    # - 0x00 / 0x01: data chunks (payload starts with masked_crc32c)
+    # - 0xfe: padding (payload ignored)
+    # - 0xff: stream identifier (payload MUST equal "sNaPpY")
+    payload :[header.length]u8       # re-parse as SnappyDataChunkPayload for 0x00/0x01
+
+format SnappyStream:
+    # §3 framing: stream MUST begin with a StreamIdentifier chunk, followed by any sequence of other chunks.
+    chunks :[..]SnappyChunk
