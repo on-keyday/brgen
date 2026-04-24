@@ -43,22 +43,19 @@ format ZstdFrameHeader:
         2 => fcs :u32
         3 => fcs :u64
 
+format ZstdBlockHeader: 
+    config.type = u24 # from lsb
+    last_block :u1
+    block_type :u2
+    block_size :u21
+
 format ZstdBlock:
     # §3.1.1.2.1 Block_Header: 24-bit little-endian word where bit 0 (LSB) = Last_Block.
     # Multi-byte LE + bit ordering makes the sub-format trick ambiguous here, so kept as u24 + fns.
-    block_header :u24
-
-    fn last_block() -> bool:
-        return (block_header & 0x01) != 0
-
-    fn block_type() -> u8:
-        return u8((block_header >> 1) & 0x03)
-
-    fn block_size() -> u32:
-        return (block_header >> 3) & 0x001FFFFF
+    block_header :ZstdBlockHeader
 
     # Raw/Compressed blocks: payload size == block_size; RLE blocks: 1-byte payload (run-length is block_size).
-    data :[block_size()]u8
+    data :[block_header.block_size]u8
 
 format ZstdBlockStream:
     # Sequence of blocks ending with one whose Last_Block bit is set.
@@ -68,7 +65,7 @@ format ZstdBlockStream:
         for:
             b := input.get(ZstdBlock)
             blocks[blocks.length] = b
-            if (<ZstdBlock>(b).block_header & 0x01) != 0:
+            if b.block_header.last_block != 0:
                 break
 
 format ZstdFrame:
