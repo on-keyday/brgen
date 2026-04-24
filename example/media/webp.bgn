@@ -1,0 +1,100 @@
+# source: WebP RIFF Container Specification (Google, https://developers.google.com/speed/webp/docs/riff_container, fetched 2026-04-24)
+# scope: RIFF-container framing for WebP — outer RIFF/WEBP magic, generic chunk framing + padding rule, Simple format (VP8 / VP8L), Extended VP8X payload, animation (ANIM / ANMF), ALPH, and pass-through metadata chunks (ICCP / EXIF / XMP).
+# out-of-scope: VP8 bitstream internals (RFC 6386), VP8L lossless bitstream, ANMF frame-data sub-stream layout beyond the 24-byte header, ICC profile parsing, EXIF/XMP metadata parsing.
+# note: Multi-byte fields are little-endian. Every chunk pads to even byte boundary: if chunk_size is odd, a single 0x00 byte follows. VP8X packs 7 useful flag bits into the first flag byte; bit positions are quoted from the spec diagram.
+config.url = "https://developers.google.com/speed/webp/docs/riff_container"
+input.endian = config.endian.little
+
+RIFF_MAGIC ::= "RIFF"
+WEBP_MAGIC ::= "WEBP"
+
+format WebPChunkHeader:
+    # §2. Every chunk: 4-byte ASCII FourCC + 4-byte LE size (size excludes the 8-byte header).
+    fourcc :[4]u8
+    size :u32
+
+format WebPVp8xPayload:
+    # §2.5.3 VP8X (Extended File Format) header is exactly 10 bytes of chunk payload.
+    # Flags byte bit layout (high→low per spec diagram "|Rsv|I|L|E|X|A|R|"):
+    #   bits 7..6 = Reserved (MUST be 0)
+    #   bit 5     = I : ICC profile present
+    #   bit 4     = L : Alpha present
+    #   bit 3     = E : EXIF metadata present
+    #   bit 2     = X : XMP metadata present
+    #   bit 1     = A : Animation present
+    #   bit 0     = R : Reserved (MUST be 0)
+    flags :u8
+    reserved :u24                     # MUST be 0
+    reserved == 0
+    canvas_width_minus1 :u24          # actual width = value + 1 (1..16777216)
+    canvas_height_minus1 :u24         # actual height = value + 1
+
+    fn has_icc_profile() -> bool:
+        return (flags & 0x20) != 0
+
+    fn has_alpha() -> bool:
+        return (flags & 0x10) != 0
+
+    fn has_exif() -> bool:
+        return (flags & 0x08) != 0
+
+    fn has_xmp() -> bool:
+        return (flags & 0x04) != 0
+
+    fn has_animation() -> bool:
+        return (flags & 0x02) != 0
+
+format WebPAnimPayload:
+    # §2.5.3 ANIM chunk payload: 6 bytes.
+    # Note: background color is stored in B, G, R, A byte order on disk (little-endian WebP convention).
+    background_bgra :[4]u8
+    loop_count :u16                   # 0 = infinite
+
+format WebPAnmfPayload:
+    # §2.5.3 ANMF chunk: 16-byte header followed by frame data (ALPH? + VP8/VP8L + unknowns).
+    # Frame X / Y are "divide by 2" values: actual coord = value * 2.
+    frame_x :u24
+    frame_y :u24
+    frame_width_minus1 :u24           # actual = value + 1
+    frame_height_minus1 :u24          # actual = value + 1
+    frame_duration_ms :u24
+    # flag byte bits (high→low): Reserved(6) | B (Blending method: 0=alpha, 1=overwrite) | D (Disposal: 0=none, 1=background)
+    flags :u8
+    frame_data :[..]u8                # remainder of the chunk payload; sub-parsing out of scope
+
+    fn blend_overwrite() -> bool:
+        return (flags & 0x02) != 0
+
+    fn dispose_to_background() -> bool:
+        return (flags & 0x01) != 0
+
+format WebPAlphPayload:
+    # §2.5.3 ALPH chunk: 1 flag byte + alpha bitstream.
+    # flag byte bits (high→low): Reserved(2) | P(2: preprocessing) | F(2: filtering) | C(2: compression)
+    flags :u8
+    alpha_bitstream :[..]u8
+
+    fn compression_method() -> u8:
+        return flags & 0x03                # 0=uncompressed, 1=VP8L format
+
+    fn filtering_method() -> u8:
+        return (flags >> 2) & 0x03         # 0=none, 1=horizontal, 2=vertical, 3=gradient
+
+    fn preprocessing_hint() -> u8:
+        return (flags >> 4) & 0x03
+
+format WebPChunk:
+    # Generic chunk framing — payload is kept as raw bytes. Higher-layer consumers re-parse
+    # `payload` as WebPVp8xPayload / WebPAnimPayload / etc. based on `header.fourcc`.
+    header :WebPChunkHeader
+    payload :[header.size]u8
+    # Padding: when header.size is odd, RIFF requires a single 0x00 pad byte.
+    if (header.size & 1) == 1:
+        pad :u8
+        pad == 0
+
+format WebPFile:
+    riff_magic :[4]u8                 # "RIFF"
+    file_size :u32                    # size of rest of file (total - 8)
+    webp_magic :[4]u8                 # "WEBP"
+    chunks :[..]WebPChunk             # consumer stops when file_size bytes are consumed

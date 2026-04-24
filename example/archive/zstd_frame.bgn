@@ -1,0 +1,94 @@
+# source: RFC 8878 (Zstandard Compression, fetched 2026-04-24) §3.1 Zstandard frames
+# scope: Zstandard frame framing — magic + Frame_Header (descriptor + optional Window_Descriptor + optional Dictionary_ID + optional Frame_Content_Size) + Block sequence + optional Content_Checksum
+# out-of-scope: Compressed_Block internals (literal sections, sequences section, FSE/Huffman probabilities); skippable frames (magic 0x184D2A50..5F); dictionary format; XXH64 checksum computation
+# note: All multi-byte fields are little-endian. Frame_Header_Descriptor bit packing is documented in MSB0 form; this file stores the descriptor as a u8 with accessor fns so bit-order interpretation is explicit rather than implicit.
+config.url = "https://datatracker.ietf.org/doc/html/rfc8878"
+input.endian = config.endian.little
+
+ZSTD_FRAME_MAGIC ::= 0xFD2FB528
+ZSTD_BLOCK_TYPE_RAW ::= 0
+ZSTD_BLOCK_TYPE_RLE ::= 1
+ZSTD_BLOCK_TYPE_COMPRESSED ::= 2
+ZSTD_BLOCK_TYPE_RESERVED ::= 3
+
+format ZstdFrameHeader:
+    # Frame_Header_Descriptor (1 byte):
+    # bits 7-6: Frame_Content_Size_flag (FCS_flag) | bit 5: Single_Segment_flag | bit 4: Unused (0)
+    # bit 3: Reserved (0) | bit 2: Content_Checksum_flag | bits 1-0: Dictionary_ID_flag
+    fhd :u8
+
+    # Window_Descriptor (1 byte) is present only when Single_Segment_flag = 0
+    if (fhd & 0x20) == 0:
+        window_descriptor :u8
+
+    # Dictionary_ID size: 0 / 1 / 2 / 4 bytes for flag value 0 / 1 / 2 / 3
+    if (fhd & 0x03) == 1:
+        dict_id_1 :u8
+    if (fhd & 0x03) == 2:
+        dict_id_2 :u16
+    if (fhd & 0x03) == 3:
+        dict_id_4 :u32
+
+    # Frame_Content_Size (0 / 1 / 2 / 4 / 8 bytes):
+    # FCS_flag == 0 → 1 byte if Single_Segment_flag=1, else 0 bytes (absent)
+    # FCS_flag == 1 → 2 bytes (add 256 to decoded value)
+    # FCS_flag == 2 → 4 bytes
+    # FCS_flag == 3 → 8 bytes
+    if (fhd >> 6) == 0 && (fhd & 0x20) != 0:
+        fcs_1 :u8
+    if (fhd >> 6) == 1:
+        fcs_2 :u16
+    if (fhd >> 6) == 2:
+        fcs_4 :u32
+    if (fhd >> 6) == 3:
+        fcs_8 :u64
+
+    fn fcs_flag() -> u8:
+        return (fhd >> 6) & 0x03
+
+    fn single_segment() -> bool:
+        return (fhd & 0x20) != 0
+
+    fn content_checksum_flag() -> bool:
+        return (fhd & 0x04) != 0
+
+    fn dict_id_flag() -> u8:
+        return fhd & 0x03
+
+format ZstdBlock:
+    # Block_Header is a single 24-bit little-endian word packing:
+    # bit 0    : Last_Block
+    # bits 1-2 : Block_Type (0=Raw, 1=RLE, 2=Compressed, 3=Reserved)
+    # bits 3-23: Block_Size (21 bits)
+    block_header :u24
+    # RLE blocks always have block-content size = 1 byte regardless of Block_Size (which is the run length).
+    # For Raw/Compressed blocks, block_content size == block_size bits.
+    data :[(block_header >> 3) & 0x001FFFFF]u8
+
+    fn last_block() -> bool:
+        return (block_header & 0x01) != 0
+
+    fn block_type() -> u8:
+        return u8((block_header >> 1) & 0x03)
+
+    fn block_size() -> u32:
+        return (block_header >> 3) & 0x001FFFFF
+
+format ZstdBlockStream:
+    # Sequence of blocks ending with one whose Last_Block bit is set.
+    blocks :[..]ZstdBlock
+
+    fn decode():
+        for:
+            b := input.get(ZstdBlock)
+            blocks[blocks.length] = b
+            if (<ZstdBlock>(b).block_header & 0x01) != 0:
+                break
+
+format ZstdFrame:
+    magic :u32
+    magic == ZSTD_FRAME_MAGIC
+    header :ZstdFrameHeader
+    blocks :ZstdBlockStream
+    # Content_Checksum: 4 bytes when header.fhd bit 2 set (low 4 bytes of XXH64 of decoded data).
+    # Presence is state-dependent so consumers read it post-hoc.
