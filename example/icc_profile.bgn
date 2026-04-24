@@ -1,0 +1,52 @@
+# source: ICC.1:2010 / v4.3/4.4 specification (https://www.color.org/specification/ICC.1-2022-05.pdf)
+# scope: ICC profile header (128 bytes) + tag table (count + 12-byte tag records)
+# out-of-scope: per-tag data structures (XYZ type, curveType, parametricCurveType, chromaticityType, textType, lutAToBType, lutBToAType, namedColor2Type, multiProcessElementsType, s15Fixed16ArrayType, etc. — each tag data block starts with its own type signature); colorimetric calculations; deviceModel-linked tags; psf tag table in DeviceLink profiles
+# note: ICC profiles are BIG-ENDIAN throughout (multi-byte integers). Version uses a packed nibble layout: byte 0 is the major version; byte 1's high nibble = minor, low nibble = bugfix; bytes 2-3 are reserved and MUST be 0.
+config.url = "https://www.color.org/specification/ICC.1-2022-05.pdf"
+input.endian = config.endian.big
+
+format IccDateTimeNumber:
+    # §4.2 dateTimeNumber — 12 bytes (6 × u16 BE: year, month, day, hours, minutes, seconds).
+    year :u16
+    month :u16                       # 1..12
+    day :u16                         # 1..31
+    hours :u16                       # 0..23
+    minutes :u16                     # 0..59
+    seconds :u16                     # 0..59
+
+format IccXyzNumber:
+    # §4.15 XYZNumber — three s15Fixed16Number values (each 4 bytes, signed 15.16 fixed-point).
+    x :i32
+    y :i32
+    z :i32
+
+format IccProfileHeader:
+    # §7.2 Profile header — 128 bytes fixed.
+    profile_size :u32
+    cmm_type :[4]u8                  # e.g. "ADBE", "appl", "lcms"
+    version :u32                     # packed: byte0=major, byte1 high nibble=minor, low nibble=bugfix, bytes 2-3=0
+    device_class :[4]u8              # "mntr" display / "prtr" printer / "scnr" scanner / "link" DeviceLink / "spac" color space / "abst" abstract / "nmcl" named color
+    color_space :[4]u8               # "RGB ", "CMYK", "GRAY", "Lab ", "XYZ ", "YCbr", "Yxy ", "HSV ", "HLS ", etc.
+    pcs :[4]u8                       # Profile Connection Space: "XYZ " or "Lab "
+    created :IccDateTimeNumber
+    profile_file_signature :"acsp"
+    primary_platform :[4]u8          # "APPL", "MSFT", "SGI ", "SUNW", or 4 zero bytes for none
+    profile_flags :u32               # bit 0 = embedded, bit 1 = use only embedded, higher bits ICC-defined
+    device_manufacturer :[4]u8
+    device_model :[4]u8
+    device_attributes :u64           # bit 0 = reflective/transparent, bit 1 = glossy/matte, bit 2 = media polarity, bit 3 = black/white media
+    rendering_intent :u32            # 0 = perceptual, 1 = media-relative colorimetric, 2 = saturation, 3 = ICC-absolute colorimetric
+    pcs_illuminant :IccXyzNumber     # fixed at D50 (0.9642, 1.0, 0.8249) for v2/v4
+    profile_creator :[4]u8
+    profile_id :[16]u8               # MD5 hash of the profile bytes with this field zeroed during hash
+    reserved :[28]u8                 # MUST be 0
+
+format IccTagRecord:
+    # §7.3 Tag table entry — 12 bytes per tag.
+    signature :[4]u8                 # ASCII tag code, e.g. "desc" (ProfileDescription), "wtpt" (MediaWhitePoint), "rTRC" (redTRC)
+    offset :u32                      # byte offset from start of profile
+    size :u32                        # byte count of the tag's data
+
+format IccTagTable:
+    count :u32
+    tags :[count]IccTagRecord

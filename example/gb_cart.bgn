@@ -1,0 +1,77 @@
+# source: Game Boy Pan Docs §The Cartridge Header (https://gbdev.io/pandocs/The_Cartridge_Header.html)
+# scope: Game Boy (DMG / CGB) cartridge header located at ROM addresses 0x0100-0x014F (80 bytes)
+# out-of-scope: Nintendo logo byte-pattern equality check (required for boot ROM to pass verification — bytes 0x0104-0x0133 MUST match the specific 48-byte sequence exactly); old licensee code lookup; new licensee code lookup; per-MBC ROM/RAM bank-switching mechanics; SGB palette / border data; checksum computation (header checksum = complement-sum of 0x0134-0x014C; global checksum = BE u16 sum of all ROM bytes except the two global checksum bytes)
+# note: Game Boy CPU is LR35902 (8-bit, little-endian-ish for register pairs). The header itself is mostly byte-wise; the one explicit multi-byte integer field (global_checksum) is stored BIG-ENDIAN unusually — the DMG boot ROM's verification logic consumes it that way.
+config.url = "https://gbdev.io/pandocs/The_Cartridge_Header.html"
+
+enum GbCartType:
+    :u8
+    # §The Cartridge Header — cartridge_type byte lists memory bank controller + extras.
+    rom_only = 0x00
+    mbc1 = 0x01
+    mbc1_ram = 0x02
+    mbc1_ram_battery = 0x03
+    mbc2 = 0x05
+    mbc2_battery = 0x06
+    rom_ram = 0x08                   # unused officially
+    rom_ram_battery = 0x09           # unused officially
+    mmm01 = 0x0B
+    mmm01_ram = 0x0C
+    mmm01_ram_battery = 0x0D
+    mbc3_timer_battery = 0x0F
+    mbc3_timer_ram_battery = 0x10
+    mbc3 = 0x11
+    mbc3_ram = 0x12
+    mbc3_ram_battery = 0x13
+    mbc5 = 0x19
+    mbc5_ram = 0x1A
+    mbc5_ram_battery = 0x1B
+    mbc5_rumble = 0x1C
+    mbc5_rumble_ram = 0x1D
+    mbc5_rumble_ram_battery = 0x1E
+    mbc6 = 0x20
+    mbc7_sensor_rumble_ram_battery = 0x22
+    pocket_camera = 0xFC
+    bandai_tama5 = 0xFD
+    huc3 = 0xFE
+    huc1_ram_battery = 0xFF
+
+enum GbCartRomSize:
+    :u8
+    # 32 KiB × 2^value. E.g., 0x00=32KiB, 0x01=64KiB, 0x08=8MiB.
+    size_32kib = 0x00
+    size_64kib = 0x01
+    size_128kib = 0x02
+    size_256kib = 0x03
+    size_512kib = 0x04
+    size_1mib = 0x05
+    size_2mib = 0x06
+    size_4mib = 0x07
+    size_8mib = 0x08
+
+enum GbCartRamSize:
+    :u8
+    none = 0x00
+    unused = 0x01                    # listed but not officially used
+    size_8kib = 0x02                 # one bank of 8KiB
+    size_32kib = 0x03                # four banks of 8KiB
+    size_128kib = 0x04               # sixteen banks of 8KiB
+    size_64kib = 0x05                # eight banks of 8KiB
+
+format GbCartHeader:
+    # 0x0100-0x014F (80 bytes). Declared in ROM address order.
+    entry_point :[4]u8               # 0x0100: typically NOP + JP to main routine
+    nintendo_logo :[48]u8            # 0x0104: fixed bitmap; bootrom verifies bitwise equality
+    title :[11]u8                    # 0x0134: ASCII title (upper-case, null-padded; older carts use 16 bytes total)
+    manufacturer_code :[4]u8         # 0x013F: 4-char publisher code (carved out of title on CGB-era carts)
+    cgb_flag :u8                     # 0x0143: 0x80 = CGB enhanced, 0xC0 = CGB only, otherwise DMG
+    new_licensee_code :[2]u8         # 0x0144: 2 ASCII chars used when old_licensee_code == 0x33
+    sgb_flag :u8                     # 0x0146: 0x03 = supports SGB; else DMG-only
+    cartridge_type :GbCartType       # 0x0147
+    rom_size :GbCartRomSize          # 0x0148
+    ram_size :GbCartRamSize          # 0x0149
+    destination_code :u8             # 0x014A: 0 = Japan, 1 = non-Japan
+    old_licensee_code :u8            # 0x014B: 0x33 = redirect to new_licensee_code
+    mask_rom_version :u8             # 0x014C
+    header_checksum :u8              # 0x014D: boot ROM verifies - sum of 0x0134..0x014C with formula
+    global_checksum :ub16            # 0x014E-0x014F: BE u16 sum of all ROM bytes except these two; not verified by bootrom

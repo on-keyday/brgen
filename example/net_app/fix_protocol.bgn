@@ -1,0 +1,24 @@
+# source: FIX Protocol tag-value encoding (https://www.fixtrading.org/standards/tagvalue-online/)
+# scope: FIX tag=value<SOH> field framing + mandatory header/trailer field anchors (BeginString=8, BodyLength=9, MsgType=35, CheckSum=10)
+# out-of-scope: complete dictionary of FIX 4.2 / 4.4 / 5.0 tag numbers + data types (int / string / float / UTCTimestamp / Price / Qty / Amt / ...); per-message-type body grammar (NewOrderSingle 'D' fields, ExecutionReport '8' fields, Logon 'A', Heartbeat '0', Reject '3', Resend Request '2', Sequence Reset '4', Logout '5'); repeating-group nested structures (NoXxx count + N group instances with fixed first-tag pattern); FIXML / FAST / SBE alternative encodings; FIX Session Layer state machine
+# note: FIX tag-value messages are ASCII text with fields delimited by the <SOH> control character (0x01, "Start of Heading"). Field order within the standard header is mandatory. BodyLength (tag 9) counts bytes from the character AFTER its own terminating <SOH> through the character BEFORE the CheckSum tag (10=). CheckSum is modulo-256 sum of all preceding bytes, formatted as 3-digit zero-padded ASCII.
+config.url = "https://www.fixtrading.org/standards/tagvalue-online/"
+
+format FixField:
+    # Single FIX field: tag digits + '=' + value bytes + 0x01 (<SOH>).
+    tag :[..]u8                      # ASCII decimal digits, e.g. "35", "52", "10001"
+    :"="
+    value :[..]u8                    # value bytes (opaque; MUST NOT contain <SOH>)
+    soh :"\x01"
+
+format FixHeaderAnchors:
+    # Mandatory ordered prefix of every FIX tag-value message (first 3 fields).
+    # Written as concrete FixField instances with specific tag strings so consumers can
+    # match positionally.
+    begin_string :FixField           # tag == "8", value == "FIX.4.2" / "FIX.4.4" / "FIXT.1.1" etc.
+    body_length :FixField            # tag == "9", value == ASCII decimal byte count
+    msg_type :FixField               # tag == "35", value == 1-2 char MsgType code
+
+format FixTrailer:
+    # Final field of every FIX tag-value message.
+    check_sum :FixField              # tag == "10", value == 3-digit zero-padded sum of all preceding bytes mod 256
