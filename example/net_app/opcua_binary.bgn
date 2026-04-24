@@ -1,0 +1,40 @@
+# source: OPC UA Part 6 §7.1 Message Format (https://reference.opcfoundation.org/Core/Part6/v105/docs/7.1)
+# scope: OPC UA binary TCP (UACP) — 8-byte common message header + Hello / Acknowledge / Error message bodies
+# out-of-scope: OpenSecureChannel ("OPN") / CloseSecureChannel ("CLO") / generic Message ("MSG") bodies which carry SecurityPolicyUri + SenderCertificate + ReceiverCertificateThumbprint + encoded Service payload; chunk reassembly when chunk_type == 'C' (intermediate); Abort handling when chunk_type == 'A'; OPC UA encoded Strings / ByteStrings / NodeIds / ExpandedNodeIds / QualifiedNames / LocalizedTexts / ExtensionObjects / DiagnosticInfos inside service payloads; binary encoding of DataValue / Variant union; OPC UA Secure Conversation nonces and MAC verification
+# note: OPC UA binary TCP is LITTLE-ENDIAN throughout. MessageType is three ASCII bytes (not a numeric code). ChunkType byte is ASCII 'F' (Final) / 'C' (Intermediate) / 'A' (Abort). String fields are length-prefixed as int32 LE with -1 indicating null.
+config.url = "https://reference.opcfoundation.org/Core/Part6/v105/docs/7.1"
+input.endian = config.endian.little
+
+format OpcUaMessageHeader:
+    # §7.1.2.2 Common message header — 8 bytes.
+    message_type :[3]u8                      # "HEL" Hello / "ACK" Acknowledge / "ERR" Error / "RHE" ReverseHello / "OPN" OpenSecureChannel / "CLO" CloseSecureChannel / "MSG" Message
+    chunk_type :u8                           # 'F' Final / 'C' Intermediate / 'A' Abort (ASCII)
+    message_size :u32                        # total byte count including this 8-byte header
+
+format OpcUaString:
+    # §5.2.2.4 String — int32 byte length + UTF-8 bytes; length == -1 denotes null.
+    length :i32
+    if length >= 0:
+        bytes :[length]u8
+
+format OpcUaHelloBody:
+    # §7.1.2.3 Hello message body — sent by client on connection.
+    protocol_version :u32
+    receive_buffer_size :u32                 # server's advertised incoming buffer capacity
+    send_buffer_size :u32
+    max_message_size :u32                    # 0 = unlimited
+    max_chunk_count :u32                     # 0 = unlimited
+    endpoint_url :OpcUaString                # client's intended endpoint
+
+format OpcUaAcknowledgeBody:
+    # §7.1.2.4 Acknowledge message body — server's response to Hello.
+    protocol_version :u32
+    receive_buffer_size :u32
+    send_buffer_size :u32
+    max_message_size :u32
+    max_chunk_count :u32
+
+format OpcUaErrorBody:
+    # §7.1.2.5 Error message body — UACP-level fatal error before channel open.
+    error :u32                               # OPC UA StatusCode (e.g. 0x80810000 BadProtocolVersionUnsupported)
+    reason :OpcUaString                      # human-readable diagnostic ≤ 4096 bytes encoded

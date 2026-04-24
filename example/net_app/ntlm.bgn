@@ -1,0 +1,80 @@
+# source: MS-NLMP §2.2.1.2 CHALLENGE_MESSAGE, §2.2.2.5 NEGOTIATE flags, §2.2.2.10 VERSION, §2.2.2.1 AV_PAIR (fetched 2026-04-23)
+# scope: NTLM CHALLENGE_MESSAGE full layout with security-buffer resolution via absolute offsets; AV_PAIR sequence decomposition
+# out-of-scope: NEGOTIATE_MESSAGE (§2.2.1.1), AUTHENTICATE_MESSAGE (§2.2.1.3), individual AV_PAIR textual content decoding
+# note: All multi-byte integers are little-endian per MS-NLMP. TargetName/TargetInfo are referenced by byte offset from message start.
+config.url = "https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-nlmp/801a4681-8809-4be9-ab0d-61dcfe762786"
+input.endian = config.endian.little
+
+enum NtlmMessageType:
+    :u32
+    negotiate = 0x00000001
+    challenge = 0x00000002
+    authenticate = 0x00000003
+
+# §2.2.2.1 AV_PAIR AvId values
+enum NtlmAvId:
+    :u16
+    MsvAvEOL = 0x0000
+    MsvAvNbComputerName = 0x0001
+    MsvAvNbDomainName = 0x0002
+    MsvAvDnsComputerName = 0x0003
+    MsvAvDnsDomainName = 0x0004
+    MsvAvDnsTreeName = 0x0005
+    MsvAvFlags = 0x0006
+    MsvAvTimestamp = 0x0007
+    MsvAvSingleHost = 0x0008
+    MsvAvTargetName = 0x0009
+    MsvAvChannelBindings = 0x000A
+
+format NtlmSecurityBuffer:
+    # §2.2.1.2 field diagram: |Len(2)|MaxLen(2)|BufferOffset(4)|
+    # Len and MaxLen both count bytes; BufferOffset is absolute from start of CHALLENGE_MESSAGE.
+    len :u16
+    max_len :u16
+    buffer_offset :u32
+
+format NtlmVersion:
+    # §2.2.2.10 VERSION (8 bytes)
+    product_major_version :u8
+    product_minor_version :u8
+    product_build :u16
+    reserved :[3]u8
+    ntlm_revision_current :u8  # typically 0x0F
+
+format NtlmAvPair:
+    # §2.2.2.1: AV_PAIR is a variable-length TLV sequence terminated by MsvAvEOL (AvId=0, AvLen=0).
+    av_id :NtlmAvId
+    av_len :u16
+    value :[av_len]u8
+
+format NtlmTargetInfo:
+    # Sequence of AV_PAIR terminated by one with av_id == MsvAvEOL and av_len == 0.
+    pairs :[]NtlmAvPair
+
+    fn decode():
+        for:
+            p := input.get(NtlmAvPair)
+            pairs[pairs.length] = p
+            if p.av_id == NtlmAvId.MsvAvEOL:
+                break
+
+    fn encode():
+        for i in pairs.length:
+            output.put(pairs[i])
+            if i == pairs.length - 1:
+                pairs[i].av_id == NtlmAvId.MsvAvEOL
+
+format NtlmChallengeMessage:
+    # §2.2.1.2 CHALLENGE_MESSAGE
+    signature :"NTLMSSP\x00"
+    message_type :NtlmMessageType
+    message_type == NtlmMessageType.challenge
+    target_name_fields :NtlmSecurityBuffer
+    negotiate_flags :u32
+    server_challenge :[8]u8
+    reserved :[8]u8
+    target_info_fields :NtlmSecurityBuffer
+    version :NtlmVersion  # valid only when NTLMSSP_NEGOTIATE_VERSION is set in negotiate_flags; otherwise MUST be zero
+    # Payload data accessed at absolute offsets from message start:
+    target_name :[target_name_fields.len]u8(input = input.subrange(target_name_fields.len, target_name_fields.buffer_offset))
+    target_info :NtlmTargetInfo(input = input.subrange(target_info_fields.len, target_info_fields.buffer_offset))

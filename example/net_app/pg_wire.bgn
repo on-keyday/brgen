@@ -1,0 +1,86 @@
+# source: PostgreSQL docs "Message Formats" (protocol v3) at postgresql.org/docs/current/protocol-message-formats.html (fetched 2026-04-23)
+# scope: common message envelope (type byte + length + body), StartupMessage special case, frontend/backend type enums, ReadyForQuery transaction status enum
+# out-of-scope: per-message body layout (Query string, Parse/Bind parameter lists, RowDescription field tuples, error-response field codes, authentication sub-types); SSL/GSSENC request packets
+# note: All multi-byte integers are big-endian (network order). The length field includes itself but NOT the 1-byte type identifier. Strings are NUL-terminated.
+
+config.url = "https://www.postgresql.org/docs/current/protocol-message-formats.html"
+
+# Frontend messages (client → server). Note: some type letters collide with backend (e.g., 'D', 'E', 'S', 'C') but the meaning is context-dependent.
+enum PgFrontendType:
+    :u8
+    query = 'Q'
+    parse = 'P'
+    bind = 'B'
+    describe = 'D'
+    execute = 'E'
+    sync = 'S'
+    flush = 'H'
+    terminate = 'X'
+    copy_data = 'd'
+    copy_done = 'c'
+    copy_fail = 'f'
+    function_call = 'F'
+    close = 'C'
+    password_message = 'p'       # also SASLInitialResponse / SASLResponse / GSSResponse
+
+# Backend messages (server → client).
+enum PgBackendType:
+    :u8
+    authentication = 'R'
+    parameter_status = 'S'
+    backend_key_data = 'K'
+    ready_for_query = 'Z'
+    row_description = 'T'
+    data_row = 'D'
+    command_complete = 'C'
+    error_response = 'E'
+    notice_response = 'N'
+    notification_response = 'A'
+    portal_suspended = 's'
+    empty_query_response = 'I'
+    parse_complete = '1'
+    bind_complete = '2'
+    close_complete = '3'
+    no_data = 'n'
+    parameter_description = 't'
+    function_call_response = 'V'
+    copy_in_response = 'G'
+    copy_out_response = 'H'
+    copy_both_response = 'W'
+    negotiate_protocol_version = 'v'
+
+enum PgTransactionStatus:
+    :u8
+    idle = 'I'                   # not in a transaction
+    in_transaction = 'T'         # within a transaction block
+    failed = 'E'                 # failed transaction, commands ignored until ROLLBACK
+
+format PgMessage:
+    # Common framing for all messages except StartupMessage/SSLRequest/GSSENCRequest/CancelRequest.
+    msg_type :u8
+    length :u32                  # includes these 4 bytes, excludes the msg_type byte
+    length >= 4
+    body :[length - 4]u8         # message-specific payload
+
+format PgStartupMessage:
+    # Special first-message form (no leading type byte).
+    length :u32                  # includes self + protocol_version + params + terminator
+    length >= 8
+    protocol_version :u32        # e.g. 196608 = 3.0, 196610 = 3.2
+    body :[length - 8]u8         # sequence of NUL-terminated "name\0value\0" pairs, terminated by an empty name (single \0)
+    # FIXME: body parsing as parameter list requires NUL-terminated-string reading loop; left as opaque bytes here.
+
+format PgCancelRequest:
+    # Special framing: no type byte, fixed 16-byte message.
+    length :u32                  # MUST be 16
+    length == 16
+    cancel_request_code :u32     # MUST be 80877102 (1234 << 16 | 5678)
+    cancel_request_code == 80877102
+    backend_pid :u32             # from prior BackendKeyData
+    backend_secret :u32          # from prior BackendKeyData
+
+format PgSSLRequest:
+    length :u32                  # MUST be 8
+    length == 8
+    ssl_request_code :u32        # MUST be 80877103 (1234 << 16 | 5679)
+    ssl_request_code == 80877103

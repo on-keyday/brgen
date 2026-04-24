@@ -1,0 +1,33 @@
+# source: W3C WOFF2 Recommendation (https://www.w3.org/TR/WOFF2/)
+# scope: WOFF2 48-byte file header + TableDirectoryEntry framing
+# out-of-scope: UIntBase128 variable-length integer (1-5 bytes, 7 bits per byte, MSB=continuation — same shape as LEB128 but BIG-ENDIAN like ASN.1 BER length octets); brotli-compressed table data block; glyf/loca transform (Version 3) processing; optional metadata XML (brotli-compressed, 4-byte-aligned); optional private data block; WOFF2 reserved tag index table mapping tag indices 0..62 to well-known sfnt table tags
+# note: WOFF2 is BIG-ENDIAN throughout. TableDirectoryEntry's `flags` byte packs a 2-bit transform-version number (high bits) and a 6-bit tag index (low bits); value 0x3F means the tag is explicit (4 bytes follow), otherwise the tag is looked up from the well-known table index.
+config.url = "https://www.w3.org/TR/WOFF2/"
+input.endian = config.endian.big
+
+WOFF2_SIGNATURE ::= 0x774F4632              # "wOF2"
+
+format Woff2Header:
+    # 48 bytes.
+    signature :u32(WOFF2_SIGNATURE)
+    flavor :u32                              # "sfnt version": 0x00010000 TTF, 0x4F54544F ("OTTO") CFF/OpenType
+    length :u32                              # total WOFF2 file size
+    num_tables :u16
+    reserved :u16                            # MUST be 0
+    reserved == 0
+    total_sfnt_size :u32                     # uncompressed original font size
+    total_compressed_size :u32               # brotli-compressed table data blob size
+    major_version :u16
+    minor_version :u16
+    meta_offset :u32                         # 0 if no metadata block
+    meta_length :u32                         # compressed size
+    meta_orig_length :u32                    # uncompressed size
+    priv_offset :u32                         # 0 if no private block
+    priv_length :u32
+
+format Woff2TableDirectoryEntryFlags:
+    # 1-byte flags: 2-bit transform version (high) + 6-bit tag index (low).
+    # transform_version != 0 means a table-type-specific transform is applied; transformLength field follows origLength.
+    # tag_index == 0x3F means the 4-byte tag is explicit (follows the flags byte).
+    transform_version :u2
+    tag_index :u6

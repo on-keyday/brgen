@@ -1,0 +1,89 @@
+# source: IEEE Std 802.1AB-2016 (Link Layer Discovery Protocol), widely-accepted Wireshark dissector interpretation (fetched 2026-04-24)
+# scope: LLDPDU TLV framing + TLV Type enumeration + mandatory TLV payloads (Chassis ID / Port ID / TTL)
+# out-of-scope: Ethernet framing details (destination MAC 01:80:C2:00:00:0E, EtherType 0x88CC); optional TLV payloads beyond trivial variants; organizationally-specific (type=127) TLV subtype parsing; IEEE 802.1/802.3 TLV subtype registries
+# note: TLV header packs 7-bit Type into the high bits and 9-bit Length into the low bits of a single 16-bit big-endian word. LLDPDU terminates on End-of-LLDPDU TLV (type=0, length=0).
+config.url = "https://www.ieee802.org/1/pages/802.1ab.html"
+
+enum TlvType:
+    :u7
+    end_of_lldpdu = 0
+    chassis_id = 1                # mandatory, first
+    port_id = 2                   # mandatory, second
+    time_to_live = 3              # mandatory, third
+    port_description = 4
+    system_name = 5
+    system_description = 6
+    system_capabilities = 7
+    management_address = 8
+    org_specific = 127            # 3-byte OUI + 1-byte subtype + data
+
+enum ChassisIdSubtype:
+    :u8
+    reserved = 0
+    chassis_component = 1
+    interface_alias = 2
+    port_component = 3
+    mac_address = 4
+    network_address = 5
+    interface_name = 6
+    locally_assigned = 7
+
+enum PortIdSubtype:
+    :u8
+    reserved = 0
+    interface_alias = 1
+    port_component = 2
+    mac_address = 3
+    network_address = 4
+    interface_name = 5
+    agent_circuit_id = 6
+    locally_assigned = 7
+
+format LldpTlvHeader:
+    # 16-bit big-endian: 7 bits Type + 9 bits Length
+    type :TlvType
+    length :u9
+
+format ChassisIdTlvValue:
+    # §8.5.2: Chassis ID TLV payload
+    subtype :ChassisIdSubtype
+    value :[..]u8                 # length = outer Length - 1
+
+format PortIdTlvValue:
+    # §8.5.3: Port ID TLV payload
+    subtype :PortIdSubtype
+    value :[..]u8
+
+format TtlTlvValue:
+    # §8.5.4: Time To Live TLV payload (2-byte seconds)
+    ttl_seconds :u16
+
+format SystemCapabilitiesTlvValue:
+    # §8.5.8: System Capabilities TLV payload
+    # bits (capability_supported / capability_enabled): 0=Other, 1=Repeater, 2=MAC Bridge,
+    # 3=WLAN AP, 4=Router, 5=Telephone, 6=DOCSIS Cable Device, 7=Station Only
+    supported :u16
+    enabled :u16
+
+format OrgSpecificTlvValue:
+    # §8.5.9: 3-byte OUI + 1-byte organizationally-defined subtype + data
+    oui :[3]u8
+    subtype :u8
+    data :[..]u8
+
+format LldpTlv:
+    header :LldpTlvHeader
+    # raw payload; interpretation depends on header.type. Higher-layer consumers
+    # should re-parse `value` as one of the *TlvValue formats above based on type.
+    value :[header.length]u8
+
+format Lldpdu:
+    # §8.2: LLDPDU = mandatory Chassis ID + Port ID + TTL + zero-or-more optional TLVs + End-of-LLDPDU
+    tlvs :[..]LldpTlv
+
+    fn decode():
+        for:
+            t := input.get(LldpTlv)
+            tlvs[tlvs.length] = t
+            if <LldpTlv>(t).header.type == TlvType.end_of_lldpdu:
+                break

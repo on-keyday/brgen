@@ -1,0 +1,58 @@
+# source: NetCDF Classic Format Specification (https://docs.unidata.ucar.edu/netcdf-c/current/file_format_specifications.html)
+# scope: NetCDF classic (v1 "CDF\x01") and 64-bit offset (v2 "CDF\x02") file header — magic + numrecs + dim / attr / var list tags and records
+# out-of-scope: per-type attribute values (NC_BYTE / NC_CHAR / NC_SHORT / NC_INT / NC_FLOAT / NC_DOUBLE decoded to native types); variable data section layout (fixed-size vars concatenated at their begin offset, record vars interleaved by record number); NetCDF-4 HDF5-based format (uses example/hdf5_superblock.bgn structure); PnetCDF parallel extensions
+# note: NetCDF classic is BIG-ENDIAN throughout. Every name / value block is padded with zero bytes to a 4-byte boundary. Absent lists are encoded as two consecutive zero int32 words (tag = 0, count = 0). Present lists have a type tag (NC_DIMENSION=10 / NC_VARIABLE=11 / NC_ATTRIBUTE=12) followed by an int32 count and the records.
+config.url = "https://docs.unidata.ucar.edu/netcdf-c/current/file_format_specifications.html"
+input.endian = config.endian.big
+
+NC_UNLIMITED_NUMRECS ::= 0xFFFFFFFF
+
+enum NcTag:
+    :u32
+    absent = 0                           # Used when a list is empty (paired with count == 0)
+    dimension = 10
+    variable = 11
+    attribute = 12
+
+enum NcType:
+    :u32
+    nc_byte = 1                          # signed 8-bit
+    nc_char = 2                          # 8-bit character
+    nc_short = 3                         # signed 16-bit
+    nc_int = 4                           # signed 32-bit
+    nc_float = 5                         # IEEE 754 32-bit
+    nc_double = 6                        # IEEE 754 64-bit
+    # v2 64-bit-offset adds nc_ubyte=7 / nc_ushort=8 / nc_uint=9 / nc_int64=10 / nc_uint64=11 / nc_string=12 (these are used by netCDF-4 layer)
+
+format NcName:
+    # §name — int32 length prefix + length bytes of ASCII + zero-padding to 4-byte boundary.
+    # Padding count is not stored; consumers compute (-length % 4 + 4) % 4.
+    length :u32
+    name :[length]u8
+    # Zero-padding bytes follow; their count is implicit.
+
+format NcDim:
+    # §dim — name + int32 dim_length (0 = unlimited dimension)
+    name :NcName
+    dim_length :u32
+
+format NcAttr:
+    # §attr — name + nc_type + int32 nelems + values (type-specific encoding, padded to 4 bytes)
+    name :NcName
+    nc_type :NcType
+    nelems :u32
+    # values follow; byte count = nelems * sizeof(nc_type), then zero-padded to 4-byte boundary.
+
+format NetCdf3Magic:
+    # 4 bytes. "CDF\x01" = classic 32-bit offset, "CDF\x02" = 64-bit offset (2005 extension),
+    # "CDF\x05" = 64-bit data (CDF-5, PnetCDF extension with unsigned + 64-bit integer types).
+    magic :[4]u8
+    magic == "CDF\x01" || magic == "CDF\x02" || magic == "CDF\x05"
+
+format NetCdf3Header:
+    magic :NetCdf3Magic
+    numrecs :u32                         # number of record variable entries; NC_UNLIMITED_NUMRECS for streaming files
+    # Followed by three list sections, each either "absent" (tag=0, count=0) or "present" with records.
+    # Dim list: NcDim × dim_count
+    # Gatt list: NcAttr × gatt_count (global attributes)
+    # Var list: variables with names, dimension references, attributes, nc_type, vsize, begin_offset

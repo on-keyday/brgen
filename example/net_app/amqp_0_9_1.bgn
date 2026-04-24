@@ -1,0 +1,46 @@
+# source: AMQP 0-9-1 specification (https://www.rabbitmq.com/resources/specs/amqp0-9-1.pdf)
+# scope: AMQP 0-9-1 frame envelope (7-byte header + payload + 1-byte frame-end marker); protocol header (connection start); frame type enumeration; generic method/content-header/content-body frame payload framing
+# out-of-scope: AMQP field-table / field-array / typed-value encodings used inside method arguments and content-header properties; class / method catalog (Connection.Start, Channel.Open, Basic.Publish, etc. — hundreds of class × method combinations); content-header property flag compaction (variable-length bitfield where a continuation bit extends into further u16 words); heartbeat timing logic
+# note: All multi-byte integers are big-endian (network byte order). The 0xCE frame-end byte is a strict delimiter — consumers MUST verify its presence to detect framing errors. Protocol header "AMQP\x00\x00\x09\x01" is sent once per connection as the client's greeting, outside the frame framing.
+config.url = "https://www.rabbitmq.com/resources/specs/amqp0-9-1.pdf"
+
+AMQP_FRAME_END ::= 0xCE
+
+enum AmqpFrameType:
+    :u8
+    method = 1                       # AMQP class/method + typed arguments
+    content_header = 2               # content metadata (per-message headers)
+    content_body = 3                 # opaque message body chunk
+    heartbeat = 8                    # 0-payload keepalive
+
+format AmqpProtocolHeader:
+    # §4.2 connection start — literal 8-byte greeting.
+    literal :"AMQP"
+    zero :u8                         # MUST be 0
+    zero == 0
+    major :u8                        # 0 for AMQP 0-9-1
+    minor :u8                        # 9
+    revision :u8                     # 1
+
+format AmqpFrame:
+    # §4.2.2 generic frame = 1-byte type + 2-byte channel + 4-byte size + payload + 0xCE end.
+    type :AmqpFrameType
+    channel :u16                     # 0 = connection-level; 1..N = per-channel
+    payload_size :u32
+    payload :[payload_size]u8        # interpretation depends on type; re-parse per method/content formats below
+    frame_end :u8(AMQP_FRAME_END)
+
+format AmqpMethodPayload:
+    # §4.2.3 method frame payload — class/method IDs + argument list (typed fields, out-of-scope).
+    class_id :u16
+    method_id :u16
+    arguments :[..]u8                # AMQP-typed field list; decoding requires the class/method catalog
+
+format AmqpContentHeaderPayload:
+    # §4.2.6 content-header frame payload — class_id + weight + body_size + property_flags + property list.
+    class_id :u16
+    weight :u16                      # reserved; MUST be 0
+    weight == 0
+    body_size :u64                   # total content-body bytes across subsequent content_body frames
+    property_flags :u16              # bitmask of which properties follow; bit 0 of subsequent u16 words chains
+    properties :[..]u8               # variable, shape determined by property_flags (out-of-scope)

@@ -1,0 +1,44 @@
+# source: Adobe FLV File Format Specification v10.1 Annex E, cross-checked against Wikipedia Flash_Video article (fetched 2026-04-23)
+# scope: FLV file header (9 bytes) + FLV tag chain with PreviousTagSize framing; TagType enumeration
+# out-of-scope: per-tag-type data body layout (AudioTagHeader SoundFormat/SoundRate/SoundSize/SoundType bits; VideoTagHeader FrameType/CodecID; ScriptDataValue AMF0/AMF3 encoding)
+# note: All multi-byte integers are big-endian. Flags byte's bit 2 = audio present, bit 0 = video present; bits 7-3 and 1 are reserved (must be zero). 32-bit timestamp is composed of Timestamp (u24) as low 24 bits and TimestampExtended (u8) as high 8 bits.
+config.url = "https://en.wikipedia.org/wiki/Flash_Video"
+
+enum FlvTagType:
+    :u8
+    audio = 8
+    video = 9
+    script_data = 18
+
+format FlvHeader:
+    # 9-byte header
+    signature :"FLV"
+    version :u8                 # typically 0x01
+    # Flags byte: |Rsvd(5)|TypeFlagsAudio(1)|Rsvd(1)|TypeFlagsVideo(1)|
+    # Wire order MSB first per IETF convention.
+    reserved1 :u5
+    has_audio :u1
+    reserved2 :u1
+    has_video :u1
+    data_offset :u32            # offset from file start to first byte after this header; typically 9
+
+format FlvTag:
+    tag_type :FlvTagType
+    data_size :u24              # length of Data field in bytes
+    timestamp :u24              # timestamp in milliseconds (low 24 bits)
+    timestamp_extended :u8      # high 8 bits of 32-bit timestamp
+    stream_id :u24              # always 0 per spec
+    stream_id == 0
+    data :[data_size]u8         # tag-type-specific payload; decomposition out-of-scope here
+
+format FlvFile:
+    header :FlvHeader
+    # PreviousTagSize0 precedes the first tag and is always 0 per spec.
+    previous_tag_size0 :u32
+    previous_tag_size0 == 0
+    tags :[..]FlvTagWithTrailer
+
+format FlvTagWithTrailer:
+    # Each tag is followed by a PreviousTagSize field that equals 11 + tag.data_size.
+    tag :FlvTag
+    previous_tag_size :u32      # SHOULD equal 11 + tag.data_size

@@ -3,8 +3,8 @@ format BPFHeader:
     magic :ub16
     if magic != 0xeb9f || magic != 0x9feb:
         error("Invalid magic number ",magic)
-    config.endian = magic == 0xeb9f  ? config.endian.big : config.endian.little
     endian.is_big = magic == 0xeb9f
+    config.endian = endian.is_big  ? config.endian.big : config.endian.little
     flags :u8
     version :u8
     header_len :u32
@@ -13,16 +13,29 @@ format BPFHeader:
     str_offset :u32
     str_len :u32
     
+config.url = "https://github.com/torvalds/linux/blob/dd6c438c3e64a5ff0b5d7e78f7f9be547803ef1b/include/uapi/linux/bpf.h#L80"
+# Original kernel struct is  
+#```
+#struct bpf_insn {
+#	__u8	code;		/* opcode */
+#	__u8	dst_reg:4;	/* dest register */
+#	__u8	src_reg:4;	/* source register */
+#	__s16	off;		/* signed offset */
+#	__s32	imm;		/* signed immediate constant */
+#};
+#```
+# if big endian architecture, 
 format Instruction:
     input.endian = config.endian.native
-    config.type = u64
-    immediate :i32 
-    offset :u16
-    src :u4
+    opcode :BPF_OP
     dst :u4
-    opcode :u8
+    src :u4
+    offset :u16
+    immediate :i32 
 
-    
+
+
+   
     
 enum BPF_OP:
     :u8

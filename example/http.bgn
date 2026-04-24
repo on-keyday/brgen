@@ -1,4 +1,6 @@
 
+config.url = "https://datatracker.ietf.org/doc/html/rfc9112"
+
 format RequestLine:
     method :[..]u8
     :" "
@@ -30,3 +32,45 @@ format ResponseHeader:
     line :ResponseLine
     fields :[..]Field
     :"\r\n"
+
+# RFC 9112 §7.1 Transfer-Encoding: chunked
+# Applied when Transfer-Encoding header includes "chunked" as its last coding.
+# Body = sequence of chunks, each with ASCII-hex size line + data + CRLF, terminated by a 0-size chunk
+# followed by optional trailer fields and a final CRLF.
+
+fn parseHexSize(s :[]u8) -> u64:
+    # Parse hex digits stopping at first non-hex character (e.g. ';' for chunk-extensions).
+    result := u64(0)
+    for i in s.length:
+        c := s[i]
+        if c >= '0' && c <= '9':
+            result = (result << 4) | u64(c - '0')
+        elif c >= 'a' && c <= 'f':
+            result = (result << 4) | (u64(c - 'a') + 10)
+        elif c >= 'A' && c <= 'F':
+            result = (result << 4) | (u64(c - 'A') + 10)
+        else:
+            break
+    return result
+
+format ChunkSize:
+    # ASCII-hex size, optionally followed by ";chunk-extensions" per RFC 9112 §7.1.1.
+    hex_ascii :[..]u8
+    :"\r\n"
+
+format Chunk:
+    size :ChunkSize
+    data :[parseHexSize(size.hex_ascii)]u8
+    :"\r\n"
+
+format ChunkedBody:
+    # Reads chunks until a size-0 chunk is seen. Trailer fields (§7.1.2) after the 0-size chunk
+    # are out-of-scope; the trailing CRLF is consumed by the 0-size Chunk's data/CRLF pair.
+    chunks :[]Chunk
+
+    fn decode():
+        for:
+            c := input.get(Chunk)
+            chunks[chunks.length] = c
+            if parseHexSize(<ChunkSize>(c).size.hex_ascii) == 0:
+                break

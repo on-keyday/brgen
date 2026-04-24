@@ -1,0 +1,43 @@
+# source: RFC 3261 §7 (SIP Messages), §25 (Augmented BNF grammar) (fetched 2026-04-23)
+# scope: SIP request/response start-line + header-field line + message envelope; text protocol with ASCII + CRLF framing
+# out-of-scope: message-body (content type dispatched by Content-Type; length by Content-Length); folded header lines (line continuation via LWS); URI parsing; per-header ABNF (Via parameters, CSeq method binding, Contact parameters, etc.)
+# note: SIP is a text protocol; all lines terminate with CRLF. The empty line between headers and body is mandatory even when body is absent.
+config.url = "https://datatracker.ietf.org/doc/html/rfc3261"
+
+format SipRequestLine:
+    # §7.1: Request-Line = Method SP Request-URI SP SIP-Version CRLF
+    method :[..]u8                    # INVITE, ACK, BYE, CANCEL, REGISTER, OPTIONS, or extension method
+    :" "
+    request_uri :[..]u8
+    :" "
+    sip_version :[..]u8               # typically "SIP/2.0"
+    :"\r\n"
+
+format SipStatusLine:
+    # §7.2: Status-Line = SIP-Version SP Status-Code SP Reason-Phrase CRLF
+    sip_version :[..]u8
+    :" "
+    status_code :[..]u8               # three ASCII digits, e.g. "200", "404", "486"
+    :" "
+    reason_phrase :[..]u8
+    :"\r\n"
+
+format SipHeaderField:
+    # §7.3: message-header = field-name ":" [LWS] field-value CRLF
+    # FIXME: simplified — proper ABNF allows optional LWS after ':' and line-folding continuation (ignored here).
+    name :[..]u8
+    :":"
+    value :[..]u8
+    :"\r\n"
+
+format SipRequestMessage:
+    # §7: generic-message = start-line *(message-header CRLF) CRLF [message-body]
+    start_line :SipRequestLine
+    fields :[..]SipHeaderField
+    :"\r\n"
+    # message-body follows; length determined by Content-Length header. Declarative size expression out-of-scope here.
+
+format SipResponseMessage:
+    start_line :SipStatusLine
+    fields :[..]SipHeaderField
+    :"\r\n"

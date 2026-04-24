@@ -1,0 +1,80 @@
+# source: ITU-T T.81 / ISO 10918-1 JPEG specification §B (Compressed Data Formats) - marker definitions
+# scope: JPEG marker structure (0xFF prefix + marker code + optional variable segment), stand-alone markers (SOI/EOI/RSTn), SOF0 (baseline DCT) frame header with component specifications
+# out-of-scope: DHT/DQT/SOS segment body; entropy-coded segment (ECS) with 0xFF 0x00 byte stuffing; APP segment payloads (JFIF/Exif); DCT coefficient and Huffman-encoded scan data; progressive/hierarchical/lossless modes
+# note: Multi-byte integers are big-endian. Each marker starts with 0xFF followed by a non-zero marker code (0x00 is byte-stuffing escape; 0xFF 0xFF... is fill/padding). Stand-alone markers carry no length/payload. All other markers have a u16 BE segment length that INCLUDES the length bytes themselves but NOT the 2-byte marker prefix.
+
+config.url = "https://www.w3.org/Graphics/JPEG/itu-t81.pdf"
+
+enum JpegMarker:
+    # the code byte following the 0xFF prefix
+    :u8                               
+    # Stand-alone markers (no length, no data):
+    SOI = 0xD8                        # Start Of Image
+    EOI = 0xD9                        # End Of Image
+    RST0 = 0xD0                       # Restart markers
+    RST1 = 0xD1
+    RST2 = 0xD2
+    RST3 = 0xD3
+    RST4 = 0xD4
+    RST5 = 0xD5
+    RST6 = 0xD6
+    RST7 = 0xD7
+    TEM = 0x01                        # Temporary private use
+    # Markers with length + payload:
+    SOF0 = 0xC0                       # Baseline DCT frame
+    SOF1 = 0xC1                       # Extended sequential DCT
+    SOF2 = 0xC2                       # Progressive DCT
+    SOF3 = 0xC3                       # Lossless
+    DHT = 0xC4                        # Define Huffman Table
+    SOF5 = 0xC5
+    SOF6 = 0xC6
+    SOF7 = 0xC7
+    JPG = 0xC8                        # JPEG extension reserved
+    SOF9 = 0xC9
+    SOF10 = 0xCA
+    SOF11 = 0xCB
+    DAC = 0xCC                        # Define Arithmetic Coding
+    SOF13 = 0xCD
+    SOF14 = 0xCE
+    SOF15 = 0xCF
+    SOS = 0xDA                        # Start Of Scan
+    DQT = 0xDB                        # Define Quantization Table
+    DNL = 0xDC                        # Define Number of Lines
+    DRI = 0xDD                        # Define Restart Interval
+    DHP = 0xDE                        # Define Hierarchical Progression
+    EXP = 0xDF                        # Expand Reference Component
+    APP0 = 0xE0                       # Application-specific (JFIF uses APP0, Exif uses APP1)
+    APP1 = 0xE1
+    APP2 = 0xE2
+    # ... APP3-APPF follow
+    COM = 0xFE                        # Comment
+
+format JpegMarkerPrefix:
+    ff :u8
+    ff == 0xFF
+    code :JpegMarker
+
+format JpegSegmentWithData:
+    # Marker + u16 BE length (including itself) + length-2 bytes of data
+    prefix :JpegMarkerPrefix
+    length :u16                       # includes these 2 bytes, excludes the 2-byte 0xFF+code prefix
+    length >= 2
+    data :[length - 2]u8              # segment-type-specific payload
+
+format JpegComponent:
+    # §B.2.2 Frame component-specification parameter (3 bytes per component in SOF0)
+    component_id :u8                  # 1=Y, 2=Cb, 3=Cr for JFIF; other per application
+    # Sampling factors packed in one byte: |Hi(4)|Vi(4)|
+    horizontal_sampling :u4
+    vertical_sampling :u4
+    quantization_table :u8            # index into DQT table
+
+format JpegSOF0:
+    # Baseline DCT Start-Of-Frame (SOF0) segment body - follows the 0xFF 0xC0 prefix and u16 length field.
+    # Segment body layout (length - 2 bytes total):
+    precision :u8                     # sample precision in bits (8 for baseline)
+    precision == 8
+    height :u16                       # number of lines
+    width :u16                        # samples per line
+    num_components :u8                # typically 1 (grayscale) or 3 (YCbCr) or 4 (CMYK)
+    components :[num_components]JpegComponent

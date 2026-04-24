@@ -1,0 +1,87 @@
+# source: LZ4 Frame Format Description v1.6.4 (https://github.com/lz4/lz4/blob/dev/doc/lz4_Frame_format.md, fetched 2026-04-24)
+# scope: LZ4 frame framing — magic + Frame Descriptor (FLG/BD + optional ContentSize/DictID + HC) + Data Block sequence + EndMark + optional Content_Checksum
+# out-of-scope: LZ4 block format proper (sequence of literals + match copies with match offset/length); XXH32 checksum computation; skippable frame magics (0x184D2A50..0x184D2A5F)
+# note: All multi-byte fields are little-endian. Single-byte bit-packed descriptors (FLG, BD) are factored
+# into sub-formats with `input.endian = config.endian.big` so the spec's "bit 7 = MSB" numbering maps
+# directly to top-to-bottom u2/u1/... field order.
+config.url = "https://github.com/lz4/lz4/blob/dev/doc/lz4_Frame_format.md"
+input.endian = config.endian.little
+
+LZ4_FRAME_MAGIC ::= 0x184D2204
+
+enum Lz4BlockMaxSize:
+    :u3
+    reserved_0 = 0
+    reserved_1 = 1
+    reserved_2 = 2
+    reserved_3 = 3
+    max_64kb = 4
+    max_256kb = 5
+    max_1mb = 6
+    max_4mb = 7
+
+format Lz4FlgByte:
+    # FLG (1 byte, MSB-first bit layout):
+    #   bits 7-6 = Version (MUST be 01)
+    #   bit 5    = Block Independence
+    #   bit 4    = Block Checksum
+    #   bit 3    = Content Size
+    #   bit 2    = Content Checksum
+    #   bit 1    = Reserved (0)
+    #   bit 0    = Dictionary ID
+    input.endian = config.endian.big
+    version :u2
+    block_independence :u1
+    block_checksum_flag :u1
+    content_size_flag :u1
+    content_checksum_flag :u1
+    reserved :u1
+    dict_id_flag :u1
+
+format Lz4BdByte:
+    # BD (1 byte, MSB-first bit layout):
+    #   bit 7     = Reserved (0)
+    #   bits 6-4  = Block MaxSize
+    #   bits 3-0  = Reserved (0)
+    input.endian = config.endian.big
+    reserved_high :u1
+    block_max_size :Lz4BlockMaxSize
+    reserved_low :u4
+
+format Lz4FrameDescriptor:
+    flg :Lz4FlgByte
+    bd :Lz4BdByte
+
+    if flg.content_size_flag == 1:
+        content_size :u64
+    if flg.dict_id_flag == 1:
+        dict_id :u32
+
+    # HC: second byte of XXH32(frame-descriptor-bytes) — (xxh32 >> 8) & 0xFF
+    hc :u8
+
+format Lz4DataBlock:
+    # Block_Size 4 bytes: MSB = 1 means raw/uncompressed, MSB = 0 means LZ4-compressed.
+    # Low 31 bits = size in bytes. EndMark is a full-zero Block_Size.
+    block_size :u32
+    data :[block_size & 0x7FFFFFFF]u8
+    # Optional 4-byte block checksum follows `data` when enclosing Frame's flg.block_checksum_flag == 1;
+    # cannot be declared here without upward reference — consumers post-process.
+
+format Lz4BlockStream:
+    # Zero-or-more data blocks terminated by an EndMark (block_size == 0).
+    blocks :[..]Lz4DataBlock
+
+    fn decode():
+        for:
+            b := input.get(Lz4DataBlock)
+            blocks[blocks.length] = b
+            if <Lz4DataBlock>(b).block_size == 0:
+                break
+
+format Lz4Frame:
+    magic :u32(LZ4_FRAME_MAGIC)
+    descriptor :Lz4FrameDescriptor
+    blocks :Lz4BlockStream
+    # Optional 4-byte content checksum after EndMark when descriptor.flg.content_checksum_flag == 1;
+    # state-dependent presence — consumers post-process.

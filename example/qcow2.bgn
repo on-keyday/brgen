@@ -1,0 +1,32 @@
+# source: QEMU qcow2 disk image format documentation (docs/interop/qcow2.txt in QEMU source tree)
+# scope: QCOW2 (QEMU Copy-On-Write v2/v3) file header including v3-additional fields
+# out-of-scope: Header extensions (optional TLV list between fixed header and backing-file-name string — backing_format_name "bfmt", feature_name table with extension type 0x6803f857, crypto-LUKS parameters, external data file "data"); Refcount table + refcount blocks (maps cluster numbers to reference counts); L1/L2 table cluster mapping (two-level paging for virtual→physical cluster lookup); snapshot headers and snapshot tables; internal LUKS encryption header for crypt_method==2; per-cluster compression + deduplication semantics; header_length may cover trailing padding — consumers trust it rather than the sum of fixed fields
+# note: QCOW2 is BIG-ENDIAN throughout. Header version selects field presence: v2 stops at snapshots_offset (72 bytes); v3 adds incompatible/compatible/autoclear feature flags + refcount_order + header_length for a minimum of 104 bytes.
+config.url = "https://gitlab.com/qemu-project/qemu/-/blob/master/docs/interop/qcow2.txt"
+input.endian = config.endian.big
+
+QCOW2_MAGIC ::= 0x514649FB                   # "QFI\xfb"
+
+format Qcow2HeaderV2Prefix:
+    # §1 File Header, common portion for v2 and v3. v2 stops here at 72 bytes.
+    magic :u32(QCOW2_MAGIC)
+    version :u32                             # 2 or 3
+    backing_file_offset :u64                 # 0 = no backing file
+    backing_file_size :u32                   # byte length of the backing-file-name string
+    cluster_bits :u32                        # cluster_size_bytes = 1 << cluster_bits; typical 16 → 64 KiB
+    size :u64                                # virtual disk size in bytes
+    crypt_method :u32                        # 0 = none, 1 = AES (qcow2 legacy), 2 = LUKS (v3)
+    l1_size :u32                             # number of L1 table entries
+    l1_table_offset :u64
+    refcount_table_offset :u64
+    refcount_table_clusters :u32             # byte count / cluster_size
+    nb_snapshots :u32
+    snapshots_offset :u64
+
+format Qcow2HeaderV3Extras:
+    # §1 Fields present ONLY in v3+ images (follow Qcow2HeaderV2Prefix when version >= 3).
+    incompatible_features :u64               # bits: 0=dirty, 1=corrupt, 2=external_data, 3=compression_type
+    compatible_features :u64                 # bits: 0=lazy_refcounts
+    autoclear_features :u64                  # bits automatically cleared by older tools
+    refcount_order :u32                      # log2 of refcount entry width in bits; default 4 → 16-bit entries
+    header_length :u32                       # total size of this header in bytes; ≥ 104 for v3

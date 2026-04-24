@@ -178,11 +178,8 @@
       "name": "Debug ebm2cpp",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceRoot}/rebrgen/tool/ebm2cpp",
-      "args": [
-        "-i",
-        "${workspaceRoot}/rebrgen/save/dns_packet.ebm"
-      ],
+      "program": "${workspaceRoot}/rebrgen/tool/ebmgen",
+      "args": ["-i", "${workspaceRoot}/rebrgen/save/stream.bgn"],
       "stopAtEntry": false,
       "cwd": "${workspaceRoot}/rebrgen",
       "environment": [],

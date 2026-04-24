@@ -1,0 +1,27 @@
+# source: RFC 8926 §3.4 base header, §3.5 tunnel options (fetched 2026-04-23)
+# scope: Geneve base header + variable-length option TLVs
+# out-of-scope: inner payload (protocol_type-dependent), specific Option Class registrations
+# note: IETF MSB-first; all multi-byte integers big-endian. The Type field's high-order bit is the Critical (C) flag per §3.5.
+config.url = "https://datatracker.ietf.org/doc/html/rfc8926"
+
+format GeneveOption:
+    # §3.5: |Option Class(16)|C(1)|Type(7)|R(3)|Length(5)| + Length*4 bytes of data
+    option_class :u16
+    critical :u1
+    option_type :u7
+    reserved :u3
+    length :u5           # data length in 4-byte words
+    data :[length * 4]u8
+
+format GeneveHeader:
+    # §3.4: |Ver(2)|Opt Len(6)|O(1)|C(1)|Rsvd(6)|Protocol Type(16)|VNI(24)|Reserved(8)|
+    version :u2
+    opt_len :u6          # total options length in 4-byte words
+    oam :u1              # O flag: OAM packet
+    critical_options :u1 # C flag: any options marked critical
+    reserved :u6
+    protocol_type :u16   # ethertype of encapsulated payload
+    vni :u24             # Virtual Network Identifier
+    reserved2 :u8
+    options :[..]GeneveOption(input = input.subrange(opt_len * 4))
+    # Inner payload (protocol_type dispatched) follows - out-of-scope.

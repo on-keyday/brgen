@@ -1,0 +1,45 @@
+# source: MS-TDS §2.2.3 (Packets) common packet header, based on broad implementation consensus (Wireshark dissector, FreeTDS docs); primary URL: learn.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/
+# scope: 8-byte TDS packet header (Type + Status + Length + SPID + PacketID + Window); Type and Status enumerations
+# out-of-scope: per-Type packet body (PRELOGIN stream of option/offset/length tuples, TDS7-LOGIN variable-length structure, SQLBatch UCS-2 query text, RPC parameters, TOKEN stream for tabular results, SSPI buffer)
+# note: Unusually, MS-TDS header fields use BIG-ENDIAN (network byte order) per §2.2.3.1.3, while the packet body uses LITTLE-ENDIAN (§2.2.5.1). Consumers parsing the body should switch input.endian to little after this header.
+config.url = "https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-tds/"
+input.endian = config.endian.big
+
+enum TdsPacketType:
+    :u8
+    sql_batch = 0x01
+    pre_tds7_login = 0x02              # legacy, obsolete
+    rpc = 0x03
+    tabular_result = 0x04
+    attention = 0x06
+    bulk_load_data = 0x07
+    federated_authentication_token = 0x08
+    transaction_manager_request = 0x0E
+    tds7_login = 0x10
+    sspi = 0x11
+    pre_login = 0x12
+
+format TdsHeader:
+    # §2.2.3 TDS packet header (8 bytes)
+    type :TdsPacketType
+    status :u8                         # bit flags; accessor fns below
+    length :u16                        # total packet length INCLUDING this header (big-endian per §2.2.3.1.3)
+    spid :u16                          # server process id (0 for login packets, big-endian)
+    packet_id :u8                      # sequence counter within a message (0..255, wraps)
+    window :u8                         # MUST be 0
+    window == 0
+
+    fn is_eom() -> bool:
+        return (status & 0x01) != 0    # end of message
+
+    fn is_ignored() -> bool:
+        return (status & 0x02) != 0    # obsolete ignore-event bit
+
+    fn is_event_notification() -> bool:
+        return (status & 0x08) != 0
+
+    fn is_reset_connection() -> bool:
+        return (status & 0x10) != 0
+
+    fn is_reset_connection_skip_tx() -> bool:
+        return (status & 0x20) != 0

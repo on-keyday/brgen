@@ -127,3 +127,91 @@ format BlockType:
         if p == 0x40:
             type = u32(Type.empty_block_type)
             return
+
+# --- Module structure (https://webassembly.github.io/spec/core/binary/modules.html) ---
+
+WASM_MAGIC ::= "\x00asm"
+
+enum WasmSectionId:
+    :u8
+    # §5.5 Module — canonical section ordering; Custom (0) may appear anywhere
+    Custom = 0
+    Type = 1
+    Import = 2
+    Function = 3
+    Table = 4
+    Memory = 5
+    Global = 6
+    Export = 7
+    Start = 8
+    Element = 9
+    Code = 10
+    Data = 11
+    DataCount = 12                           # wasm 2.0: bulk-memory extension
+    Tag = 13                                 # exception-handling proposal
+
+enum WasmImportKind:
+    :u8
+    # §5.5.5 Import — desc prefix byte selects the index type that follows
+    func = 0x00
+    table = 0x01
+    memory = 0x02
+    global = 0x03
+    tag = 0x04                               # exception-handling proposal
+
+enum WasmExportKind:
+    :u8
+    # §5.5.10 Export — desc prefix byte
+    func = 0x00
+    table = 0x01
+    memory = 0x02
+    global = 0x03
+
+format WasmName:
+    # §5.3.3 name — LEB128-prefixed UTF-8 byte sequence
+    length :Uint32
+    bytes :[length.u32()]u8
+
+format WasmModulePreamble:
+    # §5.5 Module preamble — 8 bytes
+    magic :"\x00asm"
+    version :u32                             # little-endian; currently 1
+
+format WasmSectionHeader:
+    # §5.5 common section envelope — 1-byte id + LEB128 size + <size> bytes of content
+    id :WasmSectionId
+    size :Uint32
+
+format WasmSection:
+    header :WasmSectionHeader
+    content :[header.size.u32()]u8           # interpretation depends on header.id
+
+format WasmTypeEntry:
+    # §5.3.6 functype — 0x60 prefix + two vectors of valtype
+    prefix :u8                               # MUST be 0x60
+    prefix == 0x60
+    params :ResultType
+    results :ResultType
+
+format WasmImportEntry:
+    # §5.5.5 import entry — module name + item name + kind byte + kind-specific descriptor
+    module_name :WasmName
+    item_name :WasmName
+    kind :WasmImportKind
+    match kind:
+        WasmImportKind.func => func_type_index :Uint32
+        WasmImportKind.table => table_type :TableType
+        WasmImportKind.memory => memory_type :MemoryType
+        WasmImportKind.global => global_type :GlobalType
+    # tag descriptor for WasmImportKind.tag (exception-handling proposal) out-of-scope here
+
+format WasmExportEntry:
+    # §5.5.10 export entry — name + kind byte + index
+    name :WasmName
+    kind :WasmExportKind
+    index :Uint32
+
+format WasmCodeEntry:
+    # §5.5.13 code section entry — LEB128 size + function body
+    size :Uint32
+    body :[size.u32()]u8                     # body = LEB128 locals count + n local decls + expression + 0x0B end

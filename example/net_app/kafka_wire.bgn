@@ -1,0 +1,43 @@
+# source: Apache Kafka protocol reference (https://kafka.apache.org/protocol.html, fetched 2026-04-24)
+# scope: Kafka binary wire envelope — request header (size + api_key + api_version + correlation_id + client_id) and response header (size + correlation_id); primitive length-prefix types (string / nullable_string / bytes / nullable_bytes)
+# out-of-scope: per-API request/response bodies (Produce / Fetch / Metadata / OffsetFetch / Heartbeat / SASL-related APIs, dozens of api_keys × versions); varint / zig-zag integer encoding procedural loop; compact (KIP-482) string / array types used in Flexible Versions (varint length+1 + data); tagged fields (request header v2+, response header v1+) carrying optional fields with varint tag + varint length + bytes
+# note: All multi-byte integers are big-endian (network byte order). String length prefixes are signed int16 where -1 indicates null. Byte-array length prefixes are signed int32 where -1 indicates null. Message size does NOT include the size field itself.
+config.url = "https://kafka.apache.org/protocol.html"
+
+format KafkaString:
+    # int16 length + UTF-8 bytes; length in [0, 32767]. -1 is reserved for nullable_string null sentinel.
+    length :i16
+    length >= 0
+    bytes :[length]u8
+
+format KafkaNullableString:
+    # int16 length + UTF-8 bytes; -1 means null (no body bytes follow).
+    length :i16
+    if length >= 0:
+        bytes :[length]u8
+
+format KafkaBytes:
+    length :i32
+    length >= 0
+    bytes :[length]u8
+
+format KafkaNullableBytes:
+    length :i32
+    if length >= 0:
+        bytes :[length]u8
+
+format KafkaRequestHeader:
+    # Request header v1 (pre-flexible): size + api_key + api_version + correlation_id + client_id.
+    # Size counts all bytes AFTER the size field itself (i.e. api_key through end of request body).
+    size :u32                        # total byte count of following fields; caller reads `size` more bytes
+    api_key :i16                     # identifies request type (Produce=0, Fetch=1, Metadata=3, etc.)
+    api_version :i16
+    correlation_id :i32              # echoed verbatim in the response header to match the pair
+    client_id :KafkaNullableString
+    # request body (`size - 2 - 2 - 4 - client_id_total` bytes) follows; its shape depends on api_key/version.
+
+format KafkaResponseHeader:
+    # Response header v0 (pre-flexible): size + correlation_id.
+    size :u32
+    correlation_id :i32
+    # response body follows (`size - 4` bytes)

@@ -66,14 +66,56 @@ format IMAGE_OPTIONAL_HEADER:
     NumberOfRvaAndSizes :u32
     DataDirectory :[16]IMAGE_DATA_DIRECTORY
 
-format EFI_DEBUG_SUPPORT_PROTOCOL:
-    Isa :EFI_INSTRUCTION_SET_ARCHITECTURE
-    GetMaximumProcessorIndex :EFI_GET_MAXIMUM_PROCESSOR_INDEX
-    RegisterPeriodicCallback :EFI_REGISTER_PERIODIC_CALLBACK
-    RegisterExceptionCallback :EFI_REGISTER_EXCEPTION_CALLBACK
-    InvalidateInstructionCache :EFI_INVALIDATE_INSTRUCTION_CACHE
+# --- Import Directory (https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#the-idata-section) ---
+
+format IMAGE_IMPORT_DESCRIPTOR:
+    # §.idata import directory entry — 20 bytes. An array of these ends with an all-zero entry.
+    OriginalFirstThunk :u32              # RVA to Import Lookup Table (ILT / INT). 0 in last sentinel entry.
+    TimeDateStamp :u32                   # 0 normally; -1 indicates bound import
+    ForwarderChain :u32                  # index of first forwarder reference; -1 if none
+    Name :u32                            # RVA to null-terminated ASCII DLL name
+    FirstThunk :u32                      # RVA to Import Address Table (IAT; same shape as ILT, patched at load)
+
+format IMAGE_IMPORT_BY_NAME:
+    # §.idata import-by-name hint + name — variable length, aligned to even boundary.
+    Hint :u16                            # suggested export table index into target DLL
+    Name :[..]u8                         # null-terminated ASCII
+    null :"\0"
+    # A trailing pad byte may follow when (sizeof(Hint) + len(Name) + 1) is odd, to align to 2 bytes.
+
+format IMAGE_THUNK_DATA32:
+    # §ILT/IAT entry, PE32 form — 4 bytes.
+    # bit 31    = Ordinal/Name flag (1 = import by ordinal, 0 = import by name)
+    # bits 30-0 = Ordinal (low 16 used if flag=1; upper 15 MUST be 0)
+    #             OR RVA to IMAGE_IMPORT_BY_NAME (if flag=0)
+    value :u32
+
+    fn is_ordinal() -> bool:
+        return (value & 0x80000000) != 0
+
+    fn ordinal() -> u16:
+        return u16(value & 0xFFFF)
+
+    fn import_by_name_rva() -> u32:
+        return value & 0x7FFFFFFF
+
+format IMAGE_THUNK_DATA64:
+    # §ILT/IAT entry, PE32+ form — 8 bytes.
+    # bit 63    = Ordinal/Name flag
+    # bits 62-0 = Ordinal (low 16) or RVA to IMAGE_IMPORT_BY_NAME
+    value :u64
+
+    fn is_ordinal() -> bool:
+        return (value & 0x8000000000000000) != 0
+
+    fn ordinal() -> u16:
+        return u16(value & 0xFFFF)
+
+    fn import_by_name_rva() -> u64:
+        return value & 0x7FFFFFFFFFFFFFFF
 
 enum EFI_INSTRUCTION_SET_ARCHITECTURE:
+    :u16
     IsaIa32 = 0x014C
     IsaX64 = 0x8664
     IsaIpf = 0x0200
@@ -85,6 +127,30 @@ enum EFI_INSTRUCTION_SET_ARCHITECTURE:
     IsaRISCV128 = 0x5128
     IsaLoongArch32 = 0x6232
     IsaLoongArch64 = 0x6264
+
+# --- EFI Debug Support Protocol (UEFI runtime protocol; not a PE-file structure) ---
+# Per UEFI spec §20.1: a protocol interface struct containing function pointers.
+# Function-pointer fields are represented here as formats with a native-pointer-sized slot
+# (u64 on 64-bit UEFI targets, which is the overwhelmingly common case).
+
+format EFI_GET_MAXIMUM_PROCESSOR_INDEX:
+    ptr :u64
+
+format EFI_REGISTER_PERIODIC_CALLBACK:
+    ptr :u64
+
+format EFI_REGISTER_EXCEPTION_CALLBACK:
+    ptr :u64
+
+format EFI_INVALIDATE_INSTRUCTION_CACHE:
+    ptr :u64
+
+format EFI_DEBUG_SUPPORT_PROTOCOL:
+    Isa :EFI_INSTRUCTION_SET_ARCHITECTURE
+    GetMaximumProcessorIndex :EFI_GET_MAXIMUM_PROCESSOR_INDEX
+    RegisterPeriodicCallback :EFI_REGISTER_PERIODIC_CALLBACK
+    RegisterExceptionCallback :EFI_REGISTER_EXCEPTION_CALLBACK
+    InvalidateInstructionCache :EFI_INVALIDATE_INSTRUCTION_CACHE
 
 format EFI_GUID:
     TimeLow :u32

@@ -47,3 +47,21 @@ format Capabilities:
     magic :u2(3)
     reserved :u30(0)
     capabilityTable :u32
+
+# Stream framing: capnproto.org/encoding.html "Serialization Over a Stream"
+# A serialized message on the wire begins with a segment table, followed by segment data.
+format CapnpSegmentTable:
+    # (4 bytes) segment count minus one (so 0 = exactly 1 segment)
+    segment_count_minus_one :u32
+    # (N * 4 bytes) word count of each segment
+    segment_word_counts :[segment_count_minus_one + 1]u32
+    # (0 or 4 bytes) pad to next 8-byte boundary.
+    # Header size before pad = 4 + 4 * (segment_count_minus_one + 1) bytes.
+    # Pad is needed iff that size is not a multiple of 8, i.e. when (segment_count_minus_one + 1) is even.
+    if segment_count_minus_one % 2 == 1:
+        padding :u32
+
+format CapnpStreamMessage:
+    table :CapnpSegmentTable
+    # Segment data follows: segment i occupies table.segment_word_counts[i] * 8 bytes.
+    # FIXME: per-segment variable-length body not expressed declaratively here; consumers iterate segment_word_counts.

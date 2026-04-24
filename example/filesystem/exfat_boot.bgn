@@ -1,0 +1,43 @@
+# source: Microsoft exFAT file system specification (https://learn.microsoft.com/en-us/windows/win32/fileio/exfat-specification, fetched 2026-04-24)
+# scope: 512-byte Main Boot Sector / Main Boot Region of an exFAT volume (§3.1)
+# out-of-scope: Extended Boot Sectors (sectors 1-8), OEM Parameters sector 9, Reserved sector 10, Boot Checksum sector 11 (§3.2-3.5); FAT entries, Cluster Heap, Root Directory structure with directory entry types (0x85 File, 0xC0 Stream Extension, 0xC1 File Name, 0x81 Allocation Bitmap, etc.); Upcase Table
+# note: All multi-byte integers are little-endian. The Main Boot Region (sectors 0-11) is mirrored in the Backup Boot Region (sectors 12-23). Boot Signature 0xAA55 is shared with MBR convention.
+config.url = "https://learn.microsoft.com/en-us/windows/win32/fileio/exfat-specification"
+input.endian = config.endian.little
+
+format ExFatVolumeFlags:
+    # §3.1.13 VolumeFlags — 2-byte LE u16. Spec numbers bits LSB-first (bit 0 = LSB):
+    # bit 0 = ActiveFat (0=First FAT/Bitmap, 1=Second FAT/Bitmap)
+    # bit 1 = VolumeDirty
+    # bit 2 = MediaFailure
+    # bit 3 = ClearToZero
+    # bits 4-15 reserved
+    active_fat :u1
+    volume_dirty :u1
+    media_failure :u1
+    clear_to_zero :u1
+    reserved :u12
+
+format ExFatMainBootSector:
+    # §3.1 Main Boot Sector — 512 bytes (or BytesPerSectorShift-shaped; MBS is always exactly one sector).
+    JumpBoot :[3]u8                          # 0xEB 0x76 0x90
+    FileSystemName :"EXFAT   "               # 8 bytes: "EXFAT" + 3 trailing spaces
+    MustBeZero :[53]u8                       # prevents FAT12/16/32 confusion; all bytes 0
+    PartitionOffset :u64                     # media-relative sector offset (0 = ignore)
+    VolumeLength :u64                        # total sectors in the volume
+    FatOffset :u32                           # sector offset to first FAT (MUST be >= 24)
+    FatLength :u32                           # sectors per FAT
+    ClusterHeapOffset :u32                   # sector offset to cluster heap
+    ClusterCount :u32                        # cluster count in cluster heap (max 2^32 - 11)
+    FirstClusterOfRootDirectory :u32         # cluster index of root directory (2..ClusterCount+1)
+    VolumeSerialNumber :u32
+    FileSystemRevision :u16                  # high byte = major, low byte = minor (0x0100 = v1.00)
+    VolumeFlags :ExFatVolumeFlags
+    BytesPerSectorShift :u8                  # log2 of bytes/sector, range 9..12 (512..4096)
+    SectorsPerClusterShift :u8               # log2 of sectors/cluster, range 0..(25 - BytesPerSectorShift)
+    NumberOfFats :u8                         # 1 (exFAT) or 2 (TexFAT)
+    DriveSelect :u8                          # INT 13h drive number, typically 0x80
+    PercentInUse :u8                         # allocated cluster percentage 0..100, or 0xFF = unknown
+    Reserved :[7]u8                          # MUST be 0
+    BootCode :[390]u8                        # x86 boot-strapping code or 0xF4 halt instructions
+    BootSignature :u16(0xAA55)

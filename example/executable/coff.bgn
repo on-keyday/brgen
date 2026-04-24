@@ -1,0 +1,82 @@
+# source: Microsoft PE/COFF format specification (learn.microsoft.com/en-us/windows/win32/debug/pe-format) §3.3 COFF File Header, §4 Section Table (fetched 2026-04-23)
+# scope: COFF File Header (IMAGE_FILE_HEADER, 20 bytes) + Section Header (IMAGE_SECTION_HEADER, 40 bytes); Machine type enum and common Characteristics flags
+# out-of-scope: PE-specific Optional Header (IMAGE_OPTIONAL_HEADER32/64), DataDirectories, symbol table, relocation entries, line number entries, Certificate table
+# note: All multi-byte integers are little-endian. COFF predates PE; when SizeOfOptionalHeader == 0 the file is typically a pure object file (.obj / .o).
+config.url = "https://learn.microsoft.com/en-us/windows/win32/debug/pe-format"
+input.endian = config.endian.little
+
+enum CoffMachine:
+    :u16
+    UNKNOWN = 0x0000
+    I386 = 0x014c
+    ARM = 0x01c0
+    ARMNT = 0x01c4      # ARM Thumb-2 little-endian
+    IA64 = 0x0200
+    AMD64 = 0x8664
+    ARM64 = 0xaa64
+    RISCV32 = 0x5032
+    RISCV64 = 0x5064
+    RISCV128 = 0x5128
+
+format CoffFileHeader:
+    # IMAGE_FILE_HEADER (20 bytes)
+    machine :CoffMachine
+    number_of_sections :u16
+    time_date_stamp :u32            # C runtime time_t (seconds since 1970-01-01 UTC)
+    pointer_to_symbol_table :u32    # 0 if no symbol table
+    number_of_symbols :u32
+    size_of_optional_header :u16    # 0 for object files; >0 for images (PE32/PE32+)
+    characteristics :u16            # IMAGE_FILE_* bit field (see accessor fns)
+
+    fn is_executable() -> bool:
+        return (characteristics & 0x0002) != 0      # IMAGE_FILE_EXECUTABLE_IMAGE
+
+    fn is_dll() -> bool:
+        return (characteristics & 0x2000) != 0      # IMAGE_FILE_DLL
+
+    fn is_relocs_stripped() -> bool:
+        return (characteristics & 0x0001) != 0      # IMAGE_FILE_RELOCS_STRIPPED
+
+    fn is_large_address_aware() -> bool:
+        return (characteristics & 0x0020) != 0      # IMAGE_FILE_LARGE_ADDRESS_AWARE
+
+    fn is_32bit_machine() -> bool:
+        return (characteristics & 0x0100) != 0      # IMAGE_FILE_32BIT_MACHINE
+
+format CoffSectionHeader:
+    # IMAGE_SECTION_HEADER (40 bytes per entry)
+    name :[8]u8                     # null-padded UTF-8 short name; '/' + ASCII decimal -> offset into string table for long names
+    virtual_size :u32               # in memory (Misc union: PhysicalAddress/VirtualSize)
+    virtual_address :u32            # RVA in memory
+    size_of_raw_data :u32           # on-disk size (multiple of FileAlignment for images)
+    pointer_to_raw_data :u32        # file offset
+    pointer_to_relocations :u32     # 0 for images
+    pointer_to_linenumbers :u32     # 0 in recent toolchains (deprecated)
+    number_of_relocations :u16      # 0 for images
+    number_of_linenumbers :u16
+    characteristics :u32            # IMAGE_SCN_* bit field
+
+    fn is_code() -> bool:
+        return (characteristics & 0x00000020) != 0  # IMAGE_SCN_CNT_CODE
+
+    fn is_initialized_data() -> bool:
+        return (characteristics & 0x00000040) != 0  # IMAGE_SCN_CNT_INITIALIZED_DATA
+
+    fn is_uninitialized_data() -> bool:
+        return (characteristics & 0x00000080) != 0  # IMAGE_SCN_CNT_UNINITIALIZED_DATA
+
+    fn is_executable() -> bool:
+        return (characteristics & 0x20000000) != 0  # IMAGE_SCN_MEM_EXECUTE
+
+    fn is_readable() -> bool:
+        return (characteristics & 0x40000000) != 0  # IMAGE_SCN_MEM_READ
+
+    fn is_writable() -> bool:
+        return (characteristics & 0x80000000) != 0  # IMAGE_SCN_MEM_WRITE
+
+format CoffObjectFile:
+    # Object file form: COFF header immediately followed by section headers (no Optional Header).
+    header :CoffFileHeader
+    header.size_of_optional_header == 0
+    sections :[header.number_of_sections]CoffSectionHeader
+    # Followed by raw section data pointed at by pointer_to_raw_data; symbol table at pointer_to_symbol_table.

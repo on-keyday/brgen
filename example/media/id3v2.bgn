@@ -1,0 +1,64 @@
+# source: ID3v2.4.0 structure specification at id3.org/id3v2.4.0-structure (fetched 2026-04-23)
+# scope: ID3v2 header (10 bytes) + frame header (10 bytes) + synchsafe integer primitive; does not decompose frame body
+# out-of-scope: ID3v2.3 (minor differences in size semantics and flag layout), Extended Header contents (§3.2), frame-type-specific body (TXXX, APIC, COMM, ...), footer (10 bytes; present iff footer flag set)
+# note: Multi-byte NON-synchsafe integers are big-endian. Synchsafe integers store 7 bits per byte with the MSB always zero, preventing accidental sync-pattern matches in a following MP3 stream.
+config.url = "https://id3.org/id3v2.4.0-structure"
+
+format ID3v2SynchsafeInt:
+    # 4 bytes, each contributing 7 bits; total 28 bits of integer value.
+    # Wire: |0|a6-a0|0|b6-b0|0|c6-c0|0|d6-d0| → value = (a << 21) | (b << 14) | (c << 7) | d
+    msb0_a :u1
+    msb0_a == 0
+    a :u7
+    msb0_b :u1
+    msb0_b == 0
+    b :u7
+    msb0_c :u1
+    msb0_c == 0
+    c :u7
+    msb0_d :u1
+    msb0_d == 0
+    d :u7
+
+    fn value() -> u32:
+        return (u32(a) << 21) | (u32(b) << 14) | (u32(c) << 7) | u32(d)
+
+format ID3v2Header:
+    # §3.1 ID3v2 tag header (10 bytes)
+    identifier :"ID3"
+    version_major :u8                   # 0x04 for v2.4.0
+    version_revision :u8                # typically 0x00
+    # Flags byte: |a|b|c|d|0|0|0|0|
+    unsynchronisation :u1               # a
+    extended_header :u1                 # b
+    experimental :u1                    # c
+    footer_present :u1                  # d
+    flags_reserved :u4
+    flags_reserved == 0
+    size :ID3v2SynchsafeInt             # tag size excluding header (and footer if present)
+
+format ID3v2FrameHeader:
+    # §4.1 frame header (10 bytes)
+    frame_id :[4]u8                     # A-Z and 0-9 ASCII
+    size :ID3v2SynchsafeInt             # frame data size excluding this 10-byte header
+    # Frame flags: §4.1.1 status flags %0abc0000, §4.1.2 format flags %0h00kmnp
+    status_reserved1 :u1
+    status_reserved1 == 0
+    tag_alter_preservation :u1          # a
+    file_alter_preservation :u1         # b
+    read_only :u1                       # c
+    status_reserved2 :u4
+    status_reserved2 == 0
+    format_reserved1 :u1
+    format_reserved1 == 0
+    grouping_identity :u1               # h
+    format_reserved2 :u2
+    format_reserved2 == 0
+    compression :u1                     # k
+    encryption :u1                      # m
+    unsynchronisation :u1               # n
+    data_length_indicator :u1           # p
+
+format ID3v2Frame:
+    header :ID3v2FrameHeader
+    body :[header.size.value()]u8       # frame-type-specific payload; decomposition out-of-scope

@@ -1,0 +1,69 @@
+# source: C706 (DCE RPC) §12.6.3.1 connection-oriented common header (fetched 2026-04-23)
+# scope: DCE RPC connection-oriented common header (16 bytes) and PTYPE enumeration
+# out-of-scope: per-PTYPE PDU body layouts (bind/request/response/fault have distinct additional fields per §12.6.4)
+# note: byte order of integer fields is determined at runtime by packed_drep[0] bits 4-7 (0=BE, 1=LE).
+#       The canonical Microsoft implementation uses LE, which is declared here as the default.
+#       A full spec would read the DREP before deciding endian; that pattern requires DSL features not yet exercised here.
+config.url = "https://pubs.opengroup.org/onlinepubs/9629399/chap12.htm"
+input.endian = config.endian.little
+
+enum DceRpcPtype:
+    :u8
+    request = 0
+    ping = 1
+    response = 2
+    fault = 3
+    working = 4
+    nocall = 5
+    reject = 6
+    ack = 7
+    cl_cancel = 8
+    fack = 9
+    cancel_ack = 10
+    bind = 11
+    bind_ack = 12
+    bind_nak = 13
+    alter_context = 14
+    alter_context_resp = 15
+    # 16 unused
+    shutdown = 17
+    co_cancel = 18
+    orphaned = 19
+
+enum DceRpcIntRepr:
+    :u4
+    big_endian = 0
+    little_endian = 1
+
+enum DceRpcCharRepr:
+    :u4
+    ascii = 0
+    ebcdic = 1
+
+enum DceRpcFloatRepr:
+    :u8
+    ieee = 0
+    vax = 1
+    cray = 2
+    ibm = 3
+
+format DceRpcDrep:
+    # §12.6.2.4 packed_drep (4 bytes)
+    # Byte 0: high 4 bits = integer repr, low 4 bits = character repr
+    # Byte 1: floating-point repr
+    # Bytes 2-3: reserved
+    int_repr :DceRpcIntRepr
+    char_repr :DceRpcCharRepr
+    float_repr :DceRpcFloatRepr
+    reserved :u16
+
+format DceRpcCoHeader:
+    # §12.6.3.1 connection-oriented common header (16 bytes)
+    rpc_vers :u8                # MUST be 5
+    rpc_vers_minor :u8          # 0 or 1
+    ptype :DceRpcPtype
+    pfc_flags :u8
+    packed_drep :DceRpcDrep
+    frag_length :u16            # total PDU fragment length, INCLUDING this header
+    auth_length :u16            # length of authentication verifier appended to PDU (0 = none)
+    call_id :u32                # opaque identifier correlating request/response

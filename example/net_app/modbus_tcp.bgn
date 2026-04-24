@@ -1,0 +1,44 @@
+# source: Modbus Application Protocol Specification V1.1b3 + Modbus Messaging on TCP/IP Implementation Guide V1.0b (Modbus-IDA)
+# scope: Modbus TCP/IP 7-byte MBAP (Modbus Application Protocol) header + start of Modbus PDU (function_code byte); exception-response dispatch hint
+# out-of-scope: per-function-code request/response body grammars (Read Coils: starting_address u16 + quantity u16 → byte_count u8 + coil_status bit array; Write Multiple Registers: starting_address u16 + quantity u16 + byte_count u8 + register_values; Read/Write Multiple Registers combined body, etc.); Modbus RTU (serial) framing with CRC-16 instead of MBAP; Modbus ASCII line-oriented encoding; Encapsulated Interface Transport (function code 0x2B subfunction 0x0E for Device Identification)
+# note: Modbus TCP is BIG-ENDIAN throughout. MBAP.length counts bytes AFTER the length field itself (unit_id + PDU). Exception responses: the response's function_code has the high bit set (original_function | 0x80) followed by a 1-byte exception code. Function codes are only 7 bits effectively, with 0x80-0xFF reserved for exception flagging.
+config.url = "https://modbus.org/docs/"
+input.endian = config.endian.big
+
+enum ModbusFunctionCode:
+    :u8
+    read_coils = 0x01
+    read_discrete_inputs = 0x02
+    read_holding_registers = 0x03
+    read_input_registers = 0x04
+    write_single_coil = 0x05
+    write_single_register = 0x06
+    read_exception_status = 0x07
+    diagnostics = 0x08
+    get_comm_event_counter = 0x0B
+    get_comm_event_log = 0x0C
+    write_multiple_coils = 0x0F
+    write_multiple_registers = 0x10
+    report_server_id = 0x11
+    read_file_record = 0x14
+    write_file_record = 0x15
+    mask_write_register = 0x16
+    read_write_multiple_registers = 0x17
+    read_fifo_queue = 0x18
+    encapsulated_interface_transport = 0x2B
+
+format ModbusMbapHeader:
+    # §MBAP Header — 7 bytes.
+    transaction_id :u16                      # echoed in response for request/response correlation
+    protocol_id :u16                         # MUST be 0 for Modbus
+    protocol_id == 0
+    length :u16                              # byte count of everything following (unit_id + PDU)
+    unit_id :u8                              # slave address; typically 0x00 or 0xFF on TCP, 1..247 on serial-bridged
+
+format ModbusPduStart:
+    # Start of Modbus PDU (immediately after MBAP). If function_code >= 0x80, this is an exception
+    # response; the next byte is an exception code (1 = ILLEGAL_FUNCTION, 2 = ILLEGAL_DATA_ADDRESS,
+    # 3 = ILLEGAL_DATA_VALUE, 4 = SLAVE_DEVICE_FAILURE, 5 = ACKNOWLEDGE, 6 = SLAVE_DEVICE_BUSY,
+    # 8 = MEMORY_PARITY_ERROR, 10 = GATEWAY_PATH_UNAVAILABLE, 11 = GATEWAY_TARGET_NO_RESPONSE).
+    function_code :u8
+    # Body bytes depend on function_code; out-of-scope here.

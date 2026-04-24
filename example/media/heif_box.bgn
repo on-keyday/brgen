@@ -1,0 +1,57 @@
+# source: ISO/IEC 23008-12 (HEIF) + Nokia HEIF technical overview (https://nokiatech.github.io/heif/technical.html)
+# scope: HEIF/HEIC-specific box payloads that extend ISO/IEC 14496-12 ISOBMFF (see example/mp4.bgn) — ftyp brand enumeration + meta-scope boxes (hdlr / pitm / iloc header / iinf header / infe entry header)
+# out-of-scope: Full ItemLocationBox (iloc) extents — per-item offset/length/index fields whose widths depend on the offset_size / length_size / base_offset_size / index_size nibbles (a compact variable-size table); ItemPropertyContainerBox (ipco) with ImageSpatialExtentsProperty (ispe) / AV1CodecConfigurationBox (av1C) / HEVCConfigurationBox (hvcC) / ColourInformationBox (colr) / PixelInformationProperty (pixi) / RelativeLocationProperty (rloc); ItemReferenceBox (iref) with references (dimg/thmb/auxl/cdsc); sequences (track-based HEIF) using tracks rather than items
+# note: HEIF inherits ISOBMFF framing. All boxes start with the generic 8-byte Box header (size + type). FullBox-prefixed boxes add 1-byte version + 3-byte flags immediately after. All multi-byte integers are BIG-ENDIAN.
+config.url = "https://nokiatech.github.io/heif/technical.html"
+
+enum HeifMajorBrand:
+    :u32
+    # Major brands appearing in ftyp for HEIF / AVIF / MIAF containers.
+    # Each value is the FourCC interpreted as a 32-bit big-endian integer.
+    heic = 0x68656963                        # "heic" — HEVC-coded image item
+    heix = 0x68656978                        # "heix" — HEVC image with non-base profile
+    mif1 = 0x6D696631                        # "mif1" — generic HEIF image container
+    msf1 = 0x6D736631                        # "msf1" — MIAF image sequence
+    hevc = 0x68657663                        # "hevc" — HEVC image sequence
+    avci = 0x61766369                        # "avci" — AVC coded still image
+    avif = 0x61766966                        # "avif" — AV1 image
+    avis = 0x61766973                        # "avis" — AV1 image sequence
+
+format HeifHandlerBoxPayload:
+    # §hdlr inside meta — FullBox with handler_type set to "pict" for HEIF image collections.
+    # Outer Box header (size + "hdlr") precedes this payload; see example/mp4.bgn.
+    pre_defined :u32                         # MUST be 0
+    handler_type :[4]u8                      # "pict" for HEIF (also "vide"/"soun" in generic ISOBMFF contexts)
+    reserved :[3]u32                         # MUST be 0
+    name :[..]u8                             # UTF-8 null-terminated human-readable description
+
+format HeifPrimaryItemBoxPayloadV0:
+    # §pitm FullBox — v0 uses 16-bit item_id.
+    item_id :u16
+
+format HeifPrimaryItemBoxPayloadV1:
+    # §pitm FullBox — v1+ uses 32-bit item_id.
+    item_id :u32
+
+format HeifItemLocationBoxHeaderV0:
+    # §iloc FullBox header byte prefix, v0/v1. Packs four 4-bit fields into 2 bytes followed by item_count.
+    offset_size :u4                          # byte width of each extent_offset (0/4/8)
+    length_size :u4                          # byte width of each extent_length (0/4/8)
+    base_offset_size :u4                     # byte width of base_offset (0/4/8)
+    reserved_or_index_size :u4               # 0 in v0; index_size in v1+
+    item_count :u16                          # v2 uses u32 instead; declared here for v0/v1
+
+format HeifItemInfoBoxHeader:
+    # §iinf FullBox — entry_count uses u16 for version 0, u32 for version 1+.
+    # Consumers dispatch on the FullBox version byte before reading the count.
+    entry_count :u16                         # representative v0 form
+
+format HeifItemInfoEntryV2Payload:
+    # §infe FullBox v2/v3 — describes one item.
+    item_id :u16                             # u32 for v3+; v2 uses u16
+    item_protection_index :u16               # 0 = unprotected
+    item_type :[4]u8                         # e.g. "hvc1" HEVC coded image, "mime" MIME entity, "grid", "iovl"
+    item_name :[..]u8                        # UTF-8 null-terminated
+    item_name_null :"\0"
+    # Optional content_type / content_encoding cstrings follow ONLY when item_type == "mime";
+    # declared out-of-scope here to avoid conditional cstring reads.

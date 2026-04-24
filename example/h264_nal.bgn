@@ -1,0 +1,46 @@
+# source: ITU-T Recommendation H.264 (08/2024) — Annex B byte stream format + §7.3.1 NAL unit syntax
+# scope: H.264 Annex B byte-stream start codes + 1-byte NAL unit header (forbidden_zero_bit + nal_ref_idc + nal_unit_type)
+# out-of-scope: RBSP (Raw Byte Sequence Payload) emulation-prevention byte (0x03) insertion/removal — required between every 0x00 0x00 0xXX pattern where XX ∈ {0x00, 0x01, 0x02, 0x03}; per-NAL-type payload parsing (SPS VUI / HRD params, PPS entropy coding / slice group maps, slice header + slice data CAVLC/CABAC); MP4 "AVCC" length-prefixed NAL framing (alternative to Annex B, uses 4-byte LE length instead of start codes); SVC (Scalable Video Coding) + MVC (Multiview Video Coding) extension headers (3-byte extra header after base 1-byte NAL header when nal_unit_type ∈ {14, 20})
+# note: H.264 uses BIG-ENDIAN MSB-first bit order for NAL header fields (network convention). The byte stream (Annex B) prefixes each NAL unit with a 3- or 4-byte start code `0x000001` or `0x00000001`; the 4-byte form MUST be used before the first NAL of an access unit containing SPS/PPS/IDR and MAY be used elsewhere. Zero_byte (0x00) may optionally precede the start_code_prefix_one_3bytes.
+
+enum H264NalUnitType:
+    :u5
+    unspecified = 0
+    slice_non_idr = 1                           # coded slice of a non-IDR picture
+    slice_data_partition_a = 2
+    slice_data_partition_b = 3
+    slice_data_partition_c = 4
+    slice_idr = 5                               # coded slice of an IDR picture
+    sei = 6                                     # Supplemental Enhancement Information
+    sps = 7                                     # Sequence Parameter Set
+    pps = 8                                     # Picture Parameter Set
+    aud = 9                                     # Access Unit Delimiter
+    end_of_sequence = 10
+    end_of_stream = 11
+    filler_data = 12
+    sps_extension = 13
+    prefix_nal_unit = 14                        # SVC/MVC
+    subset_sps = 15                             # SVC/MVC
+    depth_parameter_set = 16                    # MVC+D / 3D-AVC
+    reserved_17 = 17
+    reserved_18 = 18
+    auxiliary_slice = 19
+    slice_extension = 20                        # SVC/MVC coded slice
+    slice_extension_depth = 21                  # 3D-AVC
+    reserved_22 = 22
+    reserved_23 = 23
+
+format H264NalUnitHeader:
+    # §7.3.1 nal_unit(NumBytesInNALunit) header octet — 1 byte, MSB-first bit layout.
+    forbidden_zero_bit :u1                      # MUST be 0
+    forbidden_zero_bit == 0
+    nal_ref_idc :u2                             # 00 = non-reference, non-zero = reference (priority hint)
+    nal_unit_type :H264NalUnitType
+
+format H264AnnexBNalUnit:
+    # §Annex B byte stream NAL unit. start_code_prefix is "\x00\x00\x01" here; the optional
+    # leading zero_byte (0x00) making it "\x00\x00\x00\x01" is absorbed by the preceding unit's
+    # trailing zeros during scanning (not modeled in this format).
+    start_code_prefix :"\x00\x00\x01"
+    header :H264NalUnitHeader
+    rbsp :[..]u8                                # emulation-prevention bytes (0x03) still present; consumers strip

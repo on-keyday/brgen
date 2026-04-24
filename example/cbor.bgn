@@ -68,6 +68,28 @@ MAP_LENGTH64 ::= 0xbb
 MAP_TERMINATED ::= 0xbf
 MAP_END ::= 0xbf
 
+TAG_BEGIN ::= 0xc0
+TAG_AS_TYPE_END ::= 0xd7
+TAG8 ::= 0xd8
+TAG16 ::= 0xd9
+TAG32 ::= 0xda
+TAG64 ::= 0xdb
+TAG_END ::= 0xdb
+
+# Major type 7: simple values and floats (0xe0-0xff)
+# 0xe0-0xf3: unassigned/reserved simple values (direct)
+# 0xf4-0xf7: false/true/null/undefined
+# 0xf8: next byte encodes simple value 32-255
+# 0xf9/0xfa/0xfb: IEEE 754 half/single/double
+# 0xfc/0xfd/0xfe: reserved
+# 0xff: break stop code (already consumed by indefinite-length terminators)
+SIMPLE_DIRECT_BEGIN ::= 0xe0
+SIMPLE_DIRECT_END ::= 0xf3
+SIMPLE_FALSE ::= 0xf4
+SIMPLE_TRUE ::= 0xf5
+SIMPLE_NULL ::= 0xf6
+SIMPLE_UNDEFINED ::= 0xf7
+SIMPLE_VALUE8 ::= 0xf8
 FLOAT_BEGIN ::= 0xf9
 FLOAT_16 ::= 0xf9
 FLOAT_32 ::= 0xfa
@@ -152,6 +174,29 @@ format Value:
         MAP_END:
             data :[..]Pair
             :"\xff"
+        # Major type 6: Tag (tagged data item)
+        TAG_BEGIN..=TAG_AS_TYPE_END => tagged :Value  # tag number = type - 0xc0
+        TAG8:
+            tag_num :u8
+            tagged :Value
+        TAG16:
+            tag_num :u16
+            tagged :Value
+        TAG32:
+            tag_num :u32
+            tagged :Value
+        TAG_END:
+            tag_num :u64
+            tagged :Value
+        # Major type 7: simple values and floats
+        SIMPLE_DIRECT_BEGIN..=SIMPLE_DIRECT_END => .. # unassigned simple values 0-19
+        SIMPLE_FALSE => ..
+        SIMPLE_TRUE => ..
+        SIMPLE_NULL => ..
+        SIMPLE_UNDEFINED => ..
+        SIMPLE_VALUE8:
+            simple_value :u8
+            simple_value >= 32  # RFC 8949 §3.3: encoder MUST NOT use this form for values 0-31 (those have direct 0xe0-0xf7 encodings)
         FLOAT_BEGIN:
             data :f16
         FLOAT_32:

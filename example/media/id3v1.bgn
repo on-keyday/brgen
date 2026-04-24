@@ -1,0 +1,20 @@
+# source: ID3v1 de-facto specification (128-byte trailer appended to MP3 files) - see id3.org for history
+# scope: full ID3v1 and ID3v1.1 128-byte trailer structure with Genre enum (original 80 values + WinAmp extensions)
+# out-of-scope: ID3v2 (implemented in id3v2.bgn; distinct tag at file start with proper versioning); enhanced tag (pre-tag 227-byte extension); Lyrics3 v1/v2
+# note: ID3v1.1 splits the last 2 bytes of the 30-byte Comment field into a u8 zero-terminator and a u8 track number. This file uses the ID3v1.1 interpretation (the common case); for pure ID3v1, treat comment_v1_1_marker and track as part of a 30-byte comment block.
+
+config.url = "https://id3.org/ID3v1"
+
+format ID3v1Tag:
+    # 128-byte trailer at end of file
+    identifier :"TAG"                 # 3 bytes, must be ASCII "TAG"
+    title :[30]u8                     # ASCII, space-padded, no null terminator
+    artist :[30]u8
+    album :[30]u8
+    year :[4]u8                       # ASCII decimal year, e.g. "1999"
+    # ID3v1.1 comment splits: 28 chars + 0x00 + track number byte.
+    # Pure ID3v1 uses all 30 bytes as comment; consumers should check comment_v1_1_marker == 0 to detect v1.1.
+    comment :[28]u8
+    comment_v1_1_marker :u8           # MUST be 0 in ID3v1.1; any other value means pure ID3v1 (interpret comment + this byte + track as 30-byte comment)
+    track :u8                         # ID3v1.1: track number; ID3v1: last byte of comment
+    genre :u8                         # index into genre table (0-79 original, 80-147 WinAmp extensions, 0xFF = unknown)

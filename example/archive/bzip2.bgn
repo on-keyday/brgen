@@ -1,0 +1,28 @@
+# source: bzip2 file format (Wikipedia summary + Julian Seward's original bzip2 source, fetched 2026-04-24)
+# scope: Stream header (4 bytes, byte-aligned) + block-header field layout (bit-packed, for reference) + stream-footer field layout (bit-packed, for reference)
+# out-of-scope: Block and footer start positions within the bit stream — bzip2 blocks are **bit-aligned** with no padding between them, so the offset of the second block header depends on the Huffman-coded payload length of the first block. Block location is not byte-aligned after the first block and requires procedural bit-stream scanning for the block magic. Huffman trees, move-to-front transform output, run-length-encoding output, BWT original-pointer payload are all variable-width / procedural. Randomised-block deprecated variant.
+# note: bzip2 uses a **big-endian MSB-first bit stream**. Only the 4-byte stream header is guaranteed to be byte-aligned at offset 0; everything after that is a bit stream. Block/footer field formats below are declared for reference but cannot be attached at a fixed byte offset because their starting bit position is payload-dependent.
+config.url = "https://en.wikipedia.org/wiki/Bzip2"
+
+format Bzip2StreamHeader:
+    # §Stream header — 4 bytes, byte-aligned at file offset 0.
+    magic :"BZh"
+    block_size :u8                   # ASCII digit '1'..'9' → 100 KB..900 KB uncompressed block size
+
+format Bzip2BlockHeader:
+    # §Compressed block — bit-packed, starts at an arbitrary bit offset after the preceding block's payload.
+    # Block magic spells "pi" in BCD: 0x314159265359 (48 bits).
+    magic :u48                       # MUST equal 0x314159265359
+    magic == 0x314159265359
+    block_crc32 :u32                 # CRC of uncompressed block data (big-endian 32-bit in bit stream)
+    randomised :u1                   # deprecated; MUST be 0 in practice
+    origin_pointer :u24              # BWT original pointer (0..900000)
+    # Huffman-coded payload follows (out-of-scope); block length is implicit.
+
+format Bzip2StreamFooter:
+    # §Stream footer — bit-packed, at the end of the last block's payload.
+    # End-of-stream magic spells "sqrt(pi)" in BCD: 0x177245385090 (48 bits).
+    magic :u48                       # MUST equal 0x177245385090
+    magic == 0x177245385090
+    stream_crc32 :u32                # CRC of concatenated original uncompressed data
+    # 0..7 bits of zero padding follow to align the stream end to a byte boundary.

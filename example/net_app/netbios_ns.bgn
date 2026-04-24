@@ -1,0 +1,187 @@
+# source: RFC 1002 §4.2.1.1 (header), §4.2.1.2-3 (RR/question), §4.2.1.3 NB/NBSTAT RDATA, RFC 1001 §14.4 name compression (fetched 2026-04-23)
+# scope: NetBIOS Name Service full packet (header + 4 RR sections) with DNS-style compression; NB RDATA and NBSTAT RDATA both decomposed
+# out-of-scope: full opcode+rcode cross-matrix validation per RFC 1002 §4.2.1.1 Table 1
+config.url = "https://datatracker.ietf.org/doc/html/rfc1002"
+
+enum NBNSOpcode:
+    :u4
+    query = 0
+    registration = 5
+    release = 6
+    wack = 7
+    refresh = 8
+
+enum NBNSRcode:
+    :u4
+    no_error = 0
+    format_error = 1
+    server_failure = 2
+    name_error = 3
+    unsupported_request = 4
+    refused = 5
+    active_error = 6
+    name_in_conflict = 7
+
+enum NBNSQuestionType:
+    :u16
+    NB = 0x0020
+    NBSTAT = 0x0021
+
+enum NBNSResourceType:
+    :u16
+    # §4.2.1.3: RR_TYPE values
+    A = 0x0001       # reserved, not used in NetBIOS
+    NS = 0x0002      # reserved, not used
+    NULL = 0x000A
+    NB = 0x0020
+    NBSTAT = 0x0021
+
+enum NBNSQuestionClass:
+    :u16
+    IN = 0x0001
+
+enum NBOwnerNodeType:
+    :u2
+    B = 0  # broadcast
+    P = 1  # point-to-point
+    M = 2  # mixed
+    # 3 reserved
+
+format NBNSHeader:
+    # §4.2.1.1: 12-byte fixed header
+    # Flags word (16 bits): |R(1)|OPCODE(4)|AA(1)|TC(1)|RD(1)|RA(1)|0(1)|0(1)|B(1)|RCODE(4)|
+    name_trn_id :u16
+    response :u1
+    opcode :NBNSOpcode
+    authoritative :u1
+    truncation :u1
+    recursion_desired :u1
+    recursion_available :u1
+    reserved :u2
+    reserved == 0
+    broadcast :u1
+    rcode :NBNSRcode
+    qdcount :u16
+    ancount :u16
+    nscount :u16
+    arcount :u16
+
+format NBNSLabel:
+    # RFC 1001 §14.4 / RFC 1035 §4.1.4 compression
+    # prefix=0b00: regular length-prefixed label (len field = u6)
+    #   - first-level NetBIOS encoded name appears as a single 32-byte label (length byte = 0x20)
+    #   - scope labels follow with their own length bytes until 0x00 terminator
+    # prefix=0b11: 14-bit pointer to prior location in message (compression)
+    prefix :u2
+    match prefix:
+        0b11 => pointer :u14
+        0b00:
+            len :u6
+            label :[len]u8
+        .. => error("unexpected label prefix (0b01/0b10 reserved)")
+
+format NBNSName:
+    # Sequence of labels terminated by either a pointer or a zero-length label.
+    # Same structural pattern as dns.bgn DomainName.
+    labels :[]NBNSLabel
+
+    fn encode():
+        for i in labels.length:
+            output.put(labels[i])
+            if available(labels[i].pointer) || u8(labels[i].len) == 0:
+                i + 1 == labels.length
+
+    fn decode():
+        for:
+            lab := input.get(NBNSLabel)
+            if available(lab.pointer):
+                labels[labels.length] = lab
+                break
+            if u8(lab.len) == 0:
+                labels[labels.length] = lab
+                break
+            labels[labels.length] = lab
+
+format NBNSQuestion:
+    # §4.2.1.3 QUESTION_ENTRY
+    name :NBNSName
+    type :NBNSQuestionType
+    class :NBNSQuestionClass
+
+format NBAddressEntry:
+    # §4.2.1.3 NB RDATA entry (6 bytes): NB_FLAGS(2) + NB_ADDRESS(4)
+    # NB_FLAGS: |G(1)|ONT(2)|reserved(13)|
+    group :u1
+    ont :NBOwnerNodeType
+    nb_flags_reserved :u13
+    nb_flags_reserved == 0
+    address :u32
+
+format NBRData:
+    # §4.2.1.3 NB RDATA: one or more NBAddressEntry filling the RDLENGTH-sized subrange
+    entries :[..]NBAddressEntry
+
+format NBStatNodeNameFlags:
+    # §4.2.1.3 NODE_NAME NAME_FLAGS (16 bits):
+    # |G(1)|ONT(2)|DRG(1)|CNF(1)|ACT(1)|PRM(1)|RESERVED(9)|
+    group :u1
+    ont :NBOwnerNodeType
+    deregistered :u1
+    conflict :u1
+    active :u1
+    permanent :u1
+    reserved :u9
+    reserved == 0
+
+format NBStatNodeName:
+    # §4.2.1.3 NODE_NAME entry (18 bytes)
+    netbios_format_name :[16]u8  # raw 16-char NetBIOS name (space-padded, last byte = service code)
+    flags :NBStatNodeNameFlags
+
+format NBStatistics:
+    # §4.2.1.3 STATISTICS (46 bytes, all big-endian)
+    unit_id :[6]u8  # unique unit ID (typically Ethernet address)
+    jumpers :u8
+    test_result :u8
+    version_number :u16
+    period_of_statistics :u16
+    number_of_crcs :u16
+    number_alignment_errors :u16
+    number_of_collisions :u16
+    number_send_aborts :u16
+    number_good_sends :u32
+    number_good_receives :u32
+    number_retransmits :u16
+    number_no_resource_conditions :u16
+    number_free_command_blocks :u16
+    total_number_command_blocks :u16
+    max_total_number_command_blocks :u16
+    number_pending_sessions :u16
+    max_number_pending_sessions :u16
+    max_total_sessions_possible :u16
+    session_data_packet_size :u16
+
+format NBStatRData:
+    # §4.2.1.3 NBSTAT RDATA
+    num_names :u8
+    node_names :[num_names]NBStatNodeName
+    statistics :NBStatistics
+
+format NBNSResourceRecord:
+    # §4.2.1.2 RESOURCE_RECORD
+    name :NBNSName
+    type :NBNSResourceType
+    class :NBNSQuestionClass
+    ttl :u32
+    rdlength :u16
+    match type:
+        NBNSResourceType.NB => nb_rdata :NBRData(input = input.subrange(rdlength))
+        NBNSResourceType.NBSTAT => nbstat_rdata :NBStatRData(input = input.subrange(rdlength))
+        .. => rdata :[rdlength]u8
+
+format NBNSPacket:
+    header :NBNSHeader
+    questions :[header.qdcount]NBNSQuestion
+    answers :[header.ancount]NBNSResourceRecord
+    authority :[header.nscount]NBNSResourceRecord
+    additional :[header.arcount]NBNSResourceRecord

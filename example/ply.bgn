@@ -1,0 +1,19 @@
+# source: Paul Bourke's PLY (Polygon File Format) reference (http://paulbourke.net/dataformats/ply/)
+# scope: PLY plain-ASCII header framing — magic / format declaration / comment / element / property / end_header line structure
+# out-of-scope: body content (ASCII record-per-element rows OR binary records in big/little-endian per format declaration); property list variable-length handling (count_type + N × element_type elements per property); type-size table (char=1, short=2, int=4, float=4, double=8); post-parse association of property declarations to their parent element
+# note: The PLY header is strict ASCII line-oriented with "\n" or "\r\n" terminators. After end_header, the body follows in the format declared on the second header line. This file models only the line-based header envelope; grammar within each header line is left to consumers to parse from `content`.
+config.url = "http://paulbourke.net/dataformats/ply/"
+
+format PlyLine:
+    # One CR/LF-terminated ASCII line. Terminator is either "\n" or "\r\n"; this file matches "\n"
+    # which covers both (since the trailing "\r" would be absorbed into `content` when present).
+    content :[..]u8
+    :"\n"
+
+format PlyHeader:
+    # §Header — magic "ply", then format declaration, then zero-or-more comment / element / property
+    # lines, terminated by "end_header". Each line is an ASCII record.
+    magic :"ply\n"
+    format_line :PlyLine                    # expected: "format ascii 1.0" or "format binary_little_endian 1.0" etc.
+    # Consumers iterate reading PlyLine until a line whose `content` equals "end_header" is observed.
+    lines :[..]PlyLine

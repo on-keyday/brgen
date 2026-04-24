@@ -1,0 +1,48 @@
+# source: Apple File System Reference (https://developer.apple.com/support/downloads/Apple-File-System-Reference.pdf) §Container Superblock
+# scope: APFS container superblock (nx_superblock_t) primary fields + obj_phys_t object header layout
+# out-of-scope: Checkpoint mapping blocks (nx_xp_desc_base / nx_xp_data_base pointed-to regions), space manager (spaceman) and object map (omap) tree structures, per-volume superblocks (apfs_superblock_t), encrypted/keybag structures, Fusion Drive fields, trailing nx_blocked_out_prange / nx_evict_mapping_tree_oid / nx_flags / nx_efi_jumpstart / nx_fusion_* fields beyond the first 100 fs_oid slots
+# note: All multi-byte integers are little-endian. Superblock lives at block 0 of the container. The struct is defined in C headers without explicit padding; all members are naturally aligned so the declared order matches wire order exactly.
+config.url = "https://developer.apple.com/support/downloads/Apple-File-System-Reference.pdf"
+input.endian = config.endian.little
+
+NX_MAGIC ::= 0x4253584E                      # "NXSB" in ASCII
+
+format ApfsObjPhys:
+    # §obj_phys_t — 32-byte header on every APFS on-disk object.
+    o_cksum :u64                             # Fletcher-64 checksum
+    o_oid :u64                               # object identifier
+    o_xid :u64                               # transaction identifier when this object was last written
+    o_type :u32                              # OBJECT_TYPE_* constant (low 16 bits = type, high 16 = flags)
+    o_subtype :u32                           # subtype (layout varies per type)
+
+format ApfsNxSuperblock:
+    nx_o :ApfsObjPhys
+    nx_magic :u32(NX_MAGIC)
+    nx_block_size :u32                       # typically 4096
+    nx_block_count :u64
+    nx_features :u64                         # NX_FEATURE_DEFRAG etc.
+    nx_readonly_compatible_features :u64
+    nx_incompatible_features :u64
+    nx_uuid :[16]u8
+    nx_next_oid :u64
+    nx_next_xid :u64
+    nx_xp_desc_blocks :u32                   # size of checkpoint descriptor area in blocks
+    nx_xp_data_blocks :u32                   # size of checkpoint data area in blocks
+    nx_xp_desc_base :u64                     # block address of checkpoint descriptor area start
+    nx_xp_data_base :u64                     # block address of checkpoint data area start
+    nx_xp_desc_next :u32                     # next free index in descriptor area (circular)
+    nx_xp_data_next :u32                     # next free index in data area (circular)
+    nx_xp_desc_index :u32                    # index of first valid descriptor block
+    nx_xp_desc_len :u32                      # number of valid descriptor blocks
+    nx_xp_data_index :u32                    # index of first valid data block
+    nx_xp_data_len :u32
+    nx_spaceman_oid :u64                     # ephemeral OID of space manager
+    nx_omap_oid :u64                         # physical OID of container object map
+    nx_reaper_oid :u64                       # ephemeral OID of the reaper
+    nx_test_type :u32                        # reserved for Apple test
+    nx_max_file_systems :u32                 # always 100 in current spec
+    nx_fs_oid :[100]u64                      # per-volume superblock virtual OIDs; zeros for unused slots
+    # Trailing fields (nx_counters, nx_blocked_out_prange, nx_evict_mapping_tree_oid, nx_flags,
+    # nx_efi_jumpstart, nx_fusion_uuid, nx_keylocker, nx_ephemeral_info[4], nx_test_oid,
+    # nx_fusion_mt_oid / nx_fusion_wbc_oid / nx_fusion_wbc, nx_newest_mounted_version,
+    # nx_mkb_locker) are out-of-scope here; see spec for full 1376-byte layout.

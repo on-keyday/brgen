@@ -1,0 +1,49 @@
+# source: Redis RDB dump file format (https://github.com/sripathikrishnan/redis-rdb-tools/wiki/Redis-RDB-Dump-File-Format)
+# scope: RDB file header (magic + ASCII version) + opcode enumeration + end-of-file marker + CRC64 trailer
+# out-of-scope: length-encoded integer decoding (top-2-bit dispatch with 6-bit / 14-bit / 32-bit / 64-bit / int-encoded / LZF-compressed variants — requires procedural bit inspection); per-object-type value encoding (String, List, Set, Hash, Sorted Set, plus compact variants ZipList, IntSet, QuickList, ListPack); AUX field metadata key-value pairs; DB number / hash-table size hints; module data format (opcode 0xF7); streams (Redis Streams object type); function library dumps; CRC64 computation (Jones' XMODEM+variant with polynomial 0xad93d23594c935a9)
+# note: Redis RDB is predominantly LITTLE-ENDIAN for fixed-width numeric fields (expiretime ms, CRC64) but the 14-bit and 32-bit length-encoded values are BIG-ENDIAN. Version field is 4 ASCII digits zero-padded (e.g., "0009" for RDB v9).
+config.url = "https://github.com/sripathikrishnan/redis-rdb-tools/wiki/Redis-RDB-Dump-File-Format"
+input.endian = config.endian.little
+
+enum RedisRdbOpcode:
+    :u8
+    # High opcodes signal structural boundaries; otherwise the byte is a value-type code.
+    module_aux = 0xF7                           # RDB v9+ module aux metadata
+    idle = 0xF8                                 # LFU/LRU idle time (RDB v9+)
+    freq = 0xF9                                 # LFU access frequency (RDB v9+)
+    aux = 0xFA                                  # auxiliary metadata (redis-ver, redis-bits, ctime, used-mem etc., v7+)
+    resizedb = 0xFB                             # hash table size hints (v7+)
+    expiretime_ms = 0xFC                        # 8-byte LE millisecond expiration, then object
+    expiretime = 0xFD                           # 4-byte LE second expiration, then object
+    selectdb = 0xFE                             # followed by length-encoded database number
+    eof = 0xFF                                  # end of file marker; 8-byte CRC64 follows (v5+)
+
+enum RedisRdbValueType:
+    :u8
+    string = 0
+    list = 1
+    set = 2
+    sorted_set = 3
+    hash = 4
+    zipmap = 9                                  # obsolete
+    ziplist = 10
+    intset = 11
+    sorted_set_in_ziplist = 12
+    hash_in_ziplist = 13
+    list_in_quicklist = 14
+    stream_listpacks = 15
+    hash_with_metadata = 16
+    list_quicklist_v2 = 18                      # v10+
+    stream_listpacks_v2 = 19
+    set_listpack = 20
+    stream_listpacks_v3 = 21
+
+format RedisRdbHeader:
+    magic :"REDIS"
+    version :[4]u8                              # ASCII digits, e.g. "0009" for RDB v9
+
+format RedisRdbTrailer:
+    # §end-of-file marker + CRC64 checksum (RDB v5+).
+    eof_marker :u8                              # MUST equal RedisRdbOpcode.eof == 0xFF
+    eof_marker == 0xFF
+    crc64 :u64                                  # CRC-64 of all preceding bytes (Jones variant)

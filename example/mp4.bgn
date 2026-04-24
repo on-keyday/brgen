@@ -1,3 +1,5 @@
+# source: ISO/IEC 14496-12 ISO Base Media File Format (shared by MP4 / MOV / HEIF / 3GP / CMAF)
+# note: All multi-byte integers are big-endian. Size == 0 means "box extends to end of file"; size == 1 means a 64-bit large_size follows; size >= 8 gives the total box byte count including the 8-byte header.
 
 format Box:
     size :u32
@@ -12,4 +14,85 @@ format Box:
         data :[..]u8
     else:
         data :[size-8]u8
+
+format Mp4FullBoxPrefix:
+    # §4.2 FullBox — 1-byte version + 24-bit flags at start of payload for boxes that carry it.
+    version :u8
+    flags :u24
+
+format Mp4FtypPayload:
+    # §4.3 File Type Box (ftyp) payload.
+    major_brand :[4]u8                   # e.g. "isom", "mp41", "mp42", "heic"
+    minor_version :u32
+    compatible_brands :[..]u8            # 4-byte FourCCs until end of box
+
+format Mp4MvhdPayload:
+    # §8.2.2 Movie Header Box (mvhd) payload — FullBox with v0/v1 field widths.
+    prefix :Mp4FullBoxPrefix
+    if prefix.version == 0:
+        creation_time :u32
+        modification_time :u32
+        timescale :u32
+        duration :u32
+    else:
+        creation_time :u64
+        modification_time :u64
+        timescale :u32
+        duration :u64
+    rate :i32                            # 16.16 fixed-point; 0x00010000 = 1.0
+    volume :i16                          # 8.8 fixed-point; 0x0100 = 1.0
+    reserved :u16
+    reserved2 :[2]u32
+    matrix :[9]i32                       # 3×3 transformation matrix (unity = identity)
+    pre_defined :[6]u32
+    next_track_id :u32
+
+format Mp4TkhdPayload:
+    # §8.3.2 Track Header Box (tkhd) payload — FullBox with v0/v1 field widths.
+    prefix :Mp4FullBoxPrefix
+    if prefix.version == 0:
+        creation_time :u32
+        modification_time :u32
+        track_id :u32
+        reserved :u32
+        duration :u32
+    else:
+        creation_time :u64
+        modification_time :u64
+        track_id :u32
+        reserved :u32
+        duration :u64
+    reserved2 :[2]u32
+    layer :i16
+    alternate_group :i16
+    volume :i16                          # 8.8 fixed-point
+    reserved3 :u16
+    matrix :[9]i32
+    width :u32                           # 16.16 fixed-point
+    height :u32                          # 16.16 fixed-point
+
+format Mp4HdlrPayload:
+    # §8.4.3 Handler Reference Box (hdlr) payload.
+    prefix :Mp4FullBoxPrefix
+    pre_defined :u32
+    handler_type :[4]u8                  # "vide" / "soun" / "hint" / "meta" / "pict" / etc.
+    reserved :[3]u32
+    name :[..]u8                         # UTF-8 null-terminated human-readable handler name
+
+format Mp4MdhdPayload:
+    # §8.4.2 Media Header Box (mdhd) payload.
+    prefix :Mp4FullBoxPrefix
+    if prefix.version == 0:
+        creation_time :u32
+        modification_time :u32
+        timescale :u32
+        duration :u32
+    else:
+        creation_time :u64
+        modification_time :u64
+        timescale :u32
+        duration :u64
+    # language: 1-bit reserved + 3 × 5-bit ISO 639-2 letter codes (each letter + 0x60)
+    language :u16
+    pre_defined :u16
 

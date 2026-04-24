@@ -1,0 +1,20 @@
+# source: 7z archive file format (https://py7zr.readthedocs.io/en/latest/archive_format.html, fetched 2026-04-24), original authoritative source is `DOC/7zFormat.txt` in the LZMA SDK distribution
+# scope: 7z outer framing — SignatureHeader (6-byte magic + version + StartHeader CRC + StartHeader containing NextHeaderOffset/Size/CRC)
+# out-of-scope: Packed header body (PropertyID-tagged nested structure containing CodersInfo / StreamsInfo / FilesInfo); LZMA/LZMA2/PPMd/BZip2 filter streams that compress the header itself and per-file data; the "packed" payload section between SignatureHeader and NextHeader
+# note: All multi-byte integers are little-endian. NextHeaderOffset is measured from byte 32 (end of SignatureHeader), so the header database lives at absolute file offset (32 + NextHeaderOffset).
+config.url = "https://py7zr.readthedocs.io/en/latest/archive_format.html"
+input.endian = config.endian.little
+
+format SevenZStartHeader:
+    # §3.2 StartHeader — 20 bytes, covered by start_header_crc in SignatureHeader.
+    next_header_offset :u64          # offset from end of SignatureHeader (byte 32)
+    next_header_size :u64            # packed size of the header database
+    next_header_crc :u32             # CRC-32 of the NextHeader bytes
+
+format SevenZSignatureHeader:
+    # §3.1 SignatureHeader — 32 bytes fixed.
+    signature :"\x37\x7A\xBC\xAF\x27\x1C"
+    version_major :u8                # 0x00
+    version_minor :u8                # 0x04
+    start_header_crc :u32            # CRC-32 of the 20-byte StartHeader that follows
+    start_header :SevenZStartHeader

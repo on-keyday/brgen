@@ -1,0 +1,48 @@
+# source: OpenEXR File Layout (https://openexr.com/en/latest/OpenEXRFileLayout.html)
+# scope: OpenEXR file magic + version bit-field + attribute framing (name + type + size + value)
+# out-of-scope: per-attribute-type value encoding (box2i = 4 × int32, chromaticities = 8 × float, channel list chlist iterating entries of [name cstring + pixel_type u32 + pLinear u8 + 3 reserved + xSampling i32 + ySampling i32] terminated by a single 0x00, compression = 1 byte code, lineOrder = 1 byte code, tiledesc = u32 xSize + u32 ySize + byte levelMode+roundingMode); multipart offset tables (u64 chunk offsets per part); scanline / tile data chunks; deep data format
+# note: OpenEXR is LITTLE-ENDIAN throughout. Attribute encoding is a typed TLV: null-terminated name + null-terminated type + u32 LE size + size bytes of value. A single 0x00 byte terminates the list of attributes (or each part's list in multipart files; a second 0x00 byte terminates all headers).
+config.url = "https://openexr.com/en/latest/OpenEXRFileLayout.html"
+input.endian = config.endian.little
+
+EXR_MAGIC ::= 0x01312F76                     # LE u32 = 20000630
+
+format ExrVersionField:
+    # 4 bytes total. LSB byte is the format version number; remaining bits are flag bits.
+    # bit 0-7   = version number (current = 2)
+    # bit 9     = single-tile file
+    # bit 10    = long names (attribute name / type max 255 bytes, otherwise 31)
+    # bit 11    = deep data
+    # bit 12    = multipart
+    # Other bits reserved.
+    raw :u32
+
+    fn version_number() -> u8:
+        return u8(raw & 0xFF)
+
+    fn is_tiled() -> bool:
+        return (raw & 0x200) != 0
+
+    fn long_names() -> bool:
+        return (raw & 0x400) != 0
+
+    fn is_deep() -> bool:
+        return (raw & 0x800) != 0
+
+    fn is_multipart() -> bool:
+        return (raw & 0x1000) != 0
+
+format ExrCstring:
+    bytes :[..]u8
+    :"\0"
+
+format ExrAttribute:
+    # §Attributes — TLV with name + type cstrings, 4-byte LE size, size bytes of value payload.
+    name :ExrCstring
+    type :ExrCstring                         # e.g. "box2i", "float", "chlist", "compression"
+    size :u32
+    value :[size]u8                          # type-specific encoding; out-of-scope per-type decoding
+
+format ExrFileMagicAndVersion:
+    magic :u32(EXR_MAGIC)
+    version :ExrVersionField

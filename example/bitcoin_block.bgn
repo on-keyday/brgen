@@ -1,0 +1,14 @@
+# source: Bitcoin Wiki — Block hashing algorithm (https://en.bitcoin.it/wiki/Block_hashing_algorithm)
+# scope: Bitcoin block header (80 bytes, little-endian) — the input to double-SHA-256 for proof-of-work
+# out-of-scope: transaction varint count and transaction bodies (which include witness data under SegWit via `marker + flag` in serialization form 2); "compact target" decode from `bits` (1-byte exponent + 3-byte mantissa giving target = mantissa × 2^(8 × (exponent − 3))); chain work / difficulty retargeting math; merkle-root computation; P2P network envelope (magic `0xD9B4BEF9` mainnet + command + payload_size + checksum)
+# note: Bitcoin is LITTLE-ENDIAN for all header fields. Hash fields (prev_block, merkle_root) are stored in "internal byte order" which is LE interpretation of the SHA-256 digest; block explorers display them byte-reversed for human readability.
+config.url = "https://en.bitcoin.it/wiki/Block_hashing_algorithm"
+input.endian = config.endian.little
+
+format BitcoinBlockHeader:
+    version :i32                     # signed int32 per consensus rules (allows negative for soft-fork signalling masks)
+    prev_block_hash :[32]u8          # SHA-256 of previous block header, internal (LE) byte order
+    merkle_root :[32]u8              # SHA-256 root of transaction tree, internal (LE) byte order
+    timestamp :u32                   # seconds since 1970-01-01 UTC
+    bits :u32                        # compact-target encoded difficulty
+    nonce :u32                       # 32-bit counter miners increment to find valid PoW

@@ -1,0 +1,51 @@
+# source: RFC 8300 §2.2 base header, §2.3 service path header, §2.4 MD Type 1 context, §2.5.1 MD Type 2 TLV (fetched 2026-04-23)
+# scope: NSH base header + service path header + MD Type 1 fixed-length context + MD Type 2 variable TLV chain
+# out-of-scope: inner payload dispatched by next_protocol, per-TLV metadata interpretation by Metadata Class
+# note: IETF MSB-first; all multi-byte integers big-endian. Length fields count 4-byte words.
+config.url = "https://datatracker.ietf.org/doc/html/rfc8300"
+
+enum NshMdType:
+    :u4
+    type1_fixed = 0x1
+    type2_variable = 0x2
+
+format NshTlv:
+    # §2.5.1: |Metadata Class(16)|Type(8)|U(1)|Length(7)| + Length*4 bytes metadata
+    # Note: RFC 8300 text specifies the Type field's high-order bit as the Critical (C) flag.
+    metadata_class :u16
+    critical :u1
+    option_type :u7
+    unassigned :u1
+    length :u7           # variable metadata length in 4-byte words
+    metadata :[length * 4]u8
+
+format NshVariableContext:
+    # §2.5: sequence of TLVs filling the remainder of the NSH header after base + service path.
+    tlvs :[..]NshTlv
+
+format NshFixedContext:
+    # §2.4: 16 bytes (4 × 32-bit) of Mandatory Context Headers for MD Type 1
+    context1 :u32
+    context2 :u32
+    context3 :u32
+    context4 :u32
+
+format NshHeader:
+    # §2.2 base header
+    version :u2
+    oam :u1
+    unassigned1 :u1
+    ttl :u6
+    length :u6           # total NSH header length in 4-byte words (includes base + service path + all context headers)
+    unassigned2 :u4
+    md_type :NshMdType
+    next_protocol :u8
+    # §2.3 Service Path Header (4 bytes total)
+    spi :u24             # Service Path Identifier
+    si :u8               # Service Index
+    # Context Headers: size = (length - 2) * 4 bytes (base + service path occupy 2 × 4-byte words)
+    match md_type:
+        NshMdType.type1_fixed => fixed_context :NshFixedContext
+        NshMdType.type2_variable => variable_context :NshVariableContext(input = input.subrange((length - 2) * 4))
+        .. => opaque_context :[(length - 2) * 4]u8
+    # Inner payload (next_protocol dispatched) follows - out-of-scope.

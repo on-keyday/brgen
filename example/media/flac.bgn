@@ -1,0 +1,80 @@
+# source: RFC 9639 (FLAC: Free Lossless Audio Codec, fetched 2026-04-24) §8 metadata blocks, §9 frame structure
+# scope: FLAC native-stream framing — "fLaC" marker + METADATA_BLOCK_HEADER + STREAMINFO payload + SEEKTABLE entry + PICTURE payload + generic metadata block passthrough
+# out-of-scope: FRAME header / subframe decoding (§9 variable-length UTF-8-encoded sample numbers, block-size/sample-rate/channel-assignment codes, subframe type + wasted bits + subframe body); VORBIS_COMMENT field list (LE vendor length + LE field count); CUESHEET track list; APPLICATION data
+# note: FLAC uses a big-endian MSB-first bit stream for most structures. The sole exception is VORBIS_COMMENT and PICTURE's MIME / description length fields (little-endian 32-bit). This file uses default big-endian for metadata framing and notes LE exceptions in comments.
+config.url = "https://datatracker.ietf.org/doc/html/rfc9639"
+
+enum FlacBlockType:
+    :u7
+    streaminfo = 0
+    padding = 1
+    application = 2
+    seektable = 3
+    vorbis_comment = 4
+    cuesheet = 5
+    picture = 6
+    forbidden = 127
+
+format FlacMetadataBlockHeader:
+    # 4 bytes big-endian. bit 0 (MSB) = last_flag; bits 1..7 = block_type; bits 8..31 = length (24-bit BE).
+    last_flag :u1
+    block_type :FlacBlockType
+    length :u24                        # size of body in bytes (excludes this 4-byte header)
+
+format FlacStreaminfo:
+    # §8.2 STREAMINFO — 34 bytes packed big-endian.
+    min_block_size :u16                # samples, range 16..65535
+    max_block_size :u16
+    min_frame_size :u24                # bytes; 0 = unknown
+    max_frame_size :u24
+    sample_rate_hz :u20                # 0 is invalid
+    channels_minus1 :u3                # 0..7 → 1..8 channels
+    bits_per_sample_minus1 :u5         # 0..31 → 1..32 bits (FLAC practical range 4..32)
+    total_samples :u36                 # per-channel; 0 = unknown
+    md5 :[16]u8                        # MD5 of unencoded audio; all-zero = unknown
+
+format FlacSeekPoint:
+    # §8.5 SEEKTABLE entry — 18 bytes big-endian.
+    # A placeholder seek point has sample_number == 0xFFFFFFFFFFFFFFFF.
+    sample_number :u64
+    stream_offset :u64                 # bytes from first frame header (not start of file)
+    frame_samples :u16
+
+format FlacPicture:
+    # §8.8 PICTURE block.
+    # Mostly big-endian except MIME/description length fields which are little-endian per RFC.
+    # FIXME: mixing byte orders mid-format requires endian switching which is out-of-scope here;
+    # this format declares all lengths as BE matching classic FLAC implementations before RFC 9639.
+    picture_type :u32                  # IANA-registered, e.g. 3 = front cover
+    mime_length :u32                   # spec note: little-endian; LSP check only, real parsers switch
+    mime_type :[mime_length]u8         # ASCII, printable range 0x20..0x7E or literal "-->" for URI
+    desc_length :u32
+    description :[desc_length]u8       # UTF-8
+    width :u32
+    height :u32
+    color_depth :u32                   # bits per pixel
+    colors_used :u32                   # 0 for non-indexed
+    data_length :u32
+    data :[data_length]u8
+
+format FlacMetadataBlock:
+    header :FlacMetadataBlockHeader
+    body :[header.length]u8            # consumers re-parse based on header.block_type
+
+format FlacMetadataBlockChain:
+    # Zero-or-more metadata blocks terminated by one with header.last_flag == 1. Factored into its
+    # own format so the outer FlacStream can use default field decoding without overriding decode().
+    blocks :[..]FlacMetadataBlock
+
+    fn decode():
+        for:
+            b := input.get(FlacMetadataBlock)
+            blocks[blocks.length] = b
+            if <FlacMetadataBlock>(b).header.last_flag == 1:
+                break
+
+format FlacStream:
+    # §7 stream = "fLaC" marker + one-or-more metadata blocks (first MUST be STREAMINFO; last has last_flag=1).
+    # After the terminating metadata block, the FRAME stream begins; §9 frames out-of-scope here.
+    marker :"fLaC"
+    blocks :FlacMetadataBlockChain

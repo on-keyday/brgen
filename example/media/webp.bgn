@@ -1,0 +1,90 @@
+# source: WebP RIFF Container Specification (Google, https://developers.google.com/speed/webp/docs/riff_container, fetched 2026-04-24)
+# scope: RIFF-container framing for WebP — outer RIFF/WEBP magic, generic chunk framing + padding rule, Simple format (VP8 / VP8L), Extended VP8X payload, animation (ANIM / ANMF), ALPH, and pass-through metadata chunks (ICCP / EXIF / XMP).
+# out-of-scope: VP8 bitstream internals (RFC 6386), VP8L lossless bitstream, ANMF frame-data sub-stream layout beyond the 24-byte header, ICC profile parsing, EXIF/XMP metadata parsing.
+# note: Multi-byte fields are little-endian. Every chunk pads to even byte boundary: if chunk_size is odd, a single 0x00 byte follows. Single-byte flag bytes (VP8X flags, ANMF flags, ALPH flags) are factored into MSB-first sub-formats so spec diagrams map directly to u2/u1/... declarations.
+config.url = "https://developers.google.com/speed/webp/docs/riff_container"
+input.endian = config.endian.little
+
+format WebPChunkHeader:
+    # §2. Every chunk: 4-byte ASCII FourCC + 4-byte LE size (size excludes the 8-byte header).
+    fourcc :[4]u8
+    size :u32
+
+format WebPVp8xFlags:
+    # §2.5.3 VP8X Flags byte (spec diagram: "|Rsv|I|L|E|X|A|R|", MSB → LSB):
+    #   bits 7-6 = Rsv | bit 5 = I (ICC profile) | bit 4 = L (Alpha) | bit 3 = E (EXIF)
+    #   bit 2 = X (XMP) | bit 1 = A (Animation) | bit 0 = R (Reserved)
+    input.endian = config.endian.big
+    reserved_high :u2
+    icc_profile :u1
+    alpha :u1
+    exif :u1
+    xmp :u1
+    animation :u1
+    reserved_low :u1
+
+format WebPVp8xPayload:
+    # §2.5.3 VP8X (Extended File Format) header: 10-byte chunk payload.
+    flags :WebPVp8xFlags
+    reserved :u24                     # MUST be 0
+    reserved == 0
+    canvas_width_minus1 :u24          # actual width = value + 1 (1..16777216)
+    canvas_height_minus1 :u24         # actual height = value + 1
+
+format WebPAnimPayload:
+    # §2.5.3 ANIM chunk payload: 6 bytes.
+    # Note: background color is stored in B, G, R, A byte order on disk.
+    background_bgra :[4]u8
+    loop_count :u16                   # 0 = infinite
+
+format WebPAnmfFlags:
+    # §2.5.3 ANMF flags byte (MSB → LSB):
+    #   bits 7-2 = Reserved (0) | bit 1 = B (Blending: 0=alpha-blend, 1=overwrite) | bit 0 = D (Disposal: 0=none, 1=background)
+    input.endian = config.endian.big
+    reserved :u6
+    blend_overwrite :u1
+    dispose_to_background :u1
+
+format WebPAnmfPayload:
+    # §2.5.3 ANMF chunk: 16-byte header followed by frame data (ALPH? + VP8/VP8L + unknowns).
+    # Frame X / Y are divide-by-2 values: actual coordinate = value * 2.
+    frame_x :u24
+    frame_y :u24
+    frame_width_minus1 :u24           # actual = value + 1
+    frame_height_minus1 :u24          # actual = value + 1
+    frame_duration_ms :u24
+    flags :WebPAnmfFlags
+    frame_data :[..]u8                # remainder of chunk payload; sub-parsing out-of-scope
+
+format WebPAlphFlags:
+    # §2.5.3 ALPH flags byte (MSB → LSB):
+    #   bits 7-6 = Rsv | bits 5-4 = P (preprocessing, informative) | bits 3-2 = F (filtering) | bits 1-0 = C (compression)
+    # C values: 0=uncompressed, 1=VP8L format
+    # F values: 0=none, 1=horizontal, 2=vertical, 3=gradient
+    input.endian = config.endian.big
+    reserved :u2
+    preprocessing :u2
+    filtering :u2
+    compression :u2
+
+format WebPAlphPayload:
+    # §2.5.3 ALPH chunk: 1 flag byte + alpha bitstream.
+    flags :WebPAlphFlags
+    alpha_bitstream :[..]u8
+
+format WebPChunk:
+    # Generic chunk framing — payload is kept as raw bytes. Higher-layer consumers re-parse
+    # `payload` as WebPVp8xPayload / WebPAnimPayload / etc. based on `header.fourcc`.
+    header :WebPChunkHeader
+    payload :[header.size]u8
+    # RIFF padding: when header.size is odd, a single 0x00 pad byte follows.
+    if (header.size & 1) == 1:
+        pad :u8
+        pad == 0
+
+format WebPFile:
+    riff_magic :"RIFF"
+    file_size :u32                    # RIFF ChunkSize: total file size minus 8 (RIFF FourCC + this u32)
+    webp_magic :"WEBP"
+    # Remaining chunks span exactly (file_size - 4) bytes: file_size counts webp_magic (4 bytes) + chunks.
+    chunks :[..]WebPChunk(input = input.subrange(file_size - 4))

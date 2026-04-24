@@ -1,0 +1,64 @@
+# source: The .xz File Format version 1.1.0 (https://tukaani.org/xz/xz-file-format.txt, fetched 2026-04-24)
+# scope: XZ stream framing — Stream Header (12 bytes) + Stream Flags + Block Header framing (Block Header Size / Block Flags / filter flag list / CRC32) + Index framing (Index Indicator + Number of Records + Records + CRC32) + Stream Footer (12 bytes)
+# out-of-scope: Multibyte Variable-Length Integer (LEB128) payload values — continuation-byte loop is procedural, not expressible purely declaratively here; LZMA2/Delta/BCJ filter properties and their encoded data; Record contents (pairs of LEB128-encoded Unpadded Size + Uncompressed Size); Check field computation (CRC32/CRC64/SHA-256)
+# note: All multi-byte integers are little-endian. XZ bit-numbering uses "bit 0 = LSB" convention (LE × LSB-first quadrant), matching `input.endian = little` + `input.bit_order = lsb` at file scope so bit-packed descriptors declare low-bit-first.
+config.url = "https://tukaani.org/xz/xz-file-format.txt"
+input.endian = config.endian.little
+input.bit_order = config.bit_order.lsb
+
+enum XzCheckId:
+    :u4
+    none = 0x0
+    crc32 = 0x1
+    # 0x2..0x3 reserved (unused)
+    crc64 = 0x4
+    # 0x5..0x9 reserved
+    sha256 = 0xA
+    # 0xB..0xF reserved
+
+format XzStreamFlags:
+    # §2.1.1.2 Stream Flags — 2 bytes.
+    # Byte 0 is reserved (must be 0x00); byte 1 packs Check ID (bits 0-3) + reserved (bits 4-7).
+    reserved_byte :u8                # MUST be 0x00
+    reserved_byte == 0
+    check_id :XzCheckId
+    reserved_nibble :u4              # MUST be 0
+
+format XzStreamHeader:
+    # §2.1.1 Stream Header — 12 bytes fixed.
+    magic :"\xFD\x37\x7A\x58\x5A\x00"
+    stream_flags :XzStreamFlags
+    crc32 :u32                       # CRC-32 of stream_flags bytes
+
+format XzBlockFlags:
+    # §3.1.2 Block Flags — 1 byte.
+    # bits 0-1: Number of filters minus 1 (0..3 → 1..4 filters)
+    # bits 2-5: reserved (MUST be 0)
+    # bit 6   : Compressed Size present
+    # bit 7   : Uncompressed Size present
+    num_filters_minus1 :u2
+    reserved :u4
+    reserved == 0
+    compressed_size_present :u1
+    uncompressed_size_present :u1
+
+format XzBlockHeader:
+    # §3.1 Block Header — variable length, multiple of 4 bytes, starts with size byte.
+    # Actual header size (in bytes) = (block_header_size + 1) * 4. Encoded value 0 indicates the Index
+    # (not a Block Header) — callers must branch on the first byte before parsing as this format.
+    # Layout breakdown given total = (block_header_size + 1) * 4:
+    #   1 byte block_header_size + 1 byte flags + variable body + 4-byte trailing crc32
+    # body = (total - 6) bytes containing optional LEB128 Compressed Size, optional LEB128 Uncompressed
+    # Size, List of Filter Flags, and null-byte padding to the 4-byte alignment boundary. Interpreting
+    # body requires procedural LEB128 decoding (state-dependent presence) and is out-of-scope here.
+    block_header_size :u8
+    flags :XzBlockFlags
+    body :[((block_header_size + 1) * 4) - 6]u8
+    crc32 :u32
+
+format XzStreamFooter:
+    # §2.1.2 Stream Footer — 12 bytes fixed.
+    crc32 :u32                       # CRC-32 of backward_size + stream_flags
+    backward_size :u32               # actual backward size in bytes = (value + 1) * 4
+    stream_flags :XzStreamFlags      # MUST match Stream Header's stream_flags
+    footer_magic :"YZ"

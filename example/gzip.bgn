@@ -58,3 +58,19 @@ enum OS:
     vfat = 14
     mvs = 15
     beos = 16
+
+# §2.3.1 Gzip member trailer — 8 bytes at end of each compressed member.
+format GZipTrailer:
+    crc32 :u32                                  # CRC-32 of the original uncompressed data (little-endian per gzip spec)
+    isize :u32                                  # original uncompressed size modulo 2^32
+
+# §2 A gzip file is a concatenation of zero-or-more members. This wrapper models one member
+# end-to-end; the DEFLATE compressed body is left opaque (see example/archive/deflate_block.bgn
+# for the block-level structure).
+format GZipMember:
+    header :GZipHeader
+    # DEFLATE stream body: length is not declaratively known without decompressing, so captured
+    # as opaque trailing bytes between the header and the trailer. Real decoders process the
+    # DEFLATE stream and the trailer is consumed after the final DEFLATE block.
+    deflate_body :[..]u8
+    trailer :GZipTrailer

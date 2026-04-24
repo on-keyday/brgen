@@ -1,0 +1,39 @@
+# source: RFC 7845 §5 (Ogg Encapsulation for Opus, fetched 2026-04-24)
+# scope: Opus Identification Header (OpusHead) + Comment Header (OpusTags) packets as carried inside the first two Ogg pages of an Ogg Opus stream
+# out-of-scope: Ogg page framing (covered in example/media/ogg.bgn); Opus audio packet structure (TOC byte + code 0/1/2/3 configurations, frame length decoding, per-frame CELT / SILK bitstream); Channel Mapping Family 1 / 2 / 255 / 256 specifics beyond the table size itself
+# note: Despite Ogg's default big-endian page headers, the Opus header packets use LITTLE-ENDIAN for all multi-byte fields per RFC 7845 §5.1 / §5.2.
+config.url = "https://datatracker.ietf.org/doc/html/rfc7845"
+input.endian = config.endian.little
+
+format OpusChannelMappingTable:
+    # Present only when OpusHead.channel_mapping_family != 0. Length of `mapping` array equals
+    # the enclosing header's output_channel_count; without access to that field here, declared as
+    # opaque trailing bytes (consumer slices based on known count).
+    stream_count :u8                 # total number of Opus streams encoded (>= 1)
+    coupled_count :u8                # number of those streams that are coupled (L/R pairs)
+    mapping :[..]u8                  # output_channel_count bytes: output → stream index
+
+format OpusHeadPacket:
+    # §5.1 Identification Header — first Opus packet (on a single Ogg page by itself).
+    magic :"OpusHead"
+    version :u8                      # currently 1; high nibble = major (breaking), low nibble = minor (compatible)
+    output_channel_count :u8         # 1..255
+    pre_skip :u16                    # samples to discard at stream start (48 kHz scale)
+    input_sample_rate :u32           # original encoder input Hz; 0 = unspecified; informational only
+    output_gain :i16                 # Q7.8 fixed-point gain in dB; signed
+    channel_mapping_family :u8       # 0 = RTP mono/stereo, 1 = Vorbis-compatible, 2 = ambisonics, 255 = discrete
+    if channel_mapping_family != 0:
+        mapping_table :OpusChannelMappingTable
+
+format OpusTagsComment:
+    # One user comment entry: 4-byte LE length + UTF-8 "KEY=VALUE" bytes.
+    length :u32
+    utf8 :[length]u8
+
+format OpusTagsPacket:
+    # §5.2 Comment Header — second Opus packet. Carries vendor string + list of free-form comments.
+    magic :"OpusTags"
+    vendor_length :u32
+    vendor :[vendor_length]u8        # UTF-8; conventionally identifies the encoder implementation
+    user_comment_list_length :u32
+    comments :[user_comment_list_length]OpusTagsComment

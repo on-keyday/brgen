@@ -1428,7 +1428,7 @@ namespace brgen::ast {
             s.skip_white();
             enum_->base_type = parse_type(false);
             enum_->enum_type->bit_size = enum_->base_type->bit_size;
-            s.skip_space();
+            s.skip_space_comment();
             s.must_consume_token(lexer::Tag::line, "to separate enum base type");
             s.skip_line();
             auto indent = s.must_consume_token(lexer::Tag::indent, "to start enum member block");

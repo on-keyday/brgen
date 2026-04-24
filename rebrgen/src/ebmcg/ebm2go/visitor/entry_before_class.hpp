@@ -1011,8 +1011,11 @@ DEFINE_VISITOR(entry_before) {
                 return pass;
             }
             auto target = if_ctx.get_field<"instance">(if_ctx.if_statement.then_block);
-            MAYBE(endian, if_ctx.get_field<"body.endian_convert">(target));
-            MAYBE(target_type, if_ctx.get_field<"type.instance">(target->body.kind == ebm::StatementKind::INT_TO_ARRAY ? endian.target : endian.source));
+            auto endian = if_ctx.get_field<"body.endian_convert">(target);
+            if (!endian) {
+                return pass;
+            }
+            MAYBE(target_type, if_ctx.get_field<"type.instance">(target->body.kind == ebm::StatementKind::INT_TO_ARRAY ? endian->target : endian->source));
             MAYBE(size, target_type.body.length());
             switch (size.value()) {
                 case 2:
