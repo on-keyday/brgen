@@ -1,0 +1,33 @@
+# source: Apple binary property list format (CoreFoundation CFBinaryPList implementation; https://medium.com/@karaiskc/understanding-apples-binary-property-list-format-281e6da00dbd)
+# scope: Binary plist "bplist00" file magic + 32-byte trailer; object type marker byte dispatch catalog
+# out-of-scope: per-object body decoding — int size varies by low-nibble (2^N bytes for markers 0x10..0x13); ASCII/UTF-16BE string lengths with 0x5F/0x6F extended-length escape; data/array/dict containers with extended-length 0x4F/0xAF/0xDF where low nibble == 0xF followed by a nested int object giving the count; UID objects (0x8X with low 4 bits = byte count - 1); date-time (0x33 + 8-byte big-endian IEEE 754 double, seconds since 2001-01-01 00:00:00 UTC); offset-table indexing from root (trailer.top_object) through object references packed in offset_size bytes
+# note: Binary plist is BIG-ENDIAN throughout. Structure: "bplist00" (8 bytes) + object table (variable) + offset table (num_objects × offset_size bytes) + 32-byte trailer. Offset table sits IMMEDIATELY BEFORE the trailer; its start is recorded as offsetTableOffset in the trailer.
+config.url = "https://en.wikipedia.org/wiki/Property_list"
+input.endian = config.endian.big
+
+format BplistHeader:
+    magic :"bplist00"                        # 8 bytes: "bplist" + 2-digit ASCII version
+
+format BplistTrailer:
+    # 32 bytes at end of file.
+    reserved :[5]u8                          # MUST be 0
+    sort_version :u8                         # currently 0
+    offset_table_offset_size :u8             # byte width of each offset in the offset table (1..4)
+    object_ref_size :u8                      # byte width of object refs INSIDE array/dict containers (1..8 typical)
+    num_objects :u64                         # total number of objects in the file
+    top_object :u64                          # index of the root object in the offset table
+    offset_table_offset :u64                 # file offset to the start of the offset table
+
+# Object type marker byte high-nibble catalog (per low-nibble semantics above):
+enum BplistTypeHigh:
+    :u4
+    null_and_bool = 0x0                      # low nibble 0x0 = null, 0x8 = false, 0x9 = true, 0xF = fill
+    int = 0x1                                # low nibble = log2(byte count): 0=1B, 1=2B, 2=4B, 3=8B
+    real = 0x2                               # low nibble 2 = float32, 3 = float64
+    date = 0x3                               # only 0x33 is standard (8-byte BE double)
+    data = 0x4                               # byte string; low nibble = length or 0xF -> int follows
+    ascii_string = 0x5                       # low nibble = length or 0xF -> int follows
+    utf16be_string = 0x6                     # low nibble = character count or 0xF
+    uid = 0x8                                # low nibble = byte count - 1
+    array = 0xA                              # low nibble = element count or 0xF; body = N × object refs
+    dict = 0xD                               # low nibble = count or 0xF; body = N keys + N values as object refs

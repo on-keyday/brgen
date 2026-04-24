@@ -1,0 +1,59 @@
+# source: Microsoft AVI RIFF File Reference (https://learn.microsoft.com/en-us/windows/win32/directshow/avi-riff-file-reference)
+# scope: AVI RIFF envelope + LIST chunk generic framing + AVIMAINHEADER (avih) + AVISTREAMHEADER (strh) + AVIOLDINDEX (idx1) entry
+# out-of-scope: stream format payload (strf) variants — BITMAPINFOHEADER for 'vids' / WAVEFORMATEX for 'auds' / fixed IMAADPCMWAVEFORMAT / MPEGLAYER3WAVEFORMAT extensions; AVI 2.0 OpenDML index ('indx' super index + interleaved index segments within 'movi'); palette change chunks ('xxpc') with AVIPALCHANGE body; JUNK padding chunk contents (ignored); per-stream data chunks in 'movi' with FourCC = 2-digit stream number + 2-letter type code ("db"/"dc"/"pc"/"wb")
+# note: AVI is LITTLE-ENDIAN throughout. Every RIFF chunk's `ckSize` excludes the 8-byte (FourCC + size) header and does NOT include trailing pad byte required to keep the next chunk on a 2-byte boundary. LIST chunks contain nested chunks/LISTs in their `ckData`; `listSize` includes the 4-byte `listType` FourCC plus the nested data.
+config.url = "https://learn.microsoft.com/en-us/windows/win32/directshow/avi-riff-file-reference"
+input.endian = config.endian.little
+
+format RiffHeader:
+    # 12-byte outer wrapper common to all RIFF files.
+    riff :"RIFF"
+    file_size :u32                           # total file size minus 8 (excludes "RIFF" and this u32)
+    form_type :[4]u8                         # e.g. "AVI ", "WAVE", "WEBP"
+
+format RiffListHeader:
+    # 12-byte LIST chunk wrapper.
+    list :"LIST"
+    list_size :u32                           # total LIST payload size including list_type
+    list_type :[4]u8                         # e.g. "hdrl", "strl", "movi", "rec "
+
+format AviMainHeader:
+    # §avih chunk body — 56 bytes. Corresponds to AVIMAINHEADER.
+    dw_micro_sec_per_frame :u32              # period between video frames in microseconds
+    dw_max_bytes_per_sec :u32                # approximate maximum data rate (for buffer sizing)
+    dw_padding_granularity :u32              # alignment granularity (1 = byte, 2 = word)
+    dw_flags :u32                            # bitfield: HASINDEX (0x10), MUSTUSEINDEX (0x20), ISINTERLEAVED (0x100), TRUSTCKTYPE (0x800), WASCAPTUREFILE (0x10000), COPYRIGHTED (0x20000)
+    dw_total_frames :u32                     # total frame count (video stream)
+    dw_initial_frames :u32                   # for interleaved files: starting frame offset
+    dw_streams :u32                          # number of streams (strl lists in hdrl)
+    dw_suggested_buffer_size :u32            # playback buffer hint
+    dw_width :u32                            # video width in pixels
+    dw_height :u32                           # video height in pixels
+    dw_reserved :[4]u32                      # MUST be 0
+
+format AviStreamHeader:
+    # §strh chunk body — 64 bytes (with rcFrame). Corresponds to AVISTREAMHEADER.
+    fcc_type :[4]u8                          # "vids" video / "auds" audio / "txts" subtitles / "mids" MIDI
+    fcc_handler :[4]u8                       # codec FourCC (e.g. "DIV3", "XVID", "mpg4", "mp4v")
+    dw_flags :u32                            # stream-specific flags (e.g. AVISF_DISABLED 0x1, AVISF_VIDEO_PALCHANGES 0x10000)
+    w_priority :u16
+    w_language :u16
+    dw_initial_frames :u32
+    dw_scale :u32                            # frame rate is dw_rate / dw_scale
+    dw_rate :u32
+    dw_start :u32                            # start time (in units of scale/rate)
+    dw_length :u32                           # stream length (in same units)
+    dw_suggested_buffer_size :u32
+    dw_quality :u32                          # 0..10000 or -1 = default
+    dw_sample_size :u32                      # 0 = variable sample size per chunk
+    rc_frame_left :i16                       # destination rectangle within the video frame
+    rc_frame_top :i16
+    rc_frame_right :i16
+    rc_frame_bottom :i16
+
+format AviOldIndexEntry:
+    # §idx1 entry — 16 bytes per entry (AVIOLDINDEX). Lists chunk locations within the movi list.
+    ckid :[4]u8                              # FourCC of the chunk (e.g. "00dc", "01wb")
+    dw_flags :u32                            # AVIIF_KEYFRAME (0x10), AVIIF_LIST (0x1), AVIIF_NO_TIME (0x100)
+    dw_chunk_offset :u32                     # offset from start of movi LIST's data (or file-relative historically)
+    dw_chunk_length :u32                     # chunk payload size (matches chunk's ckSize)
