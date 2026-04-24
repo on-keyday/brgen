@@ -43,11 +43,15 @@ enum BTreePageType:
     LEAF_TABLE = 13
 
 format BTreePageHeader:
+    # §1.6 B-tree Page Header: 8 bytes for leaf pages, 12 bytes for interior pages.
     page_type :BTreePageType
     first_free_block_offset :u16
     number_of_cells :u16
-    cell_content_area_offset :u16
-    right_most_pointer :u32
+    cell_content_area_offset :u16              # value 0 is interpreted as 65536
+    cell_content_fragmented_free_bytes :u8     # total unused bytes inside cell content region
+    # right_most_pointer is present ONLY on interior b-tree pages (page_type 2 or 5).
+    if page_type == BTreePageType.INTERIOR_INDEX || page_type == BTreePageType.INTERIOR_TABLE:
+        right_most_pointer :u32                # BE page number
 
 format Varint:
     value :u64
