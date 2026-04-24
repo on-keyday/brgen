@@ -1,0 +1,37 @@
+# source: PDF 1.7 (ISO 32000-1) §3.4 File Structure
+# scope: PDF cross-reference table (xref) + classical trailer dictionary envelope + startxref locator + %%EOF marker, all at the end of a non-linearized, non-object-stream PDF
+# out-of-scope: body indirect objects (N G obj ... endobj with nested dictionary / array / stream / name / string tokens); content streams including filter pipelines (/FlateDecode, /ASCII85Decode, /LZWDecode, /CCITTFaxDecode, /DCTDecode); cross-reference streams (compressed XRef in /Type /XRef) used by PDF 1.5+ as an alternative to the plain xref table; linearized PDF initial hint stream; incremental updates (chained trailers); encryption dictionary processing
+# note: PDF is predominantly ASCII but contains binary object streams in the body. Line terminators may be LF (0x0A), CR (0x0D), or CRLF; each xref entry is padded to EXACTLY 20 bytes including its 2-byte line terminator. The 10-digit offset + 5-digit generation fields are zero-padded decimal ASCII.
+config.url = "https://opensource.adobe.com/dc-acrobat-sdk-docs/pdfstandards/"
+
+format PdfHeader:
+    # §3.4.1 Header — first 9+ bytes of the file.
+    percent :"%PDF-"
+    version :[3]u8                              # typically "1.7" / "2.0" — ASCII digit + '.' + digit
+    # A binary indicator comment (at least 4 bytes with the high bit set) MAY follow on the next line
+    # to signal that the file is binary; not modeled here.
+
+format PdfXrefEntry:
+    # §3.4.3 Cross-reference table entry — 20 bytes total including terminator.
+    offset :[10]u8                              # zero-padded decimal byte offset, ASCII
+    :" "
+    generation :[5]u8                           # zero-padded decimal generation number, ASCII
+    :" "
+    kind :u8                                    # 'n' = in-use, 'f' = free
+    terminator :[2]u8                           # " \n", " \r", or "\r\n" — any of the 3 valid forms
+
+format PdfXrefSubsectionHeader:
+    # §3.4.3 Subsection header: "<first_obj> <count>\n"
+    first_obj :[..]u8                           # ASCII decimal
+    :" "
+    count :[..]u8                               # ASCII decimal
+    :"\n"
+
+format PdfTrailerEnd:
+    # §3.4.4 End-of-file locator — last ~ 30 bytes of the file.
+    # "trailer\n" + dictionary + "\n" precede; only the tail is captured here.
+    startxref_kw :"startxref\n"
+    xref_offset :[..]u8                         # byte offset of the xref table, ASCII decimal
+    :"\n"
+    eof :"%%EOF"
+    # A trailing newline after %%EOF is allowed but not required; captured by consumers if present.

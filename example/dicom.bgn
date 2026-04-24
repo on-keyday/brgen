@@ -1,0 +1,36 @@
+# source: DICOM PS3.10 §7 File Meta Information (https://dicom.nema.org/medical/dicom/current/output/chtml/part10/chapter_7.html)
+# scope: DICOM file preamble + "DICM" magic + File Meta Information data element framing (Explicit VR Little Endian form only)
+# out-of-scope: Data Set following File Meta (encoded per Transfer Syntax UID declared in (0002,0010) — may switch to Implicit VR LE / Explicit VR BE / JPEG / JPEG-LS / JPEG 2000 / RLE / deflate encapsulated formats); VR-specific value parsing (UI null-terminated UIDs with even-byte padding; PN multi-component person-name delimiter ^; DA/DT/TM date-time formats; DS/IS string-formatted numbers; SQ item sequence with item tags (FFFE,E000) and delimiters); undefined-length sequence termination with (FFFE,E0DD) item delimiter
+# note: File Meta Information is ALWAYS Explicit VR Little Endian regardless of the Transfer Syntax used for the Data Set body. Length encoding of a data element depends on its VR: a fixed list of VRs (OB/OW/OF/OD/OL/SQ/UT/UN/UC/UR/OV/SV/UV) use a 32-bit length field with a 2-byte reserved pad; other VRs use a 16-bit length field with no pad.
+config.url = "https://dicom.nema.org/medical/dicom/current/output/chtml/part10/chapter_7.html"
+input.endian = config.endian.little
+
+format DicomTag:
+    # 4 bytes: 2-byte group + 2-byte element, each little-endian u16.
+    group :u16
+    element :u16
+
+format DicomShortLengthElement:
+    # Explicit VR LE data element with 16-bit length (used by most VRs).
+    tag :DicomTag
+    vr :[2]u8                                   # ASCII VR code (e.g. "UL", "UI", "CS", "DA")
+    length :u16
+    value :[length]u8
+
+format DicomLongLengthElement:
+    # Explicit VR LE data element with 32-bit length (used by OB/OW/OF/OD/OL/SQ/UT/UN/UC/UR/OV/SV/UV).
+    tag :DicomTag
+    vr :[2]u8                                   # VR code in {"OB","OW","OF","OD","OL","SQ","UT","UN","UC","UR","OV","SV","UV"}
+    reserved :u16                               # MUST be 0
+    reserved == 0
+    length :u32                                 # 0xFFFFFFFF = undefined length (SQ / pixel data encapsulation)
+    value :[..]u8                               # length bytes when length != 0xFFFFFFFF; otherwise item-delimiter-terminated
+
+format DicomPreamble:
+    # §7.1 128-byte preamble. Often zero-filled; may carry implementation-defined metadata.
+    preamble :[128]u8
+
+format DicomFileHeader:
+    # Preamble + "DICM" magic. File Meta Information elements follow.
+    preamble :DicomPreamble
+    magic :"DICM"
