@@ -1,15 +1,142 @@
+# source: Apple osx-abi-macho-file-format-reference + opensource.apple.com/source/cctools (loader.h, fat.h)
+# scope: Mach-O file framing — MachOHeader (32-bit magic family) + Load Command dispatch with common LC_* payloads (LC_SEGMENT_64 / section_64 / LC_SYMTAB / LC_UUID / LC_LOAD_DYLIB header / LC_MAIN) + Universal/Fat header (fat_header + fat_arch + fat_arch_64)
+# out-of-scope: 32-bit segment_command / section (subsumed by 64-bit variants in modern binaries, but spec defines both); complete LC_* enumeration (there are ~50+ commands, only common ones listed); LC_DYLD_INFO opcodes, LC_FUNCTION_STARTS ULEB128 payload, LC_CODE_SIGNATURE super-blob structure, LC_BUILD_VERSION tool entries
+# note: Mach-O files themselves are NATIVE-endian (magic byte 0xfeedface vs 0xcefaedfe distinguishes). Universal/fat headers (fat_header + fat_arch variants) are ALWAYS big-endian regardless of embedded files. Load commands are 8-byte aligned in 64-bit Mach-O (cmdsize is a multiple of 8); 4-byte aligned in 32-bit.
+
+MACHO_MAGIC_32 ::= 0xfeedface                # native-endian 32-bit
+MACHO_MAGIC_64 ::= 0xfeedfacf                # native-endian 64-bit
+MACHO_CIGAM_32 ::= 0xcefaedfe                # byte-swapped 32-bit
+MACHO_CIGAM_64 ::= 0xcffaedfe                # byte-swapped 64-bit
 
 format MachOHeader:
-    magic :u32(0xfeedface)
+    magic :u32(0xfeedface)                   # 32-bit native magic; modern files use 0xfeedfacf (64-bit)
     cputype :u32
     cpusubtype :u32
     filetype :u32
     ncmds :u32
     sizeofcmds :u32
     flags :u32
-    reserved :u32
+    reserved :u32                            # present only in 64-bit mach_header_64
 
 format LoadCommandHeader:
+    cmd :u32                                 # LC_* constant; high bit LC_REQ_DYLD = 0x80000000
+    cmdsize :u32                             # including this 8-byte header; 8-byte aligned in LP64
+    data :[cmdsize - 8]u8                    # payload re-parsed as specific LC_* command struct below
+
+enum LoadCommandId:
+    :u32
+    # §loader.h LC_* selection (low bits; some commands OR in LC_REQ_DYLD = 0x80000000)
+    SEGMENT = 0x01
+    SYMTAB = 0x02
+    SYMSEG = 0x03                            # obsolete
+    THREAD = 0x04
+    UNIXTHREAD = 0x05
+    LOAD_DYLIB = 0x0c
+    ID_DYLIB = 0x0d
+    LOAD_DYLINKER = 0x0e
+    ID_DYLINKER = 0x0f
+    ROUTINES = 0x11
+    SUB_FRAMEWORK = 0x12
+    SEGMENT_64 = 0x19
+    UUID = 0x1b
+    CODE_SIGNATURE = 0x1d
+    ENCRYPTION_INFO = 0x21
+    DYLD_INFO = 0x22
+    FUNCTION_STARTS = 0x26                   # | LC_REQ_DYLD in loader.h
+    MAIN = 0x28                              # | LC_REQ_DYLD
+    BUILD_VERSION = 0x32
+
+format MachOSegmentCommand64:
+    # §segment_command_64 (LC_SEGMENT_64 = 0x19) — 72 bytes including 8-byte LoadCommandHeader
+    cmd :u32(0x19)
+    cmdsize :u32                             # 72 + nsects * 80
+    segname :[16]u8                          # null-padded ASCII ("__TEXT", "__DATA", etc.)
+    vmaddr :u64
+    vmsize :u64
+    fileoff :u64
+    filesize :u64
+    maxprot :i32                             # VM protection: read/write/execute bit flags
+    initprot :i32
+    nsects :u32                              # number of trailing section_64 entries
+    flags :u32
+
+format MachOSection64:
+    # §section_64 (follows LC_SEGMENT_64; 80 bytes each)
+    sectname :[16]u8                         # null-padded ("__text", "__cstring", etc.)
+    segname :[16]u8                          # MUST match parent segment's segname
+    addr :u64
+    size :u64
+    offset :u32
+    align :u32                               # power-of-2 alignment
+    reloff :u32
+    nreloc :u32
+    flags :u32
+    reserved1 :u32
+    reserved2 :u32
+    reserved3 :u32
+
+format MachOSymtabCommand:
+    # §symtab_command (LC_SYMTAB = 0x02) — 24 bytes
+    cmd :u32(0x02)
+    cmdsize :u32(24)
+    symoff :u32                              # file offset to symbol table (nlist_64[nsyms])
+    nsyms :u32
+    stroff :u32                              # file offset to string table
+    strsize :u32
+
+format MachOUuidCommand:
+    # §uuid_command (LC_UUID = 0x1b) — 24 bytes
+    cmd :u32(0x1b)
+    cmdsize :u32(24)
+    uuid :[16]u8                             # per RFC 4122
+
+format MachODylib:
+    # §dylib struct (embedded in LC_{ID_,LOAD_,LOAD_WEAK_,REEXPORT_}DYLIB commands)
+    name_offset :u32                         # offset within enclosing command to null-terminated path
+    timestamp :u32
+    current_version :u32                     # BCD: high-16=major, mid-8=minor, low-8=patch
+    compatibility_version :u32
+
+format MachODylibCommand:
+    # §dylib_command (LC_LOAD_DYLIB = 0x0c, LC_ID_DYLIB = 0x0d, etc.)
     cmd :u32
     cmdsize :u32
-    data :[cmdsize - 8]u8
+    dylib :MachODylib
+    # Variable-length null-terminated dylib path follows at offset = dylib.name_offset from start of this command.
+
+format MachOEntryPointCommand:
+    # §entry_point_command (LC_MAIN = 0x28 | LC_REQ_DYLD = 0x80000028) — 24 bytes
+    cmd :u32(0x80000028)
+    cmdsize :u32(24)
+    entryoff :u64                            # file offset of entry function (__TEXT-relative typically)
+    stacksize :u64                           # 0 means dyld uses default
+
+# --- Universal (fat) binary headers (always big-endian) ---
+
+FAT_MAGIC ::= 0xCAFEBABE
+FAT_MAGIC_64 ::= 0xCAFEBABF
+
+format MachOFatHeader:
+    # §fat_header (big-endian on disk regardless of embedded file byte order)
+    input.endian = config.endian.big
+    magic :u32                               # 0xCAFEBABE (32-bit offsets) or 0xCAFEBABF (64-bit offsets)
+    nfat_arch :u32                           # count of following fat_arch entries
+
+format MachOFatArch:
+    # §fat_arch — 20 bytes, used when magic == FAT_MAGIC
+    input.endian = config.endian.big
+    cputype :i32
+    cpusubtype :i32
+    offset :u32                              # file offset of architecture's Mach-O
+    size :u32                                # size of architecture's Mach-O
+    align :u32                               # power-of-2 alignment (typically 12 = 4KB)
+
+format MachOFatArch64:
+    # §fat_arch_64 — 32 bytes, used when magic == FAT_MAGIC_64
+    input.endian = config.endian.big
+    cputype :i32
+    cpusubtype :i32
+    offset :u64
+    size :u64
+    align :u32
+    reserved :u32

@@ -72,7 +72,36 @@ format ProgramHeader:
 
 enum SectionType:
     :u32
+    # §Sections of the gABI (https://refspecs.linuxfoundation.org/elf/gabi4+/ch4.sheader.html)
+    Null = 0
+    ProgBits = 1
+    SymTab = 2
+    StrTab = 3
+    Rela = 4
+    Hash = 5
+    Dynamic = 6
+    Note = 7
     NoBits = 8
+    Rel = 9
+    ShLib = 10                       # reserved, unused meaning
+    DynSym = 11
+    InitArray = 14
+    FiniArray = 15
+    PreinitArray = 16
+    Group = 17
+    SymTabShndx = 18
+
+enum ProgramHeaderType:
+    :u32
+    # §Program Header (p_type) of the gABI
+    Null = 0
+    Load = 1
+    Dynamic = 2
+    Interp = 3
+    Note = 4
+    ShLib = 5                        # reserved, unused meaning
+    Phdr = 6
+    Tls = 7
 
 format SectionHeader:
     input.endian = estate.endian == Endian.LittleEndian ? config.endian.little : config.endian.big
@@ -126,6 +155,52 @@ format Relocation:
     else:
         offset :u64
         info :u64
+
+format RelocationAddend:
+    # §Relocation.rela entry (Elf32_Rela / Elf64_Rela) with explicit addend
+    if estate.cpu == CPUClass._32:
+        offset :u32
+        info :u32
+        addend :i32
+    else:
+        offset :u64
+        info :u64
+        addend :i64
+
+enum DynamicTag:
+    :u32
+    # §Dynamic array tags (Elf{32,64}_Dyn d_tag) — https://refspecs.linuxfoundation.org/elf/gabi4+/ch5.dynamic.html
+    Null = 0
+    Needed = 1
+    PltRelSz = 2
+    PltGot = 3
+    Hash = 4
+    StrTab = 5
+    SymTab = 6
+    Rela = 7
+    RelaSz = 8
+    RelaEnt = 9
+    StrSz = 10
+    SymEnt = 11
+    Init = 12
+    Fini = 13
+    SoName = 14
+    RPath = 15
+    Symbolic = 16
+    Rel = 17
+    RelSz = 18
+    RelEnt = 19
+    PltRel = 20
+    Debug = 21
+    TextRel = 22
+    JmpRel = 23
+    BindNow = 24
+    InitArray = 25
+    FiniArray = 26
+    InitArraySz = 27
+    FiniArraySz = 28
+    RunPath = 29
+    Flags = 30
 
 format DynamicTags:
     if estate.cpu == CPUClass._32:
