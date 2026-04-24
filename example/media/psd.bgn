@@ -1,0 +1,47 @@
+# source: Adobe Photoshop File Formats Specification (https://www.adobe.com/devnet-apps/photoshop/fileformatashtml/)
+# scope: PSD (Photoshop Document) top-level section framing — File Header + 4 variable-length sections (Color Mode Data / Image Resources / Layer & Mask Information / Image Data)
+# out-of-scope: Image Resource Block catalog (ResolutionInfo 0x03ED, Alpha Channel Names 0x03EE, Caption 0x03F0, Print Flags 0x2710, Version Info 0x0421, XMP 0x0424 etc.); Layer Records + Layer Mask + Blend Mode + channel image data per-layer; trailing Global Layer Mask / Additional Layer Information (Adjustment Layers / Layer Effects); per-compression image-data decoding (0=raw / 1=RLE / 2=ZIP without prediction / 3=ZIP with prediction)
+# note: PSD is **big-endian** throughout. PSB (large document) variant uses 8-byte length fields in place of some 4-byte ones; fields that change width are noted but this file targets PSD (version=1).
+
+format PsdFileHeader:
+    # §File Header Section — 26 bytes fixed.
+    signature :"8BPS"
+    version :u16                     # 1 = PSD, 2 = PSB
+    reserved :[6]u8                  # MUST be 0
+    channels :u16                    # number of channels: 1..56 (includes alpha)
+    height :u32                      # 1..30000 for PSD, 1..300000 for PSB
+    width :u32
+    depth :u16                       # bits per channel: 1 / 8 / 16 / 32
+    color_mode :u16                  # 0=Bitmap, 1=Grayscale, 2=Indexed, 3=RGB, 4=CMYK, 7=Multichannel, 8=Duotone, 9=Lab
+
+format PsdLengthPrefixedSection:
+    # §Color Mode Data / §Image Resources / §Layer & Mask Information
+    # All three follow the same outer framing: 4-byte length (BE) + length bytes of body.
+    length :u32
+    body :[length]u8                 # interpretation depends on which section this is
+
+format PsdImageResourceBlock:
+    # §Image Resources block — one entry in the Image Resources section.
+    signature :"8BIM"
+    resource_id :u16                 # catalog ID, e.g. 0x03ED ResolutionInfo
+    # Pascal-style name: 1 byte length + name bytes, padded to even total (name including length byte).
+    name_length :u8
+    name :[name_length]u8
+    # Optional 1 byte pad so that (1 + name_length) is even.
+    if (name_length & 1) == 0:
+        name_pad :u8
+    data_size :u32
+    data :[data_size]u8
+    # Optional 1 byte pad so that data_size is even on disk.
+    if (data_size & 1) == 1:
+        data_pad :u8
+
+format PsdFile:
+    # Overall file layout — 4 variable-length sections after the header, followed by image data.
+    header :PsdFileHeader
+    color_mode_data :PsdLengthPrefixedSection
+    image_resources :PsdLengthPrefixedSection
+    layer_and_mask_information :PsdLengthPrefixedSection
+    # Trailing Image Data section: 2-byte compression method + channel-interleaved bytes to end of file.
+    image_data_compression :u16      # 0=raw, 1=RLE (PackBits), 2=ZIP no prediction, 3=ZIP with prediction
+    image_data :[..]u8

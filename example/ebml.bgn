@@ -78,3 +78,33 @@ format Varint:
         for i in len - 1:
             next_byte := input.get(u8)
             value |= u64(next_byte) << ((len - 2 - i) * 8)
+
+# --- EBML element framing + Matroska top-level IDs (https://www.matroska.org/technical/elements.html) ---
+
+format EbmlElement:
+    # RFC 8794 §3: Element = VINT Element_ID + VINT Element_Size + Element_Content.
+    # Element_ID VINT retains the marker bits (unlike length VINTs where marker is stripped).
+    id :Varint
+    size :Varint
+    body :[size.value]u8
+
+# Matroska Top-Level Element IDs (Level 0/1). Values shown as the full ID including VINT marker bits.
+EBML_HEADER_ID ::= 0x1A45DFA3                # Level 0 header
+SEGMENT_ID ::= 0x18538067                    # Level 0 segment container
+SEEK_HEAD_ID ::= 0x114D9B74                  # Level 1
+INFO_ID ::= 0x1549A966
+CLUSTER_ID ::= 0x1F43B675
+TRACKS_ID ::= 0x1654AE6B
+CUES_ID ::= 0x1C53BB6B
+ATTACHMENTS_ID ::= 0x1941A469
+CHAPTERS_ID ::= 0x1043A770
+TAGS_ID ::= 0x1254C367
+
+# Commonly-used Level 2+ IDs within Cluster / TrackEntry
+CLUSTER_TIMESTAMP_ID ::= 0xE7                # u8 ID inside Cluster
+CLUSTER_SIMPLE_BLOCK_ID ::= 0xA3
+CLUSTER_BLOCK_GROUP_ID ::= 0xA0
+TRACK_ENTRY_ID ::= 0xAE                      # inside Tracks
+TRACK_NUMBER_ID ::= 0xD7                     # inside TrackEntry
+TRACK_TYPE_ID ::= 0x83
+CODEC_ID_ID ::= 0x86                         # yes the name is literal "CodecID"

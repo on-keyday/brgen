@@ -1,0 +1,50 @@
+# source: Adobe TIFF Revision 6.0 (1992)
+# scope: TIFF Image File Header (8 bytes) + Image File Directory (IFD) envelope + IFD entry (12 bytes)
+# out-of-scope: tag semantics per TIFF baseline / extension (ImageWidth 0x100, ImageLength 0x101, BitsPerSample 0x102, Compression 0x103, PhotometricInterpretation 0x106, StripOffsets 0x111, StripByteCounts 0x117, XResolution 0x11A, etc.); RATIONAL / SRATIONAL pair decoding; BigTIFF (magic 43 instead of 42, 8-byte offsets); linked IFD chain traversal; inline-vs-offset value interpretation rules (when count × typesize ≤ 4 the value is stored inline in value_offset field, otherwise it's an offset)
+# note: TIFF is **endian-self-describing**: bytes 0-1 carry "II" (0x4949, little-endian) or "MM" (0x4D4D, big-endian) and all subsequent multi-byte fields follow that convention. This file uses an ELF-style state + per-format input.endian derivation so no global endian is hardcoded.
+config.url = "https://www.itu.int/itudoc/itu-t/com16/tiff-fx/docs/tiff6.pdf"
+
+state TiffState:
+    is_little :bool
+
+tiff_state :TiffState
+
+enum TiffDataType:
+    :u16
+    byte_ = 1                        # u8
+    ascii = 2                        # null-terminated ASCII
+    short = 3                        # u16
+    long = 4                         # u32
+    rational = 5                     # two u32: numerator / denominator
+    sbyte = 6
+    undefined = 7                    # opaque bytes
+    sshort = 8                       # i16
+    slong = 9                        # i32
+    srational = 10                   # two i32
+    float = 11                       # f32 IEEE 754
+    double = 12                      # f64 IEEE 754
+
+format TiffImageFileHeader:
+    # 8 bytes total. Byte-order mark first, read as raw bytes before endian is known.
+    byte_order_mark :[2]u8                          # "II" (0x49 0x49) or "MM" (0x4D 0x4D)
+    byte_order_mark == "II" || byte_order_mark == "MM"
+    tiff_state.is_little = byte_order_mark == "II"
+    input.endian = tiff_state.is_little ? config.endian.little : config.endian.big
+    magic :u16                                      # MUST be 42 under the established endian
+    magic == 42
+    first_ifd_offset :u32
+
+format TiffIfdEntry:
+    # §2 IFD entry — 12 bytes.
+    input.endian = tiff_state.is_little ? config.endian.little : config.endian.big
+    tag :u16                                        # tag identifier (e.g. 0x0100 = ImageWidth)
+    type :TiffDataType
+    count :u32                                      # number of values of `type`
+    value_offset :u32                               # if count × typesize ≤ 4: inline value (right-aligned/zero-padded); else offset
+
+format TiffImageFileDirectory:
+    # §2 IFD — count-prefixed entries + trailing "next IFD" offset (0 terminates chain).
+    input.endian = tiff_state.is_little ? config.endian.little : config.endian.big
+    entry_count :u16
+    entries :[entry_count]TiffIfdEntry
+    next_ifd_offset :u32                            # 0 = end of IFD chain
