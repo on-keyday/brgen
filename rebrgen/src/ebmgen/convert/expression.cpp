@@ -761,9 +761,11 @@ namespace ebmgen {
     expected<ebm::ExpressionRef> convert_equal_impl(ConverterContext& ctx, ebm::ExpressionRef a, ebm::ExpressionRef b, ebm::Expression& A, ebm::Expression& B) {
         EBMU_BOOL_TYPE(bool_type);
         if (A.body.kind != B.body.kind) {  // to prevent expression like 0..1 == 1..0
-            if (auto start = A.body.start()) {
-                auto end = A.body.end();
-                if (is_nil(*start) && is_nil(*end)) {
+            if (auto start_ = A.body.start()) {
+                auto end_ = A.body.end();
+                auto start = *start_;
+                auto end = *end_;
+                if (is_nil(start) && is_nil(end)) {
                     ebm::ExpressionBody body;
                     body.kind = ebm::ExpressionKind::LITERAL_BOOL;
                     body.bool_value(1);
@@ -771,12 +773,12 @@ namespace ebmgen {
                     return true_;
                 }
                 ebm::ExpressionRef ref;
-                if (!is_nil(*start)) {
-                    EBM_BINARY_OP(greater, ebm::BinaryOp::less_or_eq, bool_type, *start, b);
+                if (!is_nil(start)) {
+                    EBM_BINARY_OP(greater, ebm::BinaryOp::less_or_eq, bool_type, start, b);
                     ref = greater;
                 }
-                if (!is_nil(*end)) {
-                    EBM_BINARY_OP(greater, ebm::BinaryOp::less_or_eq, bool_type, b, *end);
+                if (!is_nil(end)) {
+                    EBM_BINARY_OP(greater, ebm::BinaryOp::less_or_eq, bool_type, b, end);
                     if (!is_nil(ref)) {
                         EBM_BINARY_OP(and_, ebm::BinaryOp::logical_and, bool_type, ref, greater);
                         ref = and_;
