@@ -84,6 +84,7 @@ format WebPChunk:
 
 format WebPFile:
     riff_magic :"RIFF"
-    file_size :u32                    # size of rest of file (total - 8)
+    file_size :u32                    # RIFF ChunkSize: total file size minus 8 (RIFF FourCC + this u32)
     webp_magic :"WEBP"
-    chunks :[..]WebPChunk             # consumer stops when file_size bytes are consumed
+    # Remaining chunks span exactly (file_size - 4) bytes: file_size counts webp_magic (4 bytes) + chunks.
+    chunks :[..]WebPChunk(input = input.subrange(file_size - 4))
