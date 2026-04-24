@@ -1,0 +1,103 @@
+# source: BSON Specification (https://bsonspec.org/spec.html, fetched 2026-04-24)
+# scope: BSON document framing + element type dispatch + common scalar value bodies
+# out-of-scope: validation of CString (MUST NOT contain 0x00 except terminator); decimal128 internal layout (IEEE 754-2008); JSON-like legacy regex flag normalization; subtype-specific parsing of Binary (0x00 generic, 0x04 UUID, 0x05 MD5, 0x80..0xFF user-defined)
+# note: All multi-byte integers are little-endian. A BSON document starts with int32 total_byte_size which INCLUDES the 4-byte size field and the trailing 0x00 terminator. String length fields INCLUDE the trailing 0x00 of the string itself.
+config.url = "https://bsonspec.org/spec.html"
+input.endian = config.endian.little
+
+enum BsonElementType:
+    :u8
+    # Per https://bsonspec.org/spec.html "element" production
+    double_ = 0x01
+    string = 0x02
+    document = 0x03
+    array = 0x04
+    binary = 0x05
+    undefined_ = 0x06                # deprecated
+    object_id = 0x07
+    boolean_ = 0x08
+    utc_datetime = 0x09
+    null_ = 0x0A
+    regex = 0x0B
+    db_pointer = 0x0C                # deprecated
+    javascript = 0x0D
+    symbol = 0x0E                    # deprecated
+    javascript_with_scope = 0x0F
+    int32 = 0x10
+    timestamp = 0x11
+    int64 = 0x12
+    decimal128 = 0x13
+    min_key = 0xFF
+    max_key = 0x7F
+
+format BsonCString:
+    # §cstring: UTF-8 bytes (no 0x00) + 0x00 terminator.
+    bytes :[..]u8
+    terminator :"\0"
+
+format BsonString:
+    # §string: int32 length (includes terminator) + bytes + 0x00.
+    length :i32                      # MUST be >= 1
+    length >= 1
+    bytes :[length - 1]u8            # UTF-8 payload without terminator
+    terminator :"\0"
+
+format BsonBinary:
+    # §binary: int32 length + subtype byte + length bytes of payload.
+    length :i32
+    subtype :u8                      # 0x00 generic, 0x02 old binary, 0x03 old UUID, 0x04 UUID, 0x05 MD5, 0x06 encrypted, 0x07 compressed, 0x80..0xFF user
+    payload :[length]u8
+
+format BsonRegex:
+    # §regex: pattern cstring + options cstring.
+    pattern :BsonCString
+    options :BsonCString
+
+format BsonDbPointer:
+    # §db_pointer (deprecated): string namespace + 12-byte ObjectId.
+    namespace :BsonString
+    object_id :[12]u8
+
+format BsonCodeWithScope:
+    # §code_w_s: int32 total_bytes + string code + embedded document (scope).
+    total_bytes :i32                 # includes this field + code + scope
+    code :BsonString
+    scope :[..]u8                    # nested BSON document, length = total_bytes - 4 - code total
+
+format BsonElement:
+    element_type :BsonElementType
+    e_name :BsonCString
+    match element_type:
+        BsonElementType.double_:
+            value :f64
+        BsonElementType.string => string_value :BsonString
+        BsonElementType.document => embedded :[..]u8      # nested BSON document; size at its own header
+        BsonElementType.array => array_doc :[..]u8         # BSON document with "0","1",... keys
+        BsonElementType.binary => binary_value :BsonBinary
+        BsonElementType.undefined_ => ..
+        BsonElementType.object_id => object_id :[12]u8
+        BsonElementType.boolean_:
+            b :u8
+            b == 0 || b == 1
+        BsonElementType.utc_datetime => datetime_ms :i64
+        BsonElementType.null_ => ..
+        BsonElementType.regex => regex_value :BsonRegex
+        BsonElementType.db_pointer => db_ptr :BsonDbPointer
+        BsonElementType.javascript => code :BsonString
+        BsonElementType.symbol => symbol_name :BsonString
+        BsonElementType.javascript_with_scope => code_scope :BsonCodeWithScope
+        BsonElementType.int32 => i32_value :i32
+        BsonElementType.timestamp:
+            increment :u32
+            seconds :u32
+        BsonElementType.int64 => i64_value :i64
+        BsonElementType.decimal128 => dec128 :[16]u8
+        BsonElementType.min_key => ..
+        BsonElementType.max_key => ..
+
+format BsonDocument:
+    # §document: int32 total_byte_size + element list + 0x00 terminator.
+    # total_byte_size counts the 4-byte header and the trailing 0x00.
+    total_byte_size :i32
+    elements :[..]BsonElement(input = input.subrange(total_byte_size - 4 - 1))
+    terminator :"\0"

@@ -1,0 +1,31 @@
+# source: LevelDB table_format.md (https://github.com/google/leveldb/blob/main/doc/table_format.md, fetched 2026-04-24)
+# scope: LevelDB / RocksDB SSTable file envelope — 48-byte fixed footer (two varint-encoded BlockHandles + magic) + data block trailer layout (compression type + CRC32C)
+# out-of-scope: varint offset/size decoding (standard LEB128 — could reuse Varint idiom); block body internals (prefix-compressed entries + restart-point array); filter block (bloom / ribbon) layout and 2KB offset ranges; metaindex block keys (e.g. "filter.<policy_name>"); RocksDB footer format v2 (additional version / checksum_type bytes preceding the magic)
+# note: All multi-byte integers are little-endian. BlockHandles within the footer are variable-length (up to 10 bytes each for varint64 offset + varint64 size), padded with zero bytes to a total of 40 bytes so that the 8-byte magic lives at a fixed offset of (file_size - 8).
+config.url = "https://github.com/google/leveldb/blob/main/doc/table_format.md"
+input.endian = config.endian.little
+
+SSTABLE_MAGIC ::= 0xdb4775248b80fb57    # chosen by fair dice roll per LevelDB source
+
+enum SsTableCompressionType:
+    :u8
+    none = 0x00
+    snappy = 0x01
+    zlib = 0x02                     # RocksDB only
+    bzip2 = 0x03                    # RocksDB only
+    lz4 = 0x04                      # RocksDB only
+    lz4_hc = 0x05                   # RocksDB only
+    xpress = 0x06                   # RocksDB Windows only
+    zstd = 0x07                     # RocksDB only
+
+format SsTableBlockTrailer:
+    # §Block trailer — 5 bytes appended to each block (data, metaindex, index) body.
+    compression_type :SsTableCompressionType
+    crc32c :u32                     # CRC32C of (uncompressed_block_body || compression_type)
+
+format SsTableFooter:
+    # §Footer — exactly 48 bytes at end of file. Magic at absolute offset (file_size - 8).
+    # The 40 bytes before the magic contain two BlockHandles (varint offset + varint size each, each
+    # BlockHandle up to 20 bytes but typically shorter) with the remainder zero-padded.
+    block_handles :[40]u8           # consumers decode two serial varint64 pairs starting at offset 0
+    magic :u64(SSTABLE_MAGIC)

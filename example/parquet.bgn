@@ -1,0 +1,24 @@
+# source: Apache Parquet file format (https://parquet.apache.org/docs/file-format/, fetched 2026-04-24)
+# scope: Parquet file outer framing — leading PAR1 magic + trailing footer (File Metadata Length + PAR1 magic)
+# out-of-scope: Thrift-encoded FileMetaData contents (schema, row_groups, column chunks, encryption keys); per-page PageHeader (DATA_PAGE, INDEX_PAGE, DICTIONARY_PAGE) with Thrift-encoded metadata and compressed/encoded data body; bloom filter headers; encrypted (PARE trailing magic) variant
+# note: All framing integers are little-endian. Reader strategy: read the final 8 bytes of the file, verify trailing "PAR1", take the preceding u32 LE as metadata length, then seek backward metadata_length bytes from the start of the trailer to read the Thrift-encoded FileMetaData.
+config.url = "https://parquet.apache.org/docs/file-format/"
+input.endian = config.endian.little
+
+format ParquetFileHeader:
+    # §File format — first 4 bytes of every Parquet file.
+    magic :"PAR1"
+
+format ParquetFileFooter:
+    # §File format — last 8 bytes of every (non-encrypted) Parquet file.
+    metadata_length :u32             # byte length of the Thrift-encoded FileMetaData preceding this footer
+    magic :"PAR1"                    # "PARE" for encrypted files (out-of-scope here)
+
+format ParquetFileLayout:
+    # Logical overall structure; the middle portion (row groups + FileMetaData) has no fixed offset.
+    header :ParquetFileHeader
+    # Row groups + FileMetaData occupy bytes 4..(file_size - 8). Their boundaries are recoverable only
+    # by reading the footer (last 8 bytes) first and then backing up metadata_length bytes to locate
+    # the Thrift-encoded FileMetaData start.
+    body :[..]u8
+    footer :ParquetFileFooter
