@@ -1,0 +1,38 @@
+# source: APNG Specification (https://wiki.mozilla.org/APNG_Specification)
+# scope: APNG-specific chunk payload formats — acTL (animation control) / fcTL (frame control) / fdAT (frame data) — which extend the PNG chunk framing (see example/png.bgn)
+# out-of-scope: PNG chunk framing itself (4-byte BE length + 4-byte type + data + 4-byte BE CRC32); IDAT pixel data encoding (DEFLATE-compressed filter-prefixed scanlines); chunk-placement ordering rules (acTL before IDAT / fcTL before first IDAT gives a "default image is first frame" flag vs "default image is NOT a frame"); animation sequence numbering invariants
+# note: PNG and APNG are BIG-ENDIAN throughout. Both fcTL and fdAT carry a 32-bit sequence_number from the same shared counter starting at 0; gaps are forbidden. delay_den == 0 is treated as 100 per spec (i.e. delay_num is centiseconds by default).
+config.url = "https://wiki.mozilla.org/APNG_Specification"
+
+enum ApngDisposeOp:
+    :u8
+    none = 0                                 # leave canvas as-is after this frame
+    background = 1                           # clear frame region to transparent black before next
+    previous = 2                             # restore to canvas as-of before this frame
+
+enum ApngBlendOp:
+    :u8
+    source = 0                               # replace pixels
+    over = 1                                 # alpha blend over existing content
+
+format ApngActl:
+    # acTL payload — 8 bytes. Exactly one acTL per file, placed before the first IDAT.
+    num_frames :u32                          # total animated frame count
+    num_plays :u32                           # 0 = loop forever
+
+format ApngFctl:
+    # fcTL payload — 26 bytes. One per frame, preceding its fdAT (or IDAT if the default image IS frame 0).
+    sequence_number :u32                     # shared counter across fcTL/fdAT; starts at 0
+    width :u32                               # frame region width
+    height :u32                              # frame region height
+    x_offset :u32                            # top-left x within the full canvas
+    y_offset :u32                            # top-left y
+    delay_num :u16                           # delay numerator (seconds)
+    delay_den :u16                           # delay denominator; 0 treated as 100
+    dispose_op :ApngDisposeOp
+    blend_op :ApngBlendOp
+
+format ApngFdat:
+    # fdAT payload — 4-byte sequence_number + DEFLATE-compressed image data (same encoding as IDAT).
+    sequence_number :u32
+    frame_data :[..]u8                       # IDAT-shape compressed scanline data

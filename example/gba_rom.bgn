@@ -1,0 +1,24 @@
+# source: GBATEK (https://problemkaputt.de/gbatek.htm) — GBA cartridge ROM header
+# scope: 192-byte Game Boy Advance cartridge ROM header (absolute offsets 0x000-0x0BF)
+# out-of-scope: Nintendo logo bitmap equality check (156 bytes at 0x004-0x09F must match the reference pattern byte-for-byte or BIOS rejects the cartridge); header checksum computation (complement-sum of bytes 0xA0..0xBC minus 0x19); Multiboot image variant with slightly different fields at 0xC0-0xC3; DS backward-compat cartridge layout (shares first 0xA0 but differs thereafter); ROM bank switching / RTC + flash + EEPROM save hardware detection by software signature scan
+# note: GBA CPU is ARM7TDMI (little-endian 32-bit RISC). The header is predominantly byte-level — only `entry_point` is a 32-bit ARM branch instruction which consumers interpret via ARM ISA semantics (a = ((entry_point & 0xFFFFFF) << 2) + 8 relative offset for the unconditional branch opcode 0xEA).
+config.url = "https://problemkaputt.de/gbatek.htm"
+input.endian = config.endian.little
+
+GBA_HEADER_FIXED_BYTE ::= u8(0x96)
+GBA_HEADER_UNIT_CODE_GBA ::= u8(0x00)
+
+format GbaRomHeader:
+    entry_point :u32                         # 0x000: ARM branch instruction (opcode 0xEA | offset_24)
+    nintendo_logo :[156]u8                   # 0x004: fixed bitmap verified by BIOS boot sequence
+    title :[12]u8                            # 0x0A0: ASCII title, space-padded
+    game_code :[4]u8                         # 0x0AC: "UUCD" — 2-char category + country + variation
+    maker_code :[2]u8                        # 0x0B0: 2 ASCII chars (publisher ID)
+    fixed :u8                                # 0x0B2: MUST be 0x96
+    fixed == 0x96
+    main_unit_code :u8                       # 0x0B3: 0x00 = GBA
+    device_type :u8                          # 0x0B4: bit 7 = debug (1) vs retail (0), low bits reserved
+    reserved1 :[7]u8                         # 0x0B5-0x0BB: SHOULD be 0
+    software_version :u8                     # 0x0BC: mask ROM revision, typically 0x00
+    header_checksum :u8                      # 0x0BD: complement-sum of 0x0A0..0x0BC inclusive minus 0x19
+    reserved2 :[2]u8                         # 0x0BE-0x0BF: SHOULD be 0

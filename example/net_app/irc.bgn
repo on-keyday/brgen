@@ -1,0 +1,12 @@
+# source: RFC 2812 §2.3 (Internet Relay Chat: Client Protocol, fetched 2026-04-24)
+# scope: IRC wire message = optional prefix + command + parameters + CRLF; 512-octet max per message
+# out-of-scope: per-command argument grammars (NICK / USER / JOIN / PRIVMSG / MODE / TOPIC / NAMES / LIST / KICK / INVITE / PASS / OPER / QUIT / PING / PONG); 3-digit numeric reply semantics (RPL_WELCOME 001..999 range); CTCP embedded in PRIVMSG (DCC / ACTION / VERSION / PING payloads delimited by 0x01 markers); IRCv3 tags prefix "@key=value;..." that precedes the optional `:prefix` on newer networks; server-to-server S2S protocol (RFC 2813); channel name / nickname / host ABNF character classes
+# note: IRC is ASCII text, line-terminated by CRLF. Commands are case-insensitive. A middle parameter cannot contain space or start with ":"; the LAST parameter (trailing) may optionally start with ":" to allow embedded spaces — classical space-preserving trick for human-readable message bodies.
+config.url = "https://datatracker.ietf.org/doc/html/rfc2812"
+
+format IrcMessage:
+    # §2.3.1 message = [ ":" prefix SPACE ] command *( SPACE middle ) [ SPACE ":" trailing ] CRLF
+    # Prefix / command / params boundary parsing is deferred to consumers — the declarative envelope
+    # only captures the line terminator.
+    content :[..]u8                          # whole line excluding trailing CRLF
+    :"\r\n"
