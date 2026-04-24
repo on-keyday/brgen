@@ -46,13 +46,15 @@ format XzBlockHeader:
     # §3.1 Block Header — variable length, multiple of 4 bytes, starts with size byte.
     # Actual header size (in bytes) = (block_header_size + 1) * 4. Encoded value 0 indicates the Index
     # (not a Block Header) — callers must branch on the first byte before parsing as this format.
+    # Layout breakdown given total = (block_header_size + 1) * 4:
+    #   1 byte block_header_size + 1 byte flags + variable body + 4-byte trailing crc32
+    # body = (total - 6) bytes containing optional LEB128 Compressed Size, optional LEB128 Uncompressed
+    # Size, List of Filter Flags, and null-byte padding to the 4-byte alignment boundary. Interpreting
+    # body requires procedural LEB128 decoding (state-dependent presence) and is out-of-scope here.
     block_header_size :u8
     flags :XzBlockFlags
-    # Optional Compressed Size / Uncompressed Size (LEB128-encoded) and List of Filter Flags follow here;
-    # their combined presence/length is state-dependent, so out-of-scope for this declarative envelope.
-    # Padding pads the header to (block_header_size + 1) * 4 bytes, followed by CRC32 of the header.
-    # Full declarative length = (block_header_size + 1) * 4 bytes including flags, optional sizes, filter flags, padding, and crc.
-    # Remaining payload bytes after flags + before trailing CRC are left unparsed here.
+    body :[((block_header_size + 1) * 4) - 6]u8
+    crc32 :u32
 
 format XzStreamFooter:
     # §2.1.2 Stream Footer — 12 bytes fixed.
