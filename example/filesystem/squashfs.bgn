@@ -1,0 +1,40 @@
+# source: SquashFS 4.0 on-disk format (https://dr-emann.github.io/squashfs/squashfs.html, fetched 2026-04-24)
+# scope: Superblock (96 bytes, little-endian)
+# out-of-scope: inode structures (base inode + 8 subtype-specific inode bodies), directory table encoding, fragment table, id table, xattr table, export table, compression-id-specific compressor options blocks
+# note: All multi-byte integers are little-endian. Superblock sits at absolute file offset 0. root_inode is a packed reference where high 32 bits = block offset in inode table, low 16 bits = byte offset within the (decompressed) block.
+config.url = "https://dr-emann.github.io/squashfs/squashfs.html"
+input.endian = config.endian.little
+
+SQUASHFS_MAGIC ::= 0x73717368                # "hsqs" in file order
+
+enum SquashFsCompressorId:
+    :u16
+    gzip = 1
+    lzma = 2
+    lzo = 3
+    xz = 4
+    lz4 = 5
+    zstd = 6
+
+format SquashFsSuperblock:
+    magic :u32(SQUASHFS_MAGIC)
+    inode_count :u32
+    modification_time :u32                   # seconds since epoch
+    block_size :u32                          # data block size, 4K..1M, power of 2
+    fragment_entry_count :u32
+    compression_id :SquashFsCompressorId
+    block_log :u16                           # log2(block_size); sanity check
+    flags :u16                               # bitfield: compression / fragments / NFS / xattrs / etc.
+    id_count :u16                            # number of UID/GID lookup table entries
+    version_major :u16                       # MUST be 4
+    version_major == 4
+    version_minor :u16                       # MUST be 0
+    version_minor == 0
+    root_inode_ref :u64                      # packed: high 32 = inode-table block offset, low 16 = byte offset
+    bytes_used :u64                          # archive size in bytes
+    id_table_start :u64
+    xattr_id_table_start :u64
+    inode_table_start :u64
+    directory_table_start :u64
+    fragment_table_start :u64
+    export_table_start :u64

@@ -1,0 +1,48 @@
+# source: btrfs On-disk format documentation (https://btrfs.readthedocs.io/en/latest/dev/On-disk-format.html, fetched 2026-04-24)
+# scope: btrfs superblock header + primary identity/accounting fields through label (first ~0x22b bytes)
+# out-of-scope: Full 4096-byte superblock trailing regions — btrfs_dev_item internal decomposition, sys_chunk_array (2048-byte bootstrap chunk map), root_backup array (32 entries × ~168 bytes); btrfs tree nodes / leaves / items; extent / chunk / inode item types; checksum computation (CRC32c/XXHASH/SHA256/BLAKE2)
+# note: All multi-byte integers are little-endian. Superblock lives at physical offset 0x10000 (64 KiB) from start of device, with mirror copies at 64 MiB (0x4000000) and 256 GiB (0x4000000000). `csum` covers bytes [0x20, 0x1000) — the rest of the 4096-byte block.
+config.url = "https://btrfs.readthedocs.io/en/latest/dev/On-disk-format.html"
+input.endian = config.endian.little
+
+BTRFS_SUPER_MAGIC ::= "_BHRfS_M"
+
+enum BtrfsCsumType:
+    :u16
+    crc32c = 0
+    xxhash64 = 1
+    sha256 = 2
+    blake2b = 3
+
+format BtrfsSuperblock:
+    csum :[32]u8                             # covers bytes [0x20, 0x1000) of this superblock
+    fsid :[16]u8                             # filesystem UUID
+    bytenr :u64                              # physical address of THIS superblock (0x10000 for primary)
+    flags :u64                               # feature flags
+    magic :"_BHRfS_M"
+    generation :u64
+    root :u64                                # logical address of root tree
+    chunk_root :u64                          # logical address of chunk tree
+    log_root :u64                            # logical address of log tree (0 if none)
+    log_root_transid :u64
+    total_bytes :u64
+    bytes_used :u64
+    root_dir_objectid :u64
+    num_devices :u64
+    sectorsize :u32
+    nodesize :u32
+    leafsize :u32                            # deprecated; equals nodesize since v3.12
+    stripesize :u32
+    sys_chunk_array_size :u32                # used bytes inside the trailing sys_chunk_array[2048]
+    chunk_root_generation :u64
+    compat_flags :u64
+    compat_ro_flags :u64
+    incompat_flags :u64
+    csum_type :BtrfsCsumType
+    root_level :u8                           # height of root tree
+    chunk_root_level :u8
+    log_root_level :u8
+    dev_item :[98]u8                         # btrfs_dev_item; internal decomposition out-of-scope
+    label :[256]u8                           # NUL-padded ASCII filesystem label
+    # Trailing fields (cache_generation, uuid_tree_generation, metadata_uuid, _reserved[28],
+    # sys_chunk_array[2048], super_roots[32]) span to a full 4096-byte superblock and are out-of-scope here.

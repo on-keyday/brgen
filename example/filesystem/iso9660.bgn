@@ -1,0 +1,83 @@
+# source: ECMA-119 (ISO 9660) 4th edition, June 2019; osdev wiki (https://wiki.osdev.org/ISO_9660)
+# scope: Volume Descriptor common header + Primary Volume Descriptor (2048 bytes) + Directory Record envelope
+# out-of-scope: Path Table (L/M variants, sector-addressable directory hierarchy); Joliet supplementary VD (uses UCS-2 identifiers); Rock Ridge / El Torito extensions in System Use Area; system and application-use opaque regions; 17-byte date strings (dec-ASCII subfield layout)
+# note: ISO 9660 uses "both-byte-order" encoding for numeric fields — a 16-bit value occupies 4 bytes (LE copy + BE copy), a 32-bit value occupies 8 bytes (LE copy + BE copy). brgen exposes BE types as ub16/ub32, so `value_lsb :u32; value_msb :ub32` captures one 32-bit both-byte-order field as 8 consecutive bytes. Consumers SHOULD cross-check that the two halves agree.
+config.url = "https://wiki.osdev.org/ISO_9660"
+input.endian = config.endian.little
+
+ISO9660_VD_IDENTIFIER ::= "CD001"
+
+enum Iso9660VolumeDescriptorType:
+    :u8
+    boot = 0
+    primary = 1
+    supplementary = 2                        # Joliet / secondary
+    partition = 3
+    terminator = 255
+
+format Iso9660VdHeader:
+    # §8.4.1 common VD header (7 bytes)
+    type :Iso9660VolumeDescriptorType
+    identifier :"CD001"
+    version :u8                              # MUST be 0x01
+
+format Iso9660DirectoryRecord:
+    # §9.1 Directory Record — variable length, starts with self-describing length byte.
+    length_of_dr :u8                         # includes this byte; 0 means "no more records in this sector"
+    extended_attribute_record_length :u8
+    # Location of extent (both-byte-order LBA)
+    extent_lba_lsb :u32
+    extent_lba_msb :ub32
+    # Data length in bytes (both-byte-order)
+    data_length_lsb :u32
+    data_length_msb :ub32
+    recording_date :[7]u8                    # years-since-1900, month, day, hour, minute, second, GMT offset (15-min units)
+    file_flags :u8                           # bit 0=hidden, 1=directory, 2=associated, 3=record format, 4=protection, 7=multi-extent
+    file_unit_size :u8                       # non-zero only for interleaved files
+    interleave_gap_size :u8
+    volume_sequence_number_lsb :u16
+    volume_sequence_number_msb :ub16
+    length_of_file_identifier :u8
+    file_identifier :[length_of_file_identifier]u8
+    # Optional 1-byte padding to even alignment when length_of_file_identifier is even.
+    # System Use Area follows (length = length_of_dr - 33 - length_of_file_identifier - pad).
+
+format Iso9660PrimaryVolumeDescriptor:
+    # §8.4 Primary Volume Descriptor — 2048 bytes. Offsets per ECMA-119.
+    header :Iso9660VdHeader                  # type == 1 for PVD
+    unused1 :u8                              # MUST be 0
+    system_identifier :[32]u8                # A-character set (subset of ASCII)
+    volume_identifier :[32]u8                # D-character set
+    unused2 :[8]u8
+    # Volume Space Size in logical blocks (both-byte-order)
+    volume_space_size_lsb :u32
+    volume_space_size_msb :ub32
+    unused3 :[32]u8                          # reserved for Escape Sequences on secondary VDs
+    volume_set_size_lsb :u16
+    volume_set_size_msb :ub16
+    volume_sequence_number_lsb :u16
+    volume_sequence_number_msb :ub16
+    logical_block_size_lsb :u16              # typically 2048
+    logical_block_size_msb :ub16
+    path_table_size_lsb :u32
+    path_table_size_msb :ub32
+    location_of_type_l_path_table :u32       # LSB-order-only; points to L-type path table
+    location_of_optional_type_l_path_table :u32
+    location_of_type_m_path_table :ub32      # MSB-order-only; same data, opposite byte order
+    location_of_optional_type_m_path_table :ub32
+    root_directory_record :[34]u8            # parse as Iso9660DirectoryRecord when consumed
+    volume_set_identifier :[128]u8
+    publisher_identifier :[128]u8
+    data_preparer_identifier :[128]u8
+    application_identifier :[128]u8
+    copyright_file_identifier :[37]u8
+    abstract_file_identifier :[37]u8
+    bibliographic_file_identifier :[37]u8
+    volume_creation_date :[17]u8             # dec-ASCII: YYYYMMDDHHMMSSHH + GMT offset byte
+    volume_modification_date :[17]u8
+    volume_expiration_date :[17]u8
+    volume_effective_date :[17]u8
+    file_structure_version :u8               # MUST be 1
+    unused4 :u8
+    application_use :[512]u8
+    reserved :[653]u8
