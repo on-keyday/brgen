@@ -5,7 +5,7 @@
 
 config.url = "https://www.systutorials.com/docs/linux/man/5-cpio/"
 
-fn parseHex(s :[]u8) -> u32:
+fn parseHex(s :[8]u8) -> u32:
     # Parse 8-character (or fewer) ASCII hex into u32.
     result := u32(0)
     for i in s.length:

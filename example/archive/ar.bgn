@@ -5,7 +5,7 @@
 
 config.url = "https://en.wikipedia.org/wiki/Ar_(Unix)"
 
-fn parseDecimal(s :[]u8) -> u64:
+fn parseDecimal(s :[10]u8) -> u64:
     # Parse space-padded ASCII decimal (stops at first space or non-digit).
     result := u64(0)
     for i in s.length:
