@@ -114,14 +114,8 @@ format IMAGE_THUNK_DATA64:
     fn import_by_name_rva() -> u64:
         return value & 0x7FFFFFFFFFFFFFFF
 
-format EFI_DEBUG_SUPPORT_PROTOCOL:
-    Isa :EFI_INSTRUCTION_SET_ARCHITECTURE
-    GetMaximumProcessorIndex :EFI_GET_MAXIMUM_PROCESSOR_INDEX
-    RegisterPeriodicCallback :EFI_REGISTER_PERIODIC_CALLBACK
-    RegisterExceptionCallback :EFI_REGISTER_EXCEPTION_CALLBACK
-    InvalidateInstructionCache :EFI_INVALIDATE_INSTRUCTION_CACHE
-
 enum EFI_INSTRUCTION_SET_ARCHITECTURE:
+    :u16
     IsaIa32 = 0x014C
     IsaX64 = 0x8664
     IsaIpf = 0x0200
@@ -133,6 +127,30 @@ enum EFI_INSTRUCTION_SET_ARCHITECTURE:
     IsaRISCV128 = 0x5128
     IsaLoongArch32 = 0x6232
     IsaLoongArch64 = 0x6264
+
+# --- EFI Debug Support Protocol (UEFI runtime protocol; not a PE-file structure) ---
+# Per UEFI spec §20.1: a protocol interface struct containing function pointers.
+# Function-pointer fields are represented here as formats with a native-pointer-sized slot
+# (u64 on 64-bit UEFI targets, which is the overwhelmingly common case).
+
+format EFI_GET_MAXIMUM_PROCESSOR_INDEX:
+    ptr :u64
+
+format EFI_REGISTER_PERIODIC_CALLBACK:
+    ptr :u64
+
+format EFI_REGISTER_EXCEPTION_CALLBACK:
+    ptr :u64
+
+format EFI_INVALIDATE_INSTRUCTION_CACHE:
+    ptr :u64
+
+format EFI_DEBUG_SUPPORT_PROTOCOL:
+    Isa :EFI_INSTRUCTION_SET_ARCHITECTURE
+    GetMaximumProcessorIndex :EFI_GET_MAXIMUM_PROCESSOR_INDEX
+    RegisterPeriodicCallback :EFI_REGISTER_PERIODIC_CALLBACK
+    RegisterExceptionCallback :EFI_REGISTER_EXCEPTION_CALLBACK
+    InvalidateInstructionCache :EFI_INVALIDATE_INSTRUCTION_CACHE
 
 format EFI_GUID:
     TimeLow :u32
