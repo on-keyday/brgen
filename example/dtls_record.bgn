@@ -1,0 +1,29 @@
+# source: RFC 6347 §4.1 — Datagram Transport Layer Security Version 1.2 (https://datatracker.ietf.org/doc/html/rfc6347)
+# scope: DTLS 1.2 record-layer envelope (DTLSPlaintext / DTLSCiphertext share layout): ContentType + ProtocolVersion + Epoch + 48-bit Sequence Number + Length + length-prefixed fragment
+# out-of-scope: handshake message reassembly fields (DTLSHandshake message_seq / fragment_offset / fragment_length; RFC 6347 §4.2.2), record-layer encryption containers (GenericBlockCipher / GenericAEADCipher), DTLS 1.3 unified header with bit-mask record number (RFC 9147), HelloVerifyRequest cookie exchange, retransmission/timer state, Path MTU discovery
+# note: All multi-byte integers are BIG-ENDIAN (network byte order). DTLS 1.2 ProtocolVersion is the bit-inverted form of TLS 1.2: 0xFEFD = ~0x0102. The on-wire `epoch` field carries the epoch counter (incremented after each ChangeCipherSpec) and is REDUNDANT with the upper 16 bits of the receiver's reconstructed sequence-number space — it lets a receiver pick the right keying epoch without trial-decrypting. Heartbeat ContentType (24) was added later by RFC 6520.
+config.url = "https://datatracker.ietf.org/doc/html/rfc6347"
+
+enum DTLSContentType:
+    :u8
+    invalid = 0
+    change_cipher_spec = 20
+    alert = 21
+    handshake = 22
+    application_data = 23
+    heartbeat = 24
+
+enum DTLSVersion:
+    :u16
+    invalid = 0
+    dtls10 = 0xFEFF
+    dtls12 = 0xFEFD
+
+format DTLSPlaintext:
+    # RFC 6347 §4.1 envelope. DTLSCiphertext shares this exact 13-byte fixed header; the body just becomes ciphertext.
+    type :DTLSContentType
+    version :DTLSVersion
+    epoch :u16
+    sequence_number :u48
+    length :u16
+    fragment :[length]u8

@@ -1,0 +1,72 @@
+# source: ATSC A/52:2018 Digital Audio Compression (AC-3, E-AC-3) Standard (https://www.atsc.org/atsc-documents/a522018-digital-audio-compression-ac-3-e-ac-3-standard/, fetched 2026-04-29) §5.3 SyncInfo + §5.4 Bit Stream Information
+# scope: AC-3 (Dolby Digital) elementary-stream syncframe header — syncinfo + bsi up to and including the addbsi extension area, with conditional fields gated by acmod (cmixlev / surmixlev / dsurmod), the dual-mono (acmod==0) duplicated dialnorm/compr/langcod/audprodi block, copyrightb / origbs flags, the two timecode fields, and the addbsi extension
+# out-of-scope: The audblk[] PCM-block syntax (auditk[5] each carrying dynrng / cplstre / cplexpstr / chexpstr / cplbap / mantissas / etc.), the auxdata field, the trailing crc2 (24-bit at the very end of the frame), bit-rate / sample-rate decoding tables (frmsizecod → frame-size-in-words is a separate spec-defined lookup), Annex E (E-AC-3 / DD+) extensions which use bsid==16 and a different syncframe layout, channel coupling and rematrixing details, the Lossless AC-3 extension stream
+# note: AC-3 syncframes are a BIG-ENDIAN MSB-first bit stream (the brgen default). syncword is 0x0B77 (16 bits). bsid identifies the original AC-3 spec when 0..8; bsid==16 indicates the E-AC-3 / Dolby Digital Plus dialect (out-of-scope here). frmsizecod combined with fscod indexes a frame-size-in-16-bit-words lookup table. dialnorm value 0 is reserved (decoder must clamp to -31 dB if encountered). cmixlev is present only when acmod has a center channel (acmod & 0x01) AND acmod is not pure mono (acmod != 0x01). surmixlev is present iff acmod has surround channels (acmod & 0x04). dsurmod indicates the Dolby Surround encode flag for 2/0 stereo only (acmod == 0x02). For dual-mono (acmod == 0x00) a SECOND dialnorm/compr/langcod/audprodi block follows the first to describe channel 2 independently. addbsil on wire is "length minus one", so addbsil==0 means a 1-byte addbsi.
+config.url = "https://www.atsc.org/atsc-documents/a522018-digital-audio-compression-ac-3-e-ac-3-standard/"
+
+AC3_SYNCWORD ::= 0x0B77
+
+format Ac3SyncInfo:
+    # §5.3 syncinfo — fixed 5 bytes (40 bits)
+    syncword :u16
+    syncword == AC3_SYNCWORD
+    crc1 :u16                                # 16-bit CRC over the first 5/8 of the frame; reset for each frame
+    fscod :u2                                # 0=48kHz, 1=44.1kHz, 2=32kHz, 3=reserved
+    frmsizecod :u6                           # frame-size code; selects bytes-per-frame from a fscod-dependent table
+
+format Ac3AudProdInfo:
+    # Sub-block reused by both the primary and the dual-mono secondary audprodi blocks.
+    mixlevel :u5                             # peak SPL during mix in dB above 80 SPL (0..31 → 80..111 dB SPL)
+    roomtyp :u2                              # 0=not indicated, 1=large room flat-monitor, 2=small room flat-monitor, 3=reserved
+
+format Ac3Bsi:
+    # §5.4 bsi — variable-length bit-packed sequence following syncinfo.
+    bsid :u5                                 # 0..8 = original AC-3, 16 = E-AC-3 / DD+ (out-of-scope here)
+    bsmod :u3                                # bit-stream mode (main complete, music+effects, hearing-impaired, etc.)
+    acmod :u3                                # audio coding mode (0=1+1 dual-mono, 1=mono, 2=stereo, 3=3/0, 4=2/1, 5=3/1, 6=2/2, 7=3/2)
+    if (acmod & 0x01) != 0 && acmod != 0x01:
+        cmixlev :u2                          # center-channel mix level (0=-3dB, 1=-4.5dB, 2=-6dB, 3=reserved)
+    if (acmod & 0x04) != 0:
+        surmixlev :u2                        # surround mix level (0=-3dB, 1=-6dB, 2=mute, 3=reserved)
+    if acmod == 0x02:
+        dsurmod :u2                          # Dolby Surround encode flag for 2/0 stereo (0=not indicated, 1=not Dolby Surround, 2=Dolby Surround, 3=reserved)
+    lfeon :u1                                # low-frequency-effects channel present
+    dialnorm :u5                             # dialog normalization level for ch1 (-31..-1 dB; 0 reserved)
+    compre :u1
+    if compre == 1:
+        compr :u8                            # compression gain word for ch1
+    langcode :u1
+    if langcode == 1:
+        langcod :u8                          # language code byte for ch1 (deprecated; ISO 639-2 byte by convention)
+    audprodie :u1
+    if audprodie == 1:
+        audprodi :Ac3AudProdInfo
+    if acmod == 0x00:
+        # Dual-mono — duplicate the dialnorm / compr / langcod / audprodi block for channel 2.
+        dialnorm2 :u5
+        compr2e :u1
+        if compr2e == 1:
+            compr2 :u8
+        langcod2e :u1
+        if langcod2e == 1:
+            langcod2 :u8
+        audprodi2e :u1
+        if audprodi2e == 1:
+            audprodi2 :Ac3AudProdInfo
+    copyrightb :u1                           # copyright-asserted flag
+    origbs :u1                               # 1 = original bitstream, 0 = copy
+    timecod1e :u1                            # first timecode field present
+    if timecod1e == 1:
+        timecod1 :u14                        # high portion of timecode
+    timecod2e :u1                            # second timecode field present
+    if timecod2e == 1:
+        timecod2 :u14                        # low portion of timecode
+    addbsie :u1                              # additional bsi data present
+    if addbsie == 1:
+        addbsil :u6                          # length-minus-one (so on-wire 0 means 1 byte of addbsi)
+        addbsi :[addbsil + 1]u8
+
+format Ac3Syncframe:
+    # The full AC-3 syncframe header up to (but not including) the audblk[] payload.
+    syncinfo :Ac3SyncInfo
+    bsi :Ac3Bsi

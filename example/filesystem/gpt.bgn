@@ -1,0 +1,39 @@
+# source: UEFI Specification 2.10 §5.3 GPT Disk Layout (https://uefi.org/specifications), cross-referenced with Wikipedia "GUID Partition Table"
+# scope: GPT primary header (LBA1, 92 bytes) + GPT Partition Entry struct (128-byte minimum width per spec)
+# out-of-scope: Backup GPT header at LBA -1 (identical layout, role swap of CurrentLBA / BackupLBA so each header points at the other), partition entry CRC re-computation procedure, the mixed-endian display rule of disk_guid / partition_type_guid / unique_partition_guid (the first three GUID groups are LE on wire, only stringified in canonical mixed-endian form), known partition type GUIDs and attribute bit 60/62/63 semantics, hybrid MBR negotiation, EFI System Partition contents, EFI Boot Variables
+# note: All multi-byte integers are LITTLE-ENDIAN. The 8-byte signature on wire is the ASCII text "EFI PART" (0x45 0x46 0x49 0x20 0x50 0x41 0x52 0x54), which equals 0x5452415020494645 when read as a little-endian u64. header_crc32 is computed over header_size bytes with that field zeroed during compute. partition_entries_crc32 is computed over (num_partition_entries * size_partition_entry) bytes of the entry array. partition_name is 36 UTF-16LE code units (72 bytes) padded with U+0000.
+config.url = "https://uefi.org/specifications"
+input.endian = config.endian.little
+
+GPT_SIGNATURE ::= 0x5452415020494645
+GPT_REVISION_1_0 ::= 0x00010000
+
+format GptHeader:
+    # §5.3.2 EFI_PARTITION_TABLE_HEADER. Lives at LBA1 (typically byte offset 0x200 for 512-byte sectors).
+    signature :u64
+    signature == GPT_SIGNATURE
+    revision :u32                            # 0x00010000 = revision 1.0
+    header_size :u32                         # MUST be >= 92 and <= block size; typically 92
+    header_size >= 92
+    header_crc32 :u32                        # CRC32 over header_size bytes with this field zeroed
+    reserved :u32
+    reserved == 0
+    current_lba :u64                         # LBA of this header copy
+    backup_lba :u64                          # LBA of the alternate (backup) GPT header
+    first_usable_lba :u64
+    last_usable_lba :u64
+    disk_guid :[16]u8
+    partition_entries_lba :u64               # typically 2 for a primary header
+    num_partition_entries :u32               # typically 128
+    size_partition_entry :u32                # MUST be a power of 2 and >= 128; typically 128
+    partition_entries_crc32 :u32
+
+format GptPartitionEntry:
+    # §5.3.3 EFI_PARTITION_ENTRY. size_partition_entry from the header is the per-disk authoritative width;
+    # 128 bytes is the spec-mandated minimum and the universal current value.
+    partition_type_guid :[16]u8              # all-zero = unused entry
+    unique_partition_guid :[16]u8
+    starting_lba :u64
+    ending_lba :u64                          # inclusive
+    attributes :u64                          # bit 0 = RequiredPartition, bit 1 = NoBlockIOProtocol, bit 60 = ReadOnly, bit 62 = Hidden, bit 63 = NoDriveLetter; type-specific bits 48..63
+    partition_name :[72]u8                   # 36 UTF-16LE code units, U+0000 padded
