@@ -1,0 +1,34 @@
+# source: Wikipedia "Master boot record" (https://en.wikipedia.org/wiki/Master_boot_record), cross-referenced with widely deployed disk-tool implementations
+# scope: Classic 512-byte MBR sector (LBA 0): 446-byte bootstrap-code area, 4×16-byte partition-table entries with CHS + LBA dual addressing, 0xAA55 boot signature; partition entry struct exposed as a top-level format
+# out-of-scope: Extended Boot Record (EBR) chain for logical partitions inside an extended primary (type 0x05 / 0x0F), Modern MBR variants embedding a 4-byte disk signature + 2 reserved bytes at offset 0x01B8..0x01BD which truncates the bootstrap-code area to 440 bytes, Advanced Active Partition / AAP / AST tweaks, the boot-loader handoff convention, GPT protective-MBR semantics (single 0xEE entry covering the disk)
+# note: All multi-byte integers are LITTLE-ENDIAN. CHS fields are LEGACY and are commonly clamped to 0xFE 0xFF 0xFF when the geometry exceeds the 8-GiB CHS limit; modern kernels rely on lba_start / lba_sectors. Within byte 1 of MbrChsAddress the upper 2 bits hold the high cylinder bits and the lower 6 bits hold the sector-within-track value (1-based). The on-wire u16 at offset 0x01FE reads 0xAA55 (raw bytes 0x55 0xAA in disk order).
+config.url = "https://en.wikipedia.org/wiki/Master_boot_record"
+input.endian = config.endian.little
+
+enum MbrPartitionStatus:
+    :u8
+    inactive = 0x00
+    active = 0x80
+
+format MbrChsAddress:
+    # 24-bit packed CHS. byte 0 = head (8 bits); byte 1 = cylinder_high(2) | sector(6) MSB-first; byte 2 = cylinder_low (8 bits).
+    head :u8
+    cylinder_high :u2
+    sector :u6
+    cylinder_low :u8
+
+format MbrPartitionEntry:
+    # 16-byte partition-table entry (4 entries × 16 bytes = 64 bytes total).
+    status :MbrPartitionStatus
+    first_chs :MbrChsAddress
+    partition_type :u8                       # 0x00=empty, 0x07=NTFS/exFAT, 0x0B=FAT32-CHS, 0x0C=FAT32-LBA, 0x83=Linux, 0x82=Linux swap, 0xEE=GPT-protective, 0xEF=EFI-System (legacy)
+    last_chs :MbrChsAddress
+    lba_start :u32                           # absolute first LBA of the partition; 0 if unused
+    lba_sectors :u32                         # length in 512-byte sectors
+
+format MbrSector:
+    # 446 + 64 + 2 = 512 bytes
+    bootstrap_code :[446]u8
+    partition_table :[4]MbrPartitionEntry
+    boot_signature :u16
+    boot_signature == 0xAA55

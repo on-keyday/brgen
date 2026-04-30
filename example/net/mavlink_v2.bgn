@@ -1,0 +1,31 @@
+# source: MAVLink Serialization spec v2.0 (https://mavlink.io/en/guide/serialization.html, fetched 2026-04-29)
+# scope: MAVLink v2 packet on-wire framing — STX + len + incompat_flags + compat_flags + seq + sysid + compid + 24-bit msgid + length-prefixed payload + 16-bit CRC + optional 13-byte signature gated by incompat_flags bit 0
+# out-of-scope: MAVLink v1 packet (STX 0xFE, no flags, 8-bit msgid, no signing), per-message payload field layout (depends on the dialect XML and the message extensions area), payload truncation rules (trailing zero bytes are stripped on transmit and re-zero-padded on receive — applies to v1 and v2), CRC_EXTRA seed byte for the X.25 / "CRC-16/MCRF4XX" CRC (dialect-defined per msgid), MAVLink signing key management and timestamp-replay-window logic
+# note: All multi-byte integers are LITTLE-ENDIAN. STX for v2 is 0xFD (v1 was 0xFE). msgid is a 3-byte little-endian unsigned integer occupying that exact width on wire (no 4-byte padding). checksum is CRC-16/MCRF4XX over [len, incompat_flags, compat_flags, seq, sysid, compid, msgid(3 bytes), payload..., CRC_EXTRA(1 byte appended only at compute time, NOT on wire)]. The signature is present iff (incompat_flags & 0x01) != 0; total = link_id(1) + timestamp(6 LE, 10µs ticks since 2015-01-01 00:00 UTC) + sig(6 truncated SHA-256-HMAC bytes).
+config.url = "https://mavlink.io/en/guide/serialization.html"
+input.endian = config.endian.little
+
+MAVLINK_V2_STX ::= 0xFD
+MAVLINK_V2_INCOMPAT_FLAG_SIGNED ::= 0x01
+
+format MavlinkV2Signature:
+    # §Message Signing — present iff incompat_flags bit 0 is set. 13 bytes total.
+    link_id :u8                              # link-namespace tag, scopes the replay window
+    timestamp :u48                           # 10µs ticks since 2015-01-01 00:00 UTC
+    signature :[6]u8                         # truncated SHA-256-HMAC, raw bytes
+
+format MavlinkV2Packet:
+    # §Packet format. Fixed framing = 12 bytes (STX..msgid + CRC) + payload + optional 13-byte signature.
+    stx :u8
+    stx == MAVLINK_V2_STX
+    len :u8                                  # payload length 0..255
+    incompat_flags :u8
+    compat_flags :u8
+    seq :u8                                  # rolling sequence number per (sysid, compid) pair
+    sysid :u8                                # 0 reserved by convention for broadcast
+    compid :u8
+    msgid :u24
+    payload :[len]u8
+    checksum :u16                            # CRC-16/MCRF4XX (see note for input bytes)
+    if (incompat_flags & MAVLINK_V2_INCOMPAT_FLAG_SIGNED) != 0:
+        signature :MavlinkV2Signature
