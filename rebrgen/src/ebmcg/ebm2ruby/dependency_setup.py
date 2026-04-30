@@ -10,12 +10,13 @@
 #
 # Replace the placeholder body when real dependencies appear.
 import pathlib
+import subprocess
 
 HERE = pathlib.Path(__file__).parent
 
 
 def main() -> None:
-    print("dependency setup not implemented for ebm2ruby")
+    subprocess.check_call(["mise", "install"], cwd=HERE)
 
 
 if __name__ == "__main__":
