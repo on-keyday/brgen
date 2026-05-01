@@ -247,6 +247,49 @@ export const initLSP = (factory :caller.IWorkerFactory) => {
                 };
             }
         }));
+        disposeables.push(monaco.languages.registerCompletionItemProvider(BRGEN_ID,{
+            triggerCharacters: ["."],
+            provideCompletionItems:(model, position) => {
+                const offset = model.getOffsetAt(position);
+                const text = model.getValue();
+                // Detect member access: walk back over the in-progress ident,
+                // and if the next char is `.`, the LHS ident name preceding it
+                // is the member-access target.
+                const isIdentChar = (ch :number) =>
+                    (ch >= 0x41 && ch <= 0x5a) || (ch >= 0x61 && ch <= 0x7a) ||
+                    (ch >= 0x30 && ch <= 0x39) || ch === 0x5f;
+                let scan = offset;
+                while (scan > 0 && isIdentChar(text.charCodeAt(scan - 1))) {
+                    scan--;
+                }
+                let memberOf : string | undefined = undefined;
+                if (scan > 0 && text.charCodeAt(scan - 1) === 0x2e /* '.' */) {
+                    let begin = scan - 1;
+                    while (begin > 0 && isIdentChar(text.charCodeAt(begin - 1))) {
+                        begin--;
+                    }
+                    memberOf = text.substring(begin, scan - 1);
+                }
+                const word = model.getWordUntilPosition(position);
+                const range = {
+                    startLineNumber: position.lineNumber,
+                    startColumn: word.startColumn,
+                    endLineNumber: position.lineNumber,
+                    endColumn: word.endColumn,
+                };
+                const items = analyze.analyzeCompletion(context.prevNode, offset, memberOf);
+                return {
+                    suggestions: items.map((it) => ({
+                        label: it.label,
+                        kind: it.kind as monaco.languages.CompletionItemKind,
+                        detail: it.detail,
+                        documentation: it.documentation,
+                        insertText: it.label,
+                        range,
+                    })),
+                };
+            },
+        }));
 
     })
 
