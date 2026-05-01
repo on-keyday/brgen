@@ -19,6 +19,22 @@ python script/unictest.py --target-runner ebm2<lang_name> --print-stdout > save/
 grep "unimplemented" save/unictest.txt
 ```
 
+## 手動で生成を確認するとき
+
+**必ず `--debug-unimplemented` を付ける。** これがないと未実装フックがサイレントに空文字を返すため、出力を見ても何が欠けているか分からない。
+
+```bash
+./tool/ebm2<lang>.exe -i save/some.ebm --debug-unimplemented 2>/dev/null
+# → 未実装箇所に {{Unimplemented Statement_FOO N}} がインライン出力される
+```
+
+実装のゴールは2段階:
+
+1. `--debug-unimplemented` 付きで `{{Unimplemented ...}}` が一切出なくなり、生成コードが構文的に正しい
+2. unictest が通る (`python script/unictest.py --target-runner ebm2<lang>`)
+
+フックを実装するごとにこのフラグ付きで確認し、段階的にゴール1→2を目指す。
+
 ## フックの実装方針
 
 ### 基本: entry_before_class.hpp にまとめる
