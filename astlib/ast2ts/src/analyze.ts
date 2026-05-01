@@ -886,6 +886,327 @@ export interface DocumentSymbolStub {
     children? :DocumentSymbolStub[];
 }
 
+export const CompletionItemKindStub = {
+    Method: 2,
+    Function: 3,
+    Field: 5,
+    Variable: 6,
+    Class: 7,
+    Enum: 13,
+    Keyword: 14,
+    EnumMember: 20,
+    Constant: 21,
+    Struct: 22,
+    TypeParameter: 25,
+} as const;
+export type CompletionItemKindStub = (typeof CompletionItemKindStub)[keyof typeof CompletionItemKindStub];
+
+export interface CompletionItemStub {
+    label: string;
+    kind: CompletionItemKindStub;
+    detail?: string;
+    documentation?: string;
+}
+
+const BGN_KEYWORDS = [
+    "format", "if", "elif", "else", "match", "fn", "for", "enum",
+    "input", "output", "config", "true", "false",
+    "return", "break", "continue", "state",
+];
+
+// uN/iN/fN accept arbitrary bit widths (also with b/l endian prefix).
+// These are hints for common widths only.
+const BGN_BUILTIN_FIXED_TYPES = ["bool", "void"] as const;
+const BGN_INT_COMMON_WIDTHS = [8, 16, 32, 64] as const;
+const BGN_FLOAT_COMMON_WIDTHS = [16, 32, 64] as const;
+
+const identUsageToCompletionKind = (usage :ast2ts.IdentUsage) :CompletionItemKindStub => {
+    switch (usage) {
+        case ast2ts.IdentUsage.define_format:
+        case ast2ts.IdentUsage.define_state:
+            return CompletionItemKindStub.Class;
+        case ast2ts.IdentUsage.define_enum:
+            return CompletionItemKindStub.Enum;
+        case ast2ts.IdentUsage.define_enum_member:
+            return CompletionItemKindStub.EnumMember;
+        case ast2ts.IdentUsage.define_field:
+            return CompletionItemKindStub.Field;
+        case ast2ts.IdentUsage.define_variable:
+        case ast2ts.IdentUsage.define_arg:
+            return CompletionItemKindStub.Variable;
+        case ast2ts.IdentUsage.define_const:
+            return CompletionItemKindStub.Constant;
+        case ast2ts.IdentUsage.define_fn:
+            return CompletionItemKindStub.Function;
+        case ast2ts.IdentUsage.define_cast_fn:
+            return CompletionItemKindStub.Method;
+        case ast2ts.IdentUsage.define_type_parameter:
+            return CompletionItemKindStub.TypeParameter;
+        default:
+            return CompletionItemKindStub.Variable;
+    }
+};
+
+const identDefineDetail = (ident :ast2ts.Ident) :string => {
+    return `${ident.usage}: ${typeToString(ident.expr_type)}`;
+};
+
+const collectMembersFromStruct = (st :ast2ts.StructType, into :CompletionItemStub[], seen :Set<string>) => {
+    for (const m of st.fields) {
+        if (m.ident == null) {
+            continue;
+        }
+        const name = m.ident.ident;
+        if (seen.has(name)) {
+            continue;
+        }
+        seen.add(name);
+        into.push({
+            label: name,
+            kind: identUsageToCompletionKind(m.ident.usage),
+            detail: identDefineDetail(m.ident),
+        });
+    }
+};
+
+const collectMembersFromType = (type :ast2ts.Type|null|undefined, into :CompletionItemStub[]) => {
+    if (!type) {
+        return;
+    }
+    if (ast2ts.isIdentType(type)) {
+        collectMembersFromType(type.base, into);
+        return;
+    }
+    if (ast2ts.isStructType(type)) {
+        const seen = new Set<string>();
+        collectMembersFromStruct(type, into, seen);
+        if (ast2ts.isFormat(type.base)) {
+            for (const f of type.base.cast_fns) {
+                if (f.ident != null && !seen.has(f.ident.ident)) {
+                    seen.add(f.ident.ident);
+                    into.push({
+                        label: f.ident.ident,
+                        kind: CompletionItemKindStub.Method,
+                        detail: `cast fn -> ${typeToString(f.return_type)}`,
+                    });
+                }
+            }
+        }
+        return;
+    }
+    if (ast2ts.isStructUnionType(type)) {
+        const seen = new Set<string>();
+        for (const st of type.structs) {
+            collectMembersFromStruct(st, into, seen);
+        }
+        return;
+    }
+    if (ast2ts.isArrayType(type)) {
+        // Builtin: arrays expose `.length`. Element-type members aren't
+        // accessible directly on the array itself.
+        into.push({
+            label: "length",
+            kind: CompletionItemKindStub.Field,
+            detail: "array length (builtin)",
+        });
+        return;
+    }
+    if (ast2ts.isEnumType(type)) {
+        // A *value* of enum type. Members go through the type name (handled
+        // separately in analyzeCompletion); on a value the builtin
+        // `.is_defined` checks whether the value matches a declared member.
+        into.push({
+            label: "is_defined",
+            kind: CompletionItemKindStub.Method,
+            detail: "bool — true if the value matches a declared enum member (builtin)",
+        });
+        return;
+    }
+};
+
+const findIdentByName = (prevNode :ast2ts.ParseResult, name :string) :ast2ts.Ident|null => {
+    for (const sc of prevNode.scope) {
+        for (const id of sc.ident) {
+            if (id.ident !== name) {
+                continue;
+            }
+            if (id.usage === ast2ts.IdentUsage.reference || id.usage === ast2ts.IdentUsage.unknown) {
+                continue;
+            }
+            return id;
+        }
+    }
+    for (const sc of prevNode.scope) {
+        for (const id of sc.ident) {
+            if (id.ident === name && id.expr_type != null) {
+                return id;
+            }
+        }
+    }
+    return null;
+};
+
+const isDefiningUsage = (u :ast2ts.IdentUsage) :boolean => {
+    switch (u) {
+        case ast2ts.IdentUsage.define_variable:
+        case ast2ts.IdentUsage.define_const:
+        case ast2ts.IdentUsage.define_field:
+        case ast2ts.IdentUsage.define_format:
+        case ast2ts.IdentUsage.define_state:
+        case ast2ts.IdentUsage.define_enum:
+        case ast2ts.IdentUsage.define_enum_member:
+        case ast2ts.IdentUsage.define_fn:
+        case ast2ts.IdentUsage.define_cast_fn:
+        case ast2ts.IdentUsage.define_arg:
+        case ast2ts.IdentUsage.define_type_parameter:
+            return true;
+        default:
+            return false;
+    }
+};
+
+// Find the innermost scope whose loc contains `pos`. Scope.loc covers the
+// full body extent (set in src2json's parse_indent_block), so a position
+// inside the body matches the scope correctly. Ties (e.g. sibling scopes
+// sharing the same owner) are broken by depth — deeper = later sibling.
+const findEnclosingScope = (prevNode :ast2ts.ParseResult, pos :number) :ast2ts.Scope|null => {
+    let best :ast2ts.Scope|null = null;
+    let bestSize = Number.POSITIVE_INFINITY;
+    let bestDepth = -1;
+    const depthOf = (sc :ast2ts.Scope) => {
+        let d = 0;
+        let cur :ast2ts.Scope|null = sc;
+        while (cur !== null) {
+            d++;
+            cur = cur.prev;
+        }
+        return d;
+    };
+    for (const sc of prevNode.scope) {
+        const loc = sc.loc;
+        if (loc.file !== 1) {
+            continue;
+        }
+        if (loc.pos.begin <= pos && pos <= loc.pos.end) {
+            const size = loc.pos.end - loc.pos.begin;
+            if (size < bestSize) {
+                best = sc;
+                bestSize = size;
+                bestDepth = depthOf(sc);
+                continue;
+            }
+            if (size === bestSize) {
+                const d = depthOf(sc);
+                if (d > bestDepth) {
+                    best = sc;
+                    bestDepth = d;
+                }
+            }
+        }
+    }
+    return best;
+};
+
+const pushIdentItem = (id :ast2ts.Ident, into :CompletionItemStub[], seen :Set<string>) => {
+    if (!isDefiningUsage(id.usage)) {
+        return;
+    }
+    const key = `${id.ident}\0${id.usage}`;
+    if (seen.has(key)) {
+        return;
+    }
+    seen.add(key);
+    into.push({
+        label: id.ident,
+        kind: identUsageToCompletionKind(id.usage),
+        detail: identDefineDetail(id),
+    });
+};
+
+// Mirror C++ Scope::lookup_backward: walk prev (parent / earlier sibling) chain.
+const collectVisibleIdents = (start :ast2ts.Scope, into :CompletionItemStub[], seen :Set<string>) => {
+    let sc :ast2ts.Scope|null = start;
+    const visited = new Set<ast2ts.Scope>();
+    while (sc !== null && !visited.has(sc)) {
+        visited.add(sc);
+        for (const id of sc.ident) {
+            pushIdentItem(id, into, seen);
+        }
+        sc = sc.prev;
+    }
+};
+
+// global_scope walk: include all top-level definitions (format/enum/state/fn)
+// regardless of where the cursor sits, since they're file-global.
+const collectGlobalDefinitions = (globalScope :ast2ts.Scope|null, into :CompletionItemStub[], seen :Set<string>) => {
+    let sc :ast2ts.Scope|null = globalScope;
+    while (sc !== null) {
+        for (const id of sc.ident) {
+            pushIdentItem(id, into, seen);
+        }
+        sc = sc.next;
+    }
+};
+
+export const analyzeCompletion = (
+    prevNode :ast2ts.ParseResult|null,
+    pos :number,
+    memberOfName? :string,
+) :CompletionItemStub[] => {
+    const items :CompletionItemStub[] = [];
+    if (memberOfName !== undefined && memberOfName !== "" && prevNode !== null) {
+        const target = findIdentByName(prevNode, memberOfName);
+        if (target !== null) {
+            // enum type name (e.g. `Color.`): list declared enum members.
+            // The value-side path (variable of enum type) is handled via
+            // collectMembersFromType's EnumType branch (.is_defined).
+            if (target.usage === ast2ts.IdentUsage.define_enum && ast2ts.isEnum(target.base)) {
+                for (const em of target.base.members) {
+                    if (em.ident !== null) {
+                        items.push({
+                            label: em.ident.ident,
+                            kind: CompletionItemKindStub.EnumMember,
+                            detail: identDefineDetail(em.ident),
+                        });
+                    }
+                }
+                return items;
+            }
+            collectMembersFromType(target.expr_type, items);
+        }
+        return items;
+    }
+
+    for (const kw of BGN_KEYWORDS) {
+        items.push({ label: kw, kind: CompletionItemKindStub.Keyword });
+    }
+    for (const t of BGN_BUILTIN_FIXED_TYPES) {
+        items.push({ label: t, kind: CompletionItemKindStub.Struct, detail: "builtin type" });
+    }
+    const widthHint = "common width (any uN/iN allowed)";
+    for (const n of BGN_INT_COMMON_WIDTHS) {
+        items.push({ label: `u${n}`, kind: CompletionItemKindStub.Struct, detail: widthHint });
+        items.push({ label: `i${n}`, kind: CompletionItemKindStub.Struct, detail: widthHint });
+    }
+    const floatHint = "common width (any fN allowed)";
+    for (const n of BGN_FLOAT_COMMON_WIDTHS) {
+        items.push({ label: `f${n}`, kind: CompletionItemKindStub.Struct, detail: floatHint });
+    }
+
+    if (prevNode === null) {
+        return items;
+    }
+
+    const seen = new Set<string>();
+    const enclosing = findEnclosingScope(prevNode, pos);
+    if (enclosing !== null) {
+        collectVisibleIdents(enclosing, items, seen);
+    }
+    // Always include top-level format/enum/state/fn idents.
+    collectGlobalDefinitions(prevNode.root.global_scope, items, seen);
+    return items;
+};
+
 export const analyzeSymbols = (scope :ast2ts.Scope,depth :number = 0) :DocumentSymbolStub[] => {
     var symbols :DocumentSymbolStub[] = [];
     let preSym :DocumentSymbolStub | null = null;

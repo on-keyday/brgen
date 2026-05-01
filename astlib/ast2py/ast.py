@@ -729,6 +729,7 @@ class Scope:
     ident: List[Ident]
     owner: Optional[Node]
     branch_root: bool
+    loc: Loc
 
 
 class Pos:
@@ -780,6 +781,7 @@ class RawScope:
     ident: List[int]
     owner: Optional[int]
     branch_root: bool
+    loc: Loc
 
 def parse_RawScope(json: dict) -> RawScope:
     ret = RawScope()
@@ -801,6 +803,7 @@ def parse_RawScope(json: dict) -> RawScope:
     else:
         ret.owner = None
     ret.branch_root = bool(json["branch_root"])
+    ret.loc = parse_Loc(json["loc"])
     return ret
 
 
@@ -2371,6 +2374,7 @@ def ast2node(ast :JsonAst) -> Program:
         if ast.scope[i].owner is not None:
             scope[i].owner = ast.node[ast.scope[i].owner]
         scope[i].branch_root = ast.scope[i].branch_root
+        scope[i].loc = ast.scope[i].loc
     return node[0]
 
 def walk(node: Node, f: Callable[[Callable,Node],None]) -> None:

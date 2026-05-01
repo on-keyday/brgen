@@ -32,6 +32,12 @@ namespace brgen::ast {
             auto br = stack.enter_branch();
             frame = stack.current_scope();
             frame->owner = scope_owner;
+            // initialize extent to owner's head loc; callers may widen begin/end later
+            // (parse_indent_block sets begin to the first body indent and end to the
+            // last body element).
+            if (scope_owner) {
+                frame->loc = scope_owner->loc;
+            }
             return br;
         }
 
@@ -116,6 +122,10 @@ namespace brgen::ast {
             prog->loc = s.loc();
             prog->global_scope = state.reset_stack();
             prog->global_scope->owner = prog;
+            // global_scope spans the whole file; begin = 0, end is updated after
+            // all top-level statements are parsed.
+            prog->global_scope->loc = prog->loc;
+            prog->global_scope->loc.pos.begin = 0;
             prog->struct_type = std::make_shared<StructType>(prog->loc);
             prog->struct_type->base = prog;
             auto st = state.enter_struct(prog->struct_type);
@@ -140,6 +150,9 @@ namespace brgen::ast {
                 prog->elements.push_back(std::move(expr));
                 s.shrink();
                 s.skip_white();
+            }
+            if (!prog->elements.empty()) {
+                prog->global_scope->loc.pos.end = prog->elements.back()->loc.pos.end;
             }
             return prog;
         }
@@ -238,6 +251,21 @@ namespace brgen::ast {
                 }
                 s.must_consume_token(lexer::Tag::indent, "to start a new line in indent block");
                 parse_a_line();
+            }
+
+            // Record the body extent on the scope so language servers can do
+            // position->scope lookups. begin = first body indent, end = last
+            // body element end (or base end for empty bodies — shouldn't happen
+            // since indent blocks require at least one statement, but be safe).
+            block->scope->loc.file = base.loc.file;
+            block->scope->loc.line = base.loc.line;
+            block->scope->loc.col = base.loc.col;
+            block->scope->loc.pos.begin = base.loc.pos.begin;
+            if (!block->elements.empty()) {
+                block->scope->loc.pos.end = block->elements.back()->loc.pos.end;
+            }
+            else {
+                block->scope->loc.pos.end = base.loc.pos.end;
             }
 
             return block;

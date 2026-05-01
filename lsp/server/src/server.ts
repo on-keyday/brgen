@@ -76,7 +76,8 @@ connection.onInitialize((params: InitializeParams) => {
             textDocumentSync: TextDocumentSyncKind.Incremental,
             // Tell the client that this server supports code completion.
             completionProvider: {
-                resolveProvider: true
+                resolveProvider: false,
+                triggerCharacters: ["."],
             },
             semanticTokensProvider: {
                 legend: legend,
@@ -435,8 +436,59 @@ documents.onDidClose(e => {
     documentInfos.delete(e.document.uri);
 });
 
-connection.onCompletion(async (textDocumentPosition) => {
-    return null;
+// Scan back from `pos` over an identifier (alnum / underscore / digit) and
+// return the matched name, or "" if none. Stops at any non-ident byte.
+const extractTrailingIdent = (text :string, pos :number) => {
+    let end = pos;
+    let begin = end;
+    while (begin > 0) {
+        const ch = text.charCodeAt(begin - 1);
+        const isAlpha = (ch >= 0x41 && ch <= 0x5a) || (ch >= 0x61 && ch <= 0x7a);
+        const isDigit = ch >= 0x30 && ch <= 0x39;
+        const isUnder = ch === 0x5f;
+        if (!(isAlpha || isDigit || isUnder)) {
+            break;
+        }
+        begin--;
+    }
+    return text.substring(begin, end);
+};
+
+connection.onCompletion(async (params) => {
+    const doc = documents.get(params?.textDocument?.uri);
+    if (doc === undefined) {
+        return null;
+    }
+    const pos = doc.offsetAt(params.position);
+    const docInfo = await ensureParsed(doc);
+    const text = doc.getText();
+
+    // Detect member access: cursor is right after `.`, possibly mid-typing
+    // a member name. Look back past in-progress identifier chars and check
+    // if the next non-ident char is `.`.
+    let memberOf: string | undefined = undefined;
+    let scan = pos;
+    while (scan > 0) {
+        const ch = text.charCodeAt(scan - 1);
+        const isAlpha = (ch >= 0x41 && ch <= 0x5a) || (ch >= 0x61 && ch <= 0x7a);
+        const isDigit = ch >= 0x30 && ch <= 0x39;
+        const isUnder = ch === 0x5f;
+        if (!(isAlpha || isDigit || isUnder)) {
+            break;
+        }
+        scan--;
+    }
+    if (scan > 0 && text.charCodeAt(scan - 1) === 0x2e /* '.' */) {
+        memberOf = extractTrailingIdent(text, scan - 1);
+    }
+
+    const items = analyze.analyzeCompletion(docInfo.prevNode, pos, memberOf);
+    return items.map((it) => ({
+        label: it.label,
+        kind: it.kind,
+        detail: it.detail,
+        documentation: it.documentation,
+    }));
 });
 
 

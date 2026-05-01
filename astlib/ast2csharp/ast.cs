@@ -860,6 +860,7 @@ public class Scope {
 	public List<Ident>? Ident{get;set;}
 	public Node? Owner{get;set;}
 	public bool BranchRoot{get;set;}
+	public Loc Loc{get;set;}
 }
 public struct Pos {
 	public ulong Begin{get;set;}
@@ -883,6 +884,7 @@ public class RawScope {
 	public List<ulong>? Ident{get;set;}
 	public ulong? Owner{get;set;}
 	public bool BranchRoot{get;set;}
+	public Loc Loc{get;set;}
 }
 public class RawNode {
 	public NodeType NodeType{get;set;}
