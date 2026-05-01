@@ -16,6 +16,9 @@ HERE = pathlib.Path(__file__).parent
 
 
 def main() -> None:
+    # Use precompiled Ruby binaries (ruby-build) instead of compiling CRuby from source.
+    # Compiling from source can take 20+ minutes; the precompiled path is seconds.
+    subprocess.check_call(["mise", "settings", "ruby.compile=false"], cwd=HERE)
     subprocess.check_call(["mise", "install"], cwd=HERE)
 
 
