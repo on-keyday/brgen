@@ -222,5 +222,13 @@
         "source": "$WORK_DIR/src/test/until_eof.bgn",
         "failure_case": false,
         "hex": true
+    },
+    {
+        "name": "wasm_src2json",
+        "binary": "$WORK_DIR/test/binary_data/wasm_src2json.dat",
+        "format_name": "WasmModule",
+        "source": "$WORK_DIR/../example/wasm.bgn",
+        "failure_case": false,
+        "hex": false
     }
 ]

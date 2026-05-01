@@ -1,18 +1,22 @@
 
+# Wasm scalar fields (the version u32 in the preamble) are stored little-endian.
+input.endian = config.endian.little
+
 format Uint32:
     value :u32
     config.cpp.replace("wasm::Varint32")
 
     fn encode():
+        v := value
         for:
-            byte := u8(value & 0x7f)
-            value = value >> 7
-            if value == 0:
+            byte := u8(v & 0x7f)
+            v = v >> 7
+            if v == 0:
                 output.put(byte)
                 break
             else:
                 output.put(byte | 0x80)
-    
+
     fn decode():
         shift := 0
         for:
@@ -23,7 +27,7 @@ format Uint32:
             shift = shift + 7
         return value
 
-    fn u32() -> u32:   
+    fn u32() -> u32:
         return value
 
 format Uint64:
@@ -31,15 +35,16 @@ format Uint64:
     config.cpp.replace("wasm::Varint64")
 
     fn encode():
+        v := value
         for:
-            byte := u8(value & 0x7f)
-            value = value >> 7
-            if value == 0:
+            byte := u8(v & 0x7f)
+            v = v >> 7
+            if v == 0:
                 output.put(byte)
                 break
             else:
                 output.put(byte | 0x80)
-    
+
     fn decode():
         shift := 0
         for:
@@ -50,7 +55,7 @@ format Uint64:
             shift = shift + 7
         return value
 
-    fn u64() -> u64:   
+    fn u64() -> u64:
         return value
 
 enum Type:
@@ -130,7 +135,7 @@ format BlockType:
 
 # --- Module structure (https://webassembly.github.io/spec/core/binary/modules.html) ---
 
-WASM_MAGIC ::= "\x00asm"
+WASM_MAGIC ::= "\x00\x61\x73\x6d"  # NUL "asm" — must be byte-escaped to keep the parser from greedily extending \x00
 
 enum WasmSectionId:
     :u8
@@ -174,7 +179,7 @@ format WasmName:
 
 format WasmModulePreamble:
     # §5.5 Module preamble — 8 bytes
-    magic :"\x00asm"
+    magic :"\x00\x61\x73\x6d"                # NUL "asm" — byte-escaped (see WASM_MAGIC note above)
     version :u32                             # little-endian; currently 1
 
 format WasmSectionHeader:
@@ -215,3 +220,11 @@ format WasmCodeEntry:
     # §5.5.13 code section entry — LEB128 size + function body
     size :Uint32
     body :[size.u32()]u8                     # body = LEB128 locals count + n local decls + expression + 0x0B end
+
+format WasmModule:
+    # §5.5 Module — preamble followed by zero or more sections until EOF.
+    # Each WasmSection captures `[size]u8` content as opaque bytes, so the module
+    # round-trips byte-for-byte regardless of which section ids are present
+    # (custom, type, import, …, tag).
+    preamble :WasmModulePreamble
+    sections :[..]WasmSection
