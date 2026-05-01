@@ -607,23 +607,25 @@ namespace ebmcodegen::util {
     ebmgen::expected<ebm::TypeRef> get_struct_union_member_from_field(auto&& visitor, ebm::StatementRef field_ref) {
         ebmgen::MappingTable& module_ = get_visitor(visitor).module_;
         MAYBE(field_stmt, module_.get_statement(field_ref));
-        MAYBE(field_decl, field_stmt.body.field_decl());
-        MAYBE(parent_struct, module_.get_statement(field_decl.parent_struct));
-        MAYBE(struct_decl, parent_struct.body.struct_decl());
-        MAYBE(rel_var, struct_decl.related_variant());
-        MAYBE(type, module_.get_type(rel_var));
-        if (type.body.kind != ebm::TypeKind::STRUCT_UNION) {
-            return ebmgen::unexpect_error("not STRUCT_UNION variant type");
-        }
-        MAYBE(desc, type.body.struct_union_desc());
-        for (auto& member_type_ref : desc.variant_desc.members.container) {
-            MAYBE(member_type, module_.get_type(member_type_ref));
-            MAYBE(member_stmt_id, member_type.body.id());
-            if (get_id(member_stmt_id) == get_id(field_decl.parent_struct)) {
-                return member_type_ref;
+        if (auto field_decl = field_stmt.body.field_decl()) {
+            MAYBE(parent_struct, module_.get_statement(field_decl->parent_struct));
+            MAYBE(struct_decl, parent_struct.body.struct_decl());
+            MAYBE(rel_var, struct_decl.related_variant());
+            MAYBE(type, module_.get_type(rel_var));
+            if (type.body.kind != ebm::TypeKind::STRUCT_UNION) {
+                return ebmgen::unexpect_error("not STRUCT_UNION variant type");
             }
+            MAYBE(desc, type.body.struct_union_desc());
+            for (auto& member_type_ref : desc.variant_desc.members.container) {
+                MAYBE(member_type, module_.get_type(member_type_ref));
+                MAYBE(member_stmt_id, member_type.body.id());
+                if (get_id(member_stmt_id) == get_id(field_decl->parent_struct)) {
+                    return member_type_ref;
+                }
+            }
+            return ebmgen::unexpect_error("type not found in variant members");
         }
-        return ebmgen::unexpect_error("type not found in variant members");
+        return ebmgen::unexpect_error("not a field declaration");
     }
 
     ebmgen::expected<ebm::StatementRef> parent_struct_to_parent_format(auto&& visitor, ebm::StatementRef struct_ref) {
