@@ -35,5 +35,5 @@ DEFINE_VISITOR(Expression_CONDITIONAL) {
     MAYBE(then_str, ctx.visit(ctx.then));
     MAYBE(else_str, ctx.visit(ctx.else_));
 
-    return CODE("(", cond_str.to_writer(), "?", then_str.to_writer(), ":", else_str.to_writer(), ")");
+    return CODE("(", cond_str.to_writer(), " ? ", then_str.to_writer(), " : ", else_str.to_writer(), ")");
 }

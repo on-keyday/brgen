@@ -8,6 +8,11 @@
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 bool use_brace_for_condition = true;
 bool use_elif = false;
+// Keyword used by chained-elif languages (Python "elif", Ruby "elsif"). Only consulted when use_elif is true.
+std::string elif_keyword = "elif";
+// When use_elif is true, write end_block only once at the close of the chain (Ruby style).
+// When false (Python style), end_block is empty so it doesn't matter.
+bool single_end_for_if_chain = false;
 bool auto_output_root = true;
 bool methods_inner_class = false;
 std::string bool_true = "true";

@@ -47,9 +47,12 @@ DEFINE_VISITOR(Statement_IF_STATEMENT) {
     }
 
     then_scope.execute();
-    w.write(ctx.config().end_block);
+    bool single_end = ctx.config().use_elif && ctx.config().single_end_for_if_chain;
+    if (!single_end) {
+        w.write(ctx.config().end_block);
+    }
     auto els_block = ctx.if_statement.else_block;
-    auto if_word = ctx.config().use_elif ? "elif" : "if";
+    auto if_word = ctx.config().use_elif ? ctx.config().elif_keyword : "if";
     while (!is_nil(els_block)) {
         if (!ctx.config().use_elif) {
             w.write(" else ");
@@ -77,7 +80,9 @@ DEFINE_VISITOR(Statement_IF_STATEMENT) {
                 w.write(then_block.to_writer());
             }
             then_scope.execute();
-            w.write(ctx.config().end_block);
+            if (!single_end) {
+                w.write(ctx.config().end_block);
+            }
             els_block = next_if.else_block;
         }
         else {
@@ -96,9 +101,14 @@ DEFINE_VISITOR(Statement_IF_STATEMENT) {
                 w.write(else_block.to_writer());
             }
             else_scope.execute();
-            w.write(ctx.config().end_block);
+            if (!single_end) {
+                w.write(ctx.config().end_block);
+            }
             els_block = {};
         }
+    }
+    if (single_end) {
+        w.write(ctx.config().end_block);
     }
     w.writeln();
     return w;
