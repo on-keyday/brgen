@@ -1,0 +1,20 @@
+name: Lint GitHub Actions Workflows
+on: [ push, pull_request ]
+
+jobs:
+    sisakulint:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+            - name: Install sisakulint
+              run: |
+                  curl -OL https://github.com/sisaku-security/sisakulint/releases/download/v0.2.11/sisakulint_0.2.11_linux_amd64.tar.gz 
+                  tar -xzf sisakulint_0.2.11_linux_amd64.tar.gz -C /usr/local/bin
+
+            - name: Run sisakulint with reviewdog
+              env:
+                  REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  sisakulint -format "{{sarif .}}" | \
+                  reviewdog -f=sarif -reporter=github-pr-review -filter-mode=nofilter
