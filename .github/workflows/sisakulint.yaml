@@ -11,6 +11,10 @@ jobs:
               run: |
                   curl -OL https://github.com/sisaku-security/sisakulint/releases/download/v0.2.11/sisakulint_0.2.11_linux_amd64.tar.gz 
                   tar -xzf sisakulint_0.2.11_linux_amd64.tar.gz -C /usr/local/bin
+            - name: setup reviewdog
+              uses: reviewdog/action-setup@d8a7baabd7f3e8544ee4dbde3ee41d0011c3a93f
+              with:
+                  reviewdog_version: latest
 
             - name: Run sisakulint with reviewdog
               env:
