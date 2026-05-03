@@ -1,6 +1,10 @@
 name: Lint GitHub Actions Workflows
 on: [ push, pull_request ]
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
     sisakulint:
         runs-on: ubuntu-latest
