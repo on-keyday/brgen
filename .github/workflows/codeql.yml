@@ -13,9 +13,9 @@ name: "CodeQL"
 
 on:
   push:
-    branches: ["main"]
+    branches: [ "main" ]
   pull_request:
-    branches: ["main"]
+    branches: [ "main" ]
   schedule:
     - cron: "21 18 * * 0"
 
@@ -43,7 +43,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: ["c-cpp", "go"]
+        language: [ "c-cpp", "go", "github-actions" ]
         # CodeQL supports [ 'c-cpp', 'csharp', 'go', 'java-kotlin', 'javascript-typescript', 'python', 'ruby', 'swift' ]
         # Use only 'java-kotlin' to analyze code written in Java, Kotlin or both
         # Use only 'javascript-typescript' to analyze code written in JavaScript, TypeScript or both
@@ -75,6 +75,7 @@ jobs:
       #   modify them (or add more) to build your code if your project, please refer to the EXAMPLE below for guidance.
       - name: Set up Ninja
         uses: seanmiddleditch/gha-setup-ninja@7e868db0f3406270dd46e1dac26c65f621456723 # master
+        if: matrix.language != 'c-cpp'
       - name: Set up Clang
         uses: egor-tensin/setup-clang@8092a31dc33b0c41ee7cc5bb81fd0267490a0161 # v2.2
         if: matrix.language == 'c-cpp'
