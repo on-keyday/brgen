@@ -997,6 +997,7 @@ class Scope {
     List<Ident>? ident = [];
     Node? owner;
     bool branchRoot = false;
+    Loc loc = Loc();
 factory Scope.fromJson(Map<String, dynamic> json) => _$ScopeFromJson(json);
 }
 @JsonSerializable()
@@ -1028,6 +1029,7 @@ class RawScope {
     List<int> ident = [];
     int? owner;
     bool branchRoot = false;
+    Loc loc = Loc();
 factory RawScope.fromJson(Map<String, dynamic> json) => _$RawScopeFromJson(json);
 }
 @JsonSerializable()

@@ -4408,6 +4408,7 @@ namespace ebm {
     struct EBM_API PropertyDecl{
         IdentifierRef name;
         WeakStatementRef parent_format;
+        WeakStatementRef parent_struct;
         TypeRef property_type;
         MergeMode merge_mode{};
         ExpressionRef setter_condition;
@@ -4430,6 +4431,7 @@ namespace ebm {
         constexpr void visit(Visitor&& v) {
             v(v, "name",(*this).name);
             v(v, "parent_format",(*this).parent_format);
+            v(v, "parent_struct",(*this).parent_struct);
             v(v, "property_type",(*this).property_type);
             v(v, "merge_mode",(*this).merge_mode);
             v(v, "setter_condition",(*this).setter_condition);
@@ -4443,6 +4445,7 @@ namespace ebm {
         constexpr void visit(Visitor&& v) const {
             v(v, "name",(*this).name);
             v(v, "parent_format",(*this).parent_format);
+            v(v, "parent_struct",(*this).parent_struct);
             v(v, "property_type",(*this).property_type);
             v(v, "merge_mode",(*this).merge_mode);
             v(v, "setter_condition",(*this).setter_condition);
@@ -4461,6 +4464,7 @@ namespace ebm {
         static constexpr void visit_static(Visitor&& v) {
             v(v, "name",visitor_tag<decltype(std::declval<PropertyDecl>().name),false>{});
             v(v, "parent_format",visitor_tag<decltype(std::declval<PropertyDecl>().parent_format),false>{});
+            v(v, "parent_struct",visitor_tag<decltype(std::declval<PropertyDecl>().parent_struct),false>{});
             v(v, "property_type",visitor_tag<decltype(std::declval<PropertyDecl>().property_type),false>{});
             v(v, "merge_mode",visitor_tag<decltype(std::declval<PropertyDecl>().merge_mode),false>{});
             v(v, "setter_condition",visitor_tag<decltype(std::declval<PropertyDecl>().setter_condition),false>{});

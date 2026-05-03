@@ -431,6 +431,7 @@ format CompositeFieldDecl:
 format PropertyDecl:
     name :IdentifierRef # Property name
     parent_format :WeakStatementRef # Reference to parent format (e.g., struct, union)
+    parent_struct :WeakStatementRef # Reference to parent struct (maybe same as parent_format)
     property_type :TypeRef # Type of the property
     merge_mode :MergeMode # How union members are merged (e.g., common type, strict type)
     setter_condition :ExpressionRef # maybe null

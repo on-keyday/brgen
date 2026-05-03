@@ -22516,6 +22516,9 @@ namespace ebm {
         if (auto err = (*this).parent_format.encode(w)) {
             return err;
         }
+        if (auto err = (*this).parent_struct.encode(w)) {
+            return err;
+        }
         if (auto err = (*this).property_type.encode(w)) {
             return err;
         }
@@ -22553,6 +22556,9 @@ namespace ebm {
             return err;
         }
         if (auto err = (*this).parent_format.decode(r)) {
+            return err;
+        }
+        if (auto err = (*this).parent_struct.decode(r)) {
             return err;
         }
         if (auto err = (*this).property_type.decode(r)) {

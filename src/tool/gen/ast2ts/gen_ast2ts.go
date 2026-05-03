@@ -238,6 +238,11 @@ func generate(rw io.Writer, defs *gen.Defs) {
 			w.Printf("			%s: '',\n", field.Name)
 		} else if field.Type.Name == "boolean" {
 			w.Printf("			%s: false,\n", field.Name)
+		} else if field.Type.Name == "Loc" {
+			// Loc is a value type; copy the raw scope's loc as the initial value.
+			// (will be overwritten in the population loop below as well, but this
+			// keeps the object shape consistent.)
+			w.Printf("			%s: {pos: {begin: 0, end: 0}, file: 0, line: 0, col: 0},\n", field.Name)
 		}
 	}
 	w.Printf("		}\n")
@@ -345,6 +350,9 @@ func generate(rw io.Writer, defs *gen.Defs) {
 			w.Printf("		}\n")
 			w.Printf("		cscope.%s = tmp%s;\n", field.Name, field.Name)
 		} else if field.Type.Name == "number" || field.Type.Name == "string" || field.Type.Name == "boolean" {
+			w.Printf("		cscope.%s = os.%s;\n", field.Name, field.Name)
+		} else if field.Type.Name == "Loc" {
+			// Loc was already validated by isRawScope; copy through.
 			w.Printf("		cscope.%s = os.%s;\n", field.Name, field.Name)
 		} else if field.Name == "owner" {
 			w.Printf("		if (os.%s !== null && typeof os.%s !== 'number') {\n", field.Name, field.Name)
