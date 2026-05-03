@@ -15,7 +15,6 @@ jobs:
               uses: reviewdog/action-setup@d8a7baabd7f3e8544ee4dbde3ee41d0011c3a93f
               with:
                   reviewdog_version: latest
-
             - name: Run sisakulint with reviewdog
               env:
                   REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
