@@ -1,19 +1,36 @@
+input.endian = config.endian.little
 
-format WaveHeader:
-    magic :"RIFF"
-    chunkSize :u32
-    magic2 :"WAVE"
-    subChunk1Id :"fmt "
-    subChunk1Size :u32
+format FormatChunk:
+    id :"fmt "
+    size :u32
+    size == 16
     audioFormat :u16
     numChannels :u16
     sampleRate :u32
     byteRate :u32
     blockAlign :u16
     bitsPerSample :u16
-    subChunk2Id :"data"
-    subChunk2Size :u32
+    byteRate == sampleRate * numChannels * bitsPerSample / 8
+    blockAlign == numChannels * bitsPerSample / 8
+
+
+format DataHeader:
+    id :"data"
+    size :u32
+
+format RiffHeader:
+    id :"RIFF"
+    size :u32
+    fileFormat :"WAVE"
+  
+
+
+format WaveHeader:
+    riffHeader :RiffHeader
+    formatChunk :FormatChunk
+    dataHeader :DataHeader
+    u64(riffHeader.size) == sizeof(FormatChunk) + sizeof(DataHeader) + sizeof("WAVE") + dataHeader.size
 
 format Wave:
     header :WaveHeader
-    data :[header.subChunk2Size]u8
+    data :[header.dataHeader.size]u8
