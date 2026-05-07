@@ -218,6 +218,10 @@ namespace ebmgen {
                         merged.push_back({size->size, {{index, *size}}});
                         continue;
                     }
+                    if (*last_size > 64) {
+                        merged.push_back({size->size, {{index, *size}}});
+                        continue;
+                    }
                     if (*last_size % 8 != 0) {
                         last_indexes.push_back({index, *size});
                         *last_size += size->size;

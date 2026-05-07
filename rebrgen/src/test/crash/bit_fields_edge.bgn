@@ -1,0 +1,9 @@
+format TaskID:
+    data :[16]u8 
+
+format OpenInteractiveRequest:
+    task_id :TaskID
+    detachable :u1    # 1 = session new (detach on disconnect),
+                      # 0 = legacy interactive (kill on disconnect)
+    reserved :u7
+
