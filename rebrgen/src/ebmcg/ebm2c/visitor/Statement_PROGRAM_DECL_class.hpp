@@ -19,7 +19,6 @@
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 
-#include <functional>
 #include <unordered_map>
 #include "../codegen.hpp"
 #include "ebm/extended_binary_module.hpp"
@@ -472,35 +471,11 @@ DEFINE_VISITOR_CLASS(Statement_PROGRAM_DECL) {
                 }
                 return {};
             };
-            std::function<expected<void>(Union&)> write_union;
-            std::function<expected<void>(Variant&)> write_variant;
-
-            auto write_referenced_unions_variants = [&](ebm::TypeRef type_ref) -> expected<void> {
-                if (auto found = c_ctx.unions.find(get_id(type_ref)); found != c_ctx.unions.end()) {
-                    MAYBE_VOID(ok, write_union(found->second));
-                }
-                if (auto found = c_ctx.variants.find(get_id(type_ref)); found != c_ctx.variants.end()) {
-                    MAYBE_VOID(ok, write_variant(found->second));
-                }
-                return {};
-            };
-
-            write_union = [&](Union& u) -> expected<void> {
-                if (!c_ctx.written_variants.insert(get_id(u.id)).second) {
-                    return {};
-                }
+            auto write_union = [&](Union& u) -> expected<void> {
                 auto ident = std::format("{}{}", ctx.config().variant_prefix, get_id(u.id));
                 for (auto& v : u.variants) {
                     for (auto& f : v.fields) {
                         MAYBE_VOID(ok, collect_composite_fn(f.id));
-                    }
-                }
-                // Recursively emit any union/variant types referenced by the variant fields,
-                // so that their typedefs precede the variant struct definitions below.
-                for (auto& v : u.variants) {
-                    for (auto& f : v.fields) {
-                        MAYBE(typ, get_field_type(f.id));
-                        MAYBE_VOID(ok, write_referenced_unions_variants(typ.second));
                     }
                 }
                 CodeWriter parent;
@@ -531,10 +506,7 @@ DEFINE_VISITOR_CLASS(Statement_PROGRAM_DECL) {
                 return {};
             };
 
-            write_variant = [&](Variant& v) -> expected<void> {
-                if (!c_ctx.written_variants.insert(get_id(v.id)).second) {
-                    return {};
-                }
+            auto write_variant = [&](Variant& v) -> expected<void> {
                 auto ident = std::format("{}{}", ctx.config().variant_prefix, get_id(v.id));
                 CodeWriter w_var;
                 w_var.writeln("typedef struct {");
