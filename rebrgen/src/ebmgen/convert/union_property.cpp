@@ -444,6 +444,7 @@ namespace ebmgen {
             prop.name = derive.name;
             prop.property_type = *c_type;
             prop.parent_format = derive.parent_format;
+            prop.parent_struct = derive.parent_struct;
             prop.getter_condition = base_cond.getter_cond;
             prop.setter_condition = base_cond.setter_cond;
             prop.merge_mode = ebm::MergeMode::COMMON_TYPE;
@@ -470,6 +471,7 @@ namespace ebmgen {
         prop.name = derive.name;
         prop.property_type = *c_type;
         prop.parent_format = derive.parent_format;
+        prop.parent_struct = derive.parent_struct;
         prop.getter_condition = base_cond.getter_cond;
         prop.setter_condition = base_cond.setter_cond;
         prop.merge_mode = ebm::MergeMode::UNCOMMON_TYPE;
@@ -501,6 +503,7 @@ namespace ebmgen {
             ebm::PropertyDecl prop;
             prop.name = derive.name;
             prop.parent_format = derive.parent_format;
+            prop.parent_struct = derive.parent_struct;
             MAYBE_VOID(s, strict_merge(ctx, prop, base_cond, ty, merged_fields[get_id(ty)]));
             properties.push_back(std::move(prop));
         }

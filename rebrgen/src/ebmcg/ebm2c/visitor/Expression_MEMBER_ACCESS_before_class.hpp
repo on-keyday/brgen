@@ -38,14 +38,11 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
     if (prop) {
         MAYBE(getter_decl, ctx.get_field<"func_decl">(prop->getter_function.id));
         MAYBE(base, ctx.visit(ctx.base));
-        MAYBE(ident, ctx.identifier(ctx.member));
-        if (auto type_ref = get_struct_union_member_from_field(ctx, from_weak(body))) {
-            MAYBE(base, ctx.visit(ctx.base));
-            MAYBE(ident, ctx.identifier(*type_ref));
-            MAYBE(member, ctx.visit(ctx.member));
-            base.to_writer().write(".", ident);
+        if (auto desc = ctx.get_field<"member.body.id.field_decl.field_type.struct_union_desc">(ctx.base)) {
+            base = ctx.config().self_value;
         }
-        auto parent_ident = ctx.identifier(prop->parent_format);
+        MAYBE(ident, ctx.identifier(ctx.member));
+        auto parent_ident = ctx.identifier(prop->parent_struct);
         auto getter_func_name = std::format(
             "{}_get_{}",
             parent_ident,
