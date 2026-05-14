@@ -34,7 +34,7 @@ namespace ebm2c {
 
     struct Union {
         ebm::TypeRef id;
-        std::vector<Struct> variants;
+        std::vector<ebm::TypeRef> variants;
     };
 
     struct Variant {

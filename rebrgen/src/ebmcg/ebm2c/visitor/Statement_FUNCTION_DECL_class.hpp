@@ -81,7 +81,13 @@ DEFINE_VISITOR(Statement_FUNCTION_DECL) {
 
     if (!is_nil(ctx.func_decl.parent_format)) {
         auto ident = ctx.identifier(ctx.func_decl.parent_format);
-        func_prefix = ident + "_";
+        auto func_name_ident = ident;
+        if (auto prop = ctx.func_decl.property()) {
+            if (auto prop_decl = ctx.get_field<"property_decl">(prop->id)) {
+                func_name_ident = ctx.identifier(prop_decl->parent_struct);
+            }
+        }
+        func_prefix = func_name_ident + "_";
         params.write(ident, "* self");
     }
     for (const auto& param_ref : ctx.func_decl.params.container) {
