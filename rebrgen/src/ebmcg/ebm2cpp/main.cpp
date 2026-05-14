@@ -57245,6 +57245,14 @@ namespace ebm2cpp {
                 return unexpect_error(std::move(result_from_type.error()));
             }
         }
+        if (auto ptr = type_ctx.type_cast_desc.cast_call()) {
+            if (!is_nil((*ptr))) {
+                auto result_cast_call = visit_Object<Result>(std::forward<UserContext>(ctx),(*ptr));
+                if (!result_cast_call) {
+                    return unexpect_error(std::move(result_cast_call.error()));
+                }
+            }
+        }
         return {};
     }
     template<typename Result,typename Context>

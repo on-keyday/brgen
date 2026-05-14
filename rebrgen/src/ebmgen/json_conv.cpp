@@ -3275,12 +3275,12 @@ namespace ebm {
         else {
             return false;
         }
-        if (auto got = j.at("cast_function")) {
-            WeakStatementRef tmp;
+        if (auto got = j.at("cast_call")) {
+            ExpressionRef tmp;
             if(!futils::json::convert_from_json(*got, tmp)) {
                 return false;
             }
-            if(!obj.cast_function(std::move(tmp))) {
+            if(!obj.cast_call(std::move(tmp))) {
                 return false;
             }
         }

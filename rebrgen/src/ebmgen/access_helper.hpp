@@ -3582,7 +3582,7 @@ namespace ebmcodegen {
                 return ref;
             }
             else if constexpr (FieldIndex == 230) {
-                return in.cast_function();
+                return in.cast_call();
             }
         }
         else if constexpr (std::is_same_v<T,ebm::TypeCastDesc*> || std::is_same_v<T,const ebm::TypeCastDesc*>) {
@@ -3607,9 +3607,9 @@ namespace ebmcodegen {
             }
             else if constexpr (FieldIndex == 230) {
                 if (!in) {
-                    return decltype(in->cast_function())();
+                    return decltype(in->cast_call())();
                 }
-                return in->cast_function();
+                return in->cast_call();
             }
         }
         else if constexpr (std::is_same_v<T, ebm::Types>) {
@@ -5494,7 +5494,7 @@ namespace ebmcodegen {
         if (field_name == "cast_kind") {
             return 229;
         }
-        if (field_name == "cast_function") {
+        if (field_name == "cast_call") {
             return 230;
         }
         if (std::is_constant_evaluated()) {
@@ -7785,7 +7785,7 @@ namespace ebmcodegen {
         if (name == "callee") {
             return 7;
         }
-        if (name == "cast_function") {
+        if (name == "cast_call") {
             return 230;
         }
         if (name == "cast_kind") {
@@ -8456,7 +8456,7 @@ namespace ebmcodegen {
         case 173: return "break_";
         case 36: return "call_desc";
         case 7: return "callee";
-        case 230: return "cast_function";
+        case 230: return "cast_call";
         case 229: return "cast_kind";
         case 125: return "cast_type";
         case 37: return "char_value";
@@ -10379,8 +10379,8 @@ namespace ebmcodegen {
             if (field_index == get_field_index<60>("cast_kind")) {
                 return {.index = 77, .is_array = false, .is_ptr = false};
             }
-            if (field_index == get_field_index<60>("cast_function")) {
-                return {.index = 64, .is_array = false, .is_ptr = true};
+            if (field_index == get_field_index<60>("cast_call")) {
+                return {.index = 67, .is_array = false, .is_ptr = true};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }

@@ -2898,13 +2898,13 @@ namespace ebm::zc {
         TypeRef from_type;
         CastType cast_kind{};
         struct EBM_API union_struct_23{
-            WeakStatementRef cast_function;
+            ExpressionRef cast_call;
         };
         std::variant<std::monostate, union_struct_23> union_variant_22;
-        const WeakStatementRef* cast_function() const;
-        WeakStatementRef* cast_function();
-        bool cast_function(WeakStatementRef&& v);
-        bool cast_function(const WeakStatementRef& v);
+        const ExpressionRef* cast_call() const;
+        ExpressionRef* cast_call();
+        bool cast_call(ExpressionRef&& v);
+        bool cast_call(const ExpressionRef& v);
         ::futils::error::Error<> encode(::futils::binary::writer& w) const ;
         ::futils::error::Error<> decode(::futils::binary::reader& r);
         constexpr static const char* visitor_name = "TypeCastDesc";
@@ -2913,14 +2913,14 @@ namespace ebm::zc {
             v(v, "source_expr",(*this).source_expr);
             v(v, "from_type",(*this).from_type);
             v(v, "cast_kind",(*this).cast_kind);
-            v(v, "cast_function",(*this).cast_function());
+            v(v, "cast_call",(*this).cast_call());
         }
         template<typename Visitor>
         constexpr void visit(Visitor&& v) const {
             v(v, "source_expr",(*this).source_expr);
             v(v, "from_type",(*this).from_type);
             v(v, "cast_kind",(*this).cast_kind);
-            v(v, "cast_function",(*this).cast_function());
+            v(v, "cast_call",(*this).cast_call());
         }
         template<typename T,bool rvalue = false>
         struct visitor_tag {
@@ -2932,7 +2932,7 @@ namespace ebm::zc {
             v(v, "source_expr",visitor_tag<decltype(std::declval<TypeCastDesc>().source_expr),false>{});
             v(v, "from_type",visitor_tag<decltype(std::declval<TypeCastDesc>().from_type),false>{});
             v(v, "cast_kind",visitor_tag<decltype(std::declval<TypeCastDesc>().cast_kind),false>{});
-            v(v, "cast_function",visitor_tag<decltype(std::declval<TypeCastDesc>().cast_function()),false>{});
+            v(v, "cast_call",visitor_tag<decltype(std::declval<TypeCastDesc>().cast_call()),false>{});
         }
     };
     struct EBM_API Size{
