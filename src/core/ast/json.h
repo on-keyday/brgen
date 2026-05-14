@@ -222,6 +222,7 @@ namespace brgen::ast {
                             field("prev", val);
                         });
                         field("branch_root", scope->branch_root);
+                        field("loc", scope->loc);
                     });
                 }
             };
@@ -608,6 +609,10 @@ namespace brgen::ast {
                         return unexpect(error({}, "index out of range"));
                     }
                     scopes[i]->owner = nodes[*index];
+                }
+                // optional: tolerate older JSON without "loc"
+                if (auto loc_js = json_at(val, "loc"); loc_js) {
+                    parse_loc(scopes[i]->loc)(*loc_js);
                 }
             }
             return {};

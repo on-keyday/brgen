@@ -3693,6 +3693,7 @@ type Scope struct {
 	Ident      []*Ident
 	Owner      Node
 	BranchRoot bool
+	Loc        Loc
 }
 
 type Pos struct {
@@ -3720,6 +3721,7 @@ type RawScope struct {
 	Ident      []uintptr `json:"ident"`
 	Owner      *uintptr  `json:"owner"`
 	BranchRoot bool      `json:"branch_root"`
+	Loc        Loc       `json:"loc"`
 }
 
 type RawNode struct {
@@ -5599,6 +5601,7 @@ func ParseAST(aux *JsonAst) (prog *Program, err error) {
 			n.scope[i].Owner = n.node[*raw.Owner].(Node)
 		}
 		n.scope[i].BranchRoot = raw.BranchRoot
+		n.scope[i].Loc = raw.Loc
 	}
 	return n.node[0].(*Program), nil
 }

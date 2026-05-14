@@ -104,34 +104,34 @@ namespace ebm {
         }
         return false;
     }
-    const WeakStatementRef* TypeCastDesc::cast_function() const {
+    const ExpressionRef* TypeCastDesc::cast_call() const {
         if (((*this).cast_kind == CastType::FUNCTION_CAST)==true) {
         if(!std::holds_alternative<union_struct_23>(union_variant_22)) {
             return nullptr;
         }
-        return std::addressof(std::get<1>((*this).union_variant_22).cast_function);
+        return std::addressof(std::get<1>((*this).union_variant_22).cast_call);
         }
         return nullptr;
     }
-    WeakStatementRef* TypeCastDesc::cast_function() {
-        return const_cast<WeakStatementRef*>(std::as_const(*this).cast_function());
+    ExpressionRef* TypeCastDesc::cast_call() {
+        return const_cast<ExpressionRef*>(std::as_const(*this).cast_call());
     }
-    bool TypeCastDesc::cast_function(const WeakStatementRef& v) {
+    bool TypeCastDesc::cast_call(const ExpressionRef& v) {
         if (((*this).cast_kind == CastType::FUNCTION_CAST)==true) {
             if(!std::holds_alternative<union_struct_23>(union_variant_22)) {
                 union_variant_22 = union_struct_23();
             }
-            std::get<1>((*this).union_variant_22).cast_function = v;
+            std::get<1>((*this).union_variant_22).cast_call = v;
             return true;
         }
         return false;
     }
-    bool TypeCastDesc::cast_function(WeakStatementRef&& v) {
+    bool TypeCastDesc::cast_call(ExpressionRef&& v) {
         if (((*this).cast_kind == CastType::FUNCTION_CAST)==true) {
             if(!std::holds_alternative<union_struct_23>(union_variant_22)) {
                 union_variant_22 = union_struct_23();
             }
-            std::get<1>((*this).union_variant_22).cast_function = std::move(v);
+            std::get<1>((*this).union_variant_22).cast_call = std::move(v);
             return true;
         }
         return false;
@@ -20653,7 +20653,7 @@ namespace ebm {
             if(!std::holds_alternative<union_struct_23>(union_variant_22)) {
                 return ::futils::error::Error<>("encode: TypeCastDesc: union_variant_22 variant alternative union_struct_23 is not set",::futils::error::Category::lib);
             }
-            if (auto err = std::get<1>((*this).union_variant_22).cast_function.encode(w)) {
+            if (auto err = std::get<1>((*this).union_variant_22).cast_call.encode(w)) {
                 return err;
             }
         }
@@ -20675,7 +20675,7 @@ namespace ebm {
             if(!std::holds_alternative<union_struct_23>(union_variant_22)) {
                 union_variant_22 = union_struct_23();
             }
-            if (auto err = std::get<1>((*this).union_variant_22).cast_function.decode(r)) {
+            if (auto err = std::get<1>((*this).union_variant_22).cast_call.decode(r)) {
                 return err;
             }
         }
@@ -22516,6 +22516,9 @@ namespace ebm {
         if (auto err = (*this).parent_format.encode(w)) {
             return err;
         }
+        if (auto err = (*this).parent_struct.encode(w)) {
+            return err;
+        }
         if (auto err = (*this).property_type.encode(w)) {
             return err;
         }
@@ -22553,6 +22556,9 @@ namespace ebm {
             return err;
         }
         if (auto err = (*this).parent_format.decode(r)) {
+            return err;
+        }
+        if (auto err = (*this).parent_struct.decode(r)) {
             return err;
         }
         if (auto err = (*this).property_type.decode(r)) {

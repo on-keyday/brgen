@@ -9507,6 +9507,7 @@ pub struct Scope {
 	pub ident: Vec<Weak<RefCell<Ident>>>,
 	pub owner: Option<NodeWeak>,
 	pub branch_root: bool,
+	pub loc: Loc,
 }
 
 #[derive(Debug,Clone,Copy,Serialize,Deserialize)]
@@ -9538,6 +9539,7 @@ pub struct RawScope {
 	pub ident: Vec<usize>,
 	pub owner: Option<usize>,
 	pub branch_root: bool,
+	pub loc: Loc,
 }
 
 #[derive(Debug,Clone,Serialize,Deserialize)]
@@ -10325,6 +10327,7 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 			ident: Vec::new(),
 			owner: None,
 			branch_root: false,
+			loc: Loc{ pos: Pos{ begin: 0, end: 0 }, file: 0, line: 0, col: 0 },
 		}));
 		scopes.push(scope);
 	}
@@ -15900,6 +15903,8 @@ pub fn parse_ast(ast:JsonAst)->Result<Rc<RefCell<Program>> ,Error>{
 			};
 			scope.borrow_mut().ident.push(Rc::downgrade(ident));
 		}
+		scope.borrow_mut().branch_root = raw_scope.branch_root;
+		scope.borrow_mut().loc = raw_scope.loc;
 	}
 
 	match nodes.get(0){

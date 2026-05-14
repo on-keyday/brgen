@@ -578,6 +578,13 @@ namespace ebmgen {
                     ctx.state().set_struct_variant_for_id(name_ref, related_variant);
                 }
                 MAYBE(struct_decl, ctx.get_statement_converter().convert_struct_decl({}, node, related_variant));
+                if (auto props = struct_decl.properties()) {
+                    for (auto& prop_ref : props->container) {
+                        MAYBE(prop_stmt, ctx.repository().get_statement(prop_ref));
+                        MAYBE(prop_decl, prop_stmt.body.property_decl());
+                        prop_decl.parent_struct = to_weak(name_ref);
+                    }
+                }
                 stmt.struct_decl(std::move(struct_decl));
                 EBMA_ADD_STATEMENT(_, name_ref, std::move(stmt));
                 return name_ref;
