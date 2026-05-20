@@ -99,6 +99,15 @@ format SegmentRouting:
     remaining_in_byte ::= u64(header.hdrExtLen)*8 - sizeof(<[16]u8>) * (u64(common_hdr.lastEntry) + 1)
     options :[..]SegmentRoutingTLV(input = input.subrange(remaining_in_byte))
 
+    #fn set_srv6_segments(next_proto :ProtocolNumber, segments :[][16]u8):
+    #    header.nextHeader = next_proto
+    #    common_hdr.routingType = RoutingType.srv6
+    #    segments.length >= 1 && segments.length <= 127
+    #    header.hdrExtLen = u8(segments.length) * 2
+    #    common_hdr.segmentsLeft = u8(segments.length - 1)
+    #    common_hdr.lastEntry = common_hdr.segmentsLeft
+    #    segment_list = segments
+
 format SegmentRoutingTLV:
     type :u8
     if type !=0:
