@@ -1,11 +1,17 @@
 /*license*/
 
 #include "ebm/extended_binary_module.hpp"
+#include "ebmgen/access.hpp"
 #include "ebmgen/converter.hpp"
+#include "../convert/helper.hpp"
+
 namespace ebmgen {
     expected<void> add_cast_func(TransformContext& tctx) {
         auto& ctx = tctx.context();
-        for (auto& c : tctx.expression_repository().get_all()) {
+        auto& exprs = tctx.expression_repository().get_all();
+        size_t max_size = exprs.size();
+        for (size_t i = 0; i < max_size; i++) {
+            auto& c = exprs[i];
             if (auto cast = c.body.type_cast_desc()) {
                 if (cast->cast_kind != ebm::CastType::FUNCTION_CAST) {
                     continue;
@@ -55,7 +61,27 @@ namespace ebmgen {
                 if (is_nil(candidate)) {
                     return unexpect_error("no suitable cast function found in add_cast_func for type '{}'", to_string(from_type.body.kind));
                 }
-                cast->cast_function(candidate);
+
+                MAYBE(func, access_field<"func_decl">(ctx.repository(), candidate));
+                ebm::FuncTypeDesc fn_type;
+                fn_type.return_type = func.return_type;
+                for (auto& arg : func.params.container) {
+                    MAYBE(param, access_field<"param_decl">(ctx.repository(), arg));
+                    append(fn_type.params, param.param_type);
+                }
+                fn_type.annotation(ebm::FuncTypeAnnotation::METHOD);
+                ebm::TypeBody fn_type_body{.kind = ebm::TypeKind::FUNCTION};
+                fn_type_body.func_desc(std::move(fn_type));
+                EBMA_ADD_TYPE(fn_type_ref, std::move(fn_type_body));
+
+                // BE CAREFUL, from here we modify exprs
+                auto cast_copy = *cast;
+                EBM_IDENTIFIER(ident, candidate.id, fn_type_ref);
+                EBM_MEMBER_ACCESS(member, fn_type_ref, cast_copy.source_expr, ident);
+                ebm::CallDesc call;
+                call.callee = member;
+                EBM_CALL(method_call, fn_type.return_type, std::move(call));
+                exprs[i].body.type_cast_desc()->cast_call(ebm::LoweredExpressionRef{method_call});
             }
         }
         return {};

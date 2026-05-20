@@ -557,7 +557,7 @@ namespace ebmgen {
         type_cast.cast_kind = cast_kind;
         if (cast_kind == ebm::CastType::FUNCTION_CAST) {
             // find cast function
-            type_cast.cast_function({});  // at post transform phase, fill this field
+            type_cast.cast_call({});  // at post transform phase, fill this field
         }
         body.type_cast_desc(type_cast);
         return {};

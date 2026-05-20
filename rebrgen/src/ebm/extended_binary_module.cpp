@@ -104,7 +104,7 @@ namespace ebm {
         }
         return false;
     }
-    const ExpressionRef* TypeCastDesc::cast_call() const {
+    const LoweredExpressionRef* TypeCastDesc::cast_call() const {
         if (((*this).cast_kind == CastType::FUNCTION_CAST)==true) {
         if(!std::holds_alternative<union_struct_23>(union_variant_22)) {
             return nullptr;
@@ -113,10 +113,10 @@ namespace ebm {
         }
         return nullptr;
     }
-    ExpressionRef* TypeCastDesc::cast_call() {
-        return const_cast<ExpressionRef*>(std::as_const(*this).cast_call());
+    LoweredExpressionRef* TypeCastDesc::cast_call() {
+        return const_cast<LoweredExpressionRef*>(std::as_const(*this).cast_call());
     }
-    bool TypeCastDesc::cast_call(const ExpressionRef& v) {
+    bool TypeCastDesc::cast_call(const LoweredExpressionRef& v) {
         if (((*this).cast_kind == CastType::FUNCTION_CAST)==true) {
             if(!std::holds_alternative<union_struct_23>(union_variant_22)) {
                 union_variant_22 = union_struct_23();
@@ -126,7 +126,7 @@ namespace ebm {
         }
         return false;
     }
-    bool TypeCastDesc::cast_call(ExpressionRef&& v) {
+    bool TypeCastDesc::cast_call(LoweredExpressionRef&& v) {
         if (((*this).cast_kind == CastType::FUNCTION_CAST)==true) {
             if(!std::holds_alternative<union_struct_23>(union_variant_22)) {
                 union_variant_22 = union_struct_23();

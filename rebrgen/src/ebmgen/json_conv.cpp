@@ -3276,7 +3276,7 @@ namespace ebm {
             return false;
         }
         if (auto got = j.at("cast_call")) {
-            ExpressionRef tmp;
+            LoweredExpressionRef tmp;
             if(!futils::json::convert_from_json(*got, tmp)) {
                 return false;
             }

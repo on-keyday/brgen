@@ -2898,13 +2898,13 @@ namespace ebm::zc {
         TypeRef from_type;
         CastType cast_kind{};
         struct EBM_API union_struct_23{
-            ExpressionRef cast_call;
+            LoweredExpressionRef cast_call;
         };
         std::variant<std::monostate, union_struct_23> union_variant_22;
-        const ExpressionRef* cast_call() const;
-        ExpressionRef* cast_call();
-        bool cast_call(ExpressionRef&& v);
-        bool cast_call(const ExpressionRef& v);
+        const LoweredExpressionRef* cast_call() const;
+        LoweredExpressionRef* cast_call();
+        bool cast_call(LoweredExpressionRef&& v);
+        bool cast_call(const LoweredExpressionRef& v);
         ::futils::error::Error<> encode(::futils::binary::writer& w) const ;
         ::futils::error::Error<> decode(::futils::binary::reader& r);
         constexpr static const char* visitor_name = "TypeCastDesc";

@@ -18,7 +18,7 @@
         source_expr: ExpressionRef
         from_type: TypeRef
         cast_kind: CastType
-        cast_call: *ExpressionRef
+        cast_call: *LoweredExpressionRef
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 #include "../codegen.hpp"

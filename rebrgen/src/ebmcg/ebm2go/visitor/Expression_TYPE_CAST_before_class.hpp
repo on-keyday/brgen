@@ -18,7 +18,7 @@
         source_expr: ExpressionRef
         from_type: TypeRef
         cast_kind: CastType
-        cast_call: *ExpressionRef
+        cast_call: *LoweredExpressionRef
       main_logic: ebmcodegen::util::MainLogicWrapper<Result>
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/

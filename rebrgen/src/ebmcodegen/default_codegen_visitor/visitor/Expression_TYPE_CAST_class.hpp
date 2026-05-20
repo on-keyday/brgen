@@ -18,7 +18,7 @@
         source_expr: ExpressionRef
         from_type: TypeRef
         cast_kind: CastType
-        cast_call: *ExpressionRef
+        cast_call: *LoweredExpressionRef
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 #include "../codegen.hpp"
@@ -30,6 +30,11 @@ DEFINE_VISITOR(Expression_TYPE_CAST) {
     }
 
     CodeWriter w;
+
+    if (auto lw = ctx.type_cast_desc.cast_call()) {
+        MAYBE(cast_call, ctx.visit(lw->id));
+        return cast_call;
+    }
 
     MAYBE(source_expr_str, ctx.visit(ctx.type_cast_desc.source_expr));
     MAYBE(target_type_str, ctx.visit(ctx.type));

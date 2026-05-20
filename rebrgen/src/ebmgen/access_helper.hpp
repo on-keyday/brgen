@@ -10380,7 +10380,7 @@ namespace ebmcodegen {
                 return {.index = 77, .is_array = false, .is_ptr = false};
             }
             if (field_index == get_field_index<60>("cast_call")) {
-                return {.index = 67, .is_array = false, .is_ptr = true};
+                return {.index = 33, .is_array = false, .is_ptr = true};
             }
             return {.index = static_cast<size_t>(-1), .is_array = false, .is_ptr = false};
         }
