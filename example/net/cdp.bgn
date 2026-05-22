@@ -1,0 +1,75 @@
+# source: Cisco Systems Co., Ltd. Cisco Discovery Protocol Configuration Guide, widely-accepted Wireshark dissector interpretation (fetched 2026-05-22)
+# scope: CDPdu TLV framing + TLV Type enumeration + fundamental TLV payloads (Device ID / Addresses / Port ID / Capabilities)
+# out-of-scope: LLC/SNAP encapsulation details (Destination MAC 01:00:0C:CC:CC:CC, LLC DSAP/SSAP 0xAA, Control 0x03, OUI 0x00000C, PID 0x2000)
+# note: TLV header packs a discrete 16-bit Type and 16-bit Length. 
+#       Crucial structural variance from LLDP: CDP Length includes the 4-byte TLV header itself (Length = 4 + Value length).
+config.url = "https://www.cisco.com/"
+
+enum CdpTlvType:
+    :u16
+    device_id = 1                 # mandatory string (Hostname)
+    addresses = 2                 # mandatory network addresses list
+    port_id = 3                   # mandatory string (Interface Name)
+    capabilities = 4              # mandatory 32-bit capabilities bitmap
+    software_version = 5          # long description string
+    platform = 6                  # hardware model string
+    native_vlan = 10              # 16-bit VLAN ID
+    duplex = 11                   # 8-bit duplex status
+
+enum AddressProtocolType:
+    :u8
+    nlpid = 1                     # Network Layer Protocol ID format
+    ieee_802_2 = 2                # IEEE 802.2 LLC format
+
+format CdpHeader:
+    version :u8                   # 1 = CDPv1, 2 = CDPv2
+    ttl_seconds :u8               # Time-To-Live
+    checksum :u16                 # Standard Internet Checksum over CDP packet
+
+format CdpTlvHeader:
+    # 32-bit discrete fields (Big-Endian)
+    type :CdpTlvType
+    length :u16                   # Total length = 4 + len(value)
+
+format DeviceIdTlvValue:
+    # Type=1: Device ID string
+    device_id :[..]u8             # ASCII encoded string without null terminator
+
+format AddressRecord:
+    # Nested structure inside Address TLV Value
+    protocol_type :AddressProtocolType
+    protocol_length :u8           # Length of the protocol identifier field
+    protocol :[protocol_length]u8 # e.g., 0xCC for IPv4 (NLPID format)
+    address_length :u16           # Length of the address field (e.g., 4 for IPv4)
+    address :[address_length]u8   # Binary encoded network address
+
+format AddressesTlvValue:
+    # Type=2: Multiple management addresses
+    number_of_addresses :u32      # Total count of trailing address records
+    address_records :[..]AddressRecord
+
+format PortIdTlvValue:
+    # Type=3: Outbound port string
+    port_id :[..]u8
+
+format CapabilitiesTlvValue:
+    # Type=4: 32-bit capabilities bitmap
+    # bits: 0=Router, 1=Transparent Bridge, 2=Source Route Bridge, 3=L2 Switch,
+    #       4=Host/IGMP, 5=Repeater, 6=VoIP Phone/L3-Three-Systems
+    capabilities :u32
+
+format CdpTlv:
+    header :CdpTlvHeader
+    header.length >= 4                    # Safety validation: Length must cover the 4-byte header itself
+    
+    match header.type:
+        CdpTlvType.device_id => device_id :DeviceIdTlvValue(input=input.subrange(header.length - 4))
+        CdpTlvType.addresses => addresses :AddressesTlvValue(input=input.subrange(header.length - 4))
+        CdpTlvType.port_id   => port_id   :PortIdTlvValue(input=input.subrange(header.length - 4))
+        CdpTlvType.capabilities => capabilities :CapabilitiesTlvValue(input=input.subrange(header.length - 4))
+        # Optional fields default to generic byte array if not explicitly matching sub-structures
+        .. => unknown_value :[header.length - 4]u8
+
+format Cdpdu:
+    header :CdpHeader
+    tlvs :[..]CdpTlv

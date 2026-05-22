@@ -11,7 +11,7 @@ format LLCHeader:
   control :u8 
 
 format SNAPHeader:
-  out :[3]u8 
+  oui :[3]u8 
   snap_ether_type :u16 
 
 format LLCSnapHeader:
