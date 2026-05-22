@@ -51,6 +51,7 @@ enum ProtocolNumber:
     XNS_IDP = 22
     TRUNK_1 = 23
     TRUNK_2 = 24
+    IPV6 = 41
     RoutingHeader = 43
     ESP = 50
     AH = 51
