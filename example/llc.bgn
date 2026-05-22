@@ -1,7 +1,13 @@
 
+enum ServiceAccessPoint:
+    :u8 
+    stp = 0x42
+    snap = 0xaa
+
+
 format LLCHeader:
-  dsap :u8 
-  ssap :u8 
+  dsap :ServiceAccessPoint 
+  ssap :ServiceAccessPoint
   control :u8 
 
 format SNAPHeader:
