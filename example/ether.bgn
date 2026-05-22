@@ -10,6 +10,7 @@ enum EtherType:
     service_vlen = 0x88A8
     pppoe_discovery = 0x8863
     pppoe_session = 0x8864
+    lldp = 0x88cc
 
 format OUI:
     high: u6
