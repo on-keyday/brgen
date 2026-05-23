@@ -188,7 +188,39 @@ namespace ebmgen {
                 return ebm::CastType::INT_TO_USIZE;
             }
         }
-        // TODO: Add more complex type conversions (ARRAY, VECTOR, STRUCT, RECURSIVE_STRUCT)
+        // STRUCT → int-like: defer to a same-format converter method (e.g. Uint32::u32()).
+        // The actual call expression is filled in by the add_cast_func transform.
+        if ((dest->body.kind == ebm::TypeKind::INT ||
+             dest->body.kind == ebm::TypeKind::UINT ||
+             dest->body.kind == ebm::TypeKind::USIZE) &&
+            src->body.kind == ebm::TypeKind::STRUCT) {
+            if (auto src_id = src->body.id()) {
+                if (auto stmt = ctx.repository().get_statement(src_id->id)) {
+                    if (auto struct_decl = stmt->body.struct_decl()) {
+                        if (auto methods = struct_decl->methods()) {
+                            for (auto& m : methods->container) {
+                                auto decl = ctx.repository().get_statement(m);
+                                if (!decl) continue;
+                                auto func_decl = decl->body.func_decl();
+                                if (!func_decl) continue;
+                                if (func_decl->kind != ebm::FunctionKind::CAST) continue;
+                                if (get_id(func_decl->return_type) == get_id(dest_ref)) {
+                                    return ebm::CastType::FUNCTION_CAST;
+                                }
+                                if (auto ret_type = ctx.repository().get_type(func_decl->return_type)) {
+                                    if (ret_type->body.kind == ebm::TypeKind::INT ||
+                                        ret_type->body.kind == ebm::TypeKind::UINT ||
+                                        ret_type->body.kind == ebm::TypeKind::USIZE) {
+                                        return ebm::CastType::FUNCTION_CAST;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // TODO: Add more complex type conversions (ARRAY, VECTOR, RECURSIVE_STRUCT)
 
         return ebm::CastType::OTHER;
     }

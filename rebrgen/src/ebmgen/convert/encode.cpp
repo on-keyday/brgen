@@ -233,7 +233,15 @@ namespace ebmgen {
                 }
             }
             else {
-                EBMA_CONVERT_EXPRESSION(len_init, aty->length);
+                EBMA_CONVERT_EXPRESSION(len_init_raw, aty->length);
+                auto len_body = ctx.repository().get_expression(len_init_raw);
+                if (!len_body) {
+                    return unexpect_error("Array length expression is not found");
+                }
+                // Cast to counter type (USIZE) so LENGTH_CHECK, loop bound, and
+                // size storage all operate on an integer. Mirrors decode.cpp.
+                EBMU_COUNTER_TYPE(counter_type);
+                EBM_CAST(len_init, counter_type, len_body->body.type, len_init_raw);
                 auto expr_type = aty->length->expr_type;
                 if (auto u = ast::as<ast::UnionType>(expr_type)) {
                     if (!u->common_type) {
