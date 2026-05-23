@@ -33,7 +33,22 @@ DEFINE_VISITOR(Expression_TYPE_CAST) {
 
     if (auto lw = ctx.type_cast_desc.cast_call()) {
         MAYBE(cast_call, ctx.visit(lw->id));
-        return cast_call;
+        // FUNCTION_CAST returns whatever the underlying method returns
+        // (e.g. Uint32.u32() returns u32). If that already matches the
+        // destination type, emit directly; otherwise wrap in an outer
+        // target_type cast so strict-typed backends see matching types.
+        MAYBE(call_expr, ctx.get(lw->id));
+        if (get_id(call_expr.body.type) == get_id(ctx.type)) {
+            return cast_call;
+        }
+        MAYBE(target_type_str, ctx.visit(ctx.type));
+        if (ctx.config().func_style_cast) {
+            w.write(target_type_str.to_writer(), "(", cast_call.to_writer(), ")");
+        }
+        else {
+            w.write("(", target_type_str.to_writer(), ")", cast_call.to_writer());
+        }
+        return w;
     }
 
     MAYBE(source_expr_str, ctx.visit(ctx.type_cast_desc.source_expr));
