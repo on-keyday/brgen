@@ -42,6 +42,17 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
         if (ctx.config().bool_mapped_func.contains(get_id(prop->getter_function.id))) {
             ident[0] = std::tolower(ident[0]);
         }
+        // Match the parent_struct-prefix rule used by Statement_FUNCTION_DECL:
+        // accessors of inner-anon-struct properties are emitted on the outer
+        // format with a tmpNNN prefix (e.g. tmp318Max). Call sites must use
+        // the same prefixed name AND call on the outer receiver directly,
+        // not chained through the inner struct (which doesn't carry the
+        // prefixed method on Go's method set).
+        if (get_id(prop->parent_struct) != get_id(prop->parent_format)) {
+            auto inner_name = ctx.identifier(prop->parent_struct);
+            ident = std::string(inner_name) + ident;
+            base = CODE(ctx.config().self_value);
+        }
         if (prop->merge_mode != ebm::MergeMode::STRICT_TYPE) {
             return CODE(base.to_writer(), ".", ident, "(", args, ")");
         }
