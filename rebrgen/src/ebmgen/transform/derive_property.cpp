@@ -98,12 +98,36 @@ namespace ebmgen {
                             }
                             MAYBE(field_stmt, ctx.repository().get_statement(member.field));
                             if (auto field_decl = field_stmt.body.field_decl()) {
-                                ebm::TypeBody body{.kind = ebm::TypeKind::STRUCT};
-                                body.id(field_decl->parent_struct);
-                                EBMA_ADD_TYPE(struct_type_ref, std::move(body));
-                                MAYBE(handle_union, handle_variant_alternative(ctx, struct_type_ref, ebm::InitCheckType::union_get, getter_id));
+                                // Walk the variant containment chain from the leaf
+                                // field's parent_struct outward to the property's
+                                // parent_format. Each level needs its own INIT_CHECK
+                                // so backends that map variants to runtime-typed
+                                // values (e.g. Go interface) can narrow at every
+                                // chain step. ebm2c skips INIT_CHECK emission so
+                                // chain depth has no cost there.
+                                std::vector<ebm::StatementRef> init_checks;
+                                ebm::WeakStatementRef current_struct = field_decl->parent_struct;
+                                while (get_id(current_struct) != get_id(prop->parent_format)) {
+                                    auto variant_ref = ctx.state().get_struct_variant_for_id(from_weak(current_struct));
+                                    if (!variant_ref) {
+                                        break;
+                                    }
+                                    ebm::TypeBody body{.kind = ebm::TypeKind::STRUCT};
+                                    body.id(current_struct);
+                                    EBMA_ADD_TYPE(struct_type_ref, std::move(body));
+                                    MAYBE(init_check_opt, handle_variant_alternative(ctx, struct_type_ref, ebm::InitCheckType::union_get, getter_id));
+                                    MAYBE(init_check_pair, init_check_opt);
+                                    init_checks.push_back(init_check_pair.first);
+                                    MAYBE(variant_type, ctx.repository().get_type(*variant_ref));
+                                    MAYBE(desc, variant_type.body.struct_union_desc());
+                                    MAYBE(rf_stmt, ctx.repository().get_statement(from_weak(desc.related_field)));
+                                    MAYBE(rf_decl, rf_stmt.body.field_decl());
+                                    current_struct = rf_decl.parent_struct;
+                                }
                                 ebm::Block block;
-                                append(block, handle_union->first);
+                                for (auto it = init_checks.rbegin(); it != init_checks.rend(); ++it) {
+                                    append(block, *it);
+                                }
                                 append(block, ret);
                                 EBM_BLOCK(block_ref, std::move(block));
                                 br.body = block_ref;
@@ -146,11 +170,31 @@ namespace ebmgen {
                             ebm::Block block;
                             MAYBE(field_stmt, ctx.repository().get_statement(member.field));
                             if (auto field_decl = field_stmt.body.field_decl()) {
-                                ebm::TypeBody body{.kind = ebm::TypeKind::STRUCT};
-                                body.id(field_decl->parent_struct);
-                                EBMA_ADD_TYPE(struct_type_ref, std::move(body));
-                                MAYBE(handle_union, handle_variant_alternative(ctx, struct_type_ref, ebm::InitCheckType::union_set, setter_id));
-                                append(block, handle_union->first);
+                                // Walk variant containment chain outward to
+                                // emit one INIT_CHECK per level. See getter
+                                // branch above for rationale.
+                                std::vector<ebm::StatementRef> init_checks;
+                                ebm::WeakStatementRef current_struct = field_decl->parent_struct;
+                                while (get_id(current_struct) != get_id(prop->parent_format)) {
+                                    auto variant_ref = ctx.state().get_struct_variant_for_id(from_weak(current_struct));
+                                    if (!variant_ref) {
+                                        break;
+                                    }
+                                    ebm::TypeBody body{.kind = ebm::TypeKind::STRUCT};
+                                    body.id(current_struct);
+                                    EBMA_ADD_TYPE(struct_type_ref, std::move(body));
+                                    MAYBE(init_check_opt, handle_variant_alternative(ctx, struct_type_ref, ebm::InitCheckType::union_set, setter_id));
+                                    MAYBE(init_check_pair, init_check_opt);
+                                    init_checks.push_back(init_check_pair.first);
+                                    MAYBE(variant_type, ctx.repository().get_type(*variant_ref));
+                                    MAYBE(desc, variant_type.body.struct_union_desc());
+                                    MAYBE(rf_stmt, ctx.repository().get_statement(from_weak(desc.related_field)));
+                                    MAYBE(rf_decl, rf_stmt.body.field_decl());
+                                    current_struct = rf_decl.parent_struct;
+                                }
+                                for (auto it = init_checks.rbegin(); it != init_checks.rend(); ++it) {
+                                    append(block, *it);
+                                }
                             }
                             MAYBE(self_expr, ctx.state().get_self_ref_for_id(member.field));
                             MAYBE(field_expr, ctx.repository().get_expression(self_expr));
