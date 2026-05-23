@@ -110,8 +110,14 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
             auto x = std::format("tmp{}", get_id(id));
             return CODE(base.to_writer(), ".", x, ".", member.to_writer());
         }
-        auto variant_hold = std::format("tmp{}", get_id(*type_ref));
-        return CODE(variant_hold, ".", member.to_writer());
+        // The bare `tmp{type_id}` reference is never actually defined in
+        // this scope (no preceding INIT_CHECK with this exact tag); the
+        // enclosing match/if branch already guarantees the variant tag,
+        // so inline the type assertion on the base directly: e.g.
+        // `(l.tmp458.(*Tmp749)).tmp444` instead of `tmp749.tmp444`.
+        MAYBE(base, ctx.visit(ctx.base));
+        MAYBE(type_name, ctx.visit(*type_ref));
+        return CODE("(", base.to_writer(), ".(*", type_name.to_writer(), "))", ".", member.to_writer());
     }
     return pass;
 }
