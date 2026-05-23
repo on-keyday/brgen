@@ -29,6 +29,16 @@ DEFINE_VISITOR(Expression_TYPE_CAST) {
     auto cast_kind = ctx.type_cast_desc.cast_kind;
     MAYBE(source_expr_str, ctx.visit(source_expr));
     MAYBE(target_type_str, ctx.visit(ctx.type));
+    if (cast_kind == ebm::CastType::FUNCTION_CAST) {
+        if (auto lw = ctx.type_cast_desc.cast_call()) {
+            MAYBE(cast_call, ctx.visit(lw->id));
+            MAYBE(call_expr, ctx.get(lw->id));
+            if (get_id(call_expr.body.type) == get_id(ctx.type)) {
+                return cast_call;
+            }
+            return CODE("(", cast_call.to_writer(), " as ", target_type_str.to_writer(), ")");
+        }
+    }
     if (cast_kind == ebm::CastType::INT_TO_ENUM || cast_kind == ebm::CastType::ENUM_TO_INT) {
         MAYBE(typ, ctx.get(cast_kind == ebm::CastType::INT_TO_ENUM ? ctx.type : from_type));
         MAYBE(id, typ.body.id());

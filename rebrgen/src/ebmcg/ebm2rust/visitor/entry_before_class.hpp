@@ -152,6 +152,68 @@ DEFINE_VISITOR(entry_before) {
         auto enum_name = ctx.config().variant_prefix + std::format("{}", get_id(ctx.item_id));
         return Result(enum_name + "<'a>");
     };
+    // For pure VARIANT types (= union with no common_type), declare a Rust enum
+    // so the name referenced in function signatures (e.g. Option<Variant43>)
+    // actually resolves. Without this hook the default visitor returns just
+    // "Variant{id}" and the type is never defined → "cannot find type" errors.
+    config.variant_type_custom = [](Context_Type_VARIANT& vctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        if (!is_nil(vctx.variant_desc.common_type)) {
+            return pass;
+        }
+        auto enum_name = vctx.config().variant_prefix + std::format("{}", get_id(vctx.item_id));
+        const bool zero_copy = vctx.flags().zero_copy;
+        const std::string lifetime = zero_copy ? "<'a>" : "";
+        if (vctx.config().declared_variants.contains(get_id(vctx.item_id))) {
+            return Result(enum_name + lifetime);
+        }
+        vctx.config().declared_variants.insert(get_id(vctx.item_id));
+        CodeWriter w;
+        w.writeln("#[derive(Debug, Clone, PartialEq, Eq, Default)]");
+        w.writeln("pub enum ", enum_name, lifetime, " {");
+        {
+            auto scope = w.indent_scope();
+            w.writeln("#[default]");
+            w.writeln("None,");
+            int i = 0;
+            for (auto& member_type_ref : vctx.variant_desc.members.container) {
+                MAYBE(type, vctx.visit(member_type_ref));
+                w.writeln("V", std::format("{}", i), "(", type.to_writer(), "),");
+                i++;
+            }
+        }
+        w.writeln("}");
+        CodeWriter impl_w;
+        impl_w.writeln("impl", lifetime, " ", enum_name, lifetime, " {");
+        {
+            auto impl_scope = impl_w.indent_scope();
+            int j = 0;
+            for (auto& member_type_ref : vctx.variant_desc.members.container) {
+                MAYBE(type, vctx.visit(member_type_ref));
+                auto arm = std::string("V") + std::to_string(j);
+                auto arm_lower = std::string("v") + std::to_string(j);
+                impl_w.writeln("#[inline(always)]");
+                impl_w.writeln("fn get_", arm_lower, "(&self) -> &", type.to_writer(), " {");
+                {
+                    auto s = impl_w.indent_scope();
+                    impl_w.writeln("if let Self::", arm, "(x) = self { x } else { unreachable!() }");
+                }
+                impl_w.writeln("}");
+                impl_w.writeln("#[inline(always)]");
+                impl_w.writeln("fn get_mut_", arm_lower, "(&mut self) -> &mut ", type.to_writer(), " {");
+                {
+                    auto s = impl_w.indent_scope();
+                    impl_w.writeln("if let Self::", arm, "(x) = self { x } else { unreachable!() }");
+                }
+                impl_w.writeln("}");
+                j++;
+            }
+        }
+        impl_w.writeln("}");
+        vctx.config().decl_toplevel.push_back(std::move(w));
+        vctx.config().decl_toplevel.push_back(std::move(impl_w));
+        return Result(enum_name + lifetime);
+    };
     // append_visitor は _visitor 系で MAYBE 経由で dispatch されるため
     // `pass` を返すと default にフォールバックせずエラー扱いになる。
     // よって default の `<target>.push(<value>)` も自分で emit する必要がある。
