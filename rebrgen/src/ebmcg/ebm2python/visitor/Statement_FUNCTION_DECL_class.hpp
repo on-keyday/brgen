@@ -39,10 +39,18 @@ DEFINE_VISITOR(Statement_FUNCTION_DECL) {
     auto func_name = ctx.identifier(ctx.item_id);
     MAYBE(return_type_str, ctx.visit(ctx.func_decl.return_type));
 
-    std::string params_str = "self";
+    bool is_method = !is_nil(ctx.func_decl.parent_format.id);
+    std::string params_str = is_method ? "self" : "";
 
     std::vector<ebm::StatementRef> state_params;
     std::string multi_arg;
+
+    auto append_param = [&](const std::string& chunk) {
+        if (!params_str.empty()) {
+            params_str += ", ";
+        }
+        params_str += chunk;
+    };
 
     for (auto& param_stmt_ref : ctx.func_decl.params.container) {
         MAYBE(param_stmt, ctx.get(param_stmt_ref));
@@ -57,10 +65,10 @@ DEFINE_VISITOR(Statement_FUNCTION_DECL) {
                 multi_arg += ",";
             }
             multi_arg += param_name;
-            params_str += ", " + std::string(param_name) + ": \"" + param_type_str.to_string() + "| None\" = None";
+            append_param(std::string(param_name) + ": \"" + param_type_str.to_string() + "| None\" = None");
         }
         else {
-            params_str += ", " + std::string(param_name) + ": \"" + param_type_str.to_string() + "\"";
+            append_param(std::string(param_name) + ": \"" + param_type_str.to_string() + "\"");
         }
     }
 

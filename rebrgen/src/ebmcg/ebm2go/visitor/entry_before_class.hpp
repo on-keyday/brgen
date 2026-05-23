@@ -683,7 +683,27 @@ DEFINE_VISITOR(entry_before) {
         if (!is_nil(fctx.func_decl.parent_format)) {
             auto struct_name = ctx.identifier(fctx.func_decl.parent_format);
             ctx.config().self_value = std::string(1, std::tolower(struct_name[0]));
-            w.writeln(ctx.config().function_define_keyword, " (", ctx.config().self_value, " *", struct_name, ") ", name_prefix, name, "(", params, ") ", ctx.config().function_return_type_separator, " ", return_type.to_writer(), " ", ctx.config().begin_block);
+            // Property accessors on inner anonymous structs share Limits as
+            // their receiver but must not collide. When parent_struct of the
+            // PropertyDecl differs from parent_format, prepend the inner
+            // struct identifier to the method name (e.g. tmp318Max).
+            std::string emit_name(name);
+            std::string emit_prefix(name_prefix);
+            if (auto prop = fctx.func_decl.property()) {
+                if (auto prop_decl = ctx.get_field<"property_decl">(prop->id)) {
+                    if (get_id(prop_decl->parent_struct) != get_id(fctx.func_decl.parent_format)) {
+                        auto inner_name = ctx.identifier(prop_decl->parent_struct);
+                        std::string combined = std::string(inner_name);
+                        if (!emit_prefix.empty()) {
+                            combined += emit_prefix;
+                            emit_prefix.clear();
+                        }
+                        combined += emit_name;
+                        emit_name = std::move(combined);
+                    }
+                }
+            }
+            w.writeln(ctx.config().function_define_keyword, " (", ctx.config().self_value, " *", struct_name, ") ", emit_prefix, emit_name, "(", params, ") ", ctx.config().function_return_type_separator, " ", return_type.to_writer(), " ", ctx.config().begin_block);
         }
         else {
             w.writeln(ctx.config().function_define_keyword, " ", name_prefix, name, "(", params, ") ", ctx.config().function_return_type_separator, return_type.to_writer(), " ", ctx.config().begin_block);

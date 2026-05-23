@@ -16,4 +16,4 @@
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 
 MAYBE(str, module_.get_string_literal(string_value));
-return std::format("\"{}\"", futils::escape::escape_str<std::string>(str.body.data));
+return std::format("\"{}\"", futils::escape::escape_str<std::string>(str.body.data, futils::escape::EscapeFlag::hex));
