@@ -104,8 +104,36 @@ DEFINE_VISITOR(Statement_STRUCT_DECL) {
     const bool zero_copy = ctx.flags().zero_copy;
     const std::string lifetime = zero_copy ? "<'a>" : "";
     const bool is_anon_inner = is_nil(ctx.struct_decl.name);
+    // Allow Copy when every field type is a primitive scalar (UINT/INT/FLOAT/BOOL/ENUM).
+    // Wrapper structs around a numeric (Uint32 { value: u32 }) qualify and benefit
+    // because field access through `&Struct` ends up moving the field; Copy lets
+    // it stay a borrow-friendly value at usage sites.
+    // Lifetime parameters don't preclude Copy as long as every field type
+    // itself is Copy. We restrict to primitive scalar field types here
+    // (UINT/INT/FLOAT/BOOL/ENUM) which is conservative but safe.
+    bool can_derive_copy = true;
+    for (auto& field_ref : ctx.struct_decl.fields.container) {
+        if (!can_derive_copy) break;
+        auto field_stmt_r = ctx.get(field_ref);
+        if (!field_stmt_r) { can_derive_copy = false; break; }
+        auto field_decl_p = field_stmt_r->body.field_decl();
+        if (!field_decl_p) { can_derive_copy = false; break; }
+        auto field_type_r = ctx.get(field_decl_p->field_type);
+        if (!field_type_r) { can_derive_copy = false; break; }
+        auto k = field_type_r->body.kind;
+        if (k != ebm::TypeKind::UINT && k != ebm::TypeKind::INT &&
+            k != ebm::TypeKind::FLOAT && k != ebm::TypeKind::BOOL &&
+            k != ebm::TypeKind::ENUM) {
+            can_derive_copy = false;
+        }
+    }
     CodeWriter w;
-    w.writeln("#[derive(Debug, Clone, PartialEq, Eq, Default)]");  // Add common derives
+    if (can_derive_copy) {
+        w.writeln("#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]");
+    }
+    else {
+        w.writeln("#[derive(Debug, Clone, PartialEq, Eq, Default)]");
+    }
     w.writeln("pub struct ", name, lifetime, " {");
     {
         auto scope = w.indent_scope();

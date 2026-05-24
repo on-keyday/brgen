@@ -152,6 +152,90 @@ DEFINE_VISITOR(entry_before) {
         auto enum_name = ctx.config().variant_prefix + std::format("{}", get_id(ctx.item_id));
         return Result(enum_name + "<'a>");
     };
+    // `const NAME: [u8; N] = "string-literal"` is a Rust type error: string
+    // literals are &str. Emit `*b"..."` so the bytes-array literal type
+    // matches the declared `[u8; N]`.
+    config.variable_decl_custom = [](Context_Statement_VARIABLE_DECL& vctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        if (is_nil(vctx.var_decl.initial_value)) {
+            return pass;
+        }
+        MAYBE(var_type, vctx.get(vctx.var_decl.var_type));
+        if (var_type.body.kind != ebm::TypeKind::ARRAY) {
+            return pass;
+        }
+        auto element_type_p = var_type.body.element_type();
+        auto length_p = var_type.body.length();
+        if (!element_type_p || !length_p) {
+            return pass;
+        }
+        MAYBE(element_type, vctx.get(*element_type_p));
+        if (element_type.body.kind != ebm::TypeKind::UINT) {
+            return pass;
+        }
+        auto size_p = element_type.body.size();
+        if (!size_p || size_p->value() != 8) {
+            return pass;
+        }
+        MAYBE(init_expr, vctx.get(vctx.var_decl.initial_value));
+        if (init_expr.body.kind != ebm::ExpressionKind::LITERAL_STRING) {
+            return pass;
+        }
+        auto string_value_p = init_expr.body.string_value();
+        if (!string_value_p) {
+            return pass;
+        }
+        MAYBE(str_lit, vctx.module().get_string_literal(*string_value_p));
+        auto name = vctx.identifier();
+        auto escaped = futils::escape::escape_str<std::string>(str_lit.body.data, futils::escape::EscapeFlag::hex);
+        CodeWriter w;
+        w.writeln("const ", name, ": [u8; ", std::format("{}", length_p->value()), "] = *b\"", escaped, "\";");
+        return w;
+    };
+    // Assignment whose target is a PROPERTY MEMBER_ACCESS cannot use the
+    // default `target = value` form because the getter returns Option<&T>
+    // and `*` of a shared ref is not writable. Rewrite to call the
+    // generated setter method (which takes &mut self and owned value).
+    config.assignment_custom = [](Context_Statement_ASSIGNMENT& actx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        MAYBE(target_expr, actx.get(actx.target));
+        if (target_expr.body.kind != ebm::ExpressionKind::MEMBER_ACCESS) {
+            return pass;
+        }
+        auto base_p = target_expr.body.base();
+        auto member_p = target_expr.body.member();
+        if (!base_p || !member_p) {
+            return pass;
+        }
+        MAYBE(member_expr, actx.get(*member_p));
+        auto id_p = member_expr.body.id();
+        if (!id_p) {
+            return pass;
+        }
+        MAYBE(referent, actx.get(from_weak(*id_p)));
+        if (referent.body.kind != ebm::StatementKind::PROPERTY_DECL) {
+            return pass;
+        }
+        auto prop_p = referent.body.property_decl();
+        if (!prop_p) {
+            return pass;
+        }
+        MAYBE(member_ident, actx.identifier(*member_p));
+        MAYBE(value_w, actx.visit(actx.value));
+        std::string method_name;
+        std::string base_text;
+        if (get_id(prop_p->parent_struct) != get_id(prop_p->parent_format)) {
+            auto inner_name = actx.identifier(prop_p->parent_struct);
+            method_name = std::string(inner_name) + "_set_" + std::string(member_ident);
+            base_text = "self";
+        }
+        else {
+            method_name = "set_" + std::string(member_ident);
+            MAYBE(base_w, actx.visit(*base_p));
+            base_text = base_w.to_string();
+        }
+        return CODELINE(base_text, ".", method_name, "(", value_w.to_writer(), ")?", actx.config().endof_statement);
+    };
     // For pure VARIANT types (= union with no common_type), declare a Rust enum
     // so the name referenced in function signatures (e.g. Option<Variant43>)
     // actually resolves. Without this hook the default visitor returns just

@@ -63,13 +63,16 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
             auto inner_name = ctx.identifier(prop_decl.parent_struct);
             auto method_name = std::string(inner_name) + "_" + std::string(ident);
             if (prop_decl.merge_mode == ebm::MergeMode::STRICT_TYPE) {
-                return CODE("*self.", method_name, "(", args, ").unwrap()");
+                // STRICT_TYPE getter returns Option<&T>; clone() to produce
+                // an owned value so callers (e.g. Variant constructor args)
+                // can move it without hitting E0507 on non-Copy types.
+                return CODE("self.", method_name, "(", args, ").unwrap().clone()");
             }
             return CODE("self.", method_name, "(", args, ").unwrap()");
         }
         MAYBE(main, ctx.main_logic());
         if (prop_decl.merge_mode == ebm::MergeMode::STRICT_TYPE) {
-            return CODE("*", main.to_writer(), "(", args, ").unwrap()");
+            return CODE(main.to_writer(), "(", args, ").unwrap().clone()");
         }
         return CODE(main.to_writer(), "(", args, ").unwrap()");
     }
