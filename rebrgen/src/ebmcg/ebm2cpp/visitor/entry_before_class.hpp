@@ -423,6 +423,76 @@ DEFINE_VISITOR(entry_before) {
     };
 
     // Struct union type: emit inner struct definitions, then generate std::variant
+    // Assignment whose target is a MEMBER_ACCESS to a PROPERTY cannot use
+    // the default `target = value` form because the getter returns
+    // `const T*` and dereferencing it isn't writable. Call the overloaded
+    // setter method instead. Applies the same prefix rule as the read path.
+    config.assignment_custom = [](Context_Statement_ASSIGNMENT& actx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        MAYBE(target_expr, actx.get(actx.target));
+        if (target_expr.body.kind != ebm::ExpressionKind::MEMBER_ACCESS) {
+            return pass;
+        }
+        auto base_p = target_expr.body.base();
+        auto member_p = target_expr.body.member();
+        if (!base_p || !member_p) {
+            return pass;
+        }
+        MAYBE(member_expr, actx.get(*member_p));
+        auto id_p = member_expr.body.id();
+        if (!id_p) {
+            return pass;
+        }
+        MAYBE(referent, actx.get(from_weak(*id_p)));
+        if (referent.body.kind != ebm::StatementKind::PROPERTY_DECL) {
+            return pass;
+        }
+        auto prop_p = referent.body.property_decl();
+        if (!prop_p) {
+            return pass;
+        }
+        MAYBE(member_ident, actx.identifier(*member_p));
+        MAYBE(value_w, actx.visit(actx.value));
+        std::string method_name(member_ident);
+        std::string base_text;
+        if (get_id(prop_p->parent_struct) != get_id(prop_p->parent_format)) {
+            auto inner_name = actx.identifier(prop_p->parent_struct);
+            method_name = std::string(inner_name) + "_" + method_name;
+            base_text = "(*this)";
+        }
+        else {
+            MAYBE(base_w, actx.visit(*base_p));
+            base_text = base_w.to_string();
+        }
+        return CODELINE(base_text, ".", method_name, "(", value_w.to_writer(), ")", actx.config().endof_statement);
+    };
+    // `Uint64(variant)` is invalid C++; emit `std::get<Uint64>(variant)`
+    // for casts that extract a member out of a pure VARIANT type.
+    // (Casts in the opposite direction — member -> variant — work via
+    // std::variant's implicit converting constructor.)
+    config.type_cast_custom = [](Context_Expression_TYPE_CAST& ctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        auto from_type = ctx.type_cast_desc.from_type;
+        if (is_nil(from_type)) {
+            return pass;
+        }
+        MAYBE(from_type_full, ctx.get(from_type));
+        if (from_type_full.body.kind != ebm::TypeKind::VARIANT) {
+            return pass;
+        }
+        auto vd = from_type_full.body.variant_desc();
+        if (!vd || !is_nil(vd->common_type)) {
+            return pass;
+        }
+        for (auto& m : vd->members.container) {
+            if (get_id(m) == get_id(ctx.type)) {
+                MAYBE(source, ctx.visit(ctx.type_cast_desc.source_expr));
+                MAYBE(target_type_str, ctx.visit(ctx.type));
+                return CODE("std::get<", target_type_str.to_writer(), ">(", source.to_writer(), ")");
+            }
+        }
+        return pass;
+    };
     config.struct_union_type_custom = [](Context_Type_STRUCT_UNION& ctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
         // Emit struct definitions for each member type as toplevel
@@ -597,15 +667,99 @@ DEFINE_VISITOR(entry_before) {
         return w;
     };
 
-    // Struct: in FunctionBodyOnly phase, skip struct definition and only emit methods
+    // Struct emission with anon-inner-property hoisting. Property accessors
+    // belonging to anon inner structs are declared on (and defined as
+    // methods of) the outer parent_format class; their own struct body
+    // skips them. See entry_before_class function_decl_custom for the
+    // matching method-name prefixing.
     config.struct_decl_custom = [](Context_Statement_STRUCT_DECL& ctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
-        if (ctx.config().output_phase != OutputPhase::FunctionBodyOnly) {
-            return pass;  // use default STRUCT_DECL visitor
+        using Phase = std::remove_reference_t<decltype(ctx.config())>::OutputPhase;
+        const auto phase = ctx.config().output_phase;
+        if (phase == Phase::Normal) {
+            return pass;  // Normal phase is not used during program emission
         }
-        // Phase 3: emit out-of-class method definitions only
+        const bool is_anon_inner = is_nil(ctx.struct_decl.name);
+
+        if (phase == Phase::FunctionBodyOnly) {
+            // Phase 3: out-of-class method definitions.
+            CodeWriter w;
+            if (is_anon_inner) {
+                // Anon inner: only its own codec / user methods, no
+                // property accessor definitions (those are emitted from
+                // the outer parent_format struct).
+                MAYBE_VOID(_c, ebmcodegen::util::emit_struct_codec(ctx, w));
+                MAYBE_VOID(_m, ebmcodegen::util::emit_struct_user_methods(ctx, w));
+                return w;
+            }
+            MAYBE_VOID(_self, ebmcodegen::util::emit_struct_methods(ctx, w));
+            std::vector<ebm::WeakStatementRef> descendants;
+            std::unordered_set<std::uint64_t> seen;
+            ebm::WeakStatementRef self_weak{};
+            self_weak.id = ctx.item_id;
+            MAYBE_VOID(_collect, ebmcodegen::util::collect_anon_inner_descendants(ctx, self_weak, descendants, seen));
+            for (auto& inner_ref : descendants) {
+                MAYBE(inner_stmt, ctx.get(from_weak(inner_ref)));
+                auto inner_decl_p = inner_stmt.body.struct_decl();
+                if (!inner_decl_p || !inner_decl_p->has_properties()) {
+                    continue;
+                }
+                auto inner_props = inner_decl_p->properties();
+                if (!inner_props) {
+                    continue;
+                }
+                for (auto& prop_ref : inner_props->container) {
+                    MAYBE(prop_w, ctx.visit(prop_ref));
+                    w.writeln(prop_w.to_writer());
+                }
+            }
+            return w;
+        }
+
+        // Phase 2 (DeclarationOnly): build struct body inline so we can
+        // skip / aggregate property accessors per the anon-inner rule.
         CodeWriter w;
-        MAYBE_VOID(ok, emit_struct_methods(ctx, w));
+        if (ctx.config().struct_definition_start_wrapper) {
+            MAYBE(start, ctx.config().struct_definition_start_wrapper(ctx));
+            w.write(start.to_writer());
+        }
+        else {
+            auto name = ctx.identifier();
+            w.writeln(ctx.config().struct_keyword, " ", name, " ", ctx.config().begin_block);
+        }
+        {
+            auto scope = w.indent_scope();
+            MAYBE(block, ctx.visit(ctx.struct_decl.fields));
+            w.write(block.to_writer());
+            if (is_anon_inner) {
+                MAYBE_VOID(_c, ebmcodegen::util::emit_struct_codec(ctx, w));
+                MAYBE_VOID(_m, ebmcodegen::util::emit_struct_user_methods(ctx, w));
+            }
+            else {
+                MAYBE_VOID(_self, ebmcodegen::util::emit_struct_methods(ctx, w));
+                std::vector<ebm::WeakStatementRef> descendants;
+                std::unordered_set<std::uint64_t> seen;
+                ebm::WeakStatementRef self_weak{};
+                self_weak.id = ctx.item_id;
+                MAYBE_VOID(_collect, ebmcodegen::util::collect_anon_inner_descendants(ctx, self_weak, descendants, seen));
+                for (auto& inner_ref : descendants) {
+                    MAYBE(inner_stmt, ctx.get(from_weak(inner_ref)));
+                    auto inner_decl_p = inner_stmt.body.struct_decl();
+                    if (!inner_decl_p || !inner_decl_p->has_properties()) {
+                        continue;
+                    }
+                    auto inner_props = inner_decl_p->properties();
+                    if (!inner_props) {
+                        continue;
+                    }
+                    for (auto& prop_ref : inner_props->container) {
+                        MAYBE(prop_w, ctx.visit(prop_ref));
+                        w.writeln(prop_w.to_writer());
+                    }
+                }
+            }
+        }
+        w.writeln(ctx.config().end_block, ctx.config().endof_struct_definition);
         return w;
     };
 

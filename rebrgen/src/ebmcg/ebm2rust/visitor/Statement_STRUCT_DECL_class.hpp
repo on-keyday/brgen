@@ -50,54 +50,6 @@
 #include "../codegen.hpp"
 #include "ebmcodegen/stub/util.hpp"
 
-namespace CODEGEN_NAMESPACE {
-    // Walk variant member types of the struct's fields and collect every
-    // anon inner STRUCT_DECL reachable through them. Used to pull
-    // inner-anon property accessors up into the outer (parent_format) impl
-    // block so they live on the outer receiver and don't need access to
-    // outer fields through a foreign self.
-    inline ebmgen::expected<void> collect_anon_inner_descendants(auto&& ctx, ebm::WeakStatementRef struct_ref, std::vector<ebm::WeakStatementRef>& out, std::unordered_set<std::uint64_t>& seen) {
-        MAYBE(stmt, ctx.get(from_weak(struct_ref)));
-        auto struct_decl_p = stmt.body.struct_decl();
-        if (!struct_decl_p) {
-            return {};
-        }
-        for (auto& field_ref : struct_decl_p->fields.container) {
-            MAYBE(field_stmt, ctx.get(field_ref));
-            auto field_decl_p = field_stmt.body.field_decl();
-            if (!field_decl_p) {
-                continue;
-            }
-            MAYBE(field_type, ctx.get(field_decl_p->field_type));
-            if (field_type.body.kind != ebm::TypeKind::STRUCT_UNION) {
-                continue;
-            }
-            auto desc_p = field_type.body.struct_union_desc();
-            if (!desc_p) {
-                continue;
-            }
-            for (auto& member_type_ref : desc_p->variant_desc.members.container) {
-                MAYBE(member_type, ctx.get(member_type_ref));
-                if (member_type.body.kind != ebm::TypeKind::STRUCT) {
-                    continue;
-                }
-                auto member_struct_weak_p = member_type.body.id();
-                if (!member_struct_weak_p) {
-                    continue;
-                }
-                auto member_struct_weak = *member_struct_weak_p;
-                if (seen.contains(get_id(member_struct_weak))) {
-                    continue;
-                }
-                seen.insert(get_id(member_struct_weak));
-                out.push_back(member_struct_weak);
-                MAYBE_VOID(_, collect_anon_inner_descendants(ctx, member_struct_weak, out, seen));
-            }
-        }
-        return {};
-    }
-}  // namespace CODEGEN_NAMESPACE
-
 DEFINE_VISITOR(Statement_STRUCT_DECL) {
     using namespace CODEGEN_NAMESPACE;
     auto name = ctx.identifier();
@@ -166,7 +118,7 @@ DEFINE_VISITOR(Statement_STRUCT_DECL) {
     {
         ebm::WeakStatementRef self_weak{};
         self_weak.id = ctx.item_id;
-        MAYBE_VOID(_collect, collect_anon_inner_descendants(ctx, self_weak, inner_descendants, seen));
+        MAYBE_VOID(_collect, ebmcodegen::util::collect_anon_inner_descendants(ctx, self_weak, inner_descendants, seen));
     }
     bool any_inner_props = false;
     for (auto& inner_ref : inner_descendants) {
