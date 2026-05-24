@@ -29,6 +29,34 @@ DEFINE_VISITOR(Expression_TYPE_CAST) {
     auto cast_kind = ctx.type_cast_desc.cast_kind;
     MAYBE(source_expr_str, ctx.visit(source_expr));
     MAYBE(target_type_str, ctx.visit(ctx.type));
+    // Casts that touch a pure VARIANT type (common_type=nil → emitted as
+    // Rust enum Variant{id}) cannot use `as`; emit the enum constructor
+    // or pattern match instead. Check this BEFORE FUNCTION_CAST so that
+    // VARIANT destinations don't get wrapped in a fallback `as`.
+    {
+        MAYBE(target_type_full, ctx.get(ctx.type));
+        if (target_type_full.body.kind == ebm::TypeKind::VARIANT) {
+            if (auto vd = target_type_full.body.variant_desc(); vd && is_nil(vd->common_type)) {
+                for (size_t i = 0; i < vd->members.container.size(); i++) {
+                    if (get_id(vd->members.container[i]) == get_id(from_type)) {
+                        auto enum_name = std::format("Variant{}", get_id(ctx.type));
+                        return CODE(enum_name, "::V", std::format("{}", i), "(", source_expr_str.to_writer(), ")");
+                    }
+                }
+            }
+        }
+        MAYBE(from_type_full, ctx.get(from_type));
+        if (from_type_full.body.kind == ebm::TypeKind::VARIANT) {
+            if (auto vd = from_type_full.body.variant_desc(); vd && is_nil(vd->common_type)) {
+                for (size_t i = 0; i < vd->members.container.size(); i++) {
+                    if (get_id(vd->members.container[i]) == get_id(ctx.type)) {
+                        auto enum_name = std::format("Variant{}", get_id(from_type));
+                        return CODE("(match ", source_expr_str.to_writer(), " { ", enum_name, "::V", std::format("{}", i), "(x) => x, _ => unreachable!() })");
+                    }
+                }
+            }
+        }
+    }
     if (cast_kind == ebm::CastType::FUNCTION_CAST) {
         if (auto lw = ctx.type_cast_desc.cast_call()) {
             MAYBE(cast_call, ctx.visit(lw->id));

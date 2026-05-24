@@ -40,7 +40,6 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
         return CODE(base.to_writer(), ".", accessor, "()", ".", member_code.to_writer());
     }
     if (auto stmt = ctx.get(id); stmt && stmt->body.kind == ebm::StatementKind::PROPERTY_DECL) {
-        MAYBE(main, ctx.main_logic());
         MAYBE(prop_decl, stmt->body.property_decl());
         MAYBE(getter_decl, ctx.get_field<"func_decl">(prop_decl.getter_function.id));
         std::string args;
@@ -51,6 +50,24 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
             }
             args += param_name;
         }
+        // For properties whose parent_struct (where the property semantically
+        // lives, e.g. inner anon Uint64-branch struct) differs from the
+        // parent_format (the outer struct, e.g. Limits), the accessor is
+        // emitted on the outer impl with a tmpNNN-prefixed name (see
+        // Statement_STRUCT_DECL_class accessor-relocation). Rewrite the call
+        // here to invoke `self.<prefix><name>(args)` instead of chaining
+        // through `self.tmp458.<name>(...)` which would hit a variant enum
+        // that has no such method.
+        if (get_id(prop_decl.parent_struct) != get_id(prop_decl.parent_format)) {
+            MAYBE(ident, ctx.identifier(ctx.member));
+            auto inner_name = ctx.identifier(prop_decl.parent_struct);
+            auto method_name = std::string(inner_name) + "_" + std::string(ident);
+            if (prop_decl.merge_mode == ebm::MergeMode::STRICT_TYPE) {
+                return CODE("*self.", method_name, "(", args, ").unwrap()");
+            }
+            return CODE("self.", method_name, "(", args, ").unwrap()");
+        }
+        MAYBE(main, ctx.main_logic());
         if (prop_decl.merge_mode == ebm::MergeMode::STRICT_TYPE) {
             return CODE("*", main.to_writer(), "(", args, ").unwrap()");
         }

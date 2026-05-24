@@ -240,6 +240,18 @@ DEFINE_VISITOR(entry_before) {
             }
             name = "set_" + name;
         }
+        // Inner-anon property accessors are relocated to the outer impl
+        // (see Statement_STRUCT_DECL_class). Prefix the method name with
+        // the inner struct identifier so multiple branches don't collide
+        // on the outer impl (e.g. tmp318_max / tmp342_max / max).
+        if (auto prop_ref = fctx.func_decl.property()) {
+            if (auto prop_decl = fctx.get_field<"property_decl">(prop_ref->id)) {
+                if (get_id(prop_decl->parent_struct) != get_id(fctx.func_decl.parent_format)) {
+                    auto inner_name = fctx.identifier(prop_decl->parent_struct);
+                    name = std::string(inner_name) + "_" + name;
+                }
+            }
+        }
         if (fctx.config().in_direct_decode) {
             name += "_direct";
         }

@@ -977,16 +977,23 @@ namespace ebmcodegen::util {
     // Emit method-like statements (properties, encode/decode, methods) for a struct.
     // ctx must be Context_Statement_STRUCT_DECL (or compatible).
     // w is the CodeWriter to write to.
-    // This is the shared logic extracted from the default STRUCT_DECL visitor.
+    // Granular helpers extracted from emit_struct_methods so backends that
+    // need to relocate or filter parts (e.g. ebm2rust pulling anon-inner
+    // property accessors into the outer impl) can call only the pieces
+    // they want, in whatever order.
     template <class CodeWriter>
-    ebmgen::expected<void> emit_struct_methods(auto&& ctx, CodeWriter& w) {
+    ebmgen::expected<void> emit_struct_properties(auto&& ctx, CodeWriter& w) {
         if (auto props = ctx.struct_decl.properties()) {
             for (const auto& prop_ref : props->container) {
                 MAYBE(prop, ctx.visit(prop_ref));
                 w.writeln(prop.to_writer());
             }
         }
+        return {};
+    }
 
+    template <class CodeWriter>
+    ebmgen::expected<void> emit_struct_codec(auto&& ctx, CodeWriter& w) {
         if (auto enc = ctx.struct_decl.encode_fn()) {
             if (ctx.config().struct_encode_start_wrapper) {
                 MAYBE(encode_fn, ctx.config().struct_encode_start_wrapper(ctx, *enc));
@@ -1007,13 +1014,26 @@ namespace ebmcodegen::util {
                 w.writeln(std::move(decode_fn.to_writer()));
             }
         }
+        return {};
+    }
+
+    template <class CodeWriter>
+    ebmgen::expected<void> emit_struct_user_methods(auto&& ctx, CodeWriter& w) {
         if (auto methods = ctx.struct_decl.methods()) {
             for (const auto& method_ref : methods->container) {
                 MAYBE(method, ctx.visit(method_ref));
                 w.writeln(method.to_writer());
             }
         }
+        return {};
+    }
 
+    // Convenience wrapper preserving the original call-all behavior.
+    template <class CodeWriter>
+    ebmgen::expected<void> emit_struct_methods(auto&& ctx, CodeWriter& w) {
+        MAYBE_VOID(_p, emit_struct_properties(ctx, w));
+        MAYBE_VOID(_c, emit_struct_codec(ctx, w));
+        MAYBE_VOID(_m, emit_struct_user_methods(ctx, w));
         return {};
     }
 

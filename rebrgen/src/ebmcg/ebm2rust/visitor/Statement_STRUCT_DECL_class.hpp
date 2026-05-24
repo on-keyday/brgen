@@ -49,10 +49,61 @@
 /*here to write the hook*/
 #include "../codegen.hpp"
 #include "ebmcodegen/stub/util.hpp"
+
+namespace CODEGEN_NAMESPACE {
+    // Walk variant member types of the struct's fields and collect every
+    // anon inner STRUCT_DECL reachable through them. Used to pull
+    // inner-anon property accessors up into the outer (parent_format) impl
+    // block so they live on the outer receiver and don't need access to
+    // outer fields through a foreign self.
+    inline ebmgen::expected<void> collect_anon_inner_descendants(auto&& ctx, ebm::WeakStatementRef struct_ref, std::vector<ebm::WeakStatementRef>& out, std::unordered_set<std::uint64_t>& seen) {
+        MAYBE(stmt, ctx.get(from_weak(struct_ref)));
+        auto struct_decl_p = stmt.body.struct_decl();
+        if (!struct_decl_p) {
+            return {};
+        }
+        for (auto& field_ref : struct_decl_p->fields.container) {
+            MAYBE(field_stmt, ctx.get(field_ref));
+            auto field_decl_p = field_stmt.body.field_decl();
+            if (!field_decl_p) {
+                continue;
+            }
+            MAYBE(field_type, ctx.get(field_decl_p->field_type));
+            if (field_type.body.kind != ebm::TypeKind::STRUCT_UNION) {
+                continue;
+            }
+            auto desc_p = field_type.body.struct_union_desc();
+            if (!desc_p) {
+                continue;
+            }
+            for (auto& member_type_ref : desc_p->variant_desc.members.container) {
+                MAYBE(member_type, ctx.get(member_type_ref));
+                if (member_type.body.kind != ebm::TypeKind::STRUCT) {
+                    continue;
+                }
+                auto member_struct_weak_p = member_type.body.id();
+                if (!member_struct_weak_p) {
+                    continue;
+                }
+                auto member_struct_weak = *member_struct_weak_p;
+                if (seen.contains(get_id(member_struct_weak))) {
+                    continue;
+                }
+                seen.insert(get_id(member_struct_weak));
+                out.push_back(member_struct_weak);
+                MAYBE_VOID(_, collect_anon_inner_descendants(ctx, member_struct_weak, out, seen));
+            }
+        }
+        return {};
+    }
+}  // namespace CODEGEN_NAMESPACE
+
 DEFINE_VISITOR(Statement_STRUCT_DECL) {
+    using namespace CODEGEN_NAMESPACE;
     auto name = ctx.identifier();
     const bool zero_copy = ctx.flags().zero_copy;
     const std::string lifetime = zero_copy ? "<'a>" : "";
+    const bool is_anon_inner = is_nil(ctx.struct_decl.name);
     CodeWriter w;
     w.writeln("#[derive(Debug, Clone, PartialEq, Eq, Default)]");  // Add common derives
     w.writeln("pub struct ", name, lifetime, " {");
@@ -72,11 +123,57 @@ DEFINE_VISITOR(Statement_STRUCT_DECL) {
     w.writeln("}");
 
     w.writeln();  // Add a newline for separation
-    if (ctx.struct_decl.has_encode_decode() || ctx.struct_decl.has_functions() || ctx.struct_decl.has_properties()) {
+    // For anon inner structs we skip impl emission entirely. Their property
+    // accessors are pulled up into the parent_format struct's impl with
+    // name prefixing so they share the outer self (which is what the
+    // lowered body actually references). encode/decode + user methods are
+    // not generated on anon inner structs in this project's current usage.
+    if (is_anon_inner) {
+        return w;
+    }
+    // Collect anon inner descendants so their accessors get emitted into
+    // the outer struct's impl block.
+    std::vector<ebm::WeakStatementRef> inner_descendants;
+    std::unordered_set<std::uint64_t> seen;
+    {
+        ebm::WeakStatementRef self_weak{};
+        self_weak.id = ctx.item_id;
+        MAYBE_VOID(_collect, collect_anon_inner_descendants(ctx, self_weak, inner_descendants, seen));
+    }
+    bool any_inner_props = false;
+    for (auto& inner_ref : inner_descendants) {
+        MAYBE(inner_stmt, ctx.get(from_weak(inner_ref)));
+        auto inner_decl_p = inner_stmt.body.struct_decl();
+        if (inner_decl_p && inner_decl_p->has_properties()) {
+            any_inner_props = true;
+            break;
+        }
+    }
+    if (ctx.struct_decl.has_encode_decode() || ctx.struct_decl.has_functions() || ctx.struct_decl.has_properties() || any_inner_props) {
         w.writeln("impl", lifetime, " ", name, lifetime, " {");
         {
             auto impl_scope = w.indent_scope();
-            MAYBE_VOID(_, ebmcodegen::util::emit_struct_methods(ctx, w));
+            MAYBE_VOID(_p, ebmcodegen::util::emit_struct_properties(ctx, w));
+            MAYBE_VOID(_c, ebmcodegen::util::emit_struct_codec(ctx, w));
+            MAYBE_VOID(_m, ebmcodegen::util::emit_struct_user_methods(ctx, w));
+            // Inner anon descendants: emit only their property accessors,
+            // here in the outer impl. name-prefixing is handled by
+            // function_definition_start_wrapper (see entry_before_class.hpp).
+            for (auto& inner_ref : inner_descendants) {
+                MAYBE(inner_stmt, ctx.get(from_weak(inner_ref)));
+                auto inner_decl_p = inner_stmt.body.struct_decl();
+                if (!inner_decl_p || !inner_decl_p->has_properties()) {
+                    continue;
+                }
+                auto inner_props = inner_decl_p->properties();
+                if (!inner_props) {
+                    continue;
+                }
+                for (auto& prop_ref : inner_props->container) {
+                    MAYBE(prop_w, ctx.visit(prop_ref));
+                    w.writeln(prop_w.to_writer());
+                }
+            }
         }
         w.writeln("}");
     }
