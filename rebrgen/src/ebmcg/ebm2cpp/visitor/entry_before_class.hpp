@@ -680,5 +680,52 @@ DEFINE_VISITOR(entry_before) {
         return w;
     };
 
+    // `const std::array<uint8_t, N> NAME = "string-literal"` doesn't
+    // compile in C++ because string literals are const char[N+1]. Emit
+    // brace-initialization with explicit byte values instead.
+    config.variable_decl_custom = [](Context_Statement_VARIABLE_DECL& vctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        if (is_nil(vctx.var_decl.initial_value)) {
+            return pass;
+        }
+        MAYBE(var_type, vctx.get(vctx.var_decl.var_type));
+        if (var_type.body.kind != ebm::TypeKind::ARRAY) {
+            return pass;
+        }
+        auto element_type_p = var_type.body.element_type();
+        auto length_p = var_type.body.length();
+        if (!element_type_p || !length_p) {
+            return pass;
+        }
+        MAYBE(element_type, vctx.get(*element_type_p));
+        if (element_type.body.kind != ebm::TypeKind::UINT) {
+            return pass;
+        }
+        auto size_p = element_type.body.size();
+        if (!size_p || size_p->value() != 8) {
+            return pass;
+        }
+        MAYBE(init_expr, vctx.get(vctx.var_decl.initial_value));
+        if (init_expr.body.kind != ebm::ExpressionKind::LITERAL_STRING) {
+            return pass;
+        }
+        auto string_value_p = init_expr.body.string_value();
+        if (!string_value_p) {
+            return pass;
+        }
+        MAYBE(str_lit, vctx.module().get_string_literal(*string_value_p));
+        auto name = vctx.identifier();
+        CodeWriter w;
+        w.write("constexpr std::array<std::uint8_t, ", std::format("{}", length_p->value()), "> ", name, " = {");
+        for (size_t i = 0; i < str_lit.body.data.size(); i++) {
+            if (i > 0) {
+                w.write(", ");
+            }
+            w.write(std::format("0x{:02x}", static_cast<unsigned char>(str_lit.body.data[i])));
+        }
+        w.writeln("};");
+        return w;
+    };
+
     return pass;
 }

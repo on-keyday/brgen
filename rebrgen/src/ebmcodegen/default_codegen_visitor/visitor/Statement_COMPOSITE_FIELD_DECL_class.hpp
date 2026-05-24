@@ -26,9 +26,8 @@
 #include "../codegen.hpp"
 DEFINE_VISITOR(Statement_COMPOSITE_FIELD_DECL) {
     using namespace CODEGEN_NAMESPACE;
-    if (ctx.config().composite_field_decl_visitor) {
-        MAYBE(res, ctx.config().composite_field_decl_visitor(ctx));
-        return res;
+    if (ctx.config().composite_field_decl_custom) {
+        CALL_OR_PASS(res, ctx.config().composite_field_decl_custom(ctx));
     }
     return ctx.visit(ctx.composite_field_decl.fields);
 }

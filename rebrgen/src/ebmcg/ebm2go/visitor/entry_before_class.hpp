@@ -748,7 +748,7 @@ DEFINE_VISITOR(entry_before) {
         }
         return w;
     };
-    ctx.config().composite_field_decl_visitor = [&](Context_Statement_COMPOSITE_FIELD_DECL& cctx) -> expected<Result> {
+    ctx.config().composite_field_decl_custom = [&](Context_Statement_COMPOSITE_FIELD_DECL& cctx) -> expected<Result> {
         if (cctx.composite_field_decl.kind == ebm::CompositeFieldKind::BULK_PRIMITIVE ||
             cctx.composite_field_decl.kind == ebm::CompositeFieldKind::PREFIXED_UNION_PRIMITIVE) {
             auto ident = cctx.identifier();
