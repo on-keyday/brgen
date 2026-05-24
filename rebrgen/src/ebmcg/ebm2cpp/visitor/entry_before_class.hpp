@@ -202,7 +202,14 @@ DEFINE_VISITOR(entry_before) {
         if (ctx.field_decl.is_state_variable()) {
             return {};
         }
-        MAYBE(struct_unions, struct_union_members(ctx, ctx.field_decl.field_type));
+        // Note: struct_union_members(ctx, field_type) would here visit each
+        // anon inner STRUCT_DECL and return their full `struct X {...};`
+        // bodies for inline emission. We deliberately skip that — the
+        // top-level sorted_struct loop emits each STRUCT_DECL once, and
+        // nesting them again inside the parent class produces a duplicate
+        // type whose unqualified name no longer resolves correctly in
+        // out-of-class method bodies (e.g. holds_alternative<tmp667>
+        // finding a different `tmp667` from a different scope).
         auto name = ctx.identifier();
         MAYBE(type, ctx.visit(ctx.field_decl.field_type));
         auto type_ref = ctx.field_decl.field_type;
@@ -223,7 +230,7 @@ DEFINE_VISITOR(entry_before) {
             default:
                 break;
         }
-        return CODELINE(SEPARATED(CODELINE(), struct_unions.size(), [&](size_t i) { return struct_unions[i].second.to_writer(); }), type.to_writer(), " ", name, init, ctx.config().endof_statement);
+        return CODELINE(type.to_writer(), " ", name, init, ctx.config().endof_statement);
     };
 
     // Enum declaration: use enum class with base type
