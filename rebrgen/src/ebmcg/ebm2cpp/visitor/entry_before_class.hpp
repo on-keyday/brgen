@@ -644,6 +644,18 @@ DEFINE_VISITOR(entry_before) {
         if (ctx.func_decl.kind == ebm::FunctionKind::VECTOR_SETTER) {
             prefix = "set_";
         }
+        // Inner-anon property accessors live on the outer (parent_format)
+        // class but their method body references outer fields; prefix the
+        // method name with the inner struct identifier so multiple branches
+        // (and the merged accessor) don't collide as overloads.
+        if (auto prop_ref = ctx.func_decl.property()) {
+            if (auto prop_decl = ctx.get_field<"property_decl">(prop_ref->id)) {
+                if (get_id(prop_decl->parent_struct) != get_id(ctx.func_decl.parent_format)) {
+                    auto inner_name = ctx.identifier(prop_decl->parent_struct);
+                    prefix = std::string(inner_name) + "_" + prefix;
+                }
+            }
+        }
         std::string const_suffix = ctx.func_decl.attribute.is_mutable() ? "" : " const";
         CodeWriter w;
         if (phase == OutputPhase::DeclarationOnly) {
@@ -680,6 +692,16 @@ DEFINE_VISITOR(entry_before) {
         std::string prefix;
         if (ctx.func_decl.kind == ebm::FunctionKind::VECTOR_SETTER) {
             prefix = "set_";
+        }
+        // Same parent_struct-prefix rule as in function_decl_custom (see
+        // there for rationale). Keeps the Normal-phase path consistent.
+        if (auto prop_ref = ctx.func_decl.property()) {
+            if (auto prop_decl = ctx.get_field<"property_decl">(prop_ref->id)) {
+                if (get_id(prop_decl->parent_struct) != get_id(ctx.func_decl.parent_format)) {
+                    auto inner_name = ctx.identifier(prop_decl->parent_struct);
+                    prefix = std::string(inner_name) + "_" + prefix;
+                }
+            }
         }
         std::string const_suffix = ctx.func_decl.attribute.is_mutable() ? "" : " const";
         CodeWriter w;
