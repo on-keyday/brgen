@@ -1,0 +1,6 @@
+name: rebrgen/custom-queries
+version: 0.0.1
+library: false
+extractor: cpp
+dependencies:
+  codeql/cpp-all: "*"
