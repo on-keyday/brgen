@@ -35,11 +35,12 @@ class ByRefCapture extends LambdaCapture {
   ByRefCapture() { this.isCapturedByReference() }
 }
 
-/** A field whose declared type is some instantiation of std::function. */
-class StdFunctionField extends Field {
-  StdFunctionField() {
-    this.getUnspecifiedType().toString().matches("function<%>") or
-    this.getUnspecifiedType().toString().matches("std::function<%>")
+/** A call to std::function::operator=. In C++, `field = lambda` where field
+ *  is a std::function is parsed as a member-operator call, NOT an AssignExpr. */
+class StdFunctionOpAssignCall extends FunctionCall {
+  StdFunctionOpAssignCall() {
+    this.getTarget().hasName("operator=") and
+    this.getQualifier().getType().getUnspecifiedType().toString().matches("function<%>")
   }
 }
 
@@ -54,19 +55,16 @@ class DanglingProneLocal extends LocalScopeVariable {
 }
 
 from LambdaExpression lam, ByRefCapture cap, DanglingProneLocal v,
-     AssignExpr asgn, FieldAccess lhs, StdFunctionField field
+     StdFunctionOpAssignCall opasgn, FieldAccess lhs
 where
   // The lambda contains a by-ref capture of a dangling-prone local.
   cap = lam.getACapture() and
-  v = cap.getInitializer().(VariableAccess).getTarget()
-  and
-  // The lambda is assigned (possibly via implicit conversion) into a
-  // std::function-typed field.
-  asgn.getRValue() = lam.getFullyConverted() and
-  asgn.getLValue() = lhs and
-  lhs.getTarget() = field
+  v = cap.getInitializer().(VariableAccess).getTarget() and
+  // The lambda is the argument to std::function::operator= on a config field.
+  opasgn.getArgument(0).getFullyConverted() = lam.getFullyConverted() and
+  opasgn.getQualifier() = lhs
 select cap,
   "Lambda captures local `" + v.getName() + "` (declared in `" +
     v.getFunction().getName() + "`) by reference and is stored in " +
-    "std::function field `" + field.getName() + "`. " +
+    "std::function field `" + lhs.getTarget().getName() + "`. " +
     "If the field outlives the enclosing function, the captured reference dangles."
