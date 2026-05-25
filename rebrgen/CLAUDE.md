@@ -9,6 +9,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Repository: https://github.com/on-keyday/brgen (integrated into `rebrgen/` subdirectory)
 - Phase: MVP to Actual Product. unictest based proving.
 
+## Monorepo Layout
+
+This is a **monorepo**: the parent `brgen/` and this `rebrgen/` subdirectory share a single git repository (`brgen.git`). rebrgen was added as a subtree (commit `6a4765c5`), not a submodule. Practical consequences:
+
+- One `.git`, one branch state, one commit history — `cd ..` does **not** cross a repo boundary
+- CI workflows live in `../.github/workflows/` (parent brgen), not in `rebrgen/.github/` (which doesn't exist)
+- Changes touching both brgen and rebrgen go in a single commit on the brgen repo
+- `git log` from inside `rebrgen/` shows the full brgen history, not just rebrgen's
+
 ## Build Commands
 
 ### Initial Setup
