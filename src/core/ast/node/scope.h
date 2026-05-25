@@ -12,6 +12,12 @@ namespace brgen::ast {
         std::shared_ptr<Scope> next;
         std::weak_ptr<Node> owner;
         bool branch_root = false;
+        // textual extent of this scope: covers from the first body token
+        // to the last body token (inclusive). Used by language servers to
+        // resolve which scope contains a given source position. Owner.loc
+        // only points at the head token (e.g. the `format` keyword), so it
+        // cannot serve this purpose alone.
+        lexer::Loc loc{};
 
         std::optional<std::shared_ptr<Ident>> lookup_current(auto&& fn, ast::Ident* self = nullptr) {
             bool myself_appear = !self;

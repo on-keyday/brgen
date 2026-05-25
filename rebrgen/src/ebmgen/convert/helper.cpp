@@ -51,6 +51,10 @@ namespace ebmgen {
         type_cast.source_expr = expr;
         type_cast.from_type = from_typ;
         type_cast.cast_kind = cast_kind;
+        if (cast_kind == ebm::CastType::FUNCTION_CAST) {
+            // placeholder; the add_cast_func transform fills this in.
+            type_cast.cast_call({});
+        }
         body.type_cast_desc(type_cast);
         return body;
     }

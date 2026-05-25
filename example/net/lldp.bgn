@@ -85,5 +85,5 @@ format Lldpdu:
         for:
             t := input.get(LldpTlv)
             tlvs[tlvs.length] = t
-            if <LldpTlv>(t).header.type == TlvType.end_of_lldpdu:
+            if t.header.type == TlvType.end_of_lldpdu:
                 break

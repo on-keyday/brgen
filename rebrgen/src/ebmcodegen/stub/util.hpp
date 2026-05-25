@@ -581,7 +581,7 @@ namespace ebmcodegen::util {
         return ebmgen::unexpect_error("enum type has no members");
     }
 
-    void modify_keyword_identifier(ebm::ExtendedBinaryModule& m, std::unordered_set<std::string_view> keyword_list, auto&& change_rule) {
+    void modify_keyword_identifier(ebm::ExtendedBinaryModule& m, const std::unordered_set<std::string_view>& keyword_list, auto&& change_rule) {
         for (auto& ident : m.identifiers) {
             if (keyword_list.contains(ident.body.data)) {
                 ident.body.data = change_rule(ident.body.data);
@@ -607,8 +607,17 @@ namespace ebmcodegen::util {
     ebmgen::expected<ebm::TypeRef> get_struct_union_member_from_field(auto&& visitor, ebm::StatementRef field_ref) {
         ebmgen::MappingTable& module_ = get_visitor(visitor).module_;
         MAYBE(field_stmt, module_.get_statement(field_ref));
-        MAYBE(field_decl, field_stmt.body.field_decl());
-        MAYBE(parent_struct, module_.get_statement(field_decl.parent_struct));
+        ebm::WeakStatementRef parent_struct_ref;
+        if (auto field_decl = field_stmt.body.field_decl()) {
+            parent_struct_ref = field_decl->parent_struct;
+        }
+        else if (auto prop_decl = field_stmt.body.property_decl()) {
+            parent_struct_ref = prop_decl->parent_format;
+        }
+        else {
+            return ebmgen::unexpect_error("not field or property");
+        }
+        MAYBE(parent_struct, module_.get_statement(parent_struct_ref));
         MAYBE(struct_decl, parent_struct.body.struct_decl());
         MAYBE(rel_var, struct_decl.related_variant());
         MAYBE(type, module_.get_type(rel_var));
@@ -619,7 +628,7 @@ namespace ebmcodegen::util {
         for (auto& member_type_ref : desc.variant_desc.members.container) {
             MAYBE(member_type, module_.get_type(member_type_ref));
             MAYBE(member_stmt_id, member_type.body.id());
-            if (get_id(member_stmt_id) == get_id(field_decl.parent_struct)) {
+            if (get_id(member_stmt_id) == get_id(parent_struct_ref)) {
                 return member_type_ref;
             }
         }
@@ -968,16 +977,23 @@ namespace ebmcodegen::util {
     // Emit method-like statements (properties, encode/decode, methods) for a struct.
     // ctx must be Context_Statement_STRUCT_DECL (or compatible).
     // w is the CodeWriter to write to.
-    // This is the shared logic extracted from the default STRUCT_DECL visitor.
+    // Granular helpers extracted from emit_struct_methods so backends that
+    // need to relocate or filter parts (e.g. ebm2rust pulling anon-inner
+    // property accessors into the outer impl) can call only the pieces
+    // they want, in whatever order.
     template <class CodeWriter>
-    ebmgen::expected<void> emit_struct_methods(auto&& ctx, CodeWriter& w) {
+    ebmgen::expected<void> emit_struct_properties(auto&& ctx, CodeWriter& w) {
         if (auto props = ctx.struct_decl.properties()) {
             for (const auto& prop_ref : props->container) {
                 MAYBE(prop, ctx.visit(prop_ref));
                 w.writeln(prop.to_writer());
             }
         }
+        return {};
+    }
 
+    template <class CodeWriter>
+    ebmgen::expected<void> emit_struct_codec(auto&& ctx, CodeWriter& w) {
         if (auto enc = ctx.struct_decl.encode_fn()) {
             if (ctx.config().struct_encode_start_wrapper) {
                 MAYBE(encode_fn, ctx.config().struct_encode_start_wrapper(ctx, *enc));
@@ -998,13 +1014,74 @@ namespace ebmcodegen::util {
                 w.writeln(std::move(decode_fn.to_writer()));
             }
         }
+        return {};
+    }
+
+    template <class CodeWriter>
+    ebmgen::expected<void> emit_struct_user_methods(auto&& ctx, CodeWriter& w) {
         if (auto methods = ctx.struct_decl.methods()) {
             for (const auto& method_ref : methods->container) {
                 MAYBE(method, ctx.visit(method_ref));
                 w.writeln(method.to_writer());
             }
         }
+        return {};
+    }
 
+    // Convenience wrapper preserving the original call-all behavior.
+    template <class CodeWriter>
+    ebmgen::expected<void> emit_struct_methods(auto&& ctx, CodeWriter& w) {
+        MAYBE_VOID(_p, emit_struct_properties(ctx, w));
+        MAYBE_VOID(_c, emit_struct_codec(ctx, w));
+        MAYBE_VOID(_m, emit_struct_user_methods(ctx, w));
+        return {};
+    }
+
+    // Walk the variant containment chain from a struct's fields outward
+    // (depth-first) and collect every anon inner STRUCT_DECL reachable
+    // through STRUCT_UNION-typed fields. Used by backends that need to
+    // hoist inner-anon property accessors into the parent_format's scope
+    // (e.g. ebm2rust outer impl, ebm2cpp outer class) so their bodies'
+    // self/this references land on the right receiver. Language-agnostic
+    // because it only looks at EBM structure.
+    inline ebmgen::expected<void> collect_anon_inner_descendants(auto&& ctx, ebm::WeakStatementRef struct_ref, std::vector<ebm::WeakStatementRef>& out, std::unordered_set<std::uint64_t>& seen) {
+        MAYBE(stmt, ctx.get(from_weak(struct_ref)));
+        auto struct_decl_p = stmt.body.struct_decl();
+        if (!struct_decl_p) {
+            return {};
+        }
+        for (auto& field_ref : struct_decl_p->fields.container) {
+            MAYBE(field_stmt, ctx.get(field_ref));
+            auto field_decl_p = field_stmt.body.field_decl();
+            if (!field_decl_p) {
+                continue;
+            }
+            MAYBE(field_type, ctx.get(field_decl_p->field_type));
+            if (field_type.body.kind != ebm::TypeKind::STRUCT_UNION) {
+                continue;
+            }
+            auto desc_p = field_type.body.struct_union_desc();
+            if (!desc_p) {
+                continue;
+            }
+            for (auto& member_type_ref : desc_p->variant_desc.members.container) {
+                MAYBE(member_type, ctx.get(member_type_ref));
+                if (member_type.body.kind != ebm::TypeKind::STRUCT) {
+                    continue;
+                }
+                auto member_struct_weak_p = member_type.body.id();
+                if (!member_struct_weak_p) {
+                    continue;
+                }
+                auto member_struct_weak = *member_struct_weak_p;
+                if (seen.contains(get_id(member_struct_weak))) {
+                    continue;
+                }
+                seen.insert(get_id(member_struct_weak));
+                out.push_back(member_struct_weak);
+                MAYBE_VOID(_, collect_anon_inner_descendants(ctx, member_struct_weak, out, seen));
+            }
+        }
         return {};
     }
 

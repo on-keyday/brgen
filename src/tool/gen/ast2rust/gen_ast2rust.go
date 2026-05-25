@@ -554,6 +554,11 @@ func generate(rw io.Writer, defs *gen.Defs) {
 			w.Printf("			%s: 0,\n", field.Name)
 		} else if field.Type.Name == "String" {
 			w.Printf("			%s: String::new(),\n", field.Name)
+		} else if field.Type.Name == "Loc" {
+			// Loc is Copy, but doesn't derive Default in the generated ast.rs.
+			// Use a literal zero-init; the population loop below overwrites it
+			// from raw_scope.loc anyway.
+			w.Printf("			%s: Loc{ pos: Pos{ begin: 0, end: 0 }, file: 0, line: 0, col: 0 },\n", field.Name)
 		}
 	}
 	w.Printf("		}));\n")
@@ -759,6 +764,8 @@ func generate(rw io.Writer, defs *gen.Defs) {
 	w.Printf("			};\n")
 	w.Printf("			scope.borrow_mut().ident.push(Rc::downgrade(ident));\n")
 	w.Printf("		}\n")
+	w.Printf("		scope.borrow_mut().branch_root = raw_scope.branch_root;\n")
+	w.Printf("		scope.borrow_mut().loc = raw_scope.loc;\n")
 	w.Printf("	}\n\n")
 
 	w.Printf("	match nodes.get(0){\n")

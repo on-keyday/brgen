@@ -1220,10 +1220,11 @@ export interface Scope {
 	ident: Ident[];
 	owner: Node|null;
 	branch_root: boolean;
+	loc: Loc;
 }
 
 export function isScope(obj: any): obj is Scope {
-	return obj && typeof obj === 'object' && typeof obj?.prev === 'object' && typeof obj?.next === 'object' && typeof obj?.branch === 'object' && Array.isArray(obj?.ident) && (obj?.owner === null || isNode(obj?.owner)) && typeof obj?.branch_root === "boolean"
+	return obj && typeof obj === 'object' && typeof obj?.prev === 'object' && typeof obj?.next === 'object' && typeof obj?.branch === 'object' && Array.isArray(obj?.ident) && (obj?.owner === null || isNode(obj?.owner)) && typeof obj?.branch_root === "boolean" && isLoc(obj?.loc)
 }
 
 export interface Pos {
@@ -1263,10 +1264,11 @@ export interface RawScope {
 	ident: number[];
 	owner: number|null;
 	branch_root: boolean;
+	loc: Loc;
 }
 
 export function isRawScope(obj: any): obj is RawScope {
-	return obj && typeof obj === 'object' && (obj?.prev === null || typeof obj?.prev === "number") && (obj?.next === null || typeof obj?.next === "number") && (obj?.branch === null || typeof obj?.branch === "number") && Array.isArray(obj?.ident) && (obj?.owner === null || typeof obj?.owner === "number") && typeof obj?.branch_root === "boolean"
+	return obj && typeof obj === 'object' && (obj?.prev === null || typeof obj?.prev === "number") && (obj?.next === null || typeof obj?.next === "number") && (obj?.branch === null || typeof obj?.branch === "number") && Array.isArray(obj?.ident) && (obj?.owner === null || typeof obj?.owner === "number") && typeof obj?.branch_root === "boolean" && isLoc(obj?.loc)
 }
 
 export interface RawNode {
@@ -2308,6 +2310,7 @@ export function parseAST(obj: JsonAst): ParseResult {
 			ident: [],
 			owner: null,
 			branch_root: false,
+			loc: {pos: {begin: 0, end: 0}, file: 0, line: 0, col: 0},
 		}
 		c.scope.push(n);
 	}
@@ -5119,6 +5122,7 @@ export function parseAST(obj: JsonAst): ParseResult {
 		}
 		cscope.owner = tmpowner;
 		cscope.branch_root = os.branch_root;
+		cscope.loc = os.loc;
 	}
 	const root = c.node[0];
 	if (!isProgram(root)) {

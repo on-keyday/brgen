@@ -81,23 +81,25 @@ namespace ebmcodegen::util {
         std::vector<ebm::StatementRef> result;
         std::unordered_set<std::uint64_t> visited;
 
-        auto visit = [&](auto self, uint64_t id) -> void {
-            if (visited.contains(id)) return;
+        auto visit = [&](auto self, uint64_t id) -> ebmgen::expected<void> {
+            if (visited.contains(id)) return {};
 
             auto it = struct_graph.find(id);
-            if (it != struct_graph.end()) {
-                // 依存先に先に訪れる
-                for (uint64_t dep_id : it->second.deps) {
-                    self(self, dep_id);
-                }
-                // 全ての依存先を処理し終えたら、自分を追加
-                result.push_back(it->second.ref);
+            if (it == struct_graph.end()) {
+                return ebmgen::unexpect_error("Struct with id {} not found in struct graph", id);
             }
+            // 依存先に先に訪れる
+            for (uint64_t dep_id : it->second.deps) {
+                self(self, dep_id);
+            }
+            // 全ての依存先を処理し終えたら、自分を追加
+            result.push_back(it->second.ref);
             visited.insert(id);
+            return {};
         };
 
         for (uint64_t id : order_of_appearance) {
-            visit(visit, id);
+            MAYBE_VOID(ok, visit(visit, id));
         }
 
         return result;

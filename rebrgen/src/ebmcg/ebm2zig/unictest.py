@@ -63,6 +63,9 @@ pub fn main() !void {{
     var read_stream = std.io.fixedBufferStream(input_data);
     target.decode(read_stream.reader(), allocator) catch |err| {{
         std.debug.print("Decode error: {{}}\\n", .{{err}});
+        if (@errorReturnTrace()) |trace| {{
+            std.debug.dumpStackTrace(trace.*);
+        }}
         std.process.exit(10);
     }};
 
@@ -71,6 +74,9 @@ pub fn main() !void {{
     defer output_buf.deinit(allocator);
     target.encode(output_buf.writer(allocator)) catch |err| {{
         std.debug.print("Encode error: {{}}\\n", .{{err}});
+        if (@errorReturnTrace()) |trace| {{
+            std.debug.dumpStackTrace(trace.*);
+        }}
         std.process.exit(20);
     }};
 

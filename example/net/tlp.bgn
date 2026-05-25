@@ -1,0 +1,46 @@
+
+
+format TLPFormatType:
+    reserved :u1
+    fmt :u2 
+    type :u5 
+
+format TLPTrafficClass:
+    reserved1 :u1 
+    traffic_class :u3 
+    reserved2 :u4
+
+format TLPHeader:
+    format_type :TLPFormatType
+    traffic_class :TLPTrafficClass
+    digest :u1 
+    ep :u1 
+    attr: format:
+        relax :u1 
+        nosnp :u1
+    reserved :u2
+    length :u10
+
+
+format MemoryRequestHeader:
+    requester_id :u16
+    tag :u8 
+    last_dw :u4 
+    first_dw :u4 
+
+enum CPLStatus:
+    :u3 
+    success
+    unsupported
+    configuration_request_retry
+    abort
+
+format CompletionHeader:
+    completer_id :u16 
+    cpl_st :CPLStatus 
+    b :u1 
+    byte_count :u12 
+    requester_id :u16 
+    tag :u8 
+    reserved :u1 
+    lower_addr :u7

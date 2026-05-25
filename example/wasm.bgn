@@ -25,7 +25,6 @@ format Uint32:
             if byte & 0x80 == 0:
                 break
             shift = shift + 7
-        return value
 
     fn u32() -> u32:
         return value
@@ -53,7 +52,6 @@ format Uint64:
             if byte & 0x80 == 0:
                 break
             shift = shift + 7
-        return value
 
     fn u64() -> u64:
         return value

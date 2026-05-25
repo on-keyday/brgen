@@ -2056,6 +2056,7 @@ namespace brgen::ast {
         }
         new_node->owner = deep_copy(node->owner.lock(), std::forward<NodeM>(node_map), std::forward<ScopeM>(scope_map), std::forward<Subst>(subst));
         new_node->branch_root = node->branch_root;
+        new_node->loc = node->loc;
         return new_node;
     }
 
@@ -6187,6 +6188,10 @@ namespace brgen::ast {
         }
         if (a->branch_root != b->branch_root) {
             trace(a->branch_root, b->branch_root, "Scope::branch_root", -1);
+            return false;
+        }
+        if (a->loc != b->loc) {
+            trace(a->loc, b->loc, "Scope::loc", -1);
             return false;
         }
         return true;
