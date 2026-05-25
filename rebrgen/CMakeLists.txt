@@ -101,6 +101,9 @@ endif()
 
 add_library(ebm SHARED "src/ebm/extended_binary_module.cpp")
 
+
+
+
 if(NOT "$ENV{CODEGEN_ONLY}" STREQUAL "1")
 
 add_executable(ebmgen
@@ -151,6 +154,7 @@ target_link_libraries(ebmgen futils ebm)
 install(TARGETS ebmgen DESTINATION tool)
 target_compile_options(ebmgen PRIVATE -ftime-trace)
 
+
 target_precompile_headers(ebmgen PRIVATE
     <format>
     <string>
@@ -158,7 +162,6 @@ target_precompile_headers(ebmgen PRIVATE
     <variant>
     <optional>
     <ebm/extended_binary_module.hpp>
-    <ebmcodegen/stub/util.hpp>
     <ebmgen/common.hpp>
     <ebmgen/convert/helper.hpp>
     <ebmgen/mapping.hpp>
@@ -166,6 +169,32 @@ target_precompile_headers(ebmgen PRIVATE
     <concepts>
     <strutil/append.h>
 )
+
+add_library(codegen_pch OBJECT "src/ebmcodegen/stub/dummy.cpp")
+target_precompile_headers(codegen_pch PRIVATE
+    <format>
+    <expected>
+    <string>
+    <vector>
+    <variant>
+    <optional>
+    <ebm/extended_binary_module.hpp>
+    <ebmcodegen/stub/entry.hpp>
+    <ebmcodegen/stub/util.hpp>
+    <ebmgen/common.hpp>
+    <ebmgen/convert/helper.hpp>
+    <ebmgen/mapping.hpp>
+    <ebmcodegen/stub/code_writer.hpp>
+    <ebmcodegen/stub/context.hpp>
+    <ebmcodegen/stub/dependency.hpp>
+    <ebmcodegen/stub/make_visitor.hpp>
+    <ebmcodegen/stub/output.hpp>
+    <ebmcodegen/stub/writer_manager.hpp>
+    <code/loc_writer.h>
+    <concepts>
+    <strutil/append.h>
+)
+
 endif()
 
 add_library(ebmcodegen_lib STATIC

@@ -5,25 +5,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tool)
 add_executable(ebm2z3
     "main.cpp"
 )
-target_precompile_headers(ebm2z3 PRIVATE
-    <format>
-    <expected>
-    <string>
-    <vector>
-    <variant>
-    <optional>
-    <ebm/extended_binary_module.hpp>
-    <ebmcodegen/stub/entry.hpp>
-    <ebmcodegen/stub/util.hpp>
-    <ebmgen/common.hpp>
-    <ebmgen/convert/helper.hpp>
-    <ebmgen/mapping.hpp>
-    <code/code_writer.h>
-    <code/loc_writer.h>
-    <ebmcodegen/stub/writer_manager.hpp>
-    <concepts>
-    <strutil/append.h>
-)
+target_precompile_headers(ebm2z3 REUSE_FROM codegen_pch)
 if(UNIX)
 set_target_properties(ebm2z3 PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool")
 endif()

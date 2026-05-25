@@ -207,36 +207,15 @@ int print_cmake(CodeWriter& w, Flags& flags) {
     w.writeln("add_executable(", target_name);
     w.indent_writeln("\"main.cpp\"");
     w.writeln(")");
-    w.write("target_precompile_headers(", target_name, " ");
-    // codegen.hpp includes user generated code so exclude from this
-    w.write_unformatted(R"(PRIVATE
-    <format>
-    <expected>
-    <string>
-    <vector>
-    <variant>
-    <optional>
-    <ebm/extended_binary_module.hpp>
-    <ebmcodegen/stub/entry.hpp>
-    <ebmcodegen/stub/util.hpp>
-    <ebmgen/common.hpp>
-    <ebmgen/convert/helper.hpp>
-    <ebmgen/mapping.hpp>
-    <code/code_writer.h>
-    <code/loc_writer.h>
-    <ebmcodegen/stub/writer_manager.hpp>
-    <concepts>
-    <strutil/append.h>
-)
-)");
+    w.write("target_precompile_headers(", target_name, " REUSE_FROM codegen_pch)\n");
     w.writeln("if(UNIX)");
     w.writeln("set_target_properties(", target_name, " PROPERTIES INSTALL_RPATH \"${CMAKE_SOURCE_DIR}/tool\")");
     w.writeln("endif()");
     w.writeln("target_link_libraries(", target_name, " ebm futils ebm_mapping)");
     w.writeln("install(TARGETS ", target_name, " DESTINATION tool)");
-    w.writeln("if (\"$ENV{BUILD_MODE}\" STREQUAL \"web\")");
+    w.writeln(R"(if ("$ENV{BUILD_MODE}" STREQUAL "web"))");
     w.indent_writeln("target_compile_options(", target_name, " PUBLIC \"-gsource-map\")");
-    w.indent_writeln("target_link_options(", target_name, " PUBLIC \"-gsource-map\" \"--source-map-base\" \"http://localhost:8000/\")");
+    w.indent_writeln("target_link_options(", target_name, R"( PUBLIC "-gsource-map" "--source-map-base" "http://localhost:8000/"))");
     w.indent_writeln("install(FILES \"${CMAKE_BINARY_DIR}/tool/", target_name, ".wasm\" DESTINATION tool)");
     w.indent_writeln("install(FILES \"${CMAKE_BINARY_DIR}/tool/", target_name, ".wasm.map\" DESTINATION tool)");
     w.writeln("endif()");
