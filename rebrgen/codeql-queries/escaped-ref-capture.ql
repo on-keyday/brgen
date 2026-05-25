@@ -58,7 +58,7 @@ from LambdaExpression lam, ByRefCapture cap, DanglingProneLocal v,
 where
   // The lambda contains a by-ref capture of a dangling-prone local.
   cap = lam.getACapture() and
-  v = cap.getField().getVariable()
+  v = cap.getInitializer().(VariableAccess).getTarget()
   and
   // The lambda is assigned (possibly via implicit conversion) into a
   // std::function-typed field.
