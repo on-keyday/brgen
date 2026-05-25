@@ -20,44 +20,6 @@
 #include "ebm/extended_binary_module.hpp"
 DEFINE_VISITOR(entry_before) {
     auto& config = ctx.config();
-    config.assignment_custom = [](Context_Statement_ASSIGNMENT& ctx) -> expected<Result> {
-        using namespace CODEGEN_NAMESPACE;
-        // only struct/recursive_struct types are non-Copy and need clone consideration
-        MAYBE(val_type, ctx.get_field<"type.instance">(ctx.value));
-        auto type_kind = val_type.body.kind;
-        bool is_non_copy = type_kind == ebm::TypeKind::STRUCT ||
-                           type_kind == ebm::TypeKind::RECURSIVE_STRUCT;
-        if (!is_non_copy) return pass;
-
-        MAYBE(val_expr, ctx.get(ctx.value));
-        bool needs_clone = false;
-        if (val_expr.body.kind == ebm::ExpressionKind::MEMBER_ACCESS) {
-            // self.field: base is SELF kind → always needs clone (&self)
-            if (auto base_ref = val_expr.body.base()) {
-                MAYBE(base_expr, ctx.get(*base_ref));
-                if (base_expr.body.kind == ebm::ExpressionKind::SELF) {
-                    needs_clone = true;
-                }
-            }
-        }
-        else if (val_expr.body.kind == ebm::ExpressionKind::IDENTIFIER) {
-            // local variable: needs clone unless this is the last use
-            if (!ctx.config().can_move_exprs.contains(get_id(ctx.value))) {
-                needs_clone = true;
-            }
-        }
-
-        if (!needs_clone) return pass;
-
-        CodeWriter w;
-        MAYBE(result_target, ctx.visit(ctx.target));
-        auto add = ctx.add_writer();
-        MAYBE(result_value, ctx.visit(ctx.value));
-        MAYBE(got, ctx.get_writer());
-        w.write(std::move(got.get()));
-        w.writeln(result_target.to_writer(), " = ", tidy_condition_brace(result_value.to_string()), ".clone()", ctx.config().endof_statement);
-        return w;
-    };
     config.variable_define_keyword = "let mut";
     config.immutable_variable_define_keyword = "let";
     config.constant_define_keyword = "const";
@@ -192,49 +154,89 @@ DEFINE_VISITOR(entry_before) {
         w.writeln("const ", name, ": [u8; ", std::format("{}", length_p->value()), "] = *b\"", escaped, "\";");
         return w;
     };
-    // Assignment whose target is a PROPERTY MEMBER_ACCESS cannot use the
-    // default `target = value` form because the getter returns Option<&T>
-    // and `*` of a shared ref is not writable. Rewrite to call the
-    // generated setter method (which takes &mut self and owned value).
+    // Two concerns are merged into a single assignment_custom hook (only one
+    // can be registered — registering twice silently overrides):
+    //   (a) target is a PROPERTY MEMBER_ACCESS: the default `target = value`
+    //       form fails because the getter returns Option<&T> and `*ref` is
+    //       not writable. Rewrite to the generated setter method
+    //       (`base.set_x(value)?`).
+    //   (b) value is a non-Copy struct read through `&self` or a non-last-use
+    //       identifier: `target = self.field` triggers E0507 (move out of
+    //       shared/mutable reference). Append `.clone()` to the value.
     config.assignment_custom = [](Context_Statement_ASSIGNMENT& actx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
+        auto needs_value_clone = [&]() -> expected<bool> {
+            MAYBE(val_type, actx.get_field<"type.instance">(actx.value));
+            auto type_kind = val_type.body.kind;
+            bool is_non_copy = type_kind == ebm::TypeKind::STRUCT ||
+                               type_kind == ebm::TypeKind::RECURSIVE_STRUCT;
+            if (!is_non_copy) return false;
+            MAYBE(val_expr, actx.get(actx.value));
+            if (val_expr.body.kind == ebm::ExpressionKind::MEMBER_ACCESS) {
+                if (auto base_ref = val_expr.body.base()) {
+                    MAYBE(base_expr, actx.get(*base_ref));
+                    if (base_expr.body.kind == ebm::ExpressionKind::SELF) {
+                        return true;
+                    }
+                }
+            }
+            else if (val_expr.body.kind == ebm::ExpressionKind::IDENTIFIER) {
+                if (!actx.config().can_move_exprs.contains(get_id(actx.value))) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
         MAYBE(target_expr, actx.get(actx.target));
-        if (target_expr.body.kind != ebm::ExpressionKind::MEMBER_ACCESS) {
-            return pass;
+        // (a) PROPERTY MEMBER_ACCESS target → setter call rewrite
+        if (target_expr.body.kind == ebm::ExpressionKind::MEMBER_ACCESS) {
+            auto base_p = target_expr.body.base();
+            auto member_p = target_expr.body.member();
+            if (base_p && member_p) {
+                MAYBE(member_expr, actx.get(*member_p));
+                if (auto id_p = member_expr.body.id()) {
+                    MAYBE(referent, actx.get(from_weak(*id_p)));
+                    if (referent.body.kind == ebm::StatementKind::PROPERTY_DECL) {
+                        if (auto prop_p = referent.body.property_decl()) {
+                            MAYBE(member_ident, actx.identifier(*member_p));
+                            MAYBE(value_w, actx.visit(actx.value));
+                            MAYBE(clone_value, needs_value_clone());
+                            std::string value_text = value_w.to_string();
+                            if (clone_value) {
+                                value_text = tidy_condition_brace(value_text) + ".clone()";
+                            }
+                            std::string method_name;
+                            std::string base_text;
+                            if (get_id(prop_p->parent_struct) != get_id(prop_p->parent_format)) {
+                                auto inner_name = actx.identifier(prop_p->parent_struct);
+                                method_name = std::string(inner_name) + "_set_" + std::string(member_ident);
+                                base_text = "self";
+                            }
+                            else {
+                                method_name = "set_" + std::string(member_ident);
+                                MAYBE(base_w, actx.visit(*base_p));
+                                base_text = base_w.to_string();
+                            }
+                            return CODELINE(base_text, ".", method_name, "(", value_text, ")?", actx.config().endof_statement);
+                        }
+                    }
+                }
+            }
         }
-        auto base_p = target_expr.body.base();
-        auto member_p = target_expr.body.member();
-        if (!base_p || !member_p) {
-            return pass;
-        }
-        MAYBE(member_expr, actx.get(*member_p));
-        auto id_p = member_expr.body.id();
-        if (!id_p) {
-            return pass;
-        }
-        MAYBE(referent, actx.get(from_weak(*id_p)));
-        if (referent.body.kind != ebm::StatementKind::PROPERTY_DECL) {
-            return pass;
-        }
-        auto prop_p = referent.body.property_decl();
-        if (!prop_p) {
-            return pass;
-        }
-        MAYBE(member_ident, actx.identifier(*member_p));
-        MAYBE(value_w, actx.visit(actx.value));
-        std::string method_name;
-        std::string base_text;
-        if (get_id(prop_p->parent_struct) != get_id(prop_p->parent_format)) {
-            auto inner_name = actx.identifier(prop_p->parent_struct);
-            method_name = std::string(inner_name) + "_set_" + std::string(member_ident);
-            base_text = "self";
-        }
-        else {
-            method_name = "set_" + std::string(member_ident);
-            MAYBE(base_w, actx.visit(*base_p));
-            base_text = base_w.to_string();
-        }
-        return CODELINE(base_text, ".", method_name, "(", value_w.to_writer(), ")?", actx.config().endof_statement);
+
+        // (b) default target form, but value needs .clone()
+        MAYBE(clone_value, needs_value_clone());
+        if (!clone_value) return pass;
+
+        CodeWriter w;
+        MAYBE(result_target, actx.visit(actx.target));
+        auto add = actx.add_writer();
+        MAYBE(result_value, actx.visit(actx.value));
+        MAYBE(got, actx.get_writer());
+        w.write(std::move(got.get()));
+        w.writeln(result_target.to_writer(), " = ", tidy_condition_brace(result_value.to_string()), ".clone()", actx.config().endof_statement);
+        return w;
     };
     // For pure VARIANT types (= union with no common_type), declare a Rust enum
     // so the name referenced in function signatures (e.g. Option<Variant43>)
