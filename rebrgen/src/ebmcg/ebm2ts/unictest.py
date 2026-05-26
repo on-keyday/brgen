@@ -9,7 +9,7 @@ import subprocess as sp
 import sys
 
 
-WRITE_BUFFER_BYTES = 256 * 1024  # large enough for every test format we ship
+WRITE_BUFFER_BYTES = 16 * 1024 * 1024  # 16 MiB; large enough for wasm_src2json + EBM self-test
 
 
 def main():
