@@ -383,6 +383,13 @@ DEFINE_VISITOR(entry_before) {
                 return w;
             }
             // decode -- build per-field default initializer.
+            // For wrapper functions (is_wrapper=true), the EBM body is just
+            // `header_state = {}; return Foo_decode_impl(...)`. The wrapper's
+            // obj is never populated field-by-field; it is reassigned from
+            // the impl's return. Declare with `let` and skip the default
+            // init for wrappers; declare with `const` (with the proper
+            // per-field default) for the underlying impl/non-wrapper form.
+            const bool is_wrapper = fctx.func_decl.attribute.is_wrapper();
             CodeWriter init;
             init.write("{");
             bool first = true;
@@ -408,13 +415,14 @@ DEFINE_VISITOR(entry_before) {
                     }));
             }
             init.write("}");
+            const char* let_or_const = is_wrapper ? "let" : "const";
             if (is_js) {
                 w.writeln("export function ", fname, "(", params, ") {");
-                w.indent_writeln("const obj = ", init, ";");
+                w.indent_writeln(let_or_const, " obj = ", init, ";");
             }
             else {
                 w.writeln("export function ", fname, "(", params, "): ", struct_name, " {");
-                w.indent_writeln("const obj: ", struct_name, " = ", init, ";");
+                w.indent_writeln(let_or_const, " obj: ", struct_name, " = ", init, ";");
             }
             return w;
         }
@@ -565,12 +573,28 @@ DEFINE_VISITOR(entry_before) {
     config.return_visitor = [](Context_Statement_RETURN& rctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
         CodeWriter w;
-        if (ts_return_belongs_to_decode(rctx, rctx.related_function)) {
-            w.writeln("return obj;");
-            return w;
-        }
-        if (ts_return_belongs_to_encode(rctx, rctx.related_function)) {
-            w.writeln("return;");
+        const bool from_decode = ts_return_belongs_to_decode(rctx, rctx.related_function);
+        const bool from_encode = ts_return_belongs_to_encode(rctx, rctx.related_function);
+        // For encode/decode RETURN, the value is the function's "error code"
+        // (null on success). In our top-level encode/decode functions the
+        // codec semantics is void/Foo; but the EBM may still attach a
+        // meaningful side-effect expression -- notably wrapper functions
+        // that delegate to `_impl(...)` via a CALL in the RETURN value. We
+        // need to execute that CALL even though we discard its return.
+        if (from_decode || from_encode) {
+            if (!is_nil(rctx.value)) {
+                MAYBE(val, rctx.visit(rctx.value));
+                auto val_text = val.to_string();
+                if (!val_text.empty() && val_text != "undefined" && val_text != "null") {
+                    w.writeln(val_text, ";");
+                }
+            }
+            if (from_decode) {
+                w.writeln("return obj;");
+            }
+            else {
+                w.writeln("return;");
+            }
             return w;
         }
         if (is_nil(rctx.value)) {
@@ -987,6 +1011,13 @@ DEFINE_VISITOR(entry_before) {
         const bool le = rctx.read_data.attribute.endian() == ebm::Endian::little;
         auto io_ = rctx.identifier(rctx.read_data.io_ref);
         CodeWriter w;
+        // DataView's get*() already throws "Offset is outside the bounds"
+        // on overflow, but the message hides the cause. Surface our own
+        // truncation error so the test driver classifies it as a decode
+        // error (exit 10) instead of an internal error.
+        w.writeln("if (", io_, ".offset + ", std::to_string(bytes), " > ", io_, ".view.byteLength) {");
+        w.indent_writeln("throw new Error(\"unexpected EOF: need ", std::to_string(bytes), " bytes\");");
+        w.writeln("}");
         if (bits == 8) {
             w.writeln(target.to_writer(), " = ", io_, ".view.get", kind, "(", io_, ".offset);");
         }
@@ -1003,6 +1034,7 @@ DEFINE_VISITOR(entry_before) {
         }
         CodeWriter w;
         if (auto dyn = rctx.read_data.size.ref(); dyn && rctx.is(ebm::ExpressionKind::GET_REMAINING_BYTES, *dyn)) {
+            // Drain whatever remains; cannot underflow.
             w.writeln("{");
             w.indent_writeln("const _n = ", io_, ".view.byteLength - ", io_, ".offset;");
             w.indent_writeln(target.to_writer(), " = new Uint8Array(", io_, ".view.buffer.slice(", io_, ".view.byteOffset + ", io_, ".offset, ", io_, ".view.byteOffset + ", io_, ".offset + _n));");
@@ -1011,10 +1043,16 @@ DEFINE_VISITOR(entry_before) {
             return w;
         }
         MAYBE(size_str, get_size_str(rctx, rctx.read_data.size));
+        // Sized reads MUST fail on truncated input; otherwise the decoder
+        // happily continues with shorter-than-expected Uint8Arrays
+        // (`buffer.slice` clamps to byteLength) and the bug surfaces only
+        // much later as a round-trip mismatch or an infinite loop.
         w.writeln("{");
-        // Size may be bigint under --use-bigint; coerce to number for the
-        // DataView / Uint8Array arithmetic below.
+        // Size may be bigint under --use-bigint; coerce to number.
         w.indent_writeln("const _n = Number(", size_str, ");");
+        w.indent_writeln("if (", io_, ".offset + _n > ", io_, ".view.byteLength) {");
+        w.indent_writeln("    throw new Error(\"unexpected EOF: need \" + _n + \" bytes\");");
+        w.indent_writeln("}");
         w.indent_writeln(target.to_writer(), " = new Uint8Array(", io_, ".view.buffer.slice(", io_, ".view.byteOffset + ", io_, ".offset, ", io_, ".view.byteOffset + ", io_, ".offset + _n));");
         w.indent_writeln(io_, ".offset += _n;");
         w.writeln("}");

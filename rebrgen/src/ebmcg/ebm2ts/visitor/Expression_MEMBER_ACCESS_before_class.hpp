@@ -77,5 +77,30 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
     auto struct_name = std::string(ctx.identifier(parent_format));
     auto member_name = std::string(ctx.identifier(getter_ref));
     MAYBE(base_str, ctx.visit(ctx.base));
-    return CODE(struct_name, "_get_", member_name, "(", base_str.to_writer(), ")");
+    // The getter may declare extra "state variable" parameters beyond `self`
+    // (e.g. HTTP/2's `header_state`). The EBM resolves a property access as
+    // a bare MEMBER_ACCESS without surfacing those args, so we look the
+    // getter up and forward its state params by name -- the caller is
+    // expected to have a same-named local in scope.
+    CodeWriter call;
+    call.write(struct_name, "_get_", member_name, "(", base_str.to_writer());
+    MAYBE(getter_stmt, ctx.get(getter_ref));
+    if (auto fd = getter_stmt.body.func_decl()) {
+        for (auto& p : fd->params.container) {
+            auto p_stmt = ctx.get(p);
+            if (!p_stmt) {
+                continue;
+            }
+            auto pd = p_stmt->body.param_decl();
+            if (!pd) {
+                continue;
+            }
+            if (!pd->is_state_variable()) {
+                continue;
+            }
+            call.write(", ", ctx.identifier(p));
+        }
+    }
+    call.write(")");
+    return Result(std::move(call));
 }
