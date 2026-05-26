@@ -39,52 +39,70 @@ def main():
         f"new URL('./target_module{suffix}', import.meta.url).href"
     )
 
+    # Avoid calling `process.exit()` after a sync console.error: on Windows
+    # node 25, the immediate event-loop abort races against the still-pending
+    # async write to stderr inside libuv (Assertion failed: UV_HANDLE_CLOSING
+    # in src/win/async.c). We use distinct error types + `process.exitCode`
+    # and let Node drain its own I/O before exiting naturally.
     driver_src = f"""// Auto-generated round-trip driver for {TEST_TARGET_FORMAT}.
 import {{ readFileSync, writeFileSync }} from 'node:fs';
 
-const inputPath = process.argv[2];
-const outputPath = process.argv[3];
+class DecodeError extends Error {{}}
+class EncodeError extends Error {{}}
 
-const buf = readFileSync(inputPath);
-const inputBytes = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
+async function main() {{
+    const inputPath = process.argv[2];
+    const outputPath = process.argv[3];
 
-const mod = await import({module_url_expr});
-const decode = mod[{json.dumps(decode_fn)}];
-const encode = mod[{json.dumps(encode_fn)}];
-if (typeof decode !== 'function' || typeof encode !== 'function') {{
-    console.error('Missing {decode_fn} or {encode_fn} export in generated module');
-    process.exit(30);
+    const buf = readFileSync(inputPath);
+    const inputBytes = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
+
+    const mod = await import({module_url_expr});
+    const decode = mod[{json.dumps(decode_fn)}];
+    const encode = mod[{json.dumps(encode_fn)}];
+    if (typeof decode !== 'function' || typeof encode !== 'function') {{
+        throw new Error('Missing {decode_fn} or {encode_fn} export');
+    }}
+
+    const reader = {{
+        view: new DataView(inputBytes.buffer, inputBytes.byteOffset, inputBytes.byteLength),
+        offset: 0,
+    }};
+
+    let obj;
+    try {{
+        obj = decode(reader);
+    }} catch (e) {{
+        throw new DecodeError(`Decode error: ${{e && e.stack ? e.stack : e}}`);
+    }}
+
+    const writeBuf = new ArrayBuffer({WRITE_BUFFER_BYTES});
+    const writer = {{
+        view: new DataView(writeBuf),
+        offset: 0,
+    }};
+
+    try {{
+        encode(writer, obj);
+    }} catch (e) {{
+        throw new EncodeError(`Encode error: ${{e && e.stack ? e.stack : e}}`);
+    }}
+
+    const out = new Uint8Array(writeBuf, 0, writer.offset);
+    writeFileSync(outputPath, out);
+    console.log('Round-trip succeeded, wrote', writer.offset, 'bytes');
 }}
 
-const reader = {{
-    view: new DataView(inputBytes.buffer, inputBytes.byteOffset, inputBytes.byteLength),
-    offset: 0,
-}};
-
-let obj;
-try {{
-    obj = decode(reader);
-}} catch (e) {{
-    console.error('Decode error:', e && e.stack ? e.stack : e);
-    process.exit(10);
-}}
-
-const writeBuf = new ArrayBuffer({WRITE_BUFFER_BYTES});
-const writer = {{
-    view: new DataView(writeBuf),
-    offset: 0,
-}};
-
-try {{
-    encode(writer, obj);
-}} catch (e) {{
-    console.error('Encode error:', e && e.stack ? e.stack : e);
-    process.exit(20);
-}}
-
-const out = new Uint8Array(writeBuf, 0, writer.offset);
-writeFileSync(outputPath, out);
-console.log('Round-trip succeeded, wrote', writer.offset, 'bytes');
+main().catch((e) => {{
+    // `process.stderr.write` with a callback drains libuv's TTY/Pipe write
+    // queue before we surface the exit code; `process.exit` would race the
+    // pending write on Windows (UV_HANDLE_CLOSING assertion).
+    process.stderr.write(`${{e && e.message ? e.message : e}}\\n`, () => {{
+        process.exitCode = (e instanceof DecodeError) ? 10
+            : (e instanceof EncodeError) ? 20
+            : 1;
+    }});
+}});
 """
 
     with open(driver_path, "w", encoding="utf-8") as f:
