@@ -31,24 +31,27 @@ grep "unimplemented\|FAIL\|ERROR" save/unictest.txt
 
 テスト出力に `unimplemented hook: Statement_FOO` が出た場合:
 
-### 基本: entry_before_class.hpp に書く
+### 🚨 新規フックファイルは `ebmtemplate.py` で生成すること 🚨
 
-`src/ebmcg/ebm2<lang>/visitor/entry_before_class.hpp` 内の `DEFINE_VISITOR(entry_before)` で `config.foo_visitor` に設定する。量が少ない間はここにまとめる。
+手書きで `Write` するとビルドは通るが**フックがサイレントに呼ばれない**(cmake が `main.cpp` の `__has_include` 依存を追跡しないため)。`ebmtemplate.py` は必要な touch まで自動でやる。
+
+```bash
+python script/ebmtemplate.py Statement_FOO_class <lang>
+# → src/ebmcg/ebm2<lang>/visitor/Statement_FOO_class.hpp を生成
+# → main.cpp を touch して再コンパイルさせる
+```
+
+生成されたファイル内に `DEFINE_VISITOR(Statement_FOO) { ... }` を実装する。
+
+### 既存の entry_before_class.hpp に書く場合
+
+`src/ebmcg/ebm2<lang>/visitor/entry_before_class.hpp` は ebmcodegen.py で既に作られているので、編集だけなら touch 不要。量が少ない間はここに `config.foo_visitor = [...]` で集約してよい。
 
 ```cpp
 config.foo_visitor = [](Context_Statement_FOO& ctx) -> expected<Result> {
     // 実装
 };
 ```
-
-### 量が増えたら: 専用ファイルに分割
-
-```bash
-python script/ebmtemplate.py Statement_FOO_class <lang>
-# → src/ebmcg/ebm2<lang>/visitor/Statement_FOO_class.hpp を生成
-```
-
-生成されたファイルに `DEFINE_VISITOR(Statement_FOO) { ... }` を実装する。
 
 ## main ブランチとの比較
 

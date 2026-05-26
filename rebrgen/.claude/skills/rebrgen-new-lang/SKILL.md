@@ -37,9 +37,46 @@ grep "unimplemented" save/unictest.txt
 
 ## フックの実装方針
 
-### 基本: entry_before_class.hpp にまとめる
+### 🚨 新規 visitor フックファイルは必ず `ebmtemplate.py` で生成する 🚨
 
-`src/ebmcg/ebm2<lang>/visitor/entry_before_class.hpp` の `DEFINE_VISITOR(entry_before)` 内で `config.*_visitor` に設定する。量が少ない間はここに集約する。
+`Editor`/`Write` ツールで手書きしないこと。手書きするとビルドは通るがフックが**サイレントに呼ばれない**。
+
+```bash
+python script/ebmtemplate.py <hook>_class <lang>
+# → src/ebmcg/ebm2<lang>/visitor/<hook>_class.hpp を生成
+# → main.cpp の timestamp も touch される
+```
+
+**理由**: `main.cpp` は `__has_include("visitor/<hook>_class.hpp")` でフックを取り込むが、cmake は `__has_include` の依存を**追跡しない**。新規ファイル追加時に `main.cpp` を touch しないと再コンパイルされず、新規フックは include されず、何のエラーも出ずにスキップされる。`ebmtemplate.py` はこの touch まで自動でやる。
+
+生成できる template target 名(=フックの全種類)を一覧:
+
+```bash
+./tool/ebmcodegen --mode hooklist            # codegen / interpret 共通 (4000+ 種類)
+```
+
+各言語で**既に実装済み**のフック一覧(どこをオーバーライドしているか確認):
+
+```bash
+python script/ebmtemplate.py list <lang>     # ebmcg/ebm2<lang> 単一言語
+python script/ebmtemplate.py list all        # ebmcg 全言語
+python script/ebmtemplate_ip.py list all     # ebmip (interpreter 系) 全言語
+```
+
+### 緊急で手書きするしかない場合のフォールバック
+
+ebmtemplate.py が動かない・テンプレートに無いフックを増設したい等で手書きが避けられない場合のみ:
+
+```bash
+# 1. 該当する visitor/<hook>_class.hpp を Write
+# 2. main.cpp を必ず touch する (これを忘れるとサイレント失敗)
+touch src/ebmcg/ebm2<lang>/main.cpp
+python script/build.py
+```
+
+### entry_before_class.hpp でまとめる場合
+
+`src/ebmcg/ebm2<lang>/visitor/entry_before_class.hpp` の `DEFINE_VISITOR(entry_before)` 内で `config.*_visitor` に設定する。これは ebmcodegen.py のスケルトン生成時点で既に存在するファイルなので、追加 touch なしで編集 OK。量が少ない間はここに集約してよい。
 
 ```cpp
 DEFINE_VISITOR(entry_before) {
@@ -59,11 +96,10 @@ DEFINE_VISITOR(entry_before) {
 }
 ```
 
-### 量が増えたら: 専用ファイルに分割
+ファイルが大きくなったら個別フックに切り出す:
 
 ```bash
 python script/ebmtemplate.py Statement_FOO_class <lang>
-# → src/ebmcg/ebm2<lang>/visitor/Statement_FOO_class.hpp
 ```
 
 `DEFINE_VISITOR(Statement_FOO) { ... }` に実装する。
