@@ -739,6 +739,32 @@ DEFINE_VISITOR(entry_before) {
     // the surrounding bigint arithmetic chokes later with TypeError.
     config.assignment_custom = [use_bigint](Context_Statement_ASSIGNMENT& actx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
+        // (a) If the LHS is a property access, route through the setter.
+        // MEMBER_ACCESS_before would otherwise rewrite the LHS to a getter
+        // call, producing `Foo_get_x(obj) = value` -- invalid syntax.
+        auto prop_opt = actx.template get_field<"target.body.member.body.id.instance.body.property_decl">();
+        if (prop_opt && !is_nil(prop_opt->setter_function.id)) {
+            auto setter_ref = prop_opt->setter_function.id;
+            auto fd_opt = actx.template get_field<"func_decl">(setter_ref);
+            if (fd_opt && !is_nil(fd_opt->parent_format)) {
+                MAYBE(base_ref, actx.template get_field<"target.body.base">());
+                auto struct_name = std::string(actx.identifier(fd_opt->parent_format));
+                auto member_name = std::string(actx.identifier(setter_ref));
+                MAYBE(base_str, actx.visit(base_ref));
+                MAYBE(value_str, actx.visit(actx.value));
+                CodeWriter w;
+                w.write(struct_name, "_set_", member_name, "(", base_str.to_writer(), ", ", value_str.to_writer());
+                for (auto& p : fd_opt->params.container) {
+                    auto is_state = actx.template get_field<"param_decl.is_state_variable">(p);
+                    if (is_state && *is_state) {
+                        w.write(", ", actx.identifier(p));
+                    }
+                }
+                w.writeln(");");
+                return w;
+            }
+        }
+        // (b) Coerce mixed bigint <-> number on assignment.
         if (!use_bigint) {
             return pass;
         }
@@ -751,10 +777,8 @@ DEFINE_VISITOR(entry_before) {
             }
             return false;
         };
-        MAYBE(target_expr, actx.get(actx.target));
-        MAYBE(value_expr, actx.get(actx.value));
-        MAYBE(target_t, actx.get(target_expr.body.type));
-        MAYBE(value_t, actx.get(value_expr.body.type));
+        MAYBE(target_t, actx.template get_field<"target.body.type.instance">());
+        MAYBE(value_t, actx.template get_field<"value.body.type.instance">());
         const bool target_bigint = renders_as_bigint(target_t.body);
         const bool value_bigint = renders_as_bigint(value_t.body);
         if (target_bigint == value_bigint) {
