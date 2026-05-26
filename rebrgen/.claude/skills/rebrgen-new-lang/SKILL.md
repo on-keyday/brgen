@@ -49,19 +49,20 @@ python script/ebmtemplate.py <hook>_class <lang>
 
 **理由**: `main.cpp` は `__has_include("visitor/<hook>_class.hpp")` でフックを取り込むが、cmake は `__has_include` の依存を**追跡しない**。新規ファイル追加時に `main.cpp` を touch しないと再コンパイルされず、新規フックは include されず、何のエラーも出ずにスキップされる。`ebmtemplate.py` はこの touch まで自動でやる。
 
-生成できる template target 名(=フックの全種類)を一覧:
+**実用上のスケール感**: hooklist は EBM kind × stage suffix × DSL 有無の cartesian で 4000+ 種類になるが、実際に各 backend が override してるのは 10-30 程度。`default_codegen_visitor` が 99 hook で大半を済ませているので、新言語追加時に書くのも一桁〜十数個になることが多い。
 
 ```bash
-./tool/ebmcodegen --mode hooklist            # codegen / interpret 共通 (4000+ 種類)
-```
+# 全 template 名カタログ (検索用、量に圧倒されない)
+./tool/ebmcodegen --mode hooklist
 
-各言語で**既に実装済み**のフック一覧(どこをオーバーライドしているか確認):
-
-```bash
-python script/ebmtemplate.py list <lang>     # ebmcg/ebm2<lang> 単一言語
+# 既存言語が override してる hook を見る (← こちらが実用的)
+python script/ebmtemplate.py list <lang>     # 例: python, rust, go, c
 python script/ebmtemplate.py list all        # ebmcg 全言語
-python script/ebmtemplate_ip.py list all     # ebmip (interpreter 系) 全言語
+python script/ebmtemplate_ip.py list all     # ebmip (interpreter 系)
+python script/ebmtemplate.py list default    # 共通の default 実装 (99 個、これが大半をカバー)
 ```
+
+新言語の hook を考えるときは、近い既存言語 (例: 静的型なら rust / go、動的型なら python) の `list <lang>` を眺めて差分を埋める発想が早い。
 
 ### 緊急で手書きするしかない場合のフォールバック
 
