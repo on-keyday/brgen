@@ -1,0 +1,124 @@
+#!/usr/bin/env python3
+# Test logic for ebm2ts (TypeScript / JavaScript). Runs a round-trip
+# decode -> re-encode against the generated module via Node.js (which
+# supports both .ts and .js natively).
+import json
+import os
+import pathlib as pl
+import subprocess as sp
+import sys
+
+
+WRITE_BUFFER_BYTES = 256 * 1024  # large enough for every test format we ship
+
+
+def main():
+    TEST_TARGET_FILE = sys.argv[1]
+    INPUT_FILE = sys.argv[2]
+    OUTPUT_FILE = sys.argv[3]
+    TEST_TARGET_FORMAT = sys.argv[4]
+    OPTION_SET_NAME = sys.argv[5]
+    ADDITIONAL_ARGS = sys.argv[6:] if len(sys.argv) > 6 else []
+
+    is_javascript = OPTION_SET_NAME == "javascript" or "--javascript" in ADDITIONAL_ARGS
+    suffix = ".js" if is_javascript else ".ts"
+
+    work_dir = pl.Path(os.getcwd())
+    module_path = work_dir / f"target_module{suffix}"
+    driver_path = work_dir / "test_driver.ts"  # node strips types from .ts directly
+
+    # Stage the generated module next to the driver, with the right extension.
+    with open(TEST_TARGET_FILE, "rb") as src, open(module_path, "wb") as dst:
+        dst.write(src.read())
+
+    decode_fn = f"{TEST_TARGET_FORMAT}_decode"
+    encode_fn = f"{TEST_TARGET_FORMAT}_encode"
+    # Node ESM module loader keys on the file path. Use an explicit URL to
+    # bypass any package.json type confusion.
+    module_url_expr = (
+        f"new URL('./target_module{suffix}', import.meta.url).href"
+    )
+
+    driver_src = f"""// Auto-generated round-trip driver for {TEST_TARGET_FORMAT}.
+import {{ readFileSync, writeFileSync }} from 'node:fs';
+
+const inputPath = process.argv[2];
+const outputPath = process.argv[3];
+
+const buf = readFileSync(inputPath);
+const inputBytes = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
+
+const mod = await import({module_url_expr});
+const decode = mod[{json.dumps(decode_fn)}];
+const encode = mod[{json.dumps(encode_fn)}];
+if (typeof decode !== 'function' || typeof encode !== 'function') {{
+    console.error('Missing {decode_fn} or {encode_fn} export in generated module');
+    process.exit(30);
+}}
+
+const reader = {{
+    view: new DataView(inputBytes.buffer, inputBytes.byteOffset, inputBytes.byteLength),
+    offset: 0,
+}};
+
+let obj;
+try {{
+    obj = decode(reader);
+}} catch (e) {{
+    console.error('Decode error:', e && e.stack ? e.stack : e);
+    process.exit(10);
+}}
+
+const writeBuf = new ArrayBuffer({WRITE_BUFFER_BYTES});
+const writer = {{
+    view: new DataView(writeBuf),
+    offset: 0,
+}};
+
+try {{
+    encode(writer, obj);
+}} catch (e) {{
+    console.error('Encode error:', e && e.stack ? e.stack : e);
+    process.exit(20);
+}}
+
+const out = new Uint8Array(writeBuf, 0, writer.offset);
+writeFileSync(outputPath, out);
+console.log('Round-trip succeeded, wrote', writer.offset, 'bytes');
+"""
+
+    with open(driver_path, "w", encoding="utf-8") as f:
+        f.write(driver_src)
+
+    print(
+        f"Testing ebm2ts ({OPTION_SET_NAME}): format={TEST_TARGET_FORMAT}, "
+        f"module={module_path.name}, driver={driver_path.name}",
+        flush=True,
+    )
+
+    cmd = ["node", str(driver_path), INPUT_FILE, OUTPUT_FILE]
+    print(f"Running: {' '.join(cmd)}", flush=True)
+    print("for VSCode debugging")
+    print(
+        json.dumps(
+            {
+                "type": "node",
+                "request": "launch",
+                "cwd": os.getcwd(),
+                "name": f"Debug ebm2ts unictest ({TEST_TARGET_FORMAT}, {OPTION_SET_NAME})",
+                "runtimeExecutable": "node",
+                "program": str(driver_path),
+                "args": [INPUT_FILE, OUTPUT_FILE],
+            },
+            indent=4,
+        )
+    )
+
+    try:
+        sp.check_call(cmd, env=os.environ, stdout=sys.stdout, stderr=sys.stderr)
+    except sp.CalledProcessError as e:
+        sys.exit(e.returncode)
+
+
+if __name__ == "__main__":
+    main()

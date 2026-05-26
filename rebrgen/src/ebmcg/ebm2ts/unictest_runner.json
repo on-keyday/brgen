@@ -1,0 +1,32 @@
+{
+    "name": "ebm2ts",
+    "source_setup_command": [
+        "python",
+        "$WORK_DIR/script/unictest_setup.py",
+        "setup",
+        "ebm2ts"
+    ],
+    "run_command": [
+        "python",
+        "$WORK_DIR/script/unictest_setup.py",
+        "test",
+        "ebm2ts"
+    ],
+    "option_sets": [
+        {
+            "name": "typescript",
+            "setup_options": [],
+            "run_options": []
+        },
+        {
+            "name": "javascript",
+            "setup_options": ["--javascript"],
+            "run_options": ["--javascript"]
+        },
+        {
+            "name": "typescript-bigint",
+            "setup_options": ["--use-bigint"],
+            "run_options": ["--use-bigint"]
+        }
+    ]
+}

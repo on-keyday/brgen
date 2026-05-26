@@ -38,6 +38,9 @@
         },
         {
             "file": "$WORK_DIR/src/ebmcg/ebm2ruby/unictest_runner.json"
+        },
+        {
+            "file": "$WORK_DIR/src/ebmcg/ebm2ts/unictest_runner.json"
         }
     ],
     "inputs": {
