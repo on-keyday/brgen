@@ -710,11 +710,18 @@ DEFINE_VISITOR(entry_before) {
                 return w;
             }
             case ebm::FunctionKind::CAST: {
-                // FunctionKind::CAST is e.g. `obj.varint.u32()` - extracts a
-                // numeric view of a wrapper struct. In JS we let the type
-                // system coerce; the call collapses to the base reference.
-                // (TYPE_CAST around this will drop further wrapping.)
-                return base_str;
+                // FunctionKind::CAST is `obj.varint.u32()` -- an explicit
+                // bgn-defined accessor that unwraps a struct to its
+                // numeric payload (e.g. `fn u32(): u32 { return self.value }`).
+                // Emit as a top-level function call so the actual cast body
+                // runs; collapsing to just `base` would leave the wrapper
+                // struct in arithmetic positions and yield NaN.
+                w.write(struct_name, "_", recorded, "(", base_str.to_writer());
+                if (!cctx.call_desc.arguments.container.empty()) {
+                    w.write(", ", args);
+                }
+                w.write(")");
+                return w;
             }
             default:
                 return pass;
@@ -732,6 +739,23 @@ DEFINE_VISITOR(entry_before) {
     };
     config.native_endian_check = "(new Uint8Array(new Uint16Array([1]).buffer)[0] === 1)";
     config.little_endian_value = "1";
+
+    // Length check (ENCODE_VECTOR_LENGTH / SETTER_VECTOR_LENGTH): the EBM
+    // emits `if (! (target == expected)) throw "Assertion failed"`. Under
+    // --use-bigint the two sides can end up as `(number_array.length) ==
+    // (bigint header.size)`; even when values match, the wider expression
+    // surrounding it (e.g. tidy_condition_brace) may shake loose. Force a
+    // Number(...) coercion so the comparison stays homogeneous.
+    config.length_check_custom = [](Context_Statement_LENGTH_CHECK& lctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        MAYBE(target_str, lctx.visit(lctx.length_check.target));
+        MAYBE(expected_str, lctx.visit(lctx.length_check.expected_length));
+        CodeWriter w;
+        w.writeln("if (Number(", target_str.to_writer(), ") !== Number(", expected_str.to_writer(), ")) {");
+        w.indent_writeln("throw new Error(\"length mismatch\");");
+        w.writeln("}");
+        return w;
+    };
 
     // Assignment with mixed bigint / number target/value: coerce the RHS so
     // it matches the LHS representation. The EBM may emit `obj.u64_field = 0`
