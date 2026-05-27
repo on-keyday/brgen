@@ -14,13 +14,19 @@ import { fetchImportFile } from "../dummy_fs.js";
 const src2jsonModule = src2json.default as EmscriptenModuleFactory<MyEmscriptenModule>;
 
 
+const hasUserImports = (e: JobRequest) => e.extraSources !== undefined && e.extraSources.length > 0;
+
 const requestCallback = async (e:JobRequest, m:MyEmscriptenModule) => {
     switch(e.lang) {
         case RequestLanguage.JSON_AST:
-            await fetchImportFile(m,e.sourceCode);
+            if(!hasUserImports(e)) {
+                await fetchImportFile(m,e.sourceCode);
+            }
             return ["src2json","--argv",e.sourceCode,"--no-color","--print-json","--print-on-error"];
         case RequestLanguage.JSON_DEBUG_AST:
-            await fetchImportFile(m,e.sourceCode);
+            if(!hasUserImports(e)) {
+                await fetchImportFile(m,e.sourceCode);
+            }
             return ["src2json","--argv",e.sourceCode,"--no-color","--print-json","--print-on-error","--debug-json"];
         case RequestLanguage.TOKENIZE:
             return ["src2json","--argv",e.sourceCode,"--no-color","--print-json","--print-on-error","--lexer"];

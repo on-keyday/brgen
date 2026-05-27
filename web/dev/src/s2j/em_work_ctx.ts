@@ -80,7 +80,22 @@ export class EmWorkContext  {
         }
     }
 
-    async #callEmscriptenMain(traceID :TraceID, args: string[],files :FileValue[]): Promise<number> {
+    #writeExtraSources(extras: import("./msg.js").ExtraSourceFile[]) {
+        for(const f of extras) {
+            const slash = f.fileName.lastIndexOf("/");
+            if(slash > 0) {
+                const dir = f.fileName.slice(0, slash);
+                try {
+                    (this.#mod!.FS as any).mkdirTree(dir);
+                } catch(_) {
+                    // directory may already exist; ignore
+                }
+            }
+            this.#mod!.FS.writeFile(f.fileName, f.content);
+        }
+    }
+
+    async #callEmscriptenMain(traceID :TraceID, args: string[],files :FileValue[], extraSources? :import("./msg.js").ExtraSourceFile[]): Promise<number> {
         await this.#waitForPromise();
         let arg: string = "";
         for (let i = 0; i < args.length; i++) {
@@ -90,6 +105,9 @@ export class EmWorkContext  {
         try {
             for(const f of files) {
                 this.#mod!.FS.writeFile("/"+f.fileName, new Uint8Array(f.data!));
+            }
+            if(extraSources && extraSources.length > 0) {
+                this.#writeExtraSources(extraSources);
             }
             if(traceIDCanceled(traceID)) {
                 console.log(`canceled traceID before emscripten_main: ${traceIDGetID(traceID)} `);
@@ -128,7 +146,7 @@ export class EmWorkContext  {
             }
         });
         this.#setCapture(id);
-        const code = await this.#callEmscriptenMain(e.traceID, args, files);
+        const code = await this.#callEmscriptenMain(e.traceID, args, files, e.extraSources);
         const result: JobResult = {
             lang: e.lang,
             stdout: this.#textCapture.stdout,

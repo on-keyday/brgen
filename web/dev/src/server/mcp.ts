@@ -4,6 +4,7 @@ import { GeneratorService } from "../s2j/generator_service.js";
 import { Language } from "../s2j/msg.js";
 import { languageRegistry, allLanguageIds } from "../common/languages.js";
 import { UpdateTracer } from "../s2j/update.js";
+import { normalizeImports, ImportValidationError } from "./imports.js";
 
 /**
  * Creates and configures an MCP server exposing brgen's code generation
@@ -41,9 +42,15 @@ export function createMcpServer(service: GeneratorService,logger?: (...args: any
                     "Examples for C++: { use_error: true, enum_stringer: true }. " +
                     "Examples for Go: { omit_must_encode: true }."
                 ),
+                imports: z.record(z.string(), z.string()).optional().describe(
+                    "Additional .bgn files referenced by `config.import(\"...\")` in the main source. " +
+                    "Key is the relative path used in the import (must end with '.bgn', must not contain '..' " +
+                    "or start with '/'), value is the file content. " +
+                    "When provided, the server skips its built-in import lookup and uses only the supplied files."
+                ),
             },
         },
-        async ({ source, lang, options = {} }) => {
+        async ({ source, lang, options = {}, imports }) => {
             if (!allLanguageIds.includes(lang)) {
                 return {
                     content: [{
@@ -53,6 +60,19 @@ export function createMcpServer(service: GeneratorService,logger?: (...args: any
                     }],
                     isError: true,
                 };
+            }
+
+            let extraSources;
+            try {
+                extraSources = normalizeImports(imports);
+            } catch (e) {
+                if (e instanceof ImportValidationError) {
+                    return {
+                        content: [{ type: "text" as const, text: e.message }],
+                        isError: true,
+                    };
+                }
+                throw e;
             }
 
             return new Promise((resolve) => {
@@ -72,6 +92,7 @@ export function createMcpServer(service: GeneratorService,logger?: (...args: any
                     },
                     tracer,
                     logger ? (...args) => logger("[Generation]", ...args) : undefined,
+                    extraSources,
                 );
             });
         },

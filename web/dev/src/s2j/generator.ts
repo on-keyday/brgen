@@ -1,6 +1,6 @@
 
 import * as caller from "./caller.js";
-import type { EBMGenOption, TraceID } from "./msg.js";
+import type { EBMGenOption, ExtraSourceFile, TraceID } from "./msg.js";
 import { isJobResult } from "./msg.js";
 import type { UpdateTracer } from "./update.js";
 import * as inc from "./cpp_include.js";
@@ -14,7 +14,7 @@ import { EBM_LANGUAGES,EBM_LSP_LANGUAGES,generateEBMCode } from "../lib/bmgen/eb
 //import { compileCpp } from "./compiler-explorer/api";
 
 export interface UIModel {
-    getWorkerFactory(): caller.IWorkerFactory, 
+    getWorkerFactory(): caller.IWorkerFactory,
     getUpdateTracer(): UpdateTracer;
     getValue():string;
     setDefault():void;
@@ -22,6 +22,7 @@ export interface UIModel {
     setGenerated(s :string,lang :string):void;
     getLanguageConfig(lang :Language, key :ConfigKey):any;
     mappingCode(mappingInfo :MappingInfo[],s :JobResult,lang :Language,offset :number):void;
+    getExtraSources?():ExtraSourceFile[] | undefined;
 }
 
 export interface MappingInfo {
@@ -190,8 +191,9 @@ const handleKaitaiStruct = async (ui :UIModel, s :JobResult) => {
 }
 
 const handleJSONOutput = async (ui :UIModel,id :TraceID,value :string,generator:(factory :caller.IWorkerFactory, id :TraceID,srcCode :string,option:any)=>Promise<JobResult>) => {
+    const extraSources = ui.getExtraSources?.();
     const s = await generator(ui.getWorkerFactory(), id,value,
-    {filename: "editor.bgn"}).catch((e) => {
+    {filename: "editor.bgn", extraSources}).catch((e) => {
         return e as JobResult;
     });
     if(ui.getUpdateTracer().editorAlreadyUpdated(s)) {
@@ -323,8 +325,9 @@ export const updateGenerated = async (ui :UIModel,lang :Language) => {
     if(lang === Language.JSON_DEBUG_AST) {
         return handleDebugAST(ui,traceID,value);
     }
+    const extraSources = ui.getExtraSources?.();
     const s = await caller.getAST(ui.getWorkerFactory(),traceID,value,
-    {filename: "editor.bgn"}).catch((e) => {
+    {filename: "editor.bgn", extraSources}).catch((e) => {
         if(isJobResult(e)) {
             return e;
         }

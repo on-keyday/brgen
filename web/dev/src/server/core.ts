@@ -1,8 +1,9 @@
 import { Hono } from "hono";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { GeneratorService, GenerateResult, ConfigReader } from "../s2j/generator_service.js";
-import { Language } from "../s2j/msg.js";
+import { ExtraSourceFile, Language } from "../s2j/msg.js";
 import { languageRegistry, allLanguageIds } from "../common/languages.js";
+import { normalizeImports, ImportValidationError } from "./imports.js";
 /*
 import {
     directFixedWorkerMap,
@@ -179,6 +180,7 @@ export function createApp(service: GeneratorService): Hono {
             source: string;
             lang: string;
             options?: Record<string, any>;
+            imports?: Record<string, string>;
         }>();
 
         if (!body.source || !body.lang) {
@@ -187,6 +189,16 @@ export function createApp(service: GeneratorService): Hono {
 
         if (!allLanguageIds.includes(body.lang)) {
             return c.json({ error: `unsupported language: ${body.lang}` }, 400);
+        }
+
+        let extraSources: ExtraSourceFile[] | undefined;
+        try {
+            extraSources = normalizeImports(body.imports);
+        } catch (e) {
+            if (e instanceof ImportValidationError) {
+                return c.json({ error: e.message }, 400);
+            }
+            throw e;
         }
 
         const options = body.options ?? {};
@@ -207,7 +219,7 @@ export function createApp(service: GeneratorService): Hono {
                         ...(result.mappingInfo ? { mappingInfo: result.mappingInfo } : {}),
                     }),
                 );
-            },tracer);
+            }, tracer, undefined, extraSources);
         });
     });
 

@@ -164,6 +164,10 @@ export function getLanguage<L extends LanguageKey>(factory :IWorkerFactory, trac
     const req = mgr.getRequest(traceID,lang,sourceCode);
     const convert = argConverter[lang] as (opt :LanguageToOptionType[L]) => string[];
     req.arguments = convert(option);
+    const extras = (option as CallOption).extraSources;
+    if(extras && extras.length > 0) {
+        req.extraSources = extras;
+    }
     return mgr.doRequest(req);
 }
 

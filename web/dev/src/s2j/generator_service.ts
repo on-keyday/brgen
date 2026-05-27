@@ -2,7 +2,7 @@ import { WorkerFactory } from "./worker_factory";
 import { fixedWorkerMap } from "./workers";
 import { UpdateTracer } from "./update";
 import { UIModel, MappingInfo, updateGenerated } from "./generator";
-import { Language, JobResult } from "./msg";
+import { ExtraSourceFile, Language, JobResult } from "./msg";
 import { ConfigKey } from "../common/types";
 import { BM_LANGUAGES } from "../lib/bmgen/bm_caller.js";
 import { EBM_LANGUAGES } from "../lib/bmgen/ebm_caller.js";
@@ -125,6 +125,7 @@ export class GeneratorService {
         onResult: GenerateCallback,
         updateTracer?: UpdateTracer, // for server side, each request may have its own tracer, so allow passing it in
         logger?: (...args: any[]) => void, // optional logger for debug output
+        extraSources?: ExtraSourceFile[], // additional .bgn files (e.g. imports) written to the FS before src2json runs
     ): Promise<void> {
         await this.init();
 
@@ -173,6 +174,7 @@ export class GeneratorService {
             mappingCode: (mappingInfo: MappingInfo[], _s: JobResult, _lang: Language, _offset: number) => {
                 result.mappingInfo = mappingInfo;
             },
+            getExtraSources: () => extraSources,
         };
 
         try {

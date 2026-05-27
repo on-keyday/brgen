@@ -69,9 +69,15 @@ export const WorkerList = Object.freeze([
 ]);
 
 
+export interface ExtraSourceFile {
+    fileName :string
+    content :string
+}
+
 export interface CallOption {
     filename? :string
     interpret_as_utf16? :boolean
+    extraSources? :ExtraSourceFile[]
 }
 
 export interface AstOption extends CallOption {
@@ -212,6 +218,7 @@ export interface JobRequest {
     readonly jobID :number
     readonly sourceCode :string
     arguments? :(string | FileValue)[]
+    extraSources? :ExtraSourceFile[]
 }
 
 
