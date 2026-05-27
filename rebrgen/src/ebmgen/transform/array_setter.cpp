@@ -22,7 +22,25 @@ namespace ebmgen {
         if (is_nil(data.field)) {
             return std::nullopt;
         }
-        auto length_field = access_field<"member.body.id.id">(wctx.context().repository(), data.size.ref());
+        auto size_ref_ptr = data.size.ref();
+        if (!size_ref_ptr) {
+            return std::nullopt;
+        }
+        // encode.cpp wraps the dynamic-array length in a USIZE TYPE_CAST for LENGTH_CHECK
+        // consistency. The setter detection needs the underlying MEMBER_ACCESS for the
+        // `member.body.id.id` traversal, so unwrap any TYPE_CAST chain here.
+        ebm::ExpressionRef unwrapped = *size_ref_ptr;
+        while (auto expr = wctx.context().repository().get_expression(unwrapped)) {
+            if (expr->body.kind != ebm::ExpressionKind::TYPE_CAST) {
+                break;
+            }
+            auto desc = expr->body.type_cast_desc();
+            if (!desc) {
+                break;
+            }
+            unwrapped = desc->source_expr;
+        }
+        auto length_field = access_field<"member.body.id.id">(wctx.context().repository(), unwrapped);
         auto check_length_decl = access_field<"field_decl">(wctx.context().repository(), length_field);
         if (!check_length_decl) {
             return std::nullopt;
@@ -50,7 +68,7 @@ namespace ebmgen {
         }
         return ArrayLengthInfo{
             data.target,
-            *data.size.ref(),
+            unwrapped,
             *array_field,
             *length_field,
             array_type->id,
