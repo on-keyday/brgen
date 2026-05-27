@@ -26,6 +26,6 @@
 /*here to write the hook*/
 
 FILE_EXTENSIONS(".ts");
-WEB_UI_NAME("typescript");
+WEB_UI_NAME("typescript2");
 DEFINE_BOOL_FLAG(javascript, false, "javascript,j", "Emit plain JavaScript (strip TypeScript type annotations)");
 DEFINE_BOOL_FLAG(use_bigint, false, "use-bigint", "Use bigint for 64-bit integers (otherwise number, losing precision above 2^53)");
