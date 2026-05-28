@@ -436,6 +436,16 @@ DEFINE_VISITOR(entry_before) {
         // Top-level constants become real Wuffs `pub const NAME : type = value`.
         if (vctx.var_decl.decl_kind() == ebm::VariableDeclKind::CONSTANT) {
             auto cname = vctx.identifier();
+            // Wuffs only supports scalar (numeric/bool/enum-backed) constants.
+            // Array/string/struct constants (e.g. magic byte sequences) have no
+            // Wuffs const form, so they are skipped for the scaffold.
+            auto ck = vctx.get_kind(vctx.var_decl.var_type);
+            bool scalar = ck && (*ck == ebm::TypeKind::UINT || *ck == ebm::TypeKind::INT ||
+                                 *ck == ebm::TypeKind::BOOL || *ck == ebm::TypeKind::ENUM);
+            if (!scalar) {
+                return CODELINE("// TODO(ebm2wuffs): non-scalar const ", std::string(cname),
+                                " has no Wuffs equivalent");
+            }
             MAYBE(ctype, vctx.visit(vctx.var_decl.var_type));
             if (is_nil(vctx.var_decl.initial_value)) {
                 return CODELINE("pub const ", cname, " : ", ctype.to_writer());
@@ -451,8 +461,13 @@ DEFINE_VISITOR(entry_before) {
             if (is_nil(vctx.var_decl.initial_value)) {
                 return CodeWriter{};
             }
+            CodeWriter w;
+            auto add = vctx.add_writer();
             MAYBE(call, vctx.visit(vctx.var_decl.initial_value));
-            return CODELINE(call.to_writer());
+            MAYBE(got, vctx.get_writer());
+            w.write(std::move(got.get()));
+            w.writeln(call.to_writer());
+            return w;
         }
         // Local var: the declaration is hoisted to the function top
         // (function_body_prologue); keep only the assignment here. A default-value
@@ -464,9 +479,17 @@ DEFINE_VISITOR(entry_before) {
             k && *k == ebm::ExpressionKind::DEFAULT_VALUE) {
             return CodeWriter{};
         }
+        // Add a writer so statement-shaped lowered sub-expressions in the initial
+        // value (READ_DATA-as-expression, CONDITIONAL_STATEMENT) can hoist their
+        // statements ahead of the assignment, mirroring the default ASSIGNMENT.
+        CodeWriter w;
+        auto add = vctx.add_writer();
         MAYBE(init, vctx.visit(vctx.var_decl.initial_value));
+        MAYBE(got, vctx.get_writer());
+        w.write(std::move(got.get()));
         auto vname = vctx.identifier();
-        return CODELINE(vname, " = ", init.to_writer());
+        w.writeln(vname, " = ", init.to_writer());
+        return w;
     };
 
     // === Error handling ===
@@ -488,6 +511,42 @@ DEFINE_VISITOR(entry_before) {
             return CodeWriter{};
         }
         return pass;
+    };
+
+    // === Return ===
+    // Wuffs forbids `return <impure expression>`. A tail call to a coroutine
+    // (encode/decode) is impure, so emit it as a bare `?`-call statement: the `?`
+    // propagates errors and falling off the end implicitly returns ok.
+    // NOTE: return_visitor fully replaces the default RETURN handling (the
+    // framework returns its result directly, with no pass fallback), so it must
+    // emit a complete statement in every branch — never `pass`.
+    config.return_visitor = [&](Context_Statement_RETURN& rctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        CodeWriter w;
+        if (is_nil(rctx.value)) {
+            w.writeln("return", rctx.config().endof_statement);
+            return w;
+        }
+        // A tail call to a coroutine (encode/decode) is impure; Wuffs forbids
+        // `return <impure>`. Emit it as a bare `?`-call statement instead — the
+        // `?` propagates errors and falling off the end implicitly returns ok.
+        bool impure_call = false;
+        if (auto vkind = rctx.get_kind(rctx.value); vkind && *vkind == ebm::ExpressionKind::CALL) {
+            auto fn = rctx.get_field<"call_desc.callee.member.body.id.func_decl">(rctx.value);
+            impure_call = fn && (fn->kind == ebm::FunctionKind::ENCODE ||
+                                 fn->kind == ebm::FunctionKind::DECODE);
+        }
+        auto add = rctx.add_writer();
+        MAYBE(ret_val, rctx.visit(rctx.value));
+        MAYBE(got, rctx.get_writer());
+        w.merge(std::move(got.get()));
+        if (impure_call) {
+            w.writeln(ret_val.to_writer(), rctx.config().endof_statement);
+        }
+        else {
+            w.writeln("return ", ret_val.to_writer(), rctx.config().endof_statement);
+        }
+        return w;
     };
 
     // === Init check ===
@@ -533,7 +592,13 @@ DEFINE_VISITOR(entry_before) {
     // form (statement-level if/assign with a temporary); follow it when present.
     config.conditional_visitor = [&](Context_Expression_CONDITIONAL& cctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
-        if (!is_nil(cctx.lowered_expr.id)) {
+        // The lowered form is statement-shaped (CONDITIONAL_STATEMENT): it emits
+        // an if/assign into the current statement writer and yields a temp. That
+        // only works where a writer is available; in a pure-expression context
+        // (e.g. a loop condition sub-expr) get_writer() fails, so fall back rather
+        // than aborting generation. Wuffs has no ternary, so the fallback ternary
+        // will not pass wuffsfmt there — tracked as a known gap.
+        if (!is_nil(cctx.lowered_expr.id) && cctx.get_writer()) {
             return cctx.visit(cctx.lowered_expr.id);
         }
         return pass;

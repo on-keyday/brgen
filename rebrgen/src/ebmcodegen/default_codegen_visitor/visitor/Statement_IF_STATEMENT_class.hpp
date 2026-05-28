@@ -27,9 +27,20 @@ DEFINE_VISITOR(Statement_IF_STATEMENT) {
     if (ctx.config().if_statement_custom) {
         CALL_OR_PASS(custom_result, ctx.config().if_statement_custom(ctx));
     }
-    MAYBE(condition, ctx.visit(ctx.if_statement.condition.cond));
-    MAYBE(then_block, ctx.visit(ctx.if_statement.then_block));
     CodeWriter w;
+    // Evaluate a condition expression, hoisting any statement-shaped lowered
+    // sub-expression (e.g. CONDITIONAL_STATEMENT, which emits an if/assign and
+    // yields a temporary) into `w` ahead of the if/elif line. Backends that keep
+    // conditionals inline never push to the temp writer, so this is a no-op there.
+    auto eval_condition = [&](const ebm::ExpressionRef& cond_ref) -> expected<Result> {
+        auto add = ctx.add_writer();
+        MAYBE(cond_res, ctx.visit(cond_ref));
+        MAYBE(got, ctx.get_writer());
+        w.write(std::move(got.get()));
+        return cond_res;
+    };
+    MAYBE(condition, eval_condition(ctx.if_statement.condition.cond));
+    MAYBE(then_block, ctx.visit(ctx.if_statement.then_block));
     if (ctx.config().use_brace_for_condition) {
         w.writeln("if (", tidy_condition_brace(std::move(condition.to_string())), ") ", ctx.config().begin_block);
     }
@@ -62,7 +73,7 @@ DEFINE_VISITOR(Statement_IF_STATEMENT) {
             MAYBE(next_if_stmt, ctx.get(els_block));
             MAYBE(next_if, next_if_stmt.body.if_statement());
 
-            MAYBE(condition, ctx.visit(next_if.condition.cond));
+            MAYBE(condition, eval_condition(next_if.condition.cond));
             MAYBE(then_block, ctx.visit(next_if.then_block));
             if (ctx.config().use_brace_for_condition) {
                 w.writeln(if_word, " (", tidy_condition_brace(std::move(condition.to_string())), ") ", ctx.config().begin_block);
