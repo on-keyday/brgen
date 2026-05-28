@@ -1,48 +1,94 @@
 #!/usr/bin/env python3
-# Test logic for ebm2wuffs
-import sys
+# Test logic for ebm2wuffs.
+#
+# Current scope: drive the generated .wuffs through `wuffs gen`, the Wuffs
+# front-end (parse + type check + bounds/overflow prover + C codegen). Passing
+# it means the generated Wuffs is provably memory-safe, not merely syntactically
+# valid. The decode/encode round-trip (compile the emitted C and run it against
+# INPUT_FILE) is future work — see the TODO at the end.
 import os
-import json
-import pathlib as pl
+import pathlib
+import shutil
+import subprocess
+import sys
+
+HERE = pathlib.Path(__file__).parent
+
+
+def resolve_wuffs_root():
+    candidates = []
+    env_root = os.environ.get("WUFFS_ROOT")
+    if env_root:
+        candidates.append(pathlib.Path(env_root))
+    candidates.append(HERE / ".wuffs")  # created by dependency_setup.py
+    candidates.append(pathlib.Path("C:/workspace/wuffs"))  # local dev fallback
+    for c in candidates:
+        if (c / "wuffs-root-directory.txt").exists():
+            return c.resolve()
+    return None
+
 
 def main():
-    TEST_TARGET_FILE = sys.argv[1]
+    TEST_TARGET_FILE = sys.argv[1]  # the generated .wuffs file
     INPUT_FILE = sys.argv[2]
     OUTPUT_FILE = sys.argv[3]
-    TEST_TARGET_FORMAT = sys.argv[4]
-    OPTION_SET_NAME = sys.argv[5]
-    ADDITIONAL_ARGS = sys.argv[6:] if len(sys.argv) > 6 else []
+    TEST_TARGET_FORMAT = sys.argv[4]  # struct name (PascalCase)
 
-    # Test logic goes here
-    print(f'Testing {TEST_TARGET_FILE} with {INPUT_FILE} and {OUTPUT_FILE}')
-    # This is a placeholder for actual test implementation
-    with open(INPUT_FILE, 'rb') as f:
-        data = f.read()
-    # Implement test logic based on TEST_TARGET_FORMAT
-    # Return 0 for success, 10 for decode error, 20 for encode error
-    # For demonstration, just write the same data to output
-    with open(OUTPUT_FILE, 'wb') as f:
-        f.write(data)
-    print('Test logic is not implemented yet.')
-    print("for VSCode debugging")
-    executable_path = pl.Path("/path/to/executable")
-    print(
-                json.dumps(
-                    {
-                        "type": "cppvsdbg" if os.name == "nt" else "cppdbg",
-                        "request": "launch",
-                        "cwd": os.getcwd(),
-                        "name": f"Debug ebm2wuffs unictest ({TEST_TARGET_FORMAT})",
-                        "program": executable_path.as_posix(),
-                        "args": [
-                            INPUT_FILE,
-                            OUTPUT_FILE,
-                        ],
-                        "stopAtEntry": True,
-                    },
-                    indent=4,
-                )
-    )
-    exit(1)
-if __name__ == '__main__':
+    print(f"Testing {TEST_TARGET_FILE} (format={TEST_TARGET_FORMAT})")
+
+    wuffs_root = resolve_wuffs_root()
+    if wuffs_root is None:
+        print("Wuffs toolchain not found. Run this runner's dependency_setup.py "
+              "or set WUFFS_ROOT to a wuffs checkout.")
+        sys.exit(1)
+
+    env = os.environ.copy()
+    gopath = subprocess.check_output(["go", "env", "GOPATH"], text=True).strip()
+    env["PATH"] = env.get("PATH", "") + os.pathsep + str(pathlib.Path(gopath) / "bin")
+    wuffs_exe = "wuffs.exe" if os.name == "nt" else "wuffs"
+
+    # `wuffs gen` operates on a package directory under <root>/std. Stage the
+    # generated file as a throwaway package (unique per process to avoid clashes).
+    # Wuffs package names must match [a-z0-9]+ (no underscores).
+    pkg = f"ebm2wuffsprobe{os.getpid()}"
+    pkgdir = wuffs_root / "std" / pkg
+    try:
+        if pkgdir.exists():
+            shutil.rmtree(pkgdir)
+        pkgdir.mkdir(parents=True)
+        shutil.copy2(TEST_TARGET_FILE, pkgdir / f"{pkg}.wuffs")
+
+        print(f"\nRunning `wuffs gen` on std/{pkg} ...")
+        proc = subprocess.run(
+            [wuffs_exe, "gen", "-langs", "c", f"std/{pkg}"],
+            cwd=str(wuffs_root),
+            env=env,
+            capture_output=True,
+            text=True,
+        )
+        if proc.stdout:
+            print("--- wuffs gen stdout ---")
+            print(proc.stdout)
+        if proc.stderr:
+            print("--- wuffs gen stderr ---")
+            print(proc.stderr)
+        if proc.returncode != 0:
+            print("wuffs gen failed: generated Wuffs did not pass the type "
+                  "checker / bounds prover.")
+            sys.exit(10)
+        print("wuffs gen succeeded: generated Wuffs compiles to C.")
+    finally:
+        if pkgdir.exists():
+            shutil.rmtree(pkgdir, ignore_errors=True)
+
+    # TODO(ebm2wuffs): decode/encode round-trip. Once formats pass `wuffs gen`,
+    # compile the emitted C against the Wuffs base (WUFFS_IMPLEMENTATION) with a
+    # small main() that wraps INPUT_FILE in a wuffs_base__io_buffer, calls the
+    # generated decode coroutine, re-encodes into another io_buffer, and writes
+    # OUTPUT_FILE — then this exits 0/10/20 like the other runners.
+    print("round-trip harness not yet implemented for ebm2wuffs (gen-check only).")
+    sys.exit(10)
+
+
+if __name__ == "__main__":
     main()
