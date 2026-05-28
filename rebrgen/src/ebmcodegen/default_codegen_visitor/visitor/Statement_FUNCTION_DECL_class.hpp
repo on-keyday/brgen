@@ -63,6 +63,10 @@ DEFINE_VISITOR(Statement_FUNCTION_DECL) {
     }
     {
         auto scope = w.indent_scope();
+        if (ctx.config().function_body_prologue) {
+            MAYBE(prologue, ctx.config().function_body_prologue(ctx));
+            w.write(prologue.to_writer());
+        }
         MAYBE(body, ctx.visit(ctx.func_decl.body));
         w.write(body.to_writer());
     }

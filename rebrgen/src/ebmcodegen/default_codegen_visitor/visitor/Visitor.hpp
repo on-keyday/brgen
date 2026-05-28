@@ -49,6 +49,10 @@ std::string self_value = "this";
 DefaultValueOption default_value_option;
 std::string endof_statement = "";
 std::string endof_struct_definition = "";
+// If non-empty, replaces `end_block + endof_struct_definition` when closing a
+// struct body. Lets a backend use a delimiter distinct from the global block
+// close (e.g. ")" for Wuffs' `pub struct Name?( ... )` paren-delimited form).
+std::string struct_definition_close = "";
 std::string endof_enum_definition = "";
 std::string enum_member_separator = "";
 std::string enum_member_accessor = ".";
@@ -77,6 +81,10 @@ std::string float_suffix = "";
 std::string function_define_keyword = "fn";
 std::function<expected<Result>(Result return_type, std::string_view name, CodeWriter params, Context_Statement_FUNCTION_DECL& ctx)> function_definition_start_wrapper;
 std::function<expected<Result>(Context_Statement_FUNCTION_DECL& ctx)> function_decl_custom;
+// Emitted at the very top of a function body, before any body statement. Lets a
+// backend that requires declarations-first (e.g. Wuffs' "var at top of function")
+// hoist variable declarations ahead of the body.
+std::function<expected<Result>(Context_Statement_FUNCTION_DECL& ctx)> function_body_prologue;
 std::string encoder_return_type = "EncoderReturn";
 std::string decoder_return_type = "DecoderReturn";
 std::string encoder_input_type = "EncoderInput";
