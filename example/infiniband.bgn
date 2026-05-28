@@ -1,19 +1,23 @@
 config.url = "https://people.cs.pitt.edu/~jacklange/teaching/cs1652-f18/lectures/infiniband.pdf"
 config.url = "https://github.com/torvalds/linux/blob/cca7a0aae8958c9b1cd14116cb8b2f22ace2205e/include/rdma/ib_pack.h#L170"
+config.url = "https://github.com/torvalds/linux/blob/eb3f4b7426cfd2b79d65b7d37155480b32259a11/drivers/infiniband/core/ud_header.c#L48"
+config.url = "https://github.com/wireshark/wireshark/blob/a9f2c651f1a077d6691a67949f49d8cb5011a20a/epan/dissectors/packet-infiniband.c#L1912"
 
 format LocalRoutingHeader:
-    virtual_lane :u8
-    link_version :u8
-    service_level :u8
-    link_next_header :u8
+    virtual_lane :u4
+    link_version :u4
+    service_level :u4
+    reserved1 :u2
+    link_next_header :u2
     dst_lid :u16
-    packet_length :u16
+    reserved2 :u5
+    packet_length :u11
     src_lid :u16
 
 format GlobalRoutingHeader:
-    ip_version :u8
+    ip_version :u4
     traffic_class :u8
-    flow_label :u32
+    flow_label :u20
     payload_length :u16
     next_header :u8
     hop_limit :u8
@@ -22,10 +26,10 @@ format GlobalRoutingHeader:
 
 format BaseTransportHeader:
     opcode :u8
-    solicited_event :u8
-    mig_req :u8
-    pad_count :u8
-    transport_header_version :u8
+    solicited_event :u1
+    mig_req :u1
+    pad_count :u2
+    transport_header_version :u4
     pkey :u16
     destination_qpn :u32
     ack_req :u8
@@ -33,4 +37,5 @@ format BaseTransportHeader:
 
 format DirectMemoryAccessHeader:
     qkey :u32
-    source_qpn :u32
+    reserved :u8
+    source_qpn :u24
