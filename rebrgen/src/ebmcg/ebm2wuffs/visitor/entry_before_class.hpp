@@ -20,6 +20,8 @@
 #include "ebmcodegen/stub/context.hpp"
 #include "ebmcodegen/stub/make_visitor.hpp"
 #include "ebmcodegen/stub/util.hpp"
+#include <unordered_set>
+#include <cstdint>
 
 // Wuffs (Wrangling Untrusted File Formats Safely) is a memory-safe language
 // for parsing untrusted data. See https://github.com/google/wuffs.
@@ -138,6 +140,18 @@ DEFINE_VISITOR(entry_before) {
     // self/receiver is `this` in Wuffs.
     config.self_value = "this";
 
+    // Wuffs accesses function parameters through `args.`. An identifier that
+    // resolves to a PARAMETER_DECL is rewritten to `args.<name>`; fields use
+    // `this.` (self_value) and locals/constants stay bare.
+    config.identifier_custom = [&](Context_Expression_IDENTIFIER& ictx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        if (auto kind = ictx.get_kind(ictx.id.id);
+            kind && *kind == ebm::StatementKind::PARAMETER_DECL) {
+            return CODE("args.", ictx.identifier(ictx.id));
+        }
+        return pass;
+    };
+
     // === Variable / field / parameter layout: `name : type` ===
     config.variable_name_prior_to_type = true;
     config.field_name_prior_to_type = true;
@@ -167,6 +181,12 @@ DEFINE_VISITOR(entry_before) {
     config.alt_binary_op[ebm::BinaryOp::logical_and] = "and";
     config.alt_binary_op[ebm::BinaryOp::logical_or] = "or";
     config.alt_binary_op[ebm::BinaryOp::not_equal] = "<>";
+    // Wuffs requires a no-overflow proof for plain +,-,* or an explicit wrapping
+    // operator. Binary formats are modular by nature, so use the wrapping forms
+    // (`~mod+` etc.) — this satisfies the prover without range analysis.
+    config.alt_binary_op[ebm::BinaryOp::add] = "~mod+";
+    config.alt_binary_op[ebm::BinaryOp::sub] = "~mod-";
+    config.alt_binary_op[ebm::BinaryOp::mul] = "~mod*";
     config.alt_unary_op[ebm::UnaryOp::logical_not] = "not ";
 
     // Wuffs cast: `(expr as type)`
@@ -182,6 +202,11 @@ DEFINE_VISITOR(entry_before) {
                 return CODE("(", source_expr.to_writer(), " ? 1 : 0)");
             default:
                 break;
+        }
+        // Integer literals are untyped in Wuffs and adapt to their context, so an
+        // `as` cast is unnecessary (and, in a const value, rejected). Emit bare.
+        if (is_int_literal(ctx.get_kind(tctx.type_cast_desc.source_expr))) {
+            return source_expr;
         }
         MAYBE(target_type, ctx.visit(tctx.type));
         return CODE("(", source_expr.to_writer(), " as ", target_type.to_writer(), ")");
@@ -383,11 +408,15 @@ DEFINE_VISITOR(entry_before) {
     config.function_body_prologue = [&, native_scalar](Context_Statement_FUNCTION_DECL& fctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
         CodeWriter w;
+        std::unordered_set<std::uint64_t> seen;  // dedup hoisted VARIABLE_DECLs
         auto collector =
             make_visitor<void>(fctx.visitor)
                 .name("WuffsVarHoist")
                 .not_before_or_after()
                 .on([&](auto&& self, Context_Statement_VARIABLE_DECL& vctx) -> expected<void> {
+                    if (!seen.insert(get_id(vctx.item_id)).second) {
+                        return {};  // already hoisted (reachable via multiple paths)
+                    }
                     if (vctx.var_decl.decl_kind() == ebm::VariableDeclKind::CONSTANT) {
                         return {};  // emitted in place as `pub const`, not hoisted
                     }
@@ -402,6 +431,18 @@ DEFINE_VISITOR(entry_before) {
                     auto vname = vctx.identifier();
                     MAYBE(vtype, vctx.visit(vctx.var_decl.var_type));
                     w.writeln("var ", vname, " : ", vtype.to_writer());
+                    // The initializer may itself be a statement-bearing expression
+                    // owning further temps; descend into it.
+                    if (!is_nil(vctx.var_decl.initial_value)) {
+                        MAYBE_VOID(_, vctx.visit<void>(self, vctx.var_decl.initial_value));
+                    }
+                    return {};
+                })
+                // The generic child-traversal does not follow expression values,
+                // so explicitly descend into the expressions that may carry a
+                // statement-bearing read/conditional (and thus an owned temp decl).
+                .on([&](auto&& self, Context_Statement_ASSIGNMENT& actx) -> expected<void> {
+                    MAYBE_VOID(_, actx.visit<void>(self, actx.value));
                     return {};
                 })
                 // READ_DATA / WRITE_DATA reach their loop counters and temporaries
@@ -424,6 +465,19 @@ DEFINE_VISITOR(entry_before) {
                     if (auto lw = wctx.write_data.lowered_statement()) {
                         MAYBE_VOID(_, wctx.visit<void>(self, lw->io_statement.id));
                     }
+                    return {};
+                })
+                // Statement-bearing expressions own a VARIABLE_DECL (target_stmt)
+                // that lives in no block — it is materialized where the expression
+                // is used. Visit those owned statements so the temp is hoisted.
+                .on([&](auto&& self, Context_Expression_READ_DATA& ectx) -> expected<void> {
+                    MAYBE_VOID(_a, ectx.visit<void>(self, ectx.target_stmt));
+                    MAYBE_VOID(_b, ectx.visit<void>(self, ectx.io_statement));
+                    return {};
+                })
+                .on([&](auto&& self, Context_Expression_CONDITIONAL_STATEMENT& ectx) -> expected<void> {
+                    MAYBE_VOID(_a, ectx.visit<void>(self, ectx.target_stmt));
+                    MAYBE_VOID(_b, ectx.visit<void>(self, ectx.conditional_stmt));
                     return {};
                 })
                 .on_default_traverse_children()
@@ -511,6 +565,16 @@ DEFINE_VISITOR(entry_before) {
             return CodeWriter{};
         }
         return pass;
+    };
+    // Wuffs requires every returned status string to be declared at the top of
+    // the file. We only ever emit these two fixed statuses (see error hooks).
+    config.program_decl_start_wrapper = [&](Context_Statement_PROGRAM_DECL& pctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        CodeWriter w;
+        w.writeln("pub status \"#validation failed\"");
+        w.writeln("pub status \"#error\"");
+        w.writeln("");
+        return w;
     };
 
     // === Return ===
