@@ -1,0 +1,25 @@
+
+config.url = "https://www.rfc-editor.org/info/rfc8926/#name-geneve-packet-format-over-i"
+
+format GeneveFixedHeader:
+    version :u2 
+    opt_len :u6 
+    is_control :u1 # (o bit)
+    critical_options_present :u1 # (c bit)
+    reserved1 :u6
+    protocol_type :u8 
+    virtual_network_identifier :u24 
+    reserved2 :u8 
+
+
+format GeneveHeader:
+    header :GeneveFixedHeader
+    options :[..]TunnelOption(input = input.subrange(header.opt_len * 4)) 
+
+
+format TunnelOption:
+    option_class :u16 
+    type :u8 
+    reserved :u3 
+    length :u5 
+    data :[length * 4]u8 
