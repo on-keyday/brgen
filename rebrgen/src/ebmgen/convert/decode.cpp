@@ -3,8 +3,33 @@
 #include "ebm/extended_binary_module.hpp"
 #include "helper.hpp"
 #include "../converter.hpp"
+#include "../access.hpp"
 
 namespace ebmgen {
+
+    // Wrap an already-created ASSIGNMENT/APPEND statement that stores into
+    // `this.<field>` as a FIELD_STORE marker (lowered_statement = the original
+    // store), so streaming backends can emit instead of materialize. Returns the
+    // FIELD_STORE ref to use in place of `store_ref`, or `store_ref` unchanged if
+    // `target` is not a field member access (e.g. a temp). See ADR 0032.
+    static expected<ebm::StatementRef> wrap_field_store_ref(ConverterContext& ctx, ebm::StatementRef store_ref, ebm::ExpressionRef target, ebm::ExpressionRef value) {
+        auto field_opt = access_field<"member.body.id.id">(ctx.repository(), target);
+        auto field_decl = access_field<"field_decl">(ctx.repository(), field_opt);
+        if (!field_opt || !field_decl) {
+            return store_ref;
+        }
+        ebm::FieldStoreDesc desc;
+        desc.field = to_weak(*field_opt);
+        desc.target = target;
+        desc.source = value;
+        desc.lowered_statement = ebm::LoweredStatementRef{store_ref};
+        ebm::StatementBody body;
+        body.kind = ebm::StatementKind::FIELD_STORE;
+        body.field_store(desc);
+        MAYBE(new_id, ctx.repository().new_statement_id());
+        EBMA_ADD_STATEMENT(fs_ref, new_id, std::move(body));
+        return fs_ref;
+    }
     expected<ebm::StatementRef> DecoderConverter::decode_multi_byte_int_with_fixed_array(ebm::StatementRef io_ref, ebm::StatementRef field_ref, size_t n, ebm::IOAttribute endian, ebm::ExpressionRef to, ebm::TypeRef cast_to) {
         COMMON_BUFFER_SETUP(EBM_READ_DATA, read_ref, io_ref, field_ref, ebm::ArrayAnnotation::read_temporary);
 
@@ -12,11 +37,12 @@ namespace ebmgen {
             EBM_INDEX(array_index, u8_t, buffer, zero);
             EBM_CAST(cast_ref, cast_to, value_type, array_index);
             EBM_ASSIGNMENT(assign, to, cast_ref);
+            MAYBE(stored, wrap_field_store_ref(ctx, assign, to, cast_ref));
             ebm::Block block;
             block.container.reserve(3);
             append(block, buffer_def);
             append(block, read_ref);
-            append(block, assign);
+            append(block, stored);
             EBM_BLOCK(block_ref, std::move(block));
             return block_ref;
         }
@@ -57,7 +83,8 @@ namespace ebmgen {
                 }
                 EBM_CAST(cast_ref, cast_to, value_type, *prev);
                 EBM_ASSIGNMENT(assign, to, cast_ref);
-                EBM_ENDIAN_CONVERT(conv, ebm::StatementKind::ARRAY_TO_INT, ebm::Endian::little, buffer, to, assign);
+                MAYBE(stored, wrap_field_store_ref(ctx, assign, to, cast_ref));
+                EBM_ENDIAN_CONVERT(conv, ebm::StatementKind::ARRAY_TO_INT, ebm::Endian::little, buffer, to, stored);
                 return conv;
             },
             [&] -> expected<ebm::StatementRef> {
@@ -69,7 +96,8 @@ namespace ebmgen {
                 }
                 EBM_CAST(cast_ref, cast_to, value_type, *prev);
                 EBM_ASSIGNMENT(assign, to, cast_ref);
-                EBM_ENDIAN_CONVERT(conv, ebm::StatementKind::ARRAY_TO_INT, ebm::Endian::big, buffer, to, assign);
+                MAYBE(stored, wrap_field_store_ref(ctx, assign, to, cast_ref));
+                EBM_ENDIAN_CONVERT(conv, ebm::StatementKind::ARRAY_TO_INT, ebm::Endian::big, buffer, to, stored);
                 return conv;
             });
         if (!do_it) {
@@ -119,10 +147,11 @@ namespace ebmgen {
                 EBMA_ADD_STATEMENT(decode_stmt, std::move(decode_info));
                 EBM_CAST(casted, io_desc.data_type, to_ty, tmp_var);
                 EBM_ASSIGNMENT(assign, base_ref, casted);
+                MAYBE(stored, wrap_field_store_ref(ctx, assign, base_ref, casted));
                 ebm::Block block;
                 append(block, tmp_var_def);
                 append(block, decode_stmt);
-                append(block, assign);
+                append(block, stored);
                 EBM_BLOCK(block_ref, std::move(block));
                 auto io_data = ctx.repository().get_statement(decode_stmt)->body.read_data();
                 io_desc.attribute = io_data->attribute;
@@ -178,9 +207,10 @@ namespace ebmgen {
                 MAYBE(decode_info, decode_field_type(aty->element_type, tmp_var, nullptr, from_weak(io_desc.field)));
                 EBMA_ADD_STATEMENT(decode_stmt, std::move(decode_info));
                 EBM_APPEND(appended, base_ref, tmp_var);
+                MAYBE(stored, wrap_field_store_ref(ctx, appended, base_ref, tmp_var));
                 append(block, tmp_var_def);
                 append(block, decode_stmt);
-                append(block, appended);
+                append(block, stored);
             }
             EBM_BLOCK(block_ref, std::move(block));
             return block_ref;
