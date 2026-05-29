@@ -81,13 +81,32 @@ marker は EBM 上に常時存在させ gating しない。挙動の差は gener
   （length）のみを持ち、値そのものは src バッファ参照で表す（SAX のイベント境界に
   近い）。再構成は token length 分を src からコピーするだけで、エンディアンや bit
   解釈は介在しない（raw byte 透過）。
-- **全 format が round-trip する、ではない。** token 化されるのは byte-aligned な
-  native scalar read と byte vector。固定 byte array（`limited_copy`）と bit field
-  （byte 境界でない lowered read）は未 token 化で、これらを含む format（ipv6/tcp）は
-  round-trip 未完成（既知ギャップ）。
-- **encode が streaming で動く、ではない。** 格納しない field は encode で復元でき
-  ないため、streamed vector を持つ struct の encode は honest stub（`return
-  "#error"`）。encode 側 streaming は別課題。
+- **全 format が round-trip する、ではない。** decode 側の token 化自体は scalar /
+  byte vector / 固定 byte array / bit field を網羅した（bit field は「backing byte を
+  byte 単位 read → 各 byte に token → 読んだ値から shift/mask 抽出」と lower される
+  ため、追加対応なしで token 化済み）。ipv6 が round-trip しない原因は **token 化の
+  不足ではなく、生成 Wuffs が C にコンパイルできないこと**である（下記2項）。
+- **`wuffs gen` 成功は C compile 成功を意味しない。** `wuffs gen`（型検査＋bounds
+  prover）が通っても、emit された C が標準 Wuffs ランタイムに対してコンパイル/リンク
+  できるとは限らない。実測で 2 つのギャップを確認: (1) `io_writer.write_u16be?` は
+  builtin 宣言があり型検査を通るが、`wuffs_base__io_writer__write_u16be` の C 実体が
+  ランタイムに無い（std のどこも使っておらず base 実装ソースにも無い。`write_u8?`
+  だけは compile 可）。(2) 同一パッケージの sub-struct を struct field に埋め込むと
+  init が `self->private_data.f_X` を生成するが、その struct に `private_data` が宣言
+  されずコンパイルが落ちる。**Wuffs std は同一パッケージ struct の field 埋め込みを
+  一度も使っておらず**、埋め込むのは常に別パッケージの decoder。composite format
+  （ipv6/tcp/dns 等）はこの (2) が壁。token 化が済んでいても round-trip は未完成。
+- **encode は全 struct で honest stub。** 格納しない field は encode で復元できず、
+  かつ上記 (1) により多バイト整数を書く encode はそもそも C にリンクできない。よって
+  vector 有無に関わらず全 ENCODE を `return "#error"` に stub する。encode 側
+  streaming は別課題。
+- **`*_invalid` / `*_truncated` の PASS は spurious なことがある。** unictest の
+  failure-case は runner の非ゼロ終了を期待 fail として PASS 扱いにする。format ごとの
+  `.wuffs` は入力非依存に一度生成されるため、valid 入力が `wuffs gen` で落ちる format
+  は、その invalid/truncated 入力も同じ `.wuffs` で gen 落ち → 非ゼロ終了 → PASS に
+  なる。これは「decode が不正入力を正しく弾いた」ではなく「codegen が壊れている」
+  ことによる PASS。現状 PASS=13 のうち真に round-trip しているのは 3
+  （simple_vector / simple_vector_empty / until_eof）のみ。
 - **配置制約（意味論が第一、proof は整合）。** read は emit より先に置く。第一の
   理由は意味論である: token は「実際に消費した src バイト」の記録なので、read が
   失敗しうるのに emit だけ先に出ると「読めていないのに token がある」矛盾した stream

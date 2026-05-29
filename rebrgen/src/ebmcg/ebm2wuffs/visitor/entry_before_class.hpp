@@ -266,10 +266,12 @@ DEFINE_VISITOR(entry_before) {
     //   (A) A setter/getter bound to such a field has no in-struct field to
     //       read/write — omit it entirely. This also drops the PROPERTY_SETTER_RETURN
     //       ("bool") signature that Wuffs rejects.
-    //   (B) Encode of a struct holding such a field cannot be reconstructed in the
-    //       no-heap model (the variable section is never stored). Emit an honest
-    //       "unsupported" stub rather than a silently-incomplete encoder.
-    //       Encode-side streaming is future work.
+    //   (B) Encode is stubbed for every struct (not just vector-holding ones).
+    //       Two independent reasons: streamed fields are never stored so the
+    //       struct cannot be re-serialized, and Wuffs' io_writer integer-write
+    //       builtins (write_u16be? etc.) have no C runtime definition, so even an
+    //       all-scalar struct would emit C that does not link. Honest "#error"
+    //       stub; encode-side streaming is future work.
     config.function_decl_custom = [&](Context_Statement_FUNCTION_DECL& fctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
         auto is_streamed_vector_field = [&](ebm::StatementRef field_ref) -> bool {
@@ -282,38 +284,27 @@ DEFINE_VISITOR(entry_before) {
                 return CodeWriter{};
             }
         }
-        // (B) Encode of a struct that holds a streamed vector field.
-        if (fctx.func_decl.kind == ebm::FunctionKind::ENCODE && !is_nil(fctx.func_decl.parent_format)) {
-            if (auto struct_ = fctx.get_field<"struct_decl">(from_weak(fctx.func_decl.parent_format)); struct_) {
-                bool has_streamed_vector = false;
-                for (auto& decl_ref : struct_->fields.container) {
-                    if (is_streamed_vector_field(decl_ref)) {
-                        has_streamed_vector = true;
-                        break;
-                    }
+        // (B) Encode is stubbed for every struct.
+        if (fctx.func_decl.kind == ebm::FunctionKind::ENCODE) {
+            auto name = fctx.identifier();
+            MAYBE(ret_type, fctx.visit(fctx.func_decl.return_type));
+            CodeWriter params;
+            for (auto& param_ref : fctx.func_decl.params.container) {
+                MAYBE(param, fctx.visit(param_ref));
+                if (!params.empty()) {
+                    params.write(", ");
                 }
-                if (has_streamed_vector) {
-                    auto name = fctx.identifier();
-                    MAYBE(ret_type, fctx.visit(fctx.func_decl.return_type));
-                    CodeWriter params;
-                    for (auto& param_ref : fctx.func_decl.params.container) {
-                        MAYBE(param, fctx.visit(param_ref));
-                        if (!params.empty()) {
-                            params.write(", ");
-                        }
-                        params.write(param.to_writer());
-                    }
-                    MAYBE(header, fctx.config().function_definition_start_wrapper(ret_type, name, params, fctx));
-                    CodeWriter w;
-                    w.write(header.to_writer());
-                    {
-                        auto scope = w.indent_scope();
-                        w.writeln("return \"#error\"");
-                    }
-                    w.writeln(fctx.config().end_block);
-                    return w;
-                }
+                params.write(param.to_writer());
             }
+            MAYBE(header, fctx.config().function_definition_start_wrapper(ret_type, name, params, fctx));
+            CodeWriter w;
+            w.write(header.to_writer());
+            {
+                auto scope = w.indent_scope();
+                w.writeln("return \"#error\"");
+            }
+            w.writeln(fctx.config().end_block);
+            return w;
         }
         return pass;
     };
