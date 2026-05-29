@@ -1025,6 +1025,42 @@ namespace ebm {
         return true;
     }
     
+    bool from_json(FieldStoreDesc& obj, const futils::json::JSON& j) {
+        if (auto got = j.at("field")) {
+            if(!futils::json::convert_from_json(*got, obj.field)) {
+                return false;
+            }
+        }
+        else {
+            return false;
+        }
+        if (auto got = j.at("target")) {
+            if(!futils::json::convert_from_json(*got, obj.target)) {
+                return false;
+            }
+        }
+        else {
+            return false;
+        }
+        if (auto got = j.at("source")) {
+            if(!futils::json::convert_from_json(*got, obj.source)) {
+                return false;
+            }
+        }
+        else {
+            return false;
+        }
+        if (auto got = j.at("lowered_statement")) {
+            if(!futils::json::convert_from_json(*got, obj.lowered_statement)) {
+                return false;
+            }
+        }
+        else {
+            return false;
+        }
+        return true;
+    }
+    
     bool from_json(FuncTypeDesc& obj, const futils::json::JSON& j) {
         if (auto got = j.at("return_type")) {
             if(!futils::json::convert_from_json(*got, obj.return_type)) {
@@ -2559,6 +2595,15 @@ namespace ebm {
                 return false;
             }
             if(!obj.field_decl(std::move(tmp))) {
+                return false;
+            }
+        }
+        if (auto got = j.at("field_store")) {
+            FieldStoreDesc tmp;
+            if(!futils::json::convert_from_json(*got, tmp)) {
+                return false;
+            }
+            if(!obj.field_store(std::move(tmp))) {
                 return false;
             }
         }
@@ -4624,6 +4669,10 @@ namespace ebm {
             }
             if (s == "LENGTH_CHECK") {
                 obj = StatementKind::LENGTH_CHECK;
+                return true;
+            }
+            if (s == "FIELD_STORE") {
+                obj = StatementKind::FIELD_STORE;
                 return true;
             }
             return false;

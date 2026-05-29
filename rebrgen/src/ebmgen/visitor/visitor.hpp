@@ -194,6 +194,10 @@ namespace ebmgen::visitor {
     template<typename Result = Result, typename UserContext,typename TypeContext>
     expected<Result> traverse_children_Statement_LENGTH_CHECK(UserContext&& ctx,TypeContext&& type_ctx);
     template<typename Result = Result,typename Context>
+    expected<Result> dispatch_Statement_FIELD_STORE(Context&& ctx,const ebm::Statement& in,ebm::StatementRef alias_ref = {});
+    template<typename Result = Result, typename UserContext,typename TypeContext>
+    expected<Result> traverse_children_Statement_FIELD_STORE(UserContext&& ctx,TypeContext&& type_ctx);
+    template<typename Result = Result,typename Context>
     expected<Result> dispatch_Statement(Context&& ctx,const ebm::Statement& in,ebm::StatementRef alias_ref = {});
     template<typename Result = Result, typename Context>
     expected<Result> dispatch_Statement_default(Context&& ctx,const ebm::Statement& in,ebm::StatementRef alias_ref = {}) {
@@ -317,6 +321,9 @@ namespace ebmgen::visitor {
             }
             case ebm::StatementKind::LENGTH_CHECK: {
                 return dispatch_Statement_LENGTH_CHECK<Result>(std::forward<Context>(ctx),in,alias_ref);
+            }
+            case ebm::StatementKind::FIELD_STORE: {
+                return dispatch_Statement_FIELD_STORE<Result>(std::forward<Context>(ctx),in,alias_ref);
             }
             default: {
                 return unexpect_error("Unknown Statement kind: {}", to_string(in.body.kind));
@@ -2079,6 +2086,32 @@ namespace ebmgen::visitor {
         ebm::StatementRef item_id;
         const ebm::StatementKind& kind;
         const ebm::LengthCheck& length_check;
+        ebmcodegen::util::MainLogicWrapper<Result> main_logic;
+        expected<Result>& result;
+    };
+    struct Context_Statement_FIELD_STORE : ebmcodegen::util::ContextBase<Context_Statement_FIELD_STORE> {
+        constexpr static std::string_view context_name = "Statement_FIELD_STORE";
+        BaseVisitor& visitor;
+        ebm::StatementRef item_id;
+        const ebm::StatementKind& kind;
+        const ebm::FieldStoreDesc& field_store;
+    };
+    template <typename Result>
+    struct Context_Statement_FIELD_STORE_before : ebmcodegen::util::ContextBase<Context_Statement_FIELD_STORE_before<Result>> {
+        constexpr static std::string_view context_name = "Statement_FIELD_STORE_before";
+        BaseVisitor& visitor;
+        ebm::StatementRef item_id;
+        const ebm::StatementKind& kind;
+        const ebm::FieldStoreDesc& field_store;
+        ebmcodegen::util::MainLogicWrapper<Result> main_logic;
+    };
+    template <typename Result>
+    struct Context_Statement_FIELD_STORE_after : ebmcodegen::util::ContextBase<Context_Statement_FIELD_STORE_after<Result>> {
+        constexpr static std::string_view context_name = "Statement_FIELD_STORE_after";
+        BaseVisitor& visitor;
+        ebm::StatementRef item_id;
+        const ebm::StatementKind& kind;
+        const ebm::FieldStoreDesc& field_store;
         ebmcodegen::util::MainLogicWrapper<Result> main_logic;
         expected<Result>& result;
     };
@@ -6274,6 +6307,60 @@ namespace ebmgen::visitor {
         return {};
     }
     template<typename Result,typename Context>
+    expected<Result> dispatch_Statement_FIELD_STORE(Context&& ctx,const ebm::Statement& in,ebm::StatementRef alias_ref){
+        auto& kind = in.body.kind;
+        if (!in.body.field_store()) {
+            return unexpect_error("Unexpected null pointer for StatementBody::field_store");
+        }
+        auto& field_store = *in.body.field_store();
+        auto main_logic = [&]() -> expected<Result>{
+            Context_Statement_FIELD_STORE new_ctx{
+                .visitor = get_visitor_arg_from_context(ctx),
+                .item_id = is_nil(alias_ref) ? in.id : alias_ref,
+                .kind = kind,
+                .field_store = field_store,
+            };
+            return get_visitor_from_context<Result>(ctx,new_ctx).visit(new_ctx);
+        };
+        Context_Statement_FIELD_STORE_before<Result> before_ctx{
+            .visitor = get_visitor_arg_from_context(ctx),
+            .item_id = is_nil(alias_ref) ? in.id : alias_ref,
+            .kind = kind,
+            .field_store = field_store,
+            .main_logic = main_logic,
+        };
+        expected<Result> before_result = get_visitor_from_context<Result>(ctx,before_ctx).visit(before_ctx);
+        CODEGEN_MAY_HIJACK(before_result);
+        expected<Result> main_result = main_logic();
+        Context_Statement_FIELD_STORE_after<Result> after_ctx{
+            .visitor = get_visitor_arg_from_context(ctx),
+            .item_id = is_nil(alias_ref) ? in.id : alias_ref,
+            .kind = kind,
+            .field_store = field_store,
+            .main_logic = main_logic,
+            .result = main_result,
+        };
+        expected<Result> after_result = get_visitor_from_context<Result>(ctx,after_ctx).visit(after_ctx);
+        CODEGEN_MAY_HIJACK(after_result);
+        return main_result;
+    }
+    template<typename Result, typename UserContext,typename TypeContext>
+    expected<Result> traverse_children_Statement_FIELD_STORE(UserContext&& ctx,TypeContext&& type_ctx) {
+        if (!is_nil(type_ctx.field_store.target)) {
+            auto result_target = visit_Object<Result>(std::forward<UserContext>(ctx),type_ctx.field_store.target);
+            if (!result_target) {
+                return unexpect_error(std::move(result_target.error()));
+            }
+        }
+        if (!is_nil(type_ctx.field_store.source)) {
+            auto result_source = visit_Object<Result>(std::forward<UserContext>(ctx),type_ctx.field_store.source);
+            if (!result_source) {
+                return unexpect_error(std::move(result_source.error()));
+            }
+        }
+        return {};
+    }
+    template<typename Result,typename Context>
     expected<Result> dispatch_Statement(Context&& ctx,const ebm::Statement& in,ebm::StatementRef alias_ref){
         auto main_logic = [&]() -> expected<Result>{
             Context_Statement new_ctx{
@@ -9937,6 +10024,9 @@ namespace ebmgen::visitor {
         }
         else if constexpr (std::is_same_v<TypeContextType,Context_Statement_LENGTH_CHECK> || std::is_same_v<TypeContextType,Context_Statement_LENGTH_CHECK_before<Result>> || std::is_same_v<TypeContextType,Context_Statement_LENGTH_CHECK_after<Result>>) {
             return traverse_children_Statement_LENGTH_CHECK<Result>(std::forward<UserContext>(uctx),std::forward<TypeContext>(type_ctx));
+        }
+        else if constexpr (std::is_same_v<TypeContextType,Context_Statement_FIELD_STORE> || std::is_same_v<TypeContextType,Context_Statement_FIELD_STORE_before<Result>> || std::is_same_v<TypeContextType,Context_Statement_FIELD_STORE_after<Result>>) {
+            return traverse_children_Statement_FIELD_STORE<Result>(std::forward<UserContext>(uctx),std::forward<TypeContext>(type_ctx));
         }
         else if constexpr (std::is_same_v<TypeContextType,Context_Statement> || std::is_same_v<TypeContextType,Context_Statement_before<Result>> || std::is_same_v<TypeContextType,Context_Statement_after<Result>>) {
             return traverse_children_Statement<Result>(std::forward<UserContext>(uctx),std::forward<TypeContext>(type_ctx));

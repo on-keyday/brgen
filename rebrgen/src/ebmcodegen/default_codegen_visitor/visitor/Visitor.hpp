@@ -167,6 +167,11 @@ std::function<expected<Result>(Context_Expression_CONDITIONAL& ctx)> conditional
 std::function<expected<Result>(Context_Statement_INT_TO_ARRAY& ctx)> int_to_array_custom;
 std::function<expected<Result>(Context_Statement_ARRAY_TO_INT& ctx)> array_to_int_custom;
 
+// FIELD_STORE marker: streaming generators (ebm2wuffs) override this to emit the
+// decoded value to a sink instead of materializing the field. Default hook
+// (Statement_FIELD_STORE_class.hpp) visits lowered_statement, the plain DOM store.
+std::function<expected<Result>(Context_Statement_FIELD_STORE& ctx)> field_store_custom;
+
 std::function<expected<Result>(Context_Expression_IDENTIFIER& ctx)> identifier_custom;
 std::function<expected<Result>(Context_Expression_BINARY_OP& ctx)> binary_op_custom;
 std::function<expected<Result>(Context_Expression_BINARY_OP& ctx, Result& left, Result& right)> binary_op_wrapper;

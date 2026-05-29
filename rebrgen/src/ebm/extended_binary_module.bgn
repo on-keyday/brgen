@@ -88,6 +88,12 @@ format EndianConvertDesc:
     source :ExpressionRef
     lowered_statement :LoweredStatementRef
 
+format FieldStoreDesc: # marker descriptor for FIELD_STORE
+    field :WeakStatementRef # the FieldDecl being stored into
+    target :ExpressionRef # lvalue (member access) for DOM store
+    source :ExpressionRef # the value to store/emit
+    lowered_statement :LoweredStatementRef # the plain store statement (DOM fallback)
+
 format String:
     length :Varint
     data :[length.value]u8
@@ -576,6 +582,7 @@ enum StatementKind:
     ARRAY_TO_INT # for endian conversion on decode
     INT_TO_ARRAY # for endian conversion on encode
     LENGTH_CHECK # checking length context
+    FIELD_STORE # marker: store decoded value into output field (DOM: lowered_statement; streaming: emit)
     #UPDATE_OFFSET # update absolute offset counter for alignment tracking
 
 
@@ -765,6 +772,8 @@ format StatementBody:
             endian_convert :EndianConvertDesc
         StatementKind.LENGTH_CHECK:
             length_check :LengthCheck
+        StatementKind.FIELD_STORE:
+            field_store :FieldStoreDesc
         #StatementKind.UPDATE_OFFSET:
         #    update_offset :UpdateOffset
 

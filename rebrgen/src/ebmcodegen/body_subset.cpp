@@ -21,6 +21,7 @@ namespace ebmcodegen {
             body.error_report({});
             body.expression({});
             body.field_decl({});
+            body.field_store({});
             body.func_decl({});
             body.if_statement({});
             body.import_decl({});

@@ -440,6 +440,10 @@ namespace ebm2z3 {
     template<typename Result = Result, typename UserContext,typename TypeContext>
     expected<Result> traverse_children_Statement_LENGTH_CHECK(UserContext&& ctx,TypeContext&& type_ctx);
     template<typename Result = Result,typename Context>
+    expected<Result> dispatch_Statement_FIELD_STORE(Context&& ctx,const ebm::Statement& in,ebm::StatementRef alias_ref = {});
+    template<typename Result = Result, typename UserContext,typename TypeContext>
+    expected<Result> traverse_children_Statement_FIELD_STORE(UserContext&& ctx,TypeContext&& type_ctx);
+    template<typename Result = Result,typename Context>
     expected<Result> dispatch_Statement(Context&& ctx,const ebm::Statement& in,ebm::StatementRef alias_ref = {});
     template<typename Result = Result, typename Context>
     expected<Result> dispatch_Statement_default(Context&& ctx,const ebm::Statement& in,ebm::StatementRef alias_ref = {}) {
@@ -563,6 +567,9 @@ namespace ebm2z3 {
             }
             case ebm::StatementKind::LENGTH_CHECK: {
                 return dispatch_Statement_LENGTH_CHECK<Result>(std::forward<Context>(ctx),in,alias_ref);
+            }
+            case ebm::StatementKind::FIELD_STORE: {
+                return dispatch_Statement_FIELD_STORE<Result>(std::forward<Context>(ctx),in,alias_ref);
             }
             default: {
                 return unexpect_error("Unknown Statement kind: {}", to_string(in.body.kind));
@@ -1288,6 +1295,7 @@ namespace ebm2z3 {
     struct Context_Statement_ARRAY_TO_INT;
     struct Context_Statement_INT_TO_ARRAY;
     struct Context_Statement_LENGTH_CHECK;
+    struct Context_Statement_FIELD_STORE;
     struct Context_Statement;
     struct Context_Block;
     struct Context_Expression_LITERAL_INT;
@@ -3026,6 +3034,44 @@ namespace ebm2z3 {
     // Deconstruct context fields
     #define EBM2Z3_DECONSTRUCT_STATEMENT_LENGTH_CHECK_AFTER(instance_name) \
     auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& length_check = instance_name.length_check;auto& main_logic = instance_name.main_logic;auto& result = instance_name.result;
+    struct Context_Statement_FIELD_STORE : ebmcodegen::util::ContextBase<Context_Statement_FIELD_STORE> {
+        constexpr static std::string_view context_name = "Statement_FIELD_STORE";
+        BaseVisitor& visitor;
+        ebm::StatementRef item_id;
+        const ebm::StatementKind& kind;
+        const ebm::FieldStoreDesc& field_store;
+    };
+    struct VisitorTag_Statement_FIELD_STORE {};
+    // Deconstruct context fields
+    #define EBM2Z3_DECONSTRUCT_STATEMENT_FIELD_STORE(instance_name) \
+    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& field_store = instance_name.field_store;
+    template <typename Result>
+    struct Context_Statement_FIELD_STORE_before : ebmcodegen::util::ContextBase<Context_Statement_FIELD_STORE_before<Result>> {
+        constexpr static std::string_view context_name = "Statement_FIELD_STORE_before";
+        BaseVisitor& visitor;
+        ebm::StatementRef item_id;
+        const ebm::StatementKind& kind;
+        const ebm::FieldStoreDesc& field_store;
+        ebmcodegen::util::MainLogicWrapper<Result> main_logic;
+    };
+    struct VisitorTag_Statement_FIELD_STORE_before {};
+    // Deconstruct context fields
+    #define EBM2Z3_DECONSTRUCT_STATEMENT_FIELD_STORE_BEFORE(instance_name) \
+    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& field_store = instance_name.field_store;auto& main_logic = instance_name.main_logic;
+    template <typename Result>
+    struct Context_Statement_FIELD_STORE_after : ebmcodegen::util::ContextBase<Context_Statement_FIELD_STORE_after<Result>> {
+        constexpr static std::string_view context_name = "Statement_FIELD_STORE_after";
+        BaseVisitor& visitor;
+        ebm::StatementRef item_id;
+        const ebm::StatementKind& kind;
+        const ebm::FieldStoreDesc& field_store;
+        ebmcodegen::util::MainLogicWrapper<Result> main_logic;
+        expected<Result>& result;
+    };
+    struct VisitorTag_Statement_FIELD_STORE_after {};
+    // Deconstruct context fields
+    #define EBM2Z3_DECONSTRUCT_STATEMENT_FIELD_STORE_AFTER(instance_name) \
+    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& kind = instance_name.kind;auto& field_store = instance_name.field_store;auto& main_logic = instance_name.main_logic;auto& result = instance_name.result;
     struct Context_Statement : ebmcodegen::util::ContextBase<Context_Statement> {
         constexpr static std::string_view context_name = "Statement";
         BaseVisitor& visitor;
@@ -5921,6 +5967,12 @@ namespace ebm2z3 {
     #define EBM2Z3_CODEGEN_CONTEXT_Statement_LENGTH_CHECK_before ebm2z3::Context_Statement_LENGTH_CHECK_before<Result>
     #define EBM2Z3_CODEGEN_VISITOR_Statement_LENGTH_CHECK_after ebm2z3::Visitor<ebm2z3::UserHook<ebm2z3::VisitorTag_Statement_LENGTH_CHECK_after>>
     #define EBM2Z3_CODEGEN_CONTEXT_Statement_LENGTH_CHECK_after ebm2z3::Context_Statement_LENGTH_CHECK_after<Result>
+    #define EBM2Z3_CODEGEN_VISITOR_Statement_FIELD_STORE ebm2z3::Visitor<ebm2z3::UserHook<ebm2z3::VisitorTag_Statement_FIELD_STORE>>
+    #define EBM2Z3_CODEGEN_CONTEXT_Statement_FIELD_STORE ebm2z3::Context_Statement_FIELD_STORE
+    #define EBM2Z3_CODEGEN_VISITOR_Statement_FIELD_STORE_before ebm2z3::Visitor<ebm2z3::UserHook<ebm2z3::VisitorTag_Statement_FIELD_STORE_before>>
+    #define EBM2Z3_CODEGEN_CONTEXT_Statement_FIELD_STORE_before ebm2z3::Context_Statement_FIELD_STORE_before<Result>
+    #define EBM2Z3_CODEGEN_VISITOR_Statement_FIELD_STORE_after ebm2z3::Visitor<ebm2z3::UserHook<ebm2z3::VisitorTag_Statement_FIELD_STORE_after>>
+    #define EBM2Z3_CODEGEN_CONTEXT_Statement_FIELD_STORE_after ebm2z3::Context_Statement_FIELD_STORE_after<Result>
     #define EBM2Z3_CODEGEN_VISITOR_Statement_dispatch ebm2z3::Visitor<ebm2z3::UserHook<ebm2z3::VisitorTag_Statement>>
     #define EBM2Z3_CODEGEN_CONTEXT_Statement_dispatch ebm2z3::Context_Statement
     #define EBM2Z3_CODEGEN_VISITOR_Statement_dispatch_before ebm2z3::Visitor<ebm2z3::UserHook<ebm2z3::VisitorTag_Statement_before>>
