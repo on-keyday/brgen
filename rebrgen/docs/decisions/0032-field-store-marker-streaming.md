@@ -2,8 +2,8 @@
 
 ## 日付
 
-- 判断時期: 2026-05-29
-- 文書化: 2026-05-29
+- 判断時期: 2026-05-29（FIELD_STORE marker / convert producer）、2026-05-30（token passthrough / round-trip harness）
+- 文書化: 2026-05-29、追補 2026-05-30
 
 ## 判断
 
@@ -42,8 +42,17 @@ marker は EBM 上に常時存在させ gating しない。挙動の差は gener
 - scaffold 段階（producer 未実装）では FIELD_STORE ノードは一切生成されないため、
   既存 generator の出力はバイト不変であることを確認済み（ebm2wuffs / ebm2c で
   leb128 を生成、exit 0・サイズ不変）。
-- ebm2wuffs（今後）: `field_store_custom` → `emit(field, source)`、struct には
-  format field を置かない。
+- ebm2wuffs（実装済み）: streaming を **token passthrough** として具体化した。
+  decode は全 READ_DATA が「消費する src バイト範囲」を field タグ付き token
+  （`write_simple_token_fast`, value_major=0xEB23F, value_minor=field id,
+  length=消費バイト数）として `base.token_writer` へ流す。可変長 field は struct
+  から省略し（その field を参照する setter/getter/length-check/encode も省略 or
+  honest stub 化）、scalar も struct 格納と並行して token を吐く。vector 要素は
+  scalar read に lower されるため非 byte vector も同経路で covered。
+- decode round-trip 検証: `ebm2wuffs/unictest.py` が wuffs-gen 済み C を compile し、
+  INPUT を decode coroutine に流し、emit された token の length 列から src を再構成
+  して INPUT と byte 比較する。byte-vector-only の until_eof と scalar+u16-vector の
+  simple_vector が round-trip 通過（exit 0 → framework が OUTPUT==INPUT を確認）。
 
 ## これは X を意味しない
 
@@ -68,6 +77,29 @@ marker は EBM 上に常時存在させ gating しない。挙動の差は gener
   C/Go/Rust 等は無変更（scaffold は inert と検証済み）。
 - ここでの「streaming」は emit-not-store の意味であり、coroutine/suspend の意味
   ではない（後者はターゲット言語の関心事）。
+- **token が値を運ぶ、ではない。** token は field タグ（value_minor）と消費バイト長
+  （length）のみを持ち、値そのものは src バッファ参照で表す（SAX のイベント境界に
+  近い）。再構成は token length 分を src からコピーするだけで、エンディアンや bit
+  解釈は介在しない（raw byte 透過）。
+- **全 format が round-trip する、ではない。** token 化されるのは byte-aligned な
+  native scalar read と byte vector。固定 byte array（`limited_copy`）と bit field
+  （byte 境界でない lowered read）は未 token 化で、これらを含む format（ipv6/tcp）は
+  round-trip 未完成（既知ギャップ）。
+- **encode が streaming で動く、ではない。** 格納しない field は encode で復元でき
+  ないため、streamed vector を持つ struct の encode は honest stub（`return
+  "#error"`）。encode 側 streaming は別課題。
+- **配置制約（意味論が第一、proof は整合）。** read は emit より先に置く。第一の
+  理由は意味論である: token は「実際に消費した src バイト」の記録なので、read が
+  失敗しうるのに emit だけ先に出ると「読めていないのに token がある」矛盾した stream
+  になる。read 成功が emit の前提であり、これは prover とは独立に成り立つ正しさの
+  要件である。
+  これと整合する形で proof 上の制約もある: dst-space guard と token write の間に
+  fallible（`?`）call を挟めない。read は `?` coroutine call で、suspend を跨ぐと
+  prover が `args.dst` の事実を落とすため、guard が立てた `dst.length() >= 1` と
+  write の間に read が入ると前提が消える。両者を同時に満たす配置が
+  `read? → (guard + write)` で、read を先に置きつつ guard と write を隣接させる。
+  guard 自体は単発 `if/yield` ではなく `while/continue` の 1-shot loop（fall-through
+  では write 直前に下界が再確立されない；byte vector loop と同型）。
 
 ## 代替案
 
