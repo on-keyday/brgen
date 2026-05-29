@@ -261,6 +261,63 @@ DEFINE_VISITOR(entry_before) {
         return w;
     };
 
+    // Streamed (omitted) VECTOR fields ripple into the functions that touch them.
+    // Two cases need handling so the generated Wuffs still type-checks (ADR 0032):
+    //   (A) A setter/getter bound to such a field has no in-struct field to
+    //       read/write — omit it entirely. This also drops the PROPERTY_SETTER_RETURN
+    //       ("bool") signature that Wuffs rejects.
+    //   (B) Encode of a struct holding such a field cannot be reconstructed in the
+    //       no-heap model (the variable section is never stored). Emit an honest
+    //       "unsupported" stub rather than a silently-incomplete encoder.
+    //       Encode-side streaming is future work.
+    config.function_decl_custom = [&](Context_Statement_FUNCTION_DECL& fctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        auto is_streamed_vector_field = [&](ebm::StatementRef field_ref) -> bool {
+            auto fk = fctx.get_field<"field_decl.field_type.body.kind.optional">(field_ref);
+            return fk && *fk == ebm::TypeKind::VECTOR;
+        };
+        // (A) Setter/getter of a streamed vector field.
+        if (is_setter_func(fctx.func_decl.kind) || is_getter_func(fctx.func_decl.kind)) {
+            if (auto prop = fctx.func_decl.property(); prop && is_streamed_vector_field(from_weak(*prop))) {
+                return CodeWriter{};
+            }
+        }
+        // (B) Encode of a struct that holds a streamed vector field.
+        if (fctx.func_decl.kind == ebm::FunctionKind::ENCODE && !is_nil(fctx.func_decl.parent_format)) {
+            if (auto struct_ = fctx.get_field<"struct_decl">(from_weak(fctx.func_decl.parent_format)); struct_) {
+                bool has_streamed_vector = false;
+                for (auto& decl_ref : struct_->fields.container) {
+                    if (is_streamed_vector_field(decl_ref)) {
+                        has_streamed_vector = true;
+                        break;
+                    }
+                }
+                if (has_streamed_vector) {
+                    auto name = fctx.identifier();
+                    MAYBE(ret_type, fctx.visit(fctx.func_decl.return_type));
+                    CodeWriter params;
+                    for (auto& param_ref : fctx.func_decl.params.container) {
+                        MAYBE(param, fctx.visit(param_ref));
+                        if (!params.empty()) {
+                            params.write(", ");
+                        }
+                        params.write(param.to_writer());
+                    }
+                    MAYBE(header, fctx.config().function_definition_start_wrapper(ret_type, name, params, fctx));
+                    CodeWriter w;
+                    w.write(header.to_writer());
+                    {
+                        auto scope = w.indent_scope();
+                        w.writeln("return \"#error\"");
+                    }
+                    w.writeln(fctx.config().end_block);
+                    return w;
+                }
+            }
+        }
+        return pass;
+    };
+
     // === Struct declaration ===
     // Wuffs: `pub struct Name?( field : type, ... )`, with methods declared
     // separately as top-level `pub func`. Use the framework's struct flow
@@ -444,6 +501,18 @@ DEFINE_VISITOR(entry_before) {
             return CodeWriter{};
         }
         return CODELINE("args.", io_, ".copy_from_slice!(s: ", target.to_writer(), "[..])");
+    };
+
+    // A length check validating a streamed (omitted) VECTOR field has no in-struct
+    // field to reference: the data is emitted as tokens, never stored. Suppress the
+    // check so encode/decode still type-check against the omitted field. See ADR 0032.
+    config.length_check_custom = [&](Context_Statement_LENGTH_CHECK& lctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        if (auto fk = lctx.get_field<"field_decl.field_type.body.kind.optional">(from_weak(lctx.length_check.related_field));
+            fk && *fk == ebm::TypeKind::VECTOR) {
+            return CodeWriter{};
+        }
+        return pass;
     };
 
     // === Variable declarations: hoist to function top (Wuffs requirement) ===
@@ -738,11 +807,21 @@ DEFINE_VISITOR(entry_before) {
         }
         CodeWriter w;
         w.write(callee.to_writer(), suffix, "(");
-        size_t i = 0;
+        bool first = true;
+        // DECODE coroutines carry a synthetic leading `dst: base.token_writer`
+        // param (added in function_definition_start_wrapper) that has no EBM
+        // argument; thread the caller's own `dst` through. A decode is only ever
+        // called from another decode, so `args.dst` is always in scope. ADR 0032.
+        if (fn && fn->kind == ebm::FunctionKind::DECODE) {
+            w.write("dst: args.dst");
+            first = false;
+        }
+        size_t i = 0;  // indexes EBM params (excludes the synthetic dst)
         for (auto& arg : cctx.call_desc.arguments.container) {
-            if (i != 0) {
+            if (!first) {
                 w.write(", ");
             }
+            first = false;
             MAYBE(arg_str, cctx.visit(arg));
             std::string pname;
             if (fn && i < fn->params.container.size()) {
