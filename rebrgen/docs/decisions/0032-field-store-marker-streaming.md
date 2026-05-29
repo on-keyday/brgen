@@ -88,5 +88,14 @@ marker は EBM 上に常時存在させ gating しない。挙動の差は gener
 - ADR 0005（ebmcg / ebmip 分離）: streaming は CodeWriter 中心の default visitor から
   外れる面があり、将来 ebm2wuffs を ebmip 寄りに再配置する論点に繋がりうる（現状は
   ebmcg）。
-- ADR 0017（transform passes）: Phase 2 の producer（field store を FIELD_STORE で
-  包む）は transform / convert 側の追加になる。
+- ADR 0017（transform passes）: Phase 2 の producer は最終的に **convert 側
+  (`statement.cpp` の代入/APPEND 変換)** に実装した。当初 transform pass で後付け
+  wrapping を試みたが、target の `this.field` を get_field で再発見する方式が複雑
+  フォーマット(leb128/DNS label)で脆く crash した。convert は生成時点で field /
+  target / value が手元にあり、`has_self` + field-decl 解決だけで堅牢に判定できる。
+  decode-output の field store は decode.cpp の machinery と、ユーザが `fn decode()`
+  に手書きした代入(leb128 の `value |= ...`)の2系統から来るため、convert 側でも
+  単一チョークポイントは無く、現状はユーザ手書き代入(statement.cpp)を wrap する。
+  machinery 側(int/enum/array の暗黙 decode)の wrap は今後の課題。
+  検証は unictest round-trip(ID 名に非依存)で行い、byte-diff は不適(生成識別子が
+  EBM ID を埋め込むため producer の ID 採番でノイズ爆発)と判明した。

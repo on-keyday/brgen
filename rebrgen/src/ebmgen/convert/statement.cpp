@@ -11,6 +11,7 @@
 #include "ebmgen/common.hpp"
 #include "ebmgen/convert/helper.hpp"
 #include "helper.hpp"
+#include "../access.hpp"
 #include <core/ast/traverse.h>
 #include <memory>
 #include <vector>
@@ -1222,6 +1223,37 @@ namespace ebmgen {
         return {};
     }
 
+    // If `body` (a just-built ASSIGNMENT/APPEND) stores into `this.<field>`, rewrap
+    // it as a FIELD_STORE marker whose lowered_statement holds the original store.
+    // DOM generators visit the lowered store (output unchanged); streaming
+    // generators (ebm2wuffs) emit `value` to a sink instead. See ADR 0032.
+    expected<void> maybe_wrap_field_store(ConverterContext& ctx, ebm::StatementBody& body, ebm::ExpressionRef target_ref, ebm::ExpressionRef value_ref) {
+        // Restrict to direct `this.<field-decl>` stores: a MEMBER_ACCESS whose
+        // member resolves to a FIELD_DECL. Index/local/temp targets are skipped.
+        auto field_opt = access_field<"member.body.id.id">(ctx.repository(), target_ref);
+        auto field_decl = access_field<"field_decl">(ctx.repository(), field_opt);
+        if (!field_opt || !field_decl) {
+            return {};
+        }
+        MAYBE(self, has_self(ctx, target_ref));
+        if (!self) {
+            return {};
+        }
+        ebm::StatementBody lowered = body;  // copy original store (DOM fallback)
+        MAYBE(sp_id, ctx.repository().new_statement_id());
+        EBMA_ADD_STATEMENT(sp_ref, sp_id, std::move(lowered));
+        ebm::FieldStoreDesc desc;
+        desc.field = to_weak(*field_opt);
+        desc.target = target_ref;
+        desc.source = value_ref;
+        desc.lowered_statement = ebm::LoweredStatementRef{sp_ref};
+        ebm::StatementBody marker;
+        marker.kind = ebm::StatementKind::FIELD_STORE;
+        marker.field_store(desc);
+        body = std::move(marker);
+        return {};
+    }
+
     expected<void> StatementConverter::convert_statement_impl(const std::shared_ptr<ast::Binary>& node, ebm::StatementRef id, ebm::StatementBody& body) {
         auto assign_with_op = convert_assignment_binary_op(node->op);
         if (node->op == ast::BinaryOp::assign) {
@@ -1231,6 +1263,7 @@ namespace ebmgen {
             EBMA_CONVERT_EXPRESSION(value_ref, node->right);
             body.value(value_ref);
             MAYBE_VOID(ok, may_mark_self_modified(ctx, target_ref));
+            MAYBE_VOID(fs, maybe_wrap_field_store(ctx, body, target_ref, value_ref));
         }
         else if (node->op == ast::BinaryOp::append_assign) {
             body.kind = ebm::StatementKind::APPEND;
@@ -1243,6 +1276,7 @@ namespace ebmgen {
             body.target(target_ref);
             body.value(value_ref);
             MAYBE_VOID(ok, may_mark_self_modified(ctx, target_ref));
+            MAYBE_VOID(fs, maybe_wrap_field_store(ctx, body, target_ref, value_ref));
             return {};
         }
         else if (node->op == ast::BinaryOp::define_assign || node->op == ast::BinaryOp::const_assign) {
@@ -1292,6 +1326,7 @@ namespace ebmgen {
             body.target(target_ref);
             body.value(calc);
             MAYBE_VOID(ok, may_mark_self_modified(ctx, target_ref));
+            MAYBE_VOID(fs, maybe_wrap_field_store(ctx, body, target_ref, calc));
         }
         else {
             body.kind = ebm::StatementKind::EXPRESSION;
