@@ -239,16 +239,24 @@ DEFINE_VISITOR(entry_before) {
             suffix = "!";  // mutates `this`
         }
         auto ret_str = return_type.to_string();
+        // Streaming decode emits decoded fields as tokens; prepend a token_writer
+        // sink (Sans-I/O: the caller owns the token buffer). See ADR 0032.
+        std::string param_str = params.to_string();
+        if (fctx.func_decl.kind == ebm::FunctionKind::DECODE) {
+            param_str = param_str.empty()
+                            ? std::string("dst: base.token_writer")
+                            : ("dst: base.token_writer, " + param_str);
+        }
         CodeWriter w;
         std::string qualified(name);
         if (!is_nil(fctx.func_decl.parent_format)) {
             qualified = std::string(ctx.identifier(fctx.func_decl.parent_format)) + "." + qualified;
         }
         if (ret_str.empty()) {
-            w.writeln("pub func ", qualified, suffix, "(", params, ") {");
+            w.writeln("pub func ", qualified, suffix, "(", param_str, ") {");
         }
         else {
-            w.writeln("pub func ", qualified, suffix, "(", params, ") ", ret_str, " {");
+            w.writeln("pub func ", qualified, suffix, "(", param_str, ") ", ret_str, " {");
         }
         return w;
     };
@@ -273,6 +281,11 @@ DEFINE_VISITOR(entry_before) {
     config.field_decl_visitor = [&](Context_Statement_FIELD_DECL& fctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
         if (fctx.field_decl.is_state_variable()) {
+            return CodeWriter{};
+        }
+        // Variable-length (VECTOR) fields cannot live in a no-heap Wuffs struct;
+        // they are streamed to the token_writer instead. Omit them. See ADR 0032.
+        if (auto tk = fctx.get_kind(fctx.field_decl.field_type); tk && *tk == ebm::TypeKind::VECTOR) {
             return CodeWriter{};
         }
         auto fname = fctx.identifier();
@@ -379,6 +392,32 @@ DEFINE_VISITOR(entry_before) {
         if (rctx.read_data.lowered_statement()) {
             return pass;
         }
+        // Streamed VECTOR (slice) field: omitted from the struct, so emit the
+        // bytes as token_writer tokens spanning the source instead of copying into
+        // a (nonexistent) slice. value_minor = field id. Tokens cap at 0xFFFF and
+        // chain via the continued bit; decode suspends ($short write) when dst is
+        // full. See ADR 0032.
+        if (auto fk = rctx.get_field<"field_decl.field_type.body.kind.optional">(from_weak(rctx.read_data.field));
+            fk && *fk == ebm::TypeKind::VECTOR) {
+            auto fid = std::to_string(get_id(rctx.read_data.field));
+            auto lbl = "ebmtok" + fid;  // unique loop label per field
+            CodeWriter w;
+            w.writeln("while.", lbl, " args.", io_, ".length() > 0 {");
+            w.writeln("    if args.dst.length() <= 0 {");
+            w.writeln("        yield? base.\"$short write\"");
+            w.writeln("        continue.", lbl);
+            w.writeln("    }");
+            w.writeln("    ebm_navail = args.", io_, ".length()");
+            w.writeln("    if ebm_navail > 0xFFFF {");
+            w.writeln("        args.dst.write_simple_token_fast!(value_major: 0xEB23F, value_minor: ", fid, ", continued: 1, length: 0xFFFF)");
+            w.writeln("        args.", io_, ".skip_u32?(n: 0xFFFF)");
+            w.writeln("    } else {");
+            w.writeln("        args.dst.write_simple_token_fast!(value_major: 0xEB23F, value_minor: ", fid, ", continued: 0, length: ebm_navail as base.u32)");
+            w.writeln("        args.", io_, ".skip_u32?(n: ebm_navail as base.u32)");
+            w.writeln("    }");
+            w.writeln("}.", lbl);
+            return w;
+        }
         MAYBE(size_str, get_size_str(rctx, rctx.read_data.size));
         std::string up_to;
         if (size_str.empty()) {
@@ -397,6 +436,13 @@ DEFINE_VISITOR(entry_before) {
         if (wctx.write_data.lowered_statement()) {
             return pass;
         }
+        // Streamed VECTOR field is omitted from the struct; the encode-side source
+        // for it is not wired yet (increment 1 is decode-focused). Emit nothing so
+        // the generated Wuffs still type-checks. TODO(ebm2wuffs): encode streaming.
+        if (auto fk = wctx.get_field<"field_decl.field_type.body.kind.optional">(from_weak(wctx.write_data.field));
+            fk && *fk == ebm::TypeKind::VECTOR) {
+            return CodeWriter{};
+        }
         return CODELINE("args.", io_, ".copy_from_slice!(s: ", target.to_writer(), "[..])");
     };
 
@@ -409,6 +455,7 @@ DEFINE_VISITOR(entry_before) {
         using namespace CODEGEN_NAMESPACE;
         CodeWriter w;
         std::unordered_set<std::uint64_t> seen;  // dedup hoisted VARIABLE_DECLs
+        bool needs_navail = false;  // hoist `var ebm_navail` for streamed-vector token loops
         auto collector =
             make_visitor<void>(fctx.visitor)
                 .name("WuffsVarHoist")
@@ -450,6 +497,12 @@ DEFINE_VISITOR(entry_before) {
                 // not follow. Mirror generation: native scalar IO is intercepted (no
                 // lowering), otherwise descend into the lowered statement.
                 .on([&](auto&& self, Context_Statement_READ_DATA& rctx) -> expected<void> {
+                    // Streamed-vector reads use a hoisted `ebm_navail` scratch (see
+                    // read_data_bytes_io_wrapper). Flag it so the prologue declares it.
+                    if (auto fk = rctx.get_field<"field_decl.field_type.body.kind.optional">(from_weak(rctx.read_data.field));
+                        fk && *fk == ebm::TypeKind::VECTOR) {
+                        needs_navail = true;
+                    }
                     if (native_scalar(rctx, rctx.read_data)) {
                         return {};
                     }
@@ -483,6 +536,9 @@ DEFINE_VISITOR(entry_before) {
                 .on_default_traverse_children()
                 .build();
         MAYBE_VOID(_, fctx.visit<void>(collector, fctx.func_decl.body));
+        if (needs_navail) {
+            w.writeln("var ebm_navail : base.u64");
+        }
         return w;
     };
     config.variable_decl_custom = [&](Context_Statement_VARIABLE_DECL& vctx) -> expected<Result> {
