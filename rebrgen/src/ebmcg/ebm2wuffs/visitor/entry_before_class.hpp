@@ -424,8 +424,37 @@ DEFINE_VISITOR(entry_before) {
         }
         MAYBE(target, rctx.visit(rctx.read_data.target));
         auto io_ = rctx.identifier(rctx.read_data.io_ref);
-        return CODELINE(target.to_writer(), " = args.", io_, ".read_u",
-                        std::to_string(ns->first), ns->second, "?()");
+        auto nbytes = std::to_string(ns->first / 8);  // ns->first is the bit width
+        auto fid = std::to_string(get_id(rctx.read_data.field));
+        // Streaming passthrough: emit a token spanning the source bytes this
+        // scalar will consume, then read it into its field. The decode is then
+        // fully reconstructible (the round-trip harness rebuilds src from token
+        // lengths). Vector elements lower to scalar reads, so this covers
+        // non-byte vectors too. The token MUST be emitted before the read: the
+        // read is a coroutine call that drops dst facts across a suspension, so
+        // emitting after it would lose the `dst.length() >= 1` precondition the
+        // dst-space guard just established. value_minor = field id, length =
+        // byte width. See ADR 0032.
+        auto lbl = "ebmstok" + std::to_string(get_id(rctx.item_id));
+        CodeWriter w;
+        // Reserve one token slot, re-checking dst space after each suspension:
+        // a bare `if dst<=0 {yield}` fall-through does NOT re-establish
+        // dst.length() >= 1 for the following write (the write is reached on
+        // both the dst-has-room and the post-yield path, and the prover keeps
+        // no lower bound across the yield). The loop + `continue` reaches the
+        // write only on the dst-has-room path, mirroring the byte-vector loop.
+        w.writeln("while.", lbl, " true {");
+        w.writeln("    if args.dst.length() <= 0 {");
+        w.writeln("        yield? base.\"$short write\"");
+        w.writeln("        continue.", lbl);
+        w.writeln("    }");
+        w.writeln("    args.dst.write_simple_token_fast!(value_major: 0xEB23F, value_minor: ",
+                  fid, ", continued: 0, length: ", nbytes, ")");
+        w.writeln("    break.", lbl);
+        w.writeln("}.", lbl);
+        w.writeln(target.to_writer(), " = args.", io_, ".read_u",
+                  std::to_string(ns->first), ns->second, "?()");
+        return w;
     };
     config.write_data_custom = [&, native_scalar](Context_Statement_WRITE_DATA& wctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
