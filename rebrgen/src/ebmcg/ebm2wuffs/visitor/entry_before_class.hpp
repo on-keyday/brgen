@@ -504,16 +504,31 @@ DEFINE_VISITOR(entry_before) {
             return w;
         }
         MAYBE(size_str, get_size_str(rctx, rctx.read_data.size));
-        std::string up_to;
         if (size_str.empty()) {
-            // No fixed size (read-until-EOF / remaining): consume what's available.
-            up_to = "args." + io_ + ".length() as base.u32";
+            // No fixed size (read-until-EOF / remaining): consume what's
+            // available. Dynamic length; token passthrough not wired here yet.
+            return CODELINE("args.", io_, ".limited_copy_u32_to_slice!(up_to: args.",
+                            io_, ".length() as base.u32, s: ", target.to_writer(), "[..])");
         }
-        else {
-            up_to = "(" + size_str.to_string() + " as base.u32)";
-        }
-        return CODELINE("args.", io_, ".limited_copy_u32_to_slice!(up_to: ", up_to,
-                        ", s: ", target.to_writer(), "[..])");
+        // Fixed byte array: copy into the field, then emit a token claiming the
+        // full fixed size. A short source under-copies but the token over-claims,
+        // so a truncated array fails round-trip rather than passing. See ADR 0032.
+        auto fid = std::to_string(get_id(rctx.read_data.field));
+        auto lbl = "ebmatok" + std::to_string(get_id(rctx.item_id));
+        auto sz = size_str.to_string();
+        CodeWriter w;
+        w.writeln("args.", io_, ".limited_copy_u32_to_slice!(up_to: (", sz,
+                  " as base.u32), s: ", target.to_writer(), "[..])");
+        w.writeln("while.", lbl, " true {");
+        w.writeln("    if args.dst.length() <= 0 {");
+        w.writeln("        yield? base.\"$short write\"");
+        w.writeln("        continue.", lbl);
+        w.writeln("    }");
+        w.writeln("    args.dst.write_simple_token_fast!(value_major: 0xEB23F, value_minor: ",
+                  fid, ", continued: 0, length: (", sz, " as base.u32))");
+        w.writeln("    break.", lbl);
+        w.writeln("}.", lbl);
+        return w;
     };
     config.write_data_bytes_io_wrapper = [&](Context_Statement_WRITE_DATA& wctx, BytesType cand,
                                              Result target, std::string io_) -> expected<Result> {
