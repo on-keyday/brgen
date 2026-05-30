@@ -55,6 +55,19 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
     // with the field name produced by Statement_FIELD_DECL_before.
     MAYBE(member_stmt, ctx.get_field<"body.id">(ctx.member));
     if (auto type_ref = get_struct_union_member_from_field(ctx, from_weak(member_stmt))) {
+        // Variant alternative VECTOR members are omitted from their struct
+        // (field_decl_visitor strips them -- Wuffs forbids slice fields). The
+        // PROPERTY_GETTER body still references them; emit a length-0 sub-slice
+        // of the receiver's empty_buf. Wuffs requires slice returns to be of
+        // the form `this.field[i..j]` (depth 1 only), so write to `this`
+        // directly. Decide by the access expression's own type (this MEMBER_ACCESS
+        // result type), not the field decl -- only slice-typed reads need the
+        // redirect; UINT/BOOL/etc. members are still read through their member
+        // struct normally.
+        auto access_type_kind = ctx.get_field<"body.kind">(ctx.type);
+        if (access_type_kind && *access_type_kind == ebm::TypeKind::VECTOR) {
+            return CODE("this.ebm2wuffs_empty_buf[..0]");
+        }
         MAYBE(member_text, ctx.visit(ctx.member));
         MAYBE(base, ctx.visit(ctx.base));
         MAYBE(member_struct_stmt, ctx.get_field<"body.id">(*type_ref));

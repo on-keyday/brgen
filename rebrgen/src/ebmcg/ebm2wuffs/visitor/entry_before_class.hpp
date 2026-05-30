@@ -365,6 +365,9 @@ DEFINE_VISITOR(entry_before) {
         }
         // Variable-length (VECTOR) fields cannot live in a no-heap Wuffs struct;
         // they are streamed to the token_writer instead. Omit them. See ADR 0032.
+        // (Variant alternative structs also omit them -- Wuffs forbids slice
+        // fields entirely. Expression_MEMBER_ACCESS_before redirects PROPERTY_GETTER
+        // reads of these fields to the empty-buf sub-slice so they at least gen.)
         if (auto tk = fctx.get_kind(fctx.field_decl.field_type); tk && *tk == ebm::TypeKind::VECTOR) {
             return CodeWriter{};
         }

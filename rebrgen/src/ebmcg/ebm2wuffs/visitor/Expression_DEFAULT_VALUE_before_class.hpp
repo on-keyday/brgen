@@ -30,7 +30,19 @@ DEFINE_VISITOR(Expression_DEFAULT_VALUE_before) {
     if (!kind) {
         return pass;
     }
-    switch (*kind) {
+    // EBM wraps the "absent" case for PROPERTY_GETTERs in TypeKind::PTR even
+    // when the declared getter type is a base scalar (the PTR is the nullable
+    // envelope). Unwrap PTR once before dispatching so a base.u8 getter does
+    // not get `this.ebm2wuffs_empty_buf[..0]` (a slice) returned against a
+    // base.u8 declared return.
+    auto effective_kind = *kind;
+    if (effective_kind == ebm::TypeKind::PTR) {
+        auto pointee_kind = ctx.get_field<"body.pointee_type.body.kind">(ctx.type);
+        if (pointee_kind) {
+            effective_kind = *pointee_kind;
+        }
+    }
+    switch (effective_kind) {
         case ebm::TypeKind::INT:
         case ebm::TypeKind::UINT:
         case ebm::TypeKind::USIZE:
@@ -39,7 +51,6 @@ DEFINE_VISITOR(Expression_DEFAULT_VALUE_before) {
         case ebm::TypeKind::BOOL:
             return CODE("false");
         case ebm::TypeKind::VECTOR:
-        case ebm::TypeKind::PTR:
             // Wuffs allows `slice` returns only of the form `this.field[i..j]`,
             // so `this.util.empty_slice_u8()` is rejected. Use a sub-slice of
             // the per-struct `ebm2wuffs_empty_buf` (injected by
