@@ -16,6 +16,7 @@
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 
 #include "../codegen.hpp"
+#include "../enum_name.hpp"
 #include "ebm/extended_binary_module.hpp"
 #include "ebmcodegen/stub/context.hpp"
 #include "ebmcodegen/stub/make_visitor.hpp"
@@ -34,60 +35,62 @@
 //   - Wuffs has no growable vectors / heap; dynamic vectors map to `slice`.
 
 namespace ebm2wuffs {
-// Round a bit width up to the nearest Wuffs-native integer width (8/16/32/64).
-inline std::optional<size_t> wuffs_int_width(size_t bit) {
-    if (bit == 0) {
+    // Round a bit width up to the nearest Wuffs-native integer width (8/16/32/64).
+    inline std::optional<size_t> wuffs_int_width(size_t bit) {
+        if (bit == 0) {
+            return std::nullopt;
+        }
+        if (bit <= 8) {
+            return 8;
+        }
+        if (bit <= 16) {
+            return 16;
+        }
+        if (bit <= 32) {
+            return 32;
+        }
+        if (bit <= 64) {
+            return 64;
+        }
         return std::nullopt;
     }
-    if (bit <= 8) {
-        return 8;
-    }
-    if (bit <= 16) {
-        return 16;
-    }
-    if (bit <= 32) {
-        return 32;
-    }
-    if (bit <= 64) {
-        return 64;
-    }
-    return std::nullopt;
-}
 
-// Endian suffix for read_uN/write_uN. 8-bit reads/writes take no suffix.
-inline std::optional<std::string> wuffs_endian_suffix(size_t width, ebm::Endian e) {
-    if (width == 8) {
-        return std::string{""};
+    // Endian suffix for read_uN/write_uN. 8-bit reads/writes take no suffix.
+    inline std::optional<std::string> wuffs_endian_suffix(size_t width, ebm::Endian e) {
+        if (width == 8) {
+            return std::string{""};
+        }
+        if (e == ebm::Endian::big) {
+            return std::string{"be"};
+        }
+        if (e == ebm::Endian::little) {
+            return std::string{"le"};
+        }
+        // unspec/native/dynamic: cannot pick a fixed-endian primitive.
+        return std::nullopt;
     }
-    if (e == ebm::Endian::big) {
-        return std::string{"be"};
-    }
-    if (e == ebm::Endian::little) {
-        return std::string{"le"};
-    }
-    // unspec/native/dynamic: cannot pick a fixed-endian primitive.
-    return std::nullopt;
-}
 
-// Wuffs const names allow only [A-Z0-9_] and may not begin with "__".
-inline std::string to_const_name(std::string_view s) {
-    std::string r;
-    for (char c : s) {
-        if (c >= 'a' && c <= 'z') {
-            r += static_cast<char>(c - 'a' + 'A');
+    // Wuffs const names allow only [A-Z0-9_] and may not begin with "__".
+    inline std::string to_const_name(std::string_view s) {
+        std::string r;
+        for (char c : s) {
+            if (c >= 'a' && c <= 'z') {
+                r += static_cast<char>(c - 'a' + 'A');
+            }
+            else if ((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_') {
+                r += c;
+            }
+            else {
+                r += '_';
+            }
         }
-        else if ((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_') {
-            r += c;
+        if (r.starts_with("__")) {
+            r.insert(0, "K");
         }
-        else {
-            r += '_';
-        }
+        return r;
     }
-    if (r.starts_with("__")) {
-        r.insert(0, "K");
-    }
-    return r;
-}
+
+    constexpr auto ebm2wuffs_version_major = "0xEB23F";
 }  // namespace ebm2wuffs
 
 DEFINE_VISITOR(entry_before) {
@@ -241,6 +244,51 @@ DEFINE_VISITOR(entry_before) {
     config.default_value_option.decoder_return_init = "ok";
     // Wuffs has no optional sentinel; fall back to a zero value for the scaffold.
     config.default_value_option.optional_init = "0";
+
+    // Replace the default emit (which is `nullptr` and fails Wuffs type check
+    // for every non-pointer return type) with the type's natural zero/empty
+    // value. PROPERTY_GETTER `return DEFAULT_VALUE` is the principal user.
+    // EBM wraps the "absent" case for PROPERTY_GETTERs in TypeKind::PTR even
+    // when the declared getter type is a base scalar (the PTR is the nullable
+    // envelope). Unwrap PTR once before dispatching so a base.u8 getter does
+    // not get `this.ebm2wuffs_empty_buf[..0]` (a slice) returned against a
+    // base.u8 declared return.
+    config.default_value_custom = [&](Context_Expression_DEFAULT_VALUE& dvctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        auto kind = dvctx.get_field<"body.kind">(dvctx.type);
+        if (!kind) {
+            return pass;
+        }
+        auto effective_kind = *kind;
+        if (effective_kind == ebm::TypeKind::PTR) {
+            auto pointee_kind = dvctx.get_field<"body.pointee_type.body.kind">(dvctx.type);
+            if (pointee_kind) {
+                effective_kind = *pointee_kind;
+            }
+        }
+        switch (effective_kind) {
+            case ebm::TypeKind::INT:
+            case ebm::TypeKind::UINT:
+            case ebm::TypeKind::USIZE:
+            case ebm::TypeKind::FLOAT:
+            case ebm::TypeKind::ENUM:
+                // ENUM values are emitted as plain `pub const`s (UPPER_SNAKE per
+                // enum_decl_visitor), so 0 is a valid scalar for the empty case.
+                return CODE("0");
+            case ebm::TypeKind::BOOL:
+                return CODE("false");
+            case ebm::TypeKind::VECTOR:
+                // Wuffs allows `slice` returns only of the form `this.field[i..j]`,
+                // so `this.util.empty_slice_u8()` is rejected. Use a sub-slice of
+                // the per-struct `ebm2wuffs_empty_buf` (injected by
+                // struct_definition_close) with j=0 to produce a length-0 slice.
+                // Non-u8 element types would need a different buffer; revisit when
+                // one appears in a gen-pass format.
+                return CODE("this.ebm2wuffs_empty_buf[..0]");
+            default:
+                return pass;
+        }
+    };
 
     // pub func Struct.method[?|!](params) ret {
     config.function_definition_start_wrapper =
@@ -531,6 +579,31 @@ DEFINE_VISITOR(entry_before) {
     // plain `pri const` per member keeps wuffsfmt happy for the scaffold.
     config.enum_member_separator = ",";
 
+    // Wuffs has no enum type. Emit each EnumMemberDecl as a top-level
+    // `pub const <NAME> : <base_type> = <value>`; ExpressionKind.ENUM_MEMBER
+    // references resolve directly to these (see Expression_ENUM_MEMBER_before).
+    // base_type can be nil for inferred-type enums; default to base.u32 in
+    // that case (same pattern as ebm2rust's Statement_ENUM_DECL_class.hpp).
+    // Qualify member names with the enum name (UPPER_SNAKE) so different enums
+    // with same-named members (e.g. `.Normal`) do not collide at top level.
+    config.enum_decl_visitor = [&](Context_Statement_ENUM_DECL& ectx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        CodeWriter base_type_w = CODE("base.u32");
+        if (!is_nil(ectx.enum_decl.base_type)) {
+            MAYBE(base_type_res, ectx.visit(ectx.enum_decl.base_type));
+            base_type_w = std::move(base_type_res.to_writer());
+        }
+        auto enum_prefix = ebm2wuffs_enum_member_to_upper_snake(ectx.identifier(ectx.item_id));
+        CodeWriter w;
+        for (auto& member_ref : ectx.enum_decl.members.container) {
+            MAYBE(member_decl, ectx.get_field<"enum_member_decl">(member_ref));
+            auto member_part = ebm2wuffs_enum_member_to_upper_snake(ectx.identifier(member_ref));
+            MAYBE(value_text, ectx.visit(member_decl.value));
+            w.writeln("pub const ", enum_prefix, "_", member_part, " : ", base_type_w, " = ", value_text.to_writer());
+        }
+        return w;
+    };
+
     // Wuffs has no growable vector / append. Emit a parseable placeholder.
     config.append_visitor = [](Context_Statement_APPEND& actx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
@@ -604,7 +677,7 @@ DEFINE_VISITOR(entry_before) {
         w.writeln("        yield? base.\"$short write\"");
         w.writeln("        continue.", lbl);
         w.writeln("    }");
-        w.writeln("    args.dst.write_simple_token_fast!(value_major: 0xEB23F, value_minor: ",
+        w.writeln("    args.dst.write_simple_token_fast!(value_major: ", ebm2wuffs_version_major, ", value_minor: ",
                   fid, ", continued: 0, length: ", nbytes, ")");
         w.writeln("    break.", lbl);
         w.writeln("}.", lbl);
@@ -649,10 +722,10 @@ DEFINE_VISITOR(entry_before) {
             w.writeln("    }");
             w.writeln("    ebm_navail = args.", io_, ".length()");
             w.writeln("    if ebm_navail > 0xFFFF {");
-            w.writeln("        args.dst.write_simple_token_fast!(value_major: 0xEB23F, value_minor: ", fid, ", continued: 1, length: 0xFFFF)");
+            w.writeln("        args.dst.write_simple_token_fast!(value_major: ", ebm2wuffs_version_major, ", value_minor: ", fid, ", continued: 1, length: 0xFFFF)");
             w.writeln("        args.", io_, ".skip_u32?(n: 0xFFFF)");
             w.writeln("    } else {");
-            w.writeln("        args.dst.write_simple_token_fast!(value_major: 0xEB23F, value_minor: ", fid, ", continued: 0, length: ebm_navail as base.u32)");
+            w.writeln("        args.dst.write_simple_token_fast!(value_major: ", ebm2wuffs_version_major, ", value_minor: ", fid, ", continued: 0, length: ebm_navail as base.u32)");
             w.writeln("        args.", io_, ".skip_u32?(n: ebm_navail as base.u32)");
             w.writeln("    }");
             w.writeln("}.", lbl);
@@ -679,7 +752,7 @@ DEFINE_VISITOR(entry_before) {
         w.writeln("        yield? base.\"$short write\"");
         w.writeln("        continue.", lbl);
         w.writeln("    }");
-        w.writeln("    args.dst.write_simple_token_fast!(value_major: 0xEB23F, value_minor: ",
+        w.writeln("    args.dst.write_simple_token_fast!(value_major: ", ebm2wuffs_version_major, ", value_minor: ",
                   fid, ", continued: 0, length: (", sz, " as base.u32))");
         w.writeln("    break.", lbl);
         w.writeln("}.", lbl);
@@ -722,7 +795,7 @@ DEFINE_VISITOR(entry_before) {
         using namespace CODEGEN_NAMESPACE;
         CodeWriter w;
         std::unordered_set<std::uint64_t> seen;  // dedup hoisted VARIABLE_DECLs
-        bool needs_navail = false;  // hoist `var ebm_navail` for streamed-vector token loops
+        bool needs_navail = false;               // hoist `var ebm_navail` for streamed-vector token loops
         auto collector =
             make_visitor<void>(fctx.visitor)
                 .name("WuffsVarHoist")
@@ -1077,36 +1150,11 @@ DEFINE_VISITOR(entry_before) {
     };
 
     // === Enum ===
-    // Wuffs has no enum type. Emit each member as a top-level constant and use
-    // the enum's base integer type wherever an enum-typed value appears.
+    // Wuffs has no enum type; the actual ENUM_DECL → `pub const <NAME>` lowering
+    // lives near `config.enum_member_separator` above (kept with other enum
+    // emission settings). Here we just flip the framework knob so usages of
+    // ENUM-typed values are rendered as the base integer type.
     config.use_base_type_of_enum = true;
-    config.enum_decl_visitor = [&](Context_Statement_ENUM_DECL& ectx) -> expected<Result> {
-        using namespace CODEGEN_NAMESPACE;
-        auto ename = ectx.identifier();
-        Result base_type = Result("base.u32");
-        if (!is_nil(ectx.enum_decl.base_type)) {
-            MAYBE(bt, ectx.visit(ectx.enum_decl.base_type));
-            base_type = bt;
-        }
-        CodeWriter w;
-        std::uint64_t auto_val = 0;
-        for (auto& member_ref : ectx.enum_decl.members.container) {
-            auto cname = ebm2wuffs::to_const_name(std::string(ename) + "_" +
-                                                  std::string(ectx.identifier(member_ref)));
-            auto val_ref = ectx.get_field<"enum_member_decl.value">(member_ref);
-            if (val_ref && !is_nil(*val_ref)) {
-                MAYBE(vstr, ectx.visit(*val_ref));
-                w.writeln("pub const ", cname, " : ", base_type.to_writer(),
-                          " = ", vstr.to_writer());
-            }
-            else {
-                w.writeln("pub const ", cname, " : ", base_type.to_writer(),
-                          " = ", std::to_string(auto_val));
-            }
-            auto_val++;
-        }
-        return w;
-    };
 
     return pass;
 }
