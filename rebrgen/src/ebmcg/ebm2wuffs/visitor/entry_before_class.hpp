@@ -412,6 +412,17 @@ DEFINE_VISITOR(entry_before) {
         // `~mod<<` wraps modulo the type, satisfying the prover. Right shift
         // never overflows, so plain `>>` is fine.
         const char* op = (bctx.bop == ebm::BinaryOp::left_shift) ? "~mod<<" : ">>";
+        // If the right operand is a constant literal already in range, skip
+        // the `& mask` -- the masked form makes the prover treat the amount as
+        // "worst case bitwidth-1", which inflates the result bound when chained
+        // with `|` (e.g. Netlink's `(b0<<0) | (b1<<8) | (b2<<16) | (b3<<24)`).
+        auto right_kind = bctx.get_kind(bctx.right);
+        if (right_kind && *right_kind == ebm::ExpressionKind::LITERAL_INT) {
+            auto literal = bctx.get_field<"body.int_value">(bctx.right);
+            if (literal && literal->value() < bit_width) {
+                return CODE("(", left.to_writer(), " ", op, " ", right.to_writer(), ")");
+            }
+        }
         return CODE("(", left.to_writer(), " ", op, " ((", right.to_writer(), ") & ",
                     std::to_string(mask), "))");
     };
