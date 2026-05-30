@@ -25,6 +25,26 @@
 #include "ebm/extended_binary_module.hpp"
 DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
     using namespace CODEGEN_NAMESPACE;
+    // Property access: PROPERTY_GETTER yields `base.name` by default, but
+    // Wuffs treats it as referencing a function value (not calling it), so
+    // the type comes out as `func (X).name` and assignments / returns fail.
+    // Emit the call form: `base.name(<getter params>)`. Same first branch as
+    // ebm2go's Expression_MEMBER_ACCESS_before_class.hpp (line 27-60); the
+    // Go-specific bool_mapped_func / merge_mode / inner-struct prefix logic
+    // does not apply here.
+    auto prop = ctx.get_field<"body.id.property_decl">(ctx.member);
+    if (prop) {
+        MAYBE(getter_decl, ctx.get_field<"func_decl">(prop->getter_function.id));
+        MAYBE(base, ctx.visit(ctx.base));
+        MAYBE(ident, ctx.identifier(ctx.member));
+        std::string args;
+        for (auto& param : getter_decl.params.container) {
+            auto param_name = ctx.identifier(param);
+            if (!args.empty()) args += ", ";
+            args += param_name;
+        }
+        return CODE(base.to_writer(), ".", ident, "(", args, ")");
+    }
     // Variant member access: when the referenced field lives in a STRUCT_UNION
     // member, default emit produces `base.field`, but the Variant lowering
     // (Statement_FIELD_DECL_before) put each member behind its own struct
