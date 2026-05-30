@@ -72,17 +72,39 @@ DEFINE_VISITOR(Statement_FUNCTION_DECL) {
         }
     }
 
+    // Inner-anon property accessors are relocated to the outer parent_format
+    // class (see Statement_STRUCT_DECL_class), so prefix the method name
+    // with the inner struct identifier to avoid collisions when multiple
+    // variant arms expose the same property name (e.g. Struct236_padding_len
+    // / Struct97_padding_len). Mirrors the ebm2rust rule in entry_before.
+    std::string emit_name(func_name);
+    bool is_anon_inner_property = false;
+    if (auto prop_ref = ctx.func_decl.property()) {
+        if (auto prop_decl = ctx.get_field<"property_decl">(prop_ref->id)) {
+            if (get_id(prop_decl->parent_struct) != get_id(ctx.func_decl.parent_format)) {
+                auto inner_name = ctx.identifier(prop_decl->parent_struct);
+                emit_name = std::string(inner_name) + "_" + emit_name;
+                is_anon_inner_property = true;
+            }
+        }
+    }
     // if vector setter,
     if (ctx.func_decl.kind == ebm::FunctionKind::VECTOR_SETTER) {
-        func_name = "set_" + func_name;
+        emit_name = "set_" + emit_name;
     }
     else {
         if (multi_arg.empty()) {
+            // Keep `@property` / `@<name>.setter` on hoisted inner accessors
+            // too -- they share the prefixed name (Struct236_padding_len) on
+            // the parent class, so the dispatcher body's MEMBER_ACCESS rewrite
+            // (Expression_MEMBER_ACCESS_before) can emit
+            // `self.Struct236_padding_len` (no parens) for both read and
+            // write contexts, leveraging Python's property descriptor.
             if (ctx.func_decl.kind == ebm::FunctionKind::PROPERTY_GETTER) {
                 w.writeln("@property");
             }
             else if (ctx.func_decl.kind == ebm::FunctionKind::PROPERTY_SETTER) {
-                w.writeln("@", func_name, ".setter");
+                w.writeln("@", emit_name, ".setter");
             }
         }
         else {
@@ -90,10 +112,11 @@ DEFINE_VISITOR(Statement_FUNCTION_DECL) {
                 ctx.config().multi_arg_property[get_id(*prop)] = multi_arg;
             }
             if (ctx.func_decl.kind == ebm::FunctionKind::PROPERTY_SETTER) {
-                func_name = "set_" + func_name;
+                emit_name = "set_" + emit_name;
             }
         }
     }
+    func_name = emit_name;
     w.writeln("def ", func_name, "(", params_str, ") -> \"", return_type_str.to_writer(), "\":");
     {
         auto scope = w.indent_scope();

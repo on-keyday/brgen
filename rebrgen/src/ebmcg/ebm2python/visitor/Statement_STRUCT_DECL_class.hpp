@@ -86,10 +86,19 @@ DEFINE_VISITOR(Statement_STRUCT_DECL) {
         }
     }
 
-    if (auto property_block = ctx.struct_decl.properties()) {
-        for (auto& property_ref : property_block->container) {
-            MAYBE(res, ctx.visit(property_ref));
-            w.write(res.to_writer());
+    // Inner-anon structs (anonymous, i.e. name is nil -- the per-arm structs
+    // ebmgen lifts out of variant lowering) skip their own property emission;
+    // their accessors are hoisted into the parent_format class below so that
+    // the `self.<outer field>` references in the body resolve against the
+    // outer Http2Frame instance instead of the inner Struct236 class. Mirrors
+    // the ebm2rust pattern in Statement_STRUCT_DECL_class.hpp.
+    bool is_anon_inner = is_nil(ctx.struct_decl.name);
+    if (!is_anon_inner) {
+        if (auto property_block = ctx.struct_decl.properties()) {
+            for (auto& property_ref : property_block->container) {
+                MAYBE(res, ctx.visit(property_ref));
+                w.write(res.to_writer());
+            }
         }
     }
 
@@ -109,6 +118,34 @@ DEFINE_VISITOR(Statement_STRUCT_DECL) {
         for (auto& method_ref : method_block->container) {
             MAYBE(res, ctx.visit(method_ref));
             w.write(res.to_writer());
+        }
+    }
+
+    // For outer (parent_format) structs, walk anon-inner descendants reachable
+    // via STRUCT_UNION variant arms and emit their property accessors here.
+    // The accessors are name-prefixed by Statement_FUNCTION_DECL with the
+    // inner struct identifier (Struct236_padding_len etc.) so multiple arms'
+    // same-named properties do not collide on the outer class.
+    if (!is_anon_inner) {
+        std::vector<ebm::WeakStatementRef> inner_descendants;
+        std::unordered_set<std::uint64_t> seen;
+        ebm::WeakStatementRef self_weak{};
+        self_weak.id = ctx.item_id;
+        MAYBE_VOID(_collect, ebmcodegen::util::collect_anon_inner_descendants(ctx, self_weak, inner_descendants, seen));
+        for (auto& inner_ref : inner_descendants) {
+            MAYBE(inner_stmt, ctx.get(from_weak(inner_ref)));
+            auto inner_decl_p = inner_stmt.body.struct_decl();
+            if (!inner_decl_p || !inner_decl_p->has_properties()) {
+                continue;
+            }
+            auto inner_props = inner_decl_p->properties();
+            if (!inner_props) {
+                continue;
+            }
+            for (auto& prop_ref : inner_props->container) {
+                MAYBE(prop_w, ctx.visit(prop_ref));
+                w.write(prop_w.to_writer());
+            }
         }
     }
 

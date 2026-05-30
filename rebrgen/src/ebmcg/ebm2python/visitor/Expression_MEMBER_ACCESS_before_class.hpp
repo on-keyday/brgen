@@ -26,6 +26,25 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
     /*here to write the hook*/
     MAYBE(member, ctx.get_field<"member.body.id.instance">());
     if (member.body.kind == ebm::StatementKind::PROPERTY_DECL) {
+        if (auto prop_decl_p = member.body.property_decl()) {
+            // Inner-anon property dispatcher: when parent_struct != parent_format
+            // the accessor has been hoisted onto the parent_format class with a
+            // `<Inner>_<name>` prefix by Statement_STRUCT_DECL_class /
+            // Statement_FUNCTION_DECL_class. The original member-access shape
+            // `self.<variant_field>.<name>` would land on the variant arm
+            // (which no longer carries the accessor), so rewrite it to call
+            // the prefixed method on `self` directly. Mirrors the ebm2rust
+            // hook of the same name.
+            if (get_id(prop_decl_p->parent_struct) != get_id(prop_decl_p->parent_format)) {
+                MAYBE(member_name, ctx.identifier(ctx.member));
+                auto inner_name = ctx.identifier(prop_decl_p->parent_struct);
+                auto method_name = std::string(inner_name) + "_" + std::string(member_name);
+                // No parens: the hoisted accessor is emitted as
+                // `@property` + `@<name>.setter` on Http2Frame, so reading
+                // and writing both go through `self.<name>` syntax.
+                return CODE("self.", method_name);
+            }
+        }
         if (auto found = ctx.config().multi_arg_property.find(get_id(member.id)); found != ctx.config().multi_arg_property.end()) {
             MAYBE(main_result, ctx.main_logic());
             return CODE(main_result.to_writer(), "(", found->second, ")");
