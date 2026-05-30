@@ -534,23 +534,124 @@ DEFINE_VISITOR(entry_before) {
         return w;
     };
 
-    // Wuffs struct field: `name : type,`
+    // Wuffs struct field: `name : type,`. Also register Variant alternative
+    // top-level decls when the field's type is a STRUCT_UNION (Wuffs has no
+    // tagged union; each alternative becomes its own struct). Same idea as
+    // ebm2go's Statement_FIELD_DECL_before_class.hpp no_heap_mode branch.
+    // STRUCT_UNION is per-field unique (struct_union_members reads variant_desc
+    // through struct_union_desc), so no dedup is needed.
     config.field_decl_custom = [&](Context_Statement_FIELD_DECL& fctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
+        // === Variant lowering (side-effect: push extra top-level decls) ===
+        MAYBE(struct_members, struct_union_members(fctx, fctx.field_decl.field_type));
+        if (struct_members.size() > 0) {
+            for (auto& member : struct_members) {
+                fctx.config().decl_toplevel.push_back(member.second.to_writer());
+            }
+            auto variant_name = "Variant" + std::to_string(get_id(fctx.field_decl.field_type));
+            CodeWriter vw;
+            vw.writeln("pub struct ", variant_name, "?(");
+            {
+                auto scope = vw.indent_scope();
+                for (auto& member : struct_members) {
+                    auto name = fctx.identifier(member.first);
+                    vw.writeln(name, " : ", name, ",");
+                }
+            }
+            vw.writeln(")");
+            fctx.config().decl_toplevel.push_back(std::move(vw));
+        }
+        // === Field emission ===
         if (fctx.field_decl.is_state_variable()) {
             return CodeWriter{};
         }
         // Variable-length (VECTOR) fields cannot live in a no-heap Wuffs struct;
         // they are streamed to the token_writer instead. Omit them. See ADR 0032.
         // (Variant alternative structs also omit them -- Wuffs forbids slice
-        // fields entirely. Expression_MEMBER_ACCESS_before redirects PROPERTY_GETTER
-        // reads of these fields to the empty-buf sub-slice so they at least gen.)
+        // fields entirely. member_access_custom redirects PROPERTY_GETTER reads
+        // of these fields to the empty-buf sub-slice so they at least gen.)
         if (auto tk = fctx.get_kind(fctx.field_decl.field_type); tk && *tk == ebm::TypeKind::VECTOR) {
             return CodeWriter{};
         }
         auto fname = fctx.identifier();
         MAYBE(type, ctx.visit(fctx.field_decl.field_type));
         return CODELINE(fname, " : ", type.to_writer(), ",");
+    };
+
+    // === Expression member access ===
+    // Property access: PROPERTY_GETTER yields `base.name` by default, but Wuffs
+    // treats it as referencing a function value (not calling it), so the type
+    // comes out as `func (X).name` and assignments / returns fail. Emit the
+    // call form: `base.name(<getter params>)`. Same first branch as ebm2go's
+    // Expression_MEMBER_ACCESS_before_class.hpp; the Go-specific
+    // bool_mapped_func / merge_mode / inner-struct prefix logic does not apply.
+    config.member_access_custom = [&](Context_Expression_MEMBER_ACCESS& mctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        auto prop = mctx.get_field<"body.id.property_decl">(mctx.member);
+        if (prop) {
+            MAYBE(getter_decl, mctx.get_field<"func_decl">(prop->getter_function.id));
+            MAYBE(base, mctx.visit(mctx.base));
+            MAYBE(ident, mctx.identifier(mctx.member));
+            // Wuffs requires named args for method calls: `name(param: value)`.
+            // Property getters are called from contexts that already have the same
+            // parameter in scope (the param flows through chained getter calls), so
+            // emit `param_name: param_name`.
+            std::string args;
+            for (auto& param : getter_decl.params.container) {
+                auto param_name = mctx.identifier(param);
+                if (!args.empty()) args += ", ";
+                args += std::string(param_name) + ": " + std::string(param_name);
+            }
+            // Match function_definition_start_wrapper: inner-anon-struct property
+            // getters are renamed `<inner>+<name>` to avoid top-level collisions
+            // (multiple Variant alternatives sharing one property name). Apply the
+            // same prefix at call sites.
+            std::string call_name(ident);
+            if (get_id(prop->parent_struct) != get_id(prop->parent_format)) {
+                auto inner = mctx.identifier(prop->parent_struct);
+                call_name = std::string(inner) + call_name;
+            }
+            return CODE(base.to_writer(), ".", call_name, "(", args, ")");
+        }
+        // Variant member access: when the referenced field lives in a STRUCT_UNION
+        // member, default emit produces `base.field`, but the Variant lowering
+        // (field_decl_custom) put each member behind its own struct field.
+        // Insert that member-struct identifier: `base.<MemberStruct>.<field>`.
+        MAYBE(member_stmt, mctx.get_field<"body.id">(mctx.member));
+        if (auto type_ref = get_struct_union_member_from_field(mctx, from_weak(member_stmt))) {
+            // Variant alternative VECTOR members are omitted from their struct
+            // (field_decl_custom strips them -- Wuffs forbids slice fields). The
+            // PROPERTY_GETTER body still references them; emit a length-0 sub-slice
+            // of the receiver's empty_buf. Wuffs requires slice returns to be of
+            // the form `this.field[i..j]` (depth 1 only), so write to `this`
+            // directly. Decide by the access expression's own type (this MEMBER_ACCESS
+            // result type), not the field decl -- only slice-typed reads need the
+            // redirect; UINT/BOOL/etc. members are still read through their member
+            // struct normally.
+            auto access_type_kind = mctx.get_field<"body.kind">(mctx.type);
+            if (access_type_kind && *access_type_kind == ebm::TypeKind::VECTOR) {
+                return CODE("this.ebm2wuffs_empty_buf[..0]");
+            }
+            MAYBE(member_text, mctx.visit(mctx.member));
+            MAYBE(base, mctx.visit(mctx.base));
+            MAYBE(member_struct_stmt, mctx.get_field<"body.id">(*type_ref));
+            auto member_struct_name = mctx.identifier(from_weak(member_struct_stmt));
+            return CODE(base.to_writer(), ".", member_struct_name, ".", member_text.to_writer());
+        }
+        return pass;
+    };
+
+    // === Expression enum member ===
+    // Wuffs has no enum type. EnumMemberDecls are already emitted as top-level
+    // `pub const <NAME> : <base> = <value>` (UPPER_SNAKE_CASE per Wuffs const
+    // name rules); emit just `<ENUM>_<MEMBER>` (UPPER_SNAKE) to match the
+    // declarations produced by enum_decl_visitor.
+    config.enum_member_custom = [&](Context_Expression_ENUM_MEMBER& emctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        MAYBE(member_stmt, emctx.get_field<"body.id">(emctx.member));
+        auto enum_prefix = ebm2wuffs_enum_member_to_upper_snake(emctx.identifier(emctx.enum_decl));
+        auto member_part = ebm2wuffs_enum_member_to_upper_snake(emctx.identifier(from_weak(member_stmt)));
+        return CODE(enum_prefix, "_", member_part);
     };
 
     // === Type wrappers ===

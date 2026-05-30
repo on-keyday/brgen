@@ -73,7 +73,11 @@ DEFINE_VISITOR(Statement_STRUCT_DECL) {
             MAYBE_VOID(_1, emit_struct_methods(ctx, w));
         }
     }
-    if (!ctx.config().struct_definition_close.empty()) {
+    if (ctx.config().struct_definition_close_wrapper) {
+        MAYBE(close, ctx.config().struct_definition_close_wrapper(ctx));
+        w.write(close.to_writer());
+    }
+    else if (!ctx.config().struct_definition_close.empty()) {
         w.writeln(ctx.config().struct_definition_close);
     }
     else {
