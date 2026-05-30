@@ -854,15 +854,30 @@ namespace ebmgen {
 
     expected<void> ExpressionConverter::convert_expr_impl(const std::shared_ptr<ast::Available>& node, ebm::ExpressionBody& body) {
         body.kind = ebm::ExpressionKind::AVAILABLE;
+        // Look at the AST shape BEFORE EBM conversion: bare `available(field)`
+        // (target = Ident) needs no rebase of the gating condition, while
+        // qualified `available(a.b.field)` (target = MemberAccess with a
+        // non-SELF base) does. After EBMA_CONVERT_EXPRESSION the Ident gets
+        // auto-rebased into a MEMBER_ACCESS chain too, so checking the
+        // converted target's kind would over-fire for the bare case --
+        // setting additional_base spuriously and then `on_available_check
+        // = true` which skips parent-scope Ident rebase inside the lowered
+        // gating condition (`header.flag.padding` ends up under the variant
+        // path instead of root). See [[feedback_hook_existence_check_procedure]]:
+        // verify the AST kind, not the post-conversion shape.
+        bool target_is_qualified_access =
+            ast::as<ast::MemberAccess>(node->target) != nullptr;
         EBMA_CONVERT_EXPRESSION(target, node->target);
         body.target_expr(target);
         ebm::ExpressionRef additional_base;
-        if (auto member = ctx.repository().get_expression(target)) {
-            if (member->body.kind == ebm::ExpressionKind::MEMBER_ACCESS) {
-                auto base_ref = *member->body.base();
-                if (auto base = ctx.repository().get_expression(base_ref)) {
-                    if (base->body.kind != ebm::ExpressionKind::SELF) {
-                        additional_base = base_ref;
+        if (target_is_qualified_access) {
+            if (auto member = ctx.repository().get_expression(target)) {
+                if (member->body.kind == ebm::ExpressionKind::MEMBER_ACCESS) {
+                    auto base_ref = *member->body.base();
+                    if (auto base = ctx.repository().get_expression(base_ref)) {
+                        if (base->body.kind != ebm::ExpressionKind::SELF) {
+                            additional_base = base_ref;
+                        }
                     }
                 }
             }
