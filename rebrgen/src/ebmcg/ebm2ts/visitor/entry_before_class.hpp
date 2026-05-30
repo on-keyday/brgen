@@ -309,7 +309,7 @@ DEFINE_VISITOR(entry_before) {
     config.enum_type_name_wrapper = [](Result name) -> expected<Result> { return name; };
 
     // Field declarations: `name: type;` (TS interface members) -----------------
-    config.field_decl_visitor = [is_js](Context_Statement_FIELD_DECL& fctx) -> expected<Result> {
+    config.field_decl_custom = [is_js](Context_Statement_FIELD_DECL& fctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
         if (fctx.field_decl.is_state_variable()) {
             return Result{};

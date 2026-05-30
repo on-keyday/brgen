@@ -535,7 +535,7 @@ DEFINE_VISITOR(entry_before) {
     };
 
     // Wuffs struct field: `name : type,`
-    config.field_decl_visitor = [&](Context_Statement_FIELD_DECL& fctx) -> expected<Result> {
+    config.field_decl_custom = [&](Context_Statement_FIELD_DECL& fctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
         if (fctx.field_decl.is_state_variable()) {
             return CodeWriter{};

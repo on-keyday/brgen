@@ -197,7 +197,7 @@ DEFINE_VISITOR(entry_before) {
     };
 
     // Field declarations: add default initializers for C++
-    config.field_decl_visitor = [](Context_Statement_FIELD_DECL& ctx) -> expected<Result> {
+    config.field_decl_custom = [](Context_Statement_FIELD_DECL& ctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
         if (ctx.field_decl.is_state_variable()) {
             return {};

@@ -151,7 +151,7 @@ DEFINE_VISITOR(entry_before) {
         return std::format("raise Exception(\"{}\")", text);
     };
 
-    config.field_decl_visitor = [](Context_Statement_FIELD_DECL& ctx) -> expected<Result> {
+    config.field_decl_custom = [](Context_Statement_FIELD_DECL& ctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
         auto name = ctx.identifier();
         MAYBE(struct_members, struct_union_members(ctx, ctx.field_decl.field_type));

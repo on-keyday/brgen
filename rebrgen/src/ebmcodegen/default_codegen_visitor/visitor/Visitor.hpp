@@ -133,7 +133,7 @@ std::function<expected<Result>(Context_Expression_CAN_READ_STREAM& ctx)> can_rea
 std::function<expected<Result>(Context_Statement_RESERVE_DATA& ctx)> reserve_data_visitor;
 
 std::function<expected<Result>(Context_Statement_COMPOSITE_FIELD_DECL& ctx)> composite_field_decl_custom;
-std::function<expected<Result>(Context_Statement_FIELD_DECL& ctx)> field_decl_visitor;
+std::function<expected<Result>(Context_Statement_FIELD_DECL& ctx)> field_decl_custom;
 
 std::function<expected<Result>(Context_Statement_RETURN& ctx)> return_visitor;
 
@@ -163,6 +163,21 @@ std::function<expected<Result>(Result name)> enum_type_name_wrapper;  // wraps t
 // if this returns `pass` using default logic
 std::function<expected<Result>(Context_Expression_DEFAULT_VALUE& ctx)> default_value_custom;
 std::function<expected<Result>(Context_Expression_CONDITIONAL& ctx)> conditional_visitor;
+
+// override-or-pass knobs: invoked first; return `pass` to fall through to
+// the default visitor body, or return a Result to replace it entirely.
+// Lets a generator put per-node tweaks in entry_before without having to
+// spawn a standalone _before_class.hpp file per kind.
+std::function<expected<Result>(Context_Expression_MEMBER_ACCESS& ctx)> member_access_custom;
+std::function<expected<Result>(Context_Expression_ENUM_MEMBER& ctx)> enum_member_custom;
+
+// Wrapper for the struct-definition close: sits between the fields block
+// and the methods block. When set, the default Statement_STRUCT_DECL
+// visitor calls this in place of writing the fixed `struct_definition_close`
+// string -- lets a generator inject per-struct helper fields (e.g.
+// ebm2wuffs's empty_array placeholder sized by what the struct's
+// PROPERTY_GETTERs actually return). Empty -> fall back to the string.
+std::function<expected<Result>(Context_Statement_STRUCT_DECL& ctx)> struct_definition_close_wrapper;
 
 std::function<expected<Result>(Context_Statement_INT_TO_ARRAY& ctx)> int_to_array_custom;
 std::function<expected<Result>(Context_Statement_ARRAY_TO_INT& ctx)> array_to_int_custom;

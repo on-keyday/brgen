@@ -143,7 +143,7 @@ DEFINE_VISITOR(entry_before) {
     // Field declarations: emit `attr_accessor :name`. State variables are skipped.
     // For union/variant fields, emit the variant member classes inline so
     // `is_a?(StructN)` references resolve.
-    config.field_decl_visitor = [](Context_Statement_FIELD_DECL& ctx) -> expected<Result> {
+    config.field_decl_custom = [](Context_Statement_FIELD_DECL& ctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
         if (ctx.field_decl.is_state_variable()) {
             return Result{};

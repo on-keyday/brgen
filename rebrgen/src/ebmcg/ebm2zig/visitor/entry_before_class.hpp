@@ -469,7 +469,7 @@ DEFINE_VISITOR(entry_before) {
 
     // === Field declaration ===
     // Zig struct fields: name: Type = default,
-    config.field_decl_visitor = [&](Context_Statement_FIELD_DECL& fctx) -> expected<Result> {
+    config.field_decl_custom = [&](Context_Statement_FIELD_DECL& fctx) -> expected<Result> {
         if (fctx.field_decl.is_state_variable()) {
             return CodeWriter{};
         }

@@ -69,7 +69,7 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
     MAYBE(member_stmt, ctx.get_field<"body.id">(ctx.member));
     if (auto type_ref = get_struct_union_member_from_field(ctx, from_weak(member_stmt))) {
         // Variant alternative VECTOR members are omitted from their struct
-        // (field_decl_visitor strips them -- Wuffs forbids slice fields). The
+        // (field_decl_custom strips them -- Wuffs forbids slice fields). The
         // PROPERTY_GETTER body still references them; emit a length-0 sub-slice
         // of the receiver's empty_buf. Wuffs requires slice returns to be of
         // the form `this.field[i..j]` (depth 1 only), so write to `this`
