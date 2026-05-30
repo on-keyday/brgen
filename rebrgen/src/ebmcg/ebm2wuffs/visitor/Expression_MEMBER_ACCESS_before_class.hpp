@@ -37,11 +37,15 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
         MAYBE(getter_decl, ctx.get_field<"func_decl">(prop->getter_function.id));
         MAYBE(base, ctx.visit(ctx.base));
         MAYBE(ident, ctx.identifier(ctx.member));
+        // Wuffs requires named args for method calls: `name(param: value)`.
+        // Property getters are called from contexts that already have the same
+        // parameter in scope (the param flows through chained getter calls), so
+        // emit `param_name: param_name`.
         std::string args;
         for (auto& param : getter_decl.params.container) {
             auto param_name = ctx.identifier(param);
             if (!args.empty()) args += ", ";
-            args += param_name;
+            args += std::string(param_name) + ": " + std::string(param_name);
         }
         // Match function_definition_start_wrapper: inner-anon-struct property
         // getters are renamed `<inner>+<name>` to avoid top-level collisions
