@@ -17,8 +17,40 @@ import pathlib
 import shutil
 import subprocess
 import sys
+import time
 
 HERE = pathlib.Path(__file__).parent
+
+# Stale-file cleanup threshold (seconds). At startup we sweep gen/c/ of any
+# wuffs-std-ebm2wuffsprobe*.c files older than this -- they are leftovers
+# from prior unictest runs (we deliberately do not unlink our own at the
+# end; see the comment in main()).
+_STALE_PROBE_SECONDS = 3600
+
+
+def cleanup_stale_probes(wuffs_root):
+    """Remove wuffs-std-ebm2wuffsprobe*.c files older than _STALE_PROBE_SECONDS.
+
+    The per-test cleanup that unlinks the current .c was the source of a
+    flaky-test race: another parallel test's `wuffs gen` enumerates gen/c/
+    via genreleaseLang() (wuffs/cmd/wuffs/release.go:41) and then opens each
+    listed file via the wuffs-c genrelease subprocess. If our unlink runs
+    between the two steps, the subprocess fails with "system cannot find
+    the file specified" -- causing a green wuffs gen to be reported as a
+    failure. We therefore keep our .c around for the duration of the run and
+    only collect stale files at startup, scoped to our own probe prefix so
+    we never touch unrelated wuffs std libraries.
+    """
+    gen_c = wuffs_root / "gen" / "c"
+    if not gen_c.exists():
+        return
+    now = time.time()
+    for f in gen_c.glob("wuffs-std-ebm2wuffsprobe*.c"):
+        try:
+            if now - f.stat().st_mtime > _STALE_PROBE_SECONDS:
+                f.unlink()
+        except OSError:
+            pass
 
 # Decode round-trip harness, parameterized by the throwaway package name and the
 # format (struct) name. Placeholders are substituted (not %-formatted) so the C
@@ -138,6 +170,10 @@ def main():
               "or set WUFFS_ROOT to a wuffs checkout.")
         sys.exit(1)
 
+    # Sweep stale probe .c files from prior runs before doing anything else.
+    # See cleanup_stale_probes() docstring for the race this works around.
+    cleanup_stale_probes(wuffs_root)
+
     env = os.environ.copy()
     gopath = subprocess.check_output(["go", "env", "GOPATH"], text=True).strip()
     env["PATH"] = env.get("PATH", "") + os.pathsep + str(pathlib.Path(gopath) / "bin")
@@ -221,10 +257,16 @@ def main():
         # then compares OUTPUT_FILE to INPUT_FILE), 10 = decode failed.
         sys.exit(rproc.returncode)
     finally:
-        try:
-            pkg_c.unlink()
-        except OSError:
-            pass
+        # Deliberately do NOT unlink pkg_c here. Other parallel test
+        # processes may currently be running `wuffs gen`, which internally
+        # enumerates gen/c/ via wuffs/cmd/wuffs/release.go:findFiles and
+        # then opens each file from a wuffs-c genrelease subprocess. If our
+        # unlink ran between the two steps, the subprocess would fail with
+        # "system cannot find the file specified" -- spuriously turning a
+        # passing wuffs gen into a unictest FAIL. Leaving the file around
+        # means concurrent genreleases see a stable file list. We sweep
+        # stale files at startup of the next run (cleanup_stale_probes).
+        pass
 
 
 if __name__ == "__main__":
