@@ -43,7 +43,16 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
             if (!args.empty()) args += ", ";
             args += param_name;
         }
-        return CODE(base.to_writer(), ".", ident, "(", args, ")");
+        // Match function_definition_start_wrapper: inner-anon-struct property
+        // getters are renamed `<inner>+<name>` to avoid top-level collisions
+        // (multiple Variant alternatives sharing one property name). Apply the
+        // same prefix at call sites.
+        std::string call_name(ident);
+        if (get_id(prop->parent_struct) != get_id(prop->parent_format)) {
+            auto inner = ctx.identifier(prop->parent_struct);
+            call_name = std::string(inner) + call_name;
+        }
+        return CODE(base.to_writer(), ".", call_name, "(", args, ")");
     }
     // Variant member access: when the referenced field lives in a STRUCT_UNION
     // member, default emit produces `base.field`, but the Variant lowering

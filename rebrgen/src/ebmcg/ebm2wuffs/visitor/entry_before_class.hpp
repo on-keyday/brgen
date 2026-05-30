@@ -261,8 +261,24 @@ DEFINE_VISITOR(entry_before) {
                             ? std::string("dst: base.token_writer")
                             : ("dst: base.token_writer, " + param_str);
         }
+        // Property accessors on inner anonymous structs share the outer format
+        // as their receiver, so multiple getters with the same property name
+        // collide at top level (e.g. Limits.max from two variant alternatives).
+        // Mirror ebm2go's rule: when PropertyDecl.parent_struct differs from
+        // func_decl.parent_format, prepend the inner struct identifier to the
+        // method name. The MEMBER_ACCESS hook applies the same prefix at the
+        // call sites so the names stay aligned.
+        std::string emit_name(name);
+        if (auto prop = fctx.func_decl.property()) {
+            if (auto prop_decl = fctx.get_field<"property_decl">(prop->id)) {
+                if (get_id(prop_decl->parent_struct) != get_id(fctx.func_decl.parent_format)) {
+                    auto inner = fctx.identifier(prop_decl->parent_struct);
+                    emit_name = std::string(inner) + emit_name;
+                }
+            }
+        }
         CodeWriter w;
-        std::string qualified(name);
+        std::string qualified(emit_name);
         if (!is_nil(fctx.func_decl.parent_format)) {
             qualified = std::string(ctx.identifier(fctx.func_decl.parent_format)) + "." + qualified;
         }
