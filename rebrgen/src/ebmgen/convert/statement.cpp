@@ -407,7 +407,33 @@ namespace ebmgen {
             ebm::IfStatement tmp_if;
             tmp_if.then_block = if_cond->body;
             if (is_nil(match_stmt.target)) {
-                tmp_if.condition = if_cond->condition;
+                // Target-less match (e.g. lowered from `match: cond => ...`).
+                // The branch condition is already a boolean expression -- but
+                // if it is OR_COND (multi-value match arm), the children are
+                // independent boolean sub-expressions that need to be joined
+                // with logical_or here. Backends have no Expression_OR_COND
+                // emit (it is only meaningful as the RHS of an equality in
+                // ExpressionConverter::convert_equal), so leaving OR_COND in
+                // the lowered if-condition would emit empty `if  { }`.
+                auto cond_expr = ctx.repository().get_expression(if_cond->condition.cond);
+                if (cond_expr && cond_expr->body.kind == ebm::ExpressionKind::OR_COND) {
+                    auto or_children = cond_expr->body.or_cond();
+                    EBMU_BOOL_TYPE(bool_type);
+                    ebm::ExpressionRef joined;
+                    for (auto& child : or_children->container) {
+                        if (is_nil(joined)) {
+                            joined = child;
+                        }
+                        else {
+                            EBM_BINARY_OP(ored, ebm::BinaryOp::logical_or, bool_type, joined, child);
+                            joined = ored;
+                        }
+                    }
+                    tmp_if.condition = make_condition(joined);
+                }
+                else {
+                    tmp_if.condition = if_cond->condition;
+                }
             }
             else {
                 EBMU_BOOL_TYPE(bool_type);
