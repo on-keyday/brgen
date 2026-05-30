@@ -324,7 +324,23 @@ DEFINE_VISITOR(entry_before) {
         // directly), and call-site references resolve to the underlying field
         // via the Variant-member access path.
         if (fctx.func_decl.kind == ebm::FunctionKind::PROPERTY_GETTER) {
+            // The outer dispatcher for a per-alternative-typed Variant property
+            // is UNCOMMON_TYPE + property_type VARIANT/STRUCT_UNION. Wuffs has
+            // no way to return that, so drop the dispatcher. COMMON_TYPE
+            // properties (e.g. VarInt.value, a u64-typed computed property) are
+            // legitimate scalar getters and must not be omitted here.
+            if (auto prop = fctx.func_decl.property()) {
+                auto mm = fctx.get_field<"property_decl.merge_mode">(from_weak(*prop));
+                auto pt_kind = fctx.get_field<"property_decl.property_type.body.kind">(from_weak(*prop));
+                if (mm && pt_kind && *mm == ebm::MergeMode::UNCOMMON_TYPE &&
+                    (*pt_kind == ebm::TypeKind::VARIANT ||
+                     *pt_kind == ebm::TypeKind::STRUCT_UNION)) {
+                    return CodeWriter{};
+                }
+            }
             auto rk = fctx.get_field<"body.kind">(fctx.func_decl.return_type);
+            // EBM wraps the nullable empty case in PTR<...> for present-or-null
+            // getters. Unwrap PTR once before the kind check.
             if (rk && *rk == ebm::TypeKind::PTR) {
                 rk = fctx.get_field<"body.pointee_type.body.kind">(fctx.func_decl.return_type);
             }
