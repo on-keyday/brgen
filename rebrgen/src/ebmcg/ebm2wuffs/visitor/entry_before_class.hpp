@@ -383,6 +383,39 @@ DEFINE_VISITOR(entry_before) {
         return pass;
     };
 
+    // Wuffs' bounds prover requires shift amounts to be in [0..=bitwidth-1].
+    // The DSL's natural `7 ~mod* this.len`-style expressions cannot be proved
+    // in range, so mask the right operand with `& (bitwidth-1)` to make the
+    // bound trivially satisfied. Same idea as ebm2zig's binary_op_custom but
+    // using a static mask instead of @intCast.
+    config.binary_op_custom = [&](Context_Expression_BINARY_OP& bctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        if (bctx.bop != ebm::BinaryOp::left_shift && bctx.bop != ebm::BinaryOp::right_shift) {
+            return pass;
+        }
+        auto type_kind = bctx.get_field<"body.kind">(bctx.type);
+        if (!type_kind || (*type_kind != ebm::TypeKind::INT && *type_kind != ebm::TypeKind::UINT)) {
+            return pass;
+        }
+        auto size = bctx.get_field<"body.size">(bctx.type);
+        if (!size) {
+            return pass;
+        }
+        std::uint64_t bit_width = size->value();
+        if (bit_width == 0) {
+            return pass;
+        }
+        std::uint64_t mask = bit_width - 1;
+        MAYBE(left, bctx.visit(bctx.left));
+        MAYBE(right, bctx.visit(bctx.right));
+        // Left shift can overflow the result type (e.g. 127 u32 << 31). Wuffs'
+        // `~mod<<` wraps modulo the type, satisfying the prover. Right shift
+        // never overflows, so plain `>>` is fine.
+        const char* op = (bctx.bop == ebm::BinaryOp::left_shift) ? "~mod<<" : ">>";
+        return CODE("(", left.to_writer(), " ", op, " ((", right.to_writer(), ") & ",
+                    std::to_string(mask), "))");
+    };
+
     // === Struct declaration ===
     // Wuffs: `pub struct Name?( field : type, ... )`, with methods declared
     // separately as top-level `pub func`. Use the framework's struct flow
