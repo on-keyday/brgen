@@ -278,7 +278,15 @@ DEFINE_VISITOR(entry_before) {
             auto fk = fctx.get_field<"field_decl.field_type.body.kind.optional">(field_ref);
             return fk && *fk == ebm::TypeKind::VECTOR;
         };
-        // (A) Setter/getter of a streamed vector field.
+        // (A) PROPERTY_SETTER is omitted unconditionally: its return type is
+        // `bool` in EBM (success/fail signal), and Wuffs does not allow `bool`
+        // as a type in an out-param. Decode never calls these setters anyway
+        // (decode writes the struct field directly), so dropping them is safe.
+        if (fctx.func_decl.kind == ebm::FunctionKind::PROPERTY_SETTER) {
+            return CodeWriter{};
+        }
+        // Other setter/getter kinds are omitted only when they bind to a
+        // streamed vector field (no in-struct storage to read/write).
         if (is_setter_func(fctx.func_decl.kind) || is_getter_func(fctx.func_decl.kind)) {
             if (auto prop = fctx.func_decl.property(); prop && is_streamed_vector_field(from_weak(*prop))) {
                 return CodeWriter{};
