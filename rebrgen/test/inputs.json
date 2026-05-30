@@ -112,6 +112,14 @@
         "hex": true
     },
     {
+        "name": "http2_frame_inline_test",
+        "binary": "$WORK_DIR/test/binary_data/http2_frame_test.dat",
+        "format_name": "HTTP2InlineTest",
+        "source": "$WORK_DIR/src/test/http2_frame_inline_test.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
         "name": "native_endian_test",
         "binary": "$WORK_DIR/test/binary_data/netlink.dat",
         "format_name": "NetlinkTest",
