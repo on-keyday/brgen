@@ -671,6 +671,34 @@ DEFINE_VISITOR(entry_before) {
                     MAYBE_VOID(_b, ectx.visit<void>(self, ectx.conditional_stmt));
                     return {};
                 })
+                // IF_STATEMENT condition is an expression; generic child traversal
+                // does not descend into it, so a CONDITIONAL_STATEMENT used as the
+                // condition (and its owned target_stmt) would never be reached.
+                // Explicitly visit the condition expression.
+                .on([&](auto&& self, Context_Statement_IF_STATEMENT& ictx) -> expected<void> {
+                    MAYBE_VOID(_c, ictx.visit<void>(self, ictx.if_statement.condition.cond));
+                    MAYBE_VOID(_t, ictx.visit<void>(self, ictx.if_statement.then_block));
+                    if (!is_nil(ictx.if_statement.else_block)) {
+                        MAYBE_VOID(_e, ictx.visit<void>(self, ictx.if_statement.else_block));
+                    }
+                    return {};
+                })
+                // Multi-step lowered expressions: AVAILABLE / CONDITIONAL chain
+                // down to a CONDITIONAL_STATEMENT whose target_stmt is the temp
+                // we need hoisted. Generic traversal does not follow lowered_expr,
+                // so descend explicitly.
+                .on([&](auto&& self, Context_Expression_AVAILABLE& ectx) -> expected<void> {
+                    if (!is_nil(ectx.lowered_expr.id)) {
+                        MAYBE_VOID(_, ectx.visit<void>(self, ectx.lowered_expr.id));
+                    }
+                    return {};
+                })
+                .on([&](auto&& self, Context_Expression_CONDITIONAL& ectx) -> expected<void> {
+                    if (!is_nil(ectx.lowered_expr.id)) {
+                        MAYBE_VOID(_, ectx.visit<void>(self, ectx.lowered_expr.id));
+                    }
+                    return {};
+                })
                 .on_default_traverse_children()
                 .build();
         MAYBE_VOID(_, fctx.visit<void>(collector, fctx.func_decl.body));
