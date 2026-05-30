@@ -192,8 +192,25 @@ DEFINE_VISITOR(entry_before) {
     // Wuffs cast: `(expr as type)`
     config.type_cast_custom = [&](Context_Expression_TYPE_CAST& tctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
-        MAYBE(source_expr, ctx.visit(tctx.type_cast_desc.source_expr));
         auto cast_kind = tctx.type_cast_desc.cast_kind;
+        // FUNCTION_CAST: source is a struct/format wrapper (e.g. wasm.bgn's
+        // `Uint32`). `cast_call` holds the underlying method call expression
+        // (e.g. `this.length.u32_()`); emit that instead of the bare struct
+        // value, then wrap in `as <target>` only if the method's return type
+        // doesn't already match. Mirrors the default Expression_TYPE_CAST
+        // logic but uses Wuffs's `as` syntax instead of C-style cast.
+        if (cast_kind == ebm::CastType::FUNCTION_CAST) {
+            if (auto lw = tctx.type_cast_desc.cast_call()) {
+                MAYBE(cast_call, ctx.visit(lw->id));
+                MAYBE(call_expr, ctx.get(lw->id));
+                if (get_id(call_expr.body.type) == get_id(tctx.type)) {
+                    return cast_call;
+                }
+                MAYBE(target_type, ctx.visit(tctx.type));
+                return CODE("(", cast_call.to_writer(), " as ", target_type.to_writer(), ")");
+            }
+        }
+        MAYBE(source_expr, ctx.visit(tctx.type_cast_desc.source_expr));
         switch (cast_kind) {
             case ebm::CastType::INT_TO_BOOL:
                 return CODE("(", source_expr.to_writer(), " <> 0)");
