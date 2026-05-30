@@ -562,8 +562,20 @@ DEFINE_VISITOR(entry_before) {
         [&](Context_Statement_STRUCT_DECL& sctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
         auto name = sctx.identifier();
+        // Wuffs's C codegen always emits sub-struct ctor calls as
+        // `&self->private_data.f_<name>__initialize(...)`, but a same-package
+        // field whose type is another pub struct is placed in `private_impl`
+        // instead -- the resulting C references a missing private_data member
+        // and the round-trip harness fails to compile (cgen.go:1489-1517 vs
+        // parse.go:492-494). Emitting inner / Variant-alternative structs as
+        // `pri` keeps them in the same package without triggering the
+        // sub-struct init loop. Top-level formats stay `pub` so the API is
+        // still exposed. `parent_struct` is set iff this is an inner composite
+        // (per-arm struct lifted out of an if/match by ebmgen's Variant
+        // lowering).
+        const char* visibility = sctx.struct_decl.parent_struct() ? "pri" : "pub";
         CodeWriter w;
-        w.writeln_with_loc(to_any_ref(sctx.item_id), "pub struct ", name, "?(");
+        w.writeln_with_loc(to_any_ref(sctx.item_id), visibility, " struct ", name, "?(");
         return w;
     };
 
@@ -583,7 +595,11 @@ DEFINE_VISITOR(entry_before) {
             }
             auto variant_name = "Variant" + std::to_string(get_id(fctx.field_decl.field_type));
             CodeWriter vw;
-            vw.writeln("pub struct ", variant_name, "?(");
+            // `pri` for the same reason as the inner-composite branch in
+            // struct_definition_start_wrapper above: Variant wrappers hold
+            // pub-struct fields whose ctor calls Wuffs would route via
+            // private_data, but they are placed in private_impl.
+            vw.writeln("pri struct ", variant_name, "?(");
             {
                 auto scope = vw.indent_scope();
                 for (auto& member : struct_members) {
