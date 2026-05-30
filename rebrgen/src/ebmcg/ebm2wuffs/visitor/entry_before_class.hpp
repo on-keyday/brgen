@@ -315,6 +315,26 @@ DEFINE_VISITOR(entry_before) {
         if (fctx.func_decl.kind == ebm::FunctionKind::PROPERTY_SETTER) {
             return CodeWriter{};
         }
+        // PROPERTY_GETTER returning a struct/variant has no Wuffs realization
+        // (struct values cannot be returned by value, and there is no `nptr T`
+        // form for an own-package struct usable as an out-param either). EBM
+        // wraps the empty case in PTR<...>, so unwrap PTR once before the kind
+        // check, same pattern as Expression_DEFAULT_VALUE_before. Omitting the
+        // getter is safe -- decode does not call these (it writes struct fields
+        // directly), and call-site references resolve to the underlying field
+        // via the Variant-member access path.
+        if (fctx.func_decl.kind == ebm::FunctionKind::PROPERTY_GETTER) {
+            auto rk = fctx.get_field<"body.kind">(fctx.func_decl.return_type);
+            if (rk && *rk == ebm::TypeKind::PTR) {
+                rk = fctx.get_field<"body.pointee_type.body.kind">(fctx.func_decl.return_type);
+            }
+            if (rk && (*rk == ebm::TypeKind::STRUCT ||
+                       *rk == ebm::TypeKind::RECURSIVE_STRUCT ||
+                       *rk == ebm::TypeKind::STRUCT_UNION ||
+                       *rk == ebm::TypeKind::VARIANT)) {
+                return CodeWriter{};
+            }
+        }
         // Other setter/getter kinds are omitted only when they bind to a
         // streamed vector field (no in-struct storage to read/write).
         if (is_setter_func(fctx.func_decl.kind) || is_getter_func(fctx.func_decl.kind)) {
