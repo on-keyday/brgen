@@ -47,6 +47,9 @@ DEFINE_VISITOR(Expression_DEFAULT_VALUE_before) {
         case ebm::TypeKind::UINT:
         case ebm::TypeKind::USIZE:
         case ebm::TypeKind::FLOAT:
+        case ebm::TypeKind::ENUM:
+            // ENUM values are emitted as plain `pub const`s (UPPER_SNAKE per
+            // Statement_ENUM_DECL), so 0 is a valid scalar for the empty case.
             return CODE("0");
         case ebm::TypeKind::BOOL:
             return CODE("false");
