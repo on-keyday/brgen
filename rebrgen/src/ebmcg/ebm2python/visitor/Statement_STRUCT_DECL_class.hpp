@@ -86,13 +86,15 @@ DEFINE_VISITOR(Statement_STRUCT_DECL) {
         }
     }
 
-    // Inner-anon structs (anonymous, i.e. name is nil -- the per-arm structs
-    // ebmgen lifts out of variant lowering) skip their own property emission;
-    // their accessors are hoisted into the parent_format class below so that
-    // the `self.<outer field>` references in the body resolve against the
-    // outer Http2Frame instance instead of the inner Struct236 class. Mirrors
-    // the ebm2rust pattern in Statement_STRUCT_DECL_class.hpp.
-    bool is_anon_inner = is_nil(ctx.struct_decl.name);
+    // Variant-alternative structs (the per-arm structs ebmgen lifts out of
+    // variant lowering) skip their own property emission; their accessors
+    // are hoisted into the parent_format class below so the `self.<outer
+    // field>` references in the body resolve against the outer Http2Frame
+    // instance instead of the inner Struct236 class. Detect by
+    // `has_related_variant` -- the IR's semantic flag for "this struct is
+    // a member of a STRUCT_UNION variant" -- rather than the syntactic
+    // `is_nil(name)` proxy.
+    bool is_anon_inner = ctx.struct_decl.has_related_variant();
     if (!is_anon_inner) {
         if (auto property_block = ctx.struct_decl.properties()) {
             for (auto& property_ref : property_block->container) {

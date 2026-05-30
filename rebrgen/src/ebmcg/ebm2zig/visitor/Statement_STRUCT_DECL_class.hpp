@@ -54,16 +54,18 @@ DEFINE_VISITOR(Statement_STRUCT_DECL) {
         CALL_OR_PASS(uniq, ctx.config().struct_decl_custom(ctx));
     }
 
-    // Anon-inner structs (per-arm structs ebmgen lifted out of variant
-    // lowering) keep their fields, but their property accessors are
-    // hoisted onto the parent_format struct below. Otherwise the
-    // `self: *Http2Frame` receiver on the accessor would live inside a
-    // `struct Struct236` namespace, which the dispatcher's `self.
-    // Struct236_padding_len()` call cannot reach (the actual
-    // identifier is `Http2Frame.padding_len`, namespaced under
-    // Struct236, not callable through Variant76). Mirrors the
-    // ebm2rust Statement_STRUCT_DECL_class rule.
-    const bool is_anon_inner = is_nil(ctx.struct_decl.name);
+    // Variant-alternative structs (the per-arm structs ebmgen lifted out
+    // of variant lowering) keep their fields, but their property
+    // accessors are hoisted onto the parent_format struct below.
+    // Otherwise the `self: *Http2Frame` receiver on the accessor would
+    // live inside a `struct Struct236` namespace, which the
+    // dispatcher's `self.Struct236_padding_len()` call cannot reach
+    // (the actual identifier is `Http2Frame.padding_len`, namespaced
+    // under Struct236, not callable through Variant76). Detect by
+    // `has_related_variant` -- the IR's semantic flag for "this struct
+    // is a member of a STRUCT_UNION variant" -- rather than the
+    // syntactic `is_nil(name)` proxy.
+    const bool is_anon_inner = ctx.struct_decl.has_related_variant();
 
     CodeWriter w;
     if (ctx.config().struct_definition_start_wrapper) {
