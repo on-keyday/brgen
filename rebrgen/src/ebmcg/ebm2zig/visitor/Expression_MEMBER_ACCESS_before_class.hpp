@@ -29,7 +29,6 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
     auto prop = ctx.get_field<"body.id.property_decl">(ctx.member);
     if (prop) {
         MAYBE(getter_decl, ctx.get_field<"func_decl">(prop->getter_function.id));
-        MAYBE(base, ctx.visit(ctx.base));
         MAYBE(ident, ctx.identifier(ctx.member));
         std::string args;
         for (auto& param : getter_decl.params.container) {
@@ -39,6 +38,21 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
             }
             args += param_name;
         }
+        // Inner-anon property dispatcher: the accessor is hoisted to the
+        // parent_format struct (see Statement_STRUCT_DECL_class) with a
+        // `<Inner>_<name>` prefix, so call `self.<Inner>_<name>(args)`
+        // directly instead of routing through `self.<variant_field>.<name>
+        // ()` which would land on the Zig union that has no such method.
+        // Mirrors the ebm2rust hook of the same name.
+        if (get_id(prop->parent_struct) != get_id(prop->parent_format)) {
+            auto inner_name = ctx.identifier(prop->parent_struct);
+            auto method_name = std::string(inner_name) + "_" + std::string(ident);
+            if (prop->merge_mode != ebm::MergeMode::STRICT_TYPE) {
+                return CODE("self.", method_name, "(", args, ").?");
+            }
+            return CODE("self.", method_name, "(", args, ").?.*");
+        }
+        MAYBE(base, ctx.visit(ctx.base));
         if (prop->merge_mode != ebm::MergeMode::STRICT_TYPE) {
             // Returns ?T, unwrap with .?
             return CODE(base.to_writer(), ".", ident, "(", args, ").?");

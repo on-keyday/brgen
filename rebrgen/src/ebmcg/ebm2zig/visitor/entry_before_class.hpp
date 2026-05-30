@@ -384,6 +384,20 @@ DEFINE_VISITOR(entry_before) {
             }
         }
 
+        // Inner-anon property accessors are hoisted onto the parent_format
+        // struct (see Statement_STRUCT_DECL_class). Prefix the method name
+        // with the inner struct identifier so multiple variant arms exposing
+        // the same property name (e.g. Struct236_padding_len /
+        // Struct97_padding_len) do not collide on the outer impl.
+        if (auto prop_ref = fctx.func_decl.property()) {
+            if (auto prop_decl = fctx.get_field<"property_decl">(prop_ref->id)) {
+                if (get_id(prop_decl->parent_struct) != get_id(fctx.func_decl.parent_format)) {
+                    auto inner_name = ctx.identifier(prop_decl->parent_struct);
+                    func_name = std::string(inner_name) + "_" + func_name;
+                }
+            }
+        }
+
         if (!is_nil(fctx.func_decl.parent_format)) {
             auto struct_name = ctx.identifier(fctx.func_decl.parent_format);
             // Method: pub fn name(self: *StructName, params...) RetType {
