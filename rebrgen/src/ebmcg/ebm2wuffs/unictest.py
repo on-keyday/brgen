@@ -149,7 +149,6 @@ def resolve_wuffs_root():
     if env_root:
         candidates.append(pathlib.Path(env_root))
     candidates.append(HERE / ".wuffs")  # created by dependency_setup.py
-    candidates.append(pathlib.Path("C:/workspace/wuffs"))  # local dev fallback
     for c in candidates:
         if (c / "wuffs-root-directory.txt").exists():
             return c.resolve()
