@@ -416,9 +416,19 @@ DEFINE_VISITOR(entry_before) {
         // the `& mask` -- the masked form makes the prover treat the amount as
         // "worst case bitwidth-1", which inflates the result bound when chained
         // with `|` (e.g. Netlink's `(b0<<0) | (b1<<8) | (b2<<16) | (b3<<24)`).
+        // ebmgen often wraps the literal in a TYPE_CAST to match LHS type, so
+        // unwrap that first (same approach as ebm2zig's binary_op_custom).
         auto right_kind = bctx.get_kind(bctx.right);
+        ebm::ExpressionRef literal_ref = bctx.right;
+        if (right_kind && *right_kind == ebm::ExpressionKind::TYPE_CAST) {
+            auto inner = bctx.get_field<"type_cast_desc.source_expr">(bctx.right);
+            if (inner) {
+                literal_ref = *inner;
+                right_kind = bctx.get_kind(literal_ref);
+            }
+        }
         if (right_kind && *right_kind == ebm::ExpressionKind::LITERAL_INT) {
-            auto literal = bctx.get_field<"body.int_value">(bctx.right);
+            auto literal = bctx.get_field<"body.int_value">(literal_ref);
             if (literal && literal->value() < bit_width) {
                 return CODE("(", left.to_writer(), " ", op, " ", right.to_writer(), ")");
             }
