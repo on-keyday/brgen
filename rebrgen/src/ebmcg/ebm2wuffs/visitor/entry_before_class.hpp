@@ -239,6 +239,20 @@ DEFINE_VISITOR(entry_before) {
             suffix = "!";  // mutates `this`
         }
         auto ret_str = return_type.to_string();
+        // PROPERTY_GETTER bodies return `this.ebm2wuffs_empty_buf[..0]` for the
+        // empty case (see Expression_DEFAULT_VALUE_before); that's a `roslice`,
+        // so a `slice base.u8` return type would type-mismatch. Convert the
+        // declared `slice ...` to `roslice ...` for VECTOR / PTR getters; the
+        // non-empty path also yields a struct sub-slice, which Wuffs accepts as
+        // roslice as well.
+        if (fctx.func_decl.kind == ebm::FunctionKind::PROPERTY_GETTER) {
+            auto ret_kind = fctx.get_field<"body.kind">(fctx.func_decl.return_type);
+            if (ret_kind && (*ret_kind == ebm::TypeKind::VECTOR || *ret_kind == ebm::TypeKind::PTR)) {
+                if (ret_str.starts_with("slice ")) {
+                    ret_str = "ro" + ret_str;
+                }
+            }
+        }
         // Streaming decode emits decoded fields as tokens; prepend a token_writer
         // sink (Sans-I/O: the caller owns the token buffer). See ADR 0032.
         std::string param_str = params.to_string();
@@ -323,7 +337,17 @@ DEFINE_VISITOR(entry_before) {
     // (start wrapper + struct_definition_close) rather than reimplementing it:
     // fields and methods (emit_struct_methods, since methods_inner_class=false)
     // are then handled by the default Statement_STRUCT_DECL visitor.
-    config.struct_definition_close = ")";
+    // Inject two helper fields on every struct:
+    //   util : base.utility -- gives access to base helpers (e.g.
+    //     this.util.empty_slice_u8()). Wuffs has no inline `base.utility(...)`
+    //     literal -- std decoders declare a `util : base.utility` field.
+    //   ebm2wuffs_empty_buf : array[1] base.u8 -- a 1-byte dummy buffer that
+    //     PROPERTY_GETTERs can return a length-0 sub-slice of. Wuffs requires
+    //     a `slice` return to be of the form `this.field[i..j]`, so the empty
+    //     slice helper has to come out of a struct-owned array. See
+    //     Expression_DEFAULT_VALUE_before for the consumer.
+    config.struct_definition_close =
+        "    util : base.utility,\n    ebm2wuffs_empty_buf : array[1] base.u8,\n)";
     config.struct_definition_start_wrapper =
         [&](Context_Statement_STRUCT_DECL& sctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
