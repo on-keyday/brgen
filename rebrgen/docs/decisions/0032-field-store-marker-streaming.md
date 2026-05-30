@@ -100,13 +100,14 @@ marker は EBM 上に常時存在させ gating しない。挙動の差は gener
   かつ上記 (1) により多バイト整数を書く encode はそもそも C にリンクできない。よって
   vector 有無に関わらず全 ENCODE を `return "#error"` に stub する。encode 側
   streaming は別課題。
-- **`*_invalid` / `*_truncated` の PASS は spurious なことがある。** unictest の
-  failure-case は runner の非ゼロ終了を期待 fail として PASS 扱いにする。format ごとの
-  `.wuffs` は入力非依存に一度生成されるため、valid 入力が `wuffs gen` で落ちる format
-  は、その invalid/truncated 入力も同じ `.wuffs` で gen 落ち → 非ゼロ終了 → PASS に
-  なる。これは「decode が不正入力を正しく弾いた」ではなく「codegen が壊れている」
-  ことによる PASS。現状 PASS=13 のうち真に round-trip しているのは 3
-  （simple_vector / simple_vector_empty / until_eof）のみ。
+- **failure-case の PASS は exit code 設計で誠実化済み。** unictest framework は
+  runner の exit `CONFIRMED_DECODER_FAILURE_EXIT_CODE`(=10) のみを「decode が
+  期待通り失敗」と解釈し、他の非ゼロは "test internal error"=FAIL とする。当初 runner は
+  `wuffs gen` 失敗にも exit 10 を割り当てていたため、format の `.wuffs` が gen 落ちする
+  と invalid/truncated 入力も同じ gen 落ちで spurious に PASS していた。runner で gen
+  fail を exit 1（internal error）に変更したのでこの spurious 経路は閉じ、PASS 数は
+  真の round-trip 数に一致する。現状 PASS=3（simple_vector / simple_vector_empty /
+  until_eof）。
 - **配置制約（意味論が第一、proof は整合）。** read は emit より先に置く。第一の
   理由は意味論である: token は「実際に消費した src バイト」の記録なので、read が
   失敗しうるのに emit だけ先に出ると「読めていないのに token がある」矛盾した stream

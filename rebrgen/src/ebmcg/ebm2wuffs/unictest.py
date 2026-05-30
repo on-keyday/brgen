@@ -171,7 +171,11 @@ def main():
         if proc.returncode != 0:
             print("wuffs gen failed: generated Wuffs did not pass the type "
                   "checker / bounds prover.")
-            sys.exit(10)
+            # NOT exit 10: gen failure is a codegen-pipeline internal error,
+            # not the decoder rejecting bad input. Exit 10 (decoder failure)
+            # would let failure-case inputs PASS spuriously on the same broken
+            # .wuffs that makes valid inputs FAIL.
+            sys.exit(1)
         print("wuffs gen succeeded: generated Wuffs compiles to C.")
     finally:
         if pkgdir.exists():
