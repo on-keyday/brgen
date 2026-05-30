@@ -55,7 +55,10 @@ DEFINE_VISITOR(Statement_STRUCT_DECL) {
     auto name = ctx.identifier();
     const bool zero_copy = ctx.flags().zero_copy;
     const std::string lifetime = zero_copy ? "<'a>" : "";
-    const bool is_anon_inner = is_nil(ctx.struct_decl.name);
+    // Detect variant-alternative structs (the per-arm structs ebmgen lifts
+    // out of variant lowering) via the semantic IR flag rather than the
+    // syntactic `is_nil(name)` proxy.
+    const bool is_anon_inner = ctx.struct_decl.has_related_variant();
     // Allow Copy when every field type is a primitive scalar (UINT/INT/FLOAT/BOOL/ENUM).
     // Wrapper structs around a numeric (Uint32 { value: u32 }) qualify and benefit
     // because field access through `&Struct` ends up moving the field; Copy lets
