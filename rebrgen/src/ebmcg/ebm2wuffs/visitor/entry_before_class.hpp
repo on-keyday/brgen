@@ -281,11 +281,18 @@ DEFINE_VISITOR(entry_before) {
                 // Wuffs allows `slice` returns only of the form `this.field[i..j]`,
                 // so `this.util.empty_slice_u8()` is rejected. Use a sub-slice of
                 // the per-struct `ebm2wuffs_empty_buf` (injected by
-                // struct_definition_close) with j=0 to produce a length-0 slice.
-                // Non-u8 element types would need a different buffer; revisit when
-                // one appears in a gen-pass format.
+                // struct_definition_close_wrapper) with j=0 to produce a length-0
+                // slice. Non-u8 element types would need a different buffer;
+                // revisit when one appears in a gen-pass format.
                 return CODE("this.ebm2wuffs_empty_buf[..0]");
             default:
+                // ARRAY default value would require a struct-owned `array[N] T`
+                // placeholder field, but Wuffs prohibits arrays in function
+                // return ABI (writeOutParamZeroValue in wuffs/internal/cgen/
+                // func.go). The proper fix is to lower PROPERTY_GETTER array
+                // returns to slices in function_definition_start_wrapper; until
+                // that lands, ARRAY default values fall through to the default
+                // (nullptr) and Frame-style getters still fail wuffs gen.
                 return pass;
         }
     };
@@ -523,8 +530,20 @@ DEFINE_VISITOR(entry_before) {
     //     a `slice` return to be of the form `this.field[i..j]`, so the empty
     //     slice helper has to come out of a struct-owned array. See
     //     Expression_DEFAULT_VALUE_before for the consumer.
-    config.struct_definition_close =
-        "    util : base.utility,\n    ebm2wuffs_empty_buf : array[1] base.u8,\n)";
+    // Use the wrapper form of struct_definition_close even though the close text
+    // does not currently vary per struct -- it exercises the new knob and gives
+    // a single place to add per-struct helper fields once Wuffs's function ABI
+    // limitation (no array/roarray returns) is worked around for Frame-style
+    // PROPERTY_GETTERs. See `wuffs/internal/cgen/func.go:writeOutParamZeroValue`.
+    config.struct_definition_close_wrapper =
+        [](Context_Statement_STRUCT_DECL&) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        CodeWriter w;
+        w.writeln("    util : base.utility,");
+        w.writeln("    ebm2wuffs_empty_buf : array[1] base.u8,");
+        w.writeln(")");
+        return w;
+    };
     config.struct_definition_start_wrapper =
         [&](Context_Statement_STRUCT_DECL& sctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
