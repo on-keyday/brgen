@@ -699,6 +699,19 @@ DEFINE_VISITOR(entry_before) {
                     }
                     return {};
                 })
+                // LOWERED_IO_STATEMENTS holds a container of LoweredIOStatement,
+                // each carrying its own io_statement (e.g. a BLOCK that owns the
+                // BIT_FIELD_TO_BIT_SHIFT temps). Generic traversal does not descend
+                // into the container; visit each child explicitly so temp decls
+                // inside those blocks get hoisted.
+                .on([&](auto&& self, Context_Statement_LOWERED_IO_STATEMENTS& lctx) -> expected<void> {
+                    for (auto& sub : lctx.lowered_io_statements.container) {
+                        if (!is_nil(sub.io_statement.id)) {
+                            MAYBE_VOID(_, lctx.visit<void>(self, sub.io_statement.id));
+                        }
+                    }
+                    return {};
+                })
                 .on_default_traverse_children()
                 .build();
         MAYBE_VOID(_, fctx.visit<void>(collector, fctx.func_decl.body));
