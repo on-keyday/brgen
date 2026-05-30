@@ -428,6 +428,20 @@ DEFINE_VISITOR(entry_before) {
                        *rk == ebm::TypeKind::VARIANT)) {
                 return CodeWriter{};
             }
+            // Wuffs functions cannot return array / roarray:
+            // writeOutParamZeroValue (wuffs/internal/cgen/func.go) only knows
+            // how to zero-init numbers, slice-of-u8, and a handful of base
+            // types; arrays fall through to `internal error: cannot write the
+            // zero value of type ...`. Properly handling this would mean
+            // lowering array returns to roslice in
+            // function_definition_start_wrapper plus rewriting the body's
+            // `return this.field` into `return this.field[..]` -- substantial
+            // and not on the critical path. Omit the getter for now;
+            // call-site references still resolve to the underlying field via
+            // member_access_custom's variant-member path.
+            if (rk && *rk == ebm::TypeKind::ARRAY) {
+                return CodeWriter{};
+            }
         }
         // Other setter/getter kinds are omitted only when they bind to a
         // streamed vector field (no in-struct storage to read/write).
