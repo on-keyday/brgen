@@ -264,8 +264,14 @@ DEFINE_VISITOR(entry_before) {
         // roslice as well.
         if (fctx.func_decl.kind == ebm::FunctionKind::PROPERTY_GETTER) {
             auto ret_kind = fctx.get_field<"body.kind">(fctx.func_decl.return_type);
+            // PROPERTY_GETTER return types for "pointer-ish" payload come back
+            // as PTR or VECTOR (PTR even wraps fixed arrays). The body either
+            // yields a struct sub-slice / sub-array or `this.ebm2wuffs_empty_buf
+            // [..0]` (Expression_DEFAULT_VALUE_before), both of which Wuffs
+            // types as `ro...`. Convert the declared `slice T` / `array[N] T`
+            // accordingly. Frame.MaskingKey ([4]u8) hits the array branch.
             if (ret_kind && (*ret_kind == ebm::TypeKind::VECTOR || *ret_kind == ebm::TypeKind::PTR)) {
-                if (ret_str.starts_with("slice ")) {
+                if (ret_str.starts_with("slice ") || ret_str.starts_with("array[")) {
                     ret_str = "ro" + ret_str;
                 }
             }
