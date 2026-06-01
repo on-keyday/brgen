@@ -756,6 +756,7 @@ namespace ebm {
         BIT_FIELD_TO_BIT_SHIFT = 6,
         MULTI_REPRESENTATION = 7,
         VECTORIZED_IO = 8,
+        SCAN_UNTIL = 9,
     };
     constexpr const char* to_string(LoweringIOType e, bool origin_form = false) {
         switch(e) {
@@ -768,6 +769,7 @@ namespace ebm {
             case LoweringIOType::BIT_FIELD_TO_BIT_SHIFT: return origin_form ? "BIT_FIELD_TO_BIT_SHIFT":"BIT_FIELD_TO_BIT_SHIFT" ;
             case LoweringIOType::MULTI_REPRESENTATION: return origin_form ? "MULTI_REPRESENTATION":"MULTI_REPRESENTATION" ;
             case LoweringIOType::VECTORIZED_IO: return origin_form ? "VECTORIZED_IO":"VECTORIZED_IO" ;
+            case LoweringIOType::SCAN_UNTIL: return origin_form ? "SCAN_UNTIL":"SCAN_UNTIL" ;
         }
         return "";
     }
@@ -802,6 +804,9 @@ namespace ebm {
         }
         if (str == "VECTORIZED_IO") {
             return LoweringIOType::VECTORIZED_IO;
+        }
+        if (str == "SCAN_UNTIL") {
+            return LoweringIOType::SCAN_UNTIL;
         }
         return std::nullopt;
     }

@@ -4095,6 +4095,10 @@ namespace ebm {
                 obj = LoweringIOType::VECTORIZED_IO;
                 return true;
             }
+            if (s == "SCAN_UNTIL") {
+                obj = LoweringIOType::SCAN_UNTIL;
+                return true;
+            }
             return false;
         }
         return false;
