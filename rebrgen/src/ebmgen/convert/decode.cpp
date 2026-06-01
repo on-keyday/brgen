@@ -228,7 +228,7 @@ namespace ebmgen {
                     length = req_size;
                 }
                 else if (field->follow == ast::Follow::end ||
-                         (field->arguments && field->arguments->sub_byte_length)  // this means that the field is a sub-byte field
+                         (field->arguments && field->arguments->sub_byte_length)  // this means that the field is a sub-bytes field
                 ) {
                     if (!is_byte) {
                         const auto single_byte = get_size(8);
@@ -265,61 +265,123 @@ namespace ebmgen {
                     }
                     auto str = ast::cast_to<ast::StrLiteralType>(next->field_type);
                     MAYBE(candidate, decode_base64(str->strong_ref));
-                    EBMU_U8_N_ARRAY(array_type, candidate.size(), ebm::ArrayAnnotation::read_temporary);
-                    EBM_DEFAULT_VALUE(array_default, array_type);
-                    EBM_DEFINE_ANONYMOUS_VARIABLE(temporary_read_buffer, array_type, array_default);
-
-                    MAYBE(size, make_fixed_size(candidate.size(), ebm::SizeUnit::BYTE_FIXED));
-
-                    auto peek_io = make_io_data(io_desc.io_ref, from_weak(io_desc.field), temporary_read_buffer, array_type, io_desc.attribute, size);
-                    peek_io.attribute.is_peek(true);
-                    EBM_READ_DATA(temporary_read, std::move(peek_io));
-
-                    ebm::ExpressionRef cond;
-                    EBMU_BOOL_TYPE(bool_type);
-                    for (size_t i = 0; i < candidate.size(); i++) {
-                        EBMU_INT_LITERAL(i_ref, i);
-                        EBMU_INT_LITERAL(literal, static_cast<unsigned char>(candidate[i]));
-                        EBM_INDEX(array_index, array_type, temporary_read_buffer, i_ref);
-                        EBM_BINARY_OP(check, ebm::BinaryOp::equal, bool_type, array_index, literal);
-                        if (i == 0) {
-                            cond = check;
+                    if (is_byte && candidate.size() == 1) {
+                        // Single-byte sentinel (e.g. a null terminator): emit a
+                        // peek-free fused loop reusing the element decode + append of
+                        // underlying_decoder, with a terminator check inserted between:
+                        //    tmp = decode_element()       # consumes one byte
+                        //    if tmp == sentinel:           # terminator: store + stop
+                        //        this.<terminator>[0] = tmp
+                        //        break
+                        //    append(base_ref, tmp)
+                        // Needs neither peek nor seek, so any backend can realize it.
+                        // The terminator field's own read is skipped on the decode pass
+                        // (it is stored here); see IndentBlock for_each_node. Its
+                        // member-access comes from the Normal (struct decl) pass, which
+                        // has already run by the time decode is generated.
+                        MAYBE(next_id, ctx.state().is_visited(next, GenerateType::Normal));
+                        auto next_member = ctx.state().get_self_ref_for_id(next_id);
+                        if (!next_member) {
+                            return unexpect_error("terminator field member-access not found");
                         }
-                        else {
-                            EBM_BINARY_OP(new_cond, ebm::BinaryOp::logical_and, bool_type, cond, check);
-                            cond = new_cond;
+                        EBMU_BOOL_TYPE(bool_type);
+                        EBMU_INT_LITERAL(sentinel, static_cast<unsigned char>(candidate[0]));
+                        EBMU_INT_LITERAL(zero_index, 0);
+
+                        EBM_DEFAULT_VALUE(new_, element_type);
+                        EBM_DEFINE_ANONYMOUS_VARIABLE(tmp_var, element_type, new_);
+                        MAYBE(decode_info, decode_field_type(aty->element_type, tmp_var, nullptr, from_weak(io_desc.field)));
+                        EBMA_ADD_STATEMENT(decode_stmt, std::move(decode_info));
+
+                        EBM_BINARY_OP(cond, ebm::BinaryOp::equal, bool_type, tmp_var, sentinel);
+                        MAYBE(loop_id, ctx.repository().new_statement_id());
+                        EBM_BREAK(break_stmt, loop_id);
+                        EBM_INDEX(term_elem, element_type, *next_member, zero_index);
+                        EBM_ASSIGNMENT(term_assign, term_elem, tmp_var);
+                        MAYBE(term_stored, wrap_field_store_ref(ctx, term_assign, term_elem, tmp_var));
+                        ebm::Block then_block;
+                        append(then_block, term_stored);
+                        append(then_block, break_stmt);
+                        EBM_BLOCK(then_ref, std::move(then_block));
+                        EBM_IF_STATEMENT(if_stmt, cond, then_ref, {});
+
+                        EBM_APPEND(appended, base_ref, tmp_var);
+                        MAYBE(stored, wrap_field_store_ref(ctx, appended, base_ref, tmp_var));
+
+                        ebm::Block loop_body;
+                        append(loop_body, tmp_var_def);
+                        append(loop_body, decode_stmt);
+                        append(loop_body, if_stmt);
+                        append(loop_body, stored);
+                        EBM_BLOCK(loop_body_ref, std::move(loop_body));
+
+                        ebm::LoopStatement loop_stmt;
+                        loop_stmt.loop_type = ebm::LoopType::INFINITE;
+                        loop_stmt.body = loop_body_ref;
+                        auto loop = make_loop(std::move(loop_stmt));
+                        EBMA_ADD_STATEMENT(loop_ref, loop_id, std::move(loop));
+                        cond_loop = loop_ref;
+                        io_desc.size.unit = ebm::SizeUnit::DYNAMIC;
+
+                        ctx.state().mark_decode_read_skipped(next);
+                    }
+                    else {
+                        EBMU_U8_N_ARRAY(array_type, candidate.size(), ebm::ArrayAnnotation::read_temporary);
+                        EBM_DEFAULT_VALUE(array_default, array_type);
+                        EBM_DEFINE_ANONYMOUS_VARIABLE(temporary_read_buffer, array_type, array_default);
+
+                        MAYBE(size, make_fixed_size(candidate.size(), ebm::SizeUnit::BYTE_FIXED));
+
+                        auto peek_io = make_io_data(io_desc.io_ref, from_weak(io_desc.field), temporary_read_buffer, array_type, io_desc.attribute, size);
+                        peek_io.attribute.is_peek(true);
+                        EBM_READ_DATA(temporary_read, std::move(peek_io));
+
+                        ebm::ExpressionRef cond;
+                        EBMU_BOOL_TYPE(bool_type);
+                        for (size_t i = 0; i < candidate.size(); i++) {
+                            EBMU_INT_LITERAL(i_ref, i);
+                            EBMU_INT_LITERAL(literal, static_cast<unsigned char>(candidate[i]));
+                            EBM_INDEX(array_index, array_type, temporary_read_buffer, i_ref);
+                            EBM_BINARY_OP(check, ebm::BinaryOp::equal, bool_type, array_index, literal);
+                            if (i == 0) {
+                                cond = check;
+                            }
+                            else {
+                                EBM_BINARY_OP(new_cond, ebm::BinaryOp::logical_and, bool_type, cond, check);
+                                cond = new_cond;
+                            }
                         }
+                        if (is_nil(cond)) {
+                            return unexpect_error("Condition expression is empty");
+                        }
+                        MAYBE(loop_id, ctx.repository().new_statement_id());
+                        EBM_BREAK(break_stmt, loop_id);
+
+                        EBM_IF_STATEMENT(if_stmt, cond, break_stmt, {});
+                        MAYBE(data_decoder, underlying_decoder(std::nullopt));
+
+                        ebm::LoopStatement loop_stmt;
+                        loop_stmt.loop_type = ebm::LoopType::INFINITE;
+                        // for:
+                        //    temporary_read_buffer = peek(candidate.size())
+                        //    if temporary_read_buffer == candidate:
+                        //        break
+                        //    data = decode_element()
+                        //    append(base_ref, data)
+                        ebm::Block loop_body;
+                        append(loop_body, temporary_read_buffer_def);
+                        append(loop_body, temporary_read);
+                        append(loop_body, if_stmt);
+                        append(loop_body, data_decoder);
+                        EBM_BLOCK(loop_body_ref, std::move(loop_body));
+                        loop_stmt.body = loop_body_ref;
+
+                        auto loop = make_loop(std::move(loop_stmt));
+
+                        EBMA_ADD_STATEMENT(loop_ref, loop_id, std::move(loop));
+                        cond_loop = loop_ref;
+                        io_desc.size.unit = ebm::SizeUnit::DYNAMIC;
                     }
-                    if (is_nil(cond)) {
-                        return unexpect_error("Condition expression is empty");
-                    }
-                    MAYBE(loop_id, ctx.repository().new_statement_id());
-                    EBM_BREAK(break_stmt, loop_id);
-
-                    EBM_IF_STATEMENT(if_stmt, cond, break_stmt, {});
-                    MAYBE(data_decoder, underlying_decoder(std::nullopt));
-
-                    ebm::LoopStatement loop_stmt;
-                    loop_stmt.loop_type = ebm::LoopType::INFINITE;
-                    // for:
-                    //    temporary_read_buffer = peek(candidate.size())
-                    //    if temporary_read_buffer == candidate:
-                    //        break
-                    //    data = decode_element()
-                    //    append(base_ref, data)
-                    ebm::Block loop_body;
-                    append(loop_body, temporary_read_buffer_def);
-                    append(loop_body, temporary_read);
-                    append(loop_body, if_stmt);
-                    append(loop_body, data_decoder);
-                    EBM_BLOCK(loop_body_ref, std::move(loop_body));
-                    loop_stmt.body = loop_body_ref;
-
-                    auto loop = make_loop(std::move(loop_stmt));
-
-                    EBMA_ADD_STATEMENT(loop_ref, loop_id, std::move(loop));
-                    cond_loop = loop_ref;
-                    io_desc.size.unit = ebm::SizeUnit::DYNAMIC;
                 }
                 else {
                     return unexpect_error("Invalid follow type: {}, {}", to_string(field->follow), to_string(field->eventual_follow));
@@ -352,7 +414,7 @@ namespace ebmgen {
         }
         if (cond_loop) {
             io_desc.attribute.has_lowered_statement(true);
-            io_desc.lowered_statement(make_lowered_statement(ebm::LoweringIOType::ARRAY_FOR_EACH, *cond_loop));
+            io_desc.lowered_statement(make_lowered_statement(ebm::LoweringIOType::SCAN_UNTIL, *cond_loop));
         }
         else if (length) {
             EBMU_COUNTER_TYPE(counter_type);
@@ -385,17 +447,17 @@ namespace ebmgen {
         MAYBE(candidate, decode_base64(typ->strong_ref));
 
         EBMU_U8_N_ARRAY(u8_n_array, candidate.size(), ebm::ArrayAnnotation::read_temporary);
-        EBM_DEFAULT_VALUE(new_obj_ref, u8_n_array);
-        EBM_DEFINE_ANONYMOUS_VARIABLE(buffer, u8_n_array, new_obj_ref);
+        // EBM_DEFAULT_VALUE(new_obj_ref, u8_n_array);
+        //  EBM_DEFINE_ANONYMOUS_VARIABLE(buffer, u8_n_array, new_obj_ref);
 
         MAYBE(io_size, make_fixed_size(candidate.size(), ebm::SizeUnit::BYTE_FIXED));
         io_desc.size = io_size;
-        EBM_READ_DATA(read_ref, make_io_data(io_desc.io_ref, from_weak(io_desc.field), buffer, u8_n_array, io_desc.attribute, io_size));
+        EBM_READ_DATA(read_ref, make_io_data(io_desc.io_ref, from_weak(io_desc.field), base_ref, u8_n_array, io_desc.attribute, io_size));
 
         ebm::Block block;
-        append(block, buffer_def);
+        // append(block, buffer_def);
         append(block, read_ref);
-        MAYBE_VOID(ok, compare_string_array(ctx, block, buffer, candidate));
+        MAYBE_VOID(ok, compare_string_array(ctx, block, base_ref, candidate));
         EBM_BLOCK(block_ref, std::move(block));
         io_desc.attribute.has_lowered_statement(true);
         io_desc.lowered_statement(make_lowered_statement(ebm::LoweringIOType::STRING_FOR_EACH, block_ref));

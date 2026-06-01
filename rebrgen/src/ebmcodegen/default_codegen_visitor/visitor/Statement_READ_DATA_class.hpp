@@ -51,7 +51,8 @@ DEFINE_VISITOR(Statement_READ_DATA) {
     }
     // Common: VECTORIZED_IO は lowered statement へ委譲
     if (auto low = ctx.read_data.lowered_statement()) {
-        if (low->lowering_type == ebm::LoweringIOType::VECTORIZED_IO) {
+        if (low->lowering_type == ebm::LoweringIOType::VECTORIZED_IO ||
+            low->lowering_type == ebm::LoweringIOType::SCAN_UNTIL) {
             return ctx.visit(low->io_statement.id);
         }
     }

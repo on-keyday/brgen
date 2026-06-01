@@ -528,6 +528,13 @@ namespace ebmgen {
                 else if (ast::as<ast::Member>(element)) {
                     continue;
                 }
+                // A terminator field stored inline by a preceding array's fused
+                // single-byte-sentinel decode loop must not emit its own read.
+                // Decode pass only; encode still writes the terminator constant.
+                if (ctx.state().get_current_generate_type() == ebm::GenerateType::Decode &&
+                    ctx.state().is_decode_read_skipped(element)) {
+                    continue;
+                }
                 EBMA_CONVERT_STATEMENT(stmt_ref, element);
                 append(block_body, stmt_ref);
             }

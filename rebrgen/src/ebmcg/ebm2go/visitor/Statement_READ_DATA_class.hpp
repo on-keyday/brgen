@@ -49,6 +49,14 @@ DEFINE_VISITOR(Statement_READ_DATA) {
         if (low->lowering_type == ebm::LoweringIOType::VECTORIZED_IO) {
             return rctx.visit(low->io_statement.id);
         }
+        if (low->lowering_type == ebm::LoweringIOType::SCAN_UNTIL) {
+            // this is special case for until eof
+            ctx.config().on_until_eof_loop = true;
+            const auto _defer = futils::helper::defer([&] {
+                ctx.config().on_until_eof_loop = false;
+            });
+            return rctx.visit(low->io_statement.id);
+        }
     }
     if (is_single_byte_io(ctx, ctx.read_data) && ctx.config().io_strategy.is_std_io()) {  // currently, only for u8
         MAYBE(target, rctx.visit(rctx.read_data.target));
@@ -331,14 +339,6 @@ DEFINE_VISITOR(Statement_READ_DATA) {
         return w;
     }
     if (auto lw = rctx.read_data.lowered_statement()) {
-        if (auto dyn_size = rctx.read_data.size.ref(); dyn_size && ctx.is(ebm::ExpressionKind::GET_REMAINING_BYTES, *dyn_size)) {
-            // this is special case for until eof
-            ctx.config().on_until_eof_loop = true;
-            const auto _defer = futils::helper::defer([&] {
-                ctx.config().on_until_eof_loop = false;
-            });
-            return rctx.visit(lw->io_statement.id);
-        }
         return rctx.visit(lw->io_statement.id);
     }
     return "/* not implemented read data */";

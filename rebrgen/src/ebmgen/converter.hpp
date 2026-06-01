@@ -295,6 +295,8 @@ namespace ebmgen {
         std::unordered_set<ebm::TypeRef> recursive_io_input_descs;
         bool function_has_modified_self = false;
 
+        std::unordered_set<std::shared_ptr<ast::Node>> decode_read_skipped_fields;
+
         void debug_visited(const char* action, const std::shared_ptr<ast::Node>& node, ebm::StatementRef ref, GenerateType typ) const;
 
        public:
@@ -455,6 +457,14 @@ namespace ebmgen {
             debug_visited("Not found", node, ebm::StatementRef{}, *t);
             auto ident = ast::as<ast::Member>(node);
             return unexpect_error("Node not visited: {} {}", !node ? "(null)" : node_type_to_string(node->node_type), ident && ident->ident ? ident->ident->ident : "(no ident)");
+        }
+
+        void mark_decode_read_skipped(const std::shared_ptr<ast::Node>& node) {
+            decode_read_skipped_fields.insert(node);
+        }
+
+        bool is_decode_read_skipped(const std::shared_ptr<ast::Node>& node) const {
+            return decode_read_skipped_fields.contains(node);
         }
 
         void add_format_encode_decode(const std::shared_ptr<ast::Node>& node,
