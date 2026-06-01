@@ -531,6 +531,7 @@ enum LoweringIOType:
     BIT_FIELD_TO_BIT_SHIFT # Lower bit field operations to bit shift and mask operations
     MULTI_REPRESENTATION # Lower multi-representation field (statement is a LOWERED_IO_STATEMENTS that contains lowering candidates)
     VECTORIZED_IO # Lower vectorized IO to multiple IO operations
+    SCAN_UNTIL # Lower representation of until sentinel loop
   
 format LoweredIOStatement:
     lowering_type :LoweringIOType # Type of lowering

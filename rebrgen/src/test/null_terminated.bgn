@@ -1,0 +1,10 @@
+
+# null-terminated string: [..]u8 bounded by a following terminator literal.
+# distinct from until_eof.bgn, where [..]u8 is terminal (reads to EOF).
+# here the scan must stop AT the 0x00 sentinel and resume; the trailing field
+# forces that — a naive "read to EOF" impl consumes `trailing` too and fails
+# the round-trip, so this test discriminates the sentinel case from EOF.
+format NullTerminated:
+    value :[..]u8
+    terminator :"\0"
+    trailing :u32

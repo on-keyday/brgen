@@ -232,6 +232,14 @@
         "hex": true
     },
     {
+        "name": "null_terminated_test",
+        "binary": "$WORK_DIR/test/binary_data/null_terminated.dat",
+        "format_name": "NullTerminated",
+        "source": "$WORK_DIR/src/test/null_terminated.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
         "name": "wasm_src2json",
         "binary": "$WORK_DIR/test/binary_data/wasm_src2json.dat",
         "format_name": "WasmModule",
