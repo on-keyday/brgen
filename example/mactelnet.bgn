@@ -1,0 +1,94 @@
+config.url = "https://github.com/haakonnessjoen/MAC-Telnet/blob/de620882c73e235ab319f3cb55481888d7d8f71d/src/protocol.c#L54"
+config.url = "https://github.com/haakonnessjoen/MAC-Telnet/blob/de620882c73e235ab319f3cb55481888d7d8f71d/src/protocol.h#L46"
+# MacTelnetPacket
+# MAC-Telnet protocol is a proprietary L2 link layer console protocol by MikroTik.
+# -------------
+
+enum PacketType:
+    :u8
+    SessionStart = 0
+    Data = 1
+    Ack = 2
+    Ping = 4
+    Pong = 5
+    End = 255
+
+
+
+enum ControlPacketType:
+    :u8
+    BeginAuth = 0
+    PassSalt = 1
+    Password = 2
+    Username = 3
+    TermType = 4
+    TermWidth = 5
+    TermHeight = 6
+    PacketError = 7
+    EndAuth = 9
+
+enum Direction:
+    FromClient = 0     # mt_direction_fromserver == 0
+    FromServer = 1     # mt_direction_fromserver == 1
+
+state DirectionState:
+    direction :Direction
+
+dir_state :DirectionState
+
+format MacTelnetPacketHeader:
+    version :u8
+    version == 1
+    
+    packet_type :PacketType
+    
+    source_mac :[6]u8
+    target_mac :[6]u8
+    
+    if dir_state.direction == Direction.FromClient:
+        session_key  :[2]u8
+        client_type  :"\x00\x15"
+    else:
+        client_type :"\x00\x15"
+        session_key :[2]u8
+    
+    counter :u32
+    
+
+format MacTelnetPacket:
+    header :MacTelnetPacketHeader
+    # ペイロード（データの長さはL2フレーム全体の長さ、または下層から渡るサイズに依存）
+    payload :[..]ControlPacket
+
+format ControlPacket:
+    # Cコード内の add_control_packet/parse_control_packet のTLV構造を再現
+    # PLAINDATA（生データ）だけはMagic ID(4バイト)がつかない変則仕様を match で分離
+    if input.remain < 4:
+        # 残りが4バイト未満なら、Magic IDは存在せず、全てが生データ
+        plain_data :[..]u8
+    else:
+        # 最初の4バイトを先読みして、Magic IDかどうかを判定
+        magic_or_type :[4]u8(input.peek = true)
+        
+        match magic_or_type:
+            "\x56\x34\x12\xff":
+                cptype :ControlPacketType
+                length :u32
+                
+                match cptype:
+                    ControlPacketType.TermWidth:
+                        length == 2  # タイプごとに長さのバリデーション
+                        width :u16
+                    ControlPacketType.TermHeight:
+                        length == 2
+                        height :u16
+                    ControlPacketType.TermType   => term_type :[length]u8
+                    ControlPacketType.Username   => username :[length]u8
+                    ControlPacketType.Password   => password :[length]u8
+                    ControlPacketType.PassSalt   => salt_data :[length]u8
+                    ControlPacketType.BeginAuth  => length == 0   # データなし
+                    ..                           => error("unhandled control packet type")
+            .. =>
+                # 生データはパケットの終わりまで、または上位層から渡されるサイズ
+                plain_data :[..]u8
+    
