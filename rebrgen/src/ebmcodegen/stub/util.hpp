@@ -656,6 +656,87 @@ namespace ebmcodegen::util {
         return ebmgen::unexpect_error("cannot find parent format");
     }
 
+    struct FuncParamNames {
+        std::vector<std::string> params;        // all parameter identifiers, in declaration order
+        std::vector<std::string> state_params;  // subset of params with is_state_variable()
+        std::string args;                       // params joined with ", "
+        std::string state_args;                 // state_params joined with ", "
+    };
+
+    ebmgen::expected<FuncParamNames> collect_func_param_names(auto&& visitor, const ebm::FunctionDecl& func) {
+        ebmgen::MappingTable& module_ = get_visitor(visitor).module_;
+        FuncParamNames names;
+        for (auto& param : func.params.container) {
+            auto param_name = module_.get_associated_identifier(param);
+            if (!names.args.empty()) {
+                names.args += ", ";
+            }
+            names.args += param_name;
+            names.params.push_back(param_name);
+            MAYBE(param_stmt, module_.get_statement(param));
+            if (auto pd = param_stmt.body.param_decl(); pd && pd->is_state_variable()) {
+                if (!names.state_args.empty()) {
+                    names.state_args += ", ";
+                }
+                names.state_args += param_name;
+                names.state_params.push_back(param_name);
+            }
+        }
+        return names;
+    }
+
+    struct PropertyAccessInfo {
+        ebm::StatementRef member_stmt;              // the PROPERTY_DECL statement the member expression refers to
+        const ebm::PropertyDecl* prop = nullptr;
+        ebm::StatementRef getter_ref;               // nil when the property has no getter function
+        const ebm::FunctionDecl* getter = nullptr;  // null when getter_ref is nil
+        ebm::MergeMode merge_mode{};
+        bool inner_anon = false;          // parent_struct != parent_format: the accessor is hoisted onto
+                                          // parent_format with a `<parent_struct_ident><sep><member_ident>` name
+        std::string member_ident;         // identifier of the member expression
+        std::string parent_struct_ident;  // identifier of prop->parent_struct
+        std::string parent_format_ident;  // identifier of prop->parent_format
+        FuncParamNames getter_params;     // empty when getter is null
+    };
+
+    // Resolve the member of a MEMBER_ACCESS expression to a property-getter call shape.
+    // Returns std::nullopt when the member statement is not a PROPERTY_DECL, so callers
+    // can fall through to their other branches or the default `base.member` emission.
+    // With require_getter=true (default) a PROPERTY_DECL without getter function is an
+    // error; pass false for generators that fall back to default emission in that case.
+    ebmgen::expected<std::optional<PropertyAccessInfo>> analyze_property_member_access(auto&& visitor, ebm::ExpressionRef member, bool require_getter = true) {
+        ebmgen::MappingTable& module_ = get_visitor(visitor).module_;
+        MAYBE(member_expr, module_.get_expression(member));
+        MAYBE(id, member_expr.body.id());
+        MAYBE(member_stmt, module_.get_statement(from_weak(id)));
+        if (member_stmt.body.kind != ebm::StatementKind::PROPERTY_DECL) {
+            return std::nullopt;
+        }
+        MAYBE(prop, member_stmt.body.property_decl());
+        PropertyAccessInfo info;
+        info.member_stmt = from_weak(id);
+        info.prop = &prop;
+        info.merge_mode = prop.merge_mode;
+        info.inner_anon = get_id(prop.parent_struct) != get_id(prop.parent_format);
+        MAYBE(member_ident, module_.get_associated_identifier(member));
+        info.member_ident = member_ident;
+        info.parent_struct_ident = module_.get_associated_identifier(prop.parent_struct);
+        info.parent_format_ident = module_.get_associated_identifier(prop.parent_format);
+        if (is_nil(prop.getter_function.id)) {
+            if (require_getter) {
+                return ebmgen::unexpect_error("PROPERTY_DECL member access without getter function");
+            }
+            return std::optional(std::move(info));
+        }
+        info.getter_ref = prop.getter_function.id;
+        MAYBE(getter_stmt, module_.get_statement(info.getter_ref));
+        MAYBE(getter_decl, getter_stmt.body.func_decl());
+        info.getter = &getter_decl;
+        MAYBE(getter_params, collect_func_param_names(visitor, getter_decl));
+        info.getter_params = std::move(getter_params);
+        return std::optional(std::move(info));
+    }
+
     bool variant_candidate_equal(auto&& visitor, ebm::TypeRef candidate, ebm::TypeRef target) {
         ebmgen::MappingTable& module_ = get_visitor(visitor).module_;
         if (get_id(candidate) == get_id(target)) {

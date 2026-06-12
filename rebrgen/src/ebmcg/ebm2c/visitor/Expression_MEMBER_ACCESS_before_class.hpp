@@ -34,27 +34,19 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
         return w;
     }
     MAYBE(body, ctx.get_field<"body.id">(ctx.member));
-    auto prop = ctx.get_field<"property_decl">(body);
-    if (prop) {
-        MAYBE(getter_decl, ctx.get_field<"func_decl">(prop->getter_function.id));
+    MAYBE(prop_info, analyze_property_member_access(ctx, ctx.member));
+    if (prop_info) {
         MAYBE(base, ctx.visit(ctx.base));
         if (auto desc = ctx.get_field<"member.body.id.field_decl.field_type.struct_union_desc">(ctx.base)) {
             base = ctx.config().self_value;
         }
-        MAYBE(ident, ctx.identifier(ctx.member));
-        auto parent_ident = ctx.identifier(prop->parent_struct);
         auto getter_func_name = std::format(
             "{}_get_{}",
-            parent_ident,
-            ident);
-        std::string args;
+            prop_info->parent_struct_ident,
+            prop_info->member_ident);
         // if state variable, pass as is
-        for (auto& param : getter_decl.params.container) {
-            auto param_name = ctx.identifier(param);
-            args += ", ";
-            args += param_name;
-        }
-        if (prop->merge_mode != ebm::MergeMode::STRICT_TYPE) {
+        auto args = prop_info->getter_params.args.empty() ? std::string() : ", " + prop_info->getter_params.args;
+        if (prop_info->merge_mode != ebm::MergeMode::STRICT_TYPE) {
             return CODE(getter_func_name, "(&", base.to_writer(), args, ").value");
         }
         return CODE("(*", getter_func_name, "(&", base.to_writer(), args, "))");
@@ -69,15 +61,9 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
                 parent_ident,
                 member_ident);
             MAYBE(base, ctx.visit(ctx.base));
-            std::string args;
             // if state variable, pass as is
-            for (auto& param : getter_decl.params.container) {
-                auto param_name = ctx.identifier(param);
-                if (!args.empty()) {
-                    args += ", ";
-                }
-                args += param_name;
-            }
+            MAYBE(getter_params, collect_func_param_names(ctx, getter_decl));
+            auto& args = getter_params.args;
             auto base_ = base.to_writer();
             if (ctx.get_field<"struct_decl.related_variant">(comp_getter->parent_struct)) {
                 base_ = CODE(std::move(base_), ".", parent_ident);

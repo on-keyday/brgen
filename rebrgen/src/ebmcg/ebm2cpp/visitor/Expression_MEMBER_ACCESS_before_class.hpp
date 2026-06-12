@@ -38,26 +38,16 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
     }
 
     // Property access: in C++ properties are methods, call them with ()
-    if (auto stmt = ctx.get(id); stmt && stmt->body.kind == ebm::StatementKind::PROPERTY_DECL) {
-        MAYBE(prop_decl, stmt->body.property_decl());
-        MAYBE(getter_decl, ctx.get_field<"func_decl">(prop_decl.getter_function.id));
-        std::string args;
-        for (auto& param : getter_decl.params.container) {
-            auto param_name = ctx.identifier(param);
-            if (!args.empty()) {
-                args += ", ";
-            }
-            args += param_name;
-        }
+    MAYBE(prop_info, analyze_property_member_access(ctx, ctx.member));
+    if (prop_info) {
+        auto& args = prop_info->getter_params.args;
         // Inner-anon property accessors live on the outer class with a
         // parent_struct-prefixed name (see entry_before_class hooks).
         // Re-anchor the call to (*this) and apply the same prefix here
         // instead of letting main_logic chain through (*this).tmp458,
         // which would hit a std::variant that has no max() method.
-        if (get_id(prop_decl.parent_struct) != get_id(prop_decl.parent_format)) {
-            MAYBE(ident, ctx.identifier(ctx.member));
-            auto inner_name = ctx.identifier(prop_decl.parent_struct);
-            auto method_name = std::string(inner_name) + "_" + std::string(ident);
+        if (prop_info->inner_anon) {
+            auto method_name = prop_info->parent_struct_ident + "_" + prop_info->member_ident;
             return CODE("*(*this).", method_name, "(", args, ")");
         }
         MAYBE(main, ctx.main_logic());

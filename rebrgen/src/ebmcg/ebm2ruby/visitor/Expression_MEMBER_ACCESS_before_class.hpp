@@ -28,28 +28,11 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
     // In Ruby `obj.method` invokes a method (no implicit `()`). When the underlying
     // property getter has state params, the bare member access fails with arity error.
     // Resolve the PROPERTY_DECL -> getter_function -> state params and augment the call.
-    MAYBE(member, ctx.get_field<"member.body.id.instance">());
-    if (member.body.kind != ebm::StatementKind::PROPERTY_DECL) {
+    MAYBE(prop_info, analyze_property_member_access(ctx, ctx.member, false));
+    if (!prop_info || !prop_info->getter) {
         return pass;
     }
-    MAYBE(prop, member.body.property_decl());
-    if (is_nil(prop.getter_function.id)) {
-        return pass;
-    }
-    MAYBE(getter_stmt, ctx.get(prop.getter_function.id));
-    MAYBE(getter, getter_stmt.body.func_decl());
-    std::string args;
-    for (const auto& param_ref : getter.params.container) {
-        auto param_stmt = ctx.get(param_ref);
-        if (!param_stmt) continue;
-        auto pd = param_stmt->body.param_decl();
-        if (!pd) continue;
-        if (!pd->is_state_variable()) continue;
-        if (!args.empty()) {
-            args += ", ";
-        }
-        args += ctx.identifier(param_ref);
-    }
+    auto& args = prop_info->getter_params.state_args;
     if (args.empty()) {
         return pass;
     }

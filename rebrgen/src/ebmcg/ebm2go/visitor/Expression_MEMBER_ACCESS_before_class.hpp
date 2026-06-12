@@ -24,22 +24,12 @@
 #include "ebm/extended_binary_module.hpp"
 DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
     using namespace CODEGEN_NAMESPACE;
-    auto prop = ctx.get_field<"body.id.property_decl">(ctx.member);
-    if (prop) {
-        MAYBE(getter_decl, ctx.get_field<"func_decl">(prop->getter_function.id));
+    MAYBE(prop_info, analyze_property_member_access(ctx, ctx.member));
+    if (prop_info) {
         MAYBE(base, ctx.visit(ctx.base));
-        MAYBE(ident, ctx.identifier(ctx.member));
-        auto parent_ident = ctx.identifier(prop->parent_format);
-        std::string args;
-        // if state variable, pass as is
-        for (auto& param : getter_decl.params.container) {
-            auto param_name = ctx.identifier(param);
-            if (!args.empty()) {
-                args += ", ";
-            }
-            args += param_name;
-        }
-        if (ctx.config().bool_mapped_func.contains(get_id(prop->getter_function.id))) {
+        auto ident = prop_info->member_ident;
+        auto& args = prop_info->getter_params.args;
+        if (ctx.config().bool_mapped_func.contains(get_id(prop_info->getter_ref))) {
             ident[0] = std::tolower(ident[0]);
         }
         // Match the parent_struct-prefix rule used by Statement_FUNCTION_DECL:
@@ -48,12 +38,11 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
         // the same prefixed name AND call on the outer receiver directly,
         // not chained through the inner struct (which doesn't carry the
         // prefixed method on Go's method set).
-        if (get_id(prop->parent_struct) != get_id(prop->parent_format)) {
-            auto inner_name = ctx.identifier(prop->parent_struct);
-            ident = std::string(inner_name) + ident;
+        if (prop_info->inner_anon) {
+            ident = prop_info->parent_struct_ident + ident;
             base = CODE(ctx.config().self_value);
         }
-        if (prop->merge_mode != ebm::MergeMode::STRICT_TYPE) {
+        if (prop_info->merge_mode != ebm::MergeMode::STRICT_TYPE) {
             return CODE(base.to_writer(), ".", ident, "(", args, ")");
         }
         return CODE("(*", base.to_writer(), ".", ident, "(", args, "))");
@@ -61,18 +50,11 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
     if (auto comp_getter = get_composite_field(ctx, ctx.member)) {
         if (auto comp = comp_getter->composite_getter()) {
             MAYBE(getter_decl, ctx.get_field<"func_decl">(comp->id));
-            auto parent_ident = ctx.identifier(comp_getter->parent_struct);
             MAYBE(member_ident, ctx.identifier(ctx.member));
             MAYBE(base, ctx.visit(ctx.base));
-            std::string args;
             // if state variable, pass as is
-            for (auto& param : getter_decl.params.container) {
-                auto param_name = ctx.identifier(param);
-                if (!args.empty()) {
-                    args += ", ";
-                }
-                args += param_name;
-            }
+            MAYBE(getter_params, collect_func_param_names(ctx, getter_decl));
+            auto& args = getter_params.args;
             auto base_ = base.to_writer();
             MAYBE(member_stmt, ctx.get_field<"body.id">(ctx.member));
             if (auto variant_type = get_struct_union_member_from_field(ctx, from_weak(member_stmt))) {

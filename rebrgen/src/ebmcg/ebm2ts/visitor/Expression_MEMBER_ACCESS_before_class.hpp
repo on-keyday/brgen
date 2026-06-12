@@ -29,33 +29,29 @@
 DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
     using namespace CODEGEN_NAMESPACE;
 
-    MAYBE(member_stmt, ctx.template get_field<"member.body.id.instance">());
-
     // Two ways the EBM may surface a property access:
     // (a) member statement is PROPERTY_DECL with a getter_function ref.
     // (b) member statement is FUNCTION_DECL directly (PROPERTY_GETTER kind).
     ebm::StatementRef getter_ref{};
     ebm::WeakStatementRef parent_format{};
-    if (member_stmt.body.kind == ebm::StatementKind::PROPERTY_DECL) {
-        auto prop = member_stmt.body.property_decl();
-        if (!prop) {
+    std::string state_args;
+    MAYBE(prop_info, analyze_property_member_access(ctx, ctx.member, false));
+    if (prop_info) {
+        if (!prop_info->getter) {
             return pass;
         }
-        getter_ref = prop->getter_function.id;
-        if (is_nil(getter_ref)) {
+        if (is_nil(prop_info->getter->parent_format)) {
             return pass;
         }
-        MAYBE(getter_stmt, ctx.get(getter_ref));
-        auto fd = getter_stmt.body.func_decl();
-        if (!fd) {
-            return pass;
-        }
-        if (is_nil(fd->parent_format)) {
-            return pass;
-        }
-        parent_format = fd->parent_format;
+        getter_ref = prop_info->getter_ref;
+        parent_format = prop_info->getter->parent_format;
+        state_args = prop_info->getter_params.state_args;
     }
-    else if (member_stmt.body.kind == ebm::StatementKind::FUNCTION_DECL) {
+    else {
+        MAYBE(member_stmt, ctx.template get_field<"member.body.id.instance">());
+        if (member_stmt.body.kind != ebm::StatementKind::FUNCTION_DECL) {
+            return pass;
+        }
         auto fd = member_stmt.body.func_decl();
         if (!fd) {
             return pass;
@@ -69,9 +65,8 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
         }
         getter_ref = member_stmt.id;
         parent_format = fd->parent_format;
-    }
-    else {
-        return pass;
+        MAYBE(getter_params, collect_func_param_names(ctx, *fd));
+        state_args = std::move(getter_params.state_args);
     }
 
     auto struct_name = std::string(ctx.identifier(parent_format));
@@ -84,22 +79,8 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
     // expected to have a same-named local in scope.
     CodeWriter call;
     call.write(struct_name, "_get_", member_name, "(", base_str.to_writer());
-    MAYBE(getter_stmt, ctx.get(getter_ref));
-    if (auto fd = getter_stmt.body.func_decl()) {
-        for (auto& p : fd->params.container) {
-            auto p_stmt = ctx.get(p);
-            if (!p_stmt) {
-                continue;
-            }
-            auto pd = p_stmt->body.param_decl();
-            if (!pd) {
-                continue;
-            }
-            if (!pd->is_state_variable()) {
-                continue;
-            }
-            call.write(", ", ctx.identifier(p));
-        }
+    if (!state_args.empty()) {
+        call.write(", ", state_args);
     }
     call.write(")");
     return Result(std::move(call));
