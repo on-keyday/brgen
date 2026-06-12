@@ -22,6 +22,16 @@ add_compile_options(-fexperimental-library)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=undefined -fexceptions -sENVIRONMENT=worker,node -sINVOKE_RUN=0 -sMODULARIZE=1 -sEXPORT_ES6=1 -sEXIT_RUNTIME=0 -sEXPORTED_RUNTIME_METHODS=[ccall,cwrap,FS] -sALLOW_MEMORY_GROWTH=1 -sSTACK_SIZE=16777216 -sSTACK_OVERFLOW_CHECK=1 --bind")
 endif()
 
+# Recent Emscripten builds SHARED libraries as relocatable side modules and
+# rejects linking non-PIC objects against them (wasm-ld: R_WASM_TABLE_INDEX_SLEB
+# ... recompile with -fPIC). The web distribution only ships standalone .wasm
+# files and never dynamically links, so build these libraries statically there.
+if("$ENV{BUILD_MODE}" STREQUAL "web")
+set(REBRGEN_LIB_TYPE STATIC)
+else()
+set(REBRGEN_LIB_TYPE SHARED)
+endif()
+
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg -mfentry")
 
 if(UNIX)
@@ -47,7 +57,7 @@ include_directories("src")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY tool)
 
 if("$ENV{BUILD_OLD_BMGEN}" STREQUAL "1")
-add_library(bm SHARED "src/old/bm/binary_module.cpp")
+add_library(bm ${REBRGEN_LIB_TYPE} "src/old/bm/binary_module.cpp")
 
 add_executable(bmgen
     "src/old/bmgen/main.cpp" 
@@ -99,7 +109,7 @@ install(TARGETS gen_template COMPONENT gen_template DESTINATION tool)
 
 endif()
 
-add_library(ebm SHARED "src/ebm/extended_binary_module.cpp")
+add_library(ebm ${REBRGEN_LIB_TYPE} "src/ebm/extended_binary_module.cpp")
 
 
 
