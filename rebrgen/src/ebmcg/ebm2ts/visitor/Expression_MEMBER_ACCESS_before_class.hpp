@@ -16,6 +16,7 @@
       kind: const ebm::ExpressionKind&
       base: const ebm::ExpressionRef&
       member: const ebm::ExpressionRef&
+      main_logic: ebmcodegen::util::MainLogicWrapper<Result>
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 
