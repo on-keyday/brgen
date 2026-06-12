@@ -1,5 +1,7 @@
 config.url = "https://www.rfc-editor.org/rfc/rfc7348#section-5"
 
+VXLAN_DST_PORT ::= u16(4789)
+
 format VXLANHeader:
     reserved1 :u4
     indicator :u1(1)
