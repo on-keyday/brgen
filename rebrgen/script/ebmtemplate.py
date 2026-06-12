@@ -48,6 +48,17 @@ def get_mode_dir(gmode: str) -> str:
         return "ebmcg"
 
 
+def enumerate_languages(gmode: str) -> list[str]:
+    """Enumerate languages from src/<ebmcg|ebmip>/ebm2* directories (SSOT: source tree)."""
+    parent_dir = os.path.join("src", get_mode_dir(gmode))
+    langs = []
+    for entry in sorted(os.listdir(parent_dir)):
+        entry_path = os.path.join(parent_dir, entry)
+        if os.path.isdir(entry_path) and entry.startswith("ebm2"):
+            langs.append(entry.removeprefix("ebm2"))
+    return langs
+
+
 def run_save_template(tool_path, template_target, gmode, lang):
     """Generate a template and save it to the specified language's visitor directory."""
     isInterpreter = gmode == "interpret"
@@ -110,15 +121,14 @@ DEFINE_VISITOR({class_name}) {{
                 os.utime(main_file, None)
                 print(f"Touched '{main_file}' to update its timestamp.")
         else:
-            # list ebmcg or ebmip directory and touch all main.cpp files
-            parent_dir = f"src/{get_mode_dir(gmode)}"
-            for entry in os.listdir(parent_dir):
-                entry_path = os.path.join(parent_dir, entry)
-                if os.path.isdir(entry_path) and entry.startswith("ebm2"):
-                    main_file = os.path.join(entry_path, "main.cpp")
-                    if os.path.exists(main_file):
-                        os.utime(main_file, None)
-                        print(f"Touched '{main_file}' to update its timestamp.")
+            # touch all generators' main.cpp files
+            for l in enumerate_languages(gmode):
+                main_file = os.path.join(
+                    "src", get_mode_dir(gmode), f"ebm2{l}", "main.cpp"
+                )
+                if os.path.exists(main_file):
+                    os.utime(main_file, None)
+                    print(f"Touched '{main_file}' to update its timestamp.")
     except subprocess.CalledProcessError as e:
         print(
             f"Error: ebmcodegen failed for target '{template_target}' with exit code {e.returncode}",
@@ -165,26 +175,10 @@ def list_templates(
 def run_update_hooks(tool_path, lang, gmode):
     """Update all existing hook files in a language directory."""
     if lang == "all":
-        try:
-            with open("build_config.json") as f:
-                build_config = json.load(f)
-            target_languages = build_config.get(
-                str(gmode).upper() + "_TARGET_LANGUAGE", []
-            ) + [f"default"]
-            if not target_languages:
-                print(
-                    "Error: No target languages defined in build_config.json.",
-                    file=sys.stderr,
-                )
-                sys.exit(1)
-            for lang in target_languages:
-                if lang == "all":
-                    continue  # avoid infinity recursion
-                run_update_hooks(tool_path, lang, gmode)
-            return
-        except Exception as e:
-            print(f"Error: Failed to read build_config.json: {e}", file=sys.stderr)
-            sys.exit(1)
+        target_languages = enumerate_languages(gmode) + ["default"]
+        for lang in target_languages:
+            run_update_hooks(tool_path, lang, gmode)
+        return
 
     if lang == "default":
         visitor_dir = f"src/ebmcodegen/default_{gmode}_visitor/visitor"
@@ -330,27 +324,11 @@ def get_available_templates() -> list[str]:
 def list_defined_templates(lang: str, gmode: str):
     """List all defined templates for a given language."""
     if lang == "all":
-            try:
-                with open("build_config.json") as f:
-                    build_config = json.load(f)
-                target_languages = build_config.get(
-                    str(gmode).upper() + "_TARGET_LANGUAGE", []
-                ) + [f"default"]
-                if not target_languages:
-                    print(
-                        "Error: No target languages defined in build_config.json.",
-                        file=sys.stderr,
-                    )
-                    return
-                for lang in target_languages:
-                    if lang == "all":
-                        continue  # avoid infinity recursion
-                    print(f"\n--- Templates for language: '{lang}' ---")
-                    list_defined_templates(lang, gmode)
-                return
-            except Exception as e:
-                print(f"Error: Failed to read build_config.json: {e}", file=sys.stderr)
-                return
+        target_languages = enumerate_languages(gmode) + ["default"]
+        for lang in target_languages:
+            print(f"\n--- Templates for language: '{lang}' ---")
+            list_defined_templates(lang, gmode)
+        return
     if lang == "default":
         visitor_dir = f"src/ebmcodegen/default_{gmode}_visitor/visitor"
     else:

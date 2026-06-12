@@ -35,8 +35,7 @@ python script/build.py
 - Configuration file: `build_config.json` (copied from `build_config.template.json`)
 - Set `AUTO_SETUP_BRGEN` to `true` to auto-build brgen tools
 - Set `AUTO_SETUP_FUTILS` to `true` to auto-setup the futils dependency
-- Set `CODEGEN_TARGET_LANGUAGE` array to specify which language generators to build
-- Set `INTERPRET_TARGET_LANGUAGE` array to specify which interpreter generators to build
+- Language generators are not selected via config: all `ebm2<lang>` under `src/ebmcg/` and `src/ebmip/` are always built (`src/{ebmcg,ebmip}/CMakeLists.txt` is maintained by `script/ebmcodegen.py`), and `script/ebmtemplate.py ... all` enumerates languages from those directories
 
 ### Testing Workflow
 
