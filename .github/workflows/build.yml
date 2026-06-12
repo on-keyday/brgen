@@ -31,6 +31,10 @@ jobs:
           platform: x64
       - name: Install libc++-dev and libc++abi-dev
         run: sudo apt-get install libc++-dev libc++abi-dev -y
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@d62db5f07c26379fc4b4e0916f098a92573c3b03 # v1.2.23
+        with:
+          key: rebrgen-native-${{ runner.os }}
       - name: Cache rebrgen native
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         if: (!startsWith(github.ref , 'refs/heads/renovate/')) && (!startsWith(github.ref , 'refs/heads/dependabot/'))
@@ -61,7 +65,7 @@ jobs:
       - name: Build Native
         working-directory: rebrgen
         run: |
-          BUILD_OLD_BMGEN=1 FUTILS_DIR=$(pwd)/utils python script/build.py native Release
+          USE_CCACHE=1 BUILD_OLD_BMGEN=1 FUTILS_DIR=$(pwd)/utils python script/build.py native Release
       - name: Upload Artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -193,6 +197,10 @@ jobs:
       - name: Install libc++-dev and libc++abi-dev
         run: sudo apt-get install libc++-dev libc++abi-dev -y
         if: matrix.env == 'llvm'
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@d62db5f07c26379fc4b4e0916f098a92573c3b03 # v1.2.23
+        with:
+          key: brgen-linux-${{ matrix.env }}
       - name: Cache
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         # prevent renovate from updating this
@@ -224,7 +232,7 @@ jobs:
             export FUTILS_CXX_COMPILER=g++
             export FUTILS_C_COMPILER=gcc
           fi
-          FUTILS_DIR=./utils python build.py native Release
+          USE_CCACHE=1 FUTILS_DIR=./utils python build.py native Release
           ./tool/src2json --version
       - name: Pack artifacts
         run: |
@@ -272,6 +280,10 @@ jobs:
           nm $LIBCPP/libc++.1.dylib | c++filt
           echo "libc++abi"
           nm $LIBCPP/libc++abi.1.dylib | c++filt
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@d62db5f07c26379fc4b4e0916f098a92573c3b03 # v1.2.23
+        with:
+          key: brgen-macos
       - name: Cache
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         # prevent renovate from updating this
@@ -301,7 +313,7 @@ jobs:
           export FUTILS_CXX_COMPILER=$PREFIX/bin/clang++
           export FUTILS_C_COMPILER=$PREFIX/bin/clang
           export LDFLAGS="-L$PREFIX/lib/c++ -L$PREFIX/lib/unwind -lunwind -Wl,-rpath,$PREFIX/lib/c++"
-          FUTILS_DIR=./utils python build.py native Release
+          USE_CCACHE=1 FUTILS_DIR=./utils python build.py native Release
           ./tool/src2json --version
       - name: Pack artifacts
         run: |
@@ -338,6 +350,10 @@ jobs:
         with:
           version: latest
           platform: x64
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@d62db5f07c26379fc4b4e0916f098a92573c3b03 # v1.2.23
+        with:
+          key: brgen-windows
       - name: Cache
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         id: cache_windows
@@ -361,6 +377,7 @@ jobs:
       - name: Build
         shell: pwsh
         run: |
+          $env:USE_CCACHE = "1"
           $env:FUTILS_DIR = "$pwd\utils"
           python build.py native Release
           .\tool\src2json.exe --version
@@ -433,6 +450,10 @@ jobs:
       - name: Install Cross Compiler
         run: |
           sudo apt-get update && sudo apt-get install -y g++-aarch64-linux-gnu
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@d62db5f07c26379fc4b4e0916f098a92573c3b03 # v1.2.23
+        with:
+          key: brgen-arm-linux
       - name: Cache
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         if: (!startsWith(github.ref , 'refs/heads/renovate/')) && (!startsWith(github.ref , 'refs/heads/dependabot/'))
@@ -460,7 +481,7 @@ jobs:
           export FUTILS_CXX_COMPILER=aarch64-linux-gnu-g++
           export FUTILS_C_COMPILER=aarch64-linux-gnu-gcc
           export CC=$FUTILS_C_COMPILER
-          FUTILS_DIR=./utils python build.py native Release
+          USE_CCACHE=1 FUTILS_DIR=./utils python build.py native Release
       - name: Pack artifacts
         run: |
           mkdir -p artifacts
@@ -495,6 +516,10 @@ jobs:
         uses: nttld/setup-ndk@ed92fe6cadad69be94a966a7ee3271275e62f779 # v1.6.0
         with:
           ndk-version: r26b
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@d62db5f07c26379fc4b4e0916f098a92573c3b03 # v1.2.23
+        with:
+          key: brgen-android
       - name: Cache
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         if: (!startsWith(github.ref , 'refs/heads/renovate/')) && (!startsWith(github.ref , 'refs/heads/dependabot/'))
@@ -524,7 +549,7 @@ jobs:
           export FUTILS_CXX_COMPILER=$BASE_PATH/bin/aarch64-linux-android21-clang++
           export FUTILS_C_COMPILER=$BASE_PATH/bin/aarch64-linux-android21-clang
           export CC=$FUTILS_C_COMPILER
-          FUTILS_DIR=./utils python build.py native Release
+          USE_CCACHE=1 FUTILS_DIR=./utils python build.py native Release
           LIBCPP_SHARED=$BASE_PATH/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so
           cp $LIBCPP_SHARED ./tool
       - name: Pack artifacts
@@ -620,6 +645,10 @@ jobs:
       - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
           go-version: "1.26"
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@d62db5f07c26379fc4b4e0916f098a92573c3b03 # v1.2.23
+        with:
+          key: brgen-wasm-${{ matrix.env }}
       - name: Cache
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         if: (!startsWith(github.ref , 'refs/heads/renovate/')) && (!startsWith(github.ref , 'refs/heads/dependabot/'))
@@ -657,7 +686,7 @@ jobs:
           else
             MODE=Debug
           fi
-          EMSDK_DIR=$EMSDK/ FUTILS_DIR=./utils python build.py wasm $MODE
+          USE_CCACHE=1 EMSDK_DIR=$EMSDK/ FUTILS_DIR=./utils python build.py wasm $MODE
       - name: Upload WASM lib
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

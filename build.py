@@ -42,6 +42,16 @@ INSTALL_PREFIX = os.getenv(
 )
 PARALLEL_BUILD = os.getenv("PARALLEL_BUILD", build_config.get("PARALLEL_BUILD", ""))
 
+USE_CCACHE = os.getenv("USE_CCACHE", build_config.get("USE_CCACHE", ""))
+ccache_args = []
+if USE_CCACHE:
+    import shutil
+    if shutil.which("ccache"):
+        ccache_args = ["-D", "CMAKE_C_COMPILER_LAUNCHER=ccache", "-D", "CMAKE_CXX_COMPILER_LAUNCHER=ccache"]
+        print("Using ccache")
+    else:
+        print("USE_CCACHE is set but ccache is not found in PATH")
+
 CXX_COMPILER = os.getenv("FUTILS_CXX_COMPILER") or "clang++"
 C_COMPILER = os.getenv("FUTILS_C_COMPILER") or "clang"
 
@@ -189,12 +199,12 @@ def build_native():
             f"-DCMAKE_BUILD_TYPE={BUILD_TYPE}",
             "-S", ".",
             "-B", BUILD_DIR,
-        ],
+        ] + ccache_args,
         check=True,
         stdout=sys.stdout,
         stderr=sys.stderr,
     )
-    ninja_cmd = ["ninja", "-C", BUILD_DIR] 
+    ninja_cmd = ["ninja", "-C", BUILD_DIR]
     if PARALLEL_BUILD:
         ninja_cmd += ["-j", str(PARALLEL_BUILD)]
     if TARGET:
@@ -221,9 +231,15 @@ def build_wasm():
             parallel = f" -j {PARALLEL_BUILD}" if PARALLEL_BUILD else ""
             if TARGET:
                 parallel += f" {TARGET}"
+            ccache_str = (
+                ' "-DCMAKE_C_COMPILER_LAUNCHER=ccache" "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"'
+                if ccache_args
+                else ""
+            )
             cmd_run(
                 f'emcmake cmake -G Ninja "-DCMAKE_BUILD_TYPE={BUILD_TYPE}"'
-                f' "-DCMAKE_INSTALL_PREFIX={INSTALL_PREFIX}/web/dev/src" -S . -B {BUILD_DIR}',
+                f' "-DCMAKE_INSTALL_PREFIX={INSTALL_PREFIX}/web/dev/src" -S . -B {BUILD_DIR}'
+                f"{ccache_str}",
                 check=True, stdout=sys.stdout, stderr=sys.stderr,
             )
             cmd_run(
@@ -245,7 +261,7 @@ def build_wasm():
                     f"-DCMAKE_INSTALL_PREFIX={INSTALL_PREFIX}/web/dev/src",
                     "-S", ".",
                     "-B", BUILD_DIR,
-                ],
+                ] + ccache_args,
                 check=True, stdout=sys.stdout, stderr=sys.stderr,
             )
             ninja_cmd = ["ninja", "-C", BUILD_DIR]
