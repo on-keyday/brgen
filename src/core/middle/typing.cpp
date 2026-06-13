@@ -1197,10 +1197,26 @@ namespace brgen::middle {
             }
             std::shared_ptr<ast::Member> stmt;
             std::shared_ptr<ast::GenericType> via_generic;
-            if (auto union_ = lookup_union(selector->target->expr_type)) {
-                error(selector->target->loc, "union type is not supported yet").report();
+            auto target_type = selector->target->expr_type;
+            if (auto union_ = lookup_union(target_type)) {
+                // Member access through a union type, e.g. a conditionally-present
+                // field (`if cond: size :Varint` accessed as `x.size.value`) or a
+                // value produced by a conditional/ternary branch. Resolve the
+                // member via the union's common type -- the type shared by all
+                // present candidates. Whether the member is actually available at
+                // runtime is the format author's responsibility (typically guarded
+                // with `available(...)`); the union's conditions stay recoverable
+                // from the target's expr_type for downstream passes.
+                typing_union_type(union_.get());
+                auto common = union_->common_type;
+                if (!common || !lookup_struct(common)) {
+                    error(selector->target->loc,
+                          "member access through union type is only supported when its present candidates share a common struct type")
+                        .report();
+                }
+                target_type = common;
             }
-            else if (auto type = lookup_struct(selector->target->expr_type, &via_generic)) {
+            if (auto type = lookup_struct(target_type, &via_generic)) {
                 stmt = type->lookup(selector->member->ident);
                 if (!stmt) {
                     warnings.warning(selector->member->loc, "member ", selector->member->ident, " is not defined");

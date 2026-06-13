@@ -1,0 +1,172 @@
+config.url = "https://github.com/apache/thrift/blob/master/doc/specs/thrift-compact-protocol.md"
+
+fn zigzagEncode64(x :i64) -> u64:
+    return u64((x << 1) ^ (x >> 63))
+
+fn zigzagDecode64(x :u64) -> i64:
+    return i64(x >> 1) ^ -i64(x & 1) 
+
+fn zigzagEncode32(x :i32) -> u32:
+    return u32((x << 1) ^ (x >> 31))
+
+fn zigzagDecode32(x :u32) -> i32:
+    return i32(x >> 1) ^ -i32(x & 1) 
+
+format Varint:
+    len :u8
+    value :u64
+
+    fn decode():
+        value = 0
+        len = 0
+        for:
+            len <= 9
+            v := input.get()
+            value |= u64(v & 0x7f) << (7 * len)
+            len += 1
+            if v < 0x80:
+                return
+      
+
+    fn encode():
+        value_copy := value
+        counter := 0
+        for:
+            v := u8(value_copy & 0x7f)
+            value_copy = value_copy >> 7
+            if value_copy == 0 && (len == 0 || counter + 1 >= len):
+                output.put(v)
+                return
+            output.put(v | 0x80)
+            counter += 1
+
+format Binary:
+    len :Varint
+    data :[len.value]u8
+
+utf8 ::= config.import("utf8.bgn")
+
+format String:
+    value :Binary 
+    utf8.isUTF8(value.data) == true
+
+format Message:
+    protocol_id :u8(0x82)
+    message_type :u3 
+    version :u5(1)
+    sequence_id :Varint # not zigzagged
+    name :String
+
+enum FieldType:
+    :u4 
+    Stop = 0
+    BoolTrue = 1
+    BoolFalse = 2
+    Byte = 3
+    I16 = 4
+    I32 = 5
+    I64 = 6
+    Double = 7
+    Binary = 8
+    List = 9
+    Set = 10
+    Map = 11
+    Struct = 12
+    UUID = 13
+
+enum ElementType:
+    :u4 
+    Bool1 = 1
+    Bool2 = 2
+    Byte = 3
+    I16 = 4
+    I32 = 5
+    I64 = 6
+    Double = 7
+    Binary = 8
+    List = 9
+    Set = 10
+    Map = 11
+    Struct = 12
+    UUID = 13
+
+format FieldHeader:
+    field_id_delta :u4 
+    field_type :FieldType
+    if field_id_delta == 0 && field_type != FieldType.Stop:
+        field_id :Varint # zigzagged i16 
+
+format ListOrSetHeader:
+    size_bit :u4 
+    element_type :ElementType
+    if size_bit == 0b1111:
+        size :Varint
+
+    fn get_size() -> u64:
+        if available(size):
+            return size.value
+        else:
+            return size_bit
+
+format MapHeader:
+    size :Varint 
+    if size.value > 0:
+        key_type :ElementType
+        value_type :ElementType
+    else:
+        size.len == 1 # empty map; key/value types are omitted        
+
+format ListOrSet:
+    header :ListOrSetHeader
+    elements :[header.get_size()]format:
+        match header.element_type: # TODO: currently, format's has separated contexts
+            ElementType.Bool1, ElementType.Bool2 => value :u8 
+            ElementType.Byte => value :u8 
+            ElementType.I16 => value :Varint # zigzagged i16
+            ElementType.I32 => value :Varint # zigzagged i32
+            ElementType.I64 => value :Varint # zigzagged i64
+            ElementType.Double => value :fl64 # IEEE 754 double-precision binary format
+            ElementType.Binary => value :Binary
+            ElementType.List, ElementType.Set => value :ListOrSet
+            ElementType.Map => value :Map
+            ElementType.Struct => value :Struct
+            ElementType.UUID => value :[16]u8
+
+format Map:
+    header :MapHeader
+    entries :[header.size]MapEntry
+
+format Field:
+    header :FieldHeader
+    match header.field_type:
+        FieldType.BoolTrue, FieldType.BoolFalse => ..
+        FieldType.Byte => value :u8 
+        FieldType.I16 => value :Varint # zigzagged i16
+        FieldType.I32 => value :Varint # zigzagged i32
+        FieldType.I64 => value :Varint # zigzagged i64
+        FieldType.Double => value :fl64 # IEEE 754 double-precision binary format
+        FieldType.Binary => value :Binary
+        FieldType.List, FieldType.Set => value :ListOrSet
+        FieldType.Map => value :Map
+        FieldType.Struct => value :Struct
+        FieldType.UUID => value :[16]u8
+
+format Struct:
+    fields :[..]Field
+
+    fn encode():
+        for i in fields.length:
+            if i == fields.length - 1:
+                fields[i].header.field_type = FieldType.Stop
+            else:
+                fields[i].header.field_type != FieldType.Stop
+            output.put(fields[i])
+            
+
+    fn decode():
+        for:
+            field := input.get(Field)
+            if field.header.field_type == FieldType.Stop:
+                fields[fields.length] = field
+                break
+            fields[fields.length] = field

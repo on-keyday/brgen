@@ -1727,6 +1727,17 @@ namespace brgen::ast {
                     s.skip_line();
                     set_skip();
                 }
+                else if (auto prev = s.prev_token(); prev && prev->tag == lexer::Tag::line) {
+                    // The statement's terminating newline was already consumed by a
+                    // nested indent block (e.g. a field whose type is an inline
+                    // `format:` that is the last member of its struct). We are now at
+                    // the start of a fresh physical line, so the logical line is
+                    // complete. Without marking it skipped, parse_a_line would treat
+                    // the following column-0 definition (which has no `indent` token)
+                    // as a continuation of this line and misparse it as a nested
+                    // member. See example/thrift_compact_protocol.bgn.
+                    set_skip();
+                }
             };
 
             if (auto loop = s.consume_token("for")) {

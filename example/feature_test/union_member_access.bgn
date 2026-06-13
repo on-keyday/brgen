@@ -1,0 +1,26 @@
+# Feature: member access through a union (a conditionally-present struct field)
+# resolves via the union's common type. A field defined inside an `if` block has
+# a union type ({present, absent}); accessing a member of it (`size.value`) is
+# resolved through the union's common struct type. Whether the member is actually
+# present at runtime is the format author's responsibility, typically guarded with
+# `available(...)`. See typing.cpp typing_member_access.
+
+format Varint:
+    len :u8
+    value :u64
+
+format Header:
+    flag :u8
+    if flag == 1:
+        size :Varint  # conditionally present -> `size` has a union type
+
+    # guarded member access: size.value is valid inside `available(size)`
+    fn get_size() -> u64:
+        if available(size):
+            return size.value
+        else:
+            return 0
+
+format Use:
+    header :Header
+    payload :[header.get_size()]u8

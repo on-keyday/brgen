@@ -1,0 +1,33 @@
+# Regression: an inline `format:` used as the LAST member of a struct must not
+# swallow the following top-level definition. The inner indent block consumes
+# the field's terminating newline, and a column-0 definition has no indent
+# token, so the line must still be terminated (parse.cpp skip_last).
+
+# anonymous inline format as the last member
+format AnonLast:
+    only :format:
+        a :u8
+
+# array of inline format as the last member
+format ArrayInlineLast:
+    n :u8
+    items :[n]format:
+        v :u16
+
+# named inline format as the last member
+format NamedInlineLast:
+    inner :format Inner:
+        z :u32
+
+# inline format containing a match as the last member (the thrift ListOrSet shape)
+format MatchInlineLast:
+    kind :u8
+    body :format:
+        match kind:
+            1 => x :u8
+            2 => x :u16
+            .. => x :u32
+
+# a plain top-level format right after, to prove the boundary is parsed
+format After:
+    ok :u8
