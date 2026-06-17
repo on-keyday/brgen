@@ -387,6 +387,15 @@ DEFINE_VISITOR(entry_before) {
         using namespace CODEGEN_NAMESPACE;
         auto name = ctx.identifier();
         CodeWriter w;
+        // ADR 0034: an unmutated vector parameter is taken by borrow (&[T]) rather than by
+        // value (Vec<T>/Cow<'a,[T]>), avoiding needless ownership and a lifetime on the fn.
+        if (!ctx.param_decl.is_mutated() && !ctx.param_decl.is_state_variable() &&
+            ctx.get_kind(ctx.param_decl.param_type) == ebm::TypeKind::VECTOR) {
+            MAYBE(elem, ctx.get_field<"element_type">(ctx.param_decl.param_type));
+            MAYBE(elem_code, ctx.visit(elem));
+            w.write(name, ": &[", elem_code.to_writer(), "]");
+            return Result(std::move(w));
+        }
         if (ctx.param_decl.is_state_variable()) {
             w.write(name, ": &mut ", type.to_writer());
         }

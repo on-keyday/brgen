@@ -46,5 +46,13 @@ DEFINE_VISITOR(Expression_AS_ARG_before) {
             return CODE("&mut ", var.to_writer());
         }
     }
+    // ADR 0034: an unmutated vector argument is passed by borrow (&) to match the &[T]
+    // parameter chosen by param_visitor; nil/unresolved param falls through to default.
+    if (auto pd = ctx.get_field<"param_decl">(ctx.as_arg.param)) {
+        if (!pd->is_mutated() && ctx.get_kind(pd->param_type) == ebm::TypeKind::VECTOR) {
+            MAYBE(var, ctx.main_logic());
+            return CODE("&", var.to_writer());
+        }
+    }
     return pass;
 }
