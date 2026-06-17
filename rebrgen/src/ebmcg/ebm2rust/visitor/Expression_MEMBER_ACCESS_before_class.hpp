@@ -66,12 +66,7 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
         }
         return CODE(main.to_writer(), "(", args, ").unwrap()");
     }
-    // Imported-module member access: `utf8.isUTF8` refers to a crate-level decl
-    // (the imported function is emitted into this crate), so drop the module
-    // prefix and emit just the member.
-    if (ctx.get_field<"base.body.id.import_decl">(ctx.item_id)) {
-        MAYBE(member_code, ctx.visit(ctx.member));
-        return CODE(member_code.to_writer());
-    }
+    // Imported-module member access is handled language-independently in the default
+    // visitor (Expression_MEMBER_ACCESS): drop the module prefix and emit just the member.
     return pass;
 }

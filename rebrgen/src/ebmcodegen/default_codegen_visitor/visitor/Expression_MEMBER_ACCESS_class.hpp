@@ -24,6 +24,16 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS) {
     if (ctx.config().member_access_custom) {
         CALL_OR_PASS(uniq, ctx.config().member_access_custom(ctx));
     }
+    // Imported-module member access: `utf8.isUTF8` refers to a module-level decl that is
+    // emitted into the output (the imported function is generated here), so drop the module
+    // prefix and emit just the member. Language-independent, so it lives in the default
+    // visitor (was previously ebm2rust-only; see E0425 / ebm2go `undefined: Utf8`).
+    if (ctx.get_field<"base.body.id.import_decl">(ctx.item_id)) {
+        MAYBE(member_only, ctx.identifier(ctx.member));
+        CodeWriter wm;
+        wm.write(member_only);
+        return wm;
+    }
     MAYBE(base_str, ctx.visit(ctx.base));
     MAYBE(ident, ctx.identifier(ctx.member));
     CodeWriter w;
