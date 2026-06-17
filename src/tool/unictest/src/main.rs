@@ -45,6 +45,9 @@ struct Args {
     #[arg(long, help("target input"),action = clap::ArgAction::Append)]
     target_input: Vec<String>,
 
+    #[arg(long, help("target group (filter inputs by the group name of the file that loaded them)"),action = clap::ArgAction::Append)]
+    target_group: Vec<String>,
+
     #[arg(long,help("test output json file path, if specified, test results will be saved in this file in JSON format"))]
     output_json: Option<String>,
 
@@ -94,11 +97,17 @@ pub struct TestInput {
     pub failure_case: bool,
     // binary is actually hex string file
     pub hex: bool,
+    // optional group name, set from the {"file": ..., "group": ...} reference that loaded this input
+    #[serde(default)]
+    pub group: Option<String>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct TestFile {
     pub file: String,
+    // optional group name applied to every input loaded from this file (used by --target-group)
+    #[serde(default)]
+    pub group: Option<String>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -110,9 +119,19 @@ pub enum RunnerConfig {
 
 #[derive(Deserialize, Clone, Debug)]
 #[serde(untagged)]
-pub enum InputConfig {
-    TestInput(Vec<TestInput>),
+pub enum InputElem {
+    TestInput(TestInput),
     File(TestFile),
+}
+
+#[derive(Deserialize, Clone, Debug)]
+#[serde(untagged)]
+pub enum InputConfig {
+    // single {"file": ...} reference (kept first so a bare object never matches the array variant)
+    File(TestFile),
+    // an array whose elements are each either an inline input or a {"file": ...} reference.
+    // also subsumes the old inline `[{name,...}, ...]` form (every element is then a TestInput).
+    Elems(Vec<InputElem>),
 }
 
 #[derive(Deserialize, Clone)]
@@ -123,6 +142,17 @@ pub struct TestConfig {
     pub runners: Vec<RunnerConfig>,
     // test input binary file
     pub inputs: InputConfig,
+}
+
+// Load a single input file ({"file": ...} reference) into a list of TestInput.
+// The referenced file holds a flat JSON array of inputs (same format as before).
+fn load_input_file(file: &TestFile, current_dir: &str) -> anyhow::Result<Vec<TestInput>> {
+    let input_file = file.file.replace("$WORK_DIR", current_dir);
+    let input_config_str = fs::read_to_string(Path::new(&input_file))?;
+    let mut d2 = serde_json::Deserializer::from_str(&input_config_str);
+    let actual_input: Vec<TestInput> = Vec::<TestInput>::deserialize(&mut d2)?;
+    println!("Loaded input config from file {}", input_file);
+    Ok(actual_input)
 }
 
 fn compile_hex(input: Vec<u8>) -> anyhow::Result<Vec<u8>> {
@@ -779,6 +809,7 @@ async fn run_tests(
                         .env("UNICTEST_BINARY_FILE", &input_path)
                         .env("UNICTEST_INPUT_NAME", &input.name)
                         .env("UNICTEST_INPUT_FORMAT", &input.format_name)
+                        .env("UNICTEST_INPUT_GROUP", input.group.as_deref().unwrap_or(""))
                         .env(
                             "UNICTEST_FAILURE_CASE",
                             if input.failure_case { "1" } else { "0" },
@@ -990,25 +1021,39 @@ async fn main() -> anyhow::Result<()> {
         .collect::<Result<Vec<_>, _>>()?;
     // replace $WORK_DIR in binary and source paths
     let inputs = match test_config.inputs {
-        InputConfig::TestInput(input) => input,
-        InputConfig::File(file) => {
-            // replace $WORK_DIR in file path
-            let input_file = file.file.replace("$WORK_DIR", &current_dir);
-            let input_config_str = fs::read_to_string(Path::new(&input_file))?;
-            let mut d2 = serde_json::Deserializer::from_str(&input_config_str);
-            let actual_input: Vec<TestInput> = Vec::<TestInput>::deserialize(&mut d2)?;
-            println!("Loaded input config from file {}", input_file);
-            actual_input
+        InputConfig::File(file) => load_input_file(&file, &current_dir)?,
+        InputConfig::Elems(elems) => {
+            let mut all = Vec::new();
+            for elem in elems {
+                match elem {
+                    InputElem::TestInput(input) => {
+                        all.push(input);
+                    }
+                    InputElem::File(file) => {
+                        let mut loaded = load_input_file(&file, &current_dir)?;
+                        if file.group.is_some() {
+                            for input in loaded.iter_mut() {
+                                input.group = file.group.clone();
+                            }
+                        }
+                        all.append(&mut loaded);
+                    }
+                }
+            }
+            all
         }
     };
     let inputs = inputs
         .into_iter()
         .filter(|input| {
-            if parsed.target_input.is_empty() {
-                true
-            } else {
-                parsed.target_input.contains(&input.name)
-            }
+            let name_ok =
+                parsed.target_input.is_empty() || parsed.target_input.contains(&input.name);
+            let group_ok = parsed.target_group.is_empty()
+                || input
+                    .group
+                    .as_ref()
+                    .map_or(false, |g| parsed.target_group.contains(g));
+            name_ok && group_ok
         })
         .map(|mut input| {
             input.binary = input.binary.replace("$WORK_DIR", &current_dir);
