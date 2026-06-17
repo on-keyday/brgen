@@ -676,7 +676,15 @@ namespace ebmgen {
                     if (element->ident->ident == "encode" || element->ident->ident == "decode") {
                         continue;
                     }
+                    // Route through the visited cache (keyed by {node, generate_type}, here Normal)
+                    // so the same function isn't re-converted when this struct is built more than
+                    // once (e.g. an imported module reached both as IMPORT_MODULE and as a struct).
+                    if (auto v = ctx.state().is_visited(element)) {
+                        append(methods_block, *v);
+                        continue;
+                    }
                     MAYBE(func_id, ctx.repository().new_statement_id());
+                    ctx.state().add_visited_node(element, func_id);
                     MAYBE(func_decl, ctx.get_statement_converter().convert_function_decl(func_id, ast::cast_to<ast::Function>(element), GenerateType::Normal, ebm::StatementRef{}));
                     func_decl.attribute.is_user_defined(true);
                     ebm::StatementBody func_decl_body;
@@ -1210,6 +1218,10 @@ namespace ebmgen {
     }
 
     expected<void> StatementConverter::convert_statement_impl(const std::shared_ptr<ast::Import>& node, ebm::StatementRef id, ebm::StatementBody& body) {
+        // An import is generate-type-independent. Pin to Normal so the imported
+        // program (and its functions) are converted/cached once, rather than once
+        // per Normal/Encode/Decode context (the visited cache is keyed by generate_type).
+        const auto _mode = ctx.state().set_current_generate_type(GenerateType::Normal);
         body.kind = ebm::StatementKind::IMPORT_MODULE;
         ebm::ImportDecl import_decl;
         EBMA_ADD_STRING(module_name_ref, node->path);
@@ -1319,6 +1331,9 @@ namespace ebmgen {
             }
             EBMA_ADD_IDENTIFIER(name_ref, name_ident->ident);
             if (auto import_ = ast::as<ast::Import>(node->right)) {
+                // see convert_statement_impl(ast::Import): pin to Normal so the
+                // imported program is converted/cached once, not per generate_type.
+                const auto _mode = ctx.state().set_current_generate_type(GenerateType::Normal);
                 body.kind = ebm::StatementKind::IMPORT_MODULE;
                 EBMA_ADD_STRING(path_ref, import_->path);
                 ebm::ImportDecl import_decl;

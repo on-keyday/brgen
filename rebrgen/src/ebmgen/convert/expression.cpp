@@ -568,7 +568,29 @@ namespace ebmgen {
             return unexpect_error("Unsupported builtin member function '{}' for type '{}'", member->ident, node_type_to_string(node->target->expr_type->node_type));
         }
         auto temporary = ctx.state().set_self_ref(std::nullopt);
+        // If the base resolves to an imported module, the member is a generate-type-
+        // independent module-level declaration (e.g. a function). Pin to Normal so it is
+        // converted/cached once rather than once per Normal/Encode/Decode context
+        // (the visited cache is keyed by generate_type).
+        GenerateType member_gen = ctx.state().get_current_generate_type();
+        {
+            MAYBE(base_expr, ctx.repository().get_expression(base_ref));
+            if (base_expr.body.kind == ebm::ExpressionKind::IDENTIFIER) {
+                if (auto wid = base_expr.body.id()) {
+                    auto sref = from_weak(*wid);
+                    if (!is_nil(sref)) {
+                        if (auto st = ctx.repository().get_statement(sref)) {
+                            if (st->body.kind == ebm::StatementKind::IMPORT_MODULE) {
+                                member_gen = GenerateType::Normal;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        auto member_scope = ctx.state().set_current_generate_type(member_gen);
         EBMA_CONVERT_EXPRESSION(member_ref, node->member);
+        member_scope.execute();
         body.base(base_ref);
         body.member(member_ref);
         return {};
