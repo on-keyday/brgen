@@ -178,13 +178,35 @@ namespace ebmgen {
     }
 
     expected<ebm::StatementBody> assert_statement_body(ConverterContext& ctx, ebm::ExpressionRef condition) {
-        // TODO: add more specific error message
-        EBMA_ADD_STRING(error_msg, "Assertion failed");
-        EBM_ERROR_REPORT(error_report, error_msg, {});
         EBMU_BOOL_TYPE(bool_type);
         EBM_UNARY_OP(not_condition, ebm::UnaryOp::logical_not, bool_type, condition);
-        EBM_IF_STATEMENT(if_stmt, not_condition, error_report, {});
 
+        // The failure action of an assertion depends on the surrounding function context.
+        ebm::StatementRef then_stmt;
+        if (ctx.state().get_current_generate_type() == ebm::GenerateType::Normal) {
+            // Pure-function context: there is no encoder/decoder error channel here, so an
+            // assertion failure must yield the function's return value. Return the default
+            // (failure) value of the return type (e.g. `false` for a bool predicate like isUTF8).
+            auto ret_type = ctx.state().get_current_function_return_type();
+            MAYBE(ret_type_body, ctx.repository().get_type(ret_type));
+            if (ret_type_body.body.kind == ebm::TypeKind::VOID) {
+                // A void-returning normal function has no value with which to signal failure.
+                // Not supported yet; write an explicit `if (!cond): return` instead.
+                return unexpect_error("assert in a void-returning (non-coder) function is not supported yet");
+            }
+            EBM_DEFAULT_VALUE(default_value, ret_type);
+            EBM_RETURN(return_stmt, default_value, ctx.state().get_current_function_id());
+            then_stmt = return_stmt;
+        }
+        else {
+            // Encoder/decoder context: report an error on assertion failure.
+            // TODO: add more specific error message
+            EBMA_ADD_STRING(error_msg, "Assertion failed");
+            EBM_ERROR_REPORT(error_report, error_msg, {});
+            then_stmt = error_report;
+        }
+
+        EBM_IF_STATEMENT(if_stmt, not_condition, then_stmt, {});
         return make_assert_statement(condition, if_stmt);
     }
 
