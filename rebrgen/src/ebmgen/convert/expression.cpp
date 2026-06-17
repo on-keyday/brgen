@@ -473,6 +473,19 @@ namespace ebmgen {
         }
         EBMA_CONVERT_EXPRESSION(left_ref, node->left);
         EBMA_CONVERT_EXPRESSION(right_ref, node->right);
+        // Range membership `x == (a..=b)`: route through convert_equal so it becomes a
+        // RANGE_EQUAL (lowered to a<=x && x<=b). Only when one side is a RANGE; plain
+        // equality keeps the normal cast + BINARY_OP path below.
+        if (node->op == ast::BinaryOp::equal) {
+            MAYBE(le, ctx.repository().get_expression(left_ref));
+            MAYBE(re, ctx.repository().get_expression(right_ref));
+            if (le.body.kind == ebm::ExpressionKind::RANGE || re.body.kind == ebm::ExpressionKind::RANGE) {
+                MAYBE(eq_ref, convert_equal(left_ref, right_ref));
+                MAYBE(eq_expr, ctx.repository().get_expression(eq_ref));
+                body = eq_expr.body;
+                return {};
+            }
+        }
         MAYBE(bop, convert_binary_op(node->op));
         MAYBE(casted, insert_binary_op_cast(ctx, bop, body.type, left_ref, right_ref));
         left_ref = casted.first;
@@ -841,7 +854,11 @@ namespace ebmgen {
                         ref = greater;
                     }
                 }
-                return ref;
+                // Keep the range-membership meaning in the IR (RANGE_EQUAL) with the
+                // expanded a<=x && x<=b stashed in lowered_expr (see ADR; backends may
+                // emit a native range check or fall back to the lowered form).
+                EBM_RANGE_EQUAL(range_eq, bool_type, b, a, ref);
+                return range_eq;
             }
             else if (auto start = B.body.start()) {
                 return convert_equal_impl(ctx, b, a, B, A);

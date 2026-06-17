@@ -718,6 +718,10 @@ namespace ebm2rmw {
     template<typename Result = Result, typename UserContext,typename TypeContext>
     expected<Result> traverse_children_Expression_AS_ARG(UserContext&& ctx,TypeContext&& type_ctx);
     template<typename Result = Result,typename Context>
+    expected<Result> dispatch_Expression_RANGE_EQUAL(Context&& ctx,const ebm::Expression& in,ebm::ExpressionRef alias_ref = {});
+    template<typename Result = Result, typename UserContext,typename TypeContext>
+    expected<Result> traverse_children_Expression_RANGE_EQUAL(UserContext&& ctx,TypeContext&& type_ctx);
+    template<typename Result = Result,typename Context>
     expected<Result> dispatch_Expression(Context&& ctx,const ebm::Expression& in,ebm::ExpressionRef alias_ref = {});
     template<typename Result = Result, typename Context>
     expected<Result> dispatch_Expression_default(Context&& ctx,const ebm::Expression& in,ebm::ExpressionRef alias_ref = {}) {
@@ -832,6 +836,9 @@ namespace ebm2rmw {
             }
             case ebm::ExpressionKind::AS_ARG: {
                 return dispatch_Expression_AS_ARG<Result>(std::forward<Context>(ctx),in,alias_ref);
+            }
+            case ebm::ExpressionKind::RANGE_EQUAL: {
+                return dispatch_Expression_RANGE_EQUAL<Result>(std::forward<Context>(ctx),in,alias_ref);
             }
             default: {
                 return unexpect_error("Unknown Expression kind: {}", to_string(in.body.kind));
@@ -1274,6 +1281,7 @@ namespace ebm2rmw {
     struct Context_Expression_SETTER_STATUS;
     struct Context_Expression_SELF;
     struct Context_Expression_AS_ARG;
+    struct Context_Expression_RANGE_EQUAL;
     struct Context_Expression;
     struct Context_Expressions;
     struct Context_Type_INT;
@@ -4649,6 +4657,53 @@ namespace ebm2rmw {
     // Deconstruct context fields
     #define EBM2RMW_DECONSTRUCT_EXPRESSION_AS_ARG_AFTER(instance_name) \
     auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& type = instance_name.type;auto& kind = instance_name.kind;auto& as_arg = instance_name.as_arg;auto& main_logic = instance_name.main_logic;auto& result = instance_name.result;
+    struct Context_Expression_RANGE_EQUAL : ebmcodegen::util::ContextBase<Context_Expression_RANGE_EQUAL> {
+        constexpr static std::string_view context_name = "Expression_RANGE_EQUAL";
+        BaseVisitor& visitor;
+        ebm::ExpressionRef item_id;
+        const ebm::TypeRef& type;
+        const ebm::ExpressionKind& kind;
+        const ebm::LoweredExpressionRef& lowered_expr;
+        const ebm::ExpressionRef& range_expr;
+        const ebm::ExpressionRef& value;
+    };
+    struct VisitorTag_Expression_RANGE_EQUAL {};
+    // Deconstruct context fields
+    #define EBM2RMW_DECONSTRUCT_EXPRESSION_RANGE_EQUAL(instance_name) \
+    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& type = instance_name.type;auto& kind = instance_name.kind;auto& lowered_expr = instance_name.lowered_expr;auto& range_expr = instance_name.range_expr;auto& value = instance_name.value;
+    template <typename Result>
+    struct Context_Expression_RANGE_EQUAL_before : ebmcodegen::util::ContextBase<Context_Expression_RANGE_EQUAL_before<Result>> {
+        constexpr static std::string_view context_name = "Expression_RANGE_EQUAL_before";
+        BaseVisitor& visitor;
+        ebm::ExpressionRef item_id;
+        const ebm::TypeRef& type;
+        const ebm::ExpressionKind& kind;
+        const ebm::LoweredExpressionRef& lowered_expr;
+        const ebm::ExpressionRef& range_expr;
+        const ebm::ExpressionRef& value;
+        ebmcodegen::util::MainLogicWrapper<Result> main_logic;
+    };
+    struct VisitorTag_Expression_RANGE_EQUAL_before {};
+    // Deconstruct context fields
+    #define EBM2RMW_DECONSTRUCT_EXPRESSION_RANGE_EQUAL_BEFORE(instance_name) \
+    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& type = instance_name.type;auto& kind = instance_name.kind;auto& lowered_expr = instance_name.lowered_expr;auto& range_expr = instance_name.range_expr;auto& value = instance_name.value;auto& main_logic = instance_name.main_logic;
+    template <typename Result>
+    struct Context_Expression_RANGE_EQUAL_after : ebmcodegen::util::ContextBase<Context_Expression_RANGE_EQUAL_after<Result>> {
+        constexpr static std::string_view context_name = "Expression_RANGE_EQUAL_after";
+        BaseVisitor& visitor;
+        ebm::ExpressionRef item_id;
+        const ebm::TypeRef& type;
+        const ebm::ExpressionKind& kind;
+        const ebm::LoweredExpressionRef& lowered_expr;
+        const ebm::ExpressionRef& range_expr;
+        const ebm::ExpressionRef& value;
+        ebmcodegen::util::MainLogicWrapper<Result> main_logic;
+        expected<Result>& result;
+    };
+    struct VisitorTag_Expression_RANGE_EQUAL_after {};
+    // Deconstruct context fields
+    #define EBM2RMW_DECONSTRUCT_EXPRESSION_RANGE_EQUAL_AFTER(instance_name) \
+    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& type = instance_name.type;auto& kind = instance_name.kind;auto& lowered_expr = instance_name.lowered_expr;auto& range_expr = instance_name.range_expr;auto& value = instance_name.value;auto& main_logic = instance_name.main_logic;auto& result = instance_name.result;
     struct Context_Expression : ebmcodegen::util::ContextBase<Context_Expression> {
         constexpr static std::string_view context_name = "Expression";
         BaseVisitor& visitor;
@@ -6146,6 +6201,12 @@ namespace ebm2rmw {
     #define EBM2RMW_CODEGEN_CONTEXT_Expression_AS_ARG_before ebm2rmw::Context_Expression_AS_ARG_before<Result>
     #define EBM2RMW_CODEGEN_VISITOR_Expression_AS_ARG_after ebm2rmw::Visitor<ebm2rmw::UserHook<ebm2rmw::VisitorTag_Expression_AS_ARG_after>>
     #define EBM2RMW_CODEGEN_CONTEXT_Expression_AS_ARG_after ebm2rmw::Context_Expression_AS_ARG_after<Result>
+    #define EBM2RMW_CODEGEN_VISITOR_Expression_RANGE_EQUAL ebm2rmw::Visitor<ebm2rmw::UserHook<ebm2rmw::VisitorTag_Expression_RANGE_EQUAL>>
+    #define EBM2RMW_CODEGEN_CONTEXT_Expression_RANGE_EQUAL ebm2rmw::Context_Expression_RANGE_EQUAL
+    #define EBM2RMW_CODEGEN_VISITOR_Expression_RANGE_EQUAL_before ebm2rmw::Visitor<ebm2rmw::UserHook<ebm2rmw::VisitorTag_Expression_RANGE_EQUAL_before>>
+    #define EBM2RMW_CODEGEN_CONTEXT_Expression_RANGE_EQUAL_before ebm2rmw::Context_Expression_RANGE_EQUAL_before<Result>
+    #define EBM2RMW_CODEGEN_VISITOR_Expression_RANGE_EQUAL_after ebm2rmw::Visitor<ebm2rmw::UserHook<ebm2rmw::VisitorTag_Expression_RANGE_EQUAL_after>>
+    #define EBM2RMW_CODEGEN_CONTEXT_Expression_RANGE_EQUAL_after ebm2rmw::Context_Expression_RANGE_EQUAL_after<Result>
     #define EBM2RMW_CODEGEN_VISITOR_Expression_dispatch ebm2rmw::Visitor<ebm2rmw::UserHook<ebm2rmw::VisitorTag_Expression>>
     #define EBM2RMW_CODEGEN_CONTEXT_Expression_dispatch ebm2rmw::Context_Expression
     #define EBM2RMW_CODEGEN_VISITOR_Expression_dispatch_before ebm2rmw::Visitor<ebm2rmw::UserHook<ebm2rmw::VisitorTag_Expression_before>>

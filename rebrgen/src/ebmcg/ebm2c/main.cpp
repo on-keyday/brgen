@@ -5994,6 +5994,78 @@ static_assert(sizeof(ebm2c::Visitor<ebm2c::UserHook<ebm2c::VisitorTag_Expression
 template <>
 struct ebm2c::Visitor<ebm2c::UserHook<ebm2c::VisitorTag_Expression_AS_ARG_after>> {}; // Unimplemented
 #endif
+#if __has_include("visitor/Expression_RANGE_EQUAL_class.hpp")
+#define CODEGEN_VISITOR(dummy_name) ebm2c::Visitor<ebm2c::UserHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL>>
+#define CODEGEN_CONTEXT(dummy_name) Context_Expression_RANGE_EQUAL
+#include "visitor/Expression_RANGE_EQUAL_class.hpp"
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("Context_Expression_RANGE_EQUAL"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_CONTEXT(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_CONTEXT
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("ebm2c::Visitor<ebm2c::UserHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL>>"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_VISITOR(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_VISITOR
+static_assert(sizeof(ebm2c::Visitor<ebm2c::UserHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL)
+#define CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL 0
+#endif
+#else
+template <>
+struct ebm2c::Visitor<ebm2c::UserHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL>> {}; // Unimplemented
+#endif
+#if __has_include("visitor/Expression_RANGE_EQUAL_before_class.hpp")
+#define CODEGEN_VISITOR(dummy_name) ebm2c::Visitor<ebm2c::UserHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_before>>
+#define CODEGEN_CONTEXT(dummy_name) Context_Expression_RANGE_EQUAL_before<Result>
+#include "visitor/Expression_RANGE_EQUAL_before_class.hpp"
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("Context_Expression_RANGE_EQUAL_before<Result>"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_CONTEXT(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_CONTEXT
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("ebm2c::Visitor<ebm2c::UserHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_before>>"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_VISITOR(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_VISITOR
+static_assert(sizeof(ebm2c::Visitor<ebm2c::UserHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_before>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_BEFORE)
+#define CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_BEFORE 0
+#endif
+#else
+template <>
+struct ebm2c::Visitor<ebm2c::UserHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_before>> {}; // Unimplemented
+#endif
+#if __has_include("visitor/Expression_RANGE_EQUAL_after_class.hpp")
+#define CODEGEN_VISITOR(dummy_name) ebm2c::Visitor<ebm2c::UserHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_after>>
+#define CODEGEN_CONTEXT(dummy_name) Context_Expression_RANGE_EQUAL_after<Result>
+#include "visitor/Expression_RANGE_EQUAL_after_class.hpp"
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("Context_Expression_RANGE_EQUAL_after<Result>"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_CONTEXT(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_CONTEXT
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("ebm2c::Visitor<ebm2c::UserHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_after>>"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_VISITOR(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_VISITOR
+static_assert(sizeof(ebm2c::Visitor<ebm2c::UserHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_after>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_AFTER)
+#define CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_AFTER 0
+#endif
+#else
+template <>
+struct ebm2c::Visitor<ebm2c::UserHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_after>> {}; // Unimplemented
+#endif
 #if __has_include("visitor/Expression_dispatch_class.hpp")
 #define CODEGEN_VISITOR(dummy_name) ebm2c::Visitor<ebm2c::UserHook<ebm2c::VisitorTag_Expression>>
 #define CODEGEN_CONTEXT(dummy_name) Context_Expression
@@ -15657,6 +15729,99 @@ static_assert(sizeof(ebm2c::Visitor<ebm2c::UserInlinedHook<ebm2c::VisitorTag_Exp
 template <>
 struct ebm2c::Visitor<ebm2c::UserInlinedHook<ebm2c::VisitorTag_Expression_AS_ARG_after>> {}; // Unimplemented
 #endif
+#if __has_include("visitor/Expression_RANGE_EQUAL.hpp")
+// Inlined hook for Expression_RANGE_EQUAL for backward compatibility
+template <>
+struct ebm2c::Visitor<ebm2c::UserInlinedHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL>> {
+    // for backward compatibility
+    ebm2c::MergedVisitor* __legacy_compat_ptr = nullptr;
+    expected<Result> visit(Context_Expression_RANGE_EQUAL& ctx) {
+        EBM2C_DECONSTRUCT_EXPRESSION_RANGE_EQUAL(ctx);
+        auto& program_name = ctx.visitor.program_name;
+        auto& flags = ctx.visitor.flags;
+        auto& output = ctx.visitor.output;
+        auto& wm = ctx.visitor.wm;
+        auto& module_ = ctx.visitor.module_;
+        __legacy_compat_ptr = ctx.visitor.__legacy_compat_ptr;
+        // for backward compatibility
+        auto& root = wm.root;
+        auto add_writer = [&]{ return wm.add_writer(); };
+        auto get_writer = [&]{ return wm.get_writer(); };
+        using namespace ebm2c;
+        #include "visitor/Expression_RANGE_EQUAL.hpp"
+        return {};
+    }
+};
+static_assert(sizeof(ebm2c::Visitor<ebm2c::UserInlinedHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL)
+#define CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL 1
+#endif
+#else
+template <>
+struct ebm2c::Visitor<ebm2c::UserInlinedHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL>> {}; // Unimplemented
+#endif
+#if __has_include("visitor/Expression_RANGE_EQUAL_before.hpp")
+// Inlined hook for Expression_RANGE_EQUAL_before for backward compatibility
+template <>
+struct ebm2c::Visitor<ebm2c::UserInlinedHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_before>> {
+    // for backward compatibility
+    ebm2c::MergedVisitor* __legacy_compat_ptr = nullptr;
+    expected<Result> visit(Context_Expression_RANGE_EQUAL_before<Result>& ctx) {
+        EBM2C_DECONSTRUCT_EXPRESSION_RANGE_EQUAL_BEFORE(ctx);
+        auto& program_name = ctx.visitor.program_name;
+        auto& flags = ctx.visitor.flags;
+        auto& output = ctx.visitor.output;
+        auto& wm = ctx.visitor.wm;
+        auto& module_ = ctx.visitor.module_;
+        __legacy_compat_ptr = ctx.visitor.__legacy_compat_ptr;
+        // for backward compatibility
+        auto& root = wm.root;
+        auto add_writer = [&]{ return wm.add_writer(); };
+        auto get_writer = [&]{ return wm.get_writer(); };
+        using namespace ebm2c;
+        #include "visitor/Expression_RANGE_EQUAL_before.hpp"
+        return pass;
+    }
+};
+static_assert(sizeof(ebm2c::Visitor<ebm2c::UserInlinedHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_before>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_BEFORE)
+#define CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_BEFORE 1
+#endif
+#else
+template <>
+struct ebm2c::Visitor<ebm2c::UserInlinedHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_before>> {}; // Unimplemented
+#endif
+#if __has_include("visitor/Expression_RANGE_EQUAL_after.hpp")
+// Inlined hook for Expression_RANGE_EQUAL_after for backward compatibility
+template <>
+struct ebm2c::Visitor<ebm2c::UserInlinedHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_after>> {
+    // for backward compatibility
+    ebm2c::MergedVisitor* __legacy_compat_ptr = nullptr;
+    expected<Result> visit(Context_Expression_RANGE_EQUAL_after<Result>& ctx) {
+        EBM2C_DECONSTRUCT_EXPRESSION_RANGE_EQUAL_AFTER(ctx);
+        auto& program_name = ctx.visitor.program_name;
+        auto& flags = ctx.visitor.flags;
+        auto& output = ctx.visitor.output;
+        auto& wm = ctx.visitor.wm;
+        auto& module_ = ctx.visitor.module_;
+        __legacy_compat_ptr = ctx.visitor.__legacy_compat_ptr;
+        // for backward compatibility
+        auto& root = wm.root;
+        auto add_writer = [&]{ return wm.add_writer(); };
+        auto get_writer = [&]{ return wm.get_writer(); };
+        using namespace ebm2c;
+        #include "visitor/Expression_RANGE_EQUAL_after.hpp"
+        return pass;
+    }
+};
+static_assert(sizeof(ebm2c::Visitor<ebm2c::UserInlinedHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_after>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_AFTER)
+#define CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_AFTER 1
+#endif
+#else
+template <>
+struct ebm2c::Visitor<ebm2c::UserInlinedHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_after>> {}; // Unimplemented
+#endif
 #if __has_include("visitor/Expression_dispatch.hpp")
 // Inlined hook for Expression for backward compatibility
 template <>
@@ -24143,6 +24308,78 @@ static_assert(sizeof(ebm2c::Visitor<ebm2c::UserDSLHook<ebm2c::VisitorTag_Express
 #else
 template <>
 struct ebm2c::Visitor<ebm2c::UserDSLHook<ebm2c::VisitorTag_Expression_AS_ARG_after>> {}; // Unimplemented
+#endif
+#if __has_include("visitor/dsl/Expression_RANGE_EQUAL_dsl_class.hpp")
+#define CODEGEN_VISITOR(dummy_name) ebm2c::Visitor<ebm2c::UserDSLHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL>>
+#define CODEGEN_CONTEXT(dummy_name) Context_Expression_RANGE_EQUAL
+#include "visitor/dsl/Expression_RANGE_EQUAL_dsl_class.hpp"
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("Context_Expression_RANGE_EQUAL"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_CONTEXT(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_CONTEXT
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("ebm2c::Visitor<ebm2c::UserDSLHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL>>"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_VISITOR(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_VISITOR
+static_assert(sizeof(ebm2c::Visitor<ebm2c::UserDSLHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL)
+#define CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL 2
+#endif
+#else
+template <>
+struct ebm2c::Visitor<ebm2c::UserDSLHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL>> {}; // Unimplemented
+#endif
+#if __has_include("visitor/dsl/Expression_RANGE_EQUAL_before_dsl_class.hpp")
+#define CODEGEN_VISITOR(dummy_name) ebm2c::Visitor<ebm2c::UserDSLHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_before>>
+#define CODEGEN_CONTEXT(dummy_name) Context_Expression_RANGE_EQUAL_before<Result>
+#include "visitor/dsl/Expression_RANGE_EQUAL_before_dsl_class.hpp"
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("Context_Expression_RANGE_EQUAL_before<Result>"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_CONTEXT(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_CONTEXT
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("ebm2c::Visitor<ebm2c::UserDSLHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_before>>"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_VISITOR(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_VISITOR
+static_assert(sizeof(ebm2c::Visitor<ebm2c::UserDSLHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_before>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_BEFORE)
+#define CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_BEFORE 2
+#endif
+#else
+template <>
+struct ebm2c::Visitor<ebm2c::UserDSLHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_before>> {}; // Unimplemented
+#endif
+#if __has_include("visitor/dsl/Expression_RANGE_EQUAL_after_dsl_class.hpp")
+#define CODEGEN_VISITOR(dummy_name) ebm2c::Visitor<ebm2c::UserDSLHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_after>>
+#define CODEGEN_CONTEXT(dummy_name) Context_Expression_RANGE_EQUAL_after<Result>
+#include "visitor/dsl/Expression_RANGE_EQUAL_after_dsl_class.hpp"
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("Context_Expression_RANGE_EQUAL_after<Result>"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_CONTEXT(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_CONTEXT
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("ebm2c::Visitor<ebm2c::UserDSLHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_after>>"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_VISITOR(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_VISITOR
+static_assert(sizeof(ebm2c::Visitor<ebm2c::UserDSLHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_after>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_AFTER)
+#define CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_AFTER 2
+#endif
+#else
+template <>
+struct ebm2c::Visitor<ebm2c::UserDSLHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_after>> {}; // Unimplemented
 #endif
 #if __has_include("visitor/dsl/Expression_dispatch_dsl_class.hpp")
 #define CODEGEN_VISITOR(dummy_name) ebm2c::Visitor<ebm2c::UserDSLHook<ebm2c::VisitorTag_Expression>>
@@ -33807,6 +34044,99 @@ static_assert(sizeof(ebm2c::Visitor<ebm2c::UserInlinedDSLHook<ebm2c::VisitorTag_
 template <>
 struct ebm2c::Visitor<ebm2c::UserInlinedDSLHook<ebm2c::VisitorTag_Expression_AS_ARG_after>> {}; // Unimplemented
 #endif
+#if __has_include("visitor/dsl/Expression_RANGE_EQUAL_dsl.hpp")
+// Inlined hook for Expression_RANGE_EQUAL for backward compatibility
+template <>
+struct ebm2c::Visitor<ebm2c::UserInlinedDSLHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL>> {
+    // for backward compatibility
+    ebm2c::MergedVisitor* __legacy_compat_ptr = nullptr;
+    expected<Result> visit(Context_Expression_RANGE_EQUAL& ctx) {
+        EBM2C_DECONSTRUCT_EXPRESSION_RANGE_EQUAL(ctx);
+        auto& program_name = ctx.visitor.program_name;
+        auto& flags = ctx.visitor.flags;
+        auto& output = ctx.visitor.output;
+        auto& wm = ctx.visitor.wm;
+        auto& module_ = ctx.visitor.module_;
+        __legacy_compat_ptr = ctx.visitor.__legacy_compat_ptr;
+        // for backward compatibility
+        auto& root = wm.root;
+        auto add_writer = [&]{ return wm.add_writer(); };
+        auto get_writer = [&]{ return wm.get_writer(); };
+        using namespace ebm2c;
+        #include "visitor/dsl/Expression_RANGE_EQUAL_dsl.hpp"
+        return {};
+    }
+};
+static_assert(sizeof(ebm2c::Visitor<ebm2c::UserInlinedDSLHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL)
+#define CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL 3
+#endif
+#else
+template <>
+struct ebm2c::Visitor<ebm2c::UserInlinedDSLHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL>> {}; // Unimplemented
+#endif
+#if __has_include("visitor/dsl/Expression_RANGE_EQUAL_before_dsl.hpp")
+// Inlined hook for Expression_RANGE_EQUAL_before for backward compatibility
+template <>
+struct ebm2c::Visitor<ebm2c::UserInlinedDSLHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_before>> {
+    // for backward compatibility
+    ebm2c::MergedVisitor* __legacy_compat_ptr = nullptr;
+    expected<Result> visit(Context_Expression_RANGE_EQUAL_before<Result>& ctx) {
+        EBM2C_DECONSTRUCT_EXPRESSION_RANGE_EQUAL_BEFORE(ctx);
+        auto& program_name = ctx.visitor.program_name;
+        auto& flags = ctx.visitor.flags;
+        auto& output = ctx.visitor.output;
+        auto& wm = ctx.visitor.wm;
+        auto& module_ = ctx.visitor.module_;
+        __legacy_compat_ptr = ctx.visitor.__legacy_compat_ptr;
+        // for backward compatibility
+        auto& root = wm.root;
+        auto add_writer = [&]{ return wm.add_writer(); };
+        auto get_writer = [&]{ return wm.get_writer(); };
+        using namespace ebm2c;
+        #include "visitor/dsl/Expression_RANGE_EQUAL_before_dsl.hpp"
+        return pass;
+    }
+};
+static_assert(sizeof(ebm2c::Visitor<ebm2c::UserInlinedDSLHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_before>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_BEFORE)
+#define CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_BEFORE 3
+#endif
+#else
+template <>
+struct ebm2c::Visitor<ebm2c::UserInlinedDSLHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_before>> {}; // Unimplemented
+#endif
+#if __has_include("visitor/dsl/Expression_RANGE_EQUAL_after_dsl.hpp")
+// Inlined hook for Expression_RANGE_EQUAL_after for backward compatibility
+template <>
+struct ebm2c::Visitor<ebm2c::UserInlinedDSLHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_after>> {
+    // for backward compatibility
+    ebm2c::MergedVisitor* __legacy_compat_ptr = nullptr;
+    expected<Result> visit(Context_Expression_RANGE_EQUAL_after<Result>& ctx) {
+        EBM2C_DECONSTRUCT_EXPRESSION_RANGE_EQUAL_AFTER(ctx);
+        auto& program_name = ctx.visitor.program_name;
+        auto& flags = ctx.visitor.flags;
+        auto& output = ctx.visitor.output;
+        auto& wm = ctx.visitor.wm;
+        auto& module_ = ctx.visitor.module_;
+        __legacy_compat_ptr = ctx.visitor.__legacy_compat_ptr;
+        // for backward compatibility
+        auto& root = wm.root;
+        auto add_writer = [&]{ return wm.add_writer(); };
+        auto get_writer = [&]{ return wm.get_writer(); };
+        using namespace ebm2c;
+        #include "visitor/dsl/Expression_RANGE_EQUAL_after_dsl.hpp"
+        return pass;
+    }
+};
+static_assert(sizeof(ebm2c::Visitor<ebm2c::UserInlinedDSLHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_after>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_AFTER)
+#define CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_AFTER 3
+#endif
+#else
+template <>
+struct ebm2c::Visitor<ebm2c::UserInlinedDSLHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_after>> {}; // Unimplemented
+#endif
 #if __has_include("visitor/dsl/Expression_dispatch_dsl.hpp")
 // Inlined hook for Expression for backward compatibility
 template <>
@@ -42293,6 +42623,78 @@ static_assert(sizeof(ebm2c::Visitor<ebm2c::DefaultCodegenVisitorHook<ebm2c::Visi
 #else
 template <>
 struct ebm2c::Visitor<ebm2c::DefaultCodegenVisitorHook<ebm2c::VisitorTag_Expression_AS_ARG_after>> {}; // Unimplemented
+#endif
+#if __has_include("ebmcodegen/default_codegen_visitor/visitor/Expression_RANGE_EQUAL_class.hpp")
+#define CODEGEN_VISITOR(dummy_name) ebm2c::Visitor<ebm2c::DefaultCodegenVisitorHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL>>
+#define CODEGEN_CONTEXT(dummy_name) Context_Expression_RANGE_EQUAL
+#include "ebmcodegen/default_codegen_visitor/visitor/Expression_RANGE_EQUAL_class.hpp"
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("Context_Expression_RANGE_EQUAL"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_CONTEXT(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_CONTEXT
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("ebm2c::Visitor<ebm2c::DefaultCodegenVisitorHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL>>"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_VISITOR(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_VISITOR
+static_assert(sizeof(ebm2c::Visitor<ebm2c::DefaultCodegenVisitorHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL)
+#define CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL 4
+#endif
+#else
+template <>
+struct ebm2c::Visitor<ebm2c::DefaultCodegenVisitorHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL>> {}; // Unimplemented
+#endif
+#if __has_include("ebmcodegen/default_codegen_visitor/visitor/Expression_RANGE_EQUAL_before_class.hpp")
+#define CODEGEN_VISITOR(dummy_name) ebm2c::Visitor<ebm2c::DefaultCodegenVisitorHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_before>>
+#define CODEGEN_CONTEXT(dummy_name) Context_Expression_RANGE_EQUAL_before<Result>
+#include "ebmcodegen/default_codegen_visitor/visitor/Expression_RANGE_EQUAL_before_class.hpp"
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("Context_Expression_RANGE_EQUAL_before<Result>"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_CONTEXT(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_CONTEXT
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("ebm2c::Visitor<ebm2c::DefaultCodegenVisitorHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_before>>"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_VISITOR(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_VISITOR
+static_assert(sizeof(ebm2c::Visitor<ebm2c::DefaultCodegenVisitorHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_before>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_BEFORE)
+#define CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_BEFORE 4
+#endif
+#else
+template <>
+struct ebm2c::Visitor<ebm2c::DefaultCodegenVisitorHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_before>> {}; // Unimplemented
+#endif
+#if __has_include("ebmcodegen/default_codegen_visitor/visitor/Expression_RANGE_EQUAL_after_class.hpp")
+#define CODEGEN_VISITOR(dummy_name) ebm2c::Visitor<ebm2c::DefaultCodegenVisitorHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_after>>
+#define CODEGEN_CONTEXT(dummy_name) Context_Expression_RANGE_EQUAL_after<Result>
+#include "ebmcodegen/default_codegen_visitor/visitor/Expression_RANGE_EQUAL_after_class.hpp"
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("Context_Expression_RANGE_EQUAL_after<Result>"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_CONTEXT(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_CONTEXT
+#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view("ebm2c::Visitor<ebm2c::DefaultCodegenVisitorHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_after>>"))
+#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)
+PASS_TO_CHECK(CODEGEN_VISITOR(dummy_name));
+#undef TEMPORARY_CHECK_MACRO
+#undef PASS_TO_CHECK
+#undef CODEGEN_VISITOR
+static_assert(sizeof(ebm2c::Visitor<ebm2c::DefaultCodegenVisitorHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_after>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_AFTER)
+#define CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_AFTER 4
+#endif
+#else
+template <>
+struct ebm2c::Visitor<ebm2c::DefaultCodegenVisitorHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_after>> {}; // Unimplemented
 #endif
 #if __has_include("ebmcodegen/default_codegen_visitor/visitor/Expression_dispatch_class.hpp")
 #define CODEGEN_VISITOR(dummy_name) ebm2c::Visitor<ebm2c::DefaultCodegenVisitorHook<ebm2c::VisitorTag_Expression>>
@@ -51957,6 +52359,99 @@ static_assert(sizeof(ebm2c::Visitor<ebm2c::DefaultCodegenVisitorInlinedHook<ebm2
 template <>
 struct ebm2c::Visitor<ebm2c::DefaultCodegenVisitorInlinedHook<ebm2c::VisitorTag_Expression_AS_ARG_after>> {}; // Unimplemented
 #endif
+#if __has_include("ebmcodegen/default_codegen_visitor/visitor/Expression_RANGE_EQUAL.hpp")
+// Inlined hook for Expression_RANGE_EQUAL for backward compatibility
+template <>
+struct ebm2c::Visitor<ebm2c::DefaultCodegenVisitorInlinedHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL>> {
+    // for backward compatibility
+    ebm2c::MergedVisitor* __legacy_compat_ptr = nullptr;
+    expected<Result> visit(Context_Expression_RANGE_EQUAL& ctx) {
+        EBM2C_DECONSTRUCT_EXPRESSION_RANGE_EQUAL(ctx);
+        auto& program_name = ctx.visitor.program_name;
+        auto& flags = ctx.visitor.flags;
+        auto& output = ctx.visitor.output;
+        auto& wm = ctx.visitor.wm;
+        auto& module_ = ctx.visitor.module_;
+        __legacy_compat_ptr = ctx.visitor.__legacy_compat_ptr;
+        // for backward compatibility
+        auto& root = wm.root;
+        auto add_writer = [&]{ return wm.add_writer(); };
+        auto get_writer = [&]{ return wm.get_writer(); };
+        using namespace ebm2c;
+        #include "ebmcodegen/default_codegen_visitor/visitor/Expression_RANGE_EQUAL.hpp"
+        return {};
+    }
+};
+static_assert(sizeof(ebm2c::Visitor<ebm2c::DefaultCodegenVisitorInlinedHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL)
+#define CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL 5
+#endif
+#else
+template <>
+struct ebm2c::Visitor<ebm2c::DefaultCodegenVisitorInlinedHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL>> {}; // Unimplemented
+#endif
+#if __has_include("ebmcodegen/default_codegen_visitor/visitor/Expression_RANGE_EQUAL_before.hpp")
+// Inlined hook for Expression_RANGE_EQUAL_before for backward compatibility
+template <>
+struct ebm2c::Visitor<ebm2c::DefaultCodegenVisitorInlinedHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_before>> {
+    // for backward compatibility
+    ebm2c::MergedVisitor* __legacy_compat_ptr = nullptr;
+    expected<Result> visit(Context_Expression_RANGE_EQUAL_before<Result>& ctx) {
+        EBM2C_DECONSTRUCT_EXPRESSION_RANGE_EQUAL_BEFORE(ctx);
+        auto& program_name = ctx.visitor.program_name;
+        auto& flags = ctx.visitor.flags;
+        auto& output = ctx.visitor.output;
+        auto& wm = ctx.visitor.wm;
+        auto& module_ = ctx.visitor.module_;
+        __legacy_compat_ptr = ctx.visitor.__legacy_compat_ptr;
+        // for backward compatibility
+        auto& root = wm.root;
+        auto add_writer = [&]{ return wm.add_writer(); };
+        auto get_writer = [&]{ return wm.get_writer(); };
+        using namespace ebm2c;
+        #include "ebmcodegen/default_codegen_visitor/visitor/Expression_RANGE_EQUAL_before.hpp"
+        return pass;
+    }
+};
+static_assert(sizeof(ebm2c::Visitor<ebm2c::DefaultCodegenVisitorInlinedHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_before>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_BEFORE)
+#define CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_BEFORE 5
+#endif
+#else
+template <>
+struct ebm2c::Visitor<ebm2c::DefaultCodegenVisitorInlinedHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_before>> {}; // Unimplemented
+#endif
+#if __has_include("ebmcodegen/default_codegen_visitor/visitor/Expression_RANGE_EQUAL_after.hpp")
+// Inlined hook for Expression_RANGE_EQUAL_after for backward compatibility
+template <>
+struct ebm2c::Visitor<ebm2c::DefaultCodegenVisitorInlinedHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_after>> {
+    // for backward compatibility
+    ebm2c::MergedVisitor* __legacy_compat_ptr = nullptr;
+    expected<Result> visit(Context_Expression_RANGE_EQUAL_after<Result>& ctx) {
+        EBM2C_DECONSTRUCT_EXPRESSION_RANGE_EQUAL_AFTER(ctx);
+        auto& program_name = ctx.visitor.program_name;
+        auto& flags = ctx.visitor.flags;
+        auto& output = ctx.visitor.output;
+        auto& wm = ctx.visitor.wm;
+        auto& module_ = ctx.visitor.module_;
+        __legacy_compat_ptr = ctx.visitor.__legacy_compat_ptr;
+        // for backward compatibility
+        auto& root = wm.root;
+        auto add_writer = [&]{ return wm.add_writer(); };
+        auto get_writer = [&]{ return wm.get_writer(); };
+        using namespace ebm2c;
+        #include "ebmcodegen/default_codegen_visitor/visitor/Expression_RANGE_EQUAL_after.hpp"
+        return pass;
+    }
+};
+static_assert(sizeof(ebm2c::Visitor<ebm2c::DefaultCodegenVisitorInlinedHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_after>>)); // ensure included
+#if !defined(CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_AFTER)
+#define CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_AFTER 5
+#endif
+#else
+template <>
+struct ebm2c::Visitor<ebm2c::DefaultCodegenVisitorInlinedHook<ebm2c::VisitorTag_Expression_RANGE_EQUAL_after>> {}; // Unimplemented
+#endif
 #if __has_include("ebmcodegen/default_codegen_visitor/visitor/Expression_dispatch.hpp")
 // Inlined hook for Expression for backward compatibility
 template <>
@@ -59241,6 +59736,84 @@ namespace ebm2c {
         return {};
     }
     template<typename Result,typename Context>
+    expected<Result> dispatch_Expression_RANGE_EQUAL(Context&& ctx,const ebm::Expression& in,ebm::ExpressionRef alias_ref){
+        auto& type = in.body.type;
+        auto& kind = in.body.kind;
+        if (!in.body.lowered_expr()) {
+            return unexpect_error("Unexpected null pointer for ExpressionBody::lowered_expr");
+        }
+        auto& lowered_expr = *in.body.lowered_expr();
+        if (!in.body.range_expr()) {
+            return unexpect_error("Unexpected null pointer for ExpressionBody::range_expr");
+        }
+        auto& range_expr = *in.body.range_expr();
+        if (!in.body.value()) {
+            return unexpect_error("Unexpected null pointer for ExpressionBody::value");
+        }
+        auto& value = *in.body.value();
+        auto main_logic = [&]() -> expected<Result>{
+            Context_Expression_RANGE_EQUAL new_ctx{
+                .visitor = get_visitor_arg_from_context(ctx),
+                .item_id = is_nil(alias_ref) ? in.id : alias_ref,
+                .type = type,
+                .kind = kind,
+                .lowered_expr = lowered_expr,
+                .range_expr = range_expr,
+                .value = value,
+            };
+            return get_visitor_from_context<Result>(ctx,new_ctx).visit(new_ctx);
+        };
+        Context_Expression_RANGE_EQUAL_before<Result> before_ctx{
+            .visitor = get_visitor_arg_from_context(ctx),
+            .item_id = is_nil(alias_ref) ? in.id : alias_ref,
+            .type = type,
+            .kind = kind,
+            .lowered_expr = lowered_expr,
+            .range_expr = range_expr,
+            .value = value,
+            .main_logic = main_logic,
+        };
+        expected<Result> before_result = get_visitor_from_context<Result>(ctx,before_ctx).visit(before_ctx);
+        CODEGEN_MAY_HIJACK(before_result);
+        expected<Result> main_result = main_logic();
+        Context_Expression_RANGE_EQUAL_after<Result> after_ctx{
+            .visitor = get_visitor_arg_from_context(ctx),
+            .item_id = is_nil(alias_ref) ? in.id : alias_ref,
+            .type = type,
+            .kind = kind,
+            .lowered_expr = lowered_expr,
+            .range_expr = range_expr,
+            .value = value,
+            .main_logic = main_logic,
+            .result = main_result,
+        };
+        expected<Result> after_result = get_visitor_from_context<Result>(ctx,after_ctx).visit(after_ctx);
+        CODEGEN_MAY_HIJACK(after_result);
+        return main_result;
+    }
+    template<typename Result, typename UserContext,typename TypeContext>
+    expected<Result> traverse_children_Expression_RANGE_EQUAL(UserContext&& ctx,TypeContext&& type_ctx) {
+        if (!is_nil(type_ctx.type)) {
+            auto result_type = visit_Object<Result>(std::forward<UserContext>(ctx),type_ctx.type);
+            if (!result_type) {
+                return unexpect_error(std::move(result_type.error()));
+            }
+        }
+        if (!is_nil(type_ctx.range_expr)) {
+            auto result_range_expr = visit_Object<Result>(std::forward<UserContext>(ctx),type_ctx.range_expr);
+            if (!result_range_expr) {
+                return unexpect_error(std::move(result_range_expr.error()));
+            }
+        }
+        if (!is_nil(type_ctx.value)) {
+            auto result_value = visit_Object<Result>(std::forward<UserContext>(ctx),type_ctx.value);
+            if (!result_value) {
+                return unexpect_error(std::move(result_value.error()));
+            }
+        }
+        return {};
+    }
+    template<typename Result,typename Context>
     expected<Result> dispatch_Expression(Context&& ctx,const ebm::Expression& in,ebm::ExpressionRef alias_ref){
         auto main_logic = [&]() -> expected<Result>{
             Context_Expression new_ctx{
@@ -60655,6 +61228,9 @@ namespace ebm2c {
         }
         else if constexpr (std::is_same_v<TypeContextType,Context_Expression_AS_ARG> || std::is_same_v<TypeContextType,Context_Expression_AS_ARG_before<Result>> || std::is_same_v<TypeContextType,Context_Expression_AS_ARG_after<Result>>) {
             return traverse_children_Expression_AS_ARG<Result>(std::forward<UserContext>(uctx),std::forward<TypeContext>(type_ctx));
+        }
+        else if constexpr (std::is_same_v<TypeContextType,Context_Expression_RANGE_EQUAL> || std::is_same_v<TypeContextType,Context_Expression_RANGE_EQUAL_before<Result>> || std::is_same_v<TypeContextType,Context_Expression_RANGE_EQUAL_after<Result>>) {
+            return traverse_children_Expression_RANGE_EQUAL<Result>(std::forward<UserContext>(uctx),std::forward<TypeContext>(type_ctx));
         }
         else if constexpr (std::is_same_v<TypeContextType,Context_Expression> || std::is_same_v<TypeContextType,Context_Expression_before<Result>> || std::is_same_v<TypeContextType,Context_Expression_after<Result>>) {
             return traverse_children_Expression<Result>(std::forward<UserContext>(uctx),std::forward<TypeContext>(type_ctx));
@@ -63230,6 +63806,36 @@ namespace ebm2c {
     };
     #if !defined(CODEGEN_EXPECTED_PRIORITY_EXPRESSION_AS_ARG_AFTER)
     #define CODEGEN_EXPECTED_PRIORITY_EXPRESSION_AS_ARG_AFTER 6
+    #endif
+    template <>
+    struct Visitor<GeneratorDefaultHook<VisitorTag_Expression_RANGE_EQUAL>> {
+        template<typename Context>
+        auto visit(Context&& ctx) {
+            return visit_unimplemented(get_visitor_from_context<void>(ctx,ctx),"Expression_RANGE_EQUAL",get_id(ctx.item_id));
+        }
+    };
+    #if !defined(CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL)
+    #define CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL 6
+    #endif
+    template <>
+    struct Visitor<GeneratorDefaultHook<VisitorTag_Expression_RANGE_EQUAL_before>> {
+        template<typename Context>
+        auto visit(Context&& ctx) {
+            return pass;
+        }
+    };
+    #if !defined(CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_BEFORE)
+    #define CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_BEFORE 6
+    #endif
+    template <>
+    struct Visitor<GeneratorDefaultHook<VisitorTag_Expression_RANGE_EQUAL_after>> {
+        template<typename Context>
+        auto visit(Context&& ctx) {
+            return pass;
+        }
+    };
+    #if !defined(CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_AFTER)
+    #define CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_AFTER 6
     #endif
     template <>
     struct Visitor<GeneratorDefaultHook<VisitorTag_Expression>> {
@@ -72259,6 +72865,105 @@ namespace ebm2c {
                 static_assert(CODEGEN_EXPECTED_PRIORITY_EXPRESSION_AS_ARG_AFTER>= 0 && CODEGEN_EXPECTED_PRIORITY_EXPRESSION_AS_ARG_AFTER < 7, "No suitable visitor hook found for Expression_AS_ARG_after");
             }
         }
+        Visitor<UserHook<VisitorTag_Expression_RANGE_EQUAL>> visitor_Expression_RANGE_EQUAL_UserHook;
+        Visitor<UserInlinedHook<VisitorTag_Expression_RANGE_EQUAL>> visitor_Expression_RANGE_EQUAL_UserInlinedHook;
+        Visitor<UserDSLHook<VisitorTag_Expression_RANGE_EQUAL>> visitor_Expression_RANGE_EQUAL_UserDSLHook;
+        Visitor<UserInlinedDSLHook<VisitorTag_Expression_RANGE_EQUAL>> visitor_Expression_RANGE_EQUAL_UserInlinedDSLHook;
+        Visitor<DefaultCodegenVisitorHook<VisitorTag_Expression_RANGE_EQUAL>> visitor_Expression_RANGE_EQUAL_DefaultCodegenVisitorHook;
+        Visitor<DefaultCodegenVisitorInlinedHook<VisitorTag_Expression_RANGE_EQUAL>> visitor_Expression_RANGE_EQUAL_DefaultCodegenVisitorInlinedHook;
+        Visitor<GeneratorDefaultHook<VisitorTag_Expression_RANGE_EQUAL>> visitor_Expression_RANGE_EQUAL_GeneratorDefaultHook;
+        auto& get_visitor_Expression_RANGE_EQUAL(const Context_Expression_RANGE_EQUAL&) {
+            if constexpr (CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL == 0) {
+                return visitor_Expression_RANGE_EQUAL_UserHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL == 1) {
+                return visitor_Expression_RANGE_EQUAL_UserInlinedHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL == 2) {
+                return visitor_Expression_RANGE_EQUAL_UserDSLHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL == 3) {
+                return visitor_Expression_RANGE_EQUAL_UserInlinedDSLHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL == 4) {
+                return visitor_Expression_RANGE_EQUAL_DefaultCodegenVisitorHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL == 5) {
+                return visitor_Expression_RANGE_EQUAL_DefaultCodegenVisitorInlinedHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL == 6) {
+                return visitor_Expression_RANGE_EQUAL_GeneratorDefaultHook;
+            }
+            else {
+                static_assert(CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL>= 0 && CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL < 7, "No suitable visitor hook found for Expression_RANGE_EQUAL");
+            }
+        }
+        Visitor<UserHook<VisitorTag_Expression_RANGE_EQUAL_before>> visitor_Expression_RANGE_EQUAL_before_UserHook;
+        Visitor<UserInlinedHook<VisitorTag_Expression_RANGE_EQUAL_before>> visitor_Expression_RANGE_EQUAL_before_UserInlinedHook;
+        Visitor<UserDSLHook<VisitorTag_Expression_RANGE_EQUAL_before>> visitor_Expression_RANGE_EQUAL_before_UserDSLHook;
+        Visitor<UserInlinedDSLHook<VisitorTag_Expression_RANGE_EQUAL_before>> visitor_Expression_RANGE_EQUAL_before_UserInlinedDSLHook;
+        Visitor<DefaultCodegenVisitorHook<VisitorTag_Expression_RANGE_EQUAL_before>> visitor_Expression_RANGE_EQUAL_before_DefaultCodegenVisitorHook;
+        Visitor<DefaultCodegenVisitorInlinedHook<VisitorTag_Expression_RANGE_EQUAL_before>> visitor_Expression_RANGE_EQUAL_before_DefaultCodegenVisitorInlinedHook;
+        Visitor<GeneratorDefaultHook<VisitorTag_Expression_RANGE_EQUAL_before>> visitor_Expression_RANGE_EQUAL_before_GeneratorDefaultHook;
+        auto& get_visitor_Expression_RANGE_EQUAL_before(const Context_Expression_RANGE_EQUAL_before<Result>&) {
+            if constexpr (CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_BEFORE == 0) {
+                return visitor_Expression_RANGE_EQUAL_before_UserHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_BEFORE == 1) {
+                return visitor_Expression_RANGE_EQUAL_before_UserInlinedHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_BEFORE == 2) {
+                return visitor_Expression_RANGE_EQUAL_before_UserDSLHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_BEFORE == 3) {
+                return visitor_Expression_RANGE_EQUAL_before_UserInlinedDSLHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_BEFORE == 4) {
+                return visitor_Expression_RANGE_EQUAL_before_DefaultCodegenVisitorHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_BEFORE == 5) {
+                return visitor_Expression_RANGE_EQUAL_before_DefaultCodegenVisitorInlinedHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_BEFORE == 6) {
+                return visitor_Expression_RANGE_EQUAL_before_GeneratorDefaultHook;
+            }
+            else {
+                static_assert(CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_BEFORE>= 0 && CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_BEFORE < 7, "No suitable visitor hook found for Expression_RANGE_EQUAL_before");
+            }
+        }
+        Visitor<UserHook<VisitorTag_Expression_RANGE_EQUAL_after>> visitor_Expression_RANGE_EQUAL_after_UserHook;
+        Visitor<UserInlinedHook<VisitorTag_Expression_RANGE_EQUAL_after>> visitor_Expression_RANGE_EQUAL_after_UserInlinedHook;
+        Visitor<UserDSLHook<VisitorTag_Expression_RANGE_EQUAL_after>> visitor_Expression_RANGE_EQUAL_after_UserDSLHook;
+        Visitor<UserInlinedDSLHook<VisitorTag_Expression_RANGE_EQUAL_after>> visitor_Expression_RANGE_EQUAL_after_UserInlinedDSLHook;
+        Visitor<DefaultCodegenVisitorHook<VisitorTag_Expression_RANGE_EQUAL_after>> visitor_Expression_RANGE_EQUAL_after_DefaultCodegenVisitorHook;
+        Visitor<DefaultCodegenVisitorInlinedHook<VisitorTag_Expression_RANGE_EQUAL_after>> visitor_Expression_RANGE_EQUAL_after_DefaultCodegenVisitorInlinedHook;
+        Visitor<GeneratorDefaultHook<VisitorTag_Expression_RANGE_EQUAL_after>> visitor_Expression_RANGE_EQUAL_after_GeneratorDefaultHook;
+        auto& get_visitor_Expression_RANGE_EQUAL_after(const Context_Expression_RANGE_EQUAL_after<Result>&) {
+            if constexpr (CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_AFTER == 0) {
+                return visitor_Expression_RANGE_EQUAL_after_UserHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_AFTER == 1) {
+                return visitor_Expression_RANGE_EQUAL_after_UserInlinedHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_AFTER == 2) {
+                return visitor_Expression_RANGE_EQUAL_after_UserDSLHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_AFTER == 3) {
+                return visitor_Expression_RANGE_EQUAL_after_UserInlinedDSLHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_AFTER == 4) {
+                return visitor_Expression_RANGE_EQUAL_after_DefaultCodegenVisitorHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_AFTER == 5) {
+                return visitor_Expression_RANGE_EQUAL_after_DefaultCodegenVisitorInlinedHook;
+            }
+            else if constexpr (CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_AFTER == 6) {
+                return visitor_Expression_RANGE_EQUAL_after_GeneratorDefaultHook;
+            }
+            else {
+                static_assert(CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_AFTER>= 0 && CODEGEN_EXPECTED_PRIORITY_EXPRESSION_RANGE_EQUAL_AFTER < 7, "No suitable visitor hook found for Expression_RANGE_EQUAL_after");
+            }
+        }
         Visitor<UserHook<VisitorTag_Expression>> visitor_Expression_UserHook;
         Visitor<UserInlinedHook<VisitorTag_Expression>> visitor_Expression_UserInlinedHook;
         Visitor<UserDSLHook<VisitorTag_Expression>> visitor_Expression_UserDSLHook;
@@ -75931,6 +76636,18 @@ namespace ebm2c {
         }
         expected<Result> visit(Context_Expression_AS_ARG_after<Result>& ctx) {
             auto& visitor = impl.get_visitor_Expression_AS_ARG_after(ctx);
+            return visitor.visit(ctx);
+        }
+        expected<Result> visit(Context_Expression_RANGE_EQUAL& ctx) {
+            auto& visitor = impl.get_visitor_Expression_RANGE_EQUAL(ctx);
+            return visitor.visit(ctx);
+        }
+        expected<Result> visit(Context_Expression_RANGE_EQUAL_before<Result>& ctx) {
+            auto& visitor = impl.get_visitor_Expression_RANGE_EQUAL_before(ctx);
+            return visitor.visit(ctx);
+        }
+        expected<Result> visit(Context_Expression_RANGE_EQUAL_after<Result>& ctx) {
+            auto& visitor = impl.get_visitor_Expression_RANGE_EQUAL_after(ctx);
             return visitor.visit(ctx);
         }
         expected<Result> visit(Context_Expression& ctx) {

@@ -626,6 +626,15 @@ namespace ebm {
                 return false;
             }
         }
+        if (auto got = j.at("range_expr")) {
+            ExpressionRef tmp;
+            if(!futils::json::convert_from_json(*got, tmp)) {
+                return false;
+            }
+            if(!obj.range_expr(std::move(tmp))) {
+                return false;
+            }
+        }
         if (auto got = j.at("right")) {
             ExpressionRef tmp;
             if(!futils::json::convert_from_json(*got, tmp)) {
@@ -749,6 +758,15 @@ namespace ebm {
                 return false;
             }
             if(!obj.uop(std::move(tmp))) {
+                return false;
+            }
+        }
+        if (auto got = j.at("value")) {
+            ExpressionRef tmp;
+            if(!futils::json::convert_from_json(*got, tmp)) {
+                return false;
+            }
+            if(!obj.value(std::move(tmp))) {
                 return false;
             }
         }
@@ -3921,6 +3939,10 @@ namespace ebm {
             }
             if (s == "AS_ARG") {
                 obj = ExpressionKind::AS_ARG;
+                return true;
+            }
+            if (s == "RANGE_EQUAL") {
+                obj = ExpressionKind::RANGE_EQUAL;
                 return true;
             }
             return false;

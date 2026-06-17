@@ -167,6 +167,7 @@ enum ExpressionKind:
     SETTER_STATUS # for property setter
     SELF # self reference in method
     AS_ARG # argument passing marker
+    RANGE_EQUAL # x == (a..=b) range membership; lowered_expr holds the expanded a<=x && x<=b
 
 enum SetterStatus:
     :u8
@@ -296,6 +297,10 @@ format ExpressionBody:
             setter_status :SetterStatus
         ExpressionKind.AS_ARG:
             as_arg :AsArgDesc
+        ExpressionKind.RANGE_EQUAL:
+            value :ExpressionRef # the value being tested (x in x == a..=b)
+            range_expr :ExpressionRef # the RANGE expression (a..=b)
+            lowered_expr :LoweredExpressionRef # expanded form: a<=value && value<=b
 
 enum LoopType:
     :u8

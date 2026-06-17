@@ -90,6 +90,7 @@ namespace ebmcodegen {
             body.num_bytes({});
             body.operand({});
             body.or_cond({});
+            body.range_expr({});
             body.right({});
             body.setter_status({});
             body.sizeof_desc({});
@@ -104,6 +105,7 @@ namespace ebmcodegen {
             body.type_ref({});
             body.unit({});
             body.uop({});
+            body.value({});
             std::set<std::string_view> subset;
             std::vector<std::string_view> ordered;
             body.visit([&](auto&& visitor,const char* name,auto&& value) {

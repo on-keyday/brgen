@@ -241,6 +241,16 @@ namespace ebmgen {
         return body;
     }
 
+    ebm::ExpressionBody make_range_equal(ebm::TypeRef type, ebm::ExpressionRef value, ebm::ExpressionRef range_expr, ebm::ExpressionRef lowered) {
+        ebm::ExpressionBody body;
+        body.type = type;
+        body.kind = ebm::ExpressionKind::RANGE_EQUAL;
+        body.value(value);
+        body.range_expr(range_expr);
+        body.lowered_expr(ebm::LoweredExpressionRef{lowered});
+        return body;
+    }
+
     ebm::StatementBody make_expression_statement(ebm::ExpressionRef expr) {
         ebm::StatementBody body;
         body.kind = ebm::StatementKind::EXPRESSION;

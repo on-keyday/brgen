@@ -291,6 +291,10 @@ namespace ebmgen {
 #define EBM_AS_INOUT_ARG(ref_name, type, target_expr_ebm) \
     EBM_AST_EXPRESSION(ref_name, make_as_arg, type, target_expr_ebm, true)
 
+    ebm::ExpressionBody make_range_equal(ebm::TypeRef type, ebm::ExpressionRef value, ebm::ExpressionRef range_expr, ebm::ExpressionRef lowered);
+#define EBM_RANGE_EQUAL(ref_name, type, value_ebm, range_ebm, lowered_ebm) \
+    EBM_AST_EXPRESSION(ref_name, make_range_equal, type, value_ebm, range_ebm, lowered_ebm)
+
     ebm::ExpressionBody make_enum_member(ebm::TypeRef type, ebm::StatementRef enum_decl, ebm::ExpressionRef member);
 #define EBM_ENUM_MEMBER(ref_name, type, enum_decl_ebm, member_ebm) \
     EBM_AST_EXPRESSION(ref_name, make_enum_member, type, enum_decl_ebm, member_ebm)

@@ -485,6 +485,10 @@ namespace ebmgen::visitor {
     template<typename Result = Result, typename UserContext,typename TypeContext>
     expected<Result> traverse_children_Expression_AS_ARG(UserContext&& ctx,TypeContext&& type_ctx);
     template<typename Result = Result,typename Context>
+    expected<Result> dispatch_Expression_RANGE_EQUAL(Context&& ctx,const ebm::Expression& in,ebm::ExpressionRef alias_ref = {});
+    template<typename Result = Result, typename UserContext,typename TypeContext>
+    expected<Result> traverse_children_Expression_RANGE_EQUAL(UserContext&& ctx,TypeContext&& type_ctx);
+    template<typename Result = Result,typename Context>
     expected<Result> dispatch_Expression(Context&& ctx,const ebm::Expression& in,ebm::ExpressionRef alias_ref = {});
     template<typename Result = Result, typename Context>
     expected<Result> dispatch_Expression_default(Context&& ctx,const ebm::Expression& in,ebm::ExpressionRef alias_ref = {}) {
@@ -599,6 +603,9 @@ namespace ebmgen::visitor {
             }
             case ebm::ExpressionKind::AS_ARG: {
                 return dispatch_Expression_AS_ARG<Result>(std::forward<Context>(ctx),in,alias_ref);
+            }
+            case ebm::ExpressionKind::RANGE_EQUAL: {
+                return dispatch_Expression_RANGE_EQUAL<Result>(std::forward<Context>(ctx),in,alias_ref);
             }
             default: {
                 return unexpect_error("Unknown Expression kind: {}", to_string(in.body.kind));
@@ -3282,6 +3289,41 @@ namespace ebmgen::visitor {
         const ebm::TypeRef& type;
         const ebm::ExpressionKind& kind;
         const ebm::AsArgDesc& as_arg;
+        ebmcodegen::util::MainLogicWrapper<Result> main_logic;
+        expected<Result>& result;
+    };
+    struct Context_Expression_RANGE_EQUAL : ebmcodegen::util::ContextBase<Context_Expression_RANGE_EQUAL> {
+        constexpr static std::string_view context_name = "Expression_RANGE_EQUAL";
+        BaseVisitor& visitor;
+        ebm::ExpressionRef item_id;
+        const ebm::TypeRef& type;
+        const ebm::ExpressionKind& kind;
+        const ebm::LoweredExpressionRef& lowered_expr;
+        const ebm::ExpressionRef& range_expr;
+        const ebm::ExpressionRef& value;
+    };
+    template <typename Result>
+    struct Context_Expression_RANGE_EQUAL_before : ebmcodegen::util::ContextBase<Context_Expression_RANGE_EQUAL_before<Result>> {
+        constexpr static std::string_view context_name = "Expression_RANGE_EQUAL_before";
+        BaseVisitor& visitor;
+        ebm::ExpressionRef item_id;
+        const ebm::TypeRef& type;
+        const ebm::ExpressionKind& kind;
+        const ebm::LoweredExpressionRef& lowered_expr;
+        const ebm::ExpressionRef& range_expr;
+        const ebm::ExpressionRef& value;
+        ebmcodegen::util::MainLogicWrapper<Result> main_logic;
+    };
+    template <typename Result>
+    struct Context_Expression_RANGE_EQUAL_after : ebmcodegen::util::ContextBase<Context_Expression_RANGE_EQUAL_after<Result>> {
+        constexpr static std::string_view context_name = "Expression_RANGE_EQUAL_after";
+        BaseVisitor& visitor;
+        ebm::ExpressionRef item_id;
+        const ebm::TypeRef& type;
+        const ebm::ExpressionKind& kind;
+        const ebm::LoweredExpressionRef& lowered_expr;
+        const ebm::ExpressionRef& range_expr;
+        const ebm::ExpressionRef& value;
         ebmcodegen::util::MainLogicWrapper<Result> main_logic;
         expected<Result>& result;
     };
@@ -8730,6 +8772,84 @@ namespace ebmgen::visitor {
         return {};
     }
     template<typename Result,typename Context>
+    expected<Result> dispatch_Expression_RANGE_EQUAL(Context&& ctx,const ebm::Expression& in,ebm::ExpressionRef alias_ref){
+        auto& type = in.body.type;
+        auto& kind = in.body.kind;
+        if (!in.body.lowered_expr()) {
+            return unexpect_error("Unexpected null pointer for ExpressionBody::lowered_expr");
+        }
+        auto& lowered_expr = *in.body.lowered_expr();
+        if (!in.body.range_expr()) {
+            return unexpect_error("Unexpected null pointer for ExpressionBody::range_expr");
+        }
+        auto& range_expr = *in.body.range_expr();
+        if (!in.body.value()) {
+            return unexpect_error("Unexpected null pointer for ExpressionBody::value");
+        }
+        auto& value = *in.body.value();
+        auto main_logic = [&]() -> expected<Result>{
+            Context_Expression_RANGE_EQUAL new_ctx{
+                .visitor = get_visitor_arg_from_context(ctx),
+                .item_id = is_nil(alias_ref) ? in.id : alias_ref,
+                .type = type,
+                .kind = kind,
+                .lowered_expr = lowered_expr,
+                .range_expr = range_expr,
+                .value = value,
+            };
+            return get_visitor_from_context<Result>(ctx,new_ctx).visit(new_ctx);
+        };
+        Context_Expression_RANGE_EQUAL_before<Result> before_ctx{
+            .visitor = get_visitor_arg_from_context(ctx),
+            .item_id = is_nil(alias_ref) ? in.id : alias_ref,
+            .type = type,
+            .kind = kind,
+            .lowered_expr = lowered_expr,
+            .range_expr = range_expr,
+            .value = value,
+            .main_logic = main_logic,
+        };
+        expected<Result> before_result = get_visitor_from_context<Result>(ctx,before_ctx).visit(before_ctx);
+        CODEGEN_MAY_HIJACK(before_result);
+        expected<Result> main_result = main_logic();
+        Context_Expression_RANGE_EQUAL_after<Result> after_ctx{
+            .visitor = get_visitor_arg_from_context(ctx),
+            .item_id = is_nil(alias_ref) ? in.id : alias_ref,
+            .type = type,
+            .kind = kind,
+            .lowered_expr = lowered_expr,
+            .range_expr = range_expr,
+            .value = value,
+            .main_logic = main_logic,
+            .result = main_result,
+        };
+        expected<Result> after_result = get_visitor_from_context<Result>(ctx,after_ctx).visit(after_ctx);
+        CODEGEN_MAY_HIJACK(after_result);
+        return main_result;
+    }
+    template<typename Result, typename UserContext,typename TypeContext>
+    expected<Result> traverse_children_Expression_RANGE_EQUAL(UserContext&& ctx,TypeContext&& type_ctx) {
+        if (!is_nil(type_ctx.type)) {
+            auto result_type = visit_Object<Result>(std::forward<UserContext>(ctx),type_ctx.type);
+            if (!result_type) {
+                return unexpect_error(std::move(result_type.error()));
+            }
+        }
+        if (!is_nil(type_ctx.range_expr)) {
+            auto result_range_expr = visit_Object<Result>(std::forward<UserContext>(ctx),type_ctx.range_expr);
+            if (!result_range_expr) {
+                return unexpect_error(std::move(result_range_expr.error()));
+            }
+        }
+        if (!is_nil(type_ctx.value)) {
+            auto result_value = visit_Object<Result>(std::forward<UserContext>(ctx),type_ctx.value);
+            if (!result_value) {
+                return unexpect_error(std::move(result_value.error()));
+            }
+        }
+        return {};
+    }
+    template<typename Result,typename Context>
     expected<Result> dispatch_Expression(Context&& ctx,const ebm::Expression& in,ebm::ExpressionRef alias_ref){
         auto main_logic = [&]() -> expected<Result>{
             Context_Expression new_ctx{
@@ -10144,6 +10264,9 @@ namespace ebmgen::visitor {
         }
         else if constexpr (std::is_same_v<TypeContextType,Context_Expression_AS_ARG> || std::is_same_v<TypeContextType,Context_Expression_AS_ARG_before<Result>> || std::is_same_v<TypeContextType,Context_Expression_AS_ARG_after<Result>>) {
             return traverse_children_Expression_AS_ARG<Result>(std::forward<UserContext>(uctx),std::forward<TypeContext>(type_ctx));
+        }
+        else if constexpr (std::is_same_v<TypeContextType,Context_Expression_RANGE_EQUAL> || std::is_same_v<TypeContextType,Context_Expression_RANGE_EQUAL_before<Result>> || std::is_same_v<TypeContextType,Context_Expression_RANGE_EQUAL_after<Result>>) {
+            return traverse_children_Expression_RANGE_EQUAL<Result>(std::forward<UserContext>(uctx),std::forward<TypeContext>(type_ctx));
         }
         else if constexpr (std::is_same_v<TypeContextType,Context_Expression> || std::is_same_v<TypeContextType,Context_Expression_before<Result>> || std::is_same_v<TypeContextType,Context_Expression_after<Result>>) {
             return traverse_children_Expression<Result>(std::forward<UserContext>(uctx),std::forward<TypeContext>(type_ctx));
