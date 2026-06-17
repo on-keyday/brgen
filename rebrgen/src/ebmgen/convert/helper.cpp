@@ -229,13 +229,14 @@ namespace ebmgen {
         return body;
     }
 
-    ebm::ExpressionBody make_as_arg(ebm::TypeRef type, ebm::ExpressionRef target_expr, bool is_inout) {
+    ebm::ExpressionBody make_as_arg(ebm::TypeRef type, ebm::ExpressionRef target_expr, bool is_inout, ebm::StatementRef param) {
         ebm::ExpressionBody body;
         body.type = type;
         body.kind = ebm::ExpressionKind::AS_ARG;
         ebm::AsArgDesc desc;
         desc.target_expr = target_expr;
         desc.is_inout(is_inout);
+        desc.param = to_weak(param);  // PARAMETER_DECL this arg targets (nil if unresolved); see ADR 0034
         body.as_arg(std::move(desc));
         return body;
     }

@@ -491,18 +491,29 @@ namespace ebmgen {
         EBM_MEMBER_ACCESS(dec_access, par_encdec.decode_type, base_ref, par_encdec.decode);
         call_desc.callee = dec_access;
 
+        // ADR 0034: tag each argument with the callee param it targets (coder_input is
+        // params[0], state vars follow in par.state order).
+        MAYBE(callee_params, resolve_callee_params(ctx, dec_access));
+        auto nth_param = [&](std::size_t i) -> ebm::StatementRef {
+            if (callee_params.has_value() && i < callee_params->size()) {
+                return (*callee_params)[i];
+            }
+            return ebm::StatementRef{};
+        };
         MAYBE(dec_in_def, ctx.repository().get_expression(cur_encdec.decoder_input));
-        EBM_AS_ARG(dec_in_arg, dec_in_def.body.type, cur_encdec.decoder_input);
+        EBM_AS_ARG_PARAM(dec_in_arg, dec_in_def.body.type, cur_encdec.decoder_input, nth_param(0));
         append(call_desc.arguments, dec_in_arg);
+        std::size_t st_idx = 0;
         for (auto& st : par_encdec.state_variables) {
             for (auto& cur_st : cur_encdec.state_variables) {
                 if (cur_st.ast_field == st.ast_field) {
                     MAYBE(expr, ctx.repository().get_expression(cur_st.dec_var_expr));
-                    EBM_AS_ARG(as_arg, expr.body.type, cur_st.dec_var_expr);
+                    EBM_AS_ARG_PARAM(as_arg, expr.body.type, cur_st.dec_var_expr, nth_param(st_idx + 1));
                     append(call_desc.arguments, as_arg);
                     break;
                 }
             }
+            ++st_idx;
         }
 
         // TODO: add arguments

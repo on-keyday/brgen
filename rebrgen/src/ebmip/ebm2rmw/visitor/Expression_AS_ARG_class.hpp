@@ -18,6 +18,7 @@
         target_expr: ExpressionRef
         is_inout: bool
         reserved: std::uint8_t
+        param: WeakStatementRef
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 

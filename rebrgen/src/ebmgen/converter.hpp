@@ -921,6 +921,9 @@ namespace ebmgen {
     expected<ebm::StatementBody> assert_statement_body(ConverterContext& ctx, ebm::ExpressionRef condition);
     expected<ebm::StatementRef> assert_statement(ConverterContext& ctx, ebm::ExpressionRef condition);
     expected<ebm::ExpressionRef> get_max_value_expr(ConverterContext& ctx, ebm::TypeRef type);
+    // ADR 0034: resolve a call target to its parameter list, so each AS_ARG can be tagged
+    // with the PARAMETER_DECL it is passed to. nullopt when the callee isn't a plain fn/method ref.
+    expected<std::optional<std::vector<ebm::StatementRef>>> resolve_callee_params(ConverterContext& ctx, ebm::ExpressionRef callee);
     expected<ebm::BinaryOp> convert_assignment_binary_op(ast::BinaryOp op);
     expected<std::pair<ebm::ExpressionRef, ebm::ExpressionRef>> insert_binary_op_cast(ConverterContext& ctx, ebm::BinaryOp bop, ebm::TypeRef dst_type, ebm::ExpressionRef left, ebm::ExpressionRef right);
     expected<ebm::BinaryOp> convert_binary_op(ast::BinaryOp op);

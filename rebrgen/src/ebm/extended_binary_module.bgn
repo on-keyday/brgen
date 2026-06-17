@@ -186,6 +186,7 @@ format AsArgDesc:
     target_expr :ExpressionRef # Expression to be passed as argument
     is_inout :u1 # 1: pass by mutable reference (C: &x, Go: &x, Rust: &mut x)
     reserved :u7
+    param :WeakStatementRef # PARAMETER_DECL this argument is passed to; lets codegen decide borrow/owned from the param's is_mutated (null if unresolved). See ADR 0034.
 
 format TypeCastDesc:
     source_expr :ExpressionRef # Expression to be casted

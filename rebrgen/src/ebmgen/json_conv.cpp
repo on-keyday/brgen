@@ -44,6 +44,14 @@ namespace ebm {
         else {
             return false;
         }
+        if (auto got = j.at("param")) {
+            if(!futils::json::convert_from_json(*got, obj.param)) {
+                return false;
+            }
+        }
+        else {
+            return false;
+        }
         return true;
     }
     

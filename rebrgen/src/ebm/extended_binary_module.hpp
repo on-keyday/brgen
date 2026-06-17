@@ -2023,7 +2023,6 @@ namespace ebm {
     struct LoweredStatementRef;
     struct LoweredExpressionRef;
     struct WeakStatementRef;
-    struct AsArgDesc;
     struct LoweredIOStatement;
     struct LoopFlowControl;
     struct Condition;
@@ -2038,6 +2037,7 @@ namespace ebm {
     struct TypeCastDesc;
     struct Size;
     struct SizeofDesc;
+    struct AsArgDesc;
     struct ExpressionBody;
     struct Expression;
     struct IfStatement;
@@ -2552,38 +2552,6 @@ namespace ebm {
             v(v, "id",visitor_tag<decltype(std::declval<WeakStatementRef>().id),false>{});
         }
     };
-    struct EBM_API AsArgDesc{
-        ExpressionRef target_expr;
-        ::futils::binary::flags_t<std::uint8_t, 1, 7> flags_14_;
-        bits_flag_alias_method(flags_14_,0,is_inout);
-        bits_flag_alias_method(flags_14_,1,reserved);
-        ::futils::error::Error<> encode(::futils::binary::writer& w) const ;
-        ::futils::error::Error<> decode(::futils::binary::reader& r);
-        constexpr static const char* visitor_name = "AsArgDesc";
-        template<typename Visitor>
-        constexpr void visit(Visitor&& v) {
-            v(v, "target_expr",(*this).target_expr);
-            v(v, "is_inout",(*this).is_inout());
-            v(v, "reserved",(*this).reserved());
-        }
-        template<typename Visitor>
-        constexpr void visit(Visitor&& v) const {
-            v(v, "target_expr",(*this).target_expr);
-            v(v, "is_inout",(*this).is_inout());
-            v(v, "reserved",(*this).reserved());
-        }
-        template<typename T,bool rvalue = false>
-        struct visitor_tag {
-            using type = T;
-            static constexpr bool is_rvalue = rvalue;
-        };
-        template<typename Visitor>
-        static constexpr void visit_static(Visitor&& v) {
-            v(v, "target_expr",visitor_tag<decltype(std::declval<AsArgDesc>().target_expr),false>{});
-            v(v, "is_inout",visitor_tag<decltype(std::declval<AsArgDesc>().is_inout()),true>{});
-            v(v, "reserved",visitor_tag<decltype(std::declval<AsArgDesc>().reserved()),true>{});
-        }
-    };
     struct EBM_API LoweredIOStatement{
         LoweringIOType lowering_type{};
         LoweredStatementRef io_statement;
@@ -2714,9 +2682,9 @@ namespace ebm {
         }
     };
     struct EBM_API JumpOffset{
-        ::futils::binary::flags_t<std::uint8_t, 1, 7> flags_15_;
-        bits_flag_alias_method(flags_15_,0,backward);
-        bits_flag_alias_method(flags_15_,1,reserved);
+        ::futils::binary::flags_t<std::uint8_t, 1, 7> flags_14_;
+        bits_flag_alias_method(flags_14_,0,backward);
+        bits_flag_alias_method(flags_14_,1,reserved);
         Varint offset;
         ::futils::error::Error<> encode(::futils::binary::writer& w) const ;
         ::futils::error::Error<> decode(::futils::binary::reader& r);
@@ -2770,13 +2738,13 @@ namespace ebm {
         }
     };
     struct EBM_API OptionalImmediateSize{
-        ::futils::binary::flags_t<std::uint8_t, 1, 7> flags_16_;
-        bits_flag_alias_method(flags_16_,0,is_immediate);
-        bits_flag_alias_method(flags_16_,1,reserved);
-        struct EBM_API union_struct_19{
+        ::futils::binary::flags_t<std::uint8_t, 1, 7> flags_15_;
+        bits_flag_alias_method(flags_15_,0,is_immediate);
+        bits_flag_alias_method(flags_15_,1,reserved);
+        struct EBM_API union_struct_18{
             Varint size;
         };
-        std::variant<std::monostate, union_struct_19> union_variant_18;
+        std::variant<std::monostate, union_struct_18> union_variant_17;
         const Varint* size() const;
         Varint* size();
         bool size(Varint&& v);
@@ -2810,9 +2778,9 @@ namespace ebm {
         }
     };
     struct EBM_API EndianConvertDesc{
-        ::futils::binary::flags_t<std::uint8_t, 3, 5> flags_20_;
-        bits_flag_alias_method_with_enum(flags_20_,0,endian,Endian);
-        bits_flag_alias_method(flags_20_,1,reserved);
+        ::futils::binary::flags_t<std::uint8_t, 3, 5> flags_19_;
+        bits_flag_alias_method_with_enum(flags_19_,0,endian,Endian);
+        bits_flag_alias_method(flags_19_,1,reserved);
         ExpressionRef target;
         ExpressionRef source;
         LoweredStatementRef lowered_statement;
@@ -2908,10 +2876,10 @@ namespace ebm {
         ExpressionRef source_expr;
         TypeRef from_type;
         CastType cast_kind{};
-        struct EBM_API union_struct_23{
+        struct EBM_API union_struct_22{
             LoweredExpressionRef cast_call;
         };
-        std::variant<std::monostate, union_struct_23> union_variant_22;
+        std::variant<std::monostate, union_struct_22> union_variant_21;
         const LoweredExpressionRef* cast_call() const;
         LoweredExpressionRef* cast_call();
         bool cast_call(LoweredExpressionRef&& v);
@@ -2948,7 +2916,10 @@ namespace ebm {
     };
     struct EBM_API Size{
         SizeUnit unit{};
+        struct EBM_API union_struct_25{
+        };
         struct EBM_API union_struct_26{
+            Varint size;
         };
         struct EBM_API union_struct_27{
             Varint size;
@@ -2957,7 +2928,7 @@ namespace ebm {
             Varint size;
         };
         struct EBM_API union_struct_29{
-            Varint size;
+            ExpressionRef ref;
         };
         struct EBM_API union_struct_30{
             ExpressionRef ref;
@@ -2965,10 +2936,7 @@ namespace ebm {
         struct EBM_API union_struct_31{
             ExpressionRef ref;
         };
-        struct EBM_API union_struct_32{
-            ExpressionRef ref;
-        };
-        std::variant<std::monostate, union_struct_26, union_struct_27, union_struct_28, union_struct_29, union_struct_30, union_struct_31, union_struct_32> union_variant_25;
+        std::variant<std::monostate, union_struct_25, union_struct_26, union_struct_27, union_struct_28, union_struct_29, union_struct_30, union_struct_31> union_variant_24;
         const ExpressionRef* ref() const;
         ExpressionRef* ref();
         bool ref(ExpressionRef&& v);
@@ -3034,6 +3002,42 @@ namespace ebm {
             v(v, "target_expr",visitor_tag<decltype(std::declval<SizeofDesc>().target_expr),false>{});
             v(v, "target_type",visitor_tag<decltype(std::declval<SizeofDesc>().target_type),false>{});
             v(v, "size",visitor_tag<decltype(std::declval<SizeofDesc>().size),false>{});
+        }
+    };
+    struct EBM_API AsArgDesc{
+        ExpressionRef target_expr;
+        ::futils::binary::flags_t<std::uint8_t, 1, 7> flags_32_;
+        bits_flag_alias_method(flags_32_,0,is_inout);
+        bits_flag_alias_method(flags_32_,1,reserved);
+        WeakStatementRef param;
+        ::futils::error::Error<> encode(::futils::binary::writer& w) const ;
+        ::futils::error::Error<> decode(::futils::binary::reader& r);
+        constexpr static const char* visitor_name = "AsArgDesc";
+        template<typename Visitor>
+        constexpr void visit(Visitor&& v) {
+            v(v, "target_expr",(*this).target_expr);
+            v(v, "is_inout",(*this).is_inout());
+            v(v, "reserved",(*this).reserved());
+            v(v, "param",(*this).param);
+        }
+        template<typename Visitor>
+        constexpr void visit(Visitor&& v) const {
+            v(v, "target_expr",(*this).target_expr);
+            v(v, "is_inout",(*this).is_inout());
+            v(v, "reserved",(*this).reserved());
+            v(v, "param",(*this).param);
+        }
+        template<typename T,bool rvalue = false>
+        struct visitor_tag {
+            using type = T;
+            static constexpr bool is_rvalue = rvalue;
+        };
+        template<typename Visitor>
+        static constexpr void visit_static(Visitor&& v) {
+            v(v, "target_expr",visitor_tag<decltype(std::declval<AsArgDesc>().target_expr),false>{});
+            v(v, "is_inout",visitor_tag<decltype(std::declval<AsArgDesc>().is_inout()),true>{});
+            v(v, "reserved",visitor_tag<decltype(std::declval<AsArgDesc>().reserved()),true>{});
+            v(v, "param",visitor_tag<decltype(std::declval<AsArgDesc>().param),false>{});
         }
     };
     struct EBM_API ExpressionBody{

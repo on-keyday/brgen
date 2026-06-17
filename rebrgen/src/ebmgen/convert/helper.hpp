@@ -282,10 +282,12 @@ namespace ebmgen {
 #define EBM_MEMBER_ACCESS(ref_name, type, base_ebm, member_ebm) \
     EBM_AST_EXPRESSION(ref_name, make_member_access, type, base_ebm, member_ebm)
 
-    ebm::ExpressionBody make_as_arg(ebm::TypeRef type, ebm::ExpressionRef target_expr, bool is_inout = false);
+    ebm::ExpressionBody make_as_arg(ebm::TypeRef type, ebm::ExpressionRef target_expr, bool is_inout = false, ebm::StatementRef param = {});
 
 #define EBM_AS_ARG(ref_name, type, target_expr_ebm) \
     EBM_AST_EXPRESSION(ref_name, make_as_arg, type, target_expr_ebm, false)
+#define EBM_AS_ARG_PARAM(ref_name, type, target_expr_ebm, param_ebm) \
+    EBM_AST_EXPRESSION(ref_name, make_as_arg, type, target_expr_ebm, false, param_ebm)
 #define EBM_AS_INOUT_ARG(ref_name, type, target_expr_ebm) \
     EBM_AST_EXPRESSION(ref_name, make_as_arg, type, target_expr_ebm, true)
 

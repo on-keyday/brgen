@@ -954,16 +954,51 @@ namespace ebmgen {
         return {};
     }
 
+    // ADR 0034: resolve the callee's parameter list so each argument can be tagged with
+    // the PARAMETER_DECL it is passed to. Returns nullopt when the callee isn't a plain
+    // function/method reference (codegen then falls back to passing by value).
+    expected<std::optional<std::vector<ebm::StatementRef>>> resolve_callee_params(ConverterContext& ctx, ebm::ExpressionRef callee) {
+        MAYBE(ce, ctx.repository().get_expression(callee));
+        ebm::ExpressionRef fn_ident = callee;
+        if (ce.body.kind == ebm::ExpressionKind::MEMBER_ACCESS) {
+            MAYBE(m, ce.body.member());
+            fn_ident = m;
+        }
+        MAYBE(fe, ctx.repository().get_expression(fn_ident));
+        if (fe.body.kind != ebm::ExpressionKind::IDENTIFIER) {
+            return std::optional<std::vector<ebm::StatementRef>>{};
+        }
+        MAYBE(wid, fe.body.id());
+        MAYBE(fst, ctx.repository().get_statement(from_weak(wid)));
+        if (fst.body.kind != ebm::StatementKind::FUNCTION_DECL) {
+            return std::optional<std::vector<ebm::StatementRef>>{};
+        }
+        MAYBE(fd, fst.body.func_decl());
+        std::vector<ebm::StatementRef> params;
+        params.reserve(fd.params.container.size());
+        for (auto& p : fd.params.container) {
+            params.push_back(p);
+        }
+        return params;
+    }
+
     expected<void> ExpressionConverter::convert_expr_impl(const std::shared_ptr<ast::Call>& node, ebm::ExpressionBody& body) {
         body.kind = ebm::ExpressionKind::CALL;
         ebm::CallDesc call;
         EBMA_CONVERT_EXPRESSION(callee, node->callee);
         call.callee = callee;
+        MAYBE(callee_params, resolve_callee_params(ctx, callee));
+        std::size_t arg_idx = 0;
         for (const auto& arg : node->arguments) {
             EBMA_CONVERT_EXPRESSION(arg_ref, arg);
             MAYBE(expr, ctx.repository().get_expression(arg_ref));
-            EBM_AS_ARG(as_arg, expr.body.type, arg_ref);
+            ebm::StatementRef param_ref{};
+            if (callee_params.has_value() && arg_idx < callee_params->size()) {
+                param_ref = (*callee_params)[arg_idx];
+            }
+            EBM_AS_ARG_PARAM(as_arg, expr.body.type, arg_ref, param_ref);
             append(call.arguments, as_arg);
+            ++arg_idx;
         }
         body.call_desc(std::move(call));
         return {};
