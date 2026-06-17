@@ -19,6 +19,7 @@
         initial_value: ExpressionRef
         decl_kind: VariableDeclKind
         is_reference: bool
+        is_mutated: bool
         reserved: std::uint8_t
       main_logic: ebmcodegen::util::MainLogicWrapper<Result>
       result: expected<Result>&

@@ -4024,10 +4024,11 @@ namespace ebm::zc {
         IdentifierRef name;
         TypeRef var_type;
         ExpressionRef initial_value;
-        ::futils::binary::flags_t<std::uint8_t, 2, 1, 5> flags_93_;
+        ::futils::binary::flags_t<std::uint8_t, 2, 1, 1, 4> flags_93_;
         bits_flag_alias_method_with_enum(flags_93_,0,decl_kind,VariableDeclKind);
         bits_flag_alias_method(flags_93_,1,is_reference);
-        bits_flag_alias_method(flags_93_,2,reserved);
+        bits_flag_alias_method(flags_93_,2,is_mutated);
+        bits_flag_alias_method(flags_93_,3,reserved);
         ::futils::error::Error<> encode(::futils::binary::writer& w) const ;
         ::futils::error::Error<> decode(::futils::binary::reader& r);
         constexpr static const char* visitor_name = "VariableDecl";
@@ -4038,6 +4039,7 @@ namespace ebm::zc {
             v(v, "initial_value",(*this).initial_value);
             v(v, "decl_kind",(*this).decl_kind());
             v(v, "is_reference",(*this).is_reference());
+            v(v, "is_mutated",(*this).is_mutated());
             v(v, "reserved",(*this).reserved());
         }
         template<typename Visitor>
@@ -4047,6 +4049,7 @@ namespace ebm::zc {
             v(v, "initial_value",(*this).initial_value);
             v(v, "decl_kind",(*this).decl_kind());
             v(v, "is_reference",(*this).is_reference());
+            v(v, "is_mutated",(*this).is_mutated());
             v(v, "reserved",(*this).reserved());
         }
         template<typename T,bool rvalue = false>
@@ -4061,15 +4064,17 @@ namespace ebm::zc {
             v(v, "initial_value",visitor_tag<decltype(std::declval<VariableDecl>().initial_value),false>{});
             v(v, "decl_kind",visitor_tag<decltype(std::declval<VariableDecl>().decl_kind()),true>{});
             v(v, "is_reference",visitor_tag<decltype(std::declval<VariableDecl>().is_reference()),true>{});
+            v(v, "is_mutated",visitor_tag<decltype(std::declval<VariableDecl>().is_mutated()),true>{});
             v(v, "reserved",visitor_tag<decltype(std::declval<VariableDecl>().reserved()),true>{});
         }
     };
     struct EBM_API ParameterDecl{
         IdentifierRef name;
         TypeRef param_type;
-        ::futils::binary::flags_t<std::uint8_t, 1, 7> flags_94_;
+        ::futils::binary::flags_t<std::uint8_t, 1, 1, 6> flags_94_;
         bits_flag_alias_method(flags_94_,0,is_state_variable);
-        bits_flag_alias_method(flags_94_,1,reserved);
+        bits_flag_alias_method(flags_94_,1,is_mutated);
+        bits_flag_alias_method(flags_94_,2,reserved);
         WeakStatementRef related_function;
         ::futils::error::Error<> encode(::futils::binary::writer& w) const ;
         ::futils::error::Error<> decode(::futils::binary::reader& r);
@@ -4079,6 +4084,7 @@ namespace ebm::zc {
             v(v, "name",(*this).name);
             v(v, "param_type",(*this).param_type);
             v(v, "is_state_variable",(*this).is_state_variable());
+            v(v, "is_mutated",(*this).is_mutated());
             v(v, "reserved",(*this).reserved());
             v(v, "related_function",(*this).related_function);
         }
@@ -4087,6 +4093,7 @@ namespace ebm::zc {
             v(v, "name",(*this).name);
             v(v, "param_type",(*this).param_type);
             v(v, "is_state_variable",(*this).is_state_variable());
+            v(v, "is_mutated",(*this).is_mutated());
             v(v, "reserved",(*this).reserved());
             v(v, "related_function",(*this).related_function);
         }
@@ -4100,6 +4107,7 @@ namespace ebm::zc {
             v(v, "name",visitor_tag<decltype(std::declval<ParameterDecl>().name),false>{});
             v(v, "param_type",visitor_tag<decltype(std::declval<ParameterDecl>().param_type),false>{});
             v(v, "is_state_variable",visitor_tag<decltype(std::declval<ParameterDecl>().is_state_variable()),true>{});
+            v(v, "is_mutated",visitor_tag<decltype(std::declval<ParameterDecl>().is_mutated()),true>{});
             v(v, "reserved",visitor_tag<decltype(std::declval<ParameterDecl>().reserved()),true>{});
             v(v, "related_function",visitor_tag<decltype(std::declval<ParameterDecl>().related_function),false>{});
         }

@@ -294,6 +294,7 @@ namespace ebmgen {
         std::unordered_map<ebm::TypeRef, std::vector<ebm::TypeRef>> propagated_io_input_desc_hierarchy;
         std::unordered_set<ebm::TypeRef> recursive_io_input_descs;
         bool function_has_modified_self = false;
+        std::unordered_set<std::uint64_t> mutated_decls;
 
         std::unordered_set<std::shared_ptr<ast::Node>> decode_read_skipped_fields;
 
@@ -314,6 +315,24 @@ namespace ebmgen {
 
         [[nodiscard]] bool has_modified_self() const {
             return function_has_modified_self;
+        }
+
+        // ADR 0034: track which parameter/local decls are mutated in the current function so
+        // codegen can choose borrow vs owned. Mirrors function_has_modified_self (self version).
+        [[nodiscard]] auto enter_mutated_decls() {
+            auto old = std::move(mutated_decls);
+            mutated_decls.clear();
+            return futils::helper::defer([this, old = std::move(old)]() mutable {
+                mutated_decls = std::move(old);
+            });
+        }
+
+        void mark_decl_mutated(ebm::StatementRef ref) {
+            mutated_decls.insert(get_id(ref));
+        }
+
+        [[nodiscard]] bool is_decl_mutated(ebm::StatementRef ref) const {
+            return mutated_decls.contains(get_id(ref));
         }
 
         [[nodiscard]] auto set_self_ref(ebm::ExpressionRef self_ref) {

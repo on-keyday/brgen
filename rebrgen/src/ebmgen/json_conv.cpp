@@ -2145,6 +2145,16 @@ namespace ebm {
         else {
             return false;
         }
+        if (auto got = j.at("is_mutated")) {
+            bool tmp;
+            if(!futils::json::convert_from_json(*got, tmp)) {
+                return false;
+            }
+            obj.is_mutated(std::move(tmp));
+        }
+        else {
+            return false;
+        }
         if (auto got = j.at("reserved")) {
             std::uint8_t tmp;
             if(!futils::json::convert_from_json(*got, tmp)) {
@@ -3404,6 +3414,16 @@ namespace ebm {
                 return false;
             }
             obj.is_reference(std::move(tmp));
+        }
+        else {
+            return false;
+        }
+        if (auto got = j.at("is_mutated")) {
+            bool tmp;
+            if(!futils::json::convert_from_json(*got, tmp)) {
+                return false;
+            }
+            obj.is_mutated(std::move(tmp));
         }
         else {
             return false;

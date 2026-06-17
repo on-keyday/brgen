@@ -829,6 +829,7 @@ namespace ebmgen {
                 }
                 const auto _func = ctx.state().set_current_function_id(fn_ref, coder_return);
                 const auto _mut = ctx.state().enter_function_has_modified_self();
+                const auto _mut_decls = ctx.state().enter_mutated_decls();
                 EBMA_CONVERT_STATEMENT(body, node->body);
                 ebm::Block fn_body_block;
                 fn_body_block.container.reserve(2);
@@ -927,6 +928,7 @@ namespace ebmgen {
         const auto _mode = ctx.state().set_current_generate_type(typ);
         const auto _func = ctx.state().set_current_function_id(func_id, func_decl.return_type);
         const auto _mut = ctx.state().enter_function_has_modified_self();
+        const auto _mut_decls = ctx.state().enter_mutated_decls();
         for (auto& param : node->parameters) {
             EBMA_ADD_IDENTIFIER(param_name_ref, param->ident->ident);
             EBMA_CONVERT_TYPE(param_type_ref, param->field_type);
@@ -946,6 +948,15 @@ namespace ebmgen {
             fn_body = fn_body_ref;
         }
         func_decl.attribute.is_mutable(ctx.state().has_modified_self());
+        // ADR 0034: record which parameters were mutated so codegen can borrow the rest.
+        for (auto& param_ref : func_decl.params.container) {
+            if (!ctx.state().is_decl_mutated(param_ref)) {
+                continue;
+            }
+            MAYBE(pst, ctx.repository().get_statement(param_ref));
+            MAYBE(pd, pst.body.param_decl());
+            pd.is_mutated(1);
+        }
         func_decl.body = fn_body;
         return func_decl;
     }
@@ -1260,10 +1271,31 @@ namespace ebmgen {
         return false;
     }
 
+    // ADR 0034: follow a store target to the root decl it ultimately writes to
+    // (parameter / local / field), generalizing has_self's self detection.
+    expected<std::optional<ebm::StatementRef>> mutation_root_decl(ConverterContext& ctx, ebm::ExpressionRef expr_ref) {
+        MAYBE(got, ctx.repository().get_expression(expr_ref));
+        if (got.body.kind == ebm::ExpressionKind::IDENTIFIER) {
+            MAYBE(wid, got.body.id());
+            return std::optional<ebm::StatementRef>(from_weak(wid));
+        }
+        if (got.body.kind == ebm::ExpressionKind::MEMBER_ACCESS || got.body.kind == ebm::ExpressionKind::INDEX_ACCESS) {
+            MAYBE(base, got.body.base());
+            return mutation_root_decl(ctx, base);
+        }
+        return std::optional<ebm::StatementRef>{};
+    }
+
     expected<void> may_mark_self_modified(ConverterContext& ctx, ebm::ExpressionRef target_ref) {
         MAYBE(target_has_self, has_self(ctx, target_ref));
         if (target_has_self) {
             ctx.state().mark_function_has_modified_self();
+        }
+        // ADR 0034: also record the root decl (parameter/local/field) being written,
+        // so unmutated parameters can later be passed by borrow instead of owned.
+        MAYBE(root, mutation_root_decl(ctx, target_ref));
+        if (root) {
+            ctx.state().mark_decl_mutated(*root);
         }
         return {};
     }

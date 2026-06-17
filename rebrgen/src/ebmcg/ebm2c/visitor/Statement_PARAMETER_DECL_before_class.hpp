@@ -17,6 +17,7 @@
         name: IdentifierRef
         param_type: TypeRef
         is_state_variable: bool
+        is_mutated: bool
         reserved: std::uint8_t
         related_function: WeakStatementRef
       main_logic: ebmcodegen::util::MainLogicWrapper<Result>
