@@ -1,0 +1,10 @@
+
+utf8 ::= config.import("../utf8.bgn")
+
+# Feature test wrapper for utf8.bgn's isUTF8 function.
+# Reads all bytes until EOF, then asserts they form valid UTF-8.
+# - valid input   -> assertion holds -> decode succeeds (round-trips)
+# - invalid input -> assertion fails -> decode error (failure_case)
+format Utf8String:
+    data :[..]u8
+    utf8.isUTF8(data) == true

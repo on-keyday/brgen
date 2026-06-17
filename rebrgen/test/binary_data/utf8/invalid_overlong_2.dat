@@ -1,0 +1,2 @@
+# Overlong 2-byte encoding of U+0000 (leading byte 0xC0/0xC1 are illegal)
+C0 80

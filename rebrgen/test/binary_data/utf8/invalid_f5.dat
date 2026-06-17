@@ -1,0 +1,2 @@
+# Leading byte 0xF5 is illegal (above U+10FFFF range)
+F5 80 80 80

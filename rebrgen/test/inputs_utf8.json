@@ -1,0 +1,154 @@
+[
+    {
+        "name": "utf8_valid_ascii",
+        "binary": "$WORK_DIR/test/binary_data/utf8/valid_ascii.dat",
+        "format_name": "Utf8String",
+        "source": "$WORK_DIR/../example/feature_test/utf8_test.bgn",
+        "failure_case": false,
+        "hex": false
+    },
+    {
+        "name": "utf8_valid_japanese",
+        "binary": "$WORK_DIR/test/binary_data/utf8/valid_japanese.dat",
+        "format_name": "Utf8String",
+        "source": "$WORK_DIR/../example/feature_test/utf8_test.bgn",
+        "failure_case": false,
+        "hex": false
+    },
+    {
+        "name": "utf8_valid_mixed",
+        "binary": "$WORK_DIR/test/binary_data/utf8/valid_mixed.dat",
+        "format_name": "Utf8String",
+        "source": "$WORK_DIR/../example/feature_test/utf8_test.bgn",
+        "failure_case": false,
+        "hex": false
+    },
+    {
+        "name": "utf8_valid_empty",
+        "binary": "$WORK_DIR/test/binary_data/utf8/valid_empty.dat",
+        "format_name": "Utf8String",
+        "source": "$WORK_DIR/../example/feature_test/utf8_test.bgn",
+        "failure_case": false,
+        "hex": false
+    },
+    {
+        "name": "utf8_boundary_u0080",
+        "binary": "$WORK_DIR/test/binary_data/utf8/boundary_u0080.dat",
+        "format_name": "Utf8String",
+        "source": "$WORK_DIR/../example/feature_test/utf8_test.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "utf8_boundary_u0800",
+        "binary": "$WORK_DIR/test/binary_data/utf8/boundary_u0800.dat",
+        "format_name": "Utf8String",
+        "source": "$WORK_DIR/../example/feature_test/utf8_test.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "utf8_boundary_ud7ff",
+        "binary": "$WORK_DIR/test/binary_data/utf8/boundary_ud7ff.dat",
+        "format_name": "Utf8String",
+        "source": "$WORK_DIR/../example/feature_test/utf8_test.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "utf8_boundary_ue000",
+        "binary": "$WORK_DIR/test/binary_data/utf8/boundary_ue000.dat",
+        "format_name": "Utf8String",
+        "source": "$WORK_DIR/../example/feature_test/utf8_test.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "utf8_boundary_u10000",
+        "binary": "$WORK_DIR/test/binary_data/utf8/boundary_u10000.dat",
+        "format_name": "Utf8String",
+        "source": "$WORK_DIR/../example/feature_test/utf8_test.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "utf8_boundary_u10ffff",
+        "binary": "$WORK_DIR/test/binary_data/utf8/boundary_u10ffff.dat",
+        "format_name": "Utf8String",
+        "source": "$WORK_DIR/../example/feature_test/utf8_test.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "utf8_invalid_lone_continuation",
+        "binary": "$WORK_DIR/test/binary_data/utf8/invalid_lone_continuation.dat",
+        "format_name": "Utf8String",
+        "source": "$WORK_DIR/../example/feature_test/utf8_test.bgn",
+        "failure_case": true,
+        "hex": true
+    },
+    {
+        "name": "utf8_invalid_overlong_2",
+        "binary": "$WORK_DIR/test/binary_data/utf8/invalid_overlong_2.dat",
+        "format_name": "Utf8String",
+        "source": "$WORK_DIR/../example/feature_test/utf8_test.bgn",
+        "failure_case": true,
+        "hex": true
+    },
+    {
+        "name": "utf8_invalid_overlong_3",
+        "binary": "$WORK_DIR/test/binary_data/utf8/invalid_overlong_3.dat",
+        "format_name": "Utf8String",
+        "source": "$WORK_DIR/../example/feature_test/utf8_test.bgn",
+        "failure_case": true,
+        "hex": true
+    },
+    {
+        "name": "utf8_invalid_overlong_4",
+        "binary": "$WORK_DIR/test/binary_data/utf8/invalid_overlong_4.dat",
+        "format_name": "Utf8String",
+        "source": "$WORK_DIR/../example/feature_test/utf8_test.bgn",
+        "failure_case": true,
+        "hex": true
+    },
+    {
+        "name": "utf8_invalid_surrogate_d800",
+        "binary": "$WORK_DIR/test/binary_data/utf8/invalid_surrogate_d800.dat",
+        "format_name": "Utf8String",
+        "source": "$WORK_DIR/../example/feature_test/utf8_test.bgn",
+        "failure_case": true,
+        "hex": true
+    },
+    {
+        "name": "utf8_invalid_truncated_2",
+        "binary": "$WORK_DIR/test/binary_data/utf8/invalid_truncated_2.dat",
+        "format_name": "Utf8String",
+        "source": "$WORK_DIR/../example/feature_test/utf8_test.bgn",
+        "failure_case": true,
+        "hex": true
+    },
+    {
+        "name": "utf8_invalid_truncated_3",
+        "binary": "$WORK_DIR/test/binary_data/utf8/invalid_truncated_3.dat",
+        "format_name": "Utf8String",
+        "source": "$WORK_DIR/../example/feature_test/utf8_test.bgn",
+        "failure_case": true,
+        "hex": true
+    },
+    {
+        "name": "utf8_invalid_f5",
+        "binary": "$WORK_DIR/test/binary_data/utf8/invalid_f5.dat",
+        "format_name": "Utf8String",
+        "source": "$WORK_DIR/../example/feature_test/utf8_test.bgn",
+        "failure_case": true,
+        "hex": true
+    },
+    {
+        "name": "utf8_invalid_above_max",
+        "binary": "$WORK_DIR/test/binary_data/utf8/invalid_above_max.dat",
+        "format_name": "Utf8String",
+        "source": "$WORK_DIR/../example/feature_test/utf8_test.bgn",
+        "failure_case": true,
+        "hex": true
+    }
+]

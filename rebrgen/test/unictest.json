@@ -46,7 +46,13 @@
             "file": "$WORK_DIR/src/ebmcg/ebm2wuffs/unictest_runner.json"
         }
     ],
-    "inputs": {
-        "file": "$WORK_DIR/test/inputs.json"
-    }
+    "inputs": [
+        {
+            "file": "$WORK_DIR/test/inputs.json"
+        },
+        {
+            "file": "$WORK_DIR/test/inputs_utf8.json",
+            "group": "utf8"
+        }
+    ]
 }

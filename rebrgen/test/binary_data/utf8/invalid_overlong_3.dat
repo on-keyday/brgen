@@ -1,0 +1,2 @@
+# Overlong 3-byte encoding (E0 with second byte < 0xA0)
+E0 80 80

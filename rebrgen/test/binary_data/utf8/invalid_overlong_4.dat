@@ -1,0 +1,2 @@
+# Overlong 4-byte encoding (F0 with second byte < 0x90)
+F0 80 80 80

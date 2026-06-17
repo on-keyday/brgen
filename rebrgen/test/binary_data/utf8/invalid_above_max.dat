@@ -1,0 +1,2 @@
+# U+110000 - above U+10FFFF (F4 with second byte > 0x8F)
+F4 90 80 80
