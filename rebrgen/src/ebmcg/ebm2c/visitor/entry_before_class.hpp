@@ -24,6 +24,7 @@ DEFINE_VISITOR(entry_before) {
     ctx.config().uint_prefix = "uint";
     ctx.config().uint_suffix = "_t";
     ctx.config().variant_prefix = "Union";
+    ctx.config().void_type = "void";
     ctx.config().variable_type_separator = " ";
     ctx.config().field_name_prior_to_type = false;
     ctx.config().variable_name_prior_to_type = false;
