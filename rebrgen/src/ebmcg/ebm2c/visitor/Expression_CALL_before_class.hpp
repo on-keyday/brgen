@@ -28,6 +28,14 @@ DEFINE_VISITOR(Expression_CALL_before) {
     using namespace CODEGEN_NAMESPACE;
     MAYBE(callee, ctx.get_field<"call_desc.callee.instance">());
     if (auto member = callee.body.member()) {
+        // A callee resolving to a function with no parent_format is a free
+        // function (e.g. an imported module's top-level fn like utf8.isUTF8,
+        // which Statement_FUNCTION_DECL emits free). Skip method-call lowering
+        // (no Type_ prefix, no &receiver) and let the default CALL +
+        // MEMBER_ACCESS import branch emit a plain `isUTF8(args)` call.
+        if (auto fd = ctx.get_field<"body.id.func_decl">(*member); fd && is_nil(fd->parent_format)) {
+            return pass;
+        }
         MAYBE(base, callee.body.base());
         MAYBE(base_type, ctx.get_field<"type.instance">(base))
         MAYBE(ident, ctx.identifier(*member));

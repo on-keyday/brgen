@@ -811,6 +811,29 @@ DEFINE_VISITOR(entry_before) {
             }
         }
         std::string const_suffix = ctx.func_decl.attribute.is_mutable() ? "" : " const";
+        // A function with no parent_format is a free function (e.g. an imported
+        // module's top-level fn such as utf8.isUTF8). It must not be emitted as a
+        // member of the module-wrapper struct (which would make it `tmp::isUTF8`
+        // while the call site emits a plain `isUTF8(...)`). Emit the declaration
+        // at file scope (via decl_toplevel) and the definition as a free function.
+        if (is_nil(ctx.func_decl.parent_format)) {
+            if (phase == OutputPhase::DeclarationOnly) {
+                CodeWriter decl;
+                decl.write(ret_type.to_writer(), " ", name, "(", params, ");");
+                ctx.config().decl_toplevel.push_back(std::move(decl));
+                return CodeWriter{};  // nothing goes inside the struct body
+            }
+            // FunctionBodyOnly: free function definition (no struct scope, no const)
+            CodeWriter w;
+            w.writeln(ret_type.to_writer(), " ", name, "(", params, ") {");
+            {
+                auto scope = w.indent_scope();
+                MAYBE(body, ctx.visit(ctx.func_decl.body));
+                w.write(body.to_writer());
+            }
+            w.writeln("}");
+            return w;
+        }
         CodeWriter w;
         if (phase == OutputPhase::DeclarationOnly) {
             // Emit signature only (no body)
