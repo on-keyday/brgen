@@ -1267,27 +1267,40 @@ namespace ebm2rmw {
                         if (!num_args) [[unlikely]] {
                             return ebmgen::unexpect_error("missing argument number in CALL_DIRECT");
                         }
-                        if (stack.size() < num_args->value() + 1) [[unlikely]] {
+                        auto func = *instr.instr.func_id();
+                        // A free function (an imported module's top-level fn, whose
+                        // FUNCTION_DECL has a nil parent_format) is called without a
+                        // self receiver on the stack; a method pops its receiver.
+                        bool has_self = true;
+                        if (auto* fstmt = get_visitor_arg_from_context(ctx).module_.get_statement(func)) {
+                            if (auto* fd = fstmt->body.func_decl()) {
+                                has_self = !is_nil(fd->parent_format);
+                            }
+                        }
+                        if (stack.size() < num_args->value() + (has_self ? 1 : 0)) [[unlikely]] {
                             return ebmgen::unexpect_error("stack underflow on CALL_DIRECT");
                         }
-                        auto func = *instr.instr.func_id();
                         std::vector<Value> call_params;
                         for (int i = static_cast<int>(num_args->value()) - 1; i >= 0; i--) {
                             auto arg_val = stack_pop();
                             arg_val.unref();
                             call_params.push_back(std::move(arg_val));
                         }
-                        auto new_self = stack_pop();
-                        new_self.unref();
-                        if (!std::holds_alternative<ObjectRef>(new_self.value)) [[unlikely]] {
-                            return ebmgen::unexpect_error("CALL_DIRECT new self is not an object");
+                        ObjectRef self_obj{};
+                        if (has_self) {
+                            auto new_self = stack_pop();
+                            new_self.unref();
+                            if (!std::holds_alternative<ObjectRef>(new_self.value)) [[unlikely]] {
+                                return ebmgen::unexpect_error("CALL_DIRECT new self is not an object");
+                            }
+                            self_obj = std::get<ObjectRef>(new_self.value);
                         }
                         auto func_enter = ctx.config().env.new_function(func);
                         bool no_error = false;
                         const auto frame = new_frame(no_error);
                         auto& new_this = *call_stack.back();
                         new_this.params = std::move(call_params);
-                        new_this.self = std::get<ObjectRef>(new_self.value);
+                        new_this.self = self_obj;
                         size_t func_ip = 0;
                         MAYBE_VOID(r, interpret_impl(ctx, func_ip));
                         no_error = true;

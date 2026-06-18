@@ -833,9 +833,10 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL) {
             return unexpect_error("Failed to open binary file {}: {}",
                                   ctx.flags().binary_file, fres.error().error<std::string>());
         }
-        if (file.size() == 0) {
-            return unexpect_error("Binary file is empty: {}", ctx.flags().binary_file);
-        }
+        // An empty file is a valid input for variable-length formats (e.g. a
+        // `[..]u8` field decodes to an empty vector). decode_binary itself
+        // errors if a fixed-size field needs bytes that aren't present, so an
+        // explicit empty-file guard would wrongly reject legitimately-empty input.
         MAYBE_VOID(_, decode_binary(ctx, runtime, entry_stmt.id, decl, file));
     }
     else {

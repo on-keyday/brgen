@@ -27,8 +27,20 @@
 DEFINE_VISITOR(Expression_CALL) {
     using namespace CODEGEN_NAMESPACE;
     /*here to write the hook*/
-    // if member function, also push base at first
-    if (auto base = ctx.get_field<"base">(ctx.call_desc.callee)) {
+    // Resolve a member-function callee up front so we can distinguish a real
+    // method (whose receiver must be pushed) from a free function reached via
+    // member syntax — e.g. an imported module's top-level fn `utf8.isUTF8`,
+    // whose FUNCTION_DECL has a null parent_format. The module identifier is
+    // not a variable, so evaluating it as a receiver would fail.
+    auto maybe_member_func = ctx.get_field<"member.body.id.id">(ctx.call_desc.callee);
+    bool member_is_free = false;
+    if (maybe_member_func) {
+        if (auto member_func = ctx.get_field<"func_decl">(*maybe_member_func)) {
+            member_is_free = is_nil(member_func->parent_format);
+        }
+    }
+    // if member function (with a receiver), also push base at first
+    if (auto base = ctx.get_field<"base">(ctx.call_desc.callee); base && !member_is_free) {
         auto current_lvalue = ctx.config().is_lvalue;
         ctx.config().is_lvalue = true;
         MAYBE(base_res, ctx.visit(*base));
@@ -49,13 +61,18 @@ DEFINE_VISITOR(Expression_CALL) {
     // callee maybe function, if so CALL_DIRECT
     // pattern 1. direct function
     // pattern 2. member function
-    auto maybe_member_func = ctx.get_field<"member.body.id.id">(ctx.call_desc.callee);
     if (maybe_member_func) {
         auto func = ctx.get_field<"func_decl">(*maybe_member_func);
         if (func) {
             instr.op = ebm::OpCode::CALL_DIRECT;
             instr.func_id(*maybe_member_func);
-            str_repr = std::format("{}.{}({})", ctx.identifier(func->parent_format), ctx.identifier(*maybe_member_func), join(", ", arg_strs));
+            if (is_nil(func->parent_format)) {
+                // free function reached via member syntax (imported module fn)
+                str_repr = std::format("{}({})", ctx.identifier(*maybe_member_func), join(", ", arg_strs));
+            }
+            else {
+                str_repr = std::format("{}.{}({})", ctx.identifier(func->parent_format), ctx.identifier(*maybe_member_func), join(", ", arg_strs));
+            }
             if (!ctx.config().env.has_function(*maybe_member_func)) {
                 auto f = ctx.config().env.new_function(*maybe_member_func);
                 MAYBE(_, ctx.visit(*maybe_member_func));  // add function to instructions

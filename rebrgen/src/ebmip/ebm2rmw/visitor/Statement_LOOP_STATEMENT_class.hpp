@@ -36,7 +36,7 @@ DEFINE_VISITOR(Statement_LOOP_STATEMENT) {
         MAYBE(res, ctx.visit(low.id));
         return res;
     }
-    if (auto init = ctx.loop.init()) {
+    if (auto init = ctx.loop.init(); init && !is_nil(*init)) {
         MAYBE(res, ctx.visit(*init));
     }
     size_t loop_start_index = ctx.config().env.access_instructions().size();
@@ -56,7 +56,7 @@ DEFINE_VISITOR(Statement_LOOP_STATEMENT) {
                                          "loop {");
     }
     MAYBE(body_res, ctx.visit(ctx.loop.body));
-    if (auto incr = ctx.loop.increment()) {
+    if (auto incr = ctx.loop.increment(); incr && !is_nil(*incr)) {
         MAYBE(res, ctx.visit(*incr));
     }
     ebm::Instruction instr;
