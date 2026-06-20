@@ -272,6 +272,16 @@ namespace ebmgen {
             // INVALIDATES above references ^^^^^
             EBM_DEFINE_PARAMETER(param, {}, array_info->second.vector_type, false, new_fn_id);
             append(func_decl.params, param_def);
+            // ADR 0034: this parameter is stored into the owned vector field
+            // (`self.<field> = param` below), so it must be owned, not borrowed.
+            // The convert-time mutation analysis never sees this assignment because
+            // the setter is synthesized here in a transform; mark the parameter
+            // mutated so param_visitor / as_arg consistently pick owned over borrow.
+            {
+                MAYBE(param_stmt, ctx.repository().get_statement(param_def));
+                MAYBE(param_decl, param_stmt.body.param_decl());
+                param_decl.is_mutated(true);
+            }
             MAYBE(state_params, ctx.state().get_format_encode_decode(from_weak(func_decl.parent_format)));
             for (auto& param : state_params.state_variables) {
                 append(func_decl.params, param.prop_set_var_def);

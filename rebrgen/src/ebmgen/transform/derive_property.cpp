@@ -56,6 +56,17 @@ namespace ebmgen {
                     EBMA_ADD_TYPE(ret_type, std::move(set_return));
                     setter.return_type = ret_type;
                     append(setter.params, arg_def);
+                    // ADR 0034: the setter stores this parameter into the owned
+                    // field (`self.<field> = (cast)arg` in the setter match below),
+                    // so it must be owned, not borrowed. The convert-time mutation
+                    // analysis never sees that assignment because the setter is
+                    // synthesized here in a transform; mark the parameter mutated so
+                    // param_visitor / as_arg consistently pick owned over borrow.
+                    {
+                        MAYBE(arg_stmt, ctx.repository().get_statement(arg_def));
+                        MAYBE(arg_param_decl, arg_stmt.body.param_decl());
+                        arg_param_decl.is_mutated(true);
+                    }
 
                     for (auto& v : copy_state_vars) {
                         append(setter.params, v.prop_set_var_def);

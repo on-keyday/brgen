@@ -4,7 +4,7 @@
 
 - 判断時期: 2026-06-18
 - 文書化: 2026-06-18
-- ステータス: 提案（着手前の方針記録）
+- ステータス: 採用（実装済。2026-06-20 に下記「補足」を追記）
 
 ## 判断
 
@@ -53,3 +53,29 @@ EBM 変換時に解析して `is_mutated` 属性に焼き、codegen が
   借用/所有という根の判断をしていない。却下。
 - **呼び出し側で一律 `.clone()`**: E0507 は回避できるがコピーコストが乗り、
   zero-copy の意義を損なう。却下。
+
+## 補足: 借用条件は「mutated でない」だけでは不十分（2026-06-20）
+
+実装後、ebm2rust で 30 件のコンパイルエラー（Rust E0308 mismatched types:
+`&[T]` を `Vec<T>` / `Cow<'a,[T]>` フィールドへ代入）が発生した。原因は借用可否の
+判定が粗すぎたこと。**param が読むだけ（pass-through / index など）なら借用できるが、
+owned 領域（struct フィールド等）へ store（move）される param は所有が必須**である。
+`is_mutated`（= 代入 target として書き換えられるか）だけでは後者を捕捉できない。
+
+具体的には、合成 setter が `self.<field> = param` で param を owned フィールドへ
+書き込むケース:
+
+- `transform/array_setter.cpp` の `VECTOR_SETTER`（`self.data = param`）
+- `transform/derive_property.cpp` の `PROPERTY_SETTER` / composite setter
+  （`self.<field> = (cast)arg`、variant メンバへの書き込み含む）
+
+これらの代入は **convert 後の transform で合成される**ため、convert 時の mutation
+解析（代入 target の root を mutated マークする処理）の射程外であり、param は
+`is_mutated=0` のまま借用されてしまう。対策として、両 transform で param 生成時に
+`is_mutated(true)` を明示マークし、所有を強制する（store する param は所有必須、という
+1 次情報の補完）。これにより param 宣言（`param_visitor`）と呼び出し側
+（`as_arg_visitor`）が同じ `is_mutated` を見て一貫して所有を選ぶ。
+
+注: `bit_holder.cpp` の setter param はビットサブフィールド（uint）で、借用は VECTOR
+限定のため影響しない。また `isUTF8(data :[]u8)` のような読むだけの自由関数 param は
+引き続き `&[u8]` で借用される（本 ADR 本来の最適化は維持）。
