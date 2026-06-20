@@ -38,8 +38,9 @@ unictest の CI 結果を、コミット単位で `unictest-history` という o
 
 - **回帰ゲートではない**（現時点では）。記録のみで CI を落とさない。flaky による偽陽性を
   避けるため、ゲート化（newly-FAIL で fail させる）は quarantine list や「2 連続 fail で初めて
-  落とす」等の flaky 耐性を入れてからにする。差分の可視化（newly-FAIL / newly-PASS / flip を
-  Job Summary に出す Layer 2）とダッシュボード（input×commit ヒートマップの Layer 3）は別途。
+  落とす」等の flaky 耐性を入れてからにする。差分の可視化（newly-FAIL / newly-PASS / 新規 failing /
+  flaky 候補を Job Summary に出す `diff_unictest_history.py`）は実装済みだが非ゲート。
+  ダッシュボード（input×commit ヒートマップの Layer 3）は別途。
 - **完全な実行ログのアーカイブではない**。失敗 case の全文ログは 32KB cap で残すが、それを
   超える尾部や成功 case のログは保持しない。長大な全文は Actions のログ/アーティファクト
   保持期間に委ねる。

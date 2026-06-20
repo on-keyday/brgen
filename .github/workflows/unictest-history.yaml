@@ -2,9 +2,13 @@ name: unictest-history
 run-name: Record unictest history
 
 # Runs after brgen-build finishes and appends that run's unictest results to the
-# append-only `unictest-history` orphan branch (one snapshot per commit). Kept as
-# a standalone workflow so the write token is isolated to this tiny recorder and
-# the existing build/test jobs stay read-only. See ADR 0036.
+# append-only `unictest-history` orphan branch (one snapshot per commit). It also
+# writes a regression diff vs the previous recorded run into the job summary.
+# Kept as a standalone workflow so the write token is isolated to this tiny
+# recorder and the existing build/test jobs stay read-only. See ADR 0036.
+#
+# Note: the push below uses GITHUB_TOKEN, so it does NOT trigger build/test
+# (GitHub suppresses workflow runs from GITHUB_TOKEN pushes) - no build loop.
 on:
   workflow_run:
     workflows: ["brgen-build"]
@@ -45,22 +49,13 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: unictest-results
 
-      - name: Record into history branch
-        if: steps.dl.outcome == 'success'
-        env:
-          SHA: ${{ github.event.workflow_run.head_sha }}
-          DATE: ${{ github.event.workflow_run.head_commit.timestamp }}
+      - name: Prepare history branch
+        if: steps.dl.outcome == 'success' && hashFiles('unictest-results/test_results.json') != ''
         run: |
           set -euo pipefail
-          if [ ! -f unictest-results/test_results.json ]; then
-            echo "no test_results.json in artifact; nothing to record"
-            exit 0
-          fi
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          # Check out (or create) the orphan history branch in a worktree.
+          # Check out (or create) the orphan history branch in a worktree. `hist`
+          # then holds the PREVIOUS runs - the diff baseline - until the current
+          # run is recorded into it by the last step.
           git fetch origin unictest-history || true
           if git ls-remote --exit-code --heads origin unictest-history >/dev/null 2>&1; then
             git worktree add -B unictest-history hist origin/unictest-history
@@ -69,28 +64,52 @@ jobs:
             git -C hist switch --orphan unictest-history
           fi
 
-          python3 rebrgen/script/record_unictest_history.py \
-            --results unictest-results/test_results.json \
-            --sha "$SHA" \
-            --date "$DATE" \
-            --out-dir hist
+      - name: Regression diff (job summary)
+        if: steps.dl.outcome == 'success' && hashFiles('unictest-results/test_results.json') != ''
+        run: |
+          set -euo pipefail
+          python3 rebrgen/script/diff_unictest_history.py \
+            --current unictest-results/test_results.json \
+            --history-dir hist \
+            --out "$GITHUB_STEP_SUMMARY"
 
-          cd hist
-          git add -A
-          if git diff --cached --quiet; then
+      - name: Record and push
+        if: steps.dl.outcome == 'success' && hashFiles('unictest-results/test_results.json') != ''
+        env:
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          DATE: ${{ github.event.workflow_run.head_commit.timestamp }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          record() {
+            python3 rebrgen/script/record_unictest_history.py \
+              --results unictest-results/test_results.json \
+              --sha "$SHA" --date "$DATE" --out-dir hist
+            git -C hist add -A
+          }
+
+          record
+          if git -C hist diff --cached --quiet; then
             echo "no changes to record"
             exit 0
           fi
-          git commit -m "unictest: record ${SHA}"
+          git -C hist commit -m "unictest: record ${SHA}"
 
-          # Push with rebase-retry in case another recorder advanced the branch.
+          # Serialized by the concurrency group, so this normally succeeds first
+          # try. On the rare race (e.g. a manual push), sync to remote and
+          # re-record: summary.jsonl is regenerated from runs/, so the union is
+          # conflict-free (no rebase needed).
           for attempt in 1 2 3 4 5; do
-            if git push origin unictest-history; then
+            if git -C hist push origin unictest-history; then
               exit 0
             fi
-            echo "push rejected (attempt ${attempt}); rebasing onto remote"
-            git fetch origin unictest-history
-            git rebase origin/unictest-history || git rebase --abort
+            echo "push rejected (attempt ${attempt}); syncing with remote and re-recording"
+            git -C hist fetch origin unictest-history
+            git -C hist reset --hard origin/unictest-history
+            record
+            git -C hist commit -m "unictest: record ${SHA}"
           done
           echo "failed to push history after retries" >&2
           exit 1
