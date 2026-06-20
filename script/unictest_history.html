@@ -54,6 +54,7 @@
   <label>runner:
     <select id="runnerFilter" onchange="render()"><option value="">(all)</option></select>
   </label>
+  <label><input type="checkbox" id="failOnly" onchange="render()"> failures only</label>
   <label><input type="checkbox" id="flakyOnly" onchange="render()"> flaky only</label>
   <div class="legend">
     <span><span class="sw" style="background:var(--pass)"></span>pass</span>
@@ -68,7 +69,9 @@
 <script>
 // ---- config -------------------------------------------------------------
 const OWNER = "on-keyday", REPO = "brgen", BRANCH = "unictest-history";
-const RAW = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/summary.jsonl`;
+const BASE = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}`;
+const RAW = `${BASE}/summary.jsonl`;
+const RUN_URL = sha => `${BASE}/runs/${sha}.json`;
 const COMMIT_URL = sha => `https://github.com/${OWNER}/${REPO}/commit/${sha}`;
 
 let RUNS = [];        // [{sha,date,totals:{runner:{pass,fail}}, fails:Set}]
@@ -89,18 +92,29 @@ async function load() {
       "</code> branch (" + e.message + "). It is created after the first main build records a run.";
     return;
   }
-  RUNS = text.split("\n").filter(l => l.trim()).map(l => {
-    const o = JSON.parse(l);
-    o.fails = new Set(o.fails || []);
-    return o;
-  });
+  RUNS = text.split("\n").filter(l => l.trim()).map(l => JSON.parse(l));
   RUNS.sort((a, b) => (a.date || "").localeCompare(b.date || "") || (a.sha || "").localeCompare(b.sha || ""));
   if (!RUNS.length) { document.getElementById("status").textContent = "No runs recorded yet."; return; }
 
+  // summary.jsonl only lists failures, so the per-case pass/fail/didn't-run truth
+  // lives in the per-run snapshots. Fetch them to build a complete case x run
+  // matrix (otherwise passing cases are invisible and "didn't run" is guessed).
+  document.getElementById("status").textContent = `Fetching ${RUNS.length} run snapshot(s)…`;
+  await Promise.all(RUNS.map(async run => {
+    run.status = new Map(); // caseKey -> bool success
+    try {
+      const r = await fetch(RUN_URL(run.sha) + "?t=" + Date.now());
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const snap = await r.json();
+      for (const res of snap.results || []) {
+        run.status.set(`${res.runner}/${res.input_name}/${res.option_set}`, !!res.success);
+      }
+    } catch (e) { run.snapErr = e.message; }
+  }));
+
   const caseSet = new Set(), runnerSet = new Set();
   for (const run of RUNS) {
-    for (const k of run.fails) caseSet.add(k);
-    for (const r of Object.keys(run.totals || {})) runnerSet.add(r);
+    for (const k of run.status.keys()) { caseSet.add(k); runnerSet.add(runnerOf(k)); }
   }
   CASES = [...caseSet].sort();
   RUNNERS = [...runnerSet].sort();
@@ -109,9 +123,10 @@ async function load() {
   for (const r of RUNNERS) { const o = document.createElement("option"); o.value = o.textContent = r; sel.appendChild(o); }
 
   const last = RUNS[RUNS.length - 1];
+  const everFail = CASES.filter(everFailed).length;
   document.getElementById("summary").innerHTML =
     `${RUNS.length} run(s) · latest <a href="${COMMIT_URL(last.sha)}"><code>${last.sha.slice(0,8)}</code></a>` +
-    ` (${(last.date||"").slice(0,10)}) · ${CASES.length} ever-failing case(s) across ${RUNNERS.length} runner(s)`;
+    ` (${(last.date||"").slice(0,10)}) · ${CASES.length} case(s) (${everFail} ever-failing) across ${RUNNERS.length} runner(s)`;
   document.getElementById("status").hidden = true;
   document.getElementById("grid").hidden = false;
   render();
@@ -120,11 +135,22 @@ async function load() {
 // runner of a case key "runner/input/option"
 const runnerOf = key => key.split("/", 1)[0];
 
-// status of a case in a run: "absent" | "pass" | "fail"
+// status of a case in a run: "absent" (didn't run / didn't exist) | "pass" | "fail"
 function caseStatus(run, key) {
-  if (!(runnerOf(key) in (run.totals || {}))) return "absent"; // runner didn't run that build
-  return run.fails.has(key) ? "fail" : "pass";
+  if (!run.status.has(key)) return "absent";
+  return run.status.get(key) ? "pass" : "fail";
 }
+
+// pass/fail counts for a runner in a run, computed from the case matrix
+function runnerTotals(run, runner) {
+  let pass = 0, fail = 0;
+  for (const [k, ok] of run.status) {
+    if (runnerOf(k) === runner) { ok ? pass++ : fail++; }
+  }
+  return { pass, fail, ran: pass + fail > 0 };
+}
+
+const everFailed = key => RUNS.some(run => caseStatus(run, key) === "fail");
 
 function flips(key) {
   let n = 0, prev = null;
@@ -158,6 +184,7 @@ function render() {
   const grid = document.getElementById("grid");
   const filt = document.getElementById("runnerFilter").value;
   const flakyOnly = document.getElementById("flakyOnly").checked;
+  const failOnly = document.getElementById("failOnly").checked;
   let html = "<thead>" + colHeader() + "</thead><tbody>";
 
   if (view === "runner") {
@@ -165,8 +192,8 @@ function render() {
       if (filt && runner !== filt) continue;
       let cells = "";
       for (const run of RUNS) {
-        const t = (run.totals || {})[runner];
-        if (!t) { cells += `<td class="cell" style="background:var(--absent)" title="${runner}\n${run.sha.slice(0,8)}: didn't run"></td>`; continue; }
+        const t = runnerTotals(run, runner);
+        if (!t.ran) { cells += `<td class="cell" style="background:var(--absent)" title="${runner}\n${run.sha.slice(0,8)}: didn't run"></td>`; continue; }
         cells += `<td class="cell" style="background:${ratioColor(t.pass,t.fail)}" title="${runner}\n${run.sha.slice(0,8)}: ${t.pass} pass / ${t.fail} fail">${t.fail||""}</td>`;
       }
       html += `<tr><th class="row" title="${runner}">${runner}</th>${cells}</tr>`;
@@ -176,6 +203,7 @@ function render() {
     for (const key of CASES) {
       const runner = runnerOf(key);
       if (filt && runner !== filt) continue;
+      if (failOnly && !everFailed(key)) continue;
       const fl = flips(key);
       if (flakyOnly && fl < 2) continue;
       if (runner !== curRunner) {
