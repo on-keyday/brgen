@@ -19,6 +19,12 @@ decode/encode が実行時に保持する必要のある合成 state(まず stre
   reader は今まで通り独立の io param、RuntimeState はその横に並ぶ純粋な追加 state バッグ。
 - **user `state`(DSL の `state`）とは混ぜない**。GET_STREAM_OFFSET 等は `RuntimeState` への
   MEMBER_ACCESS に lowering する。
+- **IR で統一するのは「配管」だけ**: gate(どの関数が要るか)と call-graph 伝播、companion の
+  threading(param 渡し)、subrange の親 offset seed、GET_STREAM_OFFSET → companion read。
+  **offset の増分(`+= size`)は IR 化しない** — [[0008-update-offset-rejected]] の通り IO 戦略と
+  密結合で IR 一意化に失敗するため、各 backend のまま(下記「実装方針」)。集約の狙いは「各 backend が
+  バラバラに再発明している配管(go の subrange 渡し忘れ等)を 1 つの gated companion に束ねる」ことであって、
+  IO 戦略依存の増分まで巻き取ることではない。
 
 ## 動機
 
@@ -45,8 +51,12 @@ decode/encode が実行時に保持する必要のある合成 state(まず stre
 - **subrange/ネスト**: 子が RuntimeState を要する時だけ子 RuntimeState を構築。offset は親から継承
   (= [[0038-subrange-alignment-uses-absolute-offset]] の絶対 offset)。読み書きカーソル(buffer index /
   cursor)は subrange ごとに 0 でよいが、**alignment 基準の offset だけは親から seed**。
-- **増分**: RuntimeState.offset は READ_DATA/WRITE_DATA 時に `+= size` で更新(size は IR が保持)。
-  これが endian(不変・convert-time)と違う唯一の新規ロジックで、IO 文に局所化される。
+- **増分は IR 化しない(各 backend のまま)**: `offset += size` の挿入を IR 文(UPDATE_OFFSET)で
+  行うのは [[0008-update-offset-rejected]] で既に撤回済み。LOWERED_IO_STATEMENTS により**実際に
+  ストリームが進むタイミング/量が backend の IO 戦略ごとに異なる**ため、IR 時点で正しい挿入位置を
+  一意に決められず多重カウントした。よって本 ADR は**増分を各 backend の READ_DATA/WRITE_DATA
+  visitor に残す**(各 backend が自分の IO 戦略に合わせて共通 companion を `+= ` する)。
+  `transform/insert_update_offset.cpp`(dead code)は復活させない。
 - **realization knob**: bare reader(rust std-io `impl Read` / go `io.Reader`)は RuntimeState を struct/
   companion として実体化。intrinsic offset を持つ backend(ts `{view,offset}` / cpp futils reader）は
   RuntimeState.offset を native reader にマップして synthetic offset を opt-out できる。
@@ -72,3 +82,6 @@ decode/encode が実行時に保持する必要のある合成 state(まず stre
   全 decode が RuntimeState 必須になり「不要時省略」を満たせない。却下。
 - **全入力をバッファ化して intrinsic offset に統一(reader-object 一本化)**: GET_STREAM_OFFSET は
   一律 `<io>.offset` になるが streaming decode を捨てることになる。streaming は原則維持の方針に反する。却下。
+- **増分も IR で挿入(UPDATE_OFFSET StatementKind)**: [[0008-update-offset-rejected]] で試行・撤回済み。
+  LOWERED_IO_STATEMENTS で増分タイミング/量が backend 依存になり IR 一意化できず多重カウント。本 ADR は
+  この轍を踏まず、増分は backend に残し配管のみ IR 統一する。`insert_update_offset.cpp` は復活させない。
