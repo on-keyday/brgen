@@ -65,6 +65,23 @@ namespace CODEGEN_NAMESPACE {
             return {};
         }
 
+        // Propagate the BufRead requirement up the decode call graph: a function
+        // that calls a sub-decode needing fill_buf must itself take BufRead so it
+        // can pass a BufRead reader down (otherwise the parent emits `impl Read`
+        // and the child's `impl BufRead` param fails E0277). Callees are emitted
+        // before their containers (definition order is bottom-up), so the callee's
+        // HasFillBuf marker is already set by the time we analyze the caller.
+        expected<void> visit(Context_Expression_CALL& ctx) {
+            if (auto callee_ref = ctx.get_field<"member.body.id">(ctx.call_desc.callee)) {
+                auto it = ctx.config().function_markers.find(get_id(from_weak(*callee_ref)));
+                if (it != ctx.config().function_markers.end() &&
+                    has_flag(it->second, ebm2rust::FunctionFlags::HasFillBuf)) {
+                    needs_fill_buf = true;
+                }
+            }
+            return traverse_children<void>(*this, ctx);
+        }
+
         // READ_DATA 文の lowered_statement は default traverse_children が辿らないため
         // 明示的に降りる必要がある。CAN_READ_STREAM はここに埋まっている
         // (例: `while can_read { read_byte }` として lowered された vector 終端判定)。
