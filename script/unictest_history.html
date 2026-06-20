@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<!--
+  unictest history heatmap (Layer 3, ADR 0036).
+  Reads the append-only summary.jsonl from the unictest-history branch and draws
+  a case x commit (and runner x commit) pass/fail heatmap so regressions and
+  flaky tests are visible at a glance. Pure static page; data is fetched
+  cross-origin from raw.githubusercontent (CORS-enabled for public repos).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>unictest history</title>
+<style>
+  :root {
+    --pass: #2da44e; --fail: #cf222e; --absent: #e6e6e6; --line: #d0d7de;
+  }
+  * { box-sizing: border-box; }
+  body { font: 13px/1.45 -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; color: #1f2328; }
+  header { padding: 12px 16px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: #fff; z-index: 5; }
+  h1 { font-size: 16px; margin: 0 0 4px; }
+  .meta { color: #57606a; font-size: 12px; }
+  .controls { padding: 8px 16px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; border-bottom: 1px solid var(--line); position: sticky; top: 49px; background: #fff; z-index: 4; }
+  .controls label { font-size: 12px; color: #57606a; }
+  .legend { display: flex; gap: 10px; align-items: center; margin-left: auto; font-size: 12px; }
+  .sw { display: inline-block; width: 12px; height: 12px; border-radius: 2px; vertical-align: -2px; margin-right: 3px; }
+  .wrap { overflow: auto; max-height: calc(100vh - 110px); }
+  table { border-collapse: collapse; }
+  th.row, td.row { position: sticky; left: 0; background: #fff; text-align: left; white-space: nowrap; padding: 2px 8px; font-weight: 400; border-right: 1px solid var(--line); max-width: 360px; overflow: hidden; text-overflow: ellipsis; }
+  th.row { z-index: 3; }
+  thead th { position: sticky; top: 0; background: #fff; z-index: 2; font-weight: 400; color: #57606a; }
+  thead th.row { z-index: 4; }
+  .cell { width: 14px; height: 14px; padding: 0; border: 1px solid #fff; }
+  .colhdr { font: 10px monospace; height: 64px; }
+  .colhdr div { transform: rotate(-90deg); transform-origin: left; width: 14px; white-space: nowrap; translate: 7px 60px; }
+  .colhdr a { color: #57606a; text-decoration: none; }
+  tr.flaky th.row { color: var(--fail); font-weight: 600; }
+  tr.flaky th.row::after { content: " \26A0"; }
+  .group td { background: #f6f8fa; color: #57606a; font-weight: 600; padding: 2px 8px; position: sticky; left: 0; }
+  .err { color: #b35900; }
+  #status { padding: 16px; color: #57606a; }
+  button.tab { font: inherit; padding: 3px 10px; border: 1px solid var(--line); background: #f6f8fa; border-radius: 6px; cursor: pointer; }
+  button.tab.on { background: #0969da; color: #fff; border-color: #0969da; }
+</style>
+</head>
+<body>
+<header>
+  <h1>unictest history heatmap</h1>
+  <div class="meta" id="summary">loading…</div>
+</header>
+<div class="controls">
+  <button class="tab on" id="tab-case" onclick="setView('case')">cases &times; commits</button>
+  <button class="tab" id="tab-runner" onclick="setView('runner')">runners &times; commits</button>
+  <label>runner:
+    <select id="runnerFilter" onchange="render()"><option value="">(all)</option></select>
+  </label>
+  <label><input type="checkbox" id="flakyOnly" onchange="render()"> flaky only</label>
+  <div class="legend">
+    <span><span class="sw" style="background:var(--pass)"></span>pass</span>
+    <span><span class="sw" style="background:var(--fail)"></span>fail</span>
+    <span><span class="sw" style="background:var(--absent)"></span>didn't run</span>
+    <span>&#9888; flaky</span>
+  </div>
+</div>
+<div id="status">Fetching history…</div>
+<div class="wrap"><table id="grid" hidden></table></div>
+
+<script>
+// ---- config -------------------------------------------------------------
+const OWNER = "on-keyday", REPO = "brgen", BRANCH = "unictest-history";
+const RAW = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/summary.jsonl`;
+const COMMIT_URL = sha => `https://github.com/${OWNER}/${REPO}/commit/${sha}`;
+
+let RUNS = [];        // [{sha,date,totals:{runner:{pass,fail}}, fails:Set}]
+let CASES = [];       // sorted list of case keys that ever failed
+let RUNNERS = [];      // sorted runner names
+let view = "case";
+
+// ---- load ---------------------------------------------------------------
+async function load() {
+  let text;
+  try {
+    const r = await fetch(RAW + "?t=" + Date.now());
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    text = await r.text();
+  } catch (e) {
+    document.getElementById("status").innerHTML =
+      "Could not fetch <code>summary.jsonl</code> from the <code>" + BRANCH +
+      "</code> branch (" + e.message + "). It is created after the first main build records a run.";
+    return;
+  }
+  RUNS = text.split("\n").filter(l => l.trim()).map(l => {
+    const o = JSON.parse(l);
+    o.fails = new Set(o.fails || []);
+    return o;
+  });
+  RUNS.sort((a, b) => (a.date || "").localeCompare(b.date || "") || (a.sha || "").localeCompare(b.sha || ""));
+  if (!RUNS.length) { document.getElementById("status").textContent = "No runs recorded yet."; return; }
+
+  const caseSet = new Set(), runnerSet = new Set();
+  for (const run of RUNS) {
+    for (const k of run.fails) caseSet.add(k);
+    for (const r of Object.keys(run.totals || {})) runnerSet.add(r);
+  }
+  CASES = [...caseSet].sort();
+  RUNNERS = [...runnerSet].sort();
+
+  const sel = document.getElementById("runnerFilter");
+  for (const r of RUNNERS) { const o = document.createElement("option"); o.value = o.textContent = r; sel.appendChild(o); }
+
+  const last = RUNS[RUNS.length - 1];
+  document.getElementById("summary").innerHTML =
+    `${RUNS.length} run(s) · latest <a href="${COMMIT_URL(last.sha)}"><code>${last.sha.slice(0,8)}</code></a>` +
+    ` (${(last.date||"").slice(0,10)}) · ${CASES.length} ever-failing case(s) across ${RUNNERS.length} runner(s)`;
+  document.getElementById("status").hidden = true;
+  document.getElementById("grid").hidden = false;
+  render();
+}
+
+// runner of a case key "runner/input/option"
+const runnerOf = key => key.split("/", 1)[0];
+
+// status of a case in a run: "absent" | "pass" | "fail"
+function caseStatus(run, key) {
+  if (!(runnerOf(key) in (run.totals || {}))) return "absent"; // runner didn't run that build
+  return run.fails.has(key) ? "fail" : "pass";
+}
+
+function flips(key) {
+  let n = 0, prev = null;
+  for (const run of RUNS) {
+    const s = caseStatus(run, key);
+    if (s === "absent") continue;
+    if (prev !== null && s !== prev) n++;
+    prev = s;
+  }
+  return n;
+}
+
+// color for a runner-summary cell by failure ratio
+function ratioColor(pass, fail) {
+  const tot = pass + fail;
+  if (!tot) return "var(--absent)";
+  const ratio = fail / tot;
+  const hue = 136 * (1 - ratio); // 136=green -> 0=red
+  return `hsl(${hue.toFixed(0)} 70% 45%)`;
+}
+
+function colHeader() {
+  let h = '<th class="row">&nbsp;</th>';
+  for (const run of RUNS) {
+    h += `<th class="colhdr"><div><a href="${COMMIT_URL(run.sha)}" title="${run.sha}\n${run.date||""}">${run.sha.slice(0,7)}</a></div></th>`;
+  }
+  return "<tr>" + h + "</tr>";
+}
+
+function render() {
+  const grid = document.getElementById("grid");
+  const filt = document.getElementById("runnerFilter").value;
+  const flakyOnly = document.getElementById("flakyOnly").checked;
+  let html = "<thead>" + colHeader() + "</thead><tbody>";
+
+  if (view === "runner") {
+    for (const runner of RUNNERS) {
+      if (filt && runner !== filt) continue;
+      let cells = "";
+      for (const run of RUNS) {
+        const t = (run.totals || {})[runner];
+        if (!t) { cells += `<td class="cell" style="background:var(--absent)" title="${runner}\n${run.sha.slice(0,8)}: didn't run"></td>`; continue; }
+        cells += `<td class="cell" style="background:${ratioColor(t.pass,t.fail)}" title="${runner}\n${run.sha.slice(0,8)}: ${t.pass} pass / ${t.fail} fail">${t.fail||""}</td>`;
+      }
+      html += `<tr><th class="row" title="${runner}">${runner}</th>${cells}</tr>`;
+    }
+  } else {
+    let curRunner = null;
+    for (const key of CASES) {
+      const runner = runnerOf(key);
+      if (filt && runner !== filt) continue;
+      const fl = flips(key);
+      if (flakyOnly && fl < 2) continue;
+      if (runner !== curRunner) {
+        curRunner = runner;
+        const span = RUNS.length + 1;
+        html += `<tr class="group"><td colspan="${span}">${runner}</td></tr>`;
+      }
+      let cells = "";
+      for (const run of RUNS) {
+        const s = caseStatus(run, key);
+        const bg = s === "fail" ? "var(--fail)" : s === "pass" ? "var(--pass)" : "var(--absent)";
+        cells += `<td class="cell" style="background:${bg}" title="${key}\n${run.sha.slice(0,8)}: ${s}"></td>`;
+      }
+      const label = key.slice(runner.length + 1); // input/option
+      html += `<tr class="${fl >= 2 ? "flaky" : ""}"><th class="row" title="${key}${fl>=2?" — "+fl+" flips":""}">${label}</th>${cells}</tr>`;
+    }
+  }
+  grid.innerHTML = html + "</tbody>";
+}
+
+function setView(v) {
+  view = v;
+  document.getElementById("tab-case").classList.toggle("on", v === "case");
+  document.getElementById("tab-runner").classList.toggle("on", v === "runner");
+  render();
+}
+
+load();
+</script>
+</body>
+</html>
