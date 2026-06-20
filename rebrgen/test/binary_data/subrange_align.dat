@@ -1,0 +1,6 @@
+# EdgeCase, absolute-offset semantics (parent offset inherited into subrange).
+# len = 2 (u16 big-endian): the subrange holds 2 bytes.
+0002
+# Inner starts at absolute offset 2; align to 4 -> (4 - (2 & 3)) & 3 = 2 padding
+# bytes, which fill the whole 2-byte subrange.
+0000

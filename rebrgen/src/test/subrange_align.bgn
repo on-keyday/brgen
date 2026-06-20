@@ -1,0 +1,10 @@
+# Edge case: alignment inside a subrange. `Inner` has only an align field, so
+# its padding size is determined purely by the offset zero-point policy at the
+# subrange boundary: absolute (inherit parent offset) vs subrange-local (reset
+# to 0). Decided: absolute (inherit). See docs/decisions/0038.
+format EdgeCase:
+    len :u16
+    inner :Inner(input = input.subrange(len))
+
+format Inner:
+    align :[..]u8(input.align = 32)
