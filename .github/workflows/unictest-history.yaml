@@ -1,0 +1,96 @@
+name: unictest-history
+run-name: Record unictest history
+
+# Runs after brgen-build finishes and appends that run's unictest results to the
+# append-only `unictest-history` orphan branch (one snapshot per commit). Kept as
+# a standalone workflow so the write token is isolated to this tiny recorder and
+# the existing build/test jobs stay read-only. See ADR 0036.
+on:
+  workflow_run:
+    workflows: ["brgen-build"]
+    types: [completed]
+
+permissions:
+  contents: write   # push to the unictest-history branch
+  actions: read     # download the triggering run's artifact
+
+# Serialize recorders so pushes to the single history branch never race.
+concurrency:
+  group: unictest-history
+  cancel-in-progress: false
+
+jobs:
+  record:
+    # Only record main pushes (the branch whose trend we track). Record even when
+    # tests failed - failures are exactly what we want in the history.
+    if: >
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout tested commit
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - name: Download unictest results from triggering run
+        id: dl
+        continue-on-error: true
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: unictest-results
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: unictest-results
+
+      - name: Record into history branch
+        if: steps.dl.outcome == 'success'
+        env:
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          DATE: ${{ github.event.workflow_run.head_commit.timestamp }}
+        run: |
+          set -euo pipefail
+          if [ ! -f unictest-results/test_results.json ]; then
+            echo "no test_results.json in artifact; nothing to record"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Check out (or create) the orphan history branch in a worktree.
+          git fetch origin unictest-history || true
+          if git ls-remote --exit-code --heads origin unictest-history >/dev/null 2>&1; then
+            git worktree add -B unictest-history hist origin/unictest-history
+          else
+            git worktree add --detach hist
+            git -C hist switch --orphan unictest-history
+          fi
+
+          python3 rebrgen/script/record_unictest_history.py \
+            --results unictest-results/test_results.json \
+            --sha "$SHA" \
+            --date "$DATE" \
+            --out-dir hist
+
+          cd hist
+          git add -A
+          if git diff --cached --quiet; then
+            echo "no changes to record"
+            exit 0
+          fi
+          git commit -m "unictest: record ${SHA}"
+
+          # Push with rebase-retry in case another recorder advanced the branch.
+          for attempt in 1 2 3 4 5; do
+            if git push origin unictest-history; then
+              exit 0
+            fi
+            echo "push rejected (attempt ${attempt}); rebasing onto remote"
+            git fetch origin unictest-history
+            git rebase origin/unictest-history || git rebase --abort
+          done
+          echo "failed to push history after retries" >&2
+          exit 1
