@@ -57,6 +57,12 @@ decode/encode が実行時に保持する必要のある合成 state(まず stre
   一意に決められず多重カウントした。よって本 ADR は**増分を各 backend の READ_DATA/WRITE_DATA
   visitor に残す**(各 backend が自分の IO 戦略に合わせて共通 companion を `+= ` する)。
   `transform/insert_update_offset.cpp`(dead code)は復活させない。
+- **GET_STREAM_OFFSET の lowering 機構**: `GET_STREAM_OFFSET` 式に `lowered_expr`
+  (`LoweredExpressionRef`)フィールドを追加する(EBM 構造変更 → `update_ebm` + 全 ebm2* 再生成)。
+  transform が RuntimeState への MEMBER_ACCESS(`unit` で `.offset` / `.bit_offset` を出し分け)を
+  `lowered_expr` に入れ、各 backend は CONDITIONAL / RANGE_EQUAL と同じく **lowered_expr を優先**する。
+  式そのものは残るので、intrinsic offset backend(ts `{view,offset}` / cpp futils reader)は lowered_expr を
+  無視して自前の `.offset` を返す opt-out も可能(realization knob)。
 - **realization knob**: bare reader(rust std-io `impl Read` / go `io.Reader`)は RuntimeState を struct/
   companion として実体化。intrinsic offset を持つ backend(ts `{view,offset}` / cpp futils reader）は
   RuntimeState.offset を native reader にマップして synthetic offset を opt-out できる。
