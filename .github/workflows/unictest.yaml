@@ -32,6 +32,11 @@ jobs:
       matrix:
         runner: ${{ fromJSON(needs.list-runners.outputs.runners) }}
     steps:
+      # Runtime CI/CD security sensor (eBPF EDR). Must be the first step so it
+      # observes all subsequent dependency installs / test execution.
+      # Pinned to a commit SHA; pre-release, so bump deliberately.
+      - name: CI/CD runtime sensor
+        uses: cicd-sensor/cicd-sensor-action@31366296cb918b7f1413829aafc16dcf18fe8518 # v0.0.35
       - name: Timeline
         uses: Kesin11/actions-timeline@44c9c178ffb2fb1d9859614a3ffa79ccfb77565e # v3.1
         with:
