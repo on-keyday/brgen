@@ -15,6 +15,6 @@
     "typescript": "^6.0.2"
   },
   "dependencies": {
-    "vscode-languageserver": "^9.0.1"
+    "vscode-languageserver": "^10.0.0"
   }
 }
