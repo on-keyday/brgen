@@ -1,6 +1,7 @@
 /*license*/
 #include <unordered_map>
 #include "ebm/extended_binary_module.hpp"
+#include "../access.hpp"
 #include "../converter.hpp"
 #include "../visitor/visitor.hpp"
 #include "ebmgen/converter.hpp"
@@ -43,10 +44,7 @@ namespace ebmgen {
         expected<RuntimeStateGate> gate_of_function(TransformContext& tctx, const ebm::FunctionDecl& func) {
             RuntimeStateGate gate;
             for (auto& param_ref : func.params.container) {
-                MAYBE(param_stmt, tctx.context().repository().get_statement(param_ref));
-                MAYBE(param_decl, param_stmt.body.param_decl());
-                MAYBE(type, tctx.context().repository().get_type(param_decl.param_type));
-                if (auto* desc = type.body.io_input_desc()) {
+                if (auto desc = access_field<"param_decl.param_type.io_input_desc">(tctx.context().repository(), param_ref)) {
                     gate.absolute = gate.absolute || desc->has_absolute_offset();
                     gate.bit = gate.bit || desc->has_bit_offset();
                 }
@@ -162,8 +160,7 @@ namespace ebmgen {
                 param_decl->is_mutated(true);
             }
             EBMA_ADD_STATEMENT(param_ref, std::move(param_body));
-            MAYBE(fn_stmt, tctx.statement_repository().get(target));
-            MAYBE(func, fn_stmt.body.func_decl());
+            MAYBE(func, access_field<"func_decl">(ctx.repository(), target));
             append(func.params, param_ref);
             fn_to_param[get_id(target)] = param_ref;
         }
@@ -171,8 +168,7 @@ namespace ebmgen {
         // --- 4. create wrappers for gated functions that lack one, so public
         //        signatures stay unchanged (mirrors derive_encode_decode_wrapper) ---
         for (auto& target : targets) {
-            MAYBE(func_stmt, ctx.repository().get_statement(target));
-            MAYBE(func, func_stmt.body.func_decl());
+            MAYBE(func, access_field<"func_decl">(ctx.repository(), target));
             if (func.attribute.has_wrapper()) {
                 continue;  // existing (state-variable) wrapper is patched in step 5
             }
@@ -233,8 +229,7 @@ namespace ebmgen {
             wrapper_stmt_body.func_decl(std::move(wrapper_func));
             EBMA_ADD_STATEMENT(wrapper_stmt, wrapper_id, std::move(wrapper_stmt_body));
 
-            MAYBE(impl_stmt, tctx.statement_repository().get(target));
-            MAYBE(impl_func, impl_stmt.body.func_decl());
+            MAYBE(impl_func, access_field<"func_decl">(ctx.repository(), target));
             impl_func.attribute.has_wrapper(true);
             impl_func.wrapper_function(wrapper_stmt);
         }
@@ -339,8 +334,7 @@ namespace ebmgen {
             if (auto it = local_companion.find(get_id(fn)); it != local_companion.end()) {
                 return it->second;
             }
-            MAYBE(fn_stmt, ctx.repository().get_statement(fn));
-            MAYBE(func, fn_stmt.body.func_decl());
+            MAYBE(func, access_field<"func_decl">(ctx.repository(), fn));
             if (!func.attribute.is_wrapper()) {
                 return unexpect_error("lower_runtime_state: function {} needs a RuntimeState companion but is neither gated nor a wrapper", get_id(fn));
             }
@@ -348,14 +342,10 @@ namespace ebmgen {
             EBMA_ADD_IDENTIFIER(local_name, std::string("runtime_state"));
             EBM_DEFAULT_VALUE(init_expr, runtime_state_type);
             EBM_DEFINE_VARIABLE(local_var, local_name, runtime_state_type, init_expr, ebm::VariableDeclKind::MUTABLE, false);
-            MAYBE(body_stmt, tctx.statement_repository().get(body_ref));
-            auto* block = body_stmt.body.block();
-            if (!block) {
-                return unexpect_error("lower_runtime_state: wrapper {} body is not a block", get_id(fn));
-            }
-            block->container.insert(block->container.begin(), local_var_def);
-            MAYBE(new_len, varint(block->container.size()));
-            block->len = new_len;
+            MAYBE(block, access_field<"block">(ctx.repository(), body_ref));
+            block.container.insert(block.container.begin(), local_var_def);
+            MAYBE(new_len, varint(block.container.size()));
+            block.len = new_len;
             local_companion[get_id(fn)] = local_var;
             return local_var;
         };
@@ -369,15 +359,8 @@ namespace ebmgen {
             // reborrow in rust etc.), only a wrapper's local companion is INOUT
             bool is_inout = !fn_to_param.contains(get_id(patch.enclosing_fn));
             EBMA_ADD_EXPR(arg_ref, make_as_arg(runtime_state_type, rs_expr, is_inout, callee_param));
-            auto* call_expr = ctx.repository().get_expression(patch.call);
-            if (!call_expr) {
-                return unexpect_error("lower_runtime_state: call expression {} not found", get_id(patch.call));
-            }
-            auto* call_desc = call_expr->body.call_desc();
-            if (!call_desc) {
-                return unexpect_error("lower_runtime_state: expression {} is not a call", get_id(patch.call));
-            }
-            append(call_desc->arguments, arg_ref);
+            MAYBE(call_desc, access_field<"call_desc">(ctx.repository(), patch.call));
+            append(call_desc.arguments, arg_ref);
         }
 
         // --- 6. lower GET_STREAM_OFFSET to a companion member access ---
@@ -398,11 +381,8 @@ namespace ebmgen {
             MAYBE(rs_expr, companion_expr_of(patch.enclosing_fn));
             EBM_IDENTIFIER(field_expr, field_ref, counter_type);
             EBM_MEMBER_ACCESS(member_access, counter_type, rs_expr, field_expr);
-            auto* offset_expr = ctx.repository().get_expression(patch.expr);
-            if (!offset_expr) {
-                return unexpect_error("lower_runtime_state: GET_STREAM_OFFSET expression {} not found", get_id(patch.expr));
-            }
-            offset_expr->body.lowered_expr(ebm::LoweredExpressionRef{member_access});
+            MAYBE(offset_expr, ctx.repository().get_expression(patch.expr));
+            offset_expr.body.lowered_expr(ebm::LoweredExpressionRef{member_access});
         }
 
         // --- 7. fail-loud invariant check over the flat expression table:
@@ -410,50 +390,27 @@ namespace ebmgen {
         //        and every GET_STREAM_OFFSET must have been lowered. This catches
         //        containers the structural traversal above failed to reach.
         {
-            auto resolve_callee_fn = [&](const ebm::CallDesc& call_desc) -> std::optional<ebm::StatementRef> {
-                auto* callee = ctx.repository().get_expression(call_desc.callee);
-                if (!callee || callee->body.kind != ebm::ExpressionKind::MEMBER_ACCESS) {
-                    return std::nullopt;
-                }
-                auto member = callee->body.member();
-                if (!member) {
-                    return std::nullopt;
-                }
-                auto* member_expr = ctx.repository().get_expression(*member);
-                if (!member_expr || member_expr->body.kind != ebm::ExpressionKind::IDENTIFIER) {
-                    return std::nullopt;
-                }
-                auto id = member_expr->body.id();
-                if (!id) {
-                    return std::nullopt;
-                }
-                return from_weak(*id);
-            };
             for (auto& expr : tctx.expression_repository().get_all()) {
                 if (auto* call_desc = expr.body.call_desc()) {
-                    auto callee_fn = resolve_callee_fn(*call_desc);
+                    // resolve the callee the same way the collector above does
+                    auto callee_fn = access_field<"member.body.id">(ctx.repository(), call_desc->callee);
                     if (!callee_fn) {
                         continue;
                     }
-                    auto it = fn_to_param.find(get_id(*callee_fn));
+                    auto it = fn_to_param.find(get_id(from_weak(*callee_fn)));
                     if (it == fn_to_param.end()) {
                         continue;
                     }
                     bool has_companion = false;
                     for (auto& arg_ref : call_desc->arguments.container) {
-                        auto* arg = ctx.repository().get_expression(arg_ref);
-                        if (!arg) {
-                            continue;
-                        }
-                        if (auto* as_arg = arg->body.as_arg()) {
-                            if (get_id(from_weak(as_arg->param)) == get_id(it->second)) {
-                                has_companion = true;
-                                break;
-                            }
+                        auto param = access_field<"as_arg.param">(ctx.repository(), arg_ref);
+                        if (param && get_id(from_weak(*param)) == get_id(it->second)) {
+                            has_companion = true;
+                            break;
                         }
                     }
                     if (!has_companion) {
-                        return unexpect_error("lower_runtime_state: call {} targets gated function {} but was not reached by the traversal (missing runtime_state argument)", get_id(expr.id), get_id(*callee_fn));
+                        return unexpect_error("lower_runtime_state: call {} targets gated function {} but was not reached by the traversal (missing runtime_state argument)", get_id(expr.id), get_id(from_weak(*callee_fn)));
                     }
                 }
                 else if (expr.body.kind == ebm::ExpressionKind::GET_STREAM_OFFSET) {
