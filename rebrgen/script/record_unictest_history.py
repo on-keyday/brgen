@@ -15,6 +15,12 @@ To bound growth without losing triage ability, snapshots keep the full
 ``output_stdout`` / ``output_stderr`` (each capped) *only for failing cases* -
 those are what you investigate later. Passing cases keep just the boolean and
 identifying fields ("compilation successful" logs have no triage value).
+
+Setup failures (``setup_failures`` in the merged results) are recorded too:
+they never appear in ``results``, so without them a runner whose codegen
+errors out looks like its cases silently "didn't run" (e.g. ebm2llvm shows 1
+case instead of 51). They are keyed as ``runner/<source basename>/option`` -
+a distinct namespace from result cases (the ``.bgn`` suffix marks them).
 """
 
 import argparse
@@ -72,6 +78,54 @@ def _case_key(entry):
     )
 
 
+def _setup_key(entry):
+    """Key for a trimmed setup-failure entry (source keeps its .bgn suffix, so
+    this can never collide with a result case key)."""
+    return "{}/{}/{}".format(
+        entry.get("runner", "?"),
+        entry.get("source", "?"),
+        entry.get("option_set", "?"),
+    )
+
+
+def _trim_setup(raw):
+    """Normalize one raw setup_failures entry (serde enum-wrapped) for storage.
+
+    ``CommandFailure`` carries runner/source/option + logs; ``OrchestrationError``
+    only an error message. Unknown variants are kept with their name so new
+    unictest failure kinds surface instead of vanishing.
+    """
+    if not isinstance(raw, dict) or len(raw) != 1:
+        return {"kind": "Unknown", "error_message": _cap(json.dumps(raw, ensure_ascii=False))}
+    kind, body = next(iter(raw.items()))
+    out = {"kind": kind}
+    if not isinstance(body, dict):
+        out["error_message"] = _cap(str(body))
+        return out
+    if "runner" in body:
+        out["runner"] = body["runner"]
+    if "source" in body:
+        # paths are machine-dependent; the basename is the stable identity
+        out["source"] = os.path.basename(body["source"])
+    if "option_set" in body:
+        out["option_set"] = body["option_set"]
+    err = _first_error_line(body)
+    if err is None:
+        # setup errors are often "<tool>: error: ..." which the ^error: regex
+        # misses; fall back to the first non-empty stderr line
+        for line in (body.get("output_stderr") or "").splitlines():
+            if line.strip():
+                err = line.strip()[:300]
+                break
+    if err is not None:
+        out["error"] = err
+    for key in ("output_stdout", "output_stderr", "error_message"):
+        val = _cap(body.get(key))
+        if val:
+            out[key] = val
+    return out
+
+
 def _trim(entry):
     out = {k: entry[k] for k in _KEEP_FIELDS if k in entry}
     if entry.get("success"):
@@ -97,6 +151,7 @@ def write_snapshot(results_path, sha, date, out_dir):
         "sha": sha,
         "date": date,
         "results": [_trim(r) for r in results],
+        "setup_failures": [_trim_setup(s) for s in data.get("setup_failures", [])],
     }
     runs_dir = os.path.join(out_dir, "runs")
     os.makedirs(runs_dir, exist_ok=True)
@@ -111,6 +166,8 @@ def _summarize(snapshot):
     """Aggregate one snapshot into a compact summary line."""
     totals = {}
     fails = []
+    setup_fails = []
+    orchestration_errors = 0
     for r in snapshot.get("results", []):
         runner = r.get("runner", "?")
         bucket = totals.setdefault(runner, {"pass": 0, "fail": 0})
@@ -119,12 +176,24 @@ def _summarize(snapshot):
         else:
             bucket["fail"] += 1
             fails.append(_case_key(r))
-    return {
+    for s in snapshot.get("setup_failures", []):
+        if "runner" not in s:
+            # OrchestrationError etc. - not attributable to a runner/source
+            orchestration_errors += 1
+            continue
+        bucket = totals.setdefault(s["runner"], {"pass": 0, "fail": 0})
+        bucket["setup_fail"] = bucket.get("setup_fail", 0) + 1
+        setup_fails.append(_setup_key(s))
+    line = {
         "sha": snapshot.get("sha"),
         "date": snapshot.get("date"),
         "totals": totals,
         "fails": sorted(fails),
+        "setup_fails": sorted(setup_fails),
     }
+    if orchestration_errors:
+        line["orchestration_errors"] = orchestration_errors
+    return line
 
 
 def regenerate_summary(out_dir):

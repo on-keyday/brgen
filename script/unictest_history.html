@@ -13,7 +13,7 @@
 <title>unictest history</title>
 <style>
   :root {
-    --pass: #2da44e; --fail: #cf222e; --absent: #e6e6e6; --line: #d0d7de;
+    --pass: #2da44e; --fail: #cf222e; --setup: #d4a017; --absent: #e6e6e6; --line: #d0d7de;
   }
   * { box-sizing: border-box; }
   body { font: 13px/1.45 -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; color: #1f2328; }
@@ -59,6 +59,7 @@
   <div class="legend">
     <span><span class="sw" style="background:var(--pass)"></span>pass</span>
     <span><span class="sw" style="background:var(--fail)"></span>fail</span>
+    <span><span class="sw" style="background:var(--setup)"></span>setup fail</span>
     <span><span class="sw" style="background:var(--absent)"></span>didn't run</span>
     <span>&#9888; flaky</span>
   </div>
@@ -101,13 +102,20 @@ async function load() {
   // matrix (otherwise passing cases are invisible and "didn't run" is guessed).
   document.getElementById("status").textContent = `Fetching ${RUNS.length} run snapshot(s)…`;
   await Promise.all(RUNS.map(async run => {
-    run.status = new Map(); // caseKey -> bool success
+    run.status = new Map(); // caseKey -> "pass" | "fail" | "setup"
     try {
       const r = await fetch(RUN_URL(run.sha) + "?t=" + Date.now());
       if (!r.ok) throw new Error("HTTP " + r.status);
       const snap = await r.json();
       for (const res of snap.results || []) {
-        run.status.set(`${res.runner}/${res.input_name}/${res.option_set}`, !!res.success);
+        run.status.set(`${res.runner}/${res.input_name}/${res.option_set}`, res.success ? "pass" : "fail");
+      }
+      // setup failures never reach results; keyed runner/<source>.bgn/option
+      // (the .bgn suffix keeps them from colliding with result case keys).
+      // Snapshots recorded before setup-failure support just lack the field.
+      for (const sf of snap.setup_failures || []) {
+        if (!sf.runner) continue; // OrchestrationError etc.
+        run.status.set(`${sf.runner}/${sf.source}/${sf.option_set}`, "setup");
       }
     } catch (e) { run.snapErr = e.message; }
   }));
@@ -135,22 +143,22 @@ async function load() {
 // runner of a case key "runner/input/option"
 const runnerOf = key => key.split("/", 1)[0];
 
-// status of a case in a run: "absent" (didn't run / didn't exist) | "pass" | "fail"
+// status of a case in a run: "absent" (didn't run / didn't exist) | "pass" | "fail" | "setup"
 function caseStatus(run, key) {
-  if (!run.status.has(key)) return "absent";
-  return run.status.get(key) ? "pass" : "fail";
+  return run.status.get(key) ?? "absent";
 }
 
-// pass/fail counts for a runner in a run, computed from the case matrix
+// pass/fail/setup counts for a runner in a run, computed from the case matrix
 function runnerTotals(run, runner) {
-  let pass = 0, fail = 0;
-  for (const [k, ok] of run.status) {
-    if (runnerOf(k) === runner) { ok ? pass++ : fail++; }
+  let pass = 0, fail = 0, setup = 0;
+  for (const [k, s] of run.status) {
+    if (runnerOf(k) !== runner) continue;
+    if (s === "pass") pass++; else if (s === "fail") fail++; else if (s === "setup") setup++;
   }
-  return { pass, fail, ran: pass + fail > 0 };
+  return { pass, fail, setup, ran: pass + fail + setup > 0 };
 }
 
-const everFailed = key => RUNS.some(run => caseStatus(run, key) === "fail");
+const everFailed = key => RUNS.some(run => { const s = caseStatus(run, key); return s === "fail" || s === "setup"; });
 
 function flips(key) {
   let n = 0, prev = null;
@@ -163,7 +171,7 @@ function flips(key) {
   return n;
 }
 
-// color for a runner-summary cell by failure ratio
+// color for a runner-summary cell by failure ratio (setup failures count as failures)
 function ratioColor(pass, fail) {
   const tot = pass + fail;
   if (!tot) return "var(--absent)";
@@ -194,7 +202,8 @@ function render() {
       for (const run of RUNS) {
         const t = runnerTotals(run, runner);
         if (!t.ran) { cells += `<td class="cell" style="background:var(--absent)" title="${runner}\n${run.sha.slice(0,8)}: didn't run"></td>`; continue; }
-        cells += `<td class="cell" style="background:${ratioColor(t.pass,t.fail)}" title="${runner}\n${run.sha.slice(0,8)}: ${t.pass} pass / ${t.fail} fail">${t.fail||""}</td>`;
+        const bad = t.fail + t.setup;
+        cells += `<td class="cell" style="background:${ratioColor(t.pass,bad)}" title="${runner}\n${run.sha.slice(0,8)}: ${t.pass} pass / ${t.fail} fail${t.setup ? ` / ${t.setup} setup fail` : ""}">${bad||""}</td>`;
       }
       html += `<tr><th class="row" title="${runner}">${runner}</th>${cells}</tr>`;
     }
@@ -214,8 +223,8 @@ function render() {
       let cells = "";
       for (const run of RUNS) {
         const s = caseStatus(run, key);
-        const bg = s === "fail" ? "var(--fail)" : s === "pass" ? "var(--pass)" : "var(--absent)";
-        cells += `<td class="cell" style="background:${bg}" title="${key}\n${run.sha.slice(0,8)}: ${s}"></td>`;
+        const bg = s === "fail" ? "var(--fail)" : s === "pass" ? "var(--pass)" : s === "setup" ? "var(--setup)" : "var(--absent)";
+        cells += `<td class="cell" style="background:${bg}" title="${key}\n${run.sha.slice(0,8)}: ${s === "setup" ? "setup fail" : s}"></td>`;
       }
       const label = key.slice(runner.length + 1); // input/option
       html += `<tr class="${fl >= 2 ? "flaky" : ""}"><th class="row" title="${key}${fl>=2?" — "+fl+" flips":""}">${label}</th>${cells}</tr>`;

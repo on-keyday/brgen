@@ -23,11 +23,20 @@ import sys
 
 # Reuse the trimming/identity helpers so case keys match the recorder exactly.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from record_unictest_history import _case_key, _first_error_line  # noqa: E402
+from record_unictest_history import (  # noqa: E402
+    _case_key,
+    _first_error_line,
+    _setup_key,
+    _trim_setup,
+)
 
 
 def _load_current(path):
-    """case_key -> {'success': bool, 'error': str|None, fields...} for this run."""
+    """(case map, setup map) for this run.
+
+    case map: case_key -> {'success': bool, 'error': str|None, fields...}
+    setup map: setup_key -> trimmed setup entry (see record_unictest_history).
+    """
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
     out = {}
@@ -39,11 +48,18 @@ def _load_current(path):
             "input_name": r.get("input_name", "?"),
             "option_set": r.get("option_set", "?"),
         }
-    return out
+    setups = {}
+    for s in data.get("setup_failures", []):
+        trimmed = _trim_setup(s)
+        if "runner" in trimmed:
+            setups[_setup_key(trimmed)] = trimmed
+    return out, setups
 
 
 def _latest_snapshot(history_dir):
-    """Return (sha, {case_key: success}) of the most recent recorded run, or None."""
+    """Return (sha, {case_key: success}, {setup_key}) of the most recent
+    recorded run, or None. Snapshots recorded before setup-failure support
+    simply yield an empty setup set."""
     summary_path = os.path.join(history_dir, "summary.jsonl")
     if not os.path.exists(summary_path):
         return None
@@ -61,7 +77,10 @@ def _latest_snapshot(history_dir):
     with open(snap_path, encoding="utf-8") as f:
         snap = json.load(f)
     statuses = {_case_key(r): bool(r.get("success")) for r in snap.get("results", [])}
-    return last["sha"], statuses
+    setup_keys = {
+        _setup_key(s) for s in snap.get("setup_failures", []) if "runner" in s
+    }
+    return last["sha"], statuses, setup_keys
 
 
 def _flaky_candidates(history_dir, window):
@@ -114,7 +133,7 @@ def _totals(statuses_or_current, is_current):
     return totals
 
 
-def build_report(current, prev, flaky):
+def build_report(current, cur_setups, prev, flaky):
     cur_status = {k: v["success"] for k, v in current.items()}
     lines = []
     if prev is None:
@@ -123,7 +142,7 @@ def build_report(current, prev, flaky):
         lines.append("No previous snapshot to diff against; baseline established.")
         lines.append("")
     else:
-        prev_sha, prev_status = prev
+        prev_sha, prev_status, prev_setups = prev
         regressions = sorted(
             k for k, ok in cur_status.items()
             if not ok and prev_status.get(k) is True
@@ -137,17 +156,43 @@ def build_report(current, prev, flaky):
         # A newly-added runner or input is not a regression (it never passed
         # before), but a new case that *fails* is still worth itemizing.
         new_failing = [k for k in new_cases if cur_status.get(k) is False]
+        # Setup failures never reach `results`, so without this they'd only
+        # show up indirectly as "removed" cases.
+        new_setups = sorted(set(cur_setups) - prev_setups)
+        fixed_setups = sorted(prev_setups - set(cur_setups))
 
         lines.append("## unictest diff vs `{}`".format(prev_sha[:12]))
         lines.append("")
         lines.append(
-            "🔴 **{} regression(s)** · 🟢 {} fix(es) · ⚠️ {} flaky · "
+            "🔴 **{} regression(s)** · 🟠 **{} new setup failure(s)** · "
+            "🟢 {} fix(es) ({} setup) · ⚠️ {} flaky · "
             "🆕 {} new ({} failing) · ➖ {} removed".format(
-                len(regressions), len(fixes), len(flaky),
+                len(regressions), len(new_setups),
+                len(fixes), len(fixed_setups), len(flaky),
                 len(new_cases), len(new_failing), len(gone_cases)
             )
         )
         lines.append("")
+
+        if new_setups:
+            lines.append("### 🟠 New setup failures (codegen/setup errored; cases did not run)")
+            lines.append("")
+            lines.append("| runner | source | option | error |")
+            lines.append("|---|---|---|---|")
+            for k in new_setups:
+                info = cur_setups[k]
+                err = (info.get("error") or "").replace("|", "\\|")[:160]
+                lines.append("| {} | {} | {} | {} |".format(
+                    info.get("runner", "?"), info.get("source", "?"),
+                    info.get("option_set", "?"), err))
+            lines.append("")
+
+        if fixed_setups:
+            lines.append("### 🟢 Setup failures resolved")
+            lines.append("")
+            for k in fixed_setups:
+                lines.append("- `{}`".format(k))
+            lines.append("")
 
         if regressions:
             lines.append("### 🔴 Regressions (was passing, now failing)")
@@ -192,12 +237,17 @@ def build_report(current, prev, flaky):
     # Per-runner totals (with Δfail vs previous if available).
     cur_tot = _totals(current, True)
     prev_tot = _totals(prev[1], False) if prev else {}
+    cur_setup_tot = {}
+    for k in cur_setups:
+        runner = k.split("/", 1)[0]
+        cur_setup_tot[runner] = cur_setup_tot.get(runner, 0) + 1
     lines.append("### Totals per runner")
     lines.append("")
-    lines.append("| runner | pass | fail | Δfail |")
-    lines.append("|---|---|---|---|")
-    for runner in sorted(cur_tot):
-        p, fcount = cur_tot[runner]
+    lines.append("| runner | pass | fail | setup fail | Δfail |")
+    lines.append("|---|---|---|---|---|")
+    for runner in sorted(set(cur_tot) | set(cur_setup_tot)):
+        p, fcount = cur_tot.get(runner, [0, 0])
+        setup = cur_setup_tot.get(runner, 0)
         if not prev:
             delta = ""
         elif runner not in prev_tot:
@@ -205,7 +255,8 @@ def build_report(current, prev, flaky):
         else:
             d = fcount - prev_tot[runner][1]
             delta = "±0" if d == 0 else ("+{}".format(d) if d > 0 else str(d))
-        lines.append("| {} | {} | {} | {} |".format(runner, p, fcount, delta))
+        lines.append("| {} | {} | {} | {} | {} |".format(
+            runner, p, fcount, setup or "", delta))
     lines.append("")
     return "\n".join(lines), (len(regressions) if prev else 0)
 
@@ -223,10 +274,10 @@ def main():
     except Exception:
         pass
 
-    current = _load_current(args.current)
+    current, cur_setups = _load_current(args.current)
     prev = _latest_snapshot(args.history_dir)
     flaky = _flaky_candidates(args.history_dir, args.flaky_window)
-    report, regression_count = build_report(current, prev, flaky)
+    report, regression_count = build_report(current, cur_setups, prev, flaky)
 
     if args.out == "-":
         sys.stdout.write(report + "\n")
