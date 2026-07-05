@@ -685,7 +685,7 @@ DEFINE_VISITOR(entry_before) {
         // so the shared RuntimeState companion keeps counting inside the subrange.
         // The window is consumed as a whole, so pin the companion to
         // start + length after the child ran.
-        const bool track_offset = ebm2zig::has_absolute_offset(sctx, sctx.sub_byte_range.io_ref) &&
+        const bool track_offset = has_absolute_offset(sctx, sctx.sub_byte_range.io_ref) &&
                                   sctx.sub_byte_range.stream_type == ebm::StreamType::INPUT;
         MAYBE(length_expr, sctx.sub_byte_range.length());
         MAYBE(length_str, sctx.visit(length_expr));

@@ -87,22 +87,12 @@ expected<std::string> type_to_pack_format(Ctx& ctx, const ebm::TypeRef& type_ref
 }
 
 
-// ADR 0039: true when the io stream's input type is flagged has_absolute_offset,
-// i.e. lower_runtime_state threaded a RuntimeState companion through the
-// enclosing function (parameter/local name is always `runtime_state`).
-inline bool ruby_has_absolute_offset(auto& ctx, ebm::StatementRef io_ref) {
-    auto typ = ctx.template get_field<"param_decl.param_type">(io_ref);
-    if (!typ) {
-        typ = ctx.template get_field<"var_decl.var_type">(io_ref);
-    }
-    return ctx.template get_field<"io_input_desc.has_absolute_offset">(typ) == true;
-}
-
-// Emit `runtime_state.offset += <size>` when the stream is gated. The increment
-// stays backend-side per ADR 0008/0039; StringIO#pos stays the stream-local
-// cursor, the companion counts absolute bytes.
+// Emit `runtime_state.offset += <size>` when the stream is gated (see
+// ebmcodegen::util::has_absolute_offset). The increment stays backend-side per
+// ADR 0008/0039; StringIO#pos stays the stream-local cursor, the companion
+// counts absolute bytes.
 inline void ruby_append_runtime_offset(auto& ctx, ebm::StatementRef io_ref, CodeWriter& w, auto&& size_expr) {
-    if (ruby_has_absolute_offset(ctx, io_ref)) {
+    if (ebmcodegen::util::has_absolute_offset(ctx, io_ref)) {
         w.writeln("runtime_state.offset += (", size_expr, ")");
     }
 }

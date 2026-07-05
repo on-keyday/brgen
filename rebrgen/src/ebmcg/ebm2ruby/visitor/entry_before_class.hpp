@@ -331,7 +331,7 @@ DEFINE_VISITOR(entry_before) {
         // so the shared RuntimeState companion keeps counting inside the subrange
         // while StringIO#pos stays stream-local. The window is consumed as a whole,
         // so pin the companion to start + length after the child ran.
-        const bool track_offset = ruby_has_absolute_offset(ctx, ctx.sub_byte_range.io_ref) &&
+        const bool track_offset = has_absolute_offset(ctx, ctx.sub_byte_range.io_ref) &&
                                   ctx.sub_byte_range.stream_type == ebm::StreamType::INPUT;
         if (ctx.sub_byte_range.stream_type == ebm::StreamType::INPUT) {
             w.writeln(io_, " = StringIO.new(", parent_io_, ".read(", length_str.to_writer(), ").b)");

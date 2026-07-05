@@ -23,22 +23,12 @@
 
 namespace CODEGEN_NAMESPACE {
 
-    // ADR 0039: true when the io stream's input type is flagged has_absolute_offset,
-    // i.e. lower_runtime_state threaded a RuntimeState companion through the
-    // enclosing function (parameter/local name is always `runtime_state`).
-    inline bool cpp_has_absolute_offset(auto& ctx, ebm::StatementRef io_ref) {
-        auto typ = ctx.template get_field<"param_decl.param_type">(io_ref);
-        if (!typ) {
-            typ = ctx.template get_field<"var_decl.var_type">(io_ref);
-        }
-        return ctx.template get_field<"io_input_desc.has_absolute_offset">(typ) == true;
-    }
-
-    // Emit `runtime_state.offset += <size>;` when the stream is gated. The
-    // increment stays backend-side per ADR 0008/0039; the futils reader/writer
-    // cursor stays view-local, the companion counts absolute bytes.
+    // Emit `runtime_state.offset += <size>;` when the stream is gated
+    // (see ebmcodegen::util::has_absolute_offset). The increment stays
+    // backend-side per ADR 0008/0039; the futils reader/writer cursor stays
+    // view-local, the companion counts absolute bytes.
     inline void cpp_append_runtime_offset(auto& ctx, ebm::StatementRef io_ref, CodeWriter& w, auto&& size_expr) {
-        if (cpp_has_absolute_offset(ctx, io_ref)) {
+        if (ebmcodegen::util::has_absolute_offset(ctx, io_ref)) {
             w.writeln("runtime_state.offset += (", size_expr, ");");
         }
     }
@@ -320,7 +310,7 @@ DEFINE_VISITOR(entry_before) {
             // the subrange while the sub-reader cursor stays view-local. The
             // window is consumed as a whole, so pin the companion to
             // start + length after the child ran.
-            const bool track_offset = cpp_has_absolute_offset(ctx, ctx.sub_byte_range.io_ref);
+            const bool track_offset = has_absolute_offset(ctx, ctx.sub_byte_range.io_ref);
             // Create sub-reader from parent reader's current position
             w.writeln("{");
             {

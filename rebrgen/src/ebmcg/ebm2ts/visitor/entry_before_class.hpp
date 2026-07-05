@@ -127,22 +127,12 @@ namespace CODEGEN_NAMESPACE {
         return fn->kind == ebm::FunctionKind::ENCODE;
     }
 
-    // ADR 0039: true when the io stream's input type is flagged has_absolute_offset,
-    // i.e. lower_runtime_state threaded a RuntimeState companion through the
-    // enclosing function (parameter/local name is always `runtime_state`).
-    inline bool ts_has_absolute_offset(auto& ctx, ebm::StatementRef io_ref) {
-        auto typ = ctx.template get_field<"param_decl.param_type">(io_ref);
-        if (!typ) {
-            typ = ctx.template get_field<"var_decl.var_type">(io_ref);
-        }
-        return ctx.template get_field<"io_input_desc.has_absolute_offset">(typ) == true;
-    }
-
-    // Emit `runtime_state.offset += <size>;` when the stream is gated. The
-    // increment stays backend-side per ADR 0008/0039; `io.offset` above stays
-    // the view-local read/write cursor, the companion counts absolute bytes.
+    // Emit `runtime_state.offset += <size>;` when the stream is gated
+    // (see ebmcodegen::util::has_absolute_offset). The increment stays
+    // backend-side per ADR 0008/0039; `io.offset` stays the view-local
+    // read/write cursor, the companion counts absolute bytes.
     inline void ts_append_runtime_offset(auto& ctx, ebm::StatementRef io_ref, CodeWriter& w, auto&& size_expr) {
-        if (ts_has_absolute_offset(ctx, io_ref)) {
+        if (ebmcodegen::util::has_absolute_offset(ctx, io_ref)) {
             w.writeln("runtime_state.offset += ", size_expr, ";");
         }
     }
@@ -854,7 +844,7 @@ DEFINE_VISITOR(entry_before) {
         // so the shared RuntimeState companion keeps counting inside the subrange
         // while `io.offset` stays the view-local cursor. The window is consumed as
         // a whole, so pin the companion to start + length after the child ran.
-        const bool track_offset = ts_has_absolute_offset(sctx, sctx.sub_byte_range.io_ref) &&
+        const bool track_offset = has_absolute_offset(sctx, sctx.sub_byte_range.io_ref) &&
                                   sctx.sub_byte_range.stream_type == ebm::StreamType::INPUT;
         CodeWriter w;
         w.writeln("{");

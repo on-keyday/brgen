@@ -27,16 +27,6 @@ namespace ebm2go {
 
     constexpr auto physical_field = "body.id.struct_decl.related_variant.struct_union_desc.related_field.field_decl";
 
-    constexpr auto has_absolute_offset_type = "io_input_desc.has_absolute_offset";
-
-    constexpr bool has_absolute_offset(auto&& ctx, ebm::StatementRef io_ref) {
-        auto stmt = ctx.template get_field<"param_decl.param_type">(io_ref);
-        if (!stmt) {
-            stmt = ctx.template get_field<"var_decl.var_type">(io_ref);
-        }
-        return ctx.template get_field<has_absolute_offset_type>(stmt) == true;
-    }
-
     struct ArrayLengthInfo {
         const ebm::IOData* write_data = nullptr;
         const ebm::FieldDecl* vector_field = nullptr;
@@ -109,7 +99,7 @@ namespace ebm2go {
     // visitors to keep the companion in sync with the stream position; the increment
     // stays backend-side per ADR 0008.
     inline void append_runtime_offset(auto& ctx, ebm::StatementRef io_ref, auto& w, auto&& size_expr) {
-        if (has_absolute_offset(ctx, io_ref) == true) {
+        if (ebmcodegen::util::has_absolute_offset(ctx, io_ref)) {
             w.writeln("runtimeState.Offset += int(", size_expr, ")");
         }
     }

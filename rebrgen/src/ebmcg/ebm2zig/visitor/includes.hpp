@@ -13,23 +13,12 @@
 
 namespace ebm2zig {
 
-// Check if an IO parameter requires absolute offset tracking
-constexpr auto has_absolute_offset_type = "io_input_desc.has_absolute_offset";
-
-constexpr bool has_absolute_offset(auto&& ctx, ebm::StatementRef io_ref) {
-    auto stmt = ctx.template get_field<"param_decl.param_type">(io_ref);
-    if (!stmt) {
-        stmt = ctx.template get_field<"var_decl.var_type">(io_ref);
-    }
-    return ctx.template get_field<has_absolute_offset_type>(stmt) == true;
-}
-
 // ADR 0039: emit `runtime_state.offset += ...` after an IO operation when the
 // stream is gated (lower_runtime_state threaded the RuntimeState companion;
 // parameter name is always `runtime_state`, a *RuntimeState in zig). The
 // increment stays backend-side per ADR 0008.
 inline void append_runtime_offset(auto&& ctx, ebm::StatementRef io_ref, auto& w, auto&& size_expr) {
-    if (has_absolute_offset(ctx, io_ref)) {
+    if (ebmcodegen::util::has_absolute_offset(ctx, io_ref)) {
         w.writeln("runtime_state.offset += @as(usize, @intCast(", size_expr, "));");
     }
 }

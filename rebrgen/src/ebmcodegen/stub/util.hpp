@@ -313,6 +313,22 @@ namespace ebmcodegen::util {
         vector,
     };
 
+    // ADR 0039: path of the has_absolute_offset flag on a coder input type.
+    constexpr auto has_absolute_offset_type = "io_input_desc.has_absolute_offset";
+
+    // ADR 0039: true when the io stream's input type is flagged has_absolute_offset,
+    // i.e. lower_runtime_state threaded a RuntimeState companion through the
+    // enclosing function (parameter/local name is always `runtime_state`).
+    // io_ref may be the coder input parameter or a subrange io variable.
+    // The offset *increment* emission stays per-backend (ADR 0008/0039).
+    constexpr bool has_absolute_offset(auto&& ctx, ebm::StatementRef io_ref) {
+        auto typ = ctx.template get_field<"param_decl.param_type">(io_ref);
+        if (!typ) {
+            typ = ctx.template get_field<"var_decl.var_type">(io_ref);
+        }
+        return ctx.template get_field<has_absolute_offset_type>(typ) == true;
+    }
+
     std::optional<BytesType> is_bytes_type(auto&& visitor, ebm::TypeRef type_ref, BytesType candidate = BytesType::both) {
         const ebmgen::MappingTable& module_ = get_visitor(visitor).module_;
         auto type = module_.get_type(type_ref);

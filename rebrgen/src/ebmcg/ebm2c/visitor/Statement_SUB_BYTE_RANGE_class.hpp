@@ -70,7 +70,7 @@ DEFINE_VISITOR(Statement_SUB_BYTE_RANGE) {
         // Advance parent
         w.write(parent_io_name, "->offset += ", len.to_writer(), ";");
         w.writeln("");
-        track_offset = ebm2c::has_absolute_offset(ctx, ctx.sub_byte_range.io_ref) &&
+        track_offset = has_absolute_offset(ctx, ctx.sub_byte_range.io_ref) &&
                        ctx.sub_byte_range.stream_type == ebm::StreamType::INPUT;
         if (track_offset) {
             w.writeln("size_t ", io_name, "_rs_start = runtime_state->offset;");

@@ -45,7 +45,7 @@ DEFINE_VISITOR(Statement_SUB_BYTE_RANGE) {
     // shared RuntimeState companion keeps counting inside the subrange. The subrange
     // window is consumed as a whole from the parent stream, so after the child ran,
     // pin the offset to window start + length even if the child under-consumed.
-    const bool track_offset = ebm2rust::has_absolute_offset(ctx, ctx.sub_byte_range.io_ref) &&
+    const bool track_offset = has_absolute_offset(ctx, ctx.sub_byte_range.io_ref) &&
                               ctx.sub_byte_range.stream_type == ebm::StreamType::INPUT;
     const std::string rs_start = io_ + "_rs_start";
     auto begin_offset_window = [&] {

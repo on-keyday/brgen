@@ -31,24 +31,11 @@ namespace ebm2rust {
         return "*" + io + "_off";
     }
 
-    // ADR 0039: true when the io stream's input type is flagged has_absolute_offset,
-    // i.e. lower_runtime_state threaded a RuntimeState companion through the
-    // enclosing function (parameter name is always `runtime_state`).
-    constexpr auto has_absolute_offset_type = "io_input_desc.has_absolute_offset";
-
-    constexpr bool has_absolute_offset(auto&& ctx, ebm::StatementRef io_ref) {
-        auto typ = ctx.template get_field<"param_decl.param_type">(io_ref);
-        if (!typ) {
-            typ = ctx.template get_field<"var_decl.var_type">(io_ref);
-        }
-        return ctx.template get_field<has_absolute_offset_type>(typ) == true;
-    }
-
-    // Emit `runtime_state.offset += (<size>) as usize;` when the stream is gated.
-    // Per ADR 0008/0039 the increment stays backend-side; the companion itself is
-    // threaded at the IR level by lower_runtime_state.
+    // Emit `runtime_state.offset += (<size>) as usize;` when the stream is gated
+    // (see ebmcodegen::util::has_absolute_offset). Per ADR 0008/0039 the increment
+    // stays backend-side; the companion itself is threaded by lower_runtime_state.
     inline void append_runtime_offset(auto&& ctx, ebm::StatementRef io_ref, auto& w, auto&& size_expr) {
-        if (has_absolute_offset(ctx, io_ref)) {
+        if (ebmcodegen::util::has_absolute_offset(ctx, io_ref)) {
             w.writeln("runtime_state.offset += (", size_expr, ") as usize;");
         }
     }
