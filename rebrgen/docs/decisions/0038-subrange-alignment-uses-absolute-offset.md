@@ -6,9 +6,9 @@
 
 ## ステータス
 
-決定(spec)。実装は [[0039-runtime-state-companion-struct]] の lower_runtime_state 経由で
-ebm2rust(std-io/zero-copy)・ebm2go(std/slice/append)が `subrange_align_test` pass 済み(2026-07-05)。
-他 backend(ts/cpp/ruby/rmw/c/zig 等)は未実装で fail のまま — 引き続きトラッカーとして追跡。
+決定(spec)。実装は [[0039-runtime-state-companion-struct]] の lower_runtime_state 経由。
+`subrange_align_test` は rust/go(2026-07-05)に続き ts/cpp/ruby/python/c/zig/rmw も pass(2026-07-06)。
+アクティブ backend では p4/wuffs/z3/json/ascii/llvm(元々大量 fail 勢)のみ未対応。
 
 ## 判断
 

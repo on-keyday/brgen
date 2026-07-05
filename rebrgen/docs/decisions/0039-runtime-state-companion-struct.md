@@ -8,9 +8,10 @@
 
 決定(方針)。IR 側(`transform/lower_runtime_state.cpp`: gate / RuntimeState struct 合成 /
 param・call site threading / wrapper 合成 / GET_STREAM_OFFSET→lowered_expr)実装済み(2026-07-05)。
-backend 側の増分(ADR 0008 により per-backend)は ebm2rust・ebm2go が実装済みで
-`native_endian_test` + `subrange_align_test` pass。ebm2go は自前 absOffset 機構一式を
-IR companion に置換(コード削減)。他 backend は未実装(subrange_align_test が fail のまま)。
+backend 側の増分(ADR 0008 により per-backend)は ebm2rust・ebm2go(2026-07-05)、
+ts/cpp/ruby/python/c/zig/rmw(2026-07-06)が実装済み。go と zig は自前 absOffset 機構一式を
+IR companion に置換(コード純減)。`subrange_align_test` は上記全 backend で pass、
+`native_endian_test` は zig のみ既知別因で fail。残りは p4/wuffs/z3/json/ascii/llvm(元々大量 fail 勢)。
 副産物: propagate_io_input_desc のキューシード条件の逆転バグ(中間ノードのみシード)を修正 —
 ADR 0038 記載の go subrange 引数不一致の根本原因だった。
 
