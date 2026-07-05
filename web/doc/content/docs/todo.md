@@ -37,7 +37,7 @@ ToDo リストです(2025/11/04)
   - C++のコードも自動生成する?
   - 他言語でも JSON-AST を生成できるようにする。
 
-- `input = input.subrange`構文の offset は subrange がネストしたときどのように扱えばよいか。
+- ~~`input = input.subrange`構文の offset は subrange がネストしたときどのように扱えばよいか。~~ → **決定済み: 全体の入力の offset(絶対)を採用**。rebrgen ADR 0038(`rebrgen/docs/decisions/0038-subrange-alignment-uses-absolute-offset.md`)参照。実装は未着手(`subrange_align_test` で追跡)。
   - subrange は input.offset == 0 のときは subrange における 0 を示す? <-これは微妙だ。これだと全入力の任意の位置は指し示せない。
   - 全体の入力の offset <-こっちが良いと思われる
 - Generics の導入?
