@@ -196,11 +196,10 @@ DEFINE_VISITOR(entry_before) {
     };
 
     // Stream offset: StringIO's `pos` attribute.
-    config.get_stream_offset_custom = [](Context_Expression_GET_STREAM_OFFSET& ctx) -> expected<Result> {
-        using namespace CODEGEN_NAMESPACE;
-        auto io_ = ctx.identifier(ctx.io_ref);
-        return CODE(io_, ".pos");
-    };
+    // ADR 0039: GET_STREAM_OFFSET is emitted from lowered_expr (the RuntimeState
+    // companion member access) by the default visitor. StringIO#pos is stream-local
+    // and resets across subranges, so it cannot express the absolute offset ADR
+    // 0038 requires.
 
     // Error report: raise Ruby exception.
     config.error_report_visitor = [](Context_Statement_ERROR_REPORT& ctx) -> expected<Result> {
@@ -264,18 +263,33 @@ DEFINE_VISITOR(entry_before) {
         MAYBE(fmt, type_to_pack_format(ctx, ctx.read_data.data_type, ctx.read_data.attribute, ctx.read_data.size));
         MAYBE(size_str, get_size_str(ctx, ctx.read_data.size));
         auto io_ = ctx.identifier(ctx.read_data.io_ref);
-        return CODELINE(target.to_writer(), " = ", io_, ".read(", size_str, ").unpack1(", fmt, ")");
+        CodeWriter w;
+        w.writeln(target.to_writer(), " = ", io_, ".read(", size_str, ").unpack1(", fmt, ")");
+        if (!ctx.read_data.attribute.is_peek()) {
+            ruby_append_runtime_offset(ctx, ctx.read_data.io_ref, w, size_str);
+        }
+        return w;
     };
 
     // Read bytes array: io.read(n).bytes
     config.read_data_bytes_io_wrapper = [](Context_Statement_READ_DATA& ctx, BytesType /*cand*/, Result target, std::string io_) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
         if (ctx.read_data.lowered_statement()) return pass;
+        const bool track_offset = !ctx.read_data.attribute.is_peek();
+        CodeWriter w;
         if (auto dyn = ctx.read_data.size.ref(); dyn && ctx.is(ebm::ExpressionKind::GET_REMAINING_BYTES, *dyn)) {
-            return CODELINE(target.to_writer(), " = (", io_, ".read() || \"\").bytes");
+            w.writeln(target.to_writer(), " = (", io_, ".read() || \"\").bytes");
+            if (track_offset) {
+                ruby_append_runtime_offset(ctx, ctx.read_data.io_ref, w, CODE(target.to_writer(), ".length"));
+            }
+            return w;
         }
         MAYBE(size_str, get_size_str(ctx, ctx.read_data.size));
-        return CODELINE(target.to_writer(), " = (", io_, ".read(", size_str, ") || \"\").bytes");
+        w.writeln(target.to_writer(), " = (", io_, ".read(", size_str, ") || \"\").bytes");
+        if (track_offset) {
+            ruby_append_runtime_offset(ctx, ctx.read_data.io_ref, w, size_str);
+        }
+        return w;
     };
 
     // Write scalar: io.write([v].pack(fmt))
@@ -285,8 +299,12 @@ DEFINE_VISITOR(entry_before) {
         if (is_bytes_type(ctx, ctx.write_data.data_type)) return pass;
         MAYBE(target, ctx.visit(ctx.write_data.target));
         MAYBE(fmt, type_to_pack_format(ctx, ctx.write_data.data_type, ctx.write_data.attribute, ctx.write_data.size));
+        MAYBE(size_str, get_size_str(ctx, ctx.write_data.size));
         auto io_ = ctx.identifier(ctx.write_data.io_ref);
-        return CODELINE(io_, ".write([", target.to_writer(), "].pack(", fmt, "))");
+        CodeWriter w;
+        w.writeln(io_, ".write([", target.to_writer(), "].pack(", fmt, "))");
+        ruby_append_runtime_offset(ctx, ctx.write_data.io_ref, w, size_str);
+        return w;
     };
 
     // Write bytes array: io.write(arr[0,n].pack("C*"))
@@ -294,7 +312,10 @@ DEFINE_VISITOR(entry_before) {
         using namespace CODEGEN_NAMESPACE;
         if (ctx.write_data.lowered_statement()) return pass;
         MAYBE(size_str, get_size_str(ctx, ctx.write_data.size));
-        return CODELINE(io_, ".write(", target.to_writer(), "[0, ", size_str, "].pack(\"C*\"))");
+        CodeWriter w;
+        w.writeln(io_, ".write(", target.to_writer(), "[0, ", size_str, "].pack(\"C*\"))");
+        ruby_append_runtime_offset(ctx, ctx.write_data.io_ref, w, size_str);
+        return w;
     };
 
     // Sub-byte-range: Ruby StringIO slicing.
@@ -306,13 +327,25 @@ DEFINE_VISITOR(entry_before) {
         auto parent_io_ = ctx.identifier(ctx.sub_byte_range.parent_io_ref);
         MAYBE(length, ctx.sub_byte_range.length());
         MAYBE(length_str, ctx.visit(length));
+        // ADR 0038/0039: alignment offset is absolute (inherited from the parent),
+        // so the shared RuntimeState companion keeps counting inside the subrange
+        // while StringIO#pos stays stream-local. The window is consumed as a whole,
+        // so pin the companion to start + length after the child ran.
+        const bool track_offset = ruby_has_absolute_offset(ctx, ctx.sub_byte_range.io_ref) &&
+                                  ctx.sub_byte_range.stream_type == ebm::StreamType::INPUT;
         if (ctx.sub_byte_range.stream_type == ebm::StreamType::INPUT) {
             w.writeln(io_, " = StringIO.new(", parent_io_, ".read(", length_str.to_writer(), ").b)");
         }
         else {
             w.writeln(io_, " = StringIO.new");
         }
+        if (track_offset) {
+            w.writeln("_rs_start = runtime_state.offset");
+        }
         w.write(do_io.to_writer());
+        if (track_offset) {
+            w.writeln("runtime_state.offset = _rs_start + (", length_str.to_writer(), ")");
+        }
         if (ctx.sub_byte_range.stream_type == ebm::StreamType::OUTPUT) {
             w.writeln("raise \"length mismatch\" unless ", length_str.to_writer(), " == ", io_, ".string.bytesize");
             w.writeln(parent_io_, ".write(", io_, ".string)");

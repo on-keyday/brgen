@@ -26,7 +26,7 @@
 DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
     using namespace CODEGEN_NAMESPACE;
     auto param = ctx.get_field<"body.id.param_decl">(ctx.base);
-    if (param && param->is_state_variable()) {
+    if (param && (param->is_state_variable() || param->is_runtime_state())) {
         MAYBE(base_str, ctx.visit(ctx.base));
         MAYBE(member_ident, ctx.identifier(ctx.member));
         CodeWriter w;

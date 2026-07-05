@@ -333,6 +333,7 @@ DEFINE_VISITOR_CLASS(Statement_PROGRAM_DECL) {
             }
             w.writeln("");
 
+
             if (c_ctx.array_types.size() > 0) {
                 w.writeln("// Array type definitions");
                 w.writeln("#ifndef ARRAY_OF");
@@ -379,6 +380,38 @@ DEFINE_VISITOR_CLASS(Statement_PROGRAM_DECL) {
                 w.writeln("");
                 write_vector_macros(w);
             }
+
+            // Top-level constants (e.g. `AF_INET ::= u16(2)`); without these the
+            // property accessors referencing them do not compile. This visitor may
+            // run on an imported module's PROGRAM_DECL, so walk every program
+            // block (like collect_structs walks the whole statement table).
+            {
+                bool any_const = false;
+                std::unordered_set<std::uint64_t> emitted_consts;
+                for (auto& prog : ctx.module().module().statements) {
+                    if (prog.body.kind != ebm::StatementKind::PROGRAM_DECL) {
+                        continue;
+                    }
+                    auto* blk = prog.body.block();
+                    if (!blk) {
+                        continue;
+                    }
+                    for (auto& stmt_ref : blk->container) {
+                        auto var = ctx.get_field<"var_decl">(stmt_ref);
+                        if (!var || !emitted_consts.insert(get_id(stmt_ref)).second) {
+                            continue;
+                        }
+                        MAYBE(typ, ctx.visit(var->var_type));
+                        MAYBE(init, ctx.visit(var->initial_value));
+                        w.writeln("static const ", typ.to_writer(), " ", ctx.identifier(stmt_ref), " = ", init.to_writer(), ";");
+                        any_const = true;
+                    }
+                }
+                if (any_const) {
+                    w.writeln("");
+                }
+            }
+
 
             w.writeln("#ifndef EBM_EMIT_ERROR");
             w.write_unformatted(&R"(

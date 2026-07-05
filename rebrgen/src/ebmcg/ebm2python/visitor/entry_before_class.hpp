@@ -207,6 +207,7 @@ DEFINE_VISITOR(entry_before) {
         w.writeln("import enum");
         w.writeln("import builtins");
         w.writeln("import io");
+        w.writeln("import sys");  // native_endian_check uses sys.byteorder
         w.writeln("from typing import Any, Union, BinaryIO, Optional");
         w.writeln();
         for (auto& stmt_ref : ctx.block.container) {
@@ -244,13 +245,25 @@ DEFINE_VISITOR(entry_before) {
         auto parent_io_ = ctx.identifier(ctx.sub_byte_range.parent_io_ref);
         MAYBE(length, ctx.sub_byte_range.length());
         MAYBE(length_str, ctx.visit(length));
+        // ADR 0038/0039: alignment offset is absolute (inherited from the parent),
+        // so the shared RuntimeState companion keeps counting inside the subrange
+        // while BytesIO's cursor stays stream-local. The window is consumed as a
+        // whole, so pin the companion to start + length after the child ran.
+        const bool track_offset = py_has_absolute_offset(ctx, ctx.sub_byte_range.io_ref) &&
+                                  ctx.sub_byte_range.stream_type == ebm::StreamType::INPUT;
         if (ctx.sub_byte_range.stream_type == ebm::StreamType::INPUT) {
             w.writeln(io_, " = io.BytesIO(", parent_io_, ".read(", length_str.to_writer(), "))");
         }
         else {
             w.writeln(io_, " = io.BytesIO()");
         }
+        if (track_offset) {
+            w.writeln("_rs_start = runtime_state.offset");
+        }
         w.write(do_io.to_writer());
+        if (track_offset) {
+            w.writeln("runtime_state.offset = _rs_start + int(", length_str.to_writer(), ")");
+        }
         if (ctx.sub_byte_range.stream_type == ebm::StreamType::OUTPUT) {
             w.writeln("assert ", length_str.to_writer(), " == builtins.len(", io_, ".getvalue())");
             w.writeln(parent_io_, ".write(", io_, ".getvalue())");
@@ -266,17 +279,32 @@ DEFINE_VISITOR(entry_before) {
         MAYBE(fmt, type_to_struct_format(ctx, ctx.read_data.data_type, ctx.read_data.attribute, ctx.read_data.size));
         MAYBE(size_str, get_size_str(ctx, ctx.read_data.size));
         auto io_ = ctx.identifier(ctx.read_data.io_ref);
-        return CODELINE(target.to_writer(), " = struct.unpack(", fmt, ", ", io_, ".read(", size_str, "))[0]");
+        CodeWriter w;
+        w.writeln(target.to_writer(), " = struct.unpack(", fmt, ", ", io_, ".read(", size_str, "))[0]");
+        if (!ctx.read_data.attribute.is_peek()) {
+            py_append_runtime_offset(ctx, ctx.read_data.io_ref, w, size_str);
+        }
+        return w;
     };
     config.read_data_bytes_io_wrapper = [](Context_Statement_READ_DATA& ctx, BytesType cand, Result target, std::string io_) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
         // lowered がある場合 (bit_fields等) は lowered に委譲
         if (ctx.read_data.lowered_statement()) return pass;
+        const bool track_offset = !ctx.read_data.attribute.is_peek();
         MAYBE(size_str, get_size_str(ctx, ctx.read_data.size));
+        CodeWriter w;
         if (auto dyn = ctx.read_data.size.ref(); dyn && ctx.is(ebm::ExpressionKind::GET_REMAINING_BYTES, *dyn)) {
-            return CODELINE(target.to_writer(), " = ", io_, ".read()");
+            w.writeln(target.to_writer(), " = ", io_, ".read()");
+            if (track_offset) {
+                py_append_runtime_offset(ctx, ctx.read_data.io_ref, w, CODE("builtins.len(", target.to_writer(), ")"));
+            }
+            return w;
         }
-        return CODELINE(target.to_writer(), " = ", io_, ".read(", size_str, ")");
+        w.writeln(target.to_writer(), " = ", io_, ".read(", size_str, ")");
+        if (track_offset) {
+            py_append_runtime_offset(ctx, ctx.read_data.io_ref, w, size_str);
+        }
+        return w;
     };
     config.length_check_custom = [](Context_Statement_LENGTH_CHECK& lctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
@@ -306,15 +334,22 @@ DEFINE_VISITOR(entry_before) {
         if (is_bytes_type(ctx, ctx.write_data.data_type)) return pass;  // bytes IO handled by default path
         MAYBE(target, ctx.visit(ctx.write_data.target));
         MAYBE(fmt, type_to_struct_format(ctx, ctx.write_data.data_type, ctx.write_data.attribute, ctx.write_data.size));
+        MAYBE(size_str, get_size_str(ctx, ctx.write_data.size));
         auto io_ = ctx.identifier(ctx.write_data.io_ref);
-        return CODELINE(io_, ".write(struct.pack(", fmt, ", ", target.to_writer(), "))");
+        CodeWriter w;
+        w.writeln(io_, ".write(struct.pack(", fmt, ", ", target.to_writer(), "))");
+        py_append_runtime_offset(ctx, ctx.write_data.io_ref, w, size_str);
+        return w;
     };
     config.write_data_bytes_io_wrapper = [](Context_Statement_WRITE_DATA& ctx, BytesType cand, Result target, std::string io_) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
         // lowered がある場合は lowered に委譲
         if (ctx.write_data.lowered_statement()) return pass;
         MAYBE(size_str, get_size_str(ctx, ctx.write_data.size));
-        return CODELINE(io_, ".write(", target.to_writer(), "[:", size_str, "])");
+        CodeWriter w;
+        w.writeln(io_, ".write(", target.to_writer(), "[:", size_str, "])");
+        py_append_runtime_offset(ctx, ctx.write_data.io_ref, w, size_str);
+        return w;
     };
     return pass;
 }

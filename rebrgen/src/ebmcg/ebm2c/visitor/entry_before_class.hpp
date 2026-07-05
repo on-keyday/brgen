@@ -64,8 +64,8 @@ DEFINE_VISITOR(entry_before) {
         return CODE("VECTOR_OF(", elem_type.to_writer(), ")");
     };
     ctx.config().param_type_wrapper = [&](Context_Statement_PARAMETER_DECL& ctx, Result typ) -> expected<Result> {
-        if (ctx.param_decl.is_state_variable()) {
-            return CODE(typ.to_writer(), "*");  // In C, parameters are passed as pointers
+        if (ctx.param_decl.is_state_variable() || ctx.param_decl.is_runtime_state()) {
+            return CODE(typ.to_writer(), "*");  // In C, INOUT parameters are passed as pointers
         }
         return typ;
     };
@@ -156,14 +156,21 @@ DEFINE_VISITOR(entry_before) {
         }
         MAYBE(layer_str, get_identifier_layer_str(ctx, from_weak(ctx.read_data.field)));
         layer_str = "\"" + layer_str + "\"";
+        CodeWriter w;
         if (cand == BytesType::vector) {
-            return CODELINE("EBM_READ_BYTES(", io_, ", ", target.to_writer(), ", ", size_str, ", ", offset_val, ", ", layer_str, ");");
+            w.writeln("EBM_READ_BYTES(", io_, ", ", target.to_writer(), ", ", size_str, ", ", offset_val, ", ", layer_str, ");");
         }
-        auto annot = ctx.get_field<"array_annotation">(ctx.read_data.data_type);
-        if (annot && *annot == ebm::ArrayAnnotation::read_temporary) {
-            return CODELINE("EBM_READ_ARRAY_BYTES_TEMPORARY(", io_, ", ", target.to_writer(), ", ", size_str, ", ", offset_val, ", ", layer_str, ");");
+        else if (auto annot = ctx.get_field<"array_annotation">(ctx.read_data.data_type);
+                 annot && *annot == ebm::ArrayAnnotation::read_temporary) {
+            w.writeln("EBM_READ_ARRAY_BYTES_TEMPORARY(", io_, ", ", target.to_writer(), ", ", size_str, ", ", offset_val, ", ", layer_str, ");");
         }
-        return CODELINE("EBM_READ_ARRAY_BYTES(", io_, ", ", target.to_writer(), ", ", size_str, ", ", offset_val, ", ", layer_str, ");");
+        else {
+            w.writeln("EBM_READ_ARRAY_BYTES(", io_, ", ", target.to_writer(), ", ", size_str, ", ", offset_val, ", ", layer_str, ");");
+        }
+        if (!ctx.read_data.attribute.is_peek()) {
+            ebm2c::append_runtime_offset(ctx, ctx.read_data.io_ref, w, size_str);
+        }
+        return w;
     };
     ctx.config().write_data_custom = [](Context_Statement_WRITE_DATA& ctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
@@ -202,14 +209,19 @@ DEFINE_VISITOR(entry_before) {
         }
         MAYBE(layer_str, get_identifier_layer_str(ctx, from_weak(ctx.write_data.field)));
         layer_str = "\"" + layer_str + "\"";
+        CodeWriter w;
         if (cand == BytesType::vector) {
-            return CODELINE("EBM_WRITE_BYTES(", io_, ", ", target.to_writer(), ", ", size_str, ", ", offset_val, ", ", layer_str, ");");
+            w.writeln("EBM_WRITE_BYTES(", io_, ", ", target.to_writer(), ", ", size_str, ", ", offset_val, ", ", layer_str, ");");
         }
-        auto annot = ctx.get_field<"array_annotation">(ctx.write_data.data_type);
-        if (annot && *annot == ebm::ArrayAnnotation::write_temporary) {
-            return CODELINE("EBM_WRITE_ARRAY_BYTES_TEMPORARY(", io_, ", ", target.to_writer(), ", ", size_str, ", ", offset_val, ", ", layer_str, ");");
+        else if (auto annot = ctx.get_field<"array_annotation">(ctx.write_data.data_type);
+                 annot && *annot == ebm::ArrayAnnotation::write_temporary) {
+            w.writeln("EBM_WRITE_ARRAY_BYTES_TEMPORARY(", io_, ", ", target.to_writer(), ", ", size_str, ", ", offset_val, ", ", layer_str, ");");
         }
-        return CODELINE("EBM_WRITE_ARRAY_BYTES(", io_, ", ", target.to_writer(), ", ", size_str, ", ", offset_val, ", ", layer_str, ");");
+        else {
+            w.writeln("EBM_WRITE_ARRAY_BYTES(", io_, ", ", target.to_writer(), ", ", size_str, ", ", offset_val, ", ", layer_str, ");");
+        }
+        ebm2c::append_runtime_offset(ctx, ctx.write_data.io_ref, w, size_str);
+        return w;
     };
     ctx.config().length_check_custom = [](Context_Statement_LENGTH_CHECK& lctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;

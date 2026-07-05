@@ -24,20 +24,13 @@ constexpr bool has_absolute_offset(auto&& ctx, ebm::StatementRef io_ref) {
     return ctx.template get_field<has_absolute_offset_type>(stmt) == true;
 }
 
-// Absolute offset parameter name: {io_name}_abs_offset
-inline std::string abs_offset_param(const std::string& io_name) {
-    return io_name + "_abs_offset";
-}
-
-// Dereference of absolute offset pointer: {io_name}_abs_offset.*
-inline std::string abs_offset_deref(const std::string& io_name) {
-    return io_name + "_abs_offset.*";
-}
-
-// Emit offset increment after IO operation
-inline void append_abs_offset(auto&& ctx, ebm::StatementRef io_ref, auto& w, auto&& size_expr) {
+// ADR 0039: emit `runtime_state.offset += ...` after an IO operation when the
+// stream is gated (lower_runtime_state threaded the RuntimeState companion;
+// parameter name is always `runtime_state`, a *RuntimeState in zig). The
+// increment stays backend-side per ADR 0008.
+inline void append_runtime_offset(auto&& ctx, ebm::StatementRef io_ref, auto& w, auto&& size_expr) {
     if (has_absolute_offset(ctx, io_ref)) {
-        w.writeln(abs_offset_deref(ctx.identifier(io_ref)), " += @as(usize, @intCast(", size_expr, "));");
+        w.writeln("runtime_state.offset += @as(usize, @intCast(", size_expr, "));");
     }
 }
 

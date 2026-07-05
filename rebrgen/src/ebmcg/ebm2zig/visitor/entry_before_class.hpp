@@ -252,16 +252,12 @@ DEFINE_VISITOR(entry_before) {
     config.param_type_separator = ": ";
 
     config.param_visitor = [](Context_Statement_PARAMETER_DECL& ctx, Result typ) -> expected<Result> {
-        if (ctx.param_decl.is_state_variable()) {
-            // For state variables, we pass a pointer to allow modification
+        if (ctx.param_decl.is_state_variable() || ctx.param_decl.is_runtime_state()) {
+            // INOUT (state variables, ADR 0039 RuntimeState companion): pass a pointer
             return CODE(ctx.identifier(), ": *", typ.to_writer());
         }
         CodeWriter w;
         w.write(ctx.identifier(), ": ", typ.to_writer());
-        // Add absolute offset pointer parameter when IO needs offset tracking
-        if (ebm2zig::has_absolute_offset(ctx, ctx.item_id)) {
-            w.write(", ", ebm2zig::abs_offset_param(ctx.identifier()), ": *usize");
-        }
         if (ctx.get_kind(ctx.param_decl.param_type) == ebm::TypeKind::DECODER_INPUT) {
             // All decode functions get an allocator parameter for dynamic allocation
             w.write(", allocator: std.mem.Allocator");
@@ -296,10 +292,6 @@ DEFINE_VISITOR(entry_before) {
         }
         CodeWriter w;
         w.write(target.to_writer());
-        // Pass absolute offset pointer to callees that need it
-        if (ctx.get_field<ebm2zig::has_absolute_offset_type>(ctx.type) == true) {
-            w.write(", ", ebm2zig::abs_offset_param(target.to_string()));
-        }
         if (kind == ebm::TypeKind::DECODER_INPUT) {
             w.write(", allocator");
         }
@@ -412,52 +404,8 @@ DEFINE_VISITOR(entry_before) {
             // Free function: pub fn name(params...) RetType {
             w.writeln("pub fn ", func_name, "(", params, ") ", ret_str, " {");
         }
-        // When has_absolute_offset, generate a public wrapper that initializes offset locally
-        // and delegates to the _impl function (which takes the offset pointer as parameter).
-        bool has_abs_offset = (fctx.func_decl.kind == ebm::FunctionKind::ENCODE ||
-                               fctx.func_decl.kind == ebm::FunctionKind::DECODE) &&
-                              !fctx.func_decl.params.container.empty() &&
-                              ebm2zig::has_absolute_offset(fctx, fctx.func_decl.params.container[0]);
-        if (has_abs_offset) {
-            // Build a public wrapper: encode/decode that inits offset and calls _impl
-            auto io_param_name = ctx.identifier(fctx.func_decl.params.container[0]);
-            auto offset_param = ebm2zig::abs_offset_param(io_param_name);
-            CodeWriter wrapper;
-            if (!is_nil(fctx.func_decl.parent_format)) {
-                auto struct_name = ctx.identifier(fctx.func_decl.parent_format);
-                CodeWriter pub_params;
-                pub_params.write("self: *", struct_name, ", ", io_param_name, ": anytype");
-                if (fctx.func_decl.kind == ebm::FunctionKind::DECODE) {
-                    pub_params.write(", allocator: std.mem.Allocator");
-                }
-                wrapper.writeln("pub fn ", func_name, "(", pub_params, ") ", ret_str, " {");
-            }
-            {
-                auto scope = wrapper.indent_scope();
-                wrapper.writeln("var ", offset_param, ": usize = 0;");
-                // Call the _impl function
-                CodeWriter call_args;
-                call_args.write(io_param_name, ", &", offset_param);
-                if (fctx.func_decl.kind == ebm::FunctionKind::DECODE) {
-                    call_args.write(", allocator");
-                }
-                wrapper.writeln("return self.", func_name, "_impl(", call_args, ");");
-            }
-            wrapper.writeln("}");
-            // Now emit the _impl function definition
-            func_name = func_name + "_impl";
-            wrapper.writeln("");
-            w = std::move(wrapper);
-            if (!is_nil(fctx.func_decl.parent_format)) {
-                auto struct_name = ctx.identifier(fctx.func_decl.parent_format);
-                CodeWriter all_params;
-                all_params.write("self: *", struct_name);
-                if (!params.empty()) {
-                    all_params.write(", ", params);
-                }
-                w.writeln("pub fn ", func_name, "(", all_params, ") ", ret_str, " {");
-            }
-        }
+        // ADR 0039: the RuntimeState companion (param/wrapper) is provided at the
+        // IR level by lower_runtime_state; no hand-rolled offset wrapper needed.
         {
             auto scope = w.indent_scope();
             // Suppress unused allocator parameter warning for all decode functions
@@ -465,14 +413,11 @@ DEFINE_VISITOR(entry_before) {
             if (fctx.func_decl.kind == ebm::FunctionKind::DECODE) {
                 w.writeln("_ = &allocator;");
             }
-            if (has_abs_offset) {
-                auto io_param_name = ctx.identifier(fctx.func_decl.params.container[0]);
-                w.writeln("_ = &", ebm2zig::abs_offset_param(io_param_name), ";");
-            }
-            // Suppress unused state variable parameter warnings
+            // Suppress unused parameter warnings for state variables and the
+            // RuntimeState companion (zig errors on unused parameters)
             for (auto& param_ref : fctx.func_decl.params.container) {
                 auto param = fctx.get_field<"param_decl">(param_ref);
-                if (param && param->is_state_variable()) {
+                if (param && (param->is_state_variable() || param->is_runtime_state())) {
                     auto param_name = ctx.identifier(param_ref);
                     w.writeln("_ = &", param_name, ";");
                 }
@@ -720,13 +665,9 @@ DEFINE_VISITOR(entry_before) {
     config.native_endian_check = "(@import(\"builtin\").cpu.arch.endian() == .little)";
 
     // === GET_STREAM_OFFSET ===
-    // Return a manual counter variable that tracks bytes read/written.
-    // The counter is declared in function_definition_start_wrapper and incremented
-    // in read_data_bytes_io_wrapper / write_data_bytes_io_wrapper.
-    config.get_stream_offset_custom = [&](Context_Expression_GET_STREAM_OFFSET& gso_ctx) -> expected<Result> {
-        auto io_name = gso_ctx.identifier(gso_ctx.io_ref);
-        return CODE(ebm2zig::abs_offset_deref(io_name));
-    };
+    // ADR 0039: GET_STREAM_OFFSET is emitted from lowered_expr (the RuntimeState
+    // companion member access) by the default visitor; the increments live in
+    // read_data_bytes_io_wrapper / write_data_bytes_io_wrapper.
 
     // === GET_REMAINING_BYTES ===
     // For read_data_bytes_io_wrapper, when size references GET_REMAINING_BYTES,
@@ -740,14 +681,15 @@ DEFINE_VISITOR(entry_before) {
     config.sub_byte_range_visitor = [&](Context_Statement_SUB_BYTE_RANGE& sctx) -> expected<Result> {
         auto io_ = sctx.identifier(sctx.sub_byte_range.io_ref);
         auto parent_io_ = sctx.identifier(sctx.sub_byte_range.parent_io_ref);
-        auto child_has_abs = ebm2zig::has_absolute_offset(sctx, sctx.sub_byte_range.io_ref);
+        // ADR 0038/0039: alignment offset is absolute (inherited from the parent),
+        // so the shared RuntimeState companion keeps counting inside the subrange.
+        // The window is consumed as a whole, so pin the companion to
+        // start + length after the child ran.
+        const bool track_offset = ebm2zig::has_absolute_offset(sctx, sctx.sub_byte_range.io_ref) &&
+                                  sctx.sub_byte_range.stream_type == ebm::StreamType::INPUT;
         MAYBE(length_expr, sctx.sub_byte_range.length());
         MAYBE(length_str, sctx.visit(length_expr));
         CodeWriter w;
-        // Inherit parent's absolute offset pointer into child IO scope (same pointer, shared tracking)
-        if (child_has_abs) {
-            w.writeln("const ", ebm2zig::abs_offset_param(io_), ": *usize = ", ebm2zig::abs_offset_param(parent_io_), ";");
-        }
         // Use page_allocator as fallback when allocator param is not available (encode functions)
         auto alloc_name = (sctx.sub_byte_range.stream_type == ebm::StreamType::INPUT) ? "allocator" : "std.heap.page_allocator";
         if (sctx.sub_byte_range.stream_type == ebm::StreamType::INPUT) {
@@ -761,8 +703,14 @@ DEFINE_VISITOR(entry_before) {
                 w.writeln("var sub_stream = std.io.fixedBufferStream(sub_buf);");
                 w.writeln("var ", io_, " = sub_stream.reader();");
                 w.writeln("_ = &", io_, ";");
+                if (track_offset) {
+                    w.writeln("const _rs_start = runtime_state.offset;");
+                }
                 MAYBE(do_io, sctx.visit(sctx.sub_byte_range.io_statement));
                 w.write(do_io.to_writer());
+                if (track_offset) {
+                    w.writeln("runtime_state.offset = _rs_start + sub_len;");
+                }
             }
             w.writeln("}");
         }
@@ -796,12 +744,12 @@ DEFINE_VISITOR(entry_before) {
         if (cand == BytesType::array) {
             MAYBE(size_str, get_size_str(wctx, wctx.write_data.size));
             w.writeln("try ", io_, ".writeAll(", target.to_writer(), "[0..", size_str, "]);");
-            ebm2zig::append_abs_offset(wctx, wctx.write_data.io_ref, w, size_str);
+            ebm2zig::append_runtime_offset(wctx, wctx.write_data.io_ref, w, size_str);
         }
         else {
             // ArrayListUnmanaged: write .items slice
             w.writeln("try ", io_, ".writeAll(", target.to_writer(), ".items);");
-            ebm2zig::append_abs_offset(wctx, wctx.write_data.io_ref, w, target.to_string() + ".items.len");
+            ebm2zig::append_runtime_offset(wctx, wctx.write_data.io_ref, w, target.to_string() + ".items.len");
         }
         return w;
     };
@@ -817,7 +765,7 @@ DEFINE_VISITOR(entry_before) {
         if (cand == BytesType::array) {
             MAYBE(size_str, get_size_str(rctx, rctx.read_data.size));
             w.writeln("try ", io_, ".readNoEof(", target.to_writer(), "[0..", size_str, "]);");
-            ebm2zig::append_abs_offset(rctx, rctx.read_data.io_ref, w, size_str);
+            ebm2zig::append_runtime_offset(rctx, rctx.read_data.io_ref, w, size_str);
         }
         else {
             // Check if size references GET_REMAINING_BYTES (read all remaining data)
@@ -843,14 +791,14 @@ DEFINE_VISITOR(entry_before) {
                 }
                 w.writeln("}");
                 // For GET_REMAINING_BYTES, offset += items.len after the loop
-                ebm2zig::append_abs_offset(rctx, rctx.read_data.io_ref, w, target.to_string() + ".items.len");
+                ebm2zig::append_runtime_offset(rctx, rctx.read_data.io_ref, w, target.to_string() + ".items.len");
             }
             else {
                 // ArrayListUnmanaged: resize then read into items
                 MAYBE(size_str, get_size_str(rctx, rctx.read_data.size));
                 w.writeln("try ", target.to_writer(), ".resize(allocator, ", size_str, ");");
                 w.writeln("try ", io_, ".readNoEof(", target.to_writer(), ".items);");
-                ebm2zig::append_abs_offset(rctx, rctx.read_data.io_ref, w, size_str);
+                ebm2zig::append_runtime_offset(rctx, rctx.read_data.io_ref, w, size_str);
             }
         }
         return w;

@@ -127,6 +127,26 @@ namespace CODEGEN_NAMESPACE {
         return fn->kind == ebm::FunctionKind::ENCODE;
     }
 
+    // ADR 0039: true when the io stream's input type is flagged has_absolute_offset,
+    // i.e. lower_runtime_state threaded a RuntimeState companion through the
+    // enclosing function (parameter/local name is always `runtime_state`).
+    inline bool ts_has_absolute_offset(auto& ctx, ebm::StatementRef io_ref) {
+        auto typ = ctx.template get_field<"param_decl.param_type">(io_ref);
+        if (!typ) {
+            typ = ctx.template get_field<"var_decl.var_type">(io_ref);
+        }
+        return ctx.template get_field<"io_input_desc.has_absolute_offset">(typ) == true;
+    }
+
+    // Emit `runtime_state.offset += <size>;` when the stream is gated. The
+    // increment stays backend-side per ADR 0008/0039; `io.offset` above stays
+    // the view-local read/write cursor, the companion counts absolute bytes.
+    inline void ts_append_runtime_offset(auto& ctx, ebm::StatementRef io_ref, CodeWriter& w, auto&& size_expr) {
+        if (ts_has_absolute_offset(ctx, io_ref)) {
+            w.writeln("runtime_state.offset += ", size_expr, ";");
+        }
+    }
+
 }  // namespace CODEGEN_NAMESPACE
 
 DEFINE_VISITOR(entry_before) {
@@ -830,6 +850,12 @@ DEFINE_VISITOR(entry_before) {
         MAYBE(length_ref, sctx.sub_byte_range.length());
         MAYBE(length_str, sctx.visit(length_ref));
         MAYBE(inner, sctx.visit(sctx.sub_byte_range.io_statement));
+        // ADR 0038/0039: alignment offset is absolute (inherited from the parent),
+        // so the shared RuntimeState companion keeps counting inside the subrange
+        // while `io.offset` stays the view-local cursor. The window is consumed as
+        // a whole, so pin the companion to start + length after the child ran.
+        const bool track_offset = ts_has_absolute_offset(sctx, sctx.sub_byte_range.io_ref) &&
+                                  sctx.sub_byte_range.stream_type == ebm::StreamType::INPUT;
         CodeWriter w;
         w.writeln("{");
         {
@@ -841,7 +867,13 @@ DEFINE_VISITOR(entry_before) {
                 w.indent_writeln("offset: 0,");
                 w.writeln("};");
                 w.writeln(parent_io_, ".offset += _sub_len;");
+                if (track_offset) {
+                    w.writeln("const _rs_start = runtime_state.offset;");
+                }
                 w.write(inner.to_writer());
+                if (track_offset) {
+                    w.writeln("runtime_state.offset = _rs_start + _sub_len;");
+                }
             }
             else {
                 w.writeln("const _sub_buf = new ArrayBuffer(_sub_len);");
@@ -1028,6 +1060,33 @@ DEFINE_VISITOR(entry_before) {
                 return Result("null");
             case ebm::TypeKind::STRUCT:
             case ebm::TypeKind::RECURSIVE_STRUCT: {
+                // All-numeric structs (e.g. the ADR 0039 RuntimeState companion)
+                // get a fully-initialized literal; `{} as T` would leave the
+                // fields undefined and `undefined + n` is NaN.
+                auto decl_ref = t.body.id();
+                if (auto* decl = decl_ref ? dctx.template get_field<"struct_decl">(from_weak(*decl_ref)) : nullptr) {
+                    CodeWriter fields;
+                    bool all_numeric = true;
+                    bool first = true;
+                    for (auto& field_ref : decl->fields.container) {
+                        auto fd = dctx.template get_field<"field_decl">(field_ref);
+                        if (!fd) {
+                            all_numeric = false;
+                            break;
+                        }
+                        auto kind = dctx.get_kind(fd->field_type);
+                        if (kind != ebm::TypeKind::INT && kind != ebm::TypeKind::UINT &&
+                            kind != ebm::TypeKind::USIZE) {
+                            all_numeric = false;
+                            break;
+                        }
+                        fields.write(first ? "" : ", ", dctx.identifier(field_ref), ": 0");
+                        first = false;
+                    }
+                    if (all_numeric && !first) {
+                        return CODE("{", std::move(fields), "}");
+                    }
+                }
                 if (is_js) {
                     return Result("{}");
                 }
@@ -1073,6 +1132,9 @@ DEFINE_VISITOR(entry_before) {
             w.writeln(target.to_writer(), " = ", io_, ".view.get", kind, "(", io_, ".offset, ", le ? "true" : "false", ");");
         }
         w.writeln(io_, ".offset += ", std::to_string(bytes), ";");
+        if (!rctx.read_data.attribute.is_peek()) {
+            ts_append_runtime_offset(rctx, rctx.read_data.io_ref, w, std::to_string(bytes));
+        }
         return w;
     };
     config.read_data_bytes_io_wrapper = [](Context_Statement_READ_DATA& rctx, BytesType, Result target, std::string io_) -> expected<Result> {
@@ -1080,6 +1142,7 @@ DEFINE_VISITOR(entry_before) {
         if (rctx.read_data.lowered_statement()) {
             return pass;
         }
+        const bool track_offset = !rctx.read_data.attribute.is_peek();
         CodeWriter w;
         if (auto dyn = rctx.read_data.size.ref(); dyn && rctx.is(ebm::ExpressionKind::GET_REMAINING_BYTES, *dyn)) {
             // Drain whatever remains; cannot underflow.
@@ -1087,6 +1150,10 @@ DEFINE_VISITOR(entry_before) {
             w.indent_writeln("const _n = ", io_, ".view.byteLength - ", io_, ".offset;");
             w.indent_writeln(target.to_writer(), " = new Uint8Array(", io_, ".view.buffer.slice(", io_, ".view.byteOffset + ", io_, ".offset, ", io_, ".view.byteOffset + ", io_, ".offset + _n));");
             w.indent_writeln(io_, ".offset += _n;");
+            if (track_offset) {
+                auto s = w.indent_scope();
+                ts_append_runtime_offset(rctx, rctx.read_data.io_ref, w, "_n");
+            }
             w.writeln("}");
             return w;
         }
@@ -1103,6 +1170,10 @@ DEFINE_VISITOR(entry_before) {
         w.indent_writeln("}");
         w.indent_writeln(target.to_writer(), " = new Uint8Array(", io_, ".view.buffer.slice(", io_, ".view.byteOffset + ", io_, ".offset, ", io_, ".view.byteOffset + ", io_, ".offset + _n));");
         w.indent_writeln(io_, ".offset += _n;");
+        if (track_offset) {
+            auto s = w.indent_scope();
+            ts_append_runtime_offset(rctx, rctx.read_data.io_ref, w, "_n");
+        }
         w.writeln("}");
         return w;
     };
@@ -1132,6 +1203,7 @@ DEFINE_VISITOR(entry_before) {
             w.writeln(io_, ".view.set", kind, "(", io_, ".offset, ", target.to_writer(), ", ", le ? "true" : "false", ");");
         }
         w.writeln(io_, ".offset += ", std::to_string(bytes), ";");
+        ts_append_runtime_offset(wctx, wctx.write_data.io_ref, w, std::to_string(bytes));
         return w;
     };
     config.write_data_bytes_io_wrapper = [](Context_Statement_WRITE_DATA& wctx, BytesType, Result target, std::string io_) -> expected<Result> {
@@ -1151,6 +1223,10 @@ DEFINE_VISITOR(entry_before) {
         w.indent_writeln("const _n = Number(", size_str, ");");
         w.indent_writeln("new Uint8Array(", io_, ".view.buffer, ", io_, ".view.byteOffset + ", io_, ".offset, _n).set(_bytes.subarray(0, _n));");
         w.indent_writeln(io_, ".offset += _n;");
+        {
+            auto s = w.indent_scope();
+            ts_append_runtime_offset(wctx, wctx.write_data.io_ref, w, "_n");
+        }
         w.writeln("}");
         return w;
     };
@@ -1165,11 +1241,10 @@ DEFINE_VISITOR(entry_before) {
         auto io_ = gctx.identifier(gctx.io_ref);
         return CODE("(", io_, ".view.byteLength - ", io_, ".offset)");
     };
-    config.get_stream_offset_custom = [](Context_Expression_GET_STREAM_OFFSET& gctx) -> expected<Result> {
-        using namespace CODEGEN_NAMESPACE;
-        auto io_ = gctx.identifier(gctx.io_ref);
-        return CODE(io_, ".offset");
-    };
+    // ADR 0039: GET_STREAM_OFFSET is emitted from lowered_expr (the RuntimeState
+    // companion member access) by the default visitor. `io.offset` is only the
+    // view-local cursor and resets across subranges, so it cannot express the
+    // absolute offset ADR 0038 requires.
 
     // Program preamble.
     config.program_decl_custom = [is_js](Context_Statement_PROGRAM_DECL& pctx) -> expected<Result> {

@@ -20,6 +20,31 @@
 #include "ebmcodegen/stub/dependency.hpp"
 #include "ebmcodegen/stub/url.hpp"
 #include "ebmcodegen/stub/util.hpp"
+
+namespace CODEGEN_NAMESPACE {
+
+    // ADR 0039: true when the io stream's input type is flagged has_absolute_offset,
+    // i.e. lower_runtime_state threaded a RuntimeState companion through the
+    // enclosing function (parameter/local name is always `runtime_state`).
+    inline bool cpp_has_absolute_offset(auto& ctx, ebm::StatementRef io_ref) {
+        auto typ = ctx.template get_field<"param_decl.param_type">(io_ref);
+        if (!typ) {
+            typ = ctx.template get_field<"var_decl.var_type">(io_ref);
+        }
+        return ctx.template get_field<"io_input_desc.has_absolute_offset">(typ) == true;
+    }
+
+    // Emit `runtime_state.offset += <size>;` when the stream is gated. The
+    // increment stays backend-side per ADR 0008/0039; the futils reader/writer
+    // cursor stays view-local, the companion counts absolute bytes.
+    inline void cpp_append_runtime_offset(auto& ctx, ebm::StatementRef io_ref, CodeWriter& w, auto&& size_expr) {
+        if (cpp_has_absolute_offset(ctx, io_ref)) {
+            w.writeln("runtime_state.offset += (", size_expr, ");");
+        }
+    }
+
+}  // namespace CODEGEN_NAMESPACE
+
 DEFINE_VISITOR(entry_before) {
     using namespace CODEGEN_NAMESPACE;
     using OutputPhase = std::remove_reference_t<decltype(ctx.config())>::OutputPhase;
@@ -163,10 +188,11 @@ DEFINE_VISITOR(entry_before) {
         return CODE("std::make_optional(", elem.to_writer(), ")");
     };
 
-    // Parameter type wrapper: state variables passed as reference
+    // Parameter type wrapper: state variables and the ADR 0039 RuntimeState
+    // companion are INOUT, passed as reference
     config.param_type_wrapper = [](Context_Statement_PARAMETER_DECL& ctx, Result typ) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
-        if (ctx.param_decl.is_state_variable()) {
+        if (ctx.param_decl.is_state_variable() || ctx.param_decl.is_runtime_state()) {
             return CODE(typ.to_writer(), "&");
         }
         return typ;
@@ -274,11 +300,10 @@ DEFINE_VISITOR(entry_before) {
     };
 
     // GET_STREAM_OFFSET: current byte offset in the stream
-    config.get_stream_offset_custom = [](Context_Expression_GET_STREAM_OFFSET& ctx) -> expected<Result> {
-        using namespace CODEGEN_NAMESPACE;
-        auto io_ = ctx.identifier(ctx.io_ref);
-        return CODE(io_, ".offset()");
-    };
+    // ADR 0039: GET_STREAM_OFFSET is emitted from lowered_expr (the RuntimeState
+    // companion member access) by the default visitor. The futils reader's
+    // `.offset()` is view-local and resets across sub-readers, so it cannot
+    // express the absolute offset ADR 0038 requires.
 
     // SUB_BYTE_RANGE: create a sub-reader/writer over a byte range
     config.sub_byte_range_visitor = [](Context_Statement_SUB_BYTE_RANGE& ctx) -> expected<Result> {
@@ -290,14 +315,26 @@ DEFINE_VISITOR(entry_before) {
         MAYBE(do_io, ctx.visit(ctx.sub_byte_range.io_statement));
         CodeWriter w;
         if (ctx.sub_byte_range.stream_type == ebm::StreamType::INPUT) {
+            // ADR 0038/0039: alignment offset is absolute (inherited from the
+            // parent), so the shared RuntimeState companion keeps counting inside
+            // the subrange while the sub-reader cursor stays view-local. The
+            // window is consumed as a whole, so pin the companion to
+            // start + length after the child ran.
+            const bool track_offset = cpp_has_absolute_offset(ctx, ctx.sub_byte_range.io_ref);
             // Create sub-reader from parent reader's current position
             w.writeln("{");
             {
                 auto scope = w.indent_scope();
                 w.writeln("auto _sub_view = ", parent_io_, ".remain().substr(0, ", length_str.to_writer(), ");");
                 w.writeln("::futils::binary::reader ", io_, "{_sub_view};");
+                if (track_offset) {
+                    w.writeln("const auto _rs_start = runtime_state.offset;");
+                }
                 w.write(do_io.to_writer());
                 w.writeln(parent_io_, ".offset(", length_str.to_writer(), ");");
+                if (track_offset) {
+                    w.writeln("runtime_state.offset = _rs_start + (", length_str.to_writer(), ");");
+                }
             }
             w.writeln("}");
         }
@@ -597,6 +634,7 @@ DEFINE_VISITOR(entry_before) {
             return pass;
         }
         MAYBE(size_str, get_size_str(ctx, ctx.read_data.size));
+        const bool track_offset = !ctx.read_data.attribute.is_peek();
         CodeWriter w;
         if (cand == BytesType::array) {
             // Read only size_str bytes; the backing std::array may be larger (e.g. alignment padding).
@@ -607,6 +645,9 @@ DEFINE_VISITOR(entry_before) {
                 w.writeln(std::format("return ::futils::error::Error<>(\"decode: {}: read byte array failed\", ::futils::error::Category::lib);", layer_str));
             }
             w.writeln("}");
+            if (track_offset) {
+                cpp_append_runtime_offset(ctx, ctx.read_data.io_ref, w, size_str);
+            }
         }
         else {
             // Vector<uint8_t> - resize then read
@@ -622,6 +663,9 @@ DEFINE_VISITOR(entry_before) {
                     w.writeln(std::format("return ::futils::error::Error<>(\"decode: {}: read bytes failed\", ::futils::error::Category::lib);", layer_str));
                 }
                 w.writeln("}");
+                if (track_offset) {
+                    cpp_append_runtime_offset(ctx, ctx.read_data.io_ref, w, "_sz");
+                }
             }
             w.writeln("}");
         }
@@ -650,6 +694,7 @@ DEFINE_VISITOR(entry_before) {
             w.writeln(std::format("return ::futils::error::Error<>(\"encode: {}: write failed\", ::futils::error::Category::lib);", layer_str));
         }
         w.writeln("}");
+        cpp_append_runtime_offset(ctx, ctx.write_data.io_ref, w, size_str);
         return w;
     };
 

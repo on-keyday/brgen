@@ -51,6 +51,12 @@ DEFINE_VISITOR(Statement_SUB_BYTE_RANGE) {
     w.write(type_name, "* ", io_name, " = &", io_name_base, ";");
     w.writeln("");
 
+    // ADR 0038/0039: alignment offset is absolute (inherited from the parent), so
+    // the shared RuntimeState companion keeps counting inside the subrange while
+    // `io->offset` stays buffer-local. The window is consumed as a whole, so pin
+    // the companion to start + length after the child ran.
+    bool track_offset = false;
+
     if (ctx.sub_byte_range.range_type == ebm::SubByteRangeType::bytes) {
         MAYBE(len, ctx.visit(*ctx.sub_byte_range.length()));
         w.writeln(io_name_base, ".data = ", parent_io_name, "->data + ", parent_io_name, "->offset;");
@@ -64,6 +70,11 @@ DEFINE_VISITOR(Statement_SUB_BYTE_RANGE) {
         // Advance parent
         w.write(parent_io_name, "->offset += ", len.to_writer(), ";");
         w.writeln("");
+        track_offset = ebm2c::has_absolute_offset(ctx, ctx.sub_byte_range.io_ref) &&
+                       ctx.sub_byte_range.stream_type == ebm::StreamType::INPUT;
+        if (track_offset) {
+            w.writeln("size_t ", io_name, "_rs_start = runtime_state->offset;");
+        }
     }
     else if (ctx.sub_byte_range.range_type == ebm::SubByteRangeType::seek_bytes) {
         MAYBE(len, ctx.visit(*ctx.sub_byte_range.length()));
@@ -83,6 +94,10 @@ DEFINE_VISITOR(Statement_SUB_BYTE_RANGE) {
 
     MAYBE(io_stmt, ctx.visit(ctx.sub_byte_range.io_statement));
     w.write(io_stmt.to_writer());
+    if (track_offset) {
+        MAYBE(len, ctx.visit(*ctx.sub_byte_range.length()));
+        w.writeln("runtime_state->offset = ", io_name, "_rs_start + (", len.to_writer(), ");");
+    }
 
     return w;
 }

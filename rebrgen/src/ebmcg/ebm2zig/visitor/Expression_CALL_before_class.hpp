@@ -27,41 +27,7 @@
 #include "../codegen.hpp"
 DEFINE_VISITOR(Expression_CALL_before) {
     using namespace CODEGEN_NAMESPACE;
-    // When calling encode/decode on a struct that has absolute offset tracking,
-    // redirect to the _impl function (which accepts the abs_offset pointer parameter).
-    MAYBE(callee, ctx.get_field<"call_desc.callee.instance">());
-    if (auto member = callee.body.member()) {
-        auto func_decl_res = ctx.get_field<"body.id.func_decl">(*member);
-        if (!func_decl_res) {
-            return pass;
-        }
-        auto& func_decl = *func_decl_res;
-        if (func_decl.kind != ebm::FunctionKind::ENCODE &&
-            func_decl.kind != ebm::FunctionKind::DECODE) {
-            return pass;
-        }
-        if (func_decl.params.container.empty() ||
-            !ebm2zig::has_absolute_offset(ctx, func_decl.params.container[0])) {
-            return pass;
-        }
-        // has_absolute_offset: call _impl instead of the public wrapper
-        MAYBE(ident_base, ctx.identifier(*member));
-        std::string ident = ident_base + "_impl";
-        MAYBE(base, callee.body.base());
-        MAYBE(base_str, ctx.visit(base));
-        CodeWriter w;
-        w.write(base_str.to_writer(), ".", ident, "(");
-        bool first = true;
-        for (const auto& arg_ref : ctx.call_desc.arguments.container) {
-            MAYBE(arg, ctx.visit(arg_ref));
-            if (!first) {
-                w.write(", ");
-            }
-            first = false;
-            w.write(arg.to_writer());
-        }
-        w.write(")");
-        return w;
-    }
+    // ADR 0039: the _impl split and the RuntimeState companion argument are
+    // provided at the IR level by lower_runtime_state; calls emit generically.
     return pass;
 }

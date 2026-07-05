@@ -754,7 +754,7 @@ namespace ebm2rmw {
                             return ebmgen::unexpect_error("stack underflow on PUSH_SUB_INPUT");
                         }
                         auto len_val = stack_pop();
-                        len_val.unref();
+                        len_val.as_int();  // length may be a member ref holding raw bytes
                         if (!std::holds_alternative<std::uint64_t>(len_val.value)) {
                             return ebmgen::unexpect_error("PUSH_SUB_INPUT: length is not integer");
                         }
@@ -816,7 +816,7 @@ namespace ebm2rmw {
                             return ebmgen::unexpect_error("stack underflow on PUSH_SUB_OUTPUT");
                         }
                         auto len_val = stack_pop();
-                        len_val.unref();
+                        len_val.as_int();  // length may be a member ref holding raw bytes
                         if (!std::holds_alternative<std::uint64_t>(len_val.value)) {
                             return ebmgen::unexpect_error("PUSH_SUB_OUTPUT: length is not integer");
                         }
