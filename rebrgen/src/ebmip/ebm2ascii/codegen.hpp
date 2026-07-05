@@ -3808,13 +3808,14 @@ namespace ebm2ascii {
         const ebm::TypeRef& type;
         const ebm::ExpressionKind& kind;
         const ebm::StatementRef& io_ref;
+        const ebm::LoweredExpressionRef& lowered_expr;
         const ebm::StreamType& stream_type;
         const ebm::SizeUnit& unit;
     };
     struct VisitorTag_Expression_GET_STREAM_OFFSET {};
     // Deconstruct context fields
     #define EBM2ASCII_DECONSTRUCT_EXPRESSION_GET_STREAM_OFFSET(instance_name) \
-    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& type = instance_name.type;auto& kind = instance_name.kind;auto& io_ref = instance_name.io_ref;auto& stream_type = instance_name.stream_type;auto& unit = instance_name.unit;
+    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& type = instance_name.type;auto& kind = instance_name.kind;auto& io_ref = instance_name.io_ref;auto& lowered_expr = instance_name.lowered_expr;auto& stream_type = instance_name.stream_type;auto& unit = instance_name.unit;
     template <typename Result>
     struct Context_Expression_GET_STREAM_OFFSET_before : ebmcodegen::util::ContextBase<Context_Expression_GET_STREAM_OFFSET_before<Result>> {
         constexpr static std::string_view context_name = "Expression_GET_STREAM_OFFSET_before";
@@ -3823,6 +3824,7 @@ namespace ebm2ascii {
         const ebm::TypeRef& type;
         const ebm::ExpressionKind& kind;
         const ebm::StatementRef& io_ref;
+        const ebm::LoweredExpressionRef& lowered_expr;
         const ebm::StreamType& stream_type;
         const ebm::SizeUnit& unit;
         ebmcodegen::util::MainLogicWrapper<Result> main_logic;
@@ -3830,7 +3832,7 @@ namespace ebm2ascii {
     struct VisitorTag_Expression_GET_STREAM_OFFSET_before {};
     // Deconstruct context fields
     #define EBM2ASCII_DECONSTRUCT_EXPRESSION_GET_STREAM_OFFSET_BEFORE(instance_name) \
-    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& type = instance_name.type;auto& kind = instance_name.kind;auto& io_ref = instance_name.io_ref;auto& stream_type = instance_name.stream_type;auto& unit = instance_name.unit;auto& main_logic = instance_name.main_logic;
+    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& type = instance_name.type;auto& kind = instance_name.kind;auto& io_ref = instance_name.io_ref;auto& lowered_expr = instance_name.lowered_expr;auto& stream_type = instance_name.stream_type;auto& unit = instance_name.unit;auto& main_logic = instance_name.main_logic;
     template <typename Result>
     struct Context_Expression_GET_STREAM_OFFSET_after : ebmcodegen::util::ContextBase<Context_Expression_GET_STREAM_OFFSET_after<Result>> {
         constexpr static std::string_view context_name = "Expression_GET_STREAM_OFFSET_after";
@@ -3839,6 +3841,7 @@ namespace ebm2ascii {
         const ebm::TypeRef& type;
         const ebm::ExpressionKind& kind;
         const ebm::StatementRef& io_ref;
+        const ebm::LoweredExpressionRef& lowered_expr;
         const ebm::StreamType& stream_type;
         const ebm::SizeUnit& unit;
         ebmcodegen::util::MainLogicWrapper<Result> main_logic;
@@ -3847,7 +3850,7 @@ namespace ebm2ascii {
     struct VisitorTag_Expression_GET_STREAM_OFFSET_after {};
     // Deconstruct context fields
     #define EBM2ASCII_DECONSTRUCT_EXPRESSION_GET_STREAM_OFFSET_AFTER(instance_name) \
-    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& type = instance_name.type;auto& kind = instance_name.kind;auto& io_ref = instance_name.io_ref;auto& stream_type = instance_name.stream_type;auto& unit = instance_name.unit;auto& main_logic = instance_name.main_logic;auto& result = instance_name.result;
+    auto& visitor = instance_name.visitor;auto& item_id = instance_name.item_id;auto& type = instance_name.type;auto& kind = instance_name.kind;auto& io_ref = instance_name.io_ref;auto& lowered_expr = instance_name.lowered_expr;auto& stream_type = instance_name.stream_type;auto& unit = instance_name.unit;auto& main_logic = instance_name.main_logic;auto& result = instance_name.result;
     struct Context_Expression_GET_REMAINING_BYTES : ebmcodegen::util::ContextBase<Context_Expression_GET_REMAINING_BYTES> {
         constexpr static std::string_view context_name = "Expression_GET_REMAINING_BYTES";
         BaseVisitor& visitor;

@@ -3107,6 +3107,7 @@ namespace ebm::zc {
             StreamType stream_type{};
             SizeUnit unit{};
             StatementRef io_ref;
+            LoweredExpressionRef lowered_expr;
         };
         struct EBM_API union_struct_52{
             StreamType stream_type{};
@@ -4099,10 +4100,11 @@ namespace ebm::zc {
     struct EBM_API ParameterDecl{
         IdentifierRef name;
         TypeRef param_type;
-        ::futils::binary::flags_t<std::uint8_t, 1, 1, 6> flags_95_;
+        ::futils::binary::flags_t<std::uint8_t, 1, 1, 1, 5> flags_95_;
         bits_flag_alias_method(flags_95_,0,is_state_variable);
         bits_flag_alias_method(flags_95_,1,is_mutated);
-        bits_flag_alias_method(flags_95_,2,reserved);
+        bits_flag_alias_method(flags_95_,2,is_runtime_state);
+        bits_flag_alias_method(flags_95_,3,reserved);
         WeakStatementRef related_function;
         ::futils::error::Error<> encode(::futils::binary::writer& w) const ;
         ::futils::error::Error<> decode(::futils::binary::reader& r);
@@ -4113,6 +4115,7 @@ namespace ebm::zc {
             v(v, "param_type",(*this).param_type);
             v(v, "is_state_variable",(*this).is_state_variable());
             v(v, "is_mutated",(*this).is_mutated());
+            v(v, "is_runtime_state",(*this).is_runtime_state());
             v(v, "reserved",(*this).reserved());
             v(v, "related_function",(*this).related_function);
         }
@@ -4122,6 +4125,7 @@ namespace ebm::zc {
             v(v, "param_type",(*this).param_type);
             v(v, "is_state_variable",(*this).is_state_variable());
             v(v, "is_mutated",(*this).is_mutated());
+            v(v, "is_runtime_state",(*this).is_runtime_state());
             v(v, "reserved",(*this).reserved());
             v(v, "related_function",(*this).related_function);
         }
@@ -4136,6 +4140,7 @@ namespace ebm::zc {
             v(v, "param_type",visitor_tag<decltype(std::declval<ParameterDecl>().param_type),false>{});
             v(v, "is_state_variable",visitor_tag<decltype(std::declval<ParameterDecl>().is_state_variable()),true>{});
             v(v, "is_mutated",visitor_tag<decltype(std::declval<ParameterDecl>().is_mutated()),true>{});
+            v(v, "is_runtime_state",visitor_tag<decltype(std::declval<ParameterDecl>().is_runtime_state()),true>{});
             v(v, "reserved",visitor_tag<decltype(std::declval<ParameterDecl>().reserved()),true>{});
             v(v, "related_function",visitor_tag<decltype(std::declval<ParameterDecl>().related_function),false>{});
         }

@@ -2683,6 +2683,7 @@ namespace ebmgen::visitor {
         const ebm::TypeRef& type;
         const ebm::ExpressionKind& kind;
         const ebm::StatementRef& io_ref;
+        const ebm::LoweredExpressionRef& lowered_expr;
         const ebm::StreamType& stream_type;
         const ebm::SizeUnit& unit;
     };
@@ -2694,6 +2695,7 @@ namespace ebmgen::visitor {
         const ebm::TypeRef& type;
         const ebm::ExpressionKind& kind;
         const ebm::StatementRef& io_ref;
+        const ebm::LoweredExpressionRef& lowered_expr;
         const ebm::StreamType& stream_type;
         const ebm::SizeUnit& unit;
         ebmcodegen::util::MainLogicWrapper<Result> main_logic;
@@ -2706,6 +2708,7 @@ namespace ebmgen::visitor {
         const ebm::TypeRef& type;
         const ebm::ExpressionKind& kind;
         const ebm::StatementRef& io_ref;
+        const ebm::LoweredExpressionRef& lowered_expr;
         const ebm::StreamType& stream_type;
         const ebm::SizeUnit& unit;
         ebmcodegen::util::MainLogicWrapper<Result> main_logic;
@@ -7509,6 +7512,10 @@ namespace ebmgen::visitor {
             return unexpect_error("Unexpected null pointer for ExpressionBody::io_ref");
         }
         auto& io_ref = *in.body.io_ref();
+        if (!in.body.lowered_expr()) {
+            return unexpect_error("Unexpected null pointer for ExpressionBody::lowered_expr");
+        }
+        auto& lowered_expr = *in.body.lowered_expr();
         if (!in.body.stream_type()) {
             return unexpect_error("Unexpected null pointer for ExpressionBody::stream_type");
         }
@@ -7524,6 +7531,7 @@ namespace ebmgen::visitor {
                 .type = type,
                 .kind = kind,
                 .io_ref = io_ref,
+                .lowered_expr = lowered_expr,
                 .stream_type = stream_type,
                 .unit = unit,
             };
@@ -7535,6 +7543,7 @@ namespace ebmgen::visitor {
             .type = type,
             .kind = kind,
             .io_ref = io_ref,
+            .lowered_expr = lowered_expr,
             .stream_type = stream_type,
             .unit = unit,
             .main_logic = main_logic,
@@ -7548,6 +7557,7 @@ namespace ebmgen::visitor {
             .type = type,
             .kind = kind,
             .io_ref = io_ref,
+            .lowered_expr = lowered_expr,
             .stream_type = stream_type,
             .unit = unit,
             .main_logic = main_logic,

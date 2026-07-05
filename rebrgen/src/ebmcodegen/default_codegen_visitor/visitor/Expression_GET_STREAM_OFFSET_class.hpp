@@ -15,6 +15,8 @@
       type: const ebm::TypeRef&
       kind: const ebm::ExpressionKind&
       io_ref: const ebm::StatementRef&
+      lowered_expr: const ebm::LoweredExpressionRef&
+        id: ExpressionRef
       stream_type: const ebm::StreamType&
       unit: const ebm::SizeUnit&
 */

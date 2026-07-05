@@ -250,6 +250,7 @@ format ExpressionBody:
             unit :SizeUnit # Size unit for the offset (e.g., BIT_FIXED, BYTE_FIXED, ELEMENT_FIXED)
             unit == SizeUnit.BIT_FIXED || unit == SizeUnit.BYTE_FIXED
             io_ref :StatementRef # Reference to the stream variable
+            lowered_expr :LoweredExpressionRef # Optional: MEMBER_ACCESS on RuntimeState companion (.offset/.bit_offset). See ADR 0039.
         ExpressionKind.GET_REMAINING_BYTES:
             stream_type :StreamType
             io_ref :StatementRef # Reference to the stream variable
@@ -367,7 +368,8 @@ format ParameterDecl:
     param_type :TypeRef # Type of the parameter
     is_state_variable :u1 # 0: regular parameter, 1: state variable
     is_mutated :u1 # whether this parameter is assigned/mutated in the function body (borrow vs owned; see ADR 0034)
-    reserved :u6 # Reserved for future use
+    is_runtime_state :u1 # 1: compiler-synthesized RuntimeState companion parameter (see ADR 0039)
+    reserved :u5 # Reserved for future use
     related_function :WeakStatementRef # Reference to the parent function declaration
 
     

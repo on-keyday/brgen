@@ -3462,7 +3462,10 @@ namespace ebm {
         return nullptr;
         }
         if (ExpressionKind::GET_STREAM_OFFSET==(*this).kind) {
-        return nullptr;
+        if(!std::holds_alternative<union_struct_51>(union_variant_34)) {
+            return nullptr;
+        }
+        return std::addressof(std::get<17>((*this).union_variant_34).lowered_expr);
         }
         if (ExpressionKind::GET_REMAINING_BYTES==(*this).kind) {
         return nullptr;
@@ -3591,7 +3594,11 @@ namespace ebm {
             return false;
         }
         if (ExpressionKind::GET_STREAM_OFFSET==(*this).kind) {
-            return false;
+            if(!std::holds_alternative<union_struct_51>(union_variant_34)) {
+                union_variant_34 = union_struct_51();
+            }
+            std::get<17>((*this).union_variant_34).lowered_expr = v;
+            return true;
         }
         if (ExpressionKind::GET_REMAINING_BYTES==(*this).kind) {
             return false;
@@ -3722,7 +3729,11 @@ namespace ebm {
             return false;
         }
         if (ExpressionKind::GET_STREAM_OFFSET==(*this).kind) {
-            return false;
+            if(!std::holds_alternative<union_struct_51>(union_variant_34)) {
+                union_variant_34 = union_struct_51();
+            }
+            std::get<17>((*this).union_variant_34).lowered_expr = std::move(v);
+            return true;
         }
         if (ExpressionKind::GET_REMAINING_BYTES==(*this).kind) {
             return false;
@@ -22160,6 +22171,9 @@ namespace ebm {
             if (auto err = std::get<17>((*this).union_variant_34).io_ref.encode(w)) {
                 return err;
             }
+            if (auto err = std::get<17>((*this).union_variant_34).lowered_expr.encode(w)) {
+                return err;
+            }
         }
         else if (ExpressionKind::GET_REMAINING_BYTES==(*this).kind) {
             if(!std::holds_alternative<union_struct_52>(union_variant_34)) {
@@ -22540,6 +22554,9 @@ namespace ebm {
                 return ::futils::error::Error<>("decode: ExpressionBody: assertion failed; (std::get<17>((*this).union_variant_34).unit == SizeUnit::BIT_FIXED) || (std::get<17>((*this).union_variant_34).unit == SizeUnit::BYTE_FIXED)",::futils::error::Category::lib);
             }
             if (auto err = std::get<17>((*this).union_variant_34).io_ref.decode(r)) {
+                return err;
+            }
+            if (auto err = std::get<17>((*this).union_variant_34).lowered_expr.decode(r)) {
                 return err;
             }
         }

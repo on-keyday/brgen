@@ -18,6 +18,7 @@
         param_type: TypeRef
         is_state_variable: bool
         is_mutated: bool
+        is_runtime_state: bool
         reserved: std::uint8_t
         related_function: WeakStatementRef
 */
