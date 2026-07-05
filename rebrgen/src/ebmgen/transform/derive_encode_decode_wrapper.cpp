@@ -29,8 +29,7 @@ namespace ebmgen {
 
             bool has_state_vars = false;
             for (auto& param_ref : func->params.container) {
-                MAYBE(param_stmt, ctx.repository().get_statement(param_ref));
-                MAYBE(param_decl, param_stmt.body.param_decl());
+                MAYBE(param_decl, access_field<"param_decl">(ctx.repository(), param_ref));
                 if (param_decl.is_state_variable()) {
                     has_state_vars = true;
                     break;
@@ -42,8 +41,7 @@ namespace ebmgen {
 
         // Second pass: create wrapper for each target
         for (auto& target : targets) {
-            MAYBE(func_stmt, ctx.repository().get_statement(target.stmt_id));
-            MAYBE(func, func_stmt.body.func_decl());
+            MAYBE(func, access_field<"func_decl">(ctx.repository(), target.stmt_id));
             bool is_encode = target.kind == ebm::FunctionKind::ENCODE;
             MAYBE(encdec, ctx.state().get_format_encode_decode(from_weak(target.parent_format)));
 
@@ -74,8 +72,7 @@ namespace ebmgen {
 
             for (auto& sv : state_vars_copy) {
                 auto var_def = is_encode ? sv.enc_var_def : sv.dec_var_def;
-                MAYBE(param_stmt_ptr, ctx.repository().get_statement(var_def));
-                MAYBE(param_decl, param_stmt_ptr.body.param_decl());
+                MAYBE(param_decl, access_field<"param_decl">(ctx.repository(), var_def));
                 auto var_type = param_decl.param_type;
                 auto param_name = param_decl.name;
 
@@ -131,8 +128,7 @@ namespace ebmgen {
             EBMA_ADD_STATEMENT(wrapper_stmt, wrapper_id, std::move(wrapper_stmt_body));
 
             // Update impl: set has_wrapper and wrapper_function
-            MAYBE(impl_stmt_ptr, tctx.statement_repository().get(target.stmt_id));
-            MAYBE(impl_func_ptr, impl_stmt_ptr.body.func_decl());
+            MAYBE(impl_func_ptr, access_field<"func_decl">(ctx.repository(), target.stmt_id));
             impl_func_ptr.attribute.has_wrapper(true);
             impl_func_ptr.wrapper_function(wrapper_stmt);
         }

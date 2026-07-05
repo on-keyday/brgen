@@ -83,47 +83,6 @@ namespace ebmgen {
         ebm::StatementRef func_ref;
     };
 
-    /*
-    struct PropertySetterDetector {
-        visitor::BaseVisitor& visitor;
-        std::unordered_map<size_t, BranchInfo>& branch_info;
-        std::optional<ebm::StatementRef> current_match_branch;
-
-        expected<void> visit(visitor::Context_Statement_ASSIGNMENT& ctx) {
-            auto target_id = ctx.get_field<"member.body.id.id">(ctx.target);
-            auto target_field_kind = ctx.get_field<"field_decl.field_type.body.kind.optional">(target_id);
-            if (target_field_kind != ebm::TypeKind::VECTOR) {
-                return {};
-            }
-            if (current_match_branch) {
-                branch_info[get_id(*target_id)] = BranchInfo{
-                    .field_ref = *target_id,
-                    .assign_ref = ctx.item_id,
-                    .branch_ref = *current_match_branch,
-                };
-            }
-            return {};
-        }
-
-        expected<void> visit(visitor::Context_Statement_MATCH_BRANCH& ctx) {
-            current_match_branch = ctx.item_id;
-            auto res = traverse_children<void>(*this, ctx);
-            current_match_branch = std::nullopt;
-            return res;
-        }
-
-        template <class Ctx>
-        expected<void> visit(Ctx&& ctx) {
-            if (ctx.context_name.contains("Type")) {
-                return {};
-            }
-            if (ctx.is_before_or_after()) {
-                return ebmcodegen::util::pass;
-            }
-            return traverse_children<void>(*this, std::forward<Ctx>(ctx));
-        }
-    };
-    */
 
     expected<void> derive_array_setter(TransformContext& tctx) {
         auto& ctx = tctx.context();
