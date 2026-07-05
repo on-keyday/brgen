@@ -23,5 +23,7 @@
 DEFINE_VISITOR(Expression_RANGE) {
     using namespace CODEGEN_NAMESPACE;
     /*here to write the hook*/
+    // Intentional no-op: a RANGE expression never evaluates on its own in the VM;
+    // consumers (RANGE_EQUAL / MATCH branches) emit via their lowered forms.
     return {};
 }

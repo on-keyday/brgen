@@ -27,6 +27,8 @@
 DEFINE_VISITOR(Statement_RESERVE_DATA) {
     using namespace CODEGEN_NAMESPACE;
     /*here to write the hook*/
+    // Intentional no-op: the VM output stream grows dynamically, so there is
+    // nothing to reserve ahead of time.
     return {};
 }
 

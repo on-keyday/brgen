@@ -24,6 +24,9 @@
 DEFINE_VISITOR(Expression_SUB_RANGE_INIT) {
     using namespace CODEGEN_NAMESPACE;
     /*here to write the hook*/
+    // Intentional no-op: the sub-stream is created by PUSH_SUB_INPUT/PUSH_SUB_OUTPUT
+    // emitted from the SUB_BYTE_RANGE statement; the init expression itself is
+    // just the io variable placeholder and produces no VM instructions.
     return {};
 }
 
