@@ -54,6 +54,13 @@ DEFINE_VISITOR(pre_visitor) {
             if (name.contains(".") || is_full_upper(name)) {
                 return;
             }
+            // ADR 0039: the compiler-synthesized RuntimeState companion parameter /
+            // wrapper local. lowerCamel keeps it unexported and avoids colliding
+            // with the `RuntimeState` struct type name.
+            if (name == "runtime_state") {
+                name = "runtimeState";
+                return;
+            }
             name = to_camel_case(name, true);
         });
     return pass;

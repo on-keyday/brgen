@@ -87,14 +87,6 @@ namespace ebm2go {
         return x + "Offset";
     }
 
-    inline std::string abs_offset_var(const std::string& x) {
-        return std::format("{}AbsOffset", x);
-    }
-
-    inline std::string abs_offset_ref(const std::string& x) {
-        return std::format("*{}AbsOffset", x);
-    }
-
     inline std::string offset_ref(const std::string& x) {
         return std::format("*{}Offset", x);
     }
@@ -111,11 +103,14 @@ namespace ebm2go {
                (kind == ebm::TypeKind::UINT || kind == ebm::TypeKind::ARRAY);
     }
 
-    // Emit `*<io>AbsOffset += int(<size_expr>)` if the IO stream has has_absolute_offset.
-    // Used by READ_DATA and WRITE_DATA visitors to keep abs_offset in sync with stream position.
-    inline void append_abs_offset(auto& ctx, ebm::StatementRef io_ref, auto& w, auto&& size_expr) {
+    // ADR 0039: emit `runtime_state.offset += int(<size_expr>)` if the IO stream has
+    // has_absolute_offset (= lower_runtime_state threaded the RuntimeState companion,
+    // parameter name is always `runtime_state`). Used by READ_DATA and WRITE_DATA
+    // visitors to keep the companion in sync with the stream position; the increment
+    // stays backend-side per ADR 0008.
+    inline void append_runtime_offset(auto& ctx, ebm::StatementRef io_ref, auto& w, auto&& size_expr) {
         if (has_absolute_offset(ctx, io_ref) == true) {
-            w.writeln(abs_offset_ref(ctx.identifier(io_ref)), " += int(", size_expr, ")");
+            w.writeln("runtimeState.Offset += int(", size_expr, ")");
         }
     }
 

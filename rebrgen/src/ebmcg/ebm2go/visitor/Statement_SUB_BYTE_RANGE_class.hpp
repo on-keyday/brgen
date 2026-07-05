@@ -32,17 +32,30 @@ DEFINE_VISITOR(Statement_SUB_BYTE_RANGE) {
     auto io_ = ctx.identifier(ctx.sub_byte_range.io_ref);
     auto parent_io_ = ctx.identifier(ctx.sub_byte_range.parent_io_ref);
 
-    auto has_abs_offset = has_absolute_offset(ctx, ctx.sub_byte_range.io_ref);
-
     CodeWriter w;
-
-    if (has_abs_offset) {
-        w.writeln(abs_offset_var(io_), " := ", abs_offset_var(parent_io_));
-    }
 
     if (ctx.sub_byte_range.range_type == ebm::SubByteRangeType::bytes) {
         MAYBE(length, ctx.sub_byte_range.length());
         MAYBE(length_str, ctx.visit(length));
+
+        // ADR 0038/0039: alignment offset is absolute (inherited from the parent), so
+        // the shared RuntimeState companion keeps counting inside the subrange. The
+        // subrange window is consumed as a whole from the parent stream, so after the
+        // child ran, pin the offset to window start + length even if the child
+        // under-consumed.
+        const bool track_offset = has_absolute_offset(ctx, ctx.sub_byte_range.io_ref) &&
+                                  ctx.sub_byte_range.stream_type == ebm::StreamType::INPUT;
+        const std::string rs_start = std::string(io_) + "RsStart";
+        auto begin_offset_window = [&] {
+            if (track_offset) {
+                w.writeln(rs_start, " := runtimeState.Offset");
+            }
+        };
+        auto end_offset_window = [&] {
+            if (track_offset) {
+                w.writeln("runtimeState.Offset = ", rs_start, " + int(", length_str.to_writer(), ")");
+            }
+        };
 
         if (ctx.config().io_strategy.is_reader_writer()) {
             if (ctx.sub_byte_range.stream_type == ebm::StreamType::INPUT) {
@@ -55,8 +68,10 @@ DEFINE_VISITOR(Statement_SUB_BYTE_RANGE) {
                 w.writeln(io_, " := &bytes.Buffer{}");
             }
 
+            begin_offset_window();
             MAYBE(do_io, ctx.visit(ctx.sub_byte_range.io_statement));
             w.write(do_io.to_writer());
+            end_offset_window();
 
             if (ctx.sub_byte_range.stream_type == ebm::StreamType::INPUT) {
                 // After encoding: verify length and write to parent
@@ -105,8 +120,10 @@ DEFINE_VISITOR(Statement_SUB_BYTE_RANGE) {
             w.writeln(offset_var(io_), " := &", offset_var(io_), "Base");
         }
 
+        begin_offset_window();
         MAYBE(do_io, ctx.visit(ctx.sub_byte_range.io_statement));
         w.write(do_io.to_writer());
+        end_offset_window();
 
         if (ctx.sub_byte_range.stream_type == ebm::StreamType::OUTPUT) {
             if (ctx.config().io_strategy.is_append()) {

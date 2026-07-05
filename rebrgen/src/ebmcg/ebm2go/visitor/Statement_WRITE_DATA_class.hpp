@@ -85,7 +85,7 @@ DEFINE_VISITOR(Statement_WRITE_DATA) {
             }
             w.writeln("}");
         }
-        append_abs_offset(ctx, ctx.write_data.io_ref, w, "1");
+        append_runtime_offset(ctx, ctx.write_data.io_ref, w, "1");
         return w;
     }
     if (auto cand = is_bytes_type(wctx, wctx.write_data.data_type)) {
@@ -114,7 +114,7 @@ DEFINE_VISITOR(Statement_WRITE_DATA) {
                 w.indent_writeln("return err");
                 w.writeln("}");
             }
-            append_abs_offset(ctx, ctx.write_data.io_ref, w, size_str);
+            append_runtime_offset(ctx, ctx.write_data.io_ref, w, size_str);
             return w;
         }
         auto range = [&](auto&& start, auto&& size) {
@@ -173,7 +173,7 @@ DEFINE_VISITOR(Statement_WRITE_DATA) {
         if (!ctx.config().io_strategy.is_append()) {
             w.writeln(offset_ref(io_), " += int(", size_str, ")");
         }
-        append_abs_offset(ctx, ctx.write_data.io_ref, w, size_str);
+        append_runtime_offset(ctx, ctx.write_data.io_ref, w, size_str);
         return w;
     }
     if (auto lw = wctx.write_data.lowered_statement()) {

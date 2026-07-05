@@ -32,10 +32,6 @@ namespace CODEGEN_NAMESPACE {
             return std::make_pair(CodeWriter{}, CodeWriter{});
         }
         CodeWriter def, use;
-        if (has_absolute_offset(ctx, decl.params.container[0]) == true) {
-            def.write(", ", abs_offset_var(ctx.identifier(decl.params.container[0])), " *int");
-            use.write(", ", abs_offset_var(ctx.identifier(decl.params.container[0])));
-        }
         if (decl.params.container.size() > 1) {
             for (size_t i = 1; i < decl.params.container.size(); i++) {
                 auto current = decl.params.container[i];
@@ -51,18 +47,17 @@ namespace CODEGEN_NAMESPACE {
         Context_Statement_STRUCT_DECL& sctx;
         CodeWriter def, use;
         bool has_wrapper;
-        bool has_abs_offset;
         std::string name;
         CodeWriter empty_cw;
 
-        // When has_wrapper=true or has_abs_offset=true, public functions have no extra params.
-        // When has_wrapper=true: delegates to EBM-generated wrapper (no state vars exposed).
-        // When has_abs_offset=true: delegates to _impl wrapper (abs_offset inited locally).
+        // When has_wrapper=true, public functions have no extra params: they delegate
+        // to the EBM-generated wrapper, which seeds state vars / the RuntimeState
+        // companion (ADR 0039) locally.
         CodeWriter& conv_def() {
-            return (has_wrapper || has_abs_offset) ? empty_cw : def;
+            return has_wrapper ? empty_cw : def;
         }
         CodeWriter& conv_use() {
-            return (has_wrapper || has_abs_offset) ? empty_cw : use;
+            return has_wrapper ? empty_cw : use;
         }
 
         // Emit Must*[_impl]: panics on error, calls inner_fn[_impl]
@@ -347,7 +342,6 @@ namespace CODEGEN_NAMESPACE {
             .def = std::move(def_use.first),
             .use = std::move(def_use.second),
             .has_wrapper = fd.attribute.has_wrapper(),
-            .has_abs_offset = fd.params.container.empty() ? false : has_absolute_offset(sctx, fd.params.container[0]),
             .name = std::string(sctx.identifier()),
         };
     }
@@ -480,6 +474,10 @@ DEFINE_VISITOR(entry_before) {
     };
     ctx.config().param_visitor = [](Context_Statement_PARAMETER_DECL& ctx, Result type) -> expected<Result> {
         auto kind = ctx.get_kind(ctx.param_decl.param_type);
+        if (ctx.param_decl.is_runtime_state()) {
+            // ADR 0039: the RuntimeState companion is INOUT, so take it by pointer
+            return CODE(ctx.identifier(), " *", type.to_writer());
+        }
         if (kind != ebm::TypeKind::ENCODER_INPUT &&
             kind != ebm::TypeKind::DECODER_INPUT) {
             return CODE(ctx.identifier(), " ", type.to_writer());
@@ -490,9 +488,6 @@ DEFINE_VISITOR(entry_before) {
         }
         else {
             w = CODE(ctx.identifier(), " ", type.to_writer());
-        }
-        if (!ctx.config().without_abs_param() && ctx.get_field<has_absolute_offset_type>(ctx.param_decl.param_type) == true) {
-            w.write(", ", abs_offset_var(ctx.identifier()), " *int");
         }
         return w;
     };
@@ -512,9 +507,6 @@ DEFINE_VISITOR(entry_before) {
         }
         else {
             w = target.to_writer();
-        }
-        if (ctx.get_field<has_absolute_offset_type>(ctx.type) == true) {
-            w = CODE(std::move(w), ", ", abs_offset_var(target.to_string()));
         }
         return w;
     };
@@ -660,22 +652,16 @@ DEFINE_VISITOR(entry_before) {
             }
         }
         bool has_wrapper = fctx.func_decl.attribute.has_wrapper();
-        bool has_abs_offset = false;
-        std::string_view original_name;
         if (fctx.func_decl.kind == ebm::FunctionKind::ENCODE) {
             name = fctx.config().encode_fn_name;
-            original_name = name;
-            has_abs_offset = has_absolute_offset(fctx, fctx.func_decl.params.container[0]);
-            if (has_wrapper || has_abs_offset) {
+            if (has_wrapper) {
                 tmp_buffer = std::string(name) + "_impl";
                 name = tmp_buffer;
             }
         }
         else if (fctx.func_decl.kind == ebm::FunctionKind::DECODE) {
             name = fctx.config().decode_fn_name;
-            original_name = name;
-            has_abs_offset = has_absolute_offset(fctx, fctx.func_decl.params.container[0]);
-            if (has_wrapper || has_abs_offset) {
+            if (has_wrapper) {
                 tmp_buffer = std::string(name) + "_impl";
                 name = tmp_buffer;
             }
@@ -725,26 +711,6 @@ DEFINE_VISITOR(entry_before) {
             auto ident = byte_io_ref(original);
             w.writeln(ident, ", _ := ", original, ".(io.ByteWriter)");
             w.writeln("_ = ", ident);
-        }
-        // if no wrapper and has absolute offset
-        if (!has_wrapper && has_abs_offset) {
-            CodeWriter wrapper;
-            auto _set = ctx.config().without_abs_param.set(true);
-            MAYBE(param, ctx.visit(fctx.func_decl.params.container[0]));
-            auto arg_ident = ctx.identifier(fctx.func_decl.params.container[0]);
-            auto arg = CODE(arg_ident);
-            if (!ctx.config().io_strategy.is_reader_writer_append()) {
-                arg.write(",", offset_var(arg_ident));
-            }
-            wrapper.writeln("func (", ctx.config().self_value, " *", ctx.identifier(fctx.func_decl.parent_format), ") ", original_name, "(", param.to_writer(), ") ", ctx.config().function_return_type_separator, " ", return_type.to_writer(), " ", ctx.config().begin_block);
-            {
-                auto scope = wrapper.indent_scope();
-                wrapper.writeln("var absOffset int");
-                wrapper.writeln("return ", ctx.config().self_value, ".", name, "(", arg, ",&absOffset)");
-            }
-            wrapper.writeln("}");
-            wrapper.write(std::move(w));
-            w = std::move(wrapper);
         }
         return w;
     };
@@ -1152,9 +1118,7 @@ DEFINE_VISITOR(entry_before) {
         w.write(var_name, " == 1");
         return w;
     };
-    ctx.config().get_stream_offset_custom = [&](Context_Expression_GET_STREAM_OFFSET& gso_ctx) -> expected<Result> {
-        auto io_ref = gso_ctx.identifier(gso_ctx.io_ref);
-        return abs_offset_ref(io_ref);
-    };
+    // ADR 0039: GET_STREAM_OFFSET is emitted from lowered_expr (the RuntimeState
+    // companion member access) by the default visitor; no custom hook needed.
     return pass;
 }
