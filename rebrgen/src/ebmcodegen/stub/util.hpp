@@ -349,6 +349,7 @@ namespace ebmcodegen::util {
         switch (type.body.kind) {
             case ebm::TypeKind::INT:
             case ebm::TypeKind::UINT:
+            case ebm::TypeKind::USIZE:  // e.g. RuntimeState.offset (ADR 0039)
             case ebm::TypeKind::FLOAT: {
                 ebm::Expression int_literal;
                 int_literal.body.kind = ebm::ExpressionKind::LITERAL_INT;
