@@ -364,7 +364,11 @@ namespace ebmgen {
         for (auto& patch : call_patches) {
             MAYBE(rs_expr, companion_expr_of(patch.enclosing_fn));
             auto callee_param = fn_to_param[get_id(patch.callee_fn)];
-            EBMA_ADD_EXPR(arg_ref, make_as_arg(runtime_state_type, rs_expr, true, callee_param));
+            // same convention as state variables (decode.cpp): forwarding the
+            // enclosing function's own param is a plain arg (borrow-friendly
+            // reborrow in rust etc.), only a wrapper's local companion is INOUT
+            bool is_inout = !fn_to_param.contains(get_id(patch.enclosing_fn));
+            EBMA_ADD_EXPR(arg_ref, make_as_arg(runtime_state_type, rs_expr, is_inout, callee_param));
             auto* call_expr = ctx.repository().get_expression(patch.call);
             if (!call_expr) {
                 return unexpect_error("lower_runtime_state: call expression {} not found", get_id(patch.call));

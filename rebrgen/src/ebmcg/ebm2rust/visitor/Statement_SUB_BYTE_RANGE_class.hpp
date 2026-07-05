@@ -41,6 +41,24 @@ DEFINE_VISITOR(Statement_SUB_BYTE_RANGE) {
     // lifetime をそのまま継承できる (reborrow)。
     const bool direct_input = ctx.config().in_direct_decode &&
                               ctx.sub_byte_range.stream_type == ebm::StreamType::INPUT;
+    // ADR 0038/0039: alignment offset is absolute (inherited from the parent), so the
+    // shared RuntimeState companion keeps counting inside the subrange. The subrange
+    // window is consumed as a whole from the parent stream, so after the child ran,
+    // pin the offset to window start + length even if the child under-consumed.
+    const bool track_offset = ebm2rust::has_absolute_offset(ctx, ctx.sub_byte_range.io_ref) &&
+                              ctx.sub_byte_range.stream_type == ebm::StreamType::INPUT;
+    const std::string rs_start = io_ + "_rs_start";
+    auto begin_offset_window = [&] {
+        if (track_offset) {
+            w.writeln("let ", rs_start, " = runtime_state.offset;");
+        }
+    };
+    auto end_offset_window = [&] {
+        if (track_offset) {
+            w.writeln("runtime_state.offset = ", rs_start, " + (", length_str.to_writer(), ") as usize;");
+        }
+    };
+
     if (direct_input) {
         const std::string parent_off_ref = ebm2rust::offset_ref(parent_io_);
         const std::string child_off_var = ebm2rust::offset_var(io_);
@@ -57,8 +75,10 @@ DEFINE_VISITOR(Statement_SUB_BYTE_RANGE) {
         w.writeln("let mut ", child_off_base, ": usize = 0;");
         w.writeln("let ", child_off_var, ": &mut usize = &mut ", child_off_base, ";");
 
+        begin_offset_window();
         MAYBE(do_io, ctx.visit(ctx.sub_byte_range.io_statement));
         w.write(do_io.to_writer());
+        end_offset_window();
         return w;
     }
 
@@ -73,7 +93,9 @@ DEFINE_VISITOR(Statement_SUB_BYTE_RANGE) {
     else {
         w.writeln("let mut ", io_, " = std::io::Cursor::new(Vec::new());");
     }
+    begin_offset_window();
     w.write(do_io.to_writer());
+    end_offset_window();
     if (ctx.sub_byte_range.stream_type == ebm::StreamType::OUTPUT) {
         w.writeln("if (", length_str.to_writer(), " as usize) != ", io_, ".get_ref().len() {");
         w.indent_writeln("return Err(anyhow::anyhow!(\"written length mismatch: {} != {}\", ", length_str.to_writer(), ", ", io_, ".get_ref().len()));");

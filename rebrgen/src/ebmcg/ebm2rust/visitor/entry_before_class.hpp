@@ -396,7 +396,8 @@ DEFINE_VISITOR(entry_before) {
             w.write(name, ": &[", elem_code.to_writer(), "]");
             return Result(std::move(w));
         }
-        if (ctx.param_decl.is_state_variable()) {
+        if (ctx.param_decl.is_state_variable() || ctx.param_decl.is_runtime_state()) {
+            // ADR 0039: the RuntimeState companion is INOUT like a state variable
             w.write(name, ": &mut ", type.to_writer());
         }
         else {
@@ -459,6 +460,13 @@ DEFINE_VISITOR(entry_before) {
         }
         const bool direct = ctx.config().in_direct_decode;
         const std::string off_ref = direct ? ebm2rust::offset_ref(io_name) : std::string();
+        // peek reads do not advance the stream, so the runtime offset stays put
+        const bool track_offset = !ctx.read_data.attribute.is_peek();
+        auto append_offset = [&](auto& w, auto&& size_expr) {
+            if (track_offset) {
+                ebm2rust::append_runtime_offset(ctx, ctx.read_data.io_ref, w, size_expr);
+            }
+        };
         CodeWriter w;
         // direct mode の bounds check helper: 切り詰めデータで `&io[off..off+n]` が panic しないよう
         // 事前に残量を比較し Err を返す。offset <= len の不変条件を前提に引き算を使う。
@@ -477,11 +485,32 @@ DEFINE_VISITOR(entry_before) {
                     emit_direct_bounds_check("_n");
                     w.writeln(target.to_writer(), ".copy_from_slice(&", io_name, "[", off_ref, "..", off_ref, "+_n]);");
                     w.writeln(off_ref, " += _n;");
+                    append_offset(w, "_n");
                     w.writeln("}");
                 }
                 else {
-                    w.writeln(io_name, ".read_to_end(&mut ", target.to_writer(), ".to_vec())?;");
+                    w.writeln("{");
+                    w.writeln("let _n = ", io_name, ".read_to_end(&mut ", target.to_writer(), ".to_vec())?;");
+                    append_offset(w, "_n");
+                    w.writeln("}");
                 }
+            }
+            else if (auto dyn = ctx.read_data.size.ref(); dyn && ctx.read_data.size.unit == ebm::SizeUnit::BYTE_DYNAMIC) {
+                // dynamic byte count into a fixed-size array (e.g. `[..]u8(input.align = N)`):
+                // only the first <size> slots are filled; the rest keep their defaults
+                MAYBE(size, get_size_str(ctx, ctx.read_data.size));
+                w.writeln("{");
+                w.writeln("let _sz = ", size, " as usize;");
+                if (direct) {
+                    emit_direct_bounds_check("_sz");
+                    w.writeln(target.to_writer(), "[.._sz].copy_from_slice(&", io_name, "[", off_ref, "..", off_ref, "+_sz]);");
+                    w.writeln(off_ref, " += _sz;");
+                }
+                else {
+                    w.writeln(io_name, ".read_exact(&mut ", target.to_writer(), "[.._sz])?;");
+                }
+                append_offset(w, "_sz");
+                w.writeln("}");
             }
             else {
                 if (direct) {
@@ -490,10 +519,12 @@ DEFINE_VISITOR(entry_before) {
                     emit_direct_bounds_check("_n");
                     w.writeln(target.to_writer(), ".copy_from_slice(&", io_name, "[", off_ref, "..", off_ref, "+_n]);");
                     w.writeln(off_ref, " += _n;");
+                    append_offset(w, "_n");
                     w.writeln("}");
                 }
                 else {
                     w.writeln(io_name, ".read_exact(&mut ", target.to_writer(), ")?;");
+                    append_offset(w, CODE(target.to_writer(), ".len()"));
                 }
             }
         }
@@ -505,11 +536,18 @@ DEFINE_VISITOR(entry_before) {
             if (auto dyn = ctx.read_data.size.ref(); dyn && ctx.is(ebm::ExpressionKind::GET_REMAINING_BYTES, *dyn)) {
                 if (direct) {
                     // Cow::Borrowed で残り全部: true zero-copy (remaining なので bounds check 不要)
+                    w.writeln("{");
+                    w.writeln("let _n = ", io_name, ".len() - ", off_ref, ";");
                     w.writeln(target.to_writer(), " = Cow::Borrowed(&", io_name, "[", off_ref, "..]);");
                     w.writeln(off_ref, " = ", io_name, ".len();");
+                    append_offset(w, "_n");
+                    w.writeln("}");
                 }
                 else {
-                    w.writeln(io_name, ".read_to_end(", (zero_copy ? "" : "&mut "), mut_target, ")?;");
+                    w.writeln("{");
+                    w.writeln("let _n = ", io_name, ".read_to_end(", (zero_copy ? "" : "&mut "), mut_target, ")?;");
+                    append_offset(w, "_n");
+                    w.writeln("}");
                 }
             }
             else {
@@ -521,6 +559,7 @@ DEFINE_VISITOR(entry_before) {
                     emit_direct_bounds_check("_sz");
                     w.writeln(target.to_writer(), " = Cow::Borrowed(&", io_name, "[", off_ref, "..", off_ref, "+_sz]);");
                     w.writeln(off_ref, " += _sz;");
+                    append_offset(w, "_sz");
                     w.writeln("}");
                 }
                 else {
@@ -528,6 +567,7 @@ DEFINE_VISITOR(entry_before) {
                     w.writeln("let _sz = ", size, " as usize;");
                     w.writeln(mut_target, ".resize(_sz,0);");
                     w.writeln(io_name, ".read_exact(", (zero_copy ? "" : "&mut "), mut_target, ")?;");
+                    append_offset(w, "_sz");
                     w.writeln("}");
                 }
             }
@@ -585,7 +625,11 @@ DEFINE_VISITOR(entry_before) {
         }
         MAYBE(size, get_size_str(ctx, ctx.write_data.size));
         CodeWriter w;
-        w.writeln(io_name, ".write_all(&", target.to_writer(), "[..", size, " as usize]", ")?;");
+        w.writeln("{");
+        w.writeln("let _sz = ", size, " as usize;");
+        w.writeln(io_name, ".write_all(&", target.to_writer(), "[.._sz])?;");
+        ebm2rust::append_runtime_offset(ctx, ctx.write_data.io_ref, w, "_sz");
+        w.writeln("}");
         return w;
     };
     return pass;

@@ -30,6 +30,12 @@ DEFINE_VISITOR(Expression_GET_STREAM_OFFSET) {
         CALL_OR_PASS(uniq, ctx.config().get_stream_offset_custom(ctx));
     }
     /*here to write the hook*/
+    // ADR 0039: when lower_runtime_state stashed a companion member access
+    // (runtime_state.offset / .bit_offset), emit that. Backends with an
+    // intrinsic reader offset opt out via get_stream_offset_custom above.
+    if (!is_nil(ctx.lowered_expr.id)) {
+        return ctx.visit(ctx.lowered_expr.id);
+    }
     return ctx.get_impl<expected<Result>>([&](auto&& impl) {
         return impl.visitor_Expression_GET_STREAM_OFFSET_GeneratorDefaultHook.visit(ctx);
     });
