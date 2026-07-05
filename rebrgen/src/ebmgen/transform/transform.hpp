@@ -19,4 +19,5 @@ namespace ebmgen {
     expected<void> derive_array_setter(TransformContext& tctx);
     expected<void> derive_encode_decode_wrapper(TransformContext& tctx);
     expected<void> propagate_io_input_desc(TransformContext& tctx, std::function<void(const char*)> timer);
+    expected<void> lower_runtime_state(TransformContext& tctx);
 }  // namespace ebmgen

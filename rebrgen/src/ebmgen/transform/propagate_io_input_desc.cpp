@@ -189,9 +189,14 @@ namespace ebmgen {
         for (size_t i = 0; i < worklist.size(); ++i) {
             auto& work = worklist[i];
 
-            // 葉ノード、ルートノード、または事前計算された再帰ノードを起点とする
-            bool is_boundary = (work.parents.empty() == (work.children == nullptr));
-            if (is_boundary || recursive_nodes.contains(work.type)) {
+            // フラグを持つノード(=伝播源)と事前計算された再帰ノードを起点とする。
+            // 以前は「葉/ルート」を意図した境界判定だったが、== 比較が逆で中間ノード
+            // のみをシードしており、葉にだけフラグが立つケース(subrange 越しの align 等)
+            // で伝播が一切走らなかった。単調緩和なので伝播源を全てシードすれば十分。
+            bool has_any_flag = work.io_input_desc.has_absolute_offset() ||
+                                work.io_input_desc.has_bit_offset() ||
+                                work.io_input_desc.is_seekable();
+            if (has_any_flag || recursive_nodes.contains(work.type)) {
                 active_queue.push(i);
                 in_queue[i] = true;
             }

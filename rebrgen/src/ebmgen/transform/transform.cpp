@@ -61,6 +61,10 @@ namespace ebmgen {
         if (timer) {
             timer("propagate io input desc");
         }
+        MAYBE_VOID(runtime_state, lower_runtime_state(ctx));
+        if (timer) {
+            timer("lower runtime state");
+        }
         if (!debug) {
             MAYBE_VOID(remove_unused, remove_unused_object(ctx, timer));
         }
