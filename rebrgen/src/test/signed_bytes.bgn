@@ -1,0 +1,8 @@
+# Signed byte arrays ([N]i8 / [len]i8). No format in example/ or src/test/
+# used i8 arrays before, so backend handling of signed byte buffers was
+# untested; ebm2ts even carried a defensive guard for them that never ran.
+# Values below cover the boundary points (-128, -1, 0, 127).
+format SignedBytes:
+    len :u8
+    data :[len]i8
+    fixed :[4]i8

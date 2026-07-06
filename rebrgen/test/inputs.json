@@ -254,5 +254,13 @@
         "source": "$WORK_DIR/src/test/subrange_align.bgn",
         "failure_case": false,
         "hex": true
+    },
+    {
+        "name": "signed_bytes_test",
+        "binary": "$WORK_DIR/test/binary_data/signed_bytes.dat",
+        "format_name": "SignedBytes",
+        "source": "$WORK_DIR/src/test/signed_bytes.bgn",
+        "failure_case": false,
+        "hex": true
     }
 ]

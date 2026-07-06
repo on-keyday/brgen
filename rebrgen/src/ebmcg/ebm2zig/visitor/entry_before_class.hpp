@@ -493,11 +493,15 @@ DEFINE_VISITOR(entry_before) {
             case ebm::CastType::SMALL_INT_TO_LARGE_INT:
             case ebm::CastType::USIZE_TO_INT:
             case ebm::CastType::INT_TO_USIZE:
+            case ebm::CastType::LARGE_INT_TO_SMALL_INT:
+                // Zig: @as(TargetType, @intCast(source)) for integer width conversions
+                return CODE("@as(", target_type.to_writer(), ", @intCast(", source_expr.to_writer(), "))");
             case ebm::CastType::SIGNED_TO_UNSIGNED:
             case ebm::CastType::UNSIGNED_TO_SIGNED:
-            case ebm::CastType::LARGE_INT_TO_SMALL_INT:
-                // Zig: @as(TargetType, @intCast(source)) for integer width/sign conversions
-                return CODE("@as(", target_type.to_writer(), ", @intCast(", source_expr.to_writer(), "))");
+                // Same-width sign conversion (the converter classifies width changes
+                // as SMALL/LARGE above) is a bit reinterpretation; @intCast would
+                // safety-panic on e.g. u8 0xFF -> i8.
+                return CODE("@as(", target_type.to_writer(), ", @bitCast(", source_expr.to_writer(), "))");
             case ebm::CastType::FLOAT_TO_INT_BIT:
             case ebm::CastType::INT_TO_FLOAT_BIT:
                 // Zig: @bitCast(expr) for reinterpret casts

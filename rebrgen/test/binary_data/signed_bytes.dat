@@ -1,0 +1,7 @@
+# SignedBytes: signed byte array round-trip.
+# len = 2
+02
+# data = [-1, 2] as i8
+FF 02
+# fixed = [-128, -1, 0, 127] as i8 (boundary values)
+80 FF 00 7F

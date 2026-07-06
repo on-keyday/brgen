@@ -360,6 +360,24 @@ DEFINE_VISITOR_CLASS(Statement_PROGRAM_DECL) {
                 }
                 w.writeln("} VECTOR_OF(void);");
                 std::set<std::string> defined_vector_types;
+                // The EncoderInput.emit handler signature references
+                // VECTOR_OF(uint8_t) unconditionally, so always define it even
+                // when no format uses a u8 vector.
+                {
+                    auto u8_name = ctx.config().uint_prefix + "8" + ctx.config().uint_suffix;
+                    // key must match ctx.visit(v.self_type)'s output form used by
+                    // the dedupe loop below
+                    defined_vector_types.insert("VECTOR_OF(" + u8_name + ")");
+                    w.writeln("typedef struct {");
+                    {
+                        auto scope = w.indent_scope();
+                        w.writeln(u8_name, "* data;");
+                        w.writeln(ctx.config().usize_type_name, " size;");
+                        w.writeln(ctx.config().usize_type_name, " capacity;");
+                    }
+                    w.writeln("} VECTOR_OF(", u8_name, ");");
+                    w.writeln("");
+                }
                 for (auto& v : c_ctx.vector_types) {
                     MAYBE(self_type, ctx.visit(v.self_type));
                     if (defined_vector_types.insert(self_type.to_string()).second == false) {

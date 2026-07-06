@@ -136,12 +136,15 @@ DEFINE_VISITOR(entry_before) {
         if (lw->lowering_type == ebm::LoweringIOType::ARRAY_FOR_EACH &&
             ctx.read_data.size.unit != ebm::SizeUnit::DYNAMIC) {
             MAYBE(target, ctx.visit(ctx.read_data.target));
-            if (auto length = get_element_count_default(ctx, ctx.read_data.data_type, ctx.read_data.size)) {
-                CodeWriter w;
-                w.writeln("EBM_RESERVE_VECTOR(", target.to_writer(), ", ", *length, ");");
-                MAYBE(lowered, ctx.visit(lw->io_statement.id));
-                w.write(std::move(lowered.to_writer()));
-                return w;
+            // reserve applies to vectors only; fixed arrays are plain C arrays
+            if (ctx.get_kind(ctx.read_data.data_type) == ebm::TypeKind::VECTOR) {
+                if (auto length = get_element_count_default(ctx, ctx.read_data.data_type, ctx.read_data.size)) {
+                    CodeWriter w;
+                    w.writeln("EBM_RESERVE_VECTOR(", target.to_writer(), ", ", *length, ");");
+                    MAYBE(lowered, ctx.visit(lw->io_statement.id));
+                    w.write(std::move(lowered.to_writer()));
+                    return w;
+                }
             }
         }
         return pass;
@@ -187,7 +190,9 @@ DEFINE_VISITOR(entry_before) {
             return CODELINE("// WRITE_DATA skipped in free function generation");
         }
         MAYBE(vec_elem_free, ctx.visit(lw->io_statement.id));
-        if (lw->lowering_type == ebm::LoweringIOType::ARRAY_FOR_EACH) {
+        if (lw->lowering_type == ebm::LoweringIOType::ARRAY_FOR_EACH &&
+            ctx.get_kind(ctx.write_data.data_type) == ebm::TypeKind::VECTOR) {
+            // free applies to vectors only; fixed arrays are plain C arrays
             MAYBE(target, ctx.visit(ctx.write_data.target));
             vec_elem_free.to_writer().writeln("EBM_FREE_VECTOR(", target.to_writer(), ", sizeof(", target.to_writer(), ".data[0])", ");");
         }

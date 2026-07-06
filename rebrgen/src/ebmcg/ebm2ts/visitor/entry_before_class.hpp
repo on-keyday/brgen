@@ -77,30 +77,13 @@ namespace CODEGEN_NAMESPACE {
         }
     }
 
-    inline bool ts_is_bytes_type(auto& ctx, ebm::TypeRef tr) {
-        auto t = ctx.get(tr);
-        if (!t) {
-            return false;
-        }
-        const auto kind = t->body.kind;
-        if (kind != ebm::TypeKind::ARRAY && kind != ebm::TypeKind::VECTOR) {
-            return false;
-        }
-        auto elem = t->body.element_type();
-        if (!elem) {
-            return false;
-        }
-        auto e = ctx.get(*elem);
-        if (!e) {
-            return false;
-        }
-        if (e->body.kind != ebm::TypeKind::UINT && e->body.kind != ebm::TypeKind::INT) {
-            return false;
-        }
-        if (auto sz = e->body.size(); sz && sz->value() == 8) {
-            return true;
-        }
-        return false;
+    // True when the READ_DATA/WRITE_DATA custom hooks below can handle the type
+    // with a single DataView accessor: scalar INT/UINT/FLOAT only. Everything
+    // else (byte arrays, i8 arrays, structs, ...) passes to the default path.
+    inline bool ts_is_dataview_scalar(auto& ctx, ebm::TypeRef tr) {
+        auto kind = ctx.get_kind(tr);
+        return kind == ebm::TypeKind::INT || kind == ebm::TypeKind::UINT ||
+               kind == ebm::TypeKind::FLOAT;
     }
 
     // True when this RETURN belongs to a decoder, so that we should emit
@@ -250,7 +233,9 @@ DEFINE_VISITOR(entry_before) {
             return Result{};
         }
         MAYBE(elem_type, actx.get(actx.element_type));
-        if ((elem_type.body.kind == ebm::TypeKind::UINT || elem_type.body.kind == ebm::TypeKind::INT) &&
+        // UINT only, aligned with util is_bytes_type: u8 buffers are Uint8Array
+        // with bulk IO; i8 arrays stay Array<number> with per-element IO.
+        if (elem_type.body.kind == ebm::TypeKind::UINT &&
             elem_type.body.size() && elem_type.body.size()->value() == 8) {
             return Result("Uint8Array");
         }
@@ -263,7 +248,7 @@ DEFINE_VISITOR(entry_before) {
             return Result{};
         }
         MAYBE(elem_type, vctx.get(vctx.element_type));
-        if ((elem_type.body.kind == ebm::TypeKind::UINT || elem_type.body.kind == ebm::TypeKind::INT) &&
+        if (elem_type.body.kind == ebm::TypeKind::UINT &&
             elem_type.body.size() && elem_type.body.size()->value() == 8) {
             return Result("Uint8Array");
         }
@@ -1014,7 +999,7 @@ DEFINE_VISITOR(entry_before) {
             case ebm::TypeKind::VECTOR: {
                 if (auto elem = t.body.element_type()) {
                     auto e = dctx.get(*elem);
-                    if (e && (e->body.kind == ebm::TypeKind::UINT || e->body.kind == ebm::TypeKind::INT) &&
+                    if (e && e->body.kind == ebm::TypeKind::UINT &&
                         e->body.size() && e->body.size()->value() == 8) {
                         if (t.body.kind == ebm::TypeKind::ARRAY) {
                             if (auto len = t.body.length(); len && len->value()) {
@@ -1086,7 +1071,7 @@ DEFINE_VISITOR(entry_before) {
         if (rctx.read_data.lowered_statement()) {
             return pass;
         }
-        if (ts_is_bytes_type(rctx, rctx.read_data.data_type)) {
+        if (!ts_is_dataview_scalar(rctx, rctx.read_data.data_type)) {
             return pass;
         }
         MAYBE(target, rctx.visit(rctx.read_data.target));
@@ -1164,7 +1149,7 @@ DEFINE_VISITOR(entry_before) {
         if (wctx.write_data.lowered_statement()) {
             return pass;
         }
-        if (ts_is_bytes_type(wctx, wctx.write_data.data_type)) {
+        if (!ts_is_dataview_scalar(wctx, wctx.write_data.data_type)) {
             return pass;
         }
         MAYBE(target, wctx.visit(wctx.write_data.target));
