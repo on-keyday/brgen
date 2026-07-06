@@ -11,6 +11,7 @@ sources: # 今回はnpmを使います
 
 allowed: # 以下のライセンスならOKとします
   - mit
+  - blueoak-1.0.0 # permissive (MIT 相当); minimatch v10 が ISC から移行
   - apache-2.0
   - isc
   - bsd-3-clause
