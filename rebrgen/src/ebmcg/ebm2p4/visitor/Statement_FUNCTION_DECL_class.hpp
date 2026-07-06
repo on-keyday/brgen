@@ -41,16 +41,8 @@ DEFINE_VISITOR(Statement_FUNCTION_DECL) {
     CodeWriter w;
     if (ctx.func_decl.kind == ebm::FunctionKind::DECODE) {
         auto belong_name = ctx.identifier(ctx.func_decl.parent_format);
-        w.write("parser ", belong_name, "_decode(");
-        bool first = true;
-        for (const auto& param : ctx.func_decl.params.container) {
-            MAYBE(param_code, ctx.visit(param));
-            if (!first) {
-                w.write(", ");
-            }
-            w.write(param_code.to_writer());
-            first = false;
-        }
+        MAYBE(params_code, TRY_SEPARATED(", ", ctx.func_decl.params.container, [&](auto& param) { return ctx.visit(param); }));
+        w.write("parser ", belong_name, "_decode(", params_code);
         w.writeln(") {");
         {
             auto scope = w.indent_scope();

@@ -49,20 +49,9 @@ DEFINE_VISITOR(Expression_CALL_before) {
         }
         MAYBE(base, callee.body.base());
         MAYBE(base_str, ctx.visit(base));
+        MAYBE(args, TRY_SEPARATED(",", ctx.call_desc.arguments.container, [&](auto& arg_ref) { return ctx.visit(arg_ref); }));
         CodeWriter w;
-        w.write(base_str.to_writer(), ".", ident, "(");
-        bool first = true;
-        for (const auto& arg_ref : ctx.call_desc.arguments.container) {
-            MAYBE(arg, ctx.visit(arg_ref));
-            if (first) {
-                first = false;
-            }
-            else {
-                w.write(",");
-            }
-            w.write(arg.to_writer());
-        }
-        w.write(")");
+        w.write(base_str.to_writer(), ".", ident, "(", args, ")");
         return w;
     }
     return pass;

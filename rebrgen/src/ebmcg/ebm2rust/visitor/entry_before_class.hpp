@@ -89,17 +89,8 @@ DEFINE_VISITOR(entry_before) {
         MAYBE(base, ctx.visit(base_ref));
         MAYBE(method_name, ctx.identifier(member_ref));
         CodeWriter w;
-        w.write(base.to_writer(), ".", method_name, "_direct(");
-        bool first = true;
-        for (auto& arg : ctx.call_desc.arguments.container) {
-            MAYBE(arg_str, ctx.visit(arg));
-            if (!first) {
-                w.write(", ");
-            }
-            first = false;
-            w.write(arg_str.to_writer());
-        }
-        w.write(")");
+        MAYBE(args, TRY_SEPARATED(", ", ctx.call_desc.arguments.container, [&](auto& arg) { return ctx.visit(arg); }));
+        w.write(base.to_writer(), ".", method_name, "_direct(", args, ")");
         return Result(std::move(w));
     };
     config.struct_type_custom = [](Context_Type_STRUCT& ctx) -> expected<Result> {

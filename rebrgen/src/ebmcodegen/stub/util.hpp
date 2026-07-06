@@ -102,10 +102,36 @@ namespace ebmcodegen::util {
         return w;
     }
 
+    // Join fallible per-element writers with a separator: fn(elem) returns an
+    // expected<> (Result or CodeWriter); the first failing element aborts the
+    // whole join. Use this instead of a hand-rolled `bool first` loop when the
+    // element rendering can fail (e.g. ctx.visit); the infallible variant is
+    // code_joint_write/SEPARATED above.
+    template <class CodeWriter>
+    ebmgen::expected<CodeWriter> try_joint_write(auto&& joint, auto&& container, auto&& fn) {
+        CodeWriter w;
+        bool first = true;
+        for (auto&& elem : container) {
+            MAYBE(part, fn(elem));
+            if (!first) {
+                w.write(joint);
+            }
+            first = false;
+            if constexpr (has_to_writer<decltype(part)>) {
+                w.write(part.to_writer());
+            }
+            else {
+                w.write(std::move(part));
+            }
+        }
+        return w;
+    }
+
 #define CODE(...) (code_write<CodeWriter>(__VA_ARGS__))
 #define CODELINE(...) (code_writeln<CodeWriter>(__VA_ARGS__))
 
 #define SEPARATED(...) (code_joint_write<CodeWriter>(__VA_ARGS__))
+#define TRY_SEPARATED(...) (try_joint_write<CodeWriter>(__VA_ARGS__))
 
     // remove top level brace
     inline std::string tidy_condition_brace(std::string&& brace) {

@@ -655,23 +655,15 @@ DEFINE_VISITOR(entry_before) {
         auto struct_name = std::string(cctx.identifier(fd->parent_format));
         auto recorded = std::string(cctx.identifier(from_weak(*fn_stmt_weak)));
         // Build the arguments tuple once.
-        CodeWriter args;
-        bool first = true;
-        for (auto& arg : cctx.call_desc.arguments.container) {
-            MAYBE(arg_str, cctx.visit(arg));
-            if (!first) {
-                args.write(", ");
-            }
-            first = false;
-            args.write(arg_str.to_writer());
-        }
+        MAYBE(args, TRY_SEPARATED(", ", cctx.call_desc.arguments.container, [&](auto& arg) { return cctx.visit(arg); }));
+        const bool has_args = !cctx.call_desc.arguments.container.empty();
         MAYBE(base_str, cctx.visit(*base_ref));
         CodeWriter w;
         switch (fd->kind) {
             case ebm::FunctionKind::ENCODE: {
                 // Foo_encode(args, obj.field)
                 w.write(struct_name, "_", recorded, "(", args);
-                if (!first) {
+                if (has_args) {
                     w.write(", ");
                 }
                 w.write(base_str.to_writer(), ")");
