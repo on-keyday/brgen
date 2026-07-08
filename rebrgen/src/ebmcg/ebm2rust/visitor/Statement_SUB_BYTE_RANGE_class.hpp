@@ -98,7 +98,7 @@ DEFINE_VISITOR(Statement_SUB_BYTE_RANGE) {
     end_offset_window();
     if (ctx.sub_byte_range.stream_type == ebm::StreamType::OUTPUT) {
         w.writeln("if (", length_str.to_writer(), " as usize) != ", io_, ".get_ref().len() {");
-        w.indent_writeln("return Err(Error::BackwardError((", length_str.to_writer(), ") as usize, ", io_, ".get_ref().len()));");
+        w.indent_writeln("return Err(Error::ArrayLengthMismatch(\"", io_, "\", (", length_str.to_writer(), ") as usize, ", io_, ".get_ref().len()));");
         w.writeln("}");
         w.writeln(parent_io_, ".write_all(&", io_, ".get_ref())", ebm2rust::map_io_err(false, parent_io_, ctx.flags().use_async), ";");
     }
