@@ -26,6 +26,10 @@ DEFINE_VISITOR(entry_before) {
     config.endof_statement = ";";
     config.self_value = "self";
     config.enum_member_accessor = "::";
+    // Rust spells bitwise NOT as `!` (not C/Go's `~`); the default
+    // to_string(UnaryOp::bit_not) is `~`. Composite bit-field setters
+    // (`storage & ~(mask << shift)`) are the first code to emit it.
+    config.alt_unary_op[ebm::UnaryOp::bit_not] = "!";
     config.module_.register_default_prefix(ebm::StatementKind::STRUCT_DECL, "Struct");
     config.use_brace_for_condition = false;
     config.append_function = "push";
@@ -48,8 +52,12 @@ DEFINE_VISITOR(entry_before) {
         using namespace CODEGEN_NAMESPACE;
         return CODE("Option<", elem.to_writer(), ">");
     };
-    config.pointer_type_wrapper = [](Result elem) -> expected<Result> {
+    config.pointer_type_wrapper = [cfgp = &config](Result elem) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
+        // Composite-backed STRICT_TYPE getters return owned (see ptr_to_owned).
+        if (cfgp->ptr_to_owned) {
+            return CODE("Option<", elem.to_writer(), ">");
+        }
         return CODE("Option<&", elem.to_writer(), ">");
     };
     const bool zero_copy = ctx.flags().zero_copy;
@@ -198,6 +206,27 @@ DEFINE_VISITOR(entry_before) {
         };
 
         MAYBE(target_expr, actx.get(actx.target));
+        // Composite bit-field write → setter call `base.set_field(value)?`.
+        // (Phase 1: BULK_PRIMITIVE, u8 setter; matches the `set_` prefix added
+        // by function_definition_start_wrapper.)
+        if (target_expr.body.kind == ebm::ExpressionKind::MEMBER_ACCESS) {
+            if (auto member_p = target_expr.body.member()) {
+                if (ebm2rust::get_composite_field(actx, *member_p)) {
+                    if (auto base_ref = target_expr.body.base()) {
+                        MAYBE(base_w, actx.visit(*base_ref));
+                        MAYBE(member_ident, actx.identifier(*member_p));
+                        // Mirror the `r#` strip the wrapper applies before the
+                        // `set_` prefix so the call matches the setter def name.
+                        std::string setter_name(member_ident);
+                        if (setter_name.starts_with("r#")) {
+                            setter_name = setter_name.substr(2);
+                        }
+                        MAYBE(value_w, actx.visit(actx.value));
+                        return CODELINE(base_w.to_string(), ".set_", setter_name, "(", value_w.to_string(), ")?", actx.config().endof_statement);
+                    }
+                }
+            }
+        }
         // (a) PROPERTY MEMBER_ACCESS target → setter call rewrite
         if (target_expr.body.kind == ebm::ExpressionKind::MEMBER_ACCESS) {
             auto base_p = target_expr.body.base();
@@ -246,6 +275,32 @@ DEFINE_VISITOR(entry_before) {
         w.write(std::move(got.get()));
         w.writeln(result_target.to_writer(), " = ", tidy_condition_brace(result_value.to_string()), ".clone()", actx.config().endof_statement);
         return w;
+    };
+    // Composite bit-field storage: emit a single packed primitive storage field
+    // (`tmpN: uN,`) in place of the folded logical bit-fields. The per-field
+    // getter/setter accessors are visited separately inside Statement_STRUCT_DECL's
+    // impl block (Rust methods must live in `impl`, so unlike ebm2go we do not
+    // push them to decl_toplevel here). Non-primitive composites fall back to
+    // expanding the logical fields.
+    config.composite_field_decl_custom = [](Context_Statement_COMPOSITE_FIELD_DECL& cctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        // Phase 1: fold BULK_PRIMITIVE composites into one storage field, except
+        // variant-arm composites (Statement_STRUCT_DECL emits no accessors for
+        // variant arms, so folding them would leave storage without getters/
+        // setters). Both PREFIXED_UNION_PRIMITIVE and variant-arm composites stay
+        // expanded; see get_composite_field for the matching access-side gate.
+        bool variant_arm = false;
+        if (!cctx.composite_field_decl.fields.container.empty()) {
+            auto& mapping = get_visitor(cctx).module_;
+            auto fd = ebmgen::access_field<"body.field_decl">(mapping, cctx.composite_field_decl.fields.container[0]);
+            variant_arm = ebm2rust::composite_owner_is_variant_arm(mapping, fd);
+        }
+        if (cctx.composite_field_decl.kind == ebm::CompositeFieldKind::BULK_PRIMITIVE && !variant_arm) {
+            auto ident = cctx.identifier();
+            MAYBE(typ, cctx.visit(cctx.composite_field_decl.composite_type));
+            return CODELINE(ident, ": ", typ.to_writer(), ",");
+        }
+        return cctx.visit(cctx.composite_field_decl.fields);
     };
     // For pure VARIANT types (= union with no common_type), declare a Rust enum
     // so the name referenced in function signatures (e.g. Option<Variant43>)
@@ -329,7 +384,12 @@ DEFINE_VISITOR(entry_before) {
         using namespace CODEGEN_NAMESPACE;
         std::string name(name_sv);
         if (fctx.func_decl.kind == ebm::FunctionKind::PROPERTY_SETTER ||
-            fctx.func_decl.kind == ebm::FunctionKind::VECTOR_SETTER) {
+            fctx.func_decl.kind == ebm::FunctionKind::VECTOR_SETTER ||
+            fctx.func_decl.kind == ebm::FunctionKind::COMPOSITE_SETTER) {
+            // COMPOSITE_SETTER shares its field-name identifier with the
+            // COMPOSITE_GETTER (both name the logical bit-field), which would
+            // collide in Rust (`fn f(&self)` vs `fn f(&mut self, v)`); the
+            // `set_` prefix disambiguates them. Call site: assignment_custom.
             if (name.starts_with("r#")) {
                 name = name.substr(2);
             }
@@ -579,8 +639,11 @@ DEFINE_VISITOR(entry_before) {
         return Result(std::move(w));
     };
 
-    config.make_pointer_wrapper = [](Result elem) -> expected<Result> {
+    config.make_pointer_wrapper = [cfgp = &config](Result elem) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
+        if (cfgp->ptr_to_owned) {
+            return CODE("Some(", elem.to_writer(), ")");
+        }
         return CODE("Some(&", elem.to_writer(), ")");
     };
     config.make_optional_wrapper = [](Result elem) -> expected<Result> {

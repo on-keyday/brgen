@@ -157,6 +157,32 @@ DEFINE_VISITOR(Statement_STRUCT_DECL) {
                     w.writeln(prop_w.to_writer());
                 }
             }
+            // Composite bit-field accessors: the folded logical fields carry
+            // composite_getter/composite_setter FUNCTION_DECLs that are NOT
+            // reachable via struct_decl.methods, so ebm2go visits them in
+            // composite_field_decl_custom and pushes to decl_toplevel. Rust
+            // methods must live inside `impl`, so we visit them here instead.
+            for (auto& field_ref : ctx.struct_decl.fields.container) {
+                auto field_stmt = ctx.get(field_ref);
+                if (!field_stmt) { continue; }
+                auto comp_p = field_stmt->body.composite_field_decl();
+                if (!comp_p) { continue; }
+                // Phase 1: BULK_PRIMITIVE only (PREFIXED_UNION_PRIMITIVE deferred).
+                if (comp_p->kind != ebm::CompositeFieldKind::BULK_PRIMITIVE) {
+                    continue;
+                }
+                for (auto& inner_field : comp_p->fields.container) {
+                    MAYBE(inner_decl, ctx.get_field<"field_decl">(inner_field));
+                    if (auto getter = inner_decl.composite_getter()) {
+                        MAYBE(getter_w, ctx.visit(getter->id));
+                        w.writeln(getter_w.to_writer());
+                    }
+                    if (auto setter = inner_decl.composite_setter()) {
+                        MAYBE(setter_w, ctx.visit(setter->id));
+                        w.writeln(setter_w.to_writer());
+                    }
+                }
+            }
         }
         w.writeln("}");
     }

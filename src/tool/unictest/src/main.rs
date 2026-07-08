@@ -48,6 +48,9 @@ struct Args {
     #[arg(long, help("target group (filter inputs by the group name of the file that loaded them)"),action = clap::ArgAction::Append)]
     target_group: Vec<String>,
 
+    #[arg(long, help("target option set (filter option sets by name, e.g. std-io; for faster local checks)"),action = clap::ArgAction::Append)]
+    target_option_set: Vec<String>,
+
     #[arg(long,help("test output json file path, if specified, test results will be saved in this file in JSON format"))]
     output_json: Option<String>,
 
@@ -1019,6 +1022,16 @@ async fn main() -> anyhow::Result<()> {
             }
         })
         .collect::<Result<Vec<_>, _>>()?;
+    // Filter each runner's option sets by --target-option-set (for faster local
+    // checks: the option sets are near-identical, so one is usually enough).
+    let mut test_runner = test_runner;
+    if !parsed.target_option_set.is_empty() {
+        for runner in test_runner.iter_mut() {
+            if let Some(sets) = runner.option_sets.as_mut() {
+                sets.retain(|os| parsed.target_option_set.contains(&os.name));
+            }
+        }
+    }
     // replace $WORK_DIR in binary and source paths
     let inputs = match test_config.inputs {
         InputConfig::File(file) => load_input_file(&file, &current_dir)?,

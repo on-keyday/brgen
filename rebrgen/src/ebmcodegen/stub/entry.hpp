@@ -82,7 +82,7 @@ namespace ebmcodegen {
         void bind(futils::cmdline::option::Context& ctx) {
             bind_help(ctx);
             ctx.VarString<true>(&input, "input,i", "input EBM file", "FILE");
-            ctx.VarString<true>(&output, "output,o", "output source code file (currently not working and always output to stdout)", "FILE");
+            ctx.VarString<true>(&output, "output,o", "output source code file (default: stdout; use - for stdout)", "FILE");
             ctx.VarBool(&show_flags, "show-flags", "show all flags (for debug and code generation)");
             ctx.VarBool(&dump_code, "dump-code", "dump code (for debug)");
             ctx.VarString<true>(&dump_test_file, "test-info", "dump test info file", "FILE");
@@ -167,31 +167,49 @@ namespace ebmcodegen {
                 cerr << flags.program_name << ": " << "unexpected remaining data for input\n";
                 return 1;
             }
-            futils::file::FileStream<std::string> fs{futils::file::File::stdout_file()};
-            futils::binary::writer w{fs.get_direct_write_handler(), &fs};
-            flags.debug_timing("file loaded");
-            int ret = then(w, ebm, output);
-            if (flags.dump_test_file.size()) {
-                futils::json::Stringer str;
-                auto obj = str.object();
-                obj("line_map", output.line_maps);
-                obj("structs", output.struct_names);
-                obj.close();
-                if (flags.dump_test_file == "-") {
-                    cout << flags.dump_test_separator;
-                    cout << str.out() << "\n";
-                    return ret;
+            // Run codegen through `w`, then optionally dump test info. Factored
+            // into a lambda so the code writer can target either stdout (default
+            // / `-o -`) or an `-o FILE` output file without duplicating the tail.
+            auto emit = [&](futils::binary::writer& w) -> int {
+                flags.debug_timing("file loaded");
+                int ret = then(w, ebm, output);
+                if (flags.dump_test_file.size()) {
+                    futils::json::Stringer str;
+                    auto obj = str.object();
+                    obj("line_map", output.line_maps);
+                    obj("structs", output.struct_names);
+                    obj.close();
+                    if (flags.dump_test_file == "-") {
+                        cout << flags.dump_test_separator;
+                        cout << str.out() << "\n";
+                        return ret;
+                    }
+                    auto file = futils::file::File::create(flags.dump_test_file);
+                    if (!file) {
+                        cerr << flags.program_name << ": " << file.error().template error<std::string>() << '\n';
+                        return 1;
+                    }
+                    futils::file::FileStream<std::string> tfs{*file};
+                    futils::binary::writer tw{tfs.get_direct_write_handler(), &tfs};
+                    tw.write(str.out());
                 }
-                auto file = futils::file::File::create(flags.dump_test_file);
-                if (!file) {
-                    cerr << flags.program_name << ": " << file.error().template error<std::string>() << '\n';
-                    return 1;
-                }
-                futils::file::FileStream<std::string> fs{*file};
+                return ret;
+            };
+            // Default to stdout; `-o -` is also stdout. A non-empty, non-"-"
+            // `-o FILE` writes the generated source to that file (mirrors ebmgen).
+            if (flags.output.empty() || flags.output == "-") {
+                futils::file::FileStream<std::string> fs{futils::file::File::stdout_file()};
                 futils::binary::writer w{fs.get_direct_write_handler(), &fs};
-                w.write(str.out());
+                return emit(w);
             }
-            return ret;
+            auto out_file = futils::file::File::create(flags.output);
+            if (!out_file) {
+                cerr << flags.program_name << ": " << out_file.error().template error<std::string>() << '\n';
+                return 1;
+            }
+            futils::file::FileStream<std::string> fs{*out_file};
+            futils::binary::writer w{fs.get_direct_write_handler(), &fs};
+            return emit(w);
         }
     }  // namespace internal
 }  // namespace ebmcodegen

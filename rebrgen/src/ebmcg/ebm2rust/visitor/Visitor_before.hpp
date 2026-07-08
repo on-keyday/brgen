@@ -16,6 +16,14 @@ size_t parent_format_stmt_id = 0;
 std::map<std::uint64_t, bool> variant_mutable_contexts;  // variant arm TypeRef ID → is_mutable
 std::unordered_set<std::uint64_t> declared_variants;  // VARIANT TypeRef IDs whose enum has been emitted
 
+// Mirrors ebm2c's ptr_to_optional. A STRICT_TYPE property getter whose body
+// takes the address (&) of a composite bit-field cannot return Option<&T>: the
+// composite read is a computed temporary (getter call), not an addressable
+// place. Statement_FUNCTION_DECL_before detects this per getter and sets
+// ptr_to_owned for its emission; pointer_type_wrapper / make_pointer_wrapper
+// then emit Option<T> / Some(v) (owned) instead of Option<&T> / Some(&v).
+bool ptr_to_owned = false;
+
 // zero-copy direct decode state
 // When true, decoder is lowered against a `&'a [u8]` input + `*offset` cursor
 // instead of `std::io::Read`. Bulk byte vectors use `Cow::Borrowed(&data[..])`.

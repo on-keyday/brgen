@@ -50,4 +50,42 @@ namespace ebm2rust {
             w.writeln("runtime_state.offset += (", size_expr, ") as usize;");
         }
     }
+
+    // Return the logical FieldDecl when `target`'s member resolves to a
+    // composite bit-field packed into a single primitive storage
+    // (BULK_PRIMITIVE / PREFIXED_UNION_PRIMITIVE). Mirrors ebm2go's helper.
+    // Access/assignment sites use this to route through the generated
+    // getter/setter instead of touching the per-field storage that no longer
+    // exists once the fields are folded into a single storage word.
+    // True when this (composite) field belongs to a variant-arm struct.
+    // Statement_STRUCT_DECL emits no accessors for variant arms (it early-returns
+    // before the impl block), so Phase 1 does not fold/rewrite their composites;
+    // they stay as plain baseline fields until variant-aware routing lands.
+    inline bool composite_owner_is_variant_arm(ebmgen::MappingTable& mapping, const ebm::FieldDecl* fd) {
+        if (!fd) {
+            return false;
+        }
+        auto owner = ebmgen::access_field<"body.struct_decl">(mapping, ebm::from_weak(fd->parent_struct));
+        return owner && owner->has_related_variant();
+    }
+
+    inline const ebm::FieldDecl* get_composite_field(auto&& ctx, auto target) {
+        ebmgen::MappingTable& mapping = get_visitor(ctx).module_;
+        const ebm::FieldDecl* comp = ebmgen::access_field<"body.id.field_decl">(mapping, target);
+        if (!comp) {
+            return nullptr;
+        }
+        auto comp_type = ebmgen::access_field<"composite_field_decl">(mapping, comp->composite_field());
+        // Phase 1: BULK_PRIMITIVE only. PREFIXED_UNION_PRIMITIVE additionally
+        // requires lowering the getter return / setter param from the variant
+        // enum to its common_type (see ebm2go wrapper L636-652); deferred.
+        if (!comp_type || comp_type->kind != ebm::CompositeFieldKind::BULK_PRIMITIVE) {
+            return nullptr;
+        }
+        // Variant-arm composites are also deferred (see helper above).
+        if (composite_owner_is_variant_arm(mapping, comp)) {
+            return nullptr;
+        }
+        return comp;
+    }
 }  // namespace ebm2rust

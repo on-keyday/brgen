@@ -39,6 +39,12 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
         MAYBE(member_code, ctx.visit(ctx.member));
         return CODE(base.to_writer(), ".", accessor, "()", ".", member_code.to_writer());
     }
+    // Composite bit-field read → getter call `base.field()` (Phase 1: u8 getter).
+    if (ebm2rust::get_composite_field(ctx, ctx.member)) {
+        MAYBE(base, ctx.visit(ctx.base));
+        MAYBE(member_ident, ctx.identifier(ctx.member));
+        return CODE(base.to_writer(), ".", member_ident, "()");
+    }
     MAYBE(prop_info, analyze_property_member_access(ctx, ctx.member));
     if (prop_info) {
         auto& args = prop_info->getter_params.args;
