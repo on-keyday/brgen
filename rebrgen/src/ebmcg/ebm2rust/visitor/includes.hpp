@@ -57,6 +57,21 @@ namespace ebm2rust {
     // Access/assignment sites use this to route through the generated
     // getter/setter instead of touching the per-field storage that no longer
     // exists once the fields are folded into a single storage word.
+    // True when a composite logical field is a single bit (u1). Such fields
+    // expose a bool public accessor; codegen must call the internal `_raw` (u8)
+    // accessor instead (see function_definition_start_wrapper).
+    inline bool composite_is_single_bit(auto&& ctx, const ebm::FieldDecl* comp) {
+        if (!comp) {
+            return false;
+        }
+        auto t = ebmgen::access_field<"instance">(get_visitor(ctx).module_, comp->field_type);
+        if (!t) {
+            return false;
+        }
+        auto sz = t->body.size();
+        return sz && sz->value() == 1;
+    }
+
     inline const ebm::FieldDecl* get_composite_field(auto&& ctx, auto target) {
         ebmgen::MappingTable& mapping = get_visitor(ctx).module_;
         const ebm::FieldDecl* comp = ebmgen::access_field<"body.id.field_decl">(mapping, target);

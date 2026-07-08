@@ -207,7 +207,7 @@ DEFINE_VISITOR(entry_before) {
         // by function_definition_start_wrapper.)
         if (target_expr.body.kind == ebm::ExpressionKind::MEMBER_ACCESS) {
             if (auto member_p = target_expr.body.member()) {
-                if (ebm2rust::get_composite_field(actx, *member_p)) {
+                if (auto comp = ebm2rust::get_composite_field(actx, *member_p)) {
                     if (auto base_ref = target_expr.body.base()) {
                         MAYBE(base_w, actx.visit(*base_ref));
                         std::string base_str = base_w.to_string();
@@ -228,6 +228,11 @@ DEFINE_VISITOR(entry_before) {
                         std::string setter_name(member_ident);
                         if (setter_name.starts_with("r#")) {
                             setter_name = setter_name.substr(2);
+                        }
+                        // u1 composites: codegen writes through the internal
+                        // `set_<field>_raw` (u8); the public `set_<field>` takes bool.
+                        if (ebm2rust::composite_is_single_bit(actx, comp)) {
+                            setter_name += "_raw";
                         }
                         MAYBE(value_w, actx.visit(actx.value));
                         return CODELINE(base_str, ".set_", setter_name, "(", value_w.to_string(), ")?", actx.config().endof_statement);
@@ -452,6 +457,35 @@ DEFINE_VISITOR(entry_before) {
         // Direct-decode fns stay sync (raw slice); only the Read/Write path goes async.
         const bool async_fn = is_async && (has_reader || has_writer);
         CodeWriter w;
+        // 1-bit composite accessors expose a bool public API (Go parity): the
+        // shift/mask accessor is renamed `<name>_raw` (u8) and a bool wrapper
+        // delegates to it. Codegen call sites use `_raw` (see MEMBER_ACCESS /
+        // assignment_custom); the bool form is for external callers.
+        if (fctx.func_decl.kind == ebm::FunctionKind::COMPOSITE_GETTER) {
+            MAYBE(rt, fctx.get_field<"func_decl.return_type.instance">(fctx.item_id));
+            if (auto sz = rt.body.size(); sz && sz->value() == 1) {
+                w.writeln("pub fn ", name, "(&self) ", fctx.config().function_return_type_separator, " bool ", fctx.config().begin_block);
+                {
+                    auto sc = w.indent_scope();
+                    w.writeln("self.", name, "_raw() != 0");
+                }
+                w.writeln(fctx.config().end_block);
+                name = std::string(name) + "_raw";
+            }
+        }
+        else if (fctx.func_decl.kind == ebm::FunctionKind::COMPOSITE_SETTER &&
+                 !fctx.func_decl.params.container.empty()) {
+            MAYBE(pt, fctx.get_field<"param_decl.param_type.instance">(fctx.func_decl.params.container[0]));
+            if (auto sz = pt.body.size(); sz && sz->value() == 1) {
+                w.writeln("pub fn ", name, "(&mut self, value: bool) ", fctx.config().function_return_type_separator, " ", ret_type.to_writer(), " ", fctx.config().begin_block);
+                {
+                    auto sc = w.indent_scope();
+                    w.writeln("self.", name, "_raw(value as u8)");
+                }
+                w.writeln(fctx.config().end_block);
+                name = std::string(name) + "_raw";
+            }
+        }
         w.write(async_fn ? "pub async fn " : "pub fn ", name, generic_clause, "(");
         bool first = true;
         if (!is_nil(fctx.func_decl.parent_format)) {

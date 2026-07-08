@@ -38,18 +38,21 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
         MAYBE(base, ctx.visit(ctx.base));
         // Composite bit-field inside a variant arm: call the arm's getter method
         // (emitted on the arm's own impl) instead of the folded-away field.
-        if (ebm2rust::get_composite_field(ctx, ctx.member)) {
+        if (auto comp = ebm2rust::get_composite_field(ctx, ctx.member)) {
             MAYBE(member_ident, ctx.identifier(ctx.member));
-            return CODE(base.to_writer(), ".", accessor, "()", ".", member_ident, "()");
+            std::string g = std::string(member_ident) + (ebm2rust::composite_is_single_bit(ctx, comp) ? "_raw" : "");
+            return CODE(base.to_writer(), ".", accessor, "()", ".", g, "()");
         }
         MAYBE(member_code, ctx.visit(ctx.member));
         return CODE(base.to_writer(), ".", accessor, "()", ".", member_code.to_writer());
     }
-    // Composite bit-field read → getter call `base.field()` (Phase 1: u8 getter).
-    if (ebm2rust::get_composite_field(ctx, ctx.member)) {
+    // Composite bit-field read → getter call `base.field()` (u1 uses the
+    // internal `_raw` u8 accessor; the bool form is the public API).
+    if (auto comp = ebm2rust::get_composite_field(ctx, ctx.member)) {
         MAYBE(base, ctx.visit(ctx.base));
         MAYBE(member_ident, ctx.identifier(ctx.member));
-        return CODE(base.to_writer(), ".", member_ident, "()");
+        std::string g = std::string(member_ident) + (ebm2rust::composite_is_single_bit(ctx, comp) ? "_raw" : "");
+        return CODE(base.to_writer(), ".", g, "()");
     }
     MAYBE(prop_info, analyze_property_member_access(ctx, ctx.member));
     if (prop_info) {
