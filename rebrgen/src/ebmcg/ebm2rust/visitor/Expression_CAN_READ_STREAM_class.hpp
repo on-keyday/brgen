@@ -33,9 +33,13 @@ DEFINE_VISITOR(Expression_CAN_READ_STREAM) {
     if (ctx.config().in_direct_decode) {
         return CODE("(", io_, ".len() - ", ebm2rust::offset_ref(io_), " >= ", num_bytes_, " as usize)");
     }
-    // fill_buf requires the BufRead trait in scope (std, or tokio AsyncBufReadExt
-    // which entry_before registers in async mode).
-    if (!ctx.flags().use_async) {
+    // fill_buf requires the BufRead trait in scope: std::io::BufRead, or tokio's
+    // AsyncBufReadExt in async mode (inserted here so it is only pulled in when
+    // fill_buf is actually emitted).
+    if (ctx.flags().use_async) {
+        ctx.config().use_statements.insert("use tokio::io::AsyncBufReadExt;");
+    }
+    else {
         ctx.config().use_statements.insert("use std::io::BufRead;");
     }
     // Only mark function as needing BufRead parameter if fill_buf is called

@@ -65,10 +65,11 @@ DEFINE_VISITOR(entry_before) {
         config.use_statements.insert("use std::borrow::Cow;");
     }
     if (ctx.flags().use_async) {
-        // tokio extension traits bring .read_exact/.write_all/.fill_buf (async) into scope.
+        // read_exact/read_to_end and write_all live on these two. fill_buf's
+        // AsyncBufReadExt is inserted only where fill_buf is actually emitted
+        // (CAN_READ_STREAM / SUB_BYTE_RANGE) to avoid an unused-import warning.
         config.use_statements.insert("use tokio::io::AsyncReadExt;");
         config.use_statements.insert("use tokio::io::AsyncWriteExt;");
-        config.use_statements.insert("use tokio::io::AsyncBufReadExt;");
     }
     config.vector_type_wrapper = [](Context_Type_VECTOR& ctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;

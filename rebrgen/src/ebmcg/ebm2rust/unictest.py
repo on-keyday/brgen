@@ -17,8 +17,12 @@ def main():
         "std-io",
         "zero-copy",
         "async",
-    ), "Expected OPTION_SET_NAME to be 'std-io', 'zero-copy', or 'async'"
-    is_async = OPTION_SET_NAME == "async"
+        "async-zero-copy",
+    ), "Expected OPTION_SET_NAME to be 'std-io', 'zero-copy', 'async', or 'async-zero-copy'"
+    # async-zero-copy exercises the async (non-direct) Cow path: the reader owns
+    # the bytes so decode reads into Cow::Owned; decode_direct (true zero-copy)
+    # stays sync and is covered by the plain zero-copy set.
+    is_async = OPTION_SET_NAME in ("async", "async-zero-copy")
     await_kw = ".await" if is_async else ""
     main_attr = '#[tokio::main(flavor = "current_thread")]\n' if is_async else ""
     main_kw = "async fn main" if is_async else "fn main"
