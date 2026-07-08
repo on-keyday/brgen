@@ -33,8 +33,11 @@ DEFINE_VISITOR(Expression_CAN_READ_STREAM) {
     if (ctx.config().in_direct_decode) {
         return CODE("(", io_, ".len() - ", ebm2rust::offset_ref(io_), " >= ", num_bytes_, " as usize)");
     }
-    // fill_buf requires `use std::io::BufRead;` regardless of io_ref kind
-    ctx.config().use_statements.insert("use std::io::BufRead;");
+    // fill_buf requires the BufRead trait in scope (std, or tokio AsyncBufReadExt
+    // which entry_before registers in async mode).
+    if (!ctx.flags().use_async) {
+        ctx.config().use_statements.insert("use std::io::BufRead;");
+    }
     // Only mark function as needing BufRead parameter if fill_buf is called
     // on the function parameter (PARAMETER_DECL), not on a local sub_byte_range
     // Cursor (VARIABLE_DECL) which already implements BufRead.
@@ -43,5 +46,5 @@ DEFINE_VISITOR(Expression_CAN_READ_STREAM) {
         auto& flags = ctx.config().function_markers[get_id(ctx.config().current_function)];
         add_flag(flags, ebm2rust::FunctionFlags::HasFillBuf);
     }
-    return CODE("(", io_, ".fill_buf()?.len() >= ", num_bytes_, ")");
+    return CODE("(", io_, ".fill_buf()", ebm2rust::map_io_err(true, io_, ctx.flags().use_async), ".len() >= ", num_bytes_, ")");
 }

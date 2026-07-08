@@ -27,9 +27,7 @@ DEFINE_VISITOR(Type_DECODER_INPUT) {
     if (ctx.config().in_direct_decode) {
         return Result("&'a [u8]");
     }
-    auto flags = ctx.config().function_markers[get_id(ctx.config().current_function)];
-    if (has_flag(flags, ebm2rust::FunctionFlags::HasFillBuf)) {
-        return Result("&mut impl std::io::BufRead");
-    }
-    return Result("&mut impl std::io::Read");
+    // Generic reader; the `<R: Read/BufRead>` bound is emitted on the fn by
+    // function_definition_start_wrapper (BufRead when fill_buf is used).
+    return Result("&mut R");
 }

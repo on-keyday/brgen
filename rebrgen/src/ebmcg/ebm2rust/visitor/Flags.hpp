@@ -28,3 +28,4 @@
 FILE_EXTENSIONS(".rs");
 WEB_UI_NAME("rust3");
 DEFINE_BOOL_FLAG(zero_copy, false, "zero-copy", "generate zero-copy decoder using Cow<'a,[T]> and lifetime-parameterized structs");
+DEFINE_BOOL_FLAG(use_async, false, "async", "generate async (tokio) encode/decode using AsyncRead/AsyncWrite");

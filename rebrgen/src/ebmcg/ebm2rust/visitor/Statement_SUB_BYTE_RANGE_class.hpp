@@ -68,7 +68,7 @@ DEFINE_VISITOR(Statement_SUB_BYTE_RANGE) {
         // 切り詰めデータで slice indexing が panic しないよう、先に bounds check で Err を返す。
         w.writeln("let _sz = ", length_str.to_writer(), " as usize;");
         w.writeln("if ", parent_io_, ".len() - ", parent_off_ref, " < _sz {");
-        w.indent_writeln("return Err(anyhow::anyhow!(\"unexpected EOF: sub_byte_range needs {} bytes from ", parent_io_, "\", _sz));");
+        w.indent_writeln("return Err(Error::DecodeError(\"", parent_io_, "\", std::io::Error::new(std::io::ErrorKind::UnexpectedEof, format!(\"unexpected EOF: sub_byte_range needs {} bytes from ", parent_io_, "\", _sz))));");
         w.writeln("}");
         w.writeln("let ", io_, ": &'a [u8] = &", parent_io_, "[", parent_off_ref, "..", parent_off_ref, " + _sz];");
         w.writeln(parent_off_ref, " += _sz;");
@@ -87,7 +87,7 @@ DEFINE_VISITOR(Statement_SUB_BYTE_RANGE) {
     if (ctx.sub_byte_range.stream_type == ebm::StreamType::INPUT) {
         w.writeln("let mut ", io_, " = Vec::new();");
         w.writeln(io_, ".resize(", length_str.to_writer(), " as usize,0);");
-        w.writeln(parent_io_, ".read_exact(&mut ", io_, ")?;");
+        w.writeln(parent_io_, ".read_exact(&mut ", io_, ")", ebm2rust::map_io_err(true, parent_io_, ctx.flags().use_async), ";");
         w.writeln("let mut ", io_, " = std::io::Cursor::new(", io_, ");");
     }
     else {
@@ -98,14 +98,16 @@ DEFINE_VISITOR(Statement_SUB_BYTE_RANGE) {
     end_offset_window();
     if (ctx.sub_byte_range.stream_type == ebm::StreamType::OUTPUT) {
         w.writeln("if (", length_str.to_writer(), " as usize) != ", io_, ".get_ref().len() {");
-        w.indent_writeln("return Err(anyhow::anyhow!(\"written length mismatch: {} != {}\", ", length_str.to_writer(), ", ", io_, ".get_ref().len()));");
+        w.indent_writeln("return Err(Error::BackwardError((", length_str.to_writer(), ") as usize, ", io_, ".get_ref().len()));");
         w.writeln("}");
-        w.writeln(parent_io_, ".write_all(&", io_, ".get_ref())?;");
+        w.writeln(parent_io_, ".write_all(&", io_, ".get_ref())", ebm2rust::map_io_err(false, parent_io_, ctx.flags().use_async), ";");
     }
 
     auto& flags = ctx.config().function_markers[get_id(ctx.config().current_function)];
     if (has_flag(flags, ebm2rust::FunctionFlags::HasFillBuf)) {
-        ctx.config().use_statements.insert("use std::io::BufRead;");
+        if (!ctx.flags().use_async) {
+            ctx.config().use_statements.insert("use std::io::BufRead;");
+        }
     }
 
     return w;

@@ -6,11 +6,22 @@
   Available variables:
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
+#include <format>
 
 namespace ebm2rust {
     enum class FunctionFlags : std::uint64_t {
         HasFillBuf = 1 << 0,
     };
+
+    // Wrap an io-producing expression so `?` yields the structured Error type
+    // with a location tag (bm2rust map_io_error analogue). `loc` is a field/
+    // format layer path (see get_identifier_layer_str); it is embedded verbatim
+    // as a Rust &'static str literal, so callers pass identifier-like strings.
+    inline std::string map_io_err(bool is_decode, const std::string& loc, bool is_async = false) {
+        return std::format("{}.map_err(|e| Error::{}(\"{}\", e))?",
+                           is_async ? ".await" : "",
+                           is_decode ? "DecodeError" : "EncodeError", loc);
+    }
 
     constexpr bool add_flag(FunctionFlags& flags, FunctionFlags flag) {
         flags = static_cast<FunctionFlags>(static_cast<std::uint64_t>(flags) | static_cast<std::uint64_t>(flag));

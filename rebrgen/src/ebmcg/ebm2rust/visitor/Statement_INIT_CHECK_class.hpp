@@ -52,7 +52,7 @@ DEFINE_VISITOR(Statement_INIT_CHECK) {
         w.writeln("if !matches!(", target.to_writer(), ", ", alt, "(_)) {");
         {
             auto scope = w.indent_scope();
-            w.writeln("return Err(anyhow::anyhow!(\"unexpected value\"));");
+            w.writeln("return Err(Error::AssertError(\"unexpected value\"));");
         }
         w.writeln("}");
     }
