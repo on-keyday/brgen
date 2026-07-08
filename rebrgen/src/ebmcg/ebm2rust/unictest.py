@@ -41,7 +41,6 @@ def main():
         f.write('edition = "2021"\n')
         f.write("\n")
         f.write("[dependencies]\n")
-        f.write('anyhow = "1.0"\n')
         if is_async:
             # Minimal features only: current-thread runtime + macros + async io
             # traits. Avoids tokio's networking stack (mio/WinSock) which is heavy
