@@ -26,6 +26,22 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
     MAYBE(member, ctx.get(ctx.member));
     MAYBE(id, member.body.id());
     if (auto type_ref = get_struct_union_member_from_field(ctx, from_weak(id))) {
+        // common_type union arm folded into a single composite storage word:
+        // flatten `self.union.arm.value` → `(self.<getter>() as <arm_value_type>)`
+        // (ebm2go: uint8(v.tmp131())). No VariantNN enum / get_vN indirection;
+        // the arm was registered in bulk_primitive by Statement_INIT_CHECK.
+        if (ctx.config().bulk_primitive.contains(get_id(*type_ref))) {
+            MAYBE(union_access, ctx.get(ctx.base));  // `self.union` access; its base is the receiver
+            if (auto recv_ref = union_access.body.base()) {
+                MAYBE(recv, ctx.visit(*recv_ref));
+                MAYBE(comp_field, (ctx.get_field<ebm2rust::physical_field>(*type_ref)));
+                MAYBE(getter, comp_field.composite_getter());
+                auto getter_name = ctx.identifier(getter.id);
+                MAYBE(arm_type, ctx.get_field<"type">(ctx.member));
+                MAYBE(type_str, ctx.visit(arm_type));
+                return CODE("(", recv.to_writer(), ".", getter_name, "() as ", type_str.to_writer(), ")");
+            }
+        }
         MAYBE(base_expr, ctx.get(ctx.base));
         MAYBE(variant_index, get_struct_union_index(ctx, base_expr.body.type, *type_ref));
         auto arm_lower = std::string("v") + std::to_string(variant_index);

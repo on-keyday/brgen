@@ -24,6 +24,18 @@
 #include "../codegen.hpp"
 DEFINE_VISITOR(Expression_TYPE_CAST) {
     /*here to write the hook*/
+    // A cast whose TARGET is a variant-like type (VARIANT / STRUCT_UNION) carrying
+    // a common_type produces that union's common representation, so render the cast
+    // against the common_type primitive rather than the (enum) union name — which
+    // would be an undeclared, non-primitive `as Variant{id}` cast (E0605). Mirrors
+    // ebm2go's Expression_TYPE_CAST_before. Only folded common_type unions emit
+    // such a cast (e.g. quic VarInt value()); plain unions construct the enum via
+    // the common_type==nil path below, never an `as`-cast.
+    if (auto vd = is_variant_like(ctx, ctx.type); vd && !is_nil(vd->common_type)) {
+        MAYBE(src_str, ctx.visit(ctx.type_cast_desc.source_expr));
+        MAYBE(common_str, ctx.visit(vd->common_type));
+        return CODE("(", src_str.to_writer(), " as ", common_str.to_writer(), ")");
+    }
     auto source_expr = ctx.type_cast_desc.source_expr;
     auto from_type = ctx.type_cast_desc.from_type;
     auto cast_kind = ctx.type_cast_desc.cast_kind;

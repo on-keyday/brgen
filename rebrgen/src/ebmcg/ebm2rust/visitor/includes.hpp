@@ -57,6 +57,15 @@ namespace ebm2rust {
     // Access/assignment sites use this to route through the generated
     // getter/setter instead of touching the per-field storage that no longer
     // exists once the fields are folded into a single storage word.
+    // Composite kinds ebm2rust folds into a single packed storage word with
+    // shift/mask accessors. PREFIXED_UNION_PRIMITIVE additionally requires the
+    // getter return / setter param to be lowered to the variant common_type
+    // (see function_definition_start_wrapper).
+    inline bool is_foldable_composite_kind(ebm::CompositeFieldKind k) {
+        return k == ebm::CompositeFieldKind::BULK_PRIMITIVE ||
+               k == ebm::CompositeFieldKind::PREFIXED_UNION_PRIMITIVE;
+    }
+
     // True when a composite logical field is a single bit (u1). Such fields
     // expose a bool public accessor; codegen must call the internal `_raw` (u8)
     // accessor instead (see function_definition_start_wrapper).
@@ -72,6 +81,30 @@ namespace ebm2rust {
         return sz && sz->value() == 1;
     }
 
+    // Path from a variant-arm member type_ref to the composite storage FieldDecl
+    // of the enclosing union: arm struct → its related_variant (the STRUCT_UNION)
+    // → related_field (the folded storage field). Mirrors ebm2go. Used to reach
+    // the composite getter/setter when flattening common_type union arm access.
+    constexpr auto physical_field = "body.id.struct_decl.related_variant.struct_union_desc.related_field.field_decl";
+
+    // True when a union's backing field (the STRUCT_UNION's related_field) is
+    // folded into a single PREFIXED_UNION_PRIMITIVE composite storage word — i.e.
+    // Go's flatten model applies and the union is representable as its common_type.
+    // A plain common_type union (distinct-width arms held separately) returns false
+    // and keeps the VariantNN enum machinery.
+    inline bool related_field_is_folded_composite(auto&& ctx, ebm::WeakStatementRef related_field) {
+        if (is_nil(related_field)) {
+            return false;
+        }
+        ebmgen::MappingTable& mapping = get_visitor(ctx).module_;
+        const ebm::FieldDecl* fd = ebmgen::access_field<"field_decl">(mapping, from_weak(related_field));
+        if (!fd) {
+            return false;
+        }
+        auto comp_type = ebmgen::access_field<"composite_field_decl">(mapping, fd->composite_field());
+        return comp_type && comp_type->kind == ebm::CompositeFieldKind::PREFIXED_UNION_PRIMITIVE;
+    }
+
     inline const ebm::FieldDecl* get_composite_field(auto&& ctx, auto target) {
         ebmgen::MappingTable& mapping = get_visitor(ctx).module_;
         const ebm::FieldDecl* comp = ebmgen::access_field<"body.id.field_decl">(mapping, target);
@@ -79,10 +112,7 @@ namespace ebm2rust {
             return nullptr;
         }
         auto comp_type = ebmgen::access_field<"composite_field_decl">(mapping, comp->composite_field());
-        // Phase 1: BULK_PRIMITIVE only. PREFIXED_UNION_PRIMITIVE additionally
-        // requires lowering the getter return / setter param from the variant
-        // enum to its common_type (see ebm2go wrapper L636-652); deferred.
-        if (!comp_type || comp_type->kind != ebm::CompositeFieldKind::BULK_PRIMITIVE) {
+        if (!comp_type || !is_foldable_composite_kind(comp_type->kind)) {
             return nullptr;
         }
         return comp;

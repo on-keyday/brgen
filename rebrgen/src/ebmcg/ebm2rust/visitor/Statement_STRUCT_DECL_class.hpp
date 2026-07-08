@@ -118,7 +118,7 @@ DEFINE_VISITOR(Statement_STRUCT_DECL) {
             if (!field_stmt) { continue; }
             auto comp_p = field_stmt->body.composite_field_decl();
             if (!comp_p) { continue; }
-            if (comp_p->kind != ebm::CompositeFieldKind::BULK_PRIMITIVE) { continue; }
+            if (!ebm2rust::is_foldable_composite_kind(comp_p->kind)) { continue; }
             for (auto& inner_field : comp_p->fields.container) {
                 MAYBE(inner_decl, ctx.get_field<"field_decl">(inner_field));
                 if (auto getter = inner_decl.composite_getter()) {
@@ -138,7 +138,7 @@ DEFINE_VISITOR(Statement_STRUCT_DECL) {
             auto field_stmt = ctx.get(field_ref);
             if (!field_stmt) { continue; }
             auto comp_p = field_stmt->body.composite_field_decl();
-            if (comp_p && comp_p->kind == ebm::CompositeFieldKind::BULK_PRIMITIVE) { return true; }
+            if (comp_p && ebm2rust::is_foldable_composite_kind(comp_p->kind)) { return true; }
         }
         return false;
     };

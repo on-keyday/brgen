@@ -52,8 +52,12 @@ DEFINE_VISITOR(entry_before) {
         using namespace CODEGEN_NAMESPACE;
         return CODE("Option<", elem.to_writer(), ">");
     };
-    config.pointer_type_wrapper = [](Result elem) -> expected<Result> {
+    config.pointer_type_wrapper = [cfgp = &config](Result elem) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
+        // Composite-backed STRICT_TYPE getters return owned (see ptr_to_owned).
+        if (cfgp->ptr_to_owned) {
+            return CODE("Option<", elem.to_writer(), ">");
+        }
         return CODE("Option<&", elem.to_writer(), ">");
     };
     const bool zero_copy = ctx.flags().zero_copy;
@@ -123,6 +127,16 @@ DEFINE_VISITOR(entry_before) {
     };
     config.struct_union_type_custom = [](Context_Type_STRUCT_UNION& ctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
+        // A common_type union whose backing field is folded into a single
+        // PREFIXED_UNION_PRIMITIVE storage word is representable as that primitive
+        // (Go's flatten: no VariantNN enum, one storage word cast per arm). Render
+        // common_type only then; a plain common_type union (distinct-width arms
+        // held separately, e.g. websocket ExtendedPayloadLength) keeps the enum.
+        if (!is_nil(ctx.struct_union_desc.variant_desc.common_type) &&
+            ebm2rust::related_field_is_folded_composite(ctx, ctx.struct_union_desc.related_field)) {
+            MAYBE(t, ctx.visit(ctx.struct_union_desc.variant_desc.common_type));
+            return t;
+        }
         if (!ctx.flags().zero_copy) return pass;
         auto enum_name = ctx.config().variant_prefix + std::format("{}", get_id(ctx.item_id));
         return Result(enum_name + "<'a>");
@@ -202,6 +216,34 @@ DEFINE_VISITOR(entry_before) {
         };
 
         MAYBE(target_expr, actx.get(actx.target));
+        // common_type union arm write folded into a single composite storage word:
+        // flatten `self.union.arm.value = x` → `self.set_<setter>((x) as <storage>)?`
+        // (ebm2go: v.settmp92(uint64(x))). The arm was registered in bulk_primitive
+        // by Statement_INIT_CHECK; the VariantNN construct/matches machinery is elided.
+        if (target_expr.body.kind == ebm::ExpressionKind::MEMBER_ACCESS) {
+            if (auto member_p = target_expr.body.member()) {
+                MAYBE(member_stmt, actx.get(*member_p));
+                if (auto mid = member_stmt.body.id()) {
+                    if (auto arm_type = get_struct_union_member_from_field(actx, from_weak(*mid))) {
+                        if (actx.config().bulk_primitive.contains(get_id(*arm_type))) {
+                            if (auto union_ref = target_expr.body.base()) {
+                                MAYBE(union_access, actx.get(*union_ref));  // `self.union` access
+                                if (auto recv_ref = union_access.body.base()) {
+                                    MAYBE(recv_w, actx.visit(*recv_ref));
+                                    MAYBE(value_w, actx.visit(actx.value));
+                                    MAYBE(comp_field, (actx.get_field<ebm2rust::physical_field>(*arm_type)));
+                                    MAYBE(setter, comp_field.composite_setter());
+                                    auto setter_name = actx.identifier(setter.id);
+                                    MAYBE(comp_fd, actx.get_field<"composite_field_decl">(comp_field.composite_field()));
+                                    MAYBE(cast_w, actx.visit(comp_fd.composite_type));
+                                    return CODELINE(recv_w.to_string(), ".set_", setter_name, "((", value_w.to_string(), ") as ", cast_w.to_string(), ")?", actx.config().endof_statement);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
         // Composite bit-field write → setter call `base.set_field(value)?`.
         // (Phase 1: BULK_PRIMITIVE, u8 setter; matches the `set_` prefix added
         // by function_definition_start_wrapper.)
@@ -297,11 +339,10 @@ DEFINE_VISITOR(entry_before) {
     // expanding the logical fields.
     config.composite_field_decl_custom = [](Context_Statement_COMPOSITE_FIELD_DECL& cctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
-        // Fold BULK_PRIMITIVE composites into a single packed storage field.
-        // Works for both top-level and variant-arm structs; the getter/setter
-        // accessors are emitted by Statement_STRUCT_DECL (variant arms get a
-        // dedicated impl for them). PREFIXED_UNION_PRIMITIVE stays expanded.
-        if (cctx.composite_field_decl.kind == ebm::CompositeFieldKind::BULK_PRIMITIVE) {
+        // Fold foldable composites into a single packed storage field. Works for
+        // both top-level and variant-arm structs; the getter/setter accessors are
+        // emitted by Statement_STRUCT_DECL (variant arms get a dedicated impl).
+        if (ebm2rust::is_foldable_composite_kind(cctx.composite_field_decl.kind)) {
             auto ident = cctx.identifier();
             MAYBE(typ, cctx.visit(cctx.composite_field_decl.composite_type));
             return CODELINE(ident, ": ", typ.to_writer(), ",");
@@ -314,6 +355,14 @@ DEFINE_VISITOR(entry_before) {
     // "Variant{id}" and the type is never defined → "cannot find type" errors.
     config.variant_type_custom = [](Context_Type_VARIANT& vctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
+        // A VARIANT carrying a common_type is the union's *value view* (the arm
+        // value types unified), distinct from the STRUCT_UNION *storage view*.
+        // It is representable as the common_type primitive (Go renders these via
+        // the default common_type path, never a VariantNN enum). Return pass so
+        // the default (Type_VARIANT) emits `ctx.visit(common_type)`; emit the
+        // enum + get_vN only for pure variants (common_type == nil), which need
+        // real Rust enum machinery. STRUCT_UNION storage enums are unaffected
+        // (they go through Type_STRUCT_UNION, not this hook).
         if (!is_nil(vctx.variant_desc.common_type)) {
             return pass;
         }
@@ -484,6 +533,25 @@ DEFINE_VISITOR(entry_before) {
                 }
                 w.writeln(fctx.config().end_block);
                 name = std::string(name) + "_raw";
+            }
+        }
+        // PREFIXED_UNION_PRIMITIVE composites carry a variant return/param type;
+        // lower it to the variant common_type so the signature names a real type
+        // instead of an undeclared VariantNN enum (Go parity, ebm2go L636-652).
+        if (fctx.func_decl.kind == ebm::FunctionKind::COMPOSITE_GETTER) {
+            if (auto got = fctx.get_field<"struct_union_desc">(fctx.func_decl.return_type);
+                got && !is_nil(got->variant_desc.common_type)) {
+                MAYBE(typ, fctx.visit(got->variant_desc.common_type));
+                ret_type = typ;
+            }
+        }
+        else if (fctx.func_decl.kind == ebm::FunctionKind::COMPOSITE_SETTER &&
+                 !fctx.func_decl.params.container.empty()) {
+            if (auto got = fctx.get_field<"param_decl.param_type.struct_union_desc">(fctx.func_decl.params.container[0]);
+                got && !is_nil(got->variant_desc.common_type)) {
+                MAYBE(typ, fctx.visit(got->variant_desc.common_type));
+                auto param_name = fctx.identifier(fctx.func_decl.params.container[0]);
+                params = CODE(param_name, ": ", typ.to_writer());
             }
         }
         w.write(async_fn ? "pub async fn " : "pub fn ", name, generic_clause, "(");
@@ -674,8 +742,11 @@ DEFINE_VISITOR(entry_before) {
         return Result(std::move(w));
     };
 
-    config.make_pointer_wrapper = [](Result elem) -> expected<Result> {
+    config.make_pointer_wrapper = [cfgp = &config](Result elem) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
+        if (cfgp->ptr_to_owned) {
+            return CODE("Some(", elem.to_writer(), ")");
+        }
         return CODE("Some(&", elem.to_writer(), ")");
     };
     config.make_optional_wrapper = [](Result elem) -> expected<Result> {
