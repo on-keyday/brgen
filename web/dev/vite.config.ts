@@ -13,7 +13,13 @@ export default defineConfig({
           src: 'src/lib/bmgen/*.map',
           // コピー先（dist 内の階層）
           // Wasmが dist/assets に入るなら 'assets'、dist 直下なら './'
-          dest: './assets' 
+          dest: './assets',
+          // vite-plugin-static-copy v4 はデフォルトで glob の base ディレクトリ構造を
+          // 保持する（v3 は flat コピーだった）。stripBase で base (src/lib/bmgen/) を
+          // 剥がし assets 直下へ flat 配置する。これがないと
+          // assets/src/lib/bmgen/*.map に置かれ、wasm が参照する
+          // assets/<name>.wasm.map が 404 になる。
+          rename: { stripBase: true }
         }
       ]
   })
