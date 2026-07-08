@@ -24,6 +24,21 @@
                 "--zero-copy"
             ],
             "run_options": []
+        },
+        {
+            "name": "async",
+            "setup_options": [
+                "--async"
+            ],
+            "run_options": []
+        },
+        {
+            "name": "async-zero-copy",
+            "setup_options": [
+                "--async",
+                "--zero-copy"
+            ],
+            "run_options": []
         }
     ]
 }

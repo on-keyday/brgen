@@ -16,7 +16,16 @@ def main():
     assert OPTION_SET_NAME in (
         "std-io",
         "zero-copy",
-    ), "Expected OPTION_SET_NAME to be 'std-io' or 'zero-copy'"
+        "async",
+        "async-zero-copy",
+    ), "Expected OPTION_SET_NAME to be 'std-io', 'zero-copy', 'async', or 'async-zero-copy'"
+    # async-zero-copy exercises the async (non-direct) Cow path: the reader owns
+    # the bytes so decode reads into Cow::Owned; decode_direct (true zero-copy)
+    # stays sync and is covered by the plain zero-copy set.
+    is_async = OPTION_SET_NAME in ("async", "async-zero-copy")
+    await_kw = ".await" if is_async else ""
+    main_attr = '#[tokio::main(flavor = "current_thread")]\n' if is_async else ""
+    main_kw = "async fn main" if is_async else "fn main"
 
     print(f"Testing {TEST_TARGET_FILE} with {INPUT_FILE} and {OUTPUT_FILE} (option_set={OPTION_SET_NAME})")
 
@@ -32,7 +41,11 @@ def main():
         f.write('edition = "2021"\n')
         f.write("\n")
         f.write("[dependencies]\n")
-        f.write('anyhow = "1.0"\n')
+        if is_async:
+            # Minimal features only: current-thread runtime + macros + async io
+            # traits. Avoids tokio's networking stack (mio/WinSock) which is heavy
+            # to compile and unnecessary for byte-buffer round-trip tests.
+            f.write('tokio = { version = "1", default-features = false, features = ["rt", "macros", "io-util"] }\n')
 
     # Copy generated rust code as a library
     with open(TEST_TARGET_FILE, "r") as f_src:
@@ -52,7 +65,7 @@ def main():
     else:
         decode_block = f"""    let mut reader = Cursor::new(&input_data);
     let mut target = test_runner::{TEST_TARGET_FORMAT}::default();
-    if let Err(e) = target.decode(&mut reader) {{
+    if let Err(e) = target.decode(&mut reader){await_kw} {{
         eprintln!("Decode error: {{:?}}", e);
         std::process::exit(10);
     }}"""
@@ -65,7 +78,7 @@ use std::io::Cursor;
 use std::env;
 use test_runner;
 
-fn main() {{
+{main_attr}{main_kw}() {{
     let args: Vec<String> = env::args().collect();
     if args.len() < 3 {{
         eprintln!("Usage: {{}} <input_file> <output_file>", args[0]);
@@ -86,7 +99,7 @@ fn main() {{
 {decode_block}
 
     let mut output_buf = Vec::new();
-    if let Err(e) = target.encode(&mut Cursor::new(&mut output_buf)) {{
+    if let Err(e) = target.encode(&mut Cursor::new(&mut output_buf)){await_kw} {{
         eprintln!("Encode error: {{:?}}", e);
         std::process::exit(20);
     }}

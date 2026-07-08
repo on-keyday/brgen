@@ -36,13 +36,13 @@ DEFINE_VISITOR(entry_before) {
     config.infinity_loop_keyword = "loop";
     // Native endian: cfg! macro evaluates to a bool at compile-time.
     config.native_endian_check = "cfg!(target_endian = \"little\")";
-    config.decoder_return_type = "Result<(), anyhow::Error>";
-    config.encoder_return_type = "Result<(), anyhow::Error>";
-    config.encoder_input_type = "&mut impl std::io::Write";
+    config.decoder_return_type = "Result<(), Error>";
+    config.encoder_return_type = "Result<(), Error>";
+    config.encoder_input_type = "&mut W";
     config.setter_status_ok = "Ok(())";
-    config.setter_status_failure = "Err(anyhow::anyhow!(\"setter failed\"))";
+    config.setter_status_failure = "Err(Error::PropertySetterError(\"setter failed\"))";
     config.void_type = "()";
-    config.property_setter_return_type = "Result<(), anyhow::Error>";
+    config.property_setter_return_type = "Result<(), Error>";
     config.variant_prefix = "Variant";
     config.optional_type_wrapper = [](Result elem) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
@@ -64,6 +64,13 @@ DEFINE_VISITOR(entry_before) {
     if (zero_copy) {
         config.use_statements.insert("use std::borrow::Cow;");
     }
+    if (ctx.flags().use_async) {
+        // read_exact/read_to_end and write_all live on these two. fill_buf's
+        // AsyncBufReadExt is inserted only where fill_buf is actually emitted
+        // (CAN_READ_STREAM / SUB_BYTE_RANGE) to avoid an unused-import warning.
+        config.use_statements.insert("use tokio::io::AsyncReadExt;");
+        config.use_statements.insert("use tokio::io::AsyncWriteExt;");
+    }
     config.vector_type_wrapper = [](Context_Type_VECTOR& ctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
         MAYBE(elem, ctx.visit(ctx.element_type));
@@ -76,22 +83,33 @@ DEFINE_VISITOR(entry_before) {
     // param_visitor/as_arg_visitor 側で DECODER_INPUT に対して自動付与する。
     config.call_custom = [](Context_Expression_CALL& ctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
-        if (!ctx.config().in_direct_decode) {
-            return pass;
-        }
         auto fn = ctx.get_field<"member.body.id.func_decl">(ctx.call_desc.callee);
-        if (!fn || fn->kind != ebm::FunctionKind::DECODE) {
-            return pass;
+        // in_direct_decode: rewrite decode() -> decode_direct(..., off). Sync.
+        if (ctx.config().in_direct_decode) {
+            if (!fn || fn->kind != ebm::FunctionKind::DECODE) {
+                return pass;
+            }
+            MAYBE(callee_expr, ctx.get(ctx.call_desc.callee));
+            MAYBE(base_ref, callee_expr.body.base());
+            MAYBE(member_ref, callee_expr.body.member());
+            MAYBE(base, ctx.visit(base_ref));
+            MAYBE(method_name, ctx.identifier(member_ref));
+            CodeWriter w;
+            MAYBE(args, TRY_SEPARATED(", ", ctx.call_desc.arguments.container, [&](auto& arg) { return ctx.visit(arg); }));
+            w.write(base.to_writer(), ".", method_name, "_direct(", args, ")");
+            return Result(std::move(w));
         }
-        MAYBE(callee_expr, ctx.get(ctx.call_desc.callee));
-        MAYBE(base_ref, callee_expr.body.base());
-        MAYBE(member_ref, callee_expr.body.member());
-        MAYBE(base, ctx.visit(base_ref));
-        MAYBE(method_name, ctx.identifier(member_ref));
-        CodeWriter w;
-        MAYBE(args, TRY_SEPARATED(", ", ctx.call_desc.arguments.container, [&](auto& arg) { return ctx.visit(arg); }));
-        w.write(base.to_writer(), ".", method_name, "_direct(", args, ")");
-        return Result(std::move(w));
+        // async: calls to encode/decode fns return a future -> append .await
+        // (io ops get .await via map_io_err; inter-fn codec calls need it here).
+        if (ctx.flags().use_async && fn &&
+            (fn->kind == ebm::FunctionKind::ENCODE || fn->kind == ebm::FunctionKind::DECODE)) {
+            MAYBE(callee, ctx.visit(ctx.call_desc.callee));
+            MAYBE(args, TRY_SEPARATED(", ", ctx.call_desc.arguments.container, [&](auto& arg) { return ctx.visit(arg); }));
+            CodeWriter w;
+            w.write(callee.to_writer(), "(", args, ").await");
+            return Result(std::move(w));
+        }
+        return pass;
     };
     config.struct_type_custom = [](Context_Type_STRUCT& ctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
@@ -332,8 +350,48 @@ DEFINE_VISITOR(entry_before) {
         if (fctx.config().in_direct_decode) {
             name += "_direct";
         }
+        // IO generics (bm2rust parity): encode/decode take a named generic
+        // reader/writer so callers can plug any Read/Write. The bound is
+        // BufRead when this fn uses fill_buf (ADR 0037 propagates the marker).
+        // Direct-decode fns keep the concrete `&'a [u8]` reader, so no generic.
+        const bool is_async = fctx.flags().use_async;
+        std::string generic_clause;
+        bool has_reader = false, has_writer = false;
+        if (!fctx.config().in_direct_decode) {
+            for (auto& p : fctx.func_decl.params.container) {
+                auto pt = fctx.get_field<"param_decl.param_type">(p);
+                if (!pt) {
+                    continue;
+                }
+                auto ptype = fctx.module().get_type(*pt);
+                if (!ptype) {
+                    continue;
+                }
+                if (ptype->body.kind == ebm::TypeKind::DECODER_INPUT) {
+                    has_reader = true;
+                }
+                else if (ptype->body.kind == ebm::TypeKind::ENCODER_INPUT) {
+                    has_writer = true;
+                }
+            }
+            if (has_reader) {
+                auto flags = fctx.config().function_markers[get_id(fctx.item_id)];
+                const bool fillbuf = has_flag(flags, ebm2rust::FunctionFlags::HasFillBuf);
+                if (is_async) {
+                    generic_clause = fillbuf ? "<R: tokio::io::AsyncBufRead + Unpin>" : "<R: tokio::io::AsyncRead + Unpin>";
+                }
+                else {
+                    generic_clause = fillbuf ? "<R: std::io::BufRead>" : "<R: std::io::Read>";
+                }
+            }
+            else if (has_writer) {
+                generic_clause = is_async ? "<W: tokio::io::AsyncWrite + Unpin>" : "<W: std::io::Write>";
+            }
+        }
+        // Direct-decode fns stay sync (raw slice); only the Read/Write path goes async.
+        const bool async_fn = is_async && (has_reader || has_writer);
         CodeWriter w;
-        w.write("pub fn ", name, "(");
+        w.write(async_fn ? "pub async fn " : "pub fn ", name, generic_clause, "(");
         bool first = true;
         if (!is_nil(fctx.func_decl.parent_format)) {
             if (fctx.func_decl.attribute.is_mutable()) {
@@ -353,15 +411,84 @@ DEFINE_VISITOR(entry_before) {
         w.writeln(") -> ", ret_type.to_writer(), " {");
         return Result(std::move(w));
     };
+    // Ergonomic codec entry points ported from bm2rust: collect a codec fn's
+    // non-io parameters (the single reader/writer is skipped — the wrapper
+    // supplies its own cursor). Returns {sig, args}: sig is ", name: type"...
+    // for the wrapper signature, args is ", name"... to forward to the raw call.
+    auto collect_wrapper_params = [](Context_Statement_STRUCT_DECL& ctx, const ebm::FunctionDecl& fn) -> expected<std::pair<std::string, std::string>> {
+        using namespace CODEGEN_NAMESPACE;
+        std::string sig, args;
+        for (auto& param_ref : fn.params.container) {
+            MAYBE(param_stmt, ctx.get(param_ref));
+            auto pd = param_stmt.body.param_decl();
+            if (!pd) {
+                continue;
+            }
+            // The public encode()/decode() wrapper creates the internal state
+            // companions locally (RuntimeState per ADR 0039, and `state` block
+            // variables), so they are absorbed. The ergonomic wrappers call that
+            // public fn and must forward neither — only genuine format arguments.
+            if (pd->is_runtime_state() || pd->is_state_variable()) {
+                continue;
+            }
+            MAYBE(ptype, ctx.module().get_type(pd->param_type));
+            if (ptype.body.kind == ebm::TypeKind::ENCODER_INPUT ||
+                ptype.body.kind == ebm::TypeKind::DECODER_INPUT) {
+                continue;
+            }
+            MAYBE(rendered, ctx.visit(param_ref));
+            sig += ", " + rendered.to_string();
+            args += ", " + std::string(ctx.identifier(param_ref));
+        }
+        return std::make_pair(std::move(sig), std::move(args));
+    };
+    // encode() + encode_to_vec()/encode_to_fixed() (bm2rust parity).
+    config.struct_encode_start_wrapper = [collect_wrapper_params](Context_Statement_STRUCT_DECL& sctx, ebm::StatementRef encode_fn) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        CodeWriter w;
+        MAYBE(enc, sctx.visit(encode_fn));
+        w.write(std::move(enc.to_writer()));
+        MAYBE(fn_stmt, sctx.get(encode_fn));
+        auto fn_decl_p = fn_stmt.body.func_decl();
+        if (!fn_decl_p) {
+            return Result(std::move(w));
+        }
+        MAYBE(params, collect_wrapper_params(sctx, *fn_decl_p));
+        auto& [sig, args] = params;
+        const bool is_async = sctx.flags().use_async;
+        const char* fn_kw = is_async ? "pub async fn " : "pub fn ";
+        const char* aw = is_async ? ".await" : "";
+        w.writeln(fn_kw, "encode_to_vec(&self", sig, ") -> Result<Vec<u8>, Error> {");
+        {
+            auto s = w.indent_scope();
+            w.writeln("let mut w = std::io::Cursor::new(Vec::new());");
+            w.writeln("self.encode(&mut w", args, ")", aw, "?;");
+            w.writeln("Ok(w.into_inner())");
+        }
+        w.writeln("}");
+        w.writeln(fn_kw, "encode_to_fixed<'buf>(&self, data: &'buf mut [u8]", sig, ") -> Result<&'buf [u8], Error> {");
+        {
+            auto s = w.indent_scope();
+            w.writeln("let mut w = std::io::Cursor::new(&mut *data);");
+            w.writeln("self.encode(&mut w", args, ")", aw, "?;");
+            w.writeln("let written = w.position() as usize;");
+            w.writeln("drop(w);");
+            w.writeln("Ok(&data[0..written])");
+        }
+        w.writeln("}");
+        return Result(std::move(w));
+    };
     // zero_copy モードでは decode_fn を 2 度 visit する: 通常の decode() と、
     // in_direct_decode=true で再 visit する decode_direct()。Go 版の
     // struct_decode_start_wrapper と同じ発想 (io_mode ごとに visit を繰り返す)。
-    config.struct_decode_start_wrapper = [](Context_Statement_STRUCT_DECL& sctx, ebm::StatementRef decode_fn) -> expected<Result> {
+    // その後 decode_slice()/decode_exact() (+ zero_copy 時 *_direct) を出す。
+    config.struct_decode_start_wrapper = [collect_wrapper_params](Context_Statement_STRUCT_DECL& sctx, ebm::StatementRef decode_fn) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
         CodeWriter w;
         MAYBE(dec, sctx.visit(decode_fn));
         w.write(std::move(dec.to_writer()));
-        if (sctx.flags().zero_copy) {
+        const bool zero_copy = sctx.flags().zero_copy;
+        if (zero_copy) {
             auto prev = sctx.config().in_direct_decode;
             sctx.config().in_direct_decode = true;
             const auto restore = futils::helper::defer([&]() {
@@ -369,6 +496,57 @@ DEFINE_VISITOR(entry_before) {
             });
             MAYBE(dec_direct, sctx.visit(decode_fn));
             w.write(std::move(dec_direct.to_writer()));
+        }
+        MAYBE(fn_stmt, sctx.get(decode_fn));
+        auto fn_decl_p = fn_stmt.body.func_decl();
+        if (!fn_decl_p) {
+            return Result(std::move(w));
+        }
+        MAYBE(params, collect_wrapper_params(sctx, *fn_decl_p));
+        auto& [sig, args] = params;
+        const bool is_async = sctx.flags().use_async;
+        const char* fn_kw = is_async ? "pub async fn " : "pub fn ";
+        const char* aw = is_async ? ".await" : "";
+        w.writeln(fn_kw, "decode_slice<'buf>(data: &'buf [u8]", sig, ") -> Result<(Self, &'buf [u8]), Error> {");
+        {
+            auto s = w.indent_scope();
+            w.writeln("let mut r = std::io::Cursor::new(data);");
+            w.writeln("let mut result = Self::default();");
+            w.writeln("result.decode(&mut r", args, ")", aw, "?;");
+            w.writeln("Ok((result, &data[r.position() as usize..]))");
+        }
+        w.writeln("}");
+        w.writeln(fn_kw, "decode_exact(data: &[u8]", sig, ") -> Result<Self, Error> {");
+        {
+            auto s = w.indent_scope();
+            w.writeln("let (result, rest) = Self::decode_slice(data", args, ")", aw, "?;");
+            w.writeln("if rest.len() > 0 {");
+            w.indent_writeln("return Err(Error::AssertError(\"Unexpected data\"));");
+            w.writeln("}");
+            w.writeln("Ok(result)");
+        }
+        w.writeln("}");
+        if (zero_copy) {
+            // true zero-copy borrows: decode_direct fills Cow::Borrowed against data.
+            w.writeln("pub fn decode_slice_direct(data: &'a [u8]", sig, ") -> Result<(Self, &'a [u8]), Error> {");
+            {
+                auto s = w.indent_scope();
+                w.writeln("let mut result = Self::default();");
+                w.writeln("let mut offset = 0;");
+                w.writeln("result.decode_direct(data, &mut offset", args, ")?;");
+                w.writeln("Ok((result, &data[offset..]))");
+            }
+            w.writeln("}");
+            w.writeln("pub fn decode_exact_direct(data: &'a [u8]", sig, ") -> Result<Self, Error> {");
+            {
+                auto s = w.indent_scope();
+                w.writeln("let (result, rest) = Self::decode_slice_direct(data", args, ")?;");
+                w.writeln("if rest.len() > 0 {");
+                w.indent_writeln("return Err(Error::AssertError(\"Unexpected data\"));");
+                w.writeln("}");
+                w.writeln("Ok(result)");
+            }
+            w.writeln("}");
         }
         return Result(std::move(w));
     };
@@ -429,7 +607,7 @@ DEFINE_VISITOR(entry_before) {
         using namespace CODEGEN_NAMESPACE;
         MAYBE(literal, ctx.get(ctx.error_report.message));
         auto text = futils::escape::escape_str<std::string>(literal.body.data);
-        return CODELINE(std::format("return Err(anyhow::anyhow!(\"{}\"));", text));
+        return CODELINE(std::format("return Err(Error::AssertError(\"{}\"));", text));
     };
     config.enum_member_decl_visitor = [](Context_Statement_ENUM_MEMBER_DECL& ctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
@@ -449,6 +627,17 @@ DEFINE_VISITOR(entry_before) {
         if (ctx.read_data.lowered_statement()) {
             return pass;
         }
+        // io error location (bm2rust get_belong_type analogue): the field being read.
+        std::string err_loc;
+        if (!is_nil(ctx.read_data.field)) {
+            if (auto ls = get_identifier_layer_str(ctx, from_weak(ctx.read_data.field))) {
+                err_loc = std::move(*ls);
+            }
+        }
+        if (err_loc.empty()) {
+            err_loc = io_name;
+        }
+        const bool is_async = ctx.flags().use_async;
         const bool direct = ctx.config().in_direct_decode;
         const std::string off_ref = direct ? ebm2rust::offset_ref(io_name) : std::string();
         // peek reads do not advance the stream, so the runtime offset stays put
@@ -463,7 +652,7 @@ DEFINE_VISITOR(entry_before) {
         // 事前に残量を比較し Err を返す。offset <= len の不変条件を前提に引き算を使う。
         auto emit_direct_bounds_check = [&](std::string_view need_var) {
             w.writeln("if ", io_name, ".len() - ", off_ref, " < ", need_var, " {");
-            w.indent_writeln("return Err(anyhow::anyhow!(\"unexpected EOF: need {} bytes from ", io_name, "\", ", need_var, "));");
+            w.indent_writeln("return Err(Error::DecodeError(\"", err_loc, "\", std::io::Error::new(std::io::ErrorKind::UnexpectedEof, format!(\"unexpected EOF: need {} bytes from ", io_name, "\", ", need_var, "))));");
             w.writeln("}");
         };
         if (cand == BytesType::array) {
@@ -481,7 +670,7 @@ DEFINE_VISITOR(entry_before) {
                 }
                 else {
                     w.writeln("{");
-                    w.writeln("let _n = ", io_name, ".read_to_end(&mut ", target.to_writer(), ".to_vec())?;");
+                    w.writeln("let _n = ", io_name, ".read_to_end(&mut ", target.to_writer(), ".to_vec())", ebm2rust::map_io_err(true, err_loc, is_async), ";");
                     append_offset(w, "_n");
                     w.writeln("}");
                 }
@@ -498,7 +687,7 @@ DEFINE_VISITOR(entry_before) {
                     w.writeln(off_ref, " += _sz;");
                 }
                 else {
-                    w.writeln(io_name, ".read_exact(&mut ", target.to_writer(), "[.._sz])?;");
+                    w.writeln(io_name, ".read_exact(&mut ", target.to_writer(), "[.._sz])", ebm2rust::map_io_err(true, err_loc, is_async), ";");
                 }
                 append_offset(w, "_sz");
                 w.writeln("}");
@@ -514,7 +703,7 @@ DEFINE_VISITOR(entry_before) {
                     w.writeln("}");
                 }
                 else {
-                    w.writeln(io_name, ".read_exact(&mut ", target.to_writer(), ")?;");
+                    w.writeln(io_name, ".read_exact(&mut ", target.to_writer(), ")", ebm2rust::map_io_err(true, err_loc, is_async), ";");
                     append_offset(w, CODE(target.to_writer(), ".len()"));
                 }
             }
@@ -536,7 +725,7 @@ DEFINE_VISITOR(entry_before) {
                 }
                 else {
                     w.writeln("{");
-                    w.writeln("let _n = ", io_name, ".read_to_end(", (zero_copy ? "" : "&mut "), mut_target, ")?;");
+                    w.writeln("let _n = ", io_name, ".read_to_end(", (zero_copy ? "" : "&mut "), mut_target, ")", ebm2rust::map_io_err(true, err_loc, is_async), ";");
                     append_offset(w, "_n");
                     w.writeln("}");
                 }
@@ -557,7 +746,7 @@ DEFINE_VISITOR(entry_before) {
                     w.writeln("{");
                     w.writeln("let _sz = ", size, " as usize;");
                     w.writeln(mut_target, ".resize(_sz,0);");
-                    w.writeln(io_name, ".read_exact(", (zero_copy ? "" : "&mut "), mut_target, ")?;");
+                    w.writeln(io_name, ".read_exact(", (zero_copy ? "" : "&mut "), mut_target, ")", ebm2rust::map_io_err(true, err_loc, is_async), ";");
                     append_offset(w, "_sz");
                     w.writeln("}");
                 }
@@ -571,6 +760,79 @@ DEFINE_VISITOR(entry_before) {
         MAYBE(index_str, ctx.visit(ctx.index));
         CodeWriter w;
         w.write(base_str.to_writer(), "[", index_str.to_writer(), " as usize]");
+        return w;
+    };
+    // Structured error type ported from bm2rust: the public `Error` that appears
+    // in every Result<(), Error>. Emitted once at file top (before struct/enum
+    // decls that reference it in signatures) via program_decl_start_wrapper.
+    config.program_decl_start_wrapper = [](Context_Statement_PROGRAM_DECL& ctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        CodeWriter w;
+        w.writeln("#[derive(Debug)]");
+        w.writeln("pub enum Error {");
+        {
+            auto s = w.indent_scope();
+            w.writeln("PropertySetterError(&'static str),");
+            w.writeln("EncodeError(&'static str, std::io::Error),");
+            w.writeln("DecodeError(&'static str, std::io::Error),");
+            w.writeln("TryFromIntError(std::num::TryFromIntError),");
+            w.writeln("ArrayLengthMismatch(&'static str, usize, usize),");
+            w.writeln("AssertError(&'static str),");
+            w.writeln("InvalidUnionVariant(&'static str),");
+            w.writeln("BackwardError(usize, usize),");
+        }
+        w.writeln("}");
+        w.writeln("impl std::fmt::Display for Error {");
+        {
+            auto s = w.indent_scope();
+            w.writeln("fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {");
+            {
+                auto s2 = w.indent_scope();
+                w.writeln("match self {");
+                {
+                    auto s3 = w.indent_scope();
+                    w.writeln("Error::PropertySetterError(s) => write!(f, \"PropertySetterError: {}\", s),");
+                    w.writeln("Error::EncodeError(s, e) => write!(f, \"EncodeError: {} {}\", s, e),");
+                    w.writeln("Error::DecodeError(s, e) => write!(f, \"DecodeError: {} {}\", s, e),");
+                    w.writeln("Error::TryFromIntError(e) => write!(f, \"TryFromIntError: {}\", e),");
+                    w.writeln("Error::ArrayLengthMismatch(s, expected, actual) => write!(f, \"ArrayLengthMismatch: {} expected:{} actual:{}\", s, expected, actual),");
+                    w.writeln("Error::AssertError(s) => write!(f, \"AssertError: {}\", s),");
+                    w.writeln("Error::InvalidUnionVariant(s) => write!(f, \"InvalidUnionVariant: {}\", s),");
+                    w.writeln("Error::BackwardError(expected, actual) => write!(f, \"BackwardError: expected:{} actual:{}\", expected, actual),");
+                }
+                w.writeln("}");
+            }
+            w.writeln("}");
+        }
+        w.writeln("}");
+        w.writeln("impl std::error::Error for Error {");
+        {
+            auto s = w.indent_scope();
+            w.writeln("fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {");
+            {
+                auto s2 = w.indent_scope();
+                w.writeln("match self {");
+                {
+                    auto s3 = w.indent_scope();
+                    w.writeln("Error::EncodeError(_, e) => Some(e),");
+                    w.writeln("Error::DecodeError(_, e) => Some(e),");
+                    w.writeln("Error::TryFromIntError(e) => Some(e),");
+                    w.writeln("_ => None,");
+                }
+                w.writeln("}");
+            }
+            w.writeln("}");
+        }
+        w.writeln("}");
+        w.writeln("impl From<std::num::TryFromIntError> for Error {");
+        {
+            auto s = w.indent_scope();
+            w.writeln("fn from(e: std::num::TryFromIntError) -> Self {");
+            w.indent_writeln("Error::TryFromIntError(e)");
+            w.writeln("}");
+        }
+        w.writeln("}");
+        w.writeln();
         return w;
     };
     config.program_decl_end_wrapper = [](Context_Statement_PROGRAM_DECL& ctx, CodeWriter& result) -> expected<Result> {
@@ -602,7 +864,7 @@ DEFINE_VISITOR(entry_before) {
             MAYBE(layer_str, get_identifier_layer_str(lctx, from_weak(lctx.length_check.related_field)));
             CodeWriter w;
             w.writeln("if ", target.to_writer(), " != ", expected.to_writer(), " as usize {");
-            w.indent_writeln("return Err(anyhow::anyhow!(\"size mismatch when writing field \\\"", layer_str, "\\\": expected {}, got {}\", ", expected.to_writer(), ", ", target.to_writer(), "));");
+            w.indent_writeln("return Err(Error::ArrayLengthMismatch(\"", layer_str, "\", ", expected.to_writer(), " as usize, ", target.to_writer(), "));");
             w.writeln("}");
             return w;
         }
@@ -614,11 +876,21 @@ DEFINE_VISITOR(entry_before) {
         if (ctx.write_data.lowered_statement()) {
             return pass;
         }
+        // io error location (bm2rust get_belong_type analogue): the field being written.
+        std::string err_loc;
+        if (!is_nil(ctx.write_data.field)) {
+            if (auto ls = get_identifier_layer_str(ctx, from_weak(ctx.write_data.field))) {
+                err_loc = std::move(*ls);
+            }
+        }
+        if (err_loc.empty()) {
+            err_loc = io_name;
+        }
         MAYBE(size, get_size_str(ctx, ctx.write_data.size));
         CodeWriter w;
         w.writeln("{");
         w.writeln("let _sz = ", size, " as usize;");
-        w.writeln(io_name, ".write_all(&", target.to_writer(), "[.._sz])?;");
+        w.writeln(io_name, ".write_all(&", target.to_writer(), "[.._sz])", ebm2rust::map_io_err(false, err_loc, ctx.flags().use_async), ";");
         ebm2rust::append_runtime_offset(ctx, ctx.write_data.io_ref, w, "_sz");
         w.writeln("}");
         return w;
