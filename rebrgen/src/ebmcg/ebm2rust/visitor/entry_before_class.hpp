@@ -103,18 +103,9 @@ DEFINE_VISITOR(entry_before) {
         if (ctx.flags().use_async && fn &&
             (fn->kind == ebm::FunctionKind::ENCODE || fn->kind == ebm::FunctionKind::DECODE)) {
             MAYBE(callee, ctx.visit(ctx.call_desc.callee));
+            MAYBE(args, TRY_SEPARATED(", ", ctx.call_desc.arguments.container, [&](auto& arg) { return ctx.visit(arg); }));
             CodeWriter w;
-            w.write(callee.to_writer(), "(");
-            bool first = true;
-            for (auto& arg : ctx.call_desc.arguments.container) {
-                MAYBE(arg_str, ctx.visit(arg));
-                if (!first) {
-                    w.write(",");
-                }
-                first = false;
-                w.write(arg_str.to_writer());
-            }
-            w.write(").await");
+            w.write(callee.to_writer(), "(", args, ").await");
             return Result(std::move(w));
         }
         return pass;
