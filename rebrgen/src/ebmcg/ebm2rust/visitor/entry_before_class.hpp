@@ -52,12 +52,8 @@ DEFINE_VISITOR(entry_before) {
         using namespace CODEGEN_NAMESPACE;
         return CODE("Option<", elem.to_writer(), ">");
     };
-    config.pointer_type_wrapper = [cfgp = &config](Result elem) -> expected<Result> {
+    config.pointer_type_wrapper = [](Result elem) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
-        // Composite-backed STRICT_TYPE getters return owned (see ptr_to_owned).
-        if (cfgp->ptr_to_owned) {
-            return CODE("Option<", elem.to_writer(), ">");
-        }
         return CODE("Option<&", elem.to_writer(), ">");
     };
     const bool zero_copy = ctx.flags().zero_copy;
@@ -214,6 +210,18 @@ DEFINE_VISITOR(entry_before) {
                 if (ebm2rust::get_composite_field(actx, *member_p)) {
                     if (auto base_ref = target_expr.body.base()) {
                         MAYBE(base_w, actx.visit(*base_ref));
+                        std::string base_str = base_w.to_string();
+                        // Composite inside a variant arm: route the setter through
+                        // the arm's mutable accessor (self.tmpN.get_mut_vK().
+                        // set_field(v)), mirroring the read path in
+                        // Expression_MEMBER_ACCESS_before.
+                        MAYBE(member_stmt, actx.get(*member_p));
+                        MAYBE(mid, member_stmt.body.id());
+                        if (auto arm_type = get_struct_union_member_from_field(actx, from_weak(mid))) {
+                            MAYBE(base_expr, actx.get(*base_ref));
+                            MAYBE(variant_index, get_struct_union_index(actx, base_expr.body.type, *arm_type));
+                            base_str += ".get_mut_v" + std::to_string(variant_index) + "()";
+                        }
                         MAYBE(member_ident, actx.identifier(*member_p));
                         // Mirror the `r#` strip the wrapper applies before the
                         // `set_` prefix so the call matches the setter def name.
@@ -222,7 +230,7 @@ DEFINE_VISITOR(entry_before) {
                             setter_name = setter_name.substr(2);
                         }
                         MAYBE(value_w, actx.visit(actx.value));
-                        return CODELINE(base_w.to_string(), ".set_", setter_name, "(", value_w.to_string(), ")?", actx.config().endof_statement);
+                        return CODELINE(base_str, ".set_", setter_name, "(", value_w.to_string(), ")?", actx.config().endof_statement);
                     }
                 }
             }
@@ -284,18 +292,11 @@ DEFINE_VISITOR(entry_before) {
     // expanding the logical fields.
     config.composite_field_decl_custom = [](Context_Statement_COMPOSITE_FIELD_DECL& cctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
-        // Phase 1: fold BULK_PRIMITIVE composites into one storage field, except
-        // variant-arm composites (Statement_STRUCT_DECL emits no accessors for
-        // variant arms, so folding them would leave storage without getters/
-        // setters). Both PREFIXED_UNION_PRIMITIVE and variant-arm composites stay
-        // expanded; see get_composite_field for the matching access-side gate.
-        bool variant_arm = false;
-        if (!cctx.composite_field_decl.fields.container.empty()) {
-            auto& mapping = get_visitor(cctx).module_;
-            auto fd = ebmgen::access_field<"body.field_decl">(mapping, cctx.composite_field_decl.fields.container[0]);
-            variant_arm = ebm2rust::composite_owner_is_variant_arm(mapping, fd);
-        }
-        if (cctx.composite_field_decl.kind == ebm::CompositeFieldKind::BULK_PRIMITIVE && !variant_arm) {
+        // Fold BULK_PRIMITIVE composites into a single packed storage field.
+        // Works for both top-level and variant-arm structs; the getter/setter
+        // accessors are emitted by Statement_STRUCT_DECL (variant arms get a
+        // dedicated impl for them). PREFIXED_UNION_PRIMITIVE stays expanded.
+        if (cctx.composite_field_decl.kind == ebm::CompositeFieldKind::BULK_PRIMITIVE) {
             auto ident = cctx.identifier();
             MAYBE(typ, cctx.visit(cctx.composite_field_decl.composite_type));
             return CODELINE(ident, ": ", typ.to_writer(), ",");
@@ -639,11 +640,8 @@ DEFINE_VISITOR(entry_before) {
         return Result(std::move(w));
     };
 
-    config.make_pointer_wrapper = [cfgp = &config](Result elem) -> expected<Result> {
+    config.make_pointer_wrapper = [](Result elem) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
-        if (cfgp->ptr_to_owned) {
-            return CODE("Some(", elem.to_writer(), ")");
-        }
         return CODE("Some(&", elem.to_writer(), ")");
     };
     config.make_optional_wrapper = [](Result elem) -> expected<Result> {

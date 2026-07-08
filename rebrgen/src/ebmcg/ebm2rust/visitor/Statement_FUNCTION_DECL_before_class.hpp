@@ -48,18 +48,6 @@ namespace CODEGEN_NAMESPACE {
         TRAVERSAL_VISITOR_BASE_WITHOUT_FUNC(DefUseCollector, BaseVisitor);
         std::unordered_map<size_t, std::vector<size_t>> def_to_uses;  // def_stmt_id → [use_expr_ids] in traversal order
         bool needs_fill_buf = false;
-        bool addresses_composite = false;  // body takes &(composite bit-field); see config.ptr_to_owned
-
-        // Mirror ebm2c's BitFieldPointerGetterMarker: a property getter body that
-        // does `&<composite read>` can't return a reference (the read is a
-        // computed temporary), so flag it to switch the getter to owned return.
-        expected<void> visit(Context_Expression_ADDRESS_OF& ctx) {
-            auto member = ctx.get_field<"member">(ctx.target_expr);
-            if (ebm2rust::get_composite_field(ctx, member)) {
-                addresses_composite = true;
-            }
-            return traverse_children<void>(*this, ctx);
-        }
 
         expected<void> visit(Context_Expression_IDENTIFIER& ctx) {
             auto def_id = get_id(ctx.id.id);
@@ -131,13 +119,9 @@ DEFINE_VISITOR(Statement_FUNCTION_DECL_before) {
     auto prev_can_move = std::move(ctx.config().can_move_exprs);
     auto prev_parent_fmt = ctx.config().parent_format_stmt_id;
     auto prev_current = ctx.config().current_function;
-    auto prev_ptr_to_owned = ctx.config().ptr_to_owned;
     ctx.config().can_move_exprs = collector.compute_last_uses();
     ctx.config().parent_format_stmt_id = get_id(ctx.func_decl.parent_format.id);
     ctx.config().current_function = ctx.item_id;
-    // A STRICT_TYPE property getter that addresses a composite bit-field must
-    // return owned (Option<T>) instead of Option<&T>; see config.ptr_to_owned.
-    ctx.config().ptr_to_owned = ctx.func_decl.kind == ebm::FunctionKind::PROPERTY_GETTER && collector.addresses_composite;
     if (collector.needs_fill_buf) {
         add_flag(ctx.config().function_markers[get_id(ctx.item_id)], ebm2rust::FunctionFlags::HasFillBuf);
         if (auto wrapper_ref = ctx.func_decl.wrapper_function()) {
@@ -148,7 +132,6 @@ DEFINE_VISITOR(Statement_FUNCTION_DECL_before) {
         ctx.config().can_move_exprs = std::move(prev_can_move);
         ctx.config().parent_format_stmt_id = prev_parent_fmt;
         ctx.config().current_function = prev_current;
-        ctx.config().ptr_to_owned = prev_ptr_to_owned;
     });
     return ctx.main_logic();
 }

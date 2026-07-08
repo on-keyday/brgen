@@ -36,6 +36,12 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
         }
         auto accessor = is_mutable ? ("get_mut_" + arm_lower) : ("get_" + arm_lower);
         MAYBE(base, ctx.visit(ctx.base));
+        // Composite bit-field inside a variant arm: call the arm's getter method
+        // (emitted on the arm's own impl) instead of the folded-away field.
+        if (ebm2rust::get_composite_field(ctx, ctx.member)) {
+            MAYBE(member_ident, ctx.identifier(ctx.member));
+            return CODE(base.to_writer(), ".", accessor, "()", ".", member_ident, "()");
+        }
         MAYBE(member_code, ctx.visit(ctx.member));
         return CODE(base.to_writer(), ".", accessor, "()", ".", member_code.to_writer());
     }

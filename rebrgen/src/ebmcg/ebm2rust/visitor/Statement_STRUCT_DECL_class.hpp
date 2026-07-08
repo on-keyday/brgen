@@ -106,12 +106,57 @@ DEFINE_VISITOR(Statement_STRUCT_DECL) {
     w.writeln("}");
 
     w.writeln();  // Add a newline for separation
-    // For anon inner structs we skip impl emission entirely. Their property
-    // accessors are pulled up into the parent_format struct's impl with
-    // name prefixing so they share the outer self (which is what the
-    // lowered body actually references). encode/decode + user methods are
-    // not generated on anon inner structs in this project's current usage.
+
+    // Emit shift/mask getter/setter methods for folded composite bit-fields.
+    // These FUNCTION_DECLs hang off field_decl.composite_getter/setter and are
+    // not reachable via struct_decl.methods, so we visit them explicitly. Their
+    // parent_format is THIS struct, so they belong on this struct's impl —
+    // including variant-arm structs, where call sites use `x.get_vN().field()`.
+    auto emit_composite_accessors = [&](CodeWriter& cw) -> expected<void> {
+        for (auto& field_ref : ctx.struct_decl.fields.container) {
+            auto field_stmt = ctx.get(field_ref);
+            if (!field_stmt) { continue; }
+            auto comp_p = field_stmt->body.composite_field_decl();
+            if (!comp_p) { continue; }
+            if (comp_p->kind != ebm::CompositeFieldKind::BULK_PRIMITIVE) { continue; }
+            for (auto& inner_field : comp_p->fields.container) {
+                MAYBE(inner_decl, ctx.get_field<"field_decl">(inner_field));
+                if (auto getter = inner_decl.composite_getter()) {
+                    MAYBE(getter_w, ctx.visit(getter->id));
+                    cw.writeln(getter_w.to_writer());
+                }
+                if (auto setter = inner_decl.composite_setter()) {
+                    MAYBE(setter_w, ctx.visit(setter->id));
+                    cw.writeln(setter_w.to_writer());
+                }
+            }
+        }
+        return {};
+    };
+    auto has_composite = [&]() -> bool {
+        for (auto& field_ref : ctx.struct_decl.fields.container) {
+            auto field_stmt = ctx.get(field_ref);
+            if (!field_stmt) { continue; }
+            auto comp_p = field_stmt->body.composite_field_decl();
+            if (comp_p && comp_p->kind == ebm::CompositeFieldKind::BULK_PRIMITIVE) { return true; }
+        }
+        return false;
+    };
+
+    // Anon inner (variant-arm) structs skip the normal impl (encode/decode +
+    // user methods aren't generated; property accessors relocate to the parent
+    // impl). Composite accessors, however, belong on THIS arm (their
+    // parent_format is this struct and call sites go through `x.get_vN()`), so
+    // emit a dedicated impl for them when present.
     if (is_anon_inner) {
+        if (has_composite()) {
+            w.writeln("impl", lifetime, " ", name, lifetime, " {");
+            {
+                auto impl_scope = w.indent_scope();
+                MAYBE_VOID(_ca, emit_composite_accessors(w));
+            }
+            w.writeln("}");
+        }
         return w;
     }
     // Collect anon inner descendants so their accessors get emitted into
@@ -157,32 +202,8 @@ DEFINE_VISITOR(Statement_STRUCT_DECL) {
                     w.writeln(prop_w.to_writer());
                 }
             }
-            // Composite bit-field accessors: the folded logical fields carry
-            // composite_getter/composite_setter FUNCTION_DECLs that are NOT
-            // reachable via struct_decl.methods, so ebm2go visits them in
-            // composite_field_decl_custom and pushes to decl_toplevel. Rust
-            // methods must live inside `impl`, so we visit them here instead.
-            for (auto& field_ref : ctx.struct_decl.fields.container) {
-                auto field_stmt = ctx.get(field_ref);
-                if (!field_stmt) { continue; }
-                auto comp_p = field_stmt->body.composite_field_decl();
-                if (!comp_p) { continue; }
-                // Phase 1: BULK_PRIMITIVE only (PREFIXED_UNION_PRIMITIVE deferred).
-                if (comp_p->kind != ebm::CompositeFieldKind::BULK_PRIMITIVE) {
-                    continue;
-                }
-                for (auto& inner_field : comp_p->fields.container) {
-                    MAYBE(inner_decl, ctx.get_field<"field_decl">(inner_field));
-                    if (auto getter = inner_decl.composite_getter()) {
-                        MAYBE(getter_w, ctx.visit(getter->id));
-                        w.writeln(getter_w.to_writer());
-                    }
-                    if (auto setter = inner_decl.composite_setter()) {
-                        MAYBE(setter_w, ctx.visit(setter->id));
-                        w.writeln(setter_w.to_writer());
-                    }
-                }
-            }
+            // Composite bit-field getter/setter methods (see lambda above).
+            MAYBE_VOID(_ca, emit_composite_accessors(w));
         }
         w.writeln("}");
     }
