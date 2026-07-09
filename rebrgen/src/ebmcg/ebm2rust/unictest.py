@@ -6,6 +6,8 @@ import subprocess
 import pathlib
 import json
 
+import unictest_report
+
 
 def main():
     TEST_TARGET_FILE = sys.argv[1]
@@ -127,7 +129,9 @@ use test_runner;
         print("Rust compilation failed!")
         print(result.stdout)
         print(result.stderr)
-        sys.exit(1)
+        # cargo prints its diagnostics (error[E0308]: ...) on stdout, so combine
+        # both streams as the reason text; pick_line prefers the error line.
+        unictest_report.fail("compile", (result.stdout or "") + (result.stderr or ""), code=1)
 
     print("Compilation successful.")
     # Run the compiled test executable
@@ -173,6 +177,10 @@ use test_runner;
 
     if proc.returncode != 0:
         print(f"Test executable failed with exit code {{proc.returncode}}")
+        # main.rs prints "Decode error: X" / "Encode error: X" to stderr and
+        # exits 10 / 20; map that to the phase, reason is that stderr line.
+        phase = {10: "decode", 20: "encode"}.get(proc.returncode, "run")
+        unictest_report.fail(phase, proc.stderr, code=proc.returncode)
 
     sys.exit(proc.returncode)
 

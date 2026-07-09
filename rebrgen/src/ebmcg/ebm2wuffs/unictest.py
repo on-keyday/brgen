@@ -19,6 +19,8 @@ import subprocess
 import sys
 import time
 
+import unictest_report
+
 HERE = pathlib.Path(__file__).parent
 
 # Stale-file cleanup threshold (seconds). At startup we sweep gen/c/ of any
@@ -167,7 +169,12 @@ def main():
     if wuffs_root is None:
         print("Wuffs toolchain not found. Run this runner's dependency_setup.py "
               "or set WUFFS_ROOT to a wuffs checkout.")
-        sys.exit(1)
+        unictest_report.fail(
+            "setup",
+            "Wuffs toolchain not found. Run this runner's dependency_setup.py "
+            "or set WUFFS_ROOT to a wuffs checkout.",
+            code=1,
+        )
 
     # Sweep stale probe .c files from prior runs before doing anything else.
     # See cleanup_stale_probes() docstring for the race this works around.
@@ -210,7 +217,8 @@ def main():
             # not the decoder rejecting bad input. Exit 10 (decoder failure)
             # would let failure-case inputs PASS spuriously on the same broken
             # .wuffs that makes valid inputs FAIL.
-            sys.exit(1)
+            unictest_report.fail(
+                "codegen", (proc.stdout or "") + (proc.stderr or ""), code=1)
         print("wuffs gen succeeded: generated Wuffs compiles to C.")
     finally:
         if pkgdir.exists():
@@ -223,7 +231,10 @@ def main():
     pkg_c = wuffs_root / "gen" / "c" / f"wuffs-std-{pkg}.c"
     if not pkg_c.exists():
         print(f"expected generated package C not found: {pkg_c}")
-        sys.exit(1)
+        # `wuffs gen` returned 0 but did not emit the expected package C: a
+        # codegen-stage postcondition failure (not compile/run).
+        unictest_report.fail(
+            "codegen", f"expected generated package C not found: {pkg_c}", code=1)
     try:
         build_dir = pathlib.Path(OUTPUT_FILE).resolve().parent
         main_c = build_dir / "wuffs_rt_main.c"
@@ -247,13 +258,22 @@ def main():
             print(cproc.stderr)
         if cproc.returncode != 0:
             print("decode harness compile failed.")
-            sys.exit(1)
+            unictest_report.fail(
+                "compile", (cproc.stdout or "") + (cproc.stderr or ""), code=1)
 
         print(f"Running decode round-trip: {exe}")
+        # Capture (rather than pass through) so the decode error line can be the
+        # failure reason; the full output is still re-emitted for the artifact.
         rproc = subprocess.run([str(exe), INPUT_FILE, OUTPUT_FILE],
-                               stdout=sys.stdout, stderr=sys.stderr)
+                               capture_output=True, text=True)
+        sys.stdout.write(rproc.stdout or "")
+        sys.stderr.write(rproc.stderr or "")
         # Exit code contract matches the other runners: 0 = decode ok (framework
         # then compares OUTPUT_FILE to INPUT_FILE), 10 = decode failed.
+        if rproc.returncode != 0:
+            print(f"decode round-trip failed with exit code {rproc.returncode}")
+            phase = {10: "decode", 20: "encode"}.get(rproc.returncode, "run")
+            unictest_report.fail(phase, rproc.stderr, code=rproc.returncode)
         sys.exit(rproc.returncode)
     finally:
         # Deliberately do NOT unlink pkg_c here. Other parallel test

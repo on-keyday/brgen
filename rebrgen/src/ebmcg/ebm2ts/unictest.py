@@ -8,6 +8,8 @@ import pathlib as pl
 import subprocess as sp
 import sys
 
+import unictest_report
+
 
 WRITE_BUFFER_BYTES = 16 * 1024 * 1024  # 16 MiB; large enough for wasm_src2json + EBM self-test
 
@@ -132,10 +134,17 @@ main().catch((e) => {{
         )
     )
 
-    try:
-        sp.check_call(cmd, env=os.environ, stdout=sys.stdout, stderr=sys.stderr)
-    except sp.CalledProcessError as e:
-        sys.exit(e.returncode)
+    # Capture (rather than pass through) so we can surface the ts-harness
+    # diagnostic (Decode/Encode error, or a tsc TS#### line) as the failure
+    # reason; the full log is still re-emitted for the artifact.
+    proc = sp.run(cmd, env=os.environ, capture_output=True, text=True)
+    sys.stdout.write(proc.stdout or "")
+    sys.stderr.write(proc.stderr or "")
+    if proc.returncode != 0:
+        # The driver exits 10 on DecodeError, 20 on EncodeError (stderr carries
+        # "Decode error: ..." etc.); tsc/other failures fall through to 'run'.
+        phase = {10: "decode", 20: "encode"}.get(proc.returncode, "run")
+        unictest_report.fail(phase, proc.stderr or proc.stdout, code=proc.returncode)
 
 
 if __name__ == "__main__":
