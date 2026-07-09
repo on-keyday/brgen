@@ -40,51 +40,30 @@ def _cell(text):
     return (text or "").replace("|", "\\|").replace("\n", " ")[:200]
 
 
-# The authoritative reason: runners that use unictest_report emit exactly this
-# line at their scoped failure site (see script/unictest_report.py). Preferred
-# over any heuristic - it carries the phase and a clean, noise-free reason.
+# The failure reason. Runners emit this line at their scoped failure site (see
+# script/unictest_report.py); it carries the phase and a clean, noise-free
+# reason. We deliberately do NOT fall back to guessing over the raw stdout blob:
+# a wrong guess is worse than an honest em dash, and killing that env-dump-
+# prefixed guesswork is the whole point of the convention. A failing case with
+# no UNICTEST_ERROR: line died in an unstructured way (an uncaught exception in
+# the runner's unictest.py, or a kill/timeout) — "—" flags that honestly, and
+# the full log is in the artifact.
 _UNICTEST_ERROR = re.compile(r"^UNICTEST_ERROR:\s*(.+)$", re.M)
-
-# Transitional fallback for runners not yet migrated to unictest_report. unictest
-# wraps every run: stdout always opens with a ``UNICTEST_*`` env dump and harness
-# scaffolding (``Running test script:``, ``Testing X with Y``, ``Test script
-# failed with return code: N``), so "first non-empty line" is always noise.
-# Instead we look *positively* for lines that read like an error. Ordered by
-# specificity: an actual compiler diagnostic beats a generic marker, so a Go type
-# error wins over the "compilation failed!" banner above it. Delete this once
-# every runner emits UNICTEST_ERROR:.
-_SIGNAL_PATTERNS = [
-    re.compile(r"error(?:\[[A-Z]?\d+\])?:\s*\S.*", re.I),        # rust/clang "error:", "error[E0308]:"
-    re.compile(r"[\w./\\-]+\.[A-Za-z]\w*:\d+(?::\d+)?:\s*\S.*"),  # file:line[:col]: msg (go/clang)
-    re.compile(r"panic:\s*\S.*"),                                # go runtime panic
-    re.compile(r".*\bnot implemented yet\b.*", re.I),            # unimplemented test harness
-    re.compile(r".*\bcompilation failed\b.*", re.I),            # go/rust compile banner
-    re.compile(r".*can'?t open file.*", re.I),                   # missing script / path error
-]
 
 
 def _error_summary(entry):
-    """Extract a one-line failure reason for a failing case, or None.
+    """The runner-emitted ``UNICTEST_ERROR:`` reason for a failing case, or None.
 
-    Prefers the authoritative ``UNICTEST_ERROR:`` line emitted by the runner;
-    falls back to the heuristic ``_SIGNAL_PATTERNS`` for un-migrated runners.
-    Env dumps and harness scaffolding never match either path, so None (rendered
-    as an em dash) is honest — the ``status`` column still classifies it and the
-    artifact keeps the full logs.
+    None (rendered as an em dash) means no structured reason was emitted — an
+    unstructured failure. The ``status`` column still classifies it and the
+    artifact keeps the full logs; we do not guess a line here.
     """
     blob = "\n".join(
         entry.get(k) or ""
         for k in ("output_stderr", "output_stdout", "error_message")
     )
     m = _UNICTEST_ERROR.search(blob)
-    if m:
-        return m.group(1).strip()[:300]
-    lines = [ln.strip() for ln in blob.splitlines() if ln.strip()]
-    for pat in _SIGNAL_PATTERNS:
-        for ln in lines:
-            if pat.search(ln):
-                return ln[:300]
-    return None
+    return m.group(1).strip()[:300] if m else None
 
 
 def _load(path):

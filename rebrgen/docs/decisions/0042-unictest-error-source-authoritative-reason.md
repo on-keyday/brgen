@@ -25,7 +25,7 @@
 
 ## これは X を意味しない
 
-- **レンダラの正規表現が完全に消えたわけではない**。`_SIGNAL_PATTERNS` は「UNICTEST_ERROR 行が無い失敗」（unictest.py 自体の想定外例外など）専用のセーフティネットとして暫定的に残す。全 runner の実失敗で UNICTEST_ERROR が出ることを CI 実走で確認後に削除予定。この ADR は「regex を主経路から外す」であって「今すぐ全廃」ではない。
+- **理由が無い失敗を推測で埋めるわけではない**。レンダラは `UNICTEST_ERROR:` 行を grep するだけで、blob への heuristic fallback は持たない。`UNICTEST_ERROR:` が無い失敗（unictest.py 自体の想定外例外・kill/timeout など、構造化されずに死んだケース）は理由欄を `—` にする。**誤った推測を出すより正直な `—` の方が良い**（regex fallback は当初残したが、blob 推測を復活させ誤誘導しうるため撤去した）。`—` でも status 列が分類し full log は artifact にあるので実害は無く、むしろ「予期せぬ失敗」を正直に示す。
 - **ハーネス（Rust の `unictest`）が何かをパースするわけではない**。`unictest.rs` は従来通り exit code で pass/fail を判定し stdout/stderr を丸ごと記録するだけ。`UNICTEST_ERROR:` はその記録の中の 1 行に過ぎず、レンダラだけが解釈する。ハーネスの責務は増えていない。
 - **各 runner が独自のエラー整形を実装するわけではない**。理由テキストは基本、対象 subprocess の captured stderr を verbatim（複数行なら `pick_line` が 1 行選ぶ）。runner がやるのは「どの subprocess の出力か」と「phase ラベル」を渡すことだけ。
 - **exit code のセマンティクスは変えていない**。移行は emit を追加しただけで、各失敗箇所の exit code は完全に維持（`fail(..., code=元のcode)`）。pass/fail 判定・failure_case の扱いは不変。
