@@ -77,5 +77,104 @@ DEFINE_VISITOR(Statement_ENUM_DECL) {
     }
     w.writeln("}");
 
+    // enum <-> string conversion (bm2rust parity):
+    //   Display                     : value -> member name (or its string_repr alias)
+    //   From<Enum> for Option<&str> : value -> Some(name) / None for unknown values
+    //   is_known()                  : whether the value matches a declared member
+    // Match arms use `Name::MEMBER` associated-const patterns; valid because the
+    // tuple struct derives PartialEq/Eq. A wildcard arm covers unknown values
+    // (the base type may hold values outside the declared set).
+    struct MemberRepr {
+        std::string path;  // e.g. "Color::Red"
+        std::string repr;  // escaped display string
+    };
+    std::vector<MemberRepr> reprs;
+    for (auto& member_ref : ctx.enum_decl.members.container) {
+        auto member_name = ctx.identifier(member_ref);
+        MAYBE(member_stmt, ctx.get(member_ref));
+        auto emd = member_stmt.body.enum_member_decl();
+        if (!emd) {
+            continue;
+        }
+        // Default display text is the member identifier; a leading raw-ident
+        // marker (r#) is stripped so keyword-named members show cleanly.
+        std::string repr(member_name);
+        if (repr.starts_with("r#")) {
+            repr = repr.substr(2);
+        }
+        repr = futils::escape::escape_str<std::string>(repr, futils::escape::EscapeFlag::hex);
+        // An explicit `= value "alias"` string_repr overrides the identifier text.
+        if (!is_nil(emd->string_repr)) {
+            if (auto str_lit = ctx.get(emd->string_repr)) {
+                repr = futils::escape::escape_str<std::string>(str_lit->body.data, futils::escape::EscapeFlag::hex);
+            }
+        }
+        reprs.push_back({std::format("{}::{}", std::string_view(name), std::string_view(member_name)), std::move(repr)});
+    }
+
+    // Display: value -> string. write_str avoids format-string interpretation of
+    // braces that may appear in a string_repr alias.
+    w.writeln("impl std::fmt::Display for ", name, " {");
+    {
+        auto scope = w.indent_scope();
+        w.writeln("fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {");
+        {
+            auto scope = w.indent_scope();
+            w.writeln("match *self {");
+            {
+                auto scope = w.indent_scope();
+                for (auto& m : reprs) {
+                    w.writeln(m.path, " => f.write_str(\"", m.repr, "\"),");
+                }
+                w.writeln("_ => write!(f, \"", name, "({})\", self.0),");
+            }
+            w.writeln("}");
+        }
+        w.writeln("}");
+    }
+    w.writeln("}");
+
+    // From<Enum> for Option<&'static str>: value -> Some(name) or None if unknown.
+    w.writeln("impl From<", name, "> for Option<&'static str> {");
+    {
+        auto scope = w.indent_scope();
+        w.writeln("fn from(value: ", name, ") -> Self {");
+        {
+            auto scope = w.indent_scope();
+            w.writeln("match value {");
+            {
+                auto scope = w.indent_scope();
+                for (auto& m : reprs) {
+                    w.writeln(m.path, " => Some(\"", m.repr, "\"),");
+                }
+                w.writeln("_ => None,");
+            }
+            w.writeln("}");
+        }
+        w.writeln("}");
+    }
+    w.writeln("}");
+
+    // is_known(): true when the value is one of the declared members.
+    w.writeln("impl ", name, " {");
+    {
+        auto scope = w.indent_scope();
+        w.writeln("pub fn is_known(&self) -> bool {");
+        {
+            auto scope = w.indent_scope();
+            w.writeln("match *self {");
+            {
+                auto scope = w.indent_scope();
+                for (auto& m : reprs) {
+                    w.writeln(m.path, " => true,");
+                }
+                w.writeln("_ => false,");
+            }
+            w.writeln("}");
+        }
+        w.writeln("}");
+    }
+    w.writeln("}");
+
     return w;
 }
