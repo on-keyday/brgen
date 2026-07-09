@@ -32,6 +32,18 @@ DEFINE_VISITOR(Statement_INIT_CHECK) {
     MAYBE(target_type, ctx.get(target_expr.body.type));
     MAYBE(expect_expr, ctx.get(ctx.init_check.expect_value));
 
+    // common_type union whose arm is folded into a single composite storage word:
+    // the arm is selected by reading/casting one storage value, not by a variant
+    // discriminant. There is no VariantNN enum to match against, so emit no guard
+    // (ebm2go returns "" here too) and register the arm type so subsequent
+    // MEMBER_ACCESS / assignment flatten to the composite getter/setter.
+    if (auto member = ctx.get_field<"member">(ctx.init_check.target_field)) {
+        if (ebm2rust::get_composite_field(ctx, *member)) {
+            ctx.config().bulk_primitive.insert(get_id(expect_expr.body.type));
+            return Result{};
+        }
+    }
+
     MAYBE(variant_index, get_struct_union_index(ctx, target_expr.body.type, expect_expr.body.type));
 
     MAYBE(target, ctx.visit(ctx.init_check.target_field));

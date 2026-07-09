@@ -18,6 +18,7 @@
 /*here to write the hook*/
 #include "../codegen.hpp"
 #include "ebm/extended_binary_module.hpp"
+#include "ebmcodegen/stub/url.hpp"
 DEFINE_VISITOR(entry_before) {
     auto& config = ctx.config();
     config.variable_define_keyword = "let mut";
@@ -26,6 +27,10 @@ DEFINE_VISITOR(entry_before) {
     config.endof_statement = ";";
     config.self_value = "self";
     config.enum_member_accessor = "::";
+    // Rust spells bitwise NOT as `!` (not C/Go's `~`); the default
+    // to_string(UnaryOp::bit_not) is `~`. Composite bit-field setters
+    // (`storage & ~(mask << shift)`) are the first code to emit it.
+    config.alt_unary_op[ebm::UnaryOp::bit_not] = "!";
     config.module_.register_default_prefix(ebm::StatementKind::STRUCT_DECL, "Struct");
     config.use_brace_for_condition = false;
     config.append_function = "push";
@@ -48,8 +53,12 @@ DEFINE_VISITOR(entry_before) {
         using namespace CODEGEN_NAMESPACE;
         return CODE("Option<", elem.to_writer(), ">");
     };
-    config.pointer_type_wrapper = [](Result elem) -> expected<Result> {
+    config.pointer_type_wrapper = [cfgp = &config](Result elem) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
+        // Composite-backed STRICT_TYPE getters return owned (see ptr_to_owned).
+        if (cfgp->ptr_to_owned) {
+            return CODE("Option<", elem.to_writer(), ">");
+        }
         return CODE("Option<&", elem.to_writer(), ">");
     };
     const bool zero_copy = ctx.flags().zero_copy;
@@ -119,6 +128,16 @@ DEFINE_VISITOR(entry_before) {
     };
     config.struct_union_type_custom = [](Context_Type_STRUCT_UNION& ctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
+        // A common_type union whose backing field is folded into a single
+        // PREFIXED_UNION_PRIMITIVE storage word is representable as that primitive
+        // (Go's flatten: no VariantNN enum, one storage word cast per arm). Render
+        // common_type only then; a plain common_type union (distinct-width arms
+        // held separately, e.g. websocket ExtendedPayloadLength) keeps the enum.
+        if (!is_nil(ctx.struct_union_desc.variant_desc.common_type) &&
+            ebm2rust::related_field_is_folded_composite(ctx, ctx.struct_union_desc.related_field)) {
+            MAYBE(t, ctx.visit(ctx.struct_union_desc.variant_desc.common_type));
+            return t;
+        }
         if (!ctx.flags().zero_copy) return pass;
         auto enum_name = ctx.config().variant_prefix + std::format("{}", get_id(ctx.item_id));
         return Result(enum_name + "<'a>");
@@ -198,6 +217,72 @@ DEFINE_VISITOR(entry_before) {
         };
 
         MAYBE(target_expr, actx.get(actx.target));
+        // common_type union arm write folded into a single composite storage word:
+        // flatten `self.union.arm.value = x` → `self.set_<setter>((x) as <storage>)?`
+        // (ebm2go: v.settmp92(uint64(x))). The arm was registered in bulk_primitive
+        // by Statement_INIT_CHECK; the VariantNN construct/matches machinery is elided.
+        if (target_expr.body.kind == ebm::ExpressionKind::MEMBER_ACCESS) {
+            if (auto member_p = target_expr.body.member()) {
+                MAYBE(member_stmt, actx.get(*member_p));
+                if (auto mid = member_stmt.body.id()) {
+                    if (auto arm_type = get_struct_union_member_from_field(actx, from_weak(*mid))) {
+                        if (actx.config().bulk_primitive.contains(get_id(*arm_type))) {
+                            if (auto union_ref = target_expr.body.base()) {
+                                MAYBE(union_access, actx.get(*union_ref));  // `self.union` access
+                                if (auto recv_ref = union_access.body.base()) {
+                                    MAYBE(recv_w, actx.visit(*recv_ref));
+                                    MAYBE(value_w, actx.visit(actx.value));
+                                    MAYBE(comp_field, (actx.get_field<ebm2rust::physical_field>(*arm_type)));
+                                    MAYBE(setter, comp_field.composite_setter());
+                                    auto setter_name = actx.identifier(setter.id);
+                                    MAYBE(comp_fd, actx.get_field<"composite_field_decl">(comp_field.composite_field()));
+                                    MAYBE(cast_w, actx.visit(comp_fd.composite_type));
+                                    return CODELINE(recv_w.to_string(), ".set_", setter_name, "((", value_w.to_string(), ") as ", cast_w.to_string(), ")?", actx.config().endof_statement);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // Composite bit-field write → setter call `base.set_field(value)?`.
+        // (Phase 1: BULK_PRIMITIVE, u8 setter; matches the `set_` prefix added
+        // by function_definition_start_wrapper.)
+        if (target_expr.body.kind == ebm::ExpressionKind::MEMBER_ACCESS) {
+            if (auto member_p = target_expr.body.member()) {
+                if (auto comp = ebm2rust::get_composite_field(actx, *member_p)) {
+                    if (auto base_ref = target_expr.body.base()) {
+                        MAYBE(base_w, actx.visit(*base_ref));
+                        std::string base_str = base_w.to_string();
+                        // Composite inside a variant arm: route the setter through
+                        // the arm's mutable accessor (self.tmpN.get_mut_vK().
+                        // set_field(v)), mirroring the read path in
+                        // Expression_MEMBER_ACCESS_before.
+                        MAYBE(member_stmt, actx.get(*member_p));
+                        MAYBE(mid, member_stmt.body.id());
+                        if (auto arm_type = get_struct_union_member_from_field(actx, from_weak(mid))) {
+                            MAYBE(base_expr, actx.get(*base_ref));
+                            MAYBE(variant_index, get_struct_union_index(actx, base_expr.body.type, *arm_type));
+                            base_str += ".get_mut_v" + std::to_string(variant_index) + "()";
+                        }
+                        MAYBE(member_ident, actx.identifier(*member_p));
+                        // Mirror the `r#` strip the wrapper applies before the
+                        // `set_` prefix so the call matches the setter def name.
+                        std::string setter_name(member_ident);
+                        if (setter_name.starts_with("r#")) {
+                            setter_name = setter_name.substr(2);
+                        }
+                        // u1 composites: codegen writes through the internal
+                        // `set_<field>_raw` (u8); the public `set_<field>` takes bool.
+                        if (ebm2rust::composite_is_single_bit(actx, comp)) {
+                            setter_name += "_raw";
+                        }
+                        MAYBE(value_w, actx.visit(actx.value));
+                        return CODELINE(base_str, ".set_", setter_name, "(", value_w.to_string(), ")?", actx.config().endof_statement);
+                    }
+                }
+            }
+        }
         // (a) PROPERTY MEMBER_ACCESS target → setter call rewrite
         if (target_expr.body.kind == ebm::ExpressionKind::MEMBER_ACCESS) {
             auto base_p = target_expr.body.base();
@@ -247,12 +332,38 @@ DEFINE_VISITOR(entry_before) {
         w.writeln(result_target.to_writer(), " = ", tidy_condition_brace(result_value.to_string()), ".clone()", actx.config().endof_statement);
         return w;
     };
+    // Composite bit-field storage: emit a single packed primitive storage field
+    // (`tmpN: uN,`) in place of the folded logical bit-fields. The per-field
+    // getter/setter accessors are visited separately inside Statement_STRUCT_DECL's
+    // impl block (Rust methods must live in `impl`, so unlike ebm2go we do not
+    // push them to decl_toplevel here). Non-primitive composites fall back to
+    // expanding the logical fields.
+    config.composite_field_decl_custom = [](Context_Statement_COMPOSITE_FIELD_DECL& cctx) -> expected<Result> {
+        using namespace CODEGEN_NAMESPACE;
+        // Fold foldable composites into a single packed storage field. Works for
+        // both top-level and variant-arm structs; the getter/setter accessors are
+        // emitted by Statement_STRUCT_DECL (variant arms get a dedicated impl).
+        if (ebm2rust::is_foldable_composite_kind(cctx.composite_field_decl.kind)) {
+            auto ident = cctx.identifier();
+            MAYBE(typ, cctx.visit(cctx.composite_field_decl.composite_type));
+            return CODELINE(ident, ": ", typ.to_writer(), ",");
+        }
+        return cctx.visit(cctx.composite_field_decl.fields);
+    };
     // For pure VARIANT types (= union with no common_type), declare a Rust enum
     // so the name referenced in function signatures (e.g. Option<Variant43>)
     // actually resolves. Without this hook the default visitor returns just
     // "Variant{id}" and the type is never defined → "cannot find type" errors.
     config.variant_type_custom = [](Context_Type_VARIANT& vctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
+        // A VARIANT carrying a common_type is the union's *value view* (the arm
+        // value types unified), distinct from the STRUCT_UNION *storage view*.
+        // It is representable as the common_type primitive (Go renders these via
+        // the default common_type path, never a VariantNN enum). Return pass so
+        // the default (Type_VARIANT) emits `ctx.visit(common_type)`; emit the
+        // enum + get_vN only for pure variants (common_type == nil), which need
+        // real Rust enum machinery. STRUCT_UNION storage enums are unaffected
+        // (they go through Type_STRUCT_UNION, not this hook).
         if (!is_nil(vctx.variant_desc.common_type)) {
             return pass;
         }
@@ -329,7 +440,12 @@ DEFINE_VISITOR(entry_before) {
         using namespace CODEGEN_NAMESPACE;
         std::string name(name_sv);
         if (fctx.func_decl.kind == ebm::FunctionKind::PROPERTY_SETTER ||
-            fctx.func_decl.kind == ebm::FunctionKind::VECTOR_SETTER) {
+            fctx.func_decl.kind == ebm::FunctionKind::VECTOR_SETTER ||
+            fctx.func_decl.kind == ebm::FunctionKind::COMPOSITE_SETTER) {
+            // COMPOSITE_SETTER shares its field-name identifier with the
+            // COMPOSITE_GETTER (both name the logical bit-field), which would
+            // collide in Rust (`fn f(&self)` vs `fn f(&mut self, v)`); the
+            // `set_` prefix disambiguates them. Call site: assignment_custom.
             if (name.starts_with("r#")) {
                 name = name.substr(2);
             }
@@ -391,6 +507,54 @@ DEFINE_VISITOR(entry_before) {
         // Direct-decode fns stay sync (raw slice); only the Read/Write path goes async.
         const bool async_fn = is_async && (has_reader || has_writer);
         CodeWriter w;
+        // 1-bit composite accessors expose a bool public API (Go parity): the
+        // shift/mask accessor is renamed `<name>_raw` (u8) and a bool wrapper
+        // delegates to it. Codegen call sites use `_raw` (see MEMBER_ACCESS /
+        // assignment_custom); the bool form is for external callers.
+        if (fctx.func_decl.kind == ebm::FunctionKind::COMPOSITE_GETTER) {
+            MAYBE(rt, fctx.get_field<"func_decl.return_type.instance">(fctx.item_id));
+            if (auto sz = rt.body.size(); sz && sz->value() == 1) {
+                w.writeln("pub fn ", name, "(&self) ", fctx.config().function_return_type_separator, " bool ", fctx.config().begin_block);
+                {
+                    auto sc = w.indent_scope();
+                    w.writeln("self.", name, "_raw() != 0");
+                }
+                w.writeln(fctx.config().end_block);
+                name = std::string(name) + "_raw";
+            }
+        }
+        else if (fctx.func_decl.kind == ebm::FunctionKind::COMPOSITE_SETTER &&
+                 !fctx.func_decl.params.container.empty()) {
+            MAYBE(pt, fctx.get_field<"param_decl.param_type.instance">(fctx.func_decl.params.container[0]));
+            if (auto sz = pt.body.size(); sz && sz->value() == 1) {
+                w.writeln("pub fn ", name, "(&mut self, value: bool) ", fctx.config().function_return_type_separator, " ", ret_type.to_writer(), " ", fctx.config().begin_block);
+                {
+                    auto sc = w.indent_scope();
+                    w.writeln("self.", name, "_raw(value as u8)");
+                }
+                w.writeln(fctx.config().end_block);
+                name = std::string(name) + "_raw";
+            }
+        }
+        // PREFIXED_UNION_PRIMITIVE composites carry a variant return/param type;
+        // lower it to the variant common_type so the signature names a real type
+        // instead of an undeclared VariantNN enum (Go parity, ebm2go L636-652).
+        if (fctx.func_decl.kind == ebm::FunctionKind::COMPOSITE_GETTER) {
+            if (auto got = fctx.get_field<"struct_union_desc">(fctx.func_decl.return_type);
+                got && !is_nil(got->variant_desc.common_type)) {
+                MAYBE(typ, fctx.visit(got->variant_desc.common_type));
+                ret_type = typ;
+            }
+        }
+        else if (fctx.func_decl.kind == ebm::FunctionKind::COMPOSITE_SETTER &&
+                 !fctx.func_decl.params.container.empty()) {
+            if (auto got = fctx.get_field<"param_decl.param_type.struct_union_desc">(fctx.func_decl.params.container[0]);
+                got && !is_nil(got->variant_desc.common_type)) {
+                MAYBE(typ, fctx.visit(got->variant_desc.common_type));
+                auto param_name = fctx.identifier(fctx.func_decl.params.container[0]);
+                params = CODE(param_name, ": ", typ.to_writer());
+            }
+        }
         w.write(async_fn ? "pub async fn " : "pub fn ", name, generic_clause, "(");
         bool first = true;
         if (!is_nil(fctx.func_decl.parent_format)) {
@@ -579,8 +743,11 @@ DEFINE_VISITOR(entry_before) {
         return Result(std::move(w));
     };
 
-    config.make_pointer_wrapper = [](Result elem) -> expected<Result> {
+    config.make_pointer_wrapper = [cfgp = &config](Result elem) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
+        if (cfgp->ptr_to_owned) {
+            return CODE("Some(", elem.to_writer(), ")");
+        }
         return CODE("Some(&", elem.to_writer(), ")");
     };
     config.make_optional_wrapper = [](Result elem) -> expected<Result> {
@@ -837,16 +1004,19 @@ DEFINE_VISITOR(entry_before) {
     };
     config.program_decl_end_wrapper = [](Context_Statement_PROGRAM_DECL& ctx, CodeWriter& result) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
-        if (ctx.config().use_statements.empty()) {
-            return Result(std::move(result));
-        }
-        CodeWriter use_w;
+        // Emit the machine-generated banner as line 1 (ebm2go / other backends do
+        // the same via their PROGRAM_DECL hook). This is the final assembly point,
+        // so the header lands above the use-statements block and all decls.
+        CodeWriter w;
+        w.writeln("// Code generated by ebm2rust at ", repo_url, ", DO NOT EDIT.");
         for (auto& use_stmt : ctx.config().use_statements) {
-            use_w.writeln(use_stmt);
+            w.writeln(use_stmt);
         }
-        use_w.writeln();
-        use_w.write(std::move(result));
-        return Result(std::move(use_w));
+        if (!ctx.config().use_statements.empty()) {
+            w.writeln();
+        }
+        w.write(std::move(result));
+        return Result(std::move(w));
     };
     config.length_check_custom = [](Context_Statement_LENGTH_CHECK& lctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
