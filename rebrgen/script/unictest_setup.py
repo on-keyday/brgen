@@ -5,6 +5,8 @@ import subprocess as sp
 import json
 import difflib
 
+import unictest_report
+
 mode = sys.argv[1]
 target_command = sys.argv[2]
 preferred_file_ext = sys.argv[3] if len(sys.argv) > 3 else None
@@ -159,13 +161,24 @@ elif mode == "test":
         optionset_name,
     ]
     cmds.extend(additional_args)
+    # Put script/ on the child's PYTHONPATH so its `import unictest_report`
+    # resolves - the test script is spawned from its own runner dir, which is
+    # not otherwise on sys.path.
+    child_env = os.environ.copy()
+    script_dir = pl.Path(__file__).parent.resolve()
+    child_env["PYTHONPATH"] = (
+        str(script_dir) + os.pathsep + child_env.get("PYTHONPATH", "")
+    )
     try:
         sp.check_call(
             cmds,
             stdout=sys.stdout,
             stderr=sys.stderr,
+            env=child_env,
         )
     except sp.CalledProcessError as e:
+        # The test script has already emitted its own UNICTEST_ERROR: line for
+        # the specific compile/run failure; just propagate its exit code.
         print(f"Test script failed with return code: {e.returncode}")
         sys.exit(e.returncode)
 
@@ -178,12 +191,23 @@ elif mode == "test":
             print("Fuzz test completed, no output file (decode may have failed).")
     else:
         if not output_file.exists():
+            unictest_report.report("run", "decoder produced no output file")
             print(f"Output file not created: {output_file.as_posix()}")
             sys.exit(1)
         with open(output_file, "rb") as f:
             output_data = f.read()
         # do compare and binary diff if not match
         if output_data != input_data:
+            first_diff = next(
+                (i for i, (x, y) in enumerate(zip(input_data, output_data)) if x != y),
+                min(len(input_data), len(output_data)),
+            )
+            unictest_report.report(
+                "compare",
+                "output mismatch (in {}B vs out {}B, first diff @ 0x{:x})".format(
+                    len(input_data), len(output_data), first_diff
+                ),
+            )
             print("Output data does not match input data!")
             a = hexdump(input_data)
             b = hexdump(output_data)
