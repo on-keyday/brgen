@@ -176,7 +176,7 @@ use test_runner;
         print(proc.stderr)
 
     if proc.returncode != 0:
-        print(f"Test executable failed with exit code {{proc.returncode}}")
+        print(f"Test executable failed with exit code {proc.returncode}")
         # main.rs prints "Decode error: X" / "Encode error: X" to stderr and
         # exits 10 / 20; map that to the phase, reason is that stderr line.
         phase = {10: "decode", 20: "encode"}.get(proc.returncode, "run")
