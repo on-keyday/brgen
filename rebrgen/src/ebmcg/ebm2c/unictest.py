@@ -6,6 +6,8 @@ import subprocess
 import pathlib
 import json
 
+import unictest_report
+
 
 def main():
     TEST_TARGET_FILE = sys.argv[1]  # The generated .c file
@@ -370,34 +372,36 @@ def main():
     if os.name != "nt":
         cmake_command.append("-DCMAKE_C_FLAGS=-fsanitize=address")
 
+    # Capture (rather than pass through) so we can surface the CMake diagnostic
+    # as the failure reason; the full log is still re-emitted for the artifact.
     result = subprocess.run(
         cmake_command,
         cwd=build_dir,
-        stderr=sys.stderr,
-        stdout=sys.stdout,
+        capture_output=True,
         text=True,
     )
+    sys.stdout.write(result.stdout or "")
+    sys.stderr.write(result.stderr or "")
     if result.returncode != 0:
         print("CMake configuration failed!")
-        print(result.stdout)
-        print(result.stderr)
-        sys.exit(1)
+        unictest_report.fail("compile", (result.stdout or "") + (result.stderr or ""))
 
     print("Building C project...")
     build_command = ["cmake", "--build", ".", "--config", "Debug"]
 
+    # Capture (rather than pass through) so we can surface the clang diagnostic
+    # as the failure reason; the full log is still re-emitted for the artifact.
     result = subprocess.run(
         build_command,
         cwd=build_dir,
-        stderr=sys.stderr,
-        stdout=sys.stdout,
+        capture_output=True,
         text=True,
     )
+    sys.stdout.write(result.stdout or "")
+    sys.stderr.write(result.stderr or "")
     if result.returncode != 0:
         print("C compilation failed!")
-        print(result.stdout)
-        print(result.stderr)
-        sys.exit(1)
+        unictest_report.fail("compile", (result.stdout or "") + (result.stderr or ""))
 
     print("Compilation successful.")
 
@@ -433,12 +437,18 @@ def main():
             INPUT_FILE,
             OUTPUT_FILE,
         ],
-        stdout=sys.stdout,
-        stderr=sys.stderr,
+        capture_output=True,
+        text=True,
     )
+    sys.stdout.write(proc.stdout or "")
+    sys.stderr.write(proc.stderr or "")
 
     if proc.returncode != 0:
         print(f"Test executable failed with exit code {proc.returncode}")
+        # The harness (main.c) prints "Decode failed with code X" / "Encode
+        # failed with code X" and exits 10 / 20; map that to the phase.
+        phase = {10: "decode", 20: "encode"}.get(proc.returncode, "run")
+        unictest_report.fail(phase, proc.stderr, code=proc.returncode)
 
     sys.exit(proc.returncode)
 

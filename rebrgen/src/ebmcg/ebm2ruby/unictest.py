@@ -6,6 +6,8 @@ import subprocess
 import json
 import shutil
 
+import unictest_report
+
 
 def main():
     TEST_TARGET_FILE = sys.argv[1]
@@ -81,6 +83,10 @@ File.binwrite(ARGV[1], output.string)
 
     if proc.returncode != 0:
         print(f"Test script failed with exit code {proc.returncode}")
+        # The Ruby harness prints "Decode error: X" / "Encode error: X" to stderr
+        # and exits 10 / 20; map that to the phase, reason is that captured stderr.
+        phase = {10: "decode", 20: "encode"}.get(proc.returncode, "run")
+        unictest_report.fail(phase, proc.stderr, code=proc.returncode)
 
     sys.exit(proc.returncode)
 

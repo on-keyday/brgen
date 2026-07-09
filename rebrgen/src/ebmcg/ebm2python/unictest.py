@@ -5,6 +5,8 @@ import os
 import subprocess as sp
 import json
 
+import unictest_report
+
 
 def main():
     TEST_TARGET_FILE = sys.argv[1]
@@ -80,20 +82,27 @@ def main():
             indent=4,
         )
     )
-    try:
-        sp.check_call(
-            [
-                sys.executable,
-                "test_script.py",
-                INPUT_FILE,
-                OUTPUT_FILE,
-            ],
-            env=os.environ,
-            stdout=sys.stdout,
-            stderr=sys.stderr,
-        )
-    except sp.CalledProcessError as e:
-        sys.exit(e.returncode)
+    proc = sp.run(
+        [
+            sys.executable,
+            "test_script.py",
+            INPUT_FILE,
+            OUTPUT_FILE,
+        ],
+        env=os.environ,
+        capture_output=True,
+        text=True,
+    )
+    sys.stdout.write(proc.stdout or "")
+    sys.stderr.write(proc.stderr or "")
+
+    if proc.returncode != 0:
+        # test_script.py prints a traceback and exits 10 (decode) / 20 (encode);
+        # map that to the phase, reason taken from the traceback on stderr.
+        phase = {10: "decode", 20: "encode"}.get(proc.returncode, "run")
+        unictest_report.fail(phase, proc.stderr or proc.stdout, code=proc.returncode)
+
+    sys.exit(proc.returncode)
 
 
 if __name__ == "__main__":

@@ -5,6 +5,9 @@ import os
 import json
 import pathlib as pl
 
+import unictest_report
+
+
 def main():
     TEST_TARGET_FILE = sys.argv[1]
     INPUT_FILE = sys.argv[2]
@@ -43,6 +46,6 @@ def main():
                     indent=4,
                 )
     )
-    exit(1)
+    unictest_report.fail('harness', 'test logic not implemented', code=1)
 if __name__ == '__main__':
     main()

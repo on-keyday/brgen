@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 # Test logic for ebm2p4
 import sys
+
+import unictest_report
+
+
 def main():
     TEST_TARGET_FILE = sys.argv[1]
     INPUT_FILE = sys.argv[2]
@@ -17,6 +21,6 @@ def main():
     with open(OUTPUT_FILE, 'wb') as f:
         f.write(data)
     print('Test logic is not implemented yet.')
-    exit(1)
+    unictest_report.fail('harness', 'test logic not implemented', code=1)
 if __name__ == '__main__':
     main()

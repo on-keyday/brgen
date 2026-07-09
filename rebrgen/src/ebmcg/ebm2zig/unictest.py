@@ -7,6 +7,8 @@ import pathlib as pl
 import json
 import shutil
 
+import unictest_report
+
 
 def main():
     TEST_TARGET_FILE = sys.argv[1]  # The generated .zig file
@@ -116,7 +118,7 @@ pub fn main() !void {{
             print(result.stdout)
         if result.stderr:
             print(result.stderr)
-        sys.exit(1)
+        unictest_report.fail("compile", (result.stderr or "") + (result.stdout or ""))
 
     print("Compilation successful.")
 
@@ -162,6 +164,10 @@ pub fn main() !void {{
 
     if proc.returncode != 0:
         print(f"Test executable failed with exit code {proc.returncode}")
+        # The harness (main.zig) prints "Decode error: X" / "Encode error: X"
+        # to stderr and exits 10 / 20; map that to the phase.
+        phase = {10: "decode", 20: "encode"}.get(proc.returncode, "run")
+        unictest_report.fail(phase, proc.stderr, code=proc.returncode)
 
     sys.exit(proc.returncode)
 

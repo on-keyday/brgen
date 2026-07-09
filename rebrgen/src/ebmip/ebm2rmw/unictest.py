@@ -6,6 +6,8 @@ import subprocess
 import pathlib as pl
 import json
 
+import unictest_report
+
 
 def main():
     TEST_TARGET_FILE = sys.argv[1]  # text file containing the path to runner_input.ebm
@@ -52,7 +54,17 @@ def main():
         "stopAtEntry": True,
     }, indent=4))
 
-    result = subprocess.run(cmd, stdout=sys.stdout, stderr=sys.stderr)
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    sys.stdout.write(result.stdout or "")
+    sys.stderr.write(result.stderr or "")
+
+    if result.returncode != 0:
+        # ebm2rmw sets exit_code=10 on decode failure (interpret.hpp); encode and
+        # other failures fall through to the interpreter's generic exit 1, so only
+        # 10 maps to a distinct phase. Everything else is classified as 'run'.
+        phase = {10: "decode"}.get(result.returncode, "run")
+        unictest_report.fail(phase, result.stderr or result.stdout, code=result.returncode)
+
     sys.exit(result.returncode)
 
 

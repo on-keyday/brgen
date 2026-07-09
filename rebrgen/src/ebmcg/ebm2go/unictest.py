@@ -6,6 +6,8 @@ import subprocess
 import pathlib
 import json
 
+import unictest_report
+
 
 def main():
     TEST_TARGET_FILE = sys.argv[1]  # The generated .go file
@@ -128,7 +130,7 @@ func main() {{
         print("Go compilation failed!")
         print(result.stdout)
         print(result.stderr)
-        sys.exit(1)
+        unictest_report.fail("compile", (result.stdout or "") + (result.stderr or ""))
 
     print("Compilation successful.")
 
@@ -175,6 +177,10 @@ func main() {{
 
     if proc.returncode != 0:
         print(f"Test executable failed with exit code {proc.returncode}")
+        # The harness (main.go) prints "Decode error: X" / "Encode error: X"
+        # and exits 10 / 20; map that to the phase, reason is that single line.
+        phase = {10: "decode", 20: "encode"}.get(proc.returncode, "run")
+        unictest_report.fail(phase, proc.stderr, code=proc.returncode)
 
     sys.exit(proc.returncode)
 
