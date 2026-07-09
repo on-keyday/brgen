@@ -156,6 +156,9 @@ def do_setup(lang_name: str, mode: str, file_extension: str):
             f.write("import os\n")
             f.write("import json\n")
             f.write("import pathlib as pl\n\n")
+            # unictest_report resolves via the PYTHONPATH that unictest_setup.py
+            # injects; the fail() below emits the UNICTEST_ERROR: reason line.
+            f.write("import unictest_report\n\n\n")
             f.write("def main():\n")
             f.write("    TEST_TARGET_FILE = sys.argv[1]\n")
             f.write("    INPUT_FILE = sys.argv[2]\n")
@@ -203,7 +206,9 @@ def do_setup(lang_name: str, mode: str, file_extension: str):
 """
             )
             f.write("    )\n")
-            f.write("    exit(1)\n")
+            f.write(
+                "    unictest_report.fail('harness', 'test logic not implemented', code=1)\n"
+            )
             f.write("if __name__ == '__main__':\n")
             f.write("    main()\n")
         print(f"Created test script: {TEST_SCRIPT_PATH}")
