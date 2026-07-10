@@ -1,0 +1,22 @@
+{
+    "name": "ebm2java",
+    "source_setup_command": [
+        "python",
+        "$WORK_DIR/script/unictest_setup.py",
+        "setup",
+        "ebm2java"
+    ],
+    "run_command": [
+        "python",
+        "$WORK_DIR/script/unictest_setup.py",
+        "test",
+        "ebm2java"
+    ],
+    "options": [
+        {
+            "name": "default",
+            "setup_options": [],
+            "run_options": []
+        }
+    ]
+}
