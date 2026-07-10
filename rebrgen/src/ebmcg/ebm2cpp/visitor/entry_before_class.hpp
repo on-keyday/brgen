@@ -482,7 +482,7 @@ DEFINE_VISITOR(entry_before) {
         MAYBE(value_w, actx.visit(actx.value));
         std::string method_name(member_ident);
         std::string base_text;
-        if (get_id(prop_p->parent_struct) != get_id(prop_p->parent_format)) {
+        if (is_inner_anon_property(*prop_p)) {
             auto inner_name = actx.identifier(prop_p->parent_struct);
             method_name = std::string(inner_name) + "_" + method_name;
             base_text = "(*this)";
@@ -837,13 +837,8 @@ DEFINE_VISITOR(entry_before) {
         // class but their method body references outer fields; prefix the
         // method name with the inner struct identifier so multiple branches
         // (and the merged accessor) don't collide as overloads.
-        if (auto prop_ref = ctx.func_decl.property()) {
-            if (auto prop_decl = ctx.get_field<"property_decl">(prop_ref->id)) {
-                if (get_id(prop_decl->parent_struct) != get_id(ctx.func_decl.parent_format)) {
-                    auto inner_name = ctx.identifier(prop_decl->parent_struct);
-                    prefix = std::string(inner_name) + "_" + prefix;
-                }
-            }
+        if (auto inner = hoisted_accessor_inner_ident(ctx)) {
+            prefix = *inner + "_" + prefix;
         }
         std::string const_suffix = ctx.func_decl.attribute.is_mutable() ? "" : " const";
         // A function with no parent_format is a free function (e.g. an imported
@@ -907,13 +902,8 @@ DEFINE_VISITOR(entry_before) {
         }
         // Same parent_struct-prefix rule as in function_decl_custom (see
         // there for rationale). Keeps the Normal-phase path consistent.
-        if (auto prop_ref = ctx.func_decl.property()) {
-            if (auto prop_decl = ctx.get_field<"property_decl">(prop_ref->id)) {
-                if (get_id(prop_decl->parent_struct) != get_id(ctx.func_decl.parent_format)) {
-                    auto inner_name = ctx.identifier(prop_decl->parent_struct);
-                    prefix = std::string(inner_name) + "_" + prefix;
-                }
-            }
+        if (auto inner = hoisted_accessor_inner_ident(ctx)) {
+            prefix = *inner + "_" + prefix;
         }
         std::string const_suffix = ctx.func_decl.attribute.is_mutable() ? "" : " const";
         CodeWriter w;

@@ -306,26 +306,12 @@ DEFINE_VISITOR(entry_before) {
         }
         return w;
     };
-    config.length_check_custom = [](Context_Statement_LENGTH_CHECK& lctx) -> expected<Result> {
+    config.length_mismatch_wrapper = [](Context_Statement_LENGTH_CHECK& lctx, Result target, Result expected_len, std::string layer_str) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
-        if (lctx.length_check.length_check_type == ebm::LengthCheckType::SETTER_VECTOR_LENGTH) {
-            auto size = lctx.get_field<"type_cast_desc.source_expr.type.size.optional">(lctx.length_check.expected_length);
-            if (size && size->value() >= 64) {
-                // for large vectors, skip length check to avoid large memory allocation
-                return "";
-            }
-        }
-        if (lctx.length_check.length_check_type == ebm::LengthCheckType::ENCODE_VECTOR_LENGTH) {
-            // target is ARRAY_SIZE expr (visit produces "len(field)"), expected_length is the length expr
-            MAYBE(target, lctx.visit(lctx.length_check.target));
-            MAYBE(expected, lctx.visit(lctx.length_check.expected_length));
-            MAYBE(layer_str, get_identifier_layer_str(lctx, from_weak(lctx.length_check.related_field)));
-            CodeWriter w;
-            w.writeln("if ", target.to_writer(), " != int(", expected.to_writer(), "):");
-            w.indent_writeln("raise Exception(f\"size mismatch when writing field ", layer_str, ": expected {int(", expected.to_writer(), ")} got {", target.to_writer(), "}\")");
-            return w;
-        }
-        return pass;
+        CodeWriter w;
+        w.writeln("if ", target.to_writer(), " != int(", expected_len.to_writer(), "):");
+        w.indent_writeln("raise Exception(f\"size mismatch when writing field ", layer_str, ": expected {int(", expected_len.to_writer(), ")} got {", target.to_writer(), "}\")");
+        return w;
     };
 
     config.write_data_custom = [](Context_Statement_WRITE_DATA& ctx) -> expected<Result> {

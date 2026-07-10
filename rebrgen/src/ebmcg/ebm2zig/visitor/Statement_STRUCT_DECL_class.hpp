@@ -93,26 +93,7 @@ DEFINE_VISITOR(Statement_STRUCT_DECL) {
                 // inner struct identifier by function_definition_start_
                 // wrapper. Keeps `self: *Http2Frame` callable as
                 // `self.Struct236_padding_len()`.
-                std::vector<ebm::WeakStatementRef> descendants;
-                std::unordered_set<std::uint64_t> seen;
-                ebm::WeakStatementRef self_weak{};
-                self_weak.id = ctx.item_id;
-                MAYBE_VOID(_collect, ebmcodegen::util::collect_anon_inner_descendants(ctx, self_weak, descendants, seen));
-                for (auto& inner_ref : descendants) {
-                    MAYBE(inner_stmt, ctx.get(from_weak(inner_ref)));
-                    auto inner_decl_p = inner_stmt.body.struct_decl();
-                    if (!inner_decl_p || !inner_decl_p->has_properties()) {
-                        continue;
-                    }
-                    auto inner_props = inner_decl_p->properties();
-                    if (!inner_props) {
-                        continue;
-                    }
-                    for (auto& prop_ref : inner_props->container) {
-                        MAYBE(prop_w, ctx.visit(prop_ref));
-                        w.writeln(prop_w.to_writer());
-                    }
-                }
+                MAYBE_VOID(_inner, ebmcodegen::util::emit_anon_inner_properties(ctx, w));
             }
         }
     }
@@ -134,26 +115,7 @@ DEFINE_VISITOR(Statement_STRUCT_DECL) {
         }
         else {
             MAYBE_VOID(_2, emit_struct_methods(ctx, w));
-            std::vector<ebm::WeakStatementRef> descendants;
-            std::unordered_set<std::uint64_t> seen;
-            ebm::WeakStatementRef self_weak{};
-            self_weak.id = ctx.item_id;
-            MAYBE_VOID(_collect, ebmcodegen::util::collect_anon_inner_descendants(ctx, self_weak, descendants, seen));
-            for (auto& inner_ref : descendants) {
-                MAYBE(inner_stmt, ctx.get(from_weak(inner_ref)));
-                auto inner_decl_p = inner_stmt.body.struct_decl();
-                if (!inner_decl_p || !inner_decl_p->has_properties()) {
-                    continue;
-                }
-                auto inner_props = inner_decl_p->properties();
-                if (!inner_props) {
-                    continue;
-                }
-                for (auto& prop_ref : inner_props->container) {
-                    MAYBE(prop_w, ctx.visit(prop_ref));
-                    w.writeln(prop_w.to_writer());
-                }
-            }
+            MAYBE_VOID(_inner, ebmcodegen::util::emit_anon_inner_properties(ctx, w));
         }
     }
 

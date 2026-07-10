@@ -675,19 +675,14 @@ DEFINE_VISITOR(entry_before) {
             // struct identifier to the method name (e.g. tmp318Max).
             std::string emit_name(name);
             std::string emit_prefix(name_prefix);
-            if (auto prop = fctx.func_decl.property()) {
-                if (auto prop_decl = ctx.get_field<"property_decl">(prop->id)) {
-                    if (get_id(prop_decl->parent_struct) != get_id(fctx.func_decl.parent_format)) {
-                        auto inner_name = ctx.identifier(prop_decl->parent_struct);
-                        std::string combined = std::string(inner_name);
-                        if (!emit_prefix.empty()) {
-                            combined += emit_prefix;
-                            emit_prefix.clear();
-                        }
-                        combined += emit_name;
-                        emit_name = std::move(combined);
-                    }
+            if (auto inner = hoisted_accessor_inner_ident(fctx)) {
+                std::string combined = std::move(*inner);
+                if (!emit_prefix.empty()) {
+                    combined += emit_prefix;
+                    emit_prefix.clear();
                 }
+                combined += emit_name;
+                emit_name = std::move(combined);
             }
             w.writeln(ctx.config().function_define_keyword, " (", ctx.config().self_value, " *", struct_name, ") ", emit_prefix, emit_name, "(", params, ") ", ctx.config().function_return_type_separator, " ", return_type.to_writer(), " ", ctx.config().begin_block);
         }
@@ -1077,32 +1072,18 @@ DEFINE_VISITOR(entry_before) {
         }
         return pass;
     };
-    ctx.config().length_check_custom = [](Context_Statement_LENGTH_CHECK& lctx) -> expected<Result> {
-        if (lctx.length_check.length_check_type == ebm::LengthCheckType::SETTER_VECTOR_LENGTH) {
-            auto size = lctx.get_field<"type_cast_desc.source_expr.type.size.optional">(lctx.length_check.expected_length);
-            if (size && size->value() >= 64) {
-                // for large vectors, skip length check to avoid large memory allocation in Go runtime
-                return "";
-            }
+    ctx.config().length_mismatch_wrapper = [](Context_Statement_LENGTH_CHECK& lctx, Result target, Result expected_len, std::string layer_str) -> expected<Result> {
+        layer_str = "\\\"" + layer_str + "\\\"";
+        lctx.config().imports.insert("fmt");
+        std::string nil_prefix;
+        if (lctx.config().io_strategy.is_append()) {
+            nil_prefix = "nil, ";
         }
-        if (lctx.length_check.length_check_type == ebm::LengthCheckType::ENCODE_VECTOR_LENGTH) {
-            // target is ARRAY_SIZE expr (visit produces "len(field)"), expected_length is the length expr
-            MAYBE(target, lctx.visit(lctx.length_check.target));
-            MAYBE(expected, lctx.visit(lctx.length_check.expected_length));
-            MAYBE(layer_str, get_identifier_layer_str(lctx, from_weak(lctx.length_check.related_field)));
-            layer_str = "\\\"" + layer_str + "\\\"";
-            lctx.config().imports.insert("fmt");
-            std::string nil_prefix;
-            if (lctx.config().io_strategy.is_append()) {
-                nil_prefix = "nil, ";
-            }
-            CodeWriter w;
-            w.writeln("if ", target.to_writer(), " != int(", expected.to_writer(), ") {");
-            w.indent_writeln("return ", nil_prefix, "fmt.Errorf(\"size mismatch when writing field ", layer_str, ": expected %d, got %d\", int(", expected.to_writer(), "), ", target.to_writer(), ")");
-            w.writeln("}");
-            return w;
-        }
-        return pass;
+        CodeWriter w;
+        w.writeln("if ", target.to_writer(), " != int(", expected_len.to_writer(), ") {");
+        w.indent_writeln("return ", nil_prefix, "fmt.Errorf(\"size mismatch when writing field ", layer_str, ": expected %d, got %d\", int(", expected_len.to_writer(), "), ", target.to_writer(), ")");
+        w.writeln("}");
+        return w;
     };
     // Native endian: binary.NativeEndian.Uint16(append(make([]byte,0,2),1,0)) == 1.
     // Using append+make avoids composite literal syntax that triggers Go parse ambiguity

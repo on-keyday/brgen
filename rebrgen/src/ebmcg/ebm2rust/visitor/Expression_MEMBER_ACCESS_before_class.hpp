@@ -82,7 +82,7 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
         // through `self.tmp458.<name>(...)` which would hit a variant enum
         // that has no such method.
         if (prop_info->inner_anon) {
-            auto method_name = prop_info->parent_struct_ident + "_" + prop_info->member_ident;
+            auto method_name = prop_info->hoisted_method_name();
             if (prop_info->merge_mode == ebm::MergeMode::STRICT_TYPE) {
                 // STRICT_TYPE getter returns Option<&T>; clone() to produce
                 // an owned value so callers (e.g. Variant constructor args)

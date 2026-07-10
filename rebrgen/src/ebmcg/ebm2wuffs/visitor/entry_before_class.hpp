@@ -347,13 +347,8 @@ DEFINE_VISITOR(entry_before) {
         // method name. The MEMBER_ACCESS hook applies the same prefix at the
         // call sites so the names stay aligned.
         std::string emit_name(name);
-        if (auto prop = fctx.func_decl.property()) {
-            if (auto prop_decl = fctx.get_field<"property_decl">(prop->id)) {
-                if (get_id(prop_decl->parent_struct) != get_id(fctx.func_decl.parent_format)) {
-                    auto inner = fctx.identifier(prop_decl->parent_struct);
-                    emit_name = std::string(inner) + emit_name;
-                }
-            }
+        if (auto inner = hoisted_accessor_inner_ident(fctx)) {
+            emit_name = *inner + emit_name;
         }
         CodeWriter w;
         std::string qualified(emit_name);

@@ -728,18 +728,33 @@ namespace ebmcodegen::util {
         return names;
     }
 
+    // parent_struct != parent_format: the property lives on an anon inner
+    // variant-arm struct while its accessor is emitted onto the outer format
+    // (see collect_anon_inner_descendants / emit_anon_inner_properties).
+    inline bool is_inner_anon_property(const ebm::PropertyDecl& prop) {
+        return get_id(prop.parent_struct) != get_id(prop.parent_format);
+    }
+
     struct PropertyAccessInfo {
         ebm::StatementRef member_stmt;              // the PROPERTY_DECL statement the member expression refers to
         const ebm::PropertyDecl* prop = nullptr;
         ebm::StatementRef getter_ref;               // nil when the property has no getter function
         const ebm::FunctionDecl* getter = nullptr;  // null when getter_ref is nil
         ebm::MergeMode merge_mode{};
-        bool inner_anon = false;          // parent_struct != parent_format: the accessor is hoisted onto
+        bool inner_anon = false;          // is_inner_anon_property: the accessor is hoisted onto
                                           // parent_format with a `<parent_struct_ident><sep><member_ident>` name
         std::string member_ident;         // identifier of the member expression
         std::string parent_struct_ident;  // identifier of prop->parent_struct
         std::string parent_format_ident;  // identifier of prop->parent_format
         FuncParamNames getter_params;     // empty when getter is null
+
+        // Accessor method name after hoisting onto parent_format:
+        // <parent_struct_ident><sep><member_ident>. Definition-side
+        // counterpart: hoisted_accessor_inner_ident. Pass sep="" for
+        // backends whose identifiers join without separator.
+        std::string hoisted_method_name(std::string_view sep = "_") const {
+            return parent_struct_ident + std::string(sep) + member_ident;
+        }
     };
 
     // Resolve the member of a MEMBER_ACCESS expression to a property-getter call shape.
@@ -760,7 +775,7 @@ namespace ebmcodegen::util {
         info.member_stmt = from_weak(id);
         info.prop = &prop;
         info.merge_mode = prop.merge_mode;
-        info.inner_anon = get_id(prop.parent_struct) != get_id(prop.parent_format);
+        info.inner_anon = is_inner_anon_property(prop);
         MAYBE(member_ident, module_.get_associated_identifier(member));
         info.member_ident = member_ident;
         info.parent_struct_ident = module_.get_associated_identifier(prop.parent_struct);
@@ -778,6 +793,23 @@ namespace ebmcodegen::util {
         MAYBE(getter_params, collect_func_param_names(visitor, getter_decl));
         info.getter_params = std::move(getter_params);
         return std::optional(std::move(info));
+    }
+
+    // Definition-side counterpart of PropertyAccessInfo::hoisted_method_name:
+    // when fctx's FUNCTION_DECL is a property accessor hoisted out of an anon
+    // inner variant-arm struct (its PropertyDecl's parent_struct differs from
+    // the function's parent_format), return the inner struct identifier the
+    // emitted method name must be prefixed with; nullopt otherwise.
+    // Composition with other prefixes (set_, separators) stays with each backend.
+    std::optional<std::string> hoisted_accessor_inner_ident(auto&& fctx) {
+        if (auto prop_ref = fctx.func_decl.property()) {
+            if (auto prop_decl = fctx.template get_field<"property_decl">(prop_ref->id)) {
+                if (get_id(prop_decl->parent_struct) != get_id(fctx.func_decl.parent_format)) {
+                    return std::string(fctx.identifier(prop_decl->parent_struct));
+                }
+            }
+        }
+        return std::nullopt;
     }
 
     bool variant_candidate_equal(auto&& visitor, ebm::TypeRef candidate, ebm::TypeRef target) {
@@ -1204,6 +1236,63 @@ namespace ebmcodegen::util {
                 seen.insert(get_id(member_struct_weak));
                 out.push_back(member_struct_weak);
                 MAYBE_VOID(_, collect_anon_inner_descendants(ctx, member_struct_weak, out, seen));
+            }
+        }
+        return {};
+    }
+
+    // Whether any anon inner descendant (see collect_anon_inner_descendants)
+    // of ctx's struct declares properties. Lets backends that wrap the
+    // hoisted accessors in a dedicated scope (e.g. ebm2rust's outer impl
+    // block) decide whether to open that scope before emitting.
+    inline ebmgen::expected<bool> has_anon_inner_properties(auto&& ctx) {
+        std::vector<ebm::WeakStatementRef> descendants;
+        std::unordered_set<std::uint64_t> seen;
+        ebm::WeakStatementRef self_weak{};
+        self_weak.id = ctx.item_id;
+        MAYBE_VOID(_collect, collect_anon_inner_descendants(ctx, self_weak, descendants, seen));
+        for (auto& inner_ref : descendants) {
+            MAYBE(inner_stmt, ctx.get(from_weak(inner_ref)));
+            auto inner_decl_p = inner_stmt.body.struct_decl();
+            if (inner_decl_p && inner_decl_p->has_properties()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Emit the property accessors of every anon inner descendant of ctx's
+    // struct into w, so they land on the outer (parent_format) scope and
+    // their self/this references resolve against the outer instance.
+    // Name-prefixing of the accessors is each backend's responsibility
+    // (function_definition_start_wrapper / MEMBER_ACCESS hooks).
+    // use_writeln=false packs the accessors with write (python-style blocks
+    // that already end with their own newline).
+    template <class CodeWriter>
+    ebmgen::expected<void> emit_anon_inner_properties(auto&& ctx, CodeWriter& w, bool use_writeln = true) {
+        std::vector<ebm::WeakStatementRef> descendants;
+        std::unordered_set<std::uint64_t> seen;
+        ebm::WeakStatementRef self_weak{};
+        self_weak.id = ctx.item_id;
+        MAYBE_VOID(_collect, collect_anon_inner_descendants(ctx, self_weak, descendants, seen));
+        for (auto& inner_ref : descendants) {
+            MAYBE(inner_stmt, ctx.get(from_weak(inner_ref)));
+            auto inner_decl_p = inner_stmt.body.struct_decl();
+            if (!inner_decl_p || !inner_decl_p->has_properties()) {
+                continue;
+            }
+            auto inner_props = inner_decl_p->properties();
+            if (!inner_props) {
+                continue;
+            }
+            for (auto& prop_ref : inner_props->container) {
+                MAYBE(prop_w, ctx.visit(prop_ref));
+                if (use_writeln) {
+                    w.writeln(prop_w.to_writer());
+                }
+                else {
+                    w.write(prop_w.to_writer());
+                }
             }
         }
         return {};

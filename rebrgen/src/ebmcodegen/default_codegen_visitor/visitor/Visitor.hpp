@@ -204,6 +204,14 @@ std::function<expected<Result>(Context_Statement_VARIABLE_DECL& ctx)> variable_d
 
 std::function<expected<Result>(Context_Expression_MAX_VALUE& ctx)> max_value_custom;
 std::function<expected<Result>(Context_Statement_LENGTH_CHECK& ctx)> length_check_custom;
+// ENCODE_VECTOR_LENGTH mismatch emitter. When set, the default
+// Statement_LENGTH_CHECK visitor takes over the shared judgment (skip
+// SETTER_VECTOR_LENGTH for fixed sizes >= 64 to avoid large allocations,
+// resolve target/expected/layer) and delegates only the language-specific
+// `if (target != expected) { <error> }` emission to this hook.
+// layer_str is the raw field layer path (unquoted/unescaped).
+// Empty -> lowered_statement fallback as before.
+std::function<expected<Result>(Context_Statement_LENGTH_CHECK& ctx, Result target, Result expected_len, std::string layer_str)> length_mismatch_wrapper;
 // std::function<expected<Result>(Context_Statement_UPDATE_OFFSET& ctx)> update_offset_custom;
 
 template <class Kind>

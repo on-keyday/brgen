@@ -159,24 +159,9 @@ DEFINE_VISITOR(Statement_STRUCT_DECL) {
         }
         return w;
     }
-    // Collect anon inner descendants so their accessors get emitted into
-    // the outer struct's impl block.
-    std::vector<ebm::WeakStatementRef> inner_descendants;
-    std::unordered_set<std::uint64_t> seen;
-    {
-        ebm::WeakStatementRef self_weak{};
-        self_weak.id = ctx.item_id;
-        MAYBE_VOID(_collect, ebmcodegen::util::collect_anon_inner_descendants(ctx, self_weak, inner_descendants, seen));
-    }
-    bool any_inner_props = false;
-    for (auto& inner_ref : inner_descendants) {
-        MAYBE(inner_stmt, ctx.get(from_weak(inner_ref)));
-        auto inner_decl_p = inner_stmt.body.struct_decl();
-        if (inner_decl_p && inner_decl_p->has_properties()) {
-            any_inner_props = true;
-            break;
-        }
-    }
+    // Anon inner descendants' accessors get emitted into the outer
+    // struct's impl block; probe first so we only open the impl if needed.
+    MAYBE(any_inner_props, ebmcodegen::util::has_anon_inner_properties(ctx));
     if (ctx.struct_decl.has_encode_decode() || ctx.struct_decl.has_functions() || ctx.struct_decl.has_properties() || any_inner_props) {
         w.writeln("impl", lifetime, " ", name, lifetime, " {");
         {
@@ -187,21 +172,7 @@ DEFINE_VISITOR(Statement_STRUCT_DECL) {
             // Inner anon descendants: emit only their property accessors,
             // here in the outer impl. name-prefixing is handled by
             // function_definition_start_wrapper (see entry_before_class.hpp).
-            for (auto& inner_ref : inner_descendants) {
-                MAYBE(inner_stmt, ctx.get(from_weak(inner_ref)));
-                auto inner_decl_p = inner_stmt.body.struct_decl();
-                if (!inner_decl_p || !inner_decl_p->has_properties()) {
-                    continue;
-                }
-                auto inner_props = inner_decl_p->properties();
-                if (!inner_props) {
-                    continue;
-                }
-                for (auto& prop_ref : inner_props->container) {
-                    MAYBE(prop_w, ctx.visit(prop_ref));
-                    w.writeln(prop_w.to_writer());
-                }
-            }
+            MAYBE_VOID(_inner, ebmcodegen::util::emit_anon_inner_properties(ctx, w));
             // Composite bit-field getter/setter methods (see lambda above).
             MAYBE_VOID(_ca, emit_composite_accessors(w));
         }

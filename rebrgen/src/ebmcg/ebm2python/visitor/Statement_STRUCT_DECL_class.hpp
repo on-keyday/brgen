@@ -129,26 +129,7 @@ DEFINE_VISITOR(Statement_STRUCT_DECL) {
     // inner struct identifier (Struct236_padding_len etc.) so multiple arms'
     // same-named properties do not collide on the outer class.
     if (!is_anon_inner) {
-        std::vector<ebm::WeakStatementRef> inner_descendants;
-        std::unordered_set<std::uint64_t> seen;
-        ebm::WeakStatementRef self_weak{};
-        self_weak.id = ctx.item_id;
-        MAYBE_VOID(_collect, ebmcodegen::util::collect_anon_inner_descendants(ctx, self_weak, inner_descendants, seen));
-        for (auto& inner_ref : inner_descendants) {
-            MAYBE(inner_stmt, ctx.get(from_weak(inner_ref)));
-            auto inner_decl_p = inner_stmt.body.struct_decl();
-            if (!inner_decl_p || !inner_decl_p->has_properties()) {
-                continue;
-            }
-            auto inner_props = inner_decl_p->properties();
-            if (!inner_props) {
-                continue;
-            }
-            for (auto& prop_ref : inner_props->container) {
-                MAYBE(prop_w, ctx.visit(prop_ref));
-                w.write(prop_w.to_writer());
-            }
-        }
+        MAYBE_VOID(_inner, ebmcodegen::util::emit_anon_inner_properties(ctx, w, false));
     }
 
     if (w.str_size() == size) {

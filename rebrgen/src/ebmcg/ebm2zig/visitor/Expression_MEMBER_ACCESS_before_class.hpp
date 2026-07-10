@@ -36,7 +36,7 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
         // ()` which would land on the Zig union that has no such method.
         // Mirrors the ebm2rust hook of the same name.
         if (prop_info->inner_anon) {
-            auto method_name = prop_info->parent_struct_ident + "_" + prop_info->member_ident;
+            auto method_name = prop_info->hoisted_method_name();
             if (prop_info->merge_mode != ebm::MergeMode::STRICT_TYPE) {
                 return CODE("self.", method_name, "(", args, ").?");
             }

@@ -30,6 +30,21 @@ DEFINE_VISITOR(Statement_LENGTH_CHECK) {
     if (ctx.config().length_check_custom) {
         CALL_OR_PASS(len_check, ctx.config().length_check_custom(ctx));
     }
-    /*here to write the hook*/
+    if (ctx.config().length_mismatch_wrapper) {
+        if (ctx.length_check.length_check_type == ebm::LengthCheckType::SETTER_VECTOR_LENGTH) {
+            auto size = ctx.get_field<"type_cast_desc.source_expr.type.size.optional">(ctx.length_check.expected_length);
+            if (size && size->value() >= 64) {
+                // for large vectors, skip length check to avoid large memory allocation
+                return "";
+            }
+        }
+        if (ctx.length_check.length_check_type == ebm::LengthCheckType::ENCODE_VECTOR_LENGTH) {
+            // target is ARRAY_SIZE expr (visit produces the length), expected_length is the length expr
+            MAYBE(target, ctx.visit(ctx.length_check.target));
+            MAYBE(expected_len, ctx.visit(ctx.length_check.expected_length));
+            MAYBE(layer_str, get_identifier_layer_str(ctx, from_weak(ctx.length_check.related_field)));
+            return ctx.config().length_mismatch_wrapper(ctx, std::move(target), std::move(expected_len), std::move(layer_str));
+        }
+    }
     return ctx.visit(ctx.length_check.lowered_statement.id);
 }

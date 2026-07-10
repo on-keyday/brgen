@@ -381,13 +381,8 @@ DEFINE_VISITOR(entry_before) {
         // with the inner struct identifier so multiple variant arms exposing
         // the same property name (e.g. Struct236_padding_len /
         // Struct97_padding_len) do not collide on the outer impl.
-        if (auto prop_ref = fctx.func_decl.property()) {
-            if (auto prop_decl = fctx.get_field<"property_decl">(prop_ref->id)) {
-                if (get_id(prop_decl->parent_struct) != get_id(fctx.func_decl.parent_format)) {
-                    auto inner_name = ctx.identifier(prop_decl->parent_struct);
-                    func_name = std::string(inner_name) + "_" + func_name;
-                }
-            }
+        if (auto inner = hoisted_accessor_inner_ident(fctx)) {
+            func_name = *inner + "_" + func_name;
         }
 
         if (!is_nil(fctx.func_decl.parent_format)) {
@@ -595,26 +590,12 @@ DEFINE_VISITOR(entry_before) {
     };
 
     // LENGTH_CHECK: emit a proper size mismatch error instead of the default assertion.
-    config.length_check_custom = [&](Context_Statement_LENGTH_CHECK& lctx) -> expected<Result> {
-        if (lctx.length_check.length_check_type == ebm::LengthCheckType::SETTER_VECTOR_LENGTH) {
-            auto size = lctx.get_field<"type_cast_desc.source_expr.type.size.optional">(lctx.length_check.expected_length);
-            if (size && size->value() >= 64) {
-                // for large vectors, skip length check to avoid large memory allocation
-                return "";
-            }
-        }
-        if (lctx.length_check.length_check_type == ebm::LengthCheckType::ENCODE_VECTOR_LENGTH) {
-            // target is ARRAY_SIZE expr (visit produces .len or .items.len), expected_length is the length expr
-            MAYBE(target, lctx.visit(lctx.length_check.target));
-            MAYBE(expected, lctx.visit(lctx.length_check.expected_length));
-            MAYBE(layer_str, get_identifier_layer_str(lctx, from_weak(lctx.length_check.related_field)));
-            CodeWriter w;
-            w.writeln("if (", target.to_writer(), " != @as(usize, @intCast(", expected.to_writer(), "))) {");
-            w.indent_writeln("return error.ValidationFailed; // size mismatch when writing field ", layer_str);
-            w.writeln("}");
-            return w;
-        }
-        return pass;
+    config.length_mismatch_wrapper = [](Context_Statement_LENGTH_CHECK& lctx, Result target, Result expected_len, std::string layer_str) -> expected<Result> {
+        CodeWriter w;
+        w.writeln("if (", target.to_writer(), " != @as(usize, @intCast(", expected_len.to_writer(), "))) {");
+        w.indent_writeln("return error.ValidationFailed; // size mismatch when writing field ", layer_str);
+        w.writeln("}");
+        return w;
     };
 
     // === Init check ===

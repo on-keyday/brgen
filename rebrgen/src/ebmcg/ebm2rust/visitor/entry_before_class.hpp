@@ -455,13 +455,8 @@ DEFINE_VISITOR(entry_before) {
         // (see Statement_STRUCT_DECL_class). Prefix the method name with
         // the inner struct identifier so multiple branches don't collide
         // on the outer impl (e.g. tmp318_max / tmp342_max / max).
-        if (auto prop_ref = fctx.func_decl.property()) {
-            if (auto prop_decl = fctx.get_field<"property_decl">(prop_ref->id)) {
-                if (get_id(prop_decl->parent_struct) != get_id(fctx.func_decl.parent_format)) {
-                    auto inner_name = fctx.identifier(prop_decl->parent_struct);
-                    name = std::string(inner_name) + "_" + name;
-                }
-            }
+        if (auto inner = hoisted_accessor_inner_ident(fctx)) {
+            name = *inner + "_" + name;
         }
         if (fctx.config().in_direct_decode) {
             name += "_direct";
@@ -1018,27 +1013,13 @@ DEFINE_VISITOR(entry_before) {
         w.write(std::move(result));
         return Result(std::move(w));
     };
-    config.length_check_custom = [](Context_Statement_LENGTH_CHECK& lctx) -> expected<Result> {
+    config.length_mismatch_wrapper = [](Context_Statement_LENGTH_CHECK& lctx, Result target, Result expected_len, std::string layer_str) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
-        if (lctx.length_check.length_check_type == ebm::LengthCheckType::SETTER_VECTOR_LENGTH) {
-            auto size = lctx.get_field<"type_cast_desc.source_expr.type.size.optional">(lctx.length_check.expected_length);
-            if (size && size->value() >= 64) {
-                // for large vectors, skip length check to avoid large memory allocation
-                return "";
-            }
-        }
-        if (lctx.length_check.length_check_type == ebm::LengthCheckType::ENCODE_VECTOR_LENGTH) {
-            // target is ARRAY_SIZE expr (visit produces ".len()"), expected_length is the length expr
-            MAYBE(target, lctx.visit(lctx.length_check.target));
-            MAYBE(expected, lctx.visit(lctx.length_check.expected_length));
-            MAYBE(layer_str, get_identifier_layer_str(lctx, from_weak(lctx.length_check.related_field)));
-            CodeWriter w;
-            w.writeln("if ", target.to_writer(), " != ", expected.to_writer(), " as usize {");
-            w.indent_writeln("return Err(Error::ArrayLengthMismatch(\"", layer_str, "\", ", expected.to_writer(), " as usize, ", target.to_writer(), "));");
-            w.writeln("}");
-            return w;
-        }
-        return pass;
+        CodeWriter w;
+        w.writeln("if ", target.to_writer(), " != ", expected_len.to_writer(), " as usize {");
+        w.indent_writeln("return Err(Error::ArrayLengthMismatch(\"", layer_str, "\", ", expected_len.to_writer(), " as usize, ", target.to_writer(), "));");
+        w.writeln("}");
+        return w;
     };
     config.write_data_bytes_io_wrapper = [](Context_Statement_WRITE_DATA& ctx, BytesType cand, Result target, std::string io_name) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;

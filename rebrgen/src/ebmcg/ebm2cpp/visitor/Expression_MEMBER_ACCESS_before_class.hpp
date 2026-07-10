@@ -47,7 +47,7 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
         // instead of letting main_logic chain through (*this).tmp458,
         // which would hit a std::variant that has no max() method.
         if (prop_info->inner_anon) {
-            auto method_name = prop_info->parent_struct_ident + "_" + prop_info->member_ident;
+            auto method_name = prop_info->hoisted_method_name();
             return CODE("*(*this).", method_name, "(", args, ")");
         }
         MAYBE(main, ctx.main_logic());

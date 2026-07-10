@@ -228,29 +228,15 @@ DEFINE_VISITOR(entry_before) {
         ebm2c::append_runtime_offset(ctx, ctx.write_data.io_ref, w, size_str);
         return w;
     };
-    ctx.config().length_check_custom = [](Context_Statement_LENGTH_CHECK& lctx) -> expected<Result> {
+    ctx.config().length_mismatch_wrapper = [](Context_Statement_LENGTH_CHECK& lctx, Result target, Result expected_len, std::string layer_str) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
-        if (lctx.length_check.length_check_type == ebm::LengthCheckType::SETTER_VECTOR_LENGTH) {
-            auto size = lctx.get_field<"type_cast_desc.source_expr.type.size.optional">(lctx.length_check.expected_length);
-            if (size && size->value() >= 64) {
-                // for large vectors, skip length check to avoid large memory allocation
-                return "";
-            }
-        }
-        if (lctx.length_check.length_check_type == ebm::LengthCheckType::ENCODE_VECTOR_LENGTH) {
-            // target is ARRAY_SIZE expr (visit produces the length), expected_length is the length expr
-            MAYBE(target, lctx.visit(lctx.length_check.target));
-            MAYBE(expected, lctx.visit(lctx.length_check.expected_length));
-            MAYBE(layer_str, get_identifier_layer_str(lctx, from_weak(lctx.length_check.related_field)));
-            layer_str = "\"" + layer_str + "\"";
-            CodeWriter w;
-            w.writeln("if (", target.to_writer(), " != (size_t)", expected.to_writer(), ") {");
-            w.indent_writeln("EBM_EMIT_ERROR(", layer_str, " \": size mismatch when encoding\");");
-            w.indent_writeln("return -1;");
-            w.writeln("}");
-            return w;
-        }
-        return pass;
+        layer_str = "\"" + layer_str + "\"";
+        CodeWriter w;
+        w.writeln("if (", target.to_writer(), " != (size_t)", expected_len.to_writer(), ") {");
+        w.indent_writeln("EBM_EMIT_ERROR(", layer_str, " \": size mismatch when encoding\");");
+        w.indent_writeln("return -1;");
+        w.writeln("}");
+        return w;
     };
     return pass;
 }

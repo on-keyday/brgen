@@ -35,7 +35,7 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
         // the prefixed method on `self` directly. Mirrors the ebm2rust
         // hook of the same name.
         if (prop_info->inner_anon) {
-            auto method_name = prop_info->parent_struct_ident + "_" + prop_info->member_ident;
+            auto method_name = prop_info->hoisted_method_name();
             // No parens: the hoisted accessor is emitted as
             // `@property` + `@<name>.setter` on Http2Frame, so reading
             // and writing both go through `self.<name>` syntax.
