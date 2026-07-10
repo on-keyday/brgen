@@ -100,7 +100,7 @@ def main():
         # A miscompiled decoder can spin forever; don't wedge the whole batch.
         proc = sp.run(cmd, capture_output=True, text=True, timeout=60)
     except sp.TimeoutExpired as e:
-        sys.stdout.write((e.stdout or b"").decode(errors="replace") if isinstance(e.stdout, bytes) else (e.stdout or ""))
+        sys.stdout.write(e.stdout or "")
         unictest_report.fail("run", "driver timed out after 60s (likely infinite decode loop)", code=1)
     sys.stdout.write(proc.stdout or "")
     sys.stderr.write(proc.stderr or "")

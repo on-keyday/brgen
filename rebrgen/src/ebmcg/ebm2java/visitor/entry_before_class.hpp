@@ -83,12 +83,22 @@ namespace CODEGEN_NAMESPACE {
             return false;
         }
         auto elem = t->body.element_type();
-        if (!elem) {
-            return false;
+        return elem && is_u8(ctx, *elem);
+    }
+
+    // ARRAY/VECTOR type text: u8 element -> byte[], otherwise <elem>[].
+    inline expected<Result> java_array_type(auto& ctx, ebm::TypeRef element_type) {
+        if (is_u8(ctx, element_type)) {
+            return Result("byte[]");
         }
-        auto et = ctx.get(*elem);
-        return et && et->body.kind == ebm::TypeKind::UINT &&
-               et->body.size() && et->body.size()->value() == 8;
+        MAYBE(elem, ctx.visit(element_type));
+        return CODE(elem.to_writer(), "[]");
+    }
+
+    // Nested static classes are addressed by their dot-joined layer path.
+    inline expected<Result> java_layer_name(auto& ctx) {
+        MAYBE(name, get_identifier_layer_str(ctx, from_weak(ctx.id), "."));
+        return Result(name);
     }
 
     inline std::optional<ebm::FunctionKind> java_related_fn_kind(auto& ctx, const ebm::WeakStatementRef& related) {
@@ -287,6 +297,18 @@ static <T> T[] append(T[] a, T v) { T[] r = java.util.Arrays.copyOf(a, a.length 
         return {};
     }
 
+    // The struct codec entry: emit the EBM-generated function, then the
+    // stream convenience overload unless --no-stream-io.
+    inline expected<Result> java_codec_with_stream_overload(Context_Statement_STRUCT_DECL& sctx, ebm::StatementRef fn_ref, bool is_encode) {
+        MAYBE(body, sctx.visit(fn_ref));
+        CodeWriter w;
+        w.write(body.to_writer());
+        if (!sctx.flags().no_stream_io) {
+            MAYBE_VOID(_s, java_emit_stream_overload(sctx, fn_ref, is_encode, w));
+        }
+        return w;
+    }
+
 }  // namespace CODEGEN_NAMESPACE
 
 DEFINE_VISITOR(entry_before) {
@@ -314,24 +336,10 @@ DEFINE_VISITOR(entry_before) {
     config.struct_keyword = "public static class";
     config.methods_inner_class = true;
     config.struct_encode_start_wrapper = [](Context_Statement_STRUCT_DECL& sctx, ebm::StatementRef encode_fn) -> expected<Result> {
-        using namespace CODEGEN_NAMESPACE;
-        MAYBE(enc, sctx.visit(encode_fn));
-        CodeWriter w;
-        w.write(enc.to_writer());
-        if (!sctx.flags().no_stream_io) {
-            MAYBE_VOID(_s, java_emit_stream_overload(sctx, encode_fn, true, w));
-        }
-        return w;
+        return java_codec_with_stream_overload(sctx, encode_fn, true);
     };
     config.struct_decode_start_wrapper = [](Context_Statement_STRUCT_DECL& sctx, ebm::StatementRef decode_fn) -> expected<Result> {
-        using namespace CODEGEN_NAMESPACE;
-        MAYBE(dec, sctx.visit(decode_fn));
-        CodeWriter w;
-        w.write(dec.to_writer());
-        if (!sctx.flags().no_stream_io) {
-            MAYBE_VOID(_s, java_emit_stream_overload(sctx, decode_fn, false, w));
-        }
-        return w;
+        return java_codec_with_stream_overload(sctx, decode_fn, false);
     };
     // Anon variant-arm structs get their property accessors hoisted onto the
     // parent format: the accessor bodies reference sibling fields of the
@@ -388,24 +396,10 @@ DEFINE_VISITOR(entry_before) {
     config.make_pointer_wrapper = [](Result elem) -> expected<Result> { return elem; };
     config.make_optional_wrapper = [](Result elem) -> expected<Result> { return elem; };
     config.array_type_wrapper = [](Context_Type_ARRAY& actx) -> expected<Result> {
-        using namespace CODEGEN_NAMESPACE;
-        MAYBE(elem_type, actx.get(actx.element_type));
-        if (elem_type.body.kind == ebm::TypeKind::UINT &&
-            elem_type.body.size() && elem_type.body.size()->value() == 8) {
-            return Result("byte[]");
-        }
-        MAYBE(elem, actx.visit(actx.element_type));
-        return CODE(elem.to_writer(), "[]");
+        return java_array_type(actx, actx.element_type);
     };
     config.vector_type_wrapper = [](Context_Type_VECTOR& vctx) -> expected<Result> {
-        using namespace CODEGEN_NAMESPACE;
-        MAYBE(elem_type, vctx.get(vctx.element_type));
-        if (elem_type.body.kind == ebm::TypeKind::UINT &&
-            elem_type.body.size() && elem_type.body.size()->value() == 8) {
-            return Result("byte[]");
-        }
-        MAYBE(elem, vctx.visit(vctx.element_type));
-        return CODE(elem.to_writer(), "[]");
+        return java_array_type(vctx, vctx.element_type);
     };
     config.variant_type_custom = [](Context_Type_VARIANT& vctx) -> expected<Result> {
         if (is_nil(vctx.variant_desc.common_type)) {
@@ -417,14 +411,10 @@ DEFINE_VISITOR(entry_before) {
         return Result("Object");
     };
     config.struct_type_custom = [](Context_Type_STRUCT& sctx) -> expected<Result> {
-        using namespace CODEGEN_NAMESPACE;
-        MAYBE(name, get_identifier_layer_str(sctx, from_weak(sctx.id), "."));
-        return Result(name);
+        return java_layer_name(sctx);
     };
     config.recursive_struct_type_custom = [](Context_Type_RECURSIVE_STRUCT& sctx) -> expected<Result> {
-        using namespace CODEGEN_NAMESPACE;
-        MAYBE(name, get_identifier_layer_str(sctx, from_weak(sctx.id), "."));
-        return Result(name);
+        return java_layer_name(sctx);
     };
 
     // Fields: `public <type> <name> = <default>;` -- inline defaults so nested
@@ -598,7 +588,6 @@ DEFINE_VISITOR(entry_before) {
             case ebm::TypeKind::INT:
             case ebm::TypeKind::UINT:
             case ebm::TypeKind::USIZE:
-                return Result("0");
             case ebm::TypeKind::FLOAT:
                 return Result("0");
             case ebm::TypeKind::BOOL:
@@ -616,9 +605,7 @@ DEFINE_VISITOR(entry_before) {
                     }
                 }
                 MAYBE(elem, t.body.element_type());
-                auto et = dctx.get(elem);
-                if (et && et->body.kind == ebm::TypeKind::UINT &&
-                    et->body.size() && et->body.size()->value() == 8) {
+                if (is_u8(dctx, elem)) {
                     return Result("new byte[" + len + "]");
                 }
                 MAYBE(elem_txt, dctx.visit(elem));
@@ -732,31 +719,28 @@ DEFINE_VISITOR(entry_before) {
             return pass;
         }
         switch (bctx.bop) {
-            case ebm::BinaryOp::right_shift: {
-                MAYBE(l, bctx.visit(bctx.left));
-                MAYBE(r, bctx.visit(bctx.right));
-                return CODE("(", l.to_writer(), " >>> ", r.to_writer(), ")");
-            }
-            case ebm::BinaryOp::div: {
-                MAYBE(l, bctx.visit(bctx.left));
-                MAYBE(r, bctx.visit(bctx.right));
-                return CODE("Long.divideUnsigned(", l.to_writer(), ", ", r.to_writer(), ")");
-            }
-            case ebm::BinaryOp::mod: {
-                MAYBE(l, bctx.visit(bctx.left));
-                MAYBE(r, bctx.visit(bctx.right));
-                return CODE("Long.remainderUnsigned(", l.to_writer(), ", ", r.to_writer(), ")");
-            }
+            case ebm::BinaryOp::right_shift:
+            case ebm::BinaryOp::div:
+            case ebm::BinaryOp::mod:
             case ebm::BinaryOp::less:
             case ebm::BinaryOp::less_or_eq:
             case ebm::BinaryOp::greater:
-            case ebm::BinaryOp::greater_or_eq: {
-                MAYBE(l, bctx.visit(bctx.left));
-                MAYBE(r, bctx.visit(bctx.right));
-                return CODE("(Long.compareUnsigned(", l.to_writer(), ", ", r.to_writer(), ") ", to_string(bctx.bop), " 0)");
-            }
+            case ebm::BinaryOp::greater_or_eq:
+                break;
             default:
                 return pass;
+        }
+        MAYBE(l, bctx.visit(bctx.left));
+        MAYBE(r, bctx.visit(bctx.right));
+        switch (bctx.bop) {
+            case ebm::BinaryOp::right_shift:
+                return CODE("(", l.to_writer(), " >>> ", r.to_writer(), ")");
+            case ebm::BinaryOp::div:
+                return CODE("Long.divideUnsigned(", l.to_writer(), ", ", r.to_writer(), ")");
+            case ebm::BinaryOp::mod:
+                return CODE("Long.remainderUnsigned(", l.to_writer(), ", ", r.to_writer(), ")");
+            default:
+                return CODE("(Long.compareUnsigned(", l.to_writer(), ", ", r.to_writer(), ") ", to_string(bctx.bop), " 0)");
         }
     };
 
@@ -956,22 +940,28 @@ DEFINE_VISITOR(entry_before) {
     // `x.union_field.arm_field` -> instanceof-guarded cast to the arm class.
     config.member_access_custom = [](Context_Expression_MEMBER_ACCESS& mctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
+        // `<receiver>.<getter>(<state args>)`; hoisted anon-inner accessors
+        // live on parent_format, so their receiver is the outer instance,
+        // not the variant-arm value the base points at.
+        auto emit_getter_call = [&](std::string_view name, std::string_view state_args, bool on_outer) -> expected<Result> {
+            CodeWriter call;
+            if (on_outer) {
+                call.write("this.", name, "(", state_args, ")");
+                return Result(std::move(call));
+            }
+            MAYBE(base_str, mctx.visit(mctx.base));
+            call.write(base_str.to_writer(), ".", name, "(", state_args, ")");
+            return Result(std::move(call));
+        };
         MAYBE(prop_info, analyze_property_member_access(mctx, mctx.member, false));
         if (prop_info) {
             if (!prop_info->getter || is_nil(prop_info->getter->parent_format)) {
                 return pass;
             }
-            CodeWriter call;
-            if (prop_info->inner_anon) {
-                // Hoisted onto parent_format: the receiver is the outer
-                // instance, not the variant-arm value the base points at.
-                call.write("this.", prop_info->hoisted_method_name("_"), "(", prop_info->getter_params.state_args, ")");
-                return Result(std::move(call));
-            }
-            auto member_name = std::string(mctx.identifier(prop_info->getter_ref));
-            MAYBE(base_str, mctx.visit(mctx.base));
-            call.write(base_str.to_writer(), ".", member_name, "(", prop_info->getter_params.state_args, ")");
-            return Result(std::move(call));
+            auto name = prop_info->inner_anon
+                            ? prop_info->hoisted_method_name("_")
+                            : std::string(mctx.identifier(prop_info->getter_ref));
+            return emit_getter_call(name, prop_info->getter_params.state_args, prop_info->inner_anon);
         }
         auto member_stmt = mctx.template get_field<"member.body.id.instance">();
         if (!member_stmt) {
@@ -983,10 +973,7 @@ DEFINE_VISITOR(entry_before) {
                 (fd->kind == ebm::FunctionKind::PROPERTY_GETTER || fd->kind == ebm::FunctionKind::COMPOSITE_GETTER) &&
                 !is_nil(fd->parent_format)) {
                 MAYBE(getter_params, collect_func_param_names(mctx, *fd));
-                MAYBE(base_str, mctx.visit(mctx.base));
-                CodeWriter call;
-                call.write(base_str.to_writer(), ".", mctx.identifier(member_stmt->id), "(", getter_params.state_args, ")");
-                return Result(std::move(call));
+                return emit_getter_call(mctx.identifier(member_stmt->id), getter_params.state_args, false);
             }
             return pass;
         }
