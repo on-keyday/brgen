@@ -143,7 +143,17 @@ ToDo リストです(2025/11/04)
     2. 可変長配列対応(length との整合性は既存 encode 時検証に委ねる)
     3. ネスト format の再帰的リテラル
     4. fn の引数/戻り値で format 型を扱えるようにして、ライブラリ化
-  - 実装箇所: brgen 本体のパーサ・AST・typing、rebrgen 側は EBM に StructLiteral 式を追加して各 ebm2* で言語別の初期化構文を生成
+  - 実装箇所: brgen 本体のパーサ・AST・typing、rebrgen 側は EBM に StructLiteral 式を追加して各 ebm2\* で言語別の初期化構文を生成
+
+- field :[4]u8|ul32 みたいなエイリアス表現型みたいなの入れたい
+  - こう保持するのとアクセスするのどっちでもできるようにしたいみたいな需要がある
+  - 他には例えば flag :Flag|u8 でどちらでも取れる的な...
+    - これは今あるformat Flag: config.type = u8とかのサポートまともにすれば....
+
+- formatまたぎcontext共有
+  - example/thrift_compact_protocol.bgn などのように配列の各要素についてヘッダの同じ値使うみたいなパターンを簡単に...
+  - state variableの糖衣構文的な?
+  - フォーマット引数的な構文でstate variable相当のが定義できればいいかなぁ...
 
 # Done リスト
 
