@@ -186,14 +186,8 @@ DEFINE_VISITOR(entry_before) {
     };
 
     // Skip `if IS_ERROR(...)` blocks: Ruby uses exception flow, not error checks.
-    config.if_statement_custom = [](Context_Statement_IF_STATEMENT& ctx) -> expected<Result> {
-        using namespace CODEGEN_NAMESPACE;
-        MAYBE(cond_taken, ctx.get(ctx.if_statement.condition.cond));
-        if (cond_taken.body.kind == ebm::ExpressionKind::IS_ERROR) {
-            return Result{};
-        }
-        return pass;
-    };
+    // Errors are exceptions: never materialize `if (IS_ERROR(x))` guards.
+    config.skip_is_error_if_statement = true;
 
     // Stream offset: StringIO's `pos` attribute.
     // ADR 0039: GET_STREAM_OFFSET is emitted from lowered_expr (the RuntimeState

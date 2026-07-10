@@ -160,14 +160,8 @@ DEFINE_VISITOR(entry_before) {
                         name, ": \"", type_str_val.to_writer(), "\"");
     };
 
-    config.if_statement_custom = [](Context_Statement_IF_STATEMENT& ctx) -> expected<Result> {
-        using namespace CODEGEN_NAMESPACE;
-        MAYBE(cond_taken, ctx.get(ctx.if_statement.condition.cond));
-        if (cond_taken.body.kind == ebm::ExpressionKind::IS_ERROR) {
-            return {};
-        }
-        return pass;
-    };
+    // Errors are exceptions: never materialize `if (IS_ERROR(x))` guards.
+    config.skip_is_error_if_statement = true;
 
     config.init_check_visitor = [](Context_Statement_INIT_CHECK& ctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;

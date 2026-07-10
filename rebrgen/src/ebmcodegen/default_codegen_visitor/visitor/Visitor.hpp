@@ -231,9 +231,19 @@ std::function<expected<Result>(Context_Expression_TYPE_CAST& ctx)> type_cast_cus
 std::function<expected<Result>(Context_Expression_SIZEOF& ctx)> sizeof_custom;
 
 std::function<expected<Result>(Context_Statement_IF_STATEMENT& ctx)> if_statement_custom;
+// Emit nothing for `if (IS_ERROR(x))` guards: languages whose error handling
+// is exceptions/error-unions (python/ruby/zig) never materialize an is-error
+// branch, so the whole IF is skipped by the default visitor when set.
+bool skip_is_error_if_statement = false;
 
 std::function<expected<Result>(Context_Statement_ASSIGNMENT& ctx)> assignment_custom;
 std::function<expected<Result>(Context_Statement_VARIABLE_DECL& ctx)> variable_decl_custom;
+// Fixed-length UINT8 array variable initialized from a string literal
+// (see util::detect_byte_array_literal, run by the default VARIABLE_DECL
+// visitor): emit the language's bytes-array literal for it, receiving the
+// raw literal bytes and the declared array length. Empty -> plain default
+// VARIABLE_DECL emission (the string literal as-is).
+std::function<expected<Result>(Context_Statement_VARIABLE_DECL& ctx, std::string_view name, size_t length, const std::string& bytes)> byte_array_literal_wrapper;
 
 std::function<expected<Result>(Context_Expression_MAX_VALUE& ctx)> max_value_custom;
 std::function<expected<Result>(Context_Statement_LENGTH_CHECK& ctx)> length_check_custom;

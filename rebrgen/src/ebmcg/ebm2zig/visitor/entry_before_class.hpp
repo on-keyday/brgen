@@ -580,13 +580,8 @@ DEFINE_VISITOR(entry_before) {
 
     // When an if-statement's condition is IS_ERROR, skip the entire block.
     // The `try` keyword already handles error propagation.
-    config.if_statement_custom = [&](Context_Statement_IF_STATEMENT& ictx) -> expected<Result> {
-        MAYBE(cond_expr, ctx.get(ictx.if_statement.condition.cond));
-        if (cond_expr.body.kind == ebm::ExpressionKind::IS_ERROR) {
-            return CodeWriter{};
-        }
-        return pass;
-    };
+    // Errors are error-unions with try: never materialize `if (IS_ERROR(x))` guards.
+    config.skip_is_error_if_statement = true;
 
     // Error report: emit `return error.ValidationFailed;` with the message as a comment.
     config.error_report_visitor = [&](Context_Statement_ERROR_REPORT& rctx) -> expected<Result> {

@@ -50,12 +50,7 @@ inline bool is_cpp_keyword(const std::string& name) {
 
 DEFINE_VISITOR(pre_visitor) {
     using namespace CODEGEN_NAMESPACE;
-    ctx.module().set_identifier_modifier(
-        [](ebm::StatementRef ref, std::string& name) {
-            if (is_cpp_keyword(name)) {
-                name += "_";
-            }
-        });
+    suffix_reserved_identifiers(ctx, is_cpp_keyword);
     return pass;
 }
 

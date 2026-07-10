@@ -31,6 +31,12 @@ DEFINE_VISITOR(Statement_VARIABLE_DECL) {
     if (ctx.config().variable_decl_custom) {
         CALL_OR_PASS(var_decl, ctx.config().variable_decl_custom(ctx));
     }
+    if (ctx.config().byte_array_literal_wrapper) {
+        MAYBE(lit, detect_byte_array_literal(ctx));
+        if (lit) {
+            return ctx.config().byte_array_literal_wrapper(ctx, ctx.identifier(), lit->length, lit->bytes);
+        }
+    }
     /*here to write the hook*/
     if (ctx.var_decl.is_reference()) {
         MAYBE(initial_value, ctx.visit(ctx.var_decl.initial_value));

@@ -145,41 +145,11 @@ DEFINE_VISITOR(entry_before) {
     // `const NAME: [u8; N] = "string-literal"` is a Rust type error: string
     // literals are &str. Emit `*b"..."` so the bytes-array literal type
     // matches the declared `[u8; N]`.
-    config.variable_decl_custom = [](Context_Statement_VARIABLE_DECL& vctx) -> expected<Result> {
+    config.byte_array_literal_wrapper = [](Context_Statement_VARIABLE_DECL& vctx, std::string_view name, size_t length, const std::string& bytes) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
-        if (is_nil(vctx.var_decl.initial_value)) {
-            return pass;
-        }
-        MAYBE(var_type, vctx.get(vctx.var_decl.var_type));
-        if (var_type.body.kind != ebm::TypeKind::ARRAY) {
-            return pass;
-        }
-        auto element_type_p = var_type.body.element_type();
-        auto length_p = var_type.body.length();
-        if (!element_type_p || !length_p) {
-            return pass;
-        }
-        MAYBE(element_type, vctx.get(*element_type_p));
-        if (element_type.body.kind != ebm::TypeKind::UINT) {
-            return pass;
-        }
-        auto size_p = element_type.body.size();
-        if (!size_p || size_p->value() != 8) {
-            return pass;
-        }
-        MAYBE(init_expr, vctx.get(vctx.var_decl.initial_value));
-        if (init_expr.body.kind != ebm::ExpressionKind::LITERAL_STRING) {
-            return pass;
-        }
-        auto string_value_p = init_expr.body.string_value();
-        if (!string_value_p) {
-            return pass;
-        }
-        MAYBE(str_lit, vctx.module().get_string_literal(*string_value_p));
-        auto name = vctx.identifier();
-        auto escaped = futils::escape::escape_str<std::string>(str_lit.body.data, futils::escape::EscapeFlag::hex);
+        auto escaped = futils::escape::escape_str<std::string>(bytes, futils::escape::EscapeFlag::hex);
         CodeWriter w;
-        w.writeln("const ", name, ": [u8; ", std::format("{}", length_p->value()), "] = *b\"", escaped, "\";");
+        w.writeln("const ", name, ": [u8; ", std::format("{}", length), "] = *b\"", escaped, "\";");
         return w;
     };
     // Two concerns are merged into a single assignment_custom hook (only one

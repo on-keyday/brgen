@@ -27,6 +27,12 @@ DEFINE_VISITOR(Statement_IF_STATEMENT) {
     if (ctx.config().if_statement_custom) {
         CALL_OR_PASS(custom_result, ctx.config().if_statement_custom(ctx));
     }
+    if (ctx.config().skip_is_error_if_statement) {
+        MAYBE(cond_taken, ctx.get(ctx.if_statement.condition.cond));
+        if (cond_taken.body.kind == ebm::ExpressionKind::IS_ERROR) {
+            return {};
+        }
+    }
     CodeWriter w;
     // Evaluate a condition expression, hoisting any statement-shaped lowered
     // sub-expression (e.g. CONDITIONAL_STATEMENT, which emits an if/assign and

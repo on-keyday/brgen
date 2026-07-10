@@ -40,12 +40,7 @@ inline bool is_wuffs_reserved(const std::string& name) {
 
 DEFINE_VISITOR(pre_visitor) {
     using namespace CODEGEN_NAMESPACE;
-    ctx.module().set_identifier_modifier(
-        [](ebm::StatementRef ref, std::string& name) {
-            if (is_wuffs_reserved(name)) {
-                name += "_";
-            }
-        });
+    suffix_reserved_identifiers(ctx, is_wuffs_reserved);
     return pass;
 }
 
