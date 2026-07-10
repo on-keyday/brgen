@@ -115,6 +115,13 @@ DEFINE_VISITOR(entry_before) {
     ctx.config().uint_prefix = "i";
     ctx.config().usize_type_name = "i64";
 
+    ctx.config().program_decl_start_wrapper = [](Context_Statement_PROGRAM_DECL& pctx) -> expected<Result> {
+        CodeWriter w;
+        // LLVM IR line comments use ";".
+        write_generated_banner(pctx, w, ";");
+        return w;
+    };
+
     ctx.config().loop_statement_custom = [](Context_Statement_LOOP_STATEMENT& ctx) -> expected<Result> {
         if (!is_nil(ctx.loop.lowered_statement.id)) {
             return ctx.visit(ctx.loop.lowered_statement.id);

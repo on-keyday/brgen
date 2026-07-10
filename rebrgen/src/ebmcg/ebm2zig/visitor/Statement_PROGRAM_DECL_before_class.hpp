@@ -27,6 +27,7 @@ DEFINE_VISITOR(Statement_PROGRAM_DECL_before) {
     MAYBE(main, ctx.main_logic());
 
     CodeWriter w;
+    write_generated_banner(ctx, w);
     w.writeln("const std = @import(\"std\");");
     w.writeln();
     w.write(main.to_writer());

@@ -235,6 +235,7 @@ DEFINE_VISITOR_CLASS(Statement_PROGRAM_DECL) {
             }
         };
         CodeWriter w;
+        write_generated_banner(ctx, w, "/*", " */");
 
         std::vector<ebm::StatementRef> composite_fns;
         std::unordered_set<std::uint64_t> parents_set;

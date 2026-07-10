@@ -1153,6 +1153,7 @@ DEFINE_VISITOR(entry_before) {
     config.program_decl_start_wrapper = [&](Context_Statement_PROGRAM_DECL& pctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
         CodeWriter w;
+        write_generated_banner(pctx, w);
         w.writeln("pub status \"#validation failed\"");
         w.writeln("pub status \"#error\"");
         w.writeln("");

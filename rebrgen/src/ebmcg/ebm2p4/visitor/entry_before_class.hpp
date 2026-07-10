@@ -28,5 +28,10 @@ DEFINE_VISITOR(entry_before) {
     ctx.config().use_base_type_of_enum = true;
     ctx.config().struct_keyword = "header";
     ctx.config().module_.register_default_prefix(ebm::StatementKind::STRUCT_DECL, "Header");
+    ctx.config().program_decl_start_wrapper = [](Context_Statement_PROGRAM_DECL& pctx) -> expected<Result> {
+        CodeWriter w;
+        write_generated_banner(pctx, w);
+        return w;
+    };
     return pass;
 }
