@@ -64,7 +64,7 @@ DEFINE_VISITOR(Statement_ASSIGNMENT_before) {
         return pass;
     }
     if (auto type_ref = get_struct_union_member_from_field(ctx, *may_variant)) {
-        if (ctx.config().bulk_primitive.contains(get_id(*type_ref))) {
+        if (ctx.config().bulk_primitive.contains(*type_ref)) {
             // bulk primitive assignment
             MAYBE(base, ctx.get_field<"base.base">(ctx.target));
             MAYBE(base_str, ctx.visit(base));

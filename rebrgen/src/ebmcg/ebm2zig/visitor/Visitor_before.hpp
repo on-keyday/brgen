@@ -13,4 +13,3 @@ std::unordered_map<ebm::StatementRef,bool> needs_allocation;
 bool current_param_needs_allocation = false;
 bool current_argument_needs_allocation = false;
 bool on_can_read_stream_loop = false;
-std::unordered_set<std::uint64_t> declared_variants;  // VARIANT TypeRef IDs whose enum has been emitted

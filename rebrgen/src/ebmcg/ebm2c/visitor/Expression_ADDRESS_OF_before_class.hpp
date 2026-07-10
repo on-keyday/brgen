@@ -23,7 +23,7 @@
 DEFINE_VISITOR(Expression_ADDRESS_OF_before) {
     using namespace CODEGEN_NAMESPACE;
     /*here to write the hook*/
-    if (ctx.config().ptr_to_optional) {
+    if (ctx.config().ptr_to_owned) {
         MAYBE(pointee, ctx.get_field<"pointee_type">(ctx.type));
         MAYBE(target, ctx.visit(ctx.target_expr));
         MAYBE(pointee_str, ctx.visit(pointee));

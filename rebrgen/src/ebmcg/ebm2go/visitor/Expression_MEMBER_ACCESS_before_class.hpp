@@ -71,7 +71,7 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
     }
     MAYBE(member, ctx.get_field<"body.id">(ctx.member));
     if (auto type_ref = get_struct_union_member_from_field(ctx, from_weak(member))) {
-        auto got = ctx.config().bulk_primitive.find(get_id(*type_ref));
+        auto got = ctx.config().bulk_primitive.find(*type_ref);
         if (got != ctx.config().bulk_primitive.end()) {
             // self.x -> self.
             MAYBE(base, ctx.get_field<"body.base">(ctx.base));

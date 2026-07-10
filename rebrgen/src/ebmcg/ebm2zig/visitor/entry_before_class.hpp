@@ -58,6 +58,12 @@ DEFINE_VISITOR(entry_before) {
     // Zig methods must be inside struct body
     config.methods_inner_class = true;
 
+    // Hoist anon-inner variant-arm property accessors onto the outer struct
+    // (default Statement_STRUCT_DECL). The dispatcher calls
+    // `self.Struct236_padding_len()` on the outer instance; the name prefix
+    // comes from function_definition_start_wrapper below.
+    config.relocate_anon_inner_properties = true;
+
     // Zig uses .len as a field, not a function call
     config.array_size_get_function = "len";
     config.surrounded_array_size = false;
@@ -663,17 +669,7 @@ DEFINE_VISITOR(entry_before) {
     // Creates a sub-stream of fixed length for IO operations.
     // INPUT: read length bytes from parent, create fixedBufferStream, do IO on it
     // OUTPUT: create a buffer, do IO on it, assert length, write to parent
-    config.sub_byte_range_visitor = [&](Context_Statement_SUB_BYTE_RANGE& sctx) -> expected<Result> {
-        auto io_ = sctx.identifier(sctx.sub_byte_range.io_ref);
-        auto parent_io_ = sctx.identifier(sctx.sub_byte_range.parent_io_ref);
-        // ADR 0038/0039: alignment offset is absolute (inherited from the parent),
-        // so the shared RuntimeState companion keeps counting inside the subrange.
-        // The window is consumed as a whole, so pin the companion to
-        // start + length after the child ran.
-        const bool track_offset = has_absolute_offset(sctx, sctx.sub_byte_range.io_ref) &&
-                                  sctx.sub_byte_range.stream_type == ebm::StreamType::INPUT;
-        MAYBE(length_expr, sctx.sub_byte_range.length());
-        MAYBE(length_str, sctx.visit(length_expr));
+    config.sub_byte_range_wrapper = [&](Context_Statement_SUB_BYTE_RANGE& sctx, std::string io_, std::string parent_io_, Result length_str, Result do_io, bool track_offset) -> expected<Result> {
         CodeWriter w;
         // Use page_allocator as fallback when allocator param is not available (encode functions)
         auto alloc_name = (sctx.sub_byte_range.stream_type == ebm::StreamType::INPUT) ? "allocator" : "std.heap.page_allocator";
@@ -691,7 +687,6 @@ DEFINE_VISITOR(entry_before) {
                 if (track_offset) {
                     w.writeln("const _rs_start = runtime_state.offset;");
                 }
-                MAYBE(do_io, sctx.visit(sctx.sub_byte_range.io_statement));
                 w.write(do_io.to_writer());
                 if (track_offset) {
                     w.writeln("runtime_state.offset = _rs_start + sub_len;");
@@ -709,7 +704,6 @@ DEFINE_VISITOR(entry_before) {
                 w.writeln("var sub_stream = std.io.fixedBufferStream(sub_buf);");
                 w.writeln("var ", io_, " = sub_stream.writer();");
                 w.writeln("_ = &", io_, ";");
-                MAYBE(do_io, sctx.visit(sctx.sub_byte_range.io_statement));
                 w.write(do_io.to_writer());
                 w.writeln("try ", parent_io_, ".writeAll(sub_buf);");
             }
@@ -798,10 +792,10 @@ DEFINE_VISITOR(entry_before) {
             return pass;
         }
         auto enum_name = vctx.config().variant_prefix + std::format("{}", get_id(vctx.item_id));
-        if (vctx.config().declared_variants.contains(get_id(vctx.item_id))) {
+        if (vctx.config().declared_variants.contains(vctx.item_id)) {
             return Result(enum_name);
         }
-        vctx.config().declared_variants.insert(get_id(vctx.item_id));
+        vctx.config().declared_variants.insert(vctx.item_id);
         CodeWriter w;
         w.writeln("pub const ", enum_name, " = union(enum) {");
         {

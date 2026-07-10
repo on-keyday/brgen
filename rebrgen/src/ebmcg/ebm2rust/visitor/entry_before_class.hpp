@@ -226,7 +226,7 @@ DEFINE_VISITOR(entry_before) {
                 MAYBE(member_stmt, actx.get(*member_p));
                 if (auto mid = member_stmt.body.id()) {
                     if (auto arm_type = get_struct_union_member_from_field(actx, from_weak(*mid))) {
-                        if (actx.config().bulk_primitive.contains(get_id(*arm_type))) {
+                        if (actx.config().bulk_primitive.contains(*arm_type)) {
                             if (auto union_ref = target_expr.body.base()) {
                                 MAYBE(union_access, actx.get(*union_ref));  // `self.union` access
                                 if (auto recv_ref = union_access.body.base()) {
@@ -370,10 +370,10 @@ DEFINE_VISITOR(entry_before) {
         auto enum_name = vctx.config().variant_prefix + std::format("{}", get_id(vctx.item_id));
         const bool zero_copy = vctx.flags().zero_copy;
         const std::string lifetime = zero_copy ? "<'a>" : "";
-        if (vctx.config().declared_variants.contains(get_id(vctx.item_id))) {
+        if (vctx.config().declared_variants.contains(vctx.item_id)) {
             return Result(enum_name + lifetime);
         }
-        vctx.config().declared_variants.insert(get_id(vctx.item_id));
+        vctx.config().declared_variants.insert(vctx.item_id);
         CodeWriter w;
         w.writeln("#[derive(Debug, Clone, PartialEq, Eq, Default)]");
         w.writeln("pub enum ", enum_name, lifetime, " {");

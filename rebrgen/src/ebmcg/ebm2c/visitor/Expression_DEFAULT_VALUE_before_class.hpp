@@ -39,7 +39,7 @@ DEFINE_VISITOR(Expression_DEFAULT_VALUE_before) {
         MAYBE(inner_text, ctx.visit(inner));
         return CODE("(OPTIONAL_OF(", inner_text.to_writer(), ")){}");
     }
-    if (typ.body.kind == ebm::TypeKind::PTR && ctx.config().ptr_to_optional) {
+    if (typ.body.kind == ebm::TypeKind::PTR && ctx.config().ptr_to_owned) {
         MAYBE(pointee, typ.body.pointee_type());
         MAYBE(pointee_text, ctx.visit(pointee));
         return CODE("(OPTIONAL_OF(", pointee_text.to_writer(), ")){}");

@@ -14,23 +14,8 @@ std::set<std::string> use_statements;
 std::unordered_set<size_t> can_move_exprs;
 size_t parent_format_stmt_id = 0;
 std::map<std::uint64_t, bool> variant_mutable_contexts;  // variant arm TypeRef ID → is_mutable
-std::unordered_set<std::uint64_t> declared_variants;  // VARIANT TypeRef IDs whose enum has been emitted
-
-// Variant-arm TypeRef IDs of common_type unions whose fields are folded into a
-// single composite storage word (PREFIXED_UNION_PRIMITIVE). Populated by
-// Statement_INIT_CHECK when it suppresses the variant guard; consumed by
-// Expression_MEMBER_ACCESS / assignment_custom to flatten arm access to the
-// composite getter/setter (the VariantNN enum + get_vN machinery is elided,
-// matching ebm2go's flatten model). Mirrors ebm2go config.bulk_primitive.
-std::unordered_set<std::uint64_t> bulk_primitive;
-
-// A STRICT_TYPE property getter whose body takes the address (&) of a composite
-// bit-field cannot return Option<&T>: the composite read is a computed temporary
-// (getter call), not an addressable place. Statement_FUNCTION_DECL_before detects
-// this per getter and sets ptr_to_owned for its emission; pointer_type_wrapper /
-// make_pointer_wrapper then emit Option<T> / Some(v) (owned). Mirrors ebm2c's
-// ptr_to_optional. Needed once PREFIXED_UNION composites are exposed by-ref.
-bool ptr_to_owned = false;
+// declared_variants / bulk_primitive / ptr_to_owned moved to the shared
+// Visitor.hpp config (also used by ebm2go / ebm2zig / ebm2c).
 
 // zero-copy direct decode state
 // When true, decoder is lowered against a `&'a [u8]` input + `*offset` cursor

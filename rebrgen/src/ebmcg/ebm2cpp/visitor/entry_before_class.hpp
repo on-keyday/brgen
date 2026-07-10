@@ -296,21 +296,10 @@ DEFINE_VISITOR(entry_before) {
     // express the absolute offset ADR 0038 requires.
 
     // SUB_BYTE_RANGE: create a sub-reader/writer over a byte range
-    config.sub_byte_range_visitor = [](Context_Statement_SUB_BYTE_RANGE& ctx) -> expected<Result> {
+    config.sub_byte_range_wrapper = [](Context_Statement_SUB_BYTE_RANGE& ctx, std::string io_, std::string parent_io_, Result length_str, Result do_io, bool track_offset) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
-        auto io_ = ctx.identifier(ctx.sub_byte_range.io_ref);
-        auto parent_io_ = ctx.identifier(ctx.sub_byte_range.parent_io_ref);
-        MAYBE(length, ctx.sub_byte_range.length());
-        MAYBE(length_str, ctx.visit(length));
-        MAYBE(do_io, ctx.visit(ctx.sub_byte_range.io_statement));
         CodeWriter w;
         if (ctx.sub_byte_range.stream_type == ebm::StreamType::INPUT) {
-            // ADR 0038/0039: alignment offset is absolute (inherited from the
-            // parent), so the shared RuntimeState companion keeps counting inside
-            // the subrange while the sub-reader cursor stays view-local. The
-            // window is consumed as a whole, so pin the companion to
-            // start + length after the child ran.
-            const bool track_offset = has_absolute_offset(ctx, ctx.sub_byte_range.io_ref);
             // Create sub-reader from parent reader's current position
             w.writeln("{");
             {

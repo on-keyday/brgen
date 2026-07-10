@@ -55,6 +55,15 @@ DEFINE_VISITOR(Statement_STRUCT_DECL) {
         CALL_OR_PASS(uniq, ctx.config().struct_decl_custom(ctx));
     }
 
+    // relocate_anon_inner_properties: variant-alternative structs (the
+    // per-arm structs ebmgen lifts out of variant lowering) keep their
+    // fields, but their property accessors are hoisted onto the
+    // parent_format struct so the accessor receiver lands on the outer
+    // instance. Detect by has_related_variant -- the IR's semantic flag for
+    // "this struct is a member of a STRUCT_UNION variant".
+    const bool relocate = ctx.config().relocate_anon_inner_properties;
+    const bool is_anon_inner = relocate && ctx.struct_decl.has_related_variant();
+
     CodeWriter w;
     if (ctx.config().struct_definition_start_wrapper) {
         MAYBE(start, ctx.config().struct_definition_start_wrapper(ctx));
@@ -70,7 +79,16 @@ DEFINE_VISITOR(Statement_STRUCT_DECL) {
         MAYBE(block, ctx.visit(ctx.struct_decl.fields));
         w.write(block.to_writer());
         if (ctx.config().methods_inner_class) {
-            MAYBE_VOID(_1, emit_struct_methods(ctx, w));
+            if (is_anon_inner) {
+                MAYBE_VOID(_c1, emit_struct_codec(ctx, w));
+                MAYBE_VOID(_m1, emit_struct_user_methods(ctx, w));
+            }
+            else {
+                MAYBE_VOID(_1, emit_struct_methods(ctx, w));
+                if (relocate) {
+                    MAYBE_VOID(_i1, emit_anon_inner_properties(ctx, w));
+                }
+            }
         }
     }
     if (ctx.config().struct_definition_close_wrapper) {
@@ -85,7 +103,16 @@ DEFINE_VISITOR(Statement_STRUCT_DECL) {
     }
 
     if (!ctx.config().methods_inner_class) {
-        MAYBE_VOID(_2, emit_struct_methods(ctx, w));
+        if (is_anon_inner) {
+            MAYBE_VOID(_c2, emit_struct_codec(ctx, w));
+            MAYBE_VOID(_m2, emit_struct_user_methods(ctx, w));
+        }
+        else {
+            MAYBE_VOID(_2, emit_struct_methods(ctx, w));
+            if (relocate) {
+                MAYBE_VOID(_i2, emit_anon_inner_properties(ctx, w));
+            }
+        }
     }
 
     if (ctx.config().struct_definition_end_wrapper) {

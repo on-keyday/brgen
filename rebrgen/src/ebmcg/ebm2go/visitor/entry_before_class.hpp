@@ -853,7 +853,7 @@ DEFINE_VISITOR(entry_before) {
             ictx.init_check.init_check_type == ebm::InitCheckType::union_set) {
             MAYBE(type, ictx.get_field<"type">(ictx.init_check.expect_value));
             if (get_composite_field(ctx, ctx.get_field<"member">(ictx.init_check.target_field))) {
-                ctx.config().bulk_primitive.insert(get_id(type));
+                ctx.config().bulk_primitive.insert(type);
                 return "";
             }
             if (ctx.config().no_heap_mode.back()) {

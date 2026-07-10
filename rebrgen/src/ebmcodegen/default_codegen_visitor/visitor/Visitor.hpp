@@ -125,6 +125,22 @@ bool func_style_cast = true;
 std::vector<CodeWriter> decl_toplevel;
 bool on_assign = false;  // useful for expression generation
 
+// VARIANT TypeRefs whose enum has been emitted: dedup guard for backends
+// that emit a variant's enum lazily at first use (ebm2rust, ebm2zig).
+std::unordered_set<ebm::TypeRef> declared_variants;
+// Variant-arm TypeRefs of common_type unions whose fields are folded into
+// a single composite storage word (PREFIXED_UNION_PRIMITIVE); arm access
+// flattens to the composite getter/setter and the VariantNN machinery is
+// elided. Populated/consumed by the backend (ebm2go's flatten model;
+// ebm2rust mirrors it).
+std::unordered_set<ebm::TypeRef> bulk_primitive;
+// A property getter that must return an owned value (optional-of-value)
+// instead of a pointer/reference: composite bit-field reads are computed
+// temporaries (getter calls) with no addressable place. Set around the
+// getter's emission; consumed by pointer_type_wrapper /
+// make_pointer_wrapper (ebm2c emits optional-of-value, ebm2rust Option<T>).
+bool ptr_to_owned = false;
+
 std::function<expected<Result>(Context_Statement_WRITE_DATA& ctx)> write_data_custom;
 std::function<expected<Result>(Context_Statement_READ_DATA& ctx)> read_data_custom;
 std::function<expected<Result>(Context_Statement_READ_DATA& ctx, BytesType cand, Result target, std::string io_name)> read_data_bytes_io_wrapper;
@@ -157,6 +173,14 @@ std::function<expected<Result>(Context_Statement_ENUM_DECL& ctx)> enum_decl_visi
 std::function<expected<Result>(Context_Statement_ENUM_MEMBER_DECL& ctx)> enum_member_decl_visitor;
 std::function<expected<Result>(Context_Statement_INIT_CHECK& ctx)> init_check_visitor;
 std::function<expected<Result>(Context_Statement_SUB_BYTE_RANGE& ctx)> sub_byte_range_visitor;
+// SUB_BYTE_RANGE with the shared preamble handled by the default visitor:
+// io/parent_io identifiers, the visited length expression and child
+// io_statement, and the ADR 0038/0039 offset-pin judgment (absolute
+// alignment offset + INPUT stream). The wrapper emits the language's
+// sub-reader/writer scaffold and, when track_offset, saves
+// runtime_state.offset before the child and pins it to start + length
+// after. Ignored when sub_byte_range_visitor is set.
+std::function<expected<Result>(Context_Statement_SUB_BYTE_RANGE& ctx, std::string io, std::string parent_io, Result length, Result do_io, bool track_offset)> sub_byte_range_wrapper;
 std::string meta_type_name = "";                                      // type name for TypeKind::META (e.g. "Any" for Python, "interface{}" for Go)
 std::function<expected<Result>(Result name)> enum_type_name_wrapper;  // wraps the resolved enum name (e.g. "Union[name,int]" for Python)
 
@@ -170,6 +194,15 @@ std::function<expected<Result>(Context_Expression_CONDITIONAL& ctx)> conditional
 // spawn a standalone _before_class.hpp file per kind.
 std::function<expected<Result>(Context_Expression_MEMBER_ACCESS& ctx)> member_access_custom;
 std::function<expected<Result>(Context_Expression_ENUM_MEMBER& ctx)> enum_member_custom;
+
+// Hoist property accessors of anon inner variant-arm structs onto their
+// parent_format struct (default Statement_STRUCT_DECL): the inner struct
+// (detected by has_related_variant) skips its own properties block and the
+// outer struct emits every descendant's accessors via
+// emit_anon_inner_properties, so the accessor receiver lands on the outer
+// instance. Name-prefixing stays with the generator's function wrappers
+// (hoisted_accessor_inner_ident). Used by ebm2zig.
+bool relocate_anon_inner_properties = false;
 
 // Wrapper for the struct-definition close: sits between the fields block
 // and the methods block. When set, the default Statement_STRUCT_DECL

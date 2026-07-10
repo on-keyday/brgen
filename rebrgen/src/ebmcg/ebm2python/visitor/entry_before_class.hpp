@@ -237,20 +237,9 @@ DEFINE_VISITOR(entry_before) {
         MAYBE(name, get_identifier_layer_str(ctx, from_weak(ctx.id), "."));
         return Result(name);
     };
-    config.sub_byte_range_visitor = [](Context_Statement_SUB_BYTE_RANGE& ctx) -> expected<Result> {
+    config.sub_byte_range_wrapper = [](Context_Statement_SUB_BYTE_RANGE& ctx, std::string io_, std::string parent_io_, Result length_str, Result do_io, bool track_offset) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
-        auto io_ = ctx.identifier(ctx.sub_byte_range.io_ref);
-        MAYBE(do_io, ctx.visit(ctx.sub_byte_range.io_statement));
         CodeWriter w;
-        auto parent_io_ = ctx.identifier(ctx.sub_byte_range.parent_io_ref);
-        MAYBE(length, ctx.sub_byte_range.length());
-        MAYBE(length_str, ctx.visit(length));
-        // ADR 0038/0039: alignment offset is absolute (inherited from the parent),
-        // so the shared RuntimeState companion keeps counting inside the subrange
-        // while BytesIO's cursor stays stream-local. The window is consumed as a
-        // whole, so pin the companion to start + length after the child ran.
-        const bool track_offset = has_absolute_offset(ctx, ctx.sub_byte_range.io_ref) &&
-                                  ctx.sub_byte_range.stream_type == ebm::StreamType::INPUT;
         if (ctx.sub_byte_range.stream_type == ebm::StreamType::INPUT) {
             w.writeln(io_, " = io.BytesIO(", parent_io_, ".read(", length_str.to_writer(), "))");
         }

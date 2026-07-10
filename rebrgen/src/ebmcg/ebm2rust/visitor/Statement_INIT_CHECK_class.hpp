@@ -39,7 +39,7 @@ DEFINE_VISITOR(Statement_INIT_CHECK) {
     // MEMBER_ACCESS / assignment flatten to the composite getter/setter.
     if (auto member = ctx.get_field<"member">(ctx.init_check.target_field)) {
         if (ebm2rust::get_composite_field(ctx, *member)) {
-            ctx.config().bulk_primitive.insert(get_id(expect_expr.body.type));
+            ctx.config().bulk_primitive.insert(expect_expr.body.type);
             return Result{};
         }
     }

@@ -810,19 +810,8 @@ DEFINE_VISITOR(entry_before) {
     // DataView constructor and offset arithmetic require number, so we
     // coerce via `Number(...)`. JS coerces number->number as identity, so
     // this is safe in both modes.
-    config.sub_byte_range_visitor = [](Context_Statement_SUB_BYTE_RANGE& sctx) -> expected<Result> {
+    config.sub_byte_range_wrapper = [](Context_Statement_SUB_BYTE_RANGE& sctx, std::string io_, std::string parent_io_, Result length_str, Result inner, bool track_offset) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
-        auto io_ = sctx.identifier(sctx.sub_byte_range.io_ref);
-        auto parent_io_ = sctx.identifier(sctx.sub_byte_range.parent_io_ref);
-        MAYBE(length_ref, sctx.sub_byte_range.length());
-        MAYBE(length_str, sctx.visit(length_ref));
-        MAYBE(inner, sctx.visit(sctx.sub_byte_range.io_statement));
-        // ADR 0038/0039: alignment offset is absolute (inherited from the parent),
-        // so the shared RuntimeState companion keeps counting inside the subrange
-        // while `io.offset` stays the view-local cursor. The window is consumed as
-        // a whole, so pin the companion to start + length after the child ran.
-        const bool track_offset = has_absolute_offset(sctx, sctx.sub_byte_range.io_ref) &&
-                                  sctx.sub_byte_range.stream_type == ebm::StreamType::INPUT;
         CodeWriter w;
         w.writeln("{");
         {

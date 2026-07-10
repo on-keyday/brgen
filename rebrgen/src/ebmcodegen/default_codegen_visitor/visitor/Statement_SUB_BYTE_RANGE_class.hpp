@@ -32,6 +32,21 @@ DEFINE_VISITOR(Statement_SUB_BYTE_RANGE) {
     if (ctx.config().sub_byte_range_visitor) {
         return ctx.config().sub_byte_range_visitor(ctx);
     }
+    if (ctx.config().sub_byte_range_wrapper) {
+        auto io_ = std::string(ctx.identifier(ctx.sub_byte_range.io_ref));
+        auto parent_io_ = std::string(ctx.identifier(ctx.sub_byte_range.parent_io_ref));
+        MAYBE(length, ctx.sub_byte_range.length());
+        MAYBE(length_str, ctx.visit(length));
+        MAYBE(do_io, ctx.visit(ctx.sub_byte_range.io_statement));
+        // ADR 0038/0039: alignment offset is absolute (inherited from the parent),
+        // so the shared RuntimeState companion keeps counting inside the subrange
+        // while the sub-reader cursor stays view-local. The window is consumed as
+        // a whole; the wrapper pins the companion to start + length after the
+        // child ran when track_offset is set.
+        const bool track_offset = has_absolute_offset(ctx, ctx.sub_byte_range.io_ref) &&
+                                  ctx.sub_byte_range.stream_type == ebm::StreamType::INPUT;
+        return ctx.config().sub_byte_range_wrapper(ctx, std::move(io_), std::move(parent_io_), std::move(length_str), std::move(do_io), track_offset);
+    }
     return ctx.get_impl<expected<Result>>([&](auto&& impl) {
         return impl.visitor_Statement_SUB_BYTE_RANGE_GeneratorDefaultHook.visit(ctx);
     });

@@ -139,7 +139,7 @@ DEFINE_VISITOR(Statement_FUNCTION_DECL) {
 
     // first, traverse body to detect bitfield pointer getters
     ctx.config()
-        .ptr_to_optional = ctx.config().ptr_to_optional_targets.contains(get_id(ctx.item_id));
+        .ptr_to_owned = ctx.config().ptr_to_optional_targets.contains(get_id(ctx.item_id));
 
     MAYBE(ret_type, ctx.visit(ctx.func_decl.return_type));
 

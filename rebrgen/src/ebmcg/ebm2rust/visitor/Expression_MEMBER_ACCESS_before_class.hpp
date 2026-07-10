@@ -30,7 +30,7 @@ DEFINE_VISITOR(Expression_MEMBER_ACCESS_before) {
         // flatten `self.union.arm.value` → `(self.<getter>() as <arm_value_type>)`
         // (ebm2go: uint8(v.tmp131())). No VariantNN enum / get_vN indirection;
         // the arm was registered in bulk_primitive by Statement_INIT_CHECK.
-        if (ctx.config().bulk_primitive.contains(get_id(*type_ref))) {
+        if (ctx.config().bulk_primitive.contains(*type_ref)) {
             MAYBE(union_access, ctx.get(ctx.base));  // `self.union` access; its base is the receiver
             if (auto recv_ref = union_access.body.base()) {
                 MAYBE(recv, ctx.visit(*recv_ref));
