@@ -8,7 +8,7 @@
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 
 /*here to write the hook*/
-std::set<std::string_view> imports;
+// imports moved to the shared Visitor.hpp config (also used by rust/python/ruby).
 std::unordered_set<std::uint64_t> any_variant;
 std::unordered_map<std::uint64_t, std::uint64_t> any_cast_counter;
 std::unordered_set<std::uint64_t> bool_mapped_func;

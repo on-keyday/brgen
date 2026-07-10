@@ -71,14 +71,14 @@ DEFINE_VISITOR(entry_before) {
         return CODE("Option<Box<", name.to_writer(), ">>");
     };
     if (zero_copy) {
-        config.use_statements.insert("use std::borrow::Cow;");
+        config.imports.insert("use std::borrow::Cow;");
     }
     if (ctx.flags().use_async) {
         // read_exact/read_to_end and write_all live on these two. fill_buf's
         // AsyncBufReadExt is inserted only where fill_buf is actually emitted
         // (CAN_READ_STREAM / SUB_BYTE_RANGE) to avoid an unused-import warning.
-        config.use_statements.insert("use tokio::io::AsyncReadExt;");
-        config.use_statements.insert("use tokio::io::AsyncWriteExt;");
+        config.imports.insert("use tokio::io::AsyncReadExt;");
+        config.imports.insert("use tokio::io::AsyncWriteExt;");
     }
     config.vector_type_wrapper = [](Context_Type_VECTOR& ctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
@@ -974,10 +974,10 @@ DEFINE_VISITOR(entry_before) {
         // so the header lands above the use-statements block and all decls.
         CodeWriter w;
         write_generated_banner(ctx, w);
-        for (auto& use_stmt : ctx.config().use_statements) {
+        for (auto& use_stmt : ctx.config().imports) {
             w.writeln(use_stmt);
         }
-        if (!ctx.config().use_statements.empty()) {
+        if (!ctx.config().imports.empty()) {
             w.writeln();
         }
         w.write(std::move(result));

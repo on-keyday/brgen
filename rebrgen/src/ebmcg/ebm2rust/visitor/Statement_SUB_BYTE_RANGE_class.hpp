@@ -106,10 +106,10 @@ DEFINE_VISITOR(Statement_SUB_BYTE_RANGE) {
     auto& flags = ctx.config().function_markers[get_id(ctx.config().current_function)];
     if (has_flag(flags, ebm2rust::FunctionFlags::HasFillBuf)) {
         if (ctx.flags().use_async) {
-            ctx.config().use_statements.insert("use tokio::io::AsyncBufReadExt;");
+            ctx.config().imports.insert("use tokio::io::AsyncBufReadExt;");
         }
         else {
-            ctx.config().use_statements.insert("use std::io::BufRead;");
+            ctx.config().imports.insert("use std::io::BufRead;");
         }
     }
 

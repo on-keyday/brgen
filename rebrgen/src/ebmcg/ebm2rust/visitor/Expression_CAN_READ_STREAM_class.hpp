@@ -37,10 +37,10 @@ DEFINE_VISITOR(Expression_CAN_READ_STREAM) {
     // AsyncBufReadExt in async mode (inserted here so it is only pulled in when
     // fill_buf is actually emitted).
     if (ctx.flags().use_async) {
-        ctx.config().use_statements.insert("use tokio::io::AsyncBufReadExt;");
+        ctx.config().imports.insert("use tokio::io::AsyncBufReadExt;");
     }
     else {
-        ctx.config().use_statements.insert("use std::io::BufRead;");
+        ctx.config().imports.insert("use std::io::BufRead;");
     }
     // Only mark function as needing BufRead parameter if fill_buf is called
     // on the function parameter (PARAMETER_DECL), not on a local sub_byte_range

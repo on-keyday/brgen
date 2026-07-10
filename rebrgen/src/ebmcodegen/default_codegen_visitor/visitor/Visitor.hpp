@@ -125,6 +125,12 @@ bool func_style_cast = true;
 std::vector<CodeWriter> decl_toplevel;
 bool on_assign = false;  // useful for expression generation
 
+// Import/use lines collected during generation and emitted by the backend's
+// PROGRAM_DECL hook (sorted). Line format is per-backend: go inserts package
+// paths ("fmt"), rust full `use ...;` statements, python full `import ...`
+// lines. Any hook may insert lazily so only actually-used imports appear.
+std::set<std::string> imports;
+
 // VARIANT TypeRefs whose enum has been emitted: dedup guard for backends
 // that emit a variant's enum lazily at first use (ebm2rust, ebm2zig).
 std::unordered_set<ebm::TypeRef> declared_variants;

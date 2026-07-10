@@ -234,12 +234,17 @@ DEFINE_VISITOR(entry_before) {
         return w;
     };
 
-    // Program preamble: require 'stringio'.
+    // Program preamble: collected in config.imports, emitted sorted by
+    // program_decl_custom.
+    config.imports.insert("require 'stringio'");
+
     config.program_decl_custom = [](Context_Statement_PROGRAM_DECL& ctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
         CodeWriter w;
         write_generated_banner(ctx, w, "#");
-        w.writeln("require 'stringio'");
+        for (auto& imp : ctx.config().imports) {
+            w.writeln(imp);
+        }
         w.writeln();
         for (auto& stmt_ref : ctx.block.container) {
             MAYBE(d, ctx.visit(stmt_ref));

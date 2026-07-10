@@ -192,17 +192,24 @@ DEFINE_VISITOR(entry_before) {
         return w;
     };
 
+    // Program preamble: collected in config.imports (any hook may add lazily),
+    // emitted sorted by program_decl_custom. Python import order is not
+    // semantically significant.
+    config.imports.insert("import dataclasses");
+    config.imports.insert("import struct");
+    config.imports.insert("import enum");
+    config.imports.insert("import builtins");
+    config.imports.insert("import io");
+    config.imports.insert("import sys");  // native_endian_check uses sys.byteorder
+    config.imports.insert("from typing import Any, Union, BinaryIO, Optional");
+
     config.program_decl_custom = [](Context_Statement_PROGRAM_DECL& ctx) -> expected<Result> {
         using namespace CODEGEN_NAMESPACE;
         CodeWriter w;
         write_generated_banner(ctx, w, "#");
-        w.writeln("import dataclasses");
-        w.writeln("import struct");
-        w.writeln("import enum");
-        w.writeln("import builtins");
-        w.writeln("import io");
-        w.writeln("import sys");  // native_endian_check uses sys.byteorder
-        w.writeln("from typing import Any, Union, BinaryIO, Optional");
+        for (auto& imp : ctx.config().imports) {
+            w.writeln(imp);
+        }
         w.writeln();
         for (auto& stmt_ref : ctx.block.container) {
             MAYBE(d, ctx.visit(stmt_ref));

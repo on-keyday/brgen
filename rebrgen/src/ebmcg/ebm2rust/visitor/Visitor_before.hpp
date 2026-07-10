@@ -10,7 +10,7 @@
 /*here to write the hook*/
 std::map<std::uint64_t, FunctionFlags> function_markers;
 ebm::StatementRef current_function;
-std::set<std::string> use_statements;
+// use statements are collected in the shared config.imports (Visitor.hpp).
 std::unordered_set<size_t> can_move_exprs;
 size_t parent_format_stmt_id = 0;
 std::map<std::uint64_t, bool> variant_mutable_contexts;  // variant arm TypeRef ID → is_mutable
