@@ -62,7 +62,7 @@ See [`rebrgen/README.md`](rebrgen/README.md) for the 2nd-generation architecture
 ## How Does brgen Differ from Similar Tools?
 
 - **Kaitai Struct** — the closest neighbor: binary format definition → multi-language parser generation. Kaitai officially supports decoding only, while brgen generates both encoders and decoders. `.bgn` also lets you write control flow and expressions directly, and brgen publishes its IR (EBM) as an independent binary format.
-- **Protocol Buffers / Thrift / Cap'n Proto** — IDLs for serialization formats you design yourself. They are not meant for describing existing binary protocols (a TCP header, a TLS record) — and describing existing formats is exactly brgen's primary use case.
+- **Protocol Buffers / Thrift / Cap'n Proto** — IDLs for RPC and serialization. You define the logical structure of a message, and the tool decides its byte representation on the wire. Because the byte layout cannot be controlled, they cannot describe existing binary protocols (a TCP header, a TLS record). brgen is a language for describing exactly that byte layout.
 - **Zeek Spicy** — the closest in approach (explicit IR pipeline: Spicy → HILTI → C++), but it targets C++ only and requires a runtime library. brgen targets many languages and keeps runtime dependencies of generated code minimal.
 - **P4** — a packet-processing language for programmable switches/NICs: you define packet headers and parsers/deparsers and run them directly on the target. It shares with brgen the problem space of describing binary headers in a DSL, but it is an execution language rather than a multi-language code generator.
 
