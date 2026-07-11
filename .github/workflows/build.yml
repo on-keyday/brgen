@@ -242,6 +242,7 @@ jobs:
           cp -a ./example ./artifacts/example
           cp -a ./LICENSE ./artifacts
           cp -a ./README.md ./artifacts
+          cp -a ./README.ja.md ./artifacts
           cp -a ./brgen.json ./artifacts
           cp -a ./script/make_cpp_test.sh ./artifacts
           cp -a ./script/make_cpp_tests.sh ./artifacts
@@ -323,6 +324,7 @@ jobs:
           cp -a ./example ./artifacts/example
           cp -a ./LICENSE ./artifacts
           cp -a ./README.md ./artifacts
+          cp -a ./README.ja.md ./artifacts
           cp -a ./brgen.json ./artifacts
           cp -a ./script/make_cpp_test.sh ./artifacts
           cp -a ./script/make_cpp_tests.sh ./artifacts
@@ -389,6 +391,7 @@ jobs:
           xcopy /E /I /Y example artifacts\example
           copy /Y LICENSE artifacts
           copy /Y README.md artifacts
+          copy /Y README.ja.md artifacts
           copy /Y brgen.json artifacts
           copy /Y script\make_cpp_test.bat artifacts
           copy /Y script\make_cpp_tests.bat artifacts
@@ -490,6 +493,7 @@ jobs:
           cp -a ./example ./artifacts/example
           cp -a ./LICENSE ./artifacts
           cp -a ./README.md ./artifacts
+          cp -a ./README.ja.md ./artifacts
           cp -a ./brgen.json ./artifacts
           cp -a ./script/make_cpp_test.sh ./artifacts
           cp -a ./script/make_cpp_tests.sh ./artifacts
@@ -560,6 +564,7 @@ jobs:
           cp -a ./example ./artifacts/example
           cp -a ./LICENSE ./artifacts
           cp -a ./README.md ./artifacts
+          cp -a ./README.ja.md ./artifacts
           cp -a ./brgen.json ./artifacts
           cp -a ./script/make_cpp_test.sh ./artifacts
           cp -a ./script/make_cpp_tests.sh ./artifacts
