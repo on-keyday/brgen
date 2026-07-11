@@ -333,7 +333,16 @@ DEFINE_VISITOR(entry_before) {
     config.property_setter_return_type = "boolean";
 
     // Struct = nested static class; methods live inside the class body.
-    config.struct_keyword = "public static class";
+    // Anonymous (generator-numbered) variant-arm classes are private: the
+    // public surface carries only names the .bgn author wrote. Private
+    // nested classes stay accessible from the whole outer class, which is
+    // where all generated references live.
+    config.struct_definition_start_wrapper = [](Context_Statement_STRUCT_DECL& sctx) -> expected<Result> {
+        CodeWriter w;
+        const char* visibility = is_nil(sctx.struct_decl.name) ? "private" : "public";
+        w.writeln(visibility, " static class ", sctx.identifier(), " {");
+        return w;
+    };
     config.methods_inner_class = true;
     config.struct_encode_start_wrapper = [](Context_Statement_STRUCT_DECL& sctx, ebm::StatementRef encode_fn) -> expected<Result> {
         return java_codec_with_stream_overload(sctx, encode_fn, true);
@@ -435,11 +444,14 @@ DEFINE_VISITOR(entry_before) {
         MAYBE(type, fctx.visit(fctx.field_decl.field_type));
         MAYBE(default_, as_DEFAULT_VALUE(fctx, fctx.field_decl.field_type));
         auto default_txt = default_.to_string();
+        // Generator-numbered storage (union fields etc.) is private; access
+        // goes through the property accessors.
+        const char* visibility = is_nil(fctx.field_decl.name) ? "private" : "public";
         if (default_txt.empty()) {
-            w.writeln("public ", type.to_writer(), " ", name, ";");
+            w.writeln(visibility, " ", type.to_writer(), " ", name, ";");
         }
         else {
-            w.writeln("public ", type.to_writer(), " ", name, " = ", default_txt, ";");
+            w.writeln(visibility, " ", type.to_writer(), " ", name, " = ", default_txt, ";");
         }
         return w;
     };
@@ -454,12 +466,16 @@ DEFINE_VISITOR(entry_before) {
         }
         const bool is_static = is_nil(fctx.func_decl.parent_format);
         std::string emit_name(name);
+        const char* visibility = "public";
         // Hoisted anon-inner accessors live on parent_format; prefix with the
-        // inner struct identifier so sibling accessors don't collide.
+        // inner struct identifier so sibling accessors don't collide. They
+        // are implementation details of the outer property dispatcher, so
+        // keep them off the public surface.
         if (auto inner = hoisted_accessor_inner_ident(fctx)) {
             emit_name = *inner + "_" + emit_name;
+            visibility = "private";
         }
-        w.writeln("public ", is_static ? "static " : "", ret, " ", emit_name, "(", params, ") {");
+        w.writeln(visibility, " ", is_static ? "static " : "", ret, " ", emit_name, "(", params, ") {");
         return w;
     };
 
