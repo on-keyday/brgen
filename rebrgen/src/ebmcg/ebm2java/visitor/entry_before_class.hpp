@@ -179,14 +179,6 @@ namespace CODEGEN_NAMESPACE {
         }
     }
 
-    // ADR 0038/0039: absolute stream offset lives in the RuntimeState
-    // companion; the view-local Input/Output offset resets across subranges.
-    inline void java_append_runtime_offset(auto& ctx, ebm::StatementRef io_ref, CodeWriter& w, auto&& size_expr) {
-        if (ebmcodegen::util::has_absolute_offset(ctx, io_ref)) {
-            w.writeln("runtime_state.offset += ", size_expr, ";");
-        }
-    }
-
     // Embedded IO/exception runtime, emitted once at the top of the outer class.
     // Scalar (multi-byte integer/float) IO never reaches the backend as a
     // plain READ_DATA/WRITE_DATA: ebmgen always attaches a lowered statement
@@ -332,6 +324,10 @@ DEFINE_VISITOR(entry_before) {
     config.setter_status_failure = "false";
     config.property_setter_return_type = "boolean";
 
+    // ADR 0008/0039: absolute-offset companion increment line.
+    config.runtime_offset_add_prefix = "runtime_state.offset += ";
+    config.runtime_offset_add_suffix = ";";
+
     // Struct = nested static class; methods live inside the class body.
     // Anonymous (generator-numbered) variant-arm classes are private: the
     // public surface carries only names the .bgn author wrote. Private
@@ -355,6 +351,10 @@ DEFINE_VISITOR(entry_before) {
     // outer instance (`this.header`, the union storage), which do not exist
     // on the inner class.
     config.relocate_anon_inner_properties = true;
+
+    // Imported modules inline their toplevel VARIABLE_DECLs into the outer
+    // class; static nested classes need them `static` to reference them.
+    config.imported_toplevel_variable_modifier = "static ";
 
     // Variables / parameters: `type name = init;`
     config.variable_with_type = true;
@@ -929,14 +929,14 @@ DEFINE_VISITOR(entry_before) {
         if (auto dyn = rctx.read_data.size.ref(); dyn && rctx.is(ebm::ExpressionKind::GET_REMAINING_BYTES, *dyn)) {
             w.writeln(target.to_writer(), " = ", io_, ".readRemaining();");
             if (track_offset) {
-                java_append_runtime_offset(rctx, rctx.read_data.io_ref, w, CODE(target.to_writer(), ".length"));
+                ebmcodegen::util::append_runtime_offset(rctx, rctx.read_data.io_ref, w, CODE(target.to_writer(), ".length"));
             }
             return w;
         }
         MAYBE(size_str, get_size_str(rctx, rctx.read_data.size));
         w.writeln(target.to_writer(), " = ", io_, ".readBytes((long) (", size_str, "));");
         if (track_offset) {
-            java_append_runtime_offset(rctx, rctx.read_data.io_ref, w, CODE("(long) (", size_str, ")"));
+            ebmcodegen::util::append_runtime_offset(rctx, rctx.read_data.io_ref, w, CODE("(long) (", size_str, ")"));
         }
         return w;
     };
@@ -948,7 +948,7 @@ DEFINE_VISITOR(entry_before) {
         MAYBE(size_str, get_size_str(wctx, wctx.write_data.size));
         CodeWriter w;
         w.writeln(io_, ".writeBytes(", target.to_writer(), ", (long) (", size_str, "));");
-        java_append_runtime_offset(wctx, wctx.write_data.io_ref, w, CODE("(long) (", size_str, ")"));
+        ebmcodegen::util::append_runtime_offset(wctx, wctx.write_data.io_ref, w, CODE("(long) (", size_str, ")"));
         return w;
     };
 

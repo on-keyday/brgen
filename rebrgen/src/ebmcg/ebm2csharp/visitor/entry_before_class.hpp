@@ -114,14 +114,6 @@ namespace CODEGEN_NAMESPACE {
         return false;
     }
 
-    // ADR 0038/0039: absolute stream offset lives in the RuntimeState
-    // companion; the view-local Input/Output offset resets across subranges.
-    inline void csharp_append_runtime_offset(auto& ctx, ebm::StatementRef io_ref, CodeWriter& w, auto&& size_expr) {
-        if (ebmcodegen::util::has_absolute_offset(ctx, io_ref)) {
-            w.writeln("runtime_state.offset += ", size_expr, ";");
-        }
-    }
-
     // Embedded IO/exception runtime, emitted once at the top of the outer
     // class. Scalar (multi-byte integer/float) IO never reaches the backend as
     // a plain READ_DATA/WRITE_DATA: ebmgen always attaches a lowered statement
@@ -257,6 +249,10 @@ DEFINE_VISITOR(entry_before) {
     config.bool_true = "true";
     config.bool_false = "false";
     config.bool_type = "bool";
+
+    // ADR 0008/0039: absolute-offset companion increment line.
+    config.runtime_offset_add_prefix = "runtime_state.offset += ";
+    config.runtime_offset_add_suffix = ";";
     config.void_type = "void";
     config.meta_type_name = "object";
     config.setter_status_ok = "true";
@@ -288,11 +284,16 @@ DEFINE_VISITOR(entry_before) {
     // on the inner class.
     config.relocate_anon_inner_properties = true;
 
+    // Imported modules inline their toplevel VARIABLE_DECLs as class-level
+    // fields of the outer class; nested classes (no outer instance in C#)
+    // need them static.
+    config.imported_toplevel_variable_modifier = "static readonly ";
+
     // Variables / parameters: `type name = init;`. C# has no local
     // immutability keyword usable here (`readonly` is fields-only, `const`
     // demands compile-time constants), so CONSTANT/IMMUTABLE locals render as
     // plain locals; toplevel decls get `static readonly` from the
-    // PROGRAM_DECL / IMPORT_MODULE hooks instead.
+    // PROGRAM_DECL hook / imported_toplevel_variable_modifier instead.
     config.variable_with_type = true;
     config.variable_name_prior_to_type = false;
     config.variable_initializer = "=";
@@ -844,14 +845,14 @@ DEFINE_VISITOR(entry_before) {
         if (auto dyn = rctx.read_data.size.ref(); dyn && rctx.is(ebm::ExpressionKind::GET_REMAINING_BYTES, *dyn)) {
             w.writeln(target.to_writer(), " = ", io_, ".ReadRemaining();");
             if (track_offset) {
-                csharp_append_runtime_offset(rctx, rctx.read_data.io_ref, w, CODE("(ulong) (", target.to_writer(), ").Length"));
+                ebmcodegen::util::append_runtime_offset(rctx, rctx.read_data.io_ref, w, CODE("(ulong) (", target.to_writer(), ").Length"));
             }
             return w;
         }
         MAYBE(size_str, get_size_str(rctx, rctx.read_data.size));
         w.writeln(target.to_writer(), " = ", io_, ".ReadBytes((ulong) (", size_str, "));");
         if (track_offset) {
-            csharp_append_runtime_offset(rctx, rctx.read_data.io_ref, w, CODE("(ulong) (", size_str, ")"));
+            ebmcodegen::util::append_runtime_offset(rctx, rctx.read_data.io_ref, w, CODE("(ulong) (", size_str, ")"));
         }
         return w;
     };
@@ -863,7 +864,7 @@ DEFINE_VISITOR(entry_before) {
         MAYBE(size_str, get_size_str(wctx, wctx.write_data.size));
         CodeWriter w;
         w.writeln(io_, ".WriteBytes(", target.to_writer(), ", (ulong) (", size_str, "));");
-        csharp_append_runtime_offset(wctx, wctx.write_data.io_ref, w, CODE("(ulong) (", size_str, ")"));
+        ebmcodegen::util::append_runtime_offset(wctx, wctx.write_data.io_ref, w, CODE("(ulong) (", size_str, ")"));
         return w;
     };
 

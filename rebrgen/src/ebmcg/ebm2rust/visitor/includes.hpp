@@ -42,15 +42,6 @@ namespace ebm2rust {
         return "*" + io + "_off";
     }
 
-    // Emit `runtime_state.offset += (<size>) as usize;` when the stream is gated
-    // (see ebmcodegen::util::has_absolute_offset). Per ADR 0008/0039 the increment
-    // stays backend-side; the companion itself is threaded by lower_runtime_state.
-    inline void append_runtime_offset(auto&& ctx, ebm::StatementRef io_ref, auto& w, auto&& size_expr) {
-        if (ebmcodegen::util::has_absolute_offset(ctx, io_ref)) {
-            w.writeln("runtime_state.offset += (", size_expr, ") as usize;");
-        }
-    }
-
     // Return the logical FieldDecl when `target`'s member resolves to a
     // composite bit-field packed into a single primitive storage
     // (BULK_PRIMITIVE / PREFIXED_UNION_PRIMITIVE). Mirrors ebm2go's helper.

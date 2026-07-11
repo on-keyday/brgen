@@ -98,14 +98,4 @@ expected<std::string> type_to_struct_format(Ctx& ctx, const ebm::TypeRef& type_r
 }
 
 
-// Emit `runtime_state.offset += <size>` when the stream is gated (see
-// ebmcodegen::util::has_absolute_offset). The increment stays backend-side per
-// ADR 0008/0039; BytesIO's cursor stays stream-local, the companion counts
-// absolute bytes.
-inline void py_append_runtime_offset(auto& ctx, ebm::StatementRef io_ref, CodeWriter& w, auto&& size_expr) {
-    if (ebmcodegen::util::has_absolute_offset(ctx, io_ref)) {
-        w.writeln("runtime_state.offset += int(", size_expr, ")");
-    }
-}
-
 }  // namespace CODEGEN_NAMESPACE

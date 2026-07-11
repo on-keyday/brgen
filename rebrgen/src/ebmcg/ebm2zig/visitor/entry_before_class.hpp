@@ -38,6 +38,10 @@ DEFINE_VISITOR(entry_before) {
     config.endof_statement = ";";
     config.endof_struct_definition = ";";  // end_block provides "}", this adds ";" for "};"
 
+    // ADR 0008/0039: absolute-offset companion increment line.
+    config.runtime_offset_add_prefix = "runtime_state.offset += @as(usize, @intCast(";
+    config.runtime_offset_add_suffix = "));";
+
     // Zig only supports line comments
     config.metadata_comment_prefix = "//";
     config.metadata_comment_suffix = "";
@@ -718,12 +722,12 @@ DEFINE_VISITOR(entry_before) {
         if (cand == BytesType::array) {
             MAYBE(size_str, get_size_str(wctx, wctx.write_data.size));
             w.writeln("try ", io_, ".writeAll(", target.to_writer(), "[0..", size_str, "]);");
-            ebm2zig::append_runtime_offset(wctx, wctx.write_data.io_ref, w, size_str);
+            ebmcodegen::util::append_runtime_offset(wctx, wctx.write_data.io_ref, w, size_str);
         }
         else {
             // ArrayListUnmanaged: write .items slice
             w.writeln("try ", io_, ".writeAll(", target.to_writer(), ".items);");
-            ebm2zig::append_runtime_offset(wctx, wctx.write_data.io_ref, w, target.to_string() + ".items.len");
+            ebmcodegen::util::append_runtime_offset(wctx, wctx.write_data.io_ref, w, target.to_string() + ".items.len");
         }
         return w;
     };
@@ -739,7 +743,7 @@ DEFINE_VISITOR(entry_before) {
         if (cand == BytesType::array) {
             MAYBE(size_str, get_size_str(rctx, rctx.read_data.size));
             w.writeln("try ", io_, ".readNoEof(", target.to_writer(), "[0..", size_str, "]);");
-            ebm2zig::append_runtime_offset(rctx, rctx.read_data.io_ref, w, size_str);
+            ebmcodegen::util::append_runtime_offset(rctx, rctx.read_data.io_ref, w, size_str);
         }
         else {
             // Check if size references GET_REMAINING_BYTES (read all remaining data)
@@ -765,14 +769,14 @@ DEFINE_VISITOR(entry_before) {
                 }
                 w.writeln("}");
                 // For GET_REMAINING_BYTES, offset += items.len after the loop
-                ebm2zig::append_runtime_offset(rctx, rctx.read_data.io_ref, w, target.to_string() + ".items.len");
+                ebmcodegen::util::append_runtime_offset(rctx, rctx.read_data.io_ref, w, target.to_string() + ".items.len");
             }
             else {
                 // ArrayListUnmanaged: resize then read into items
                 MAYBE(size_str, get_size_str(rctx, rctx.read_data.size));
                 w.writeln("try ", target.to_writer(), ".resize(allocator, ", size_str, ");");
                 w.writeln("try ", io_, ".readNoEof(", target.to_writer(), ".items);");
-                ebm2zig::append_runtime_offset(rctx, rctx.read_data.io_ref, w, size_str);
+                ebmcodegen::util::append_runtime_offset(rctx, rctx.read_data.io_ref, w, size_str);
             }
         }
         return w;

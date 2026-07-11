@@ -356,6 +356,18 @@ namespace ebmcodegen::util {
         return ctx.template get_field<has_absolute_offset_type>(typ) == true;
     }
 
+    // ADR 0008/0039: emit the backend's `runtime_state.offset += <size>` line
+    // after an IO operation when the stream is gated by has_absolute_offset
+    // (lower_runtime_state threaded the RuntimeState companion; the stream's
+    // own cursor stays view-local, the companion counts absolute bytes). The
+    // line's shape comes from the runtime_offset_add_prefix/suffix config
+    // knobs; the gate + emit skeleton is shared here.
+    void append_runtime_offset(auto&& ctx, ebm::StatementRef io_ref, auto& w, auto&& size_expr) {
+        if (has_absolute_offset(ctx, io_ref)) {
+            w.writeln(ctx.config().runtime_offset_add_prefix, size_expr, ctx.config().runtime_offset_add_suffix);
+        }
+    }
+
     std::optional<BytesType> is_bytes_type(auto&& visitor, ebm::TypeRef type_ref, BytesType candidate = BytesType::both) {
         const ebmgen::MappingTable& module_ = get_visitor(visitor).module_;
         auto type = module_.get_type(type_ref);

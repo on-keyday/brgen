@@ -41,6 +41,9 @@ DEFINE_VISITOR(entry_before) {
 
     // Statement terminator (Ruby uses newlines).
     config.endof_statement = "";
+    // ADR 0008/0039: absolute-offset companion increment line.
+    config.runtime_offset_add_prefix = "runtime_state.offset += (";
+    config.runtime_offset_add_suffix = ")";
     config.endof_struct_definition = "";
     config.endof_enum_definition = "";
     config.enum_member_separator = "";
@@ -265,7 +268,7 @@ DEFINE_VISITOR(entry_before) {
         CodeWriter w;
         w.writeln(target.to_writer(), " = ", io_, ".read(", size_str, ").unpack1(", fmt, ")");
         if (!ctx.read_data.attribute.is_peek()) {
-            ruby_append_runtime_offset(ctx, ctx.read_data.io_ref, w, size_str);
+            ebmcodegen::util::append_runtime_offset(ctx, ctx.read_data.io_ref, w, size_str);
         }
         return w;
     };
@@ -279,14 +282,14 @@ DEFINE_VISITOR(entry_before) {
         if (auto dyn = ctx.read_data.size.ref(); dyn && ctx.is(ebm::ExpressionKind::GET_REMAINING_BYTES, *dyn)) {
             w.writeln(target.to_writer(), " = (", io_, ".read() || \"\").bytes");
             if (track_offset) {
-                ruby_append_runtime_offset(ctx, ctx.read_data.io_ref, w, CODE(target.to_writer(), ".length"));
+                ebmcodegen::util::append_runtime_offset(ctx, ctx.read_data.io_ref, w, CODE(target.to_writer(), ".length"));
             }
             return w;
         }
         MAYBE(size_str, get_size_str(ctx, ctx.read_data.size));
         w.writeln(target.to_writer(), " = (", io_, ".read(", size_str, ") || \"\").bytes");
         if (track_offset) {
-            ruby_append_runtime_offset(ctx, ctx.read_data.io_ref, w, size_str);
+            ebmcodegen::util::append_runtime_offset(ctx, ctx.read_data.io_ref, w, size_str);
         }
         return w;
     };
@@ -302,7 +305,7 @@ DEFINE_VISITOR(entry_before) {
         auto io_ = ctx.identifier(ctx.write_data.io_ref);
         CodeWriter w;
         w.writeln(io_, ".write([", target.to_writer(), "].pack(", fmt, "))");
-        ruby_append_runtime_offset(ctx, ctx.write_data.io_ref, w, size_str);
+        ebmcodegen::util::append_runtime_offset(ctx, ctx.write_data.io_ref, w, size_str);
         return w;
     };
 
@@ -313,7 +316,7 @@ DEFINE_VISITOR(entry_before) {
         MAYBE(size_str, get_size_str(ctx, ctx.write_data.size));
         CodeWriter w;
         w.writeln(io_, ".write(", target.to_writer(), "[0, ", size_str, "].pack(\"C*\"))");
-        ruby_append_runtime_offset(ctx, ctx.write_data.io_ref, w, size_str);
+        ebmcodegen::util::append_runtime_offset(ctx, ctx.write_data.io_ref, w, size_str);
         return w;
     };
 

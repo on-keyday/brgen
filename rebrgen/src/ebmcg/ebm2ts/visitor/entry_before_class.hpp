@@ -110,16 +110,6 @@ namespace CODEGEN_NAMESPACE {
         return fn->kind == ebm::FunctionKind::ENCODE;
     }
 
-    // Emit `runtime_state.offset += <size>;` when the stream is gated
-    // (see ebmcodegen::util::has_absolute_offset). The increment stays
-    // backend-side per ADR 0008/0039; `io.offset` stays the view-local
-    // read/write cursor, the companion counts absolute bytes.
-    inline void ts_append_runtime_offset(auto& ctx, ebm::StatementRef io_ref, CodeWriter& w, auto&& size_expr) {
-        if (ebmcodegen::util::has_absolute_offset(ctx, io_ref)) {
-            w.writeln("runtime_state.offset += ", size_expr, ";");
-        }
-    }
-
 }  // namespace CODEGEN_NAMESPACE
 
 DEFINE_VISITOR(entry_before) {
@@ -136,6 +126,9 @@ DEFINE_VISITOR(entry_before) {
     config.use_brace_for_condition = true;
     config.use_elif = false;
     config.empty_block_marker = "";
+    // ADR 0008/0039: absolute-offset companion increment line.
+    config.runtime_offset_add_prefix = "runtime_state.offset += ";
+    config.runtime_offset_add_suffix = ";";
     config.metadata_comment_prefix = "//";
     config.metadata_comment_suffix = "";
     config.self_value = "obj";
@@ -1089,7 +1082,7 @@ DEFINE_VISITOR(entry_before) {
         }
         w.writeln(io_, ".offset += ", std::to_string(bytes), ";");
         if (!rctx.read_data.attribute.is_peek()) {
-            ts_append_runtime_offset(rctx, rctx.read_data.io_ref, w, std::to_string(bytes));
+            ebmcodegen::util::append_runtime_offset(rctx, rctx.read_data.io_ref, w, std::to_string(bytes));
         }
         return w;
     };
@@ -1108,7 +1101,7 @@ DEFINE_VISITOR(entry_before) {
             w.indent_writeln(io_, ".offset += _n;");
             if (track_offset) {
                 auto s = w.indent_scope();
-                ts_append_runtime_offset(rctx, rctx.read_data.io_ref, w, "_n");
+                ebmcodegen::util::append_runtime_offset(rctx, rctx.read_data.io_ref, w, "_n");
             }
             w.writeln("}");
             return w;
@@ -1128,7 +1121,7 @@ DEFINE_VISITOR(entry_before) {
         w.indent_writeln(io_, ".offset += _n;");
         if (track_offset) {
             auto s = w.indent_scope();
-            ts_append_runtime_offset(rctx, rctx.read_data.io_ref, w, "_n");
+            ebmcodegen::util::append_runtime_offset(rctx, rctx.read_data.io_ref, w, "_n");
         }
         w.writeln("}");
         return w;
@@ -1159,7 +1152,7 @@ DEFINE_VISITOR(entry_before) {
             w.writeln(io_, ".view.set", kind, "(", io_, ".offset, ", target.to_writer(), ", ", le ? "true" : "false", ");");
         }
         w.writeln(io_, ".offset += ", std::to_string(bytes), ";");
-        ts_append_runtime_offset(wctx, wctx.write_data.io_ref, w, std::to_string(bytes));
+        ebmcodegen::util::append_runtime_offset(wctx, wctx.write_data.io_ref, w, std::to_string(bytes));
         return w;
     };
     config.write_data_bytes_io_wrapper = [](Context_Statement_WRITE_DATA& wctx, BytesType, Result target, std::string io_) -> expected<Result> {
@@ -1181,7 +1174,7 @@ DEFINE_VISITOR(entry_before) {
         w.indent_writeln(io_, ".offset += _n;");
         {
             auto s = w.indent_scope();
-            ts_append_runtime_offset(wctx, wctx.write_data.io_ref, w, "_n");
+            ebmcodegen::util::append_runtime_offset(wctx, wctx.write_data.io_ref, w, "_n");
         }
         w.writeln("}");
         return w;

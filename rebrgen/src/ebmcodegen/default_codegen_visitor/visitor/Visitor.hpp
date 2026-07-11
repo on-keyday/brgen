@@ -131,6 +131,20 @@ bool on_assign = false;  // useful for expression generation
 // lines. Any hook may insert lazily so only actually-used imports appear.
 std::set<std::string> imports;
 
+// ADR 0008/0039 absolute-offset companion: shape of the
+// `runtime_state.offset += <size>` line emitted by
+// ebmcodegen::util::append_runtime_offset after a gated IO operation.
+// The size expression is wrapped as `<prefix><size><suffix>`.
+std::string runtime_offset_add_prefix = "runtime_state.offset += (";
+std::string runtime_offset_add_suffix = ");";
+
+// Storage modifier prefixed to each toplevel VARIABLE_DECL when an imported
+// module's program block is inlined: languages whose structs are nested
+// classes need the variable hoisted to a class-level field reachable from
+// the nested classes (Java "static ", C# "static readonly "). Empty ->
+// plain visit_Block inlining, no modifier.
+std::string imported_toplevel_variable_modifier = "";
+
 // VARIANT TypeRefs whose enum has been emitted: dedup guard for backends
 // that emit a variant's enum lazily at first use (ebm2rust, ebm2zig).
 std::unordered_set<ebm::TypeRef> declared_variants;

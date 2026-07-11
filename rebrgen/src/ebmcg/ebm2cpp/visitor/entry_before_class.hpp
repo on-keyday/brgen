@@ -23,16 +23,6 @@
 
 namespace CODEGEN_NAMESPACE {
 
-    // Emit `runtime_state.offset += <size>;` when the stream is gated
-    // (see ebmcodegen::util::has_absolute_offset). The increment stays
-    // backend-side per ADR 0008/0039; the futils reader/writer cursor stays
-    // view-local, the companion counts absolute bytes.
-    inline void cpp_append_runtime_offset(auto& ctx, ebm::StatementRef io_ref, CodeWriter& w, auto&& size_expr) {
-        if (ebmcodegen::util::has_absolute_offset(ctx, io_ref)) {
-            w.writeln("runtime_state.offset += (", size_expr, ");");
-        }
-    }
-
 }  // namespace CODEGEN_NAMESPACE
 
 DEFINE_VISITOR(entry_before) {
@@ -76,6 +66,10 @@ DEFINE_VISITOR(entry_before) {
 
     // Statement terminator
     config.endof_statement = ";";
+
+    // ADR 0008/0039: absolute-offset companion increment line.
+    config.runtime_offset_add_prefix = "runtime_state.offset += (";
+    config.runtime_offset_add_suffix = ");";
 
     // C++ uses forward type in function declarations
     config.forward_type_in_function_decl = true;
@@ -625,7 +619,7 @@ DEFINE_VISITOR(entry_before) {
             }
             w.writeln("}");
             if (track_offset) {
-                cpp_append_runtime_offset(ctx, ctx.read_data.io_ref, w, size_str);
+                ebmcodegen::util::append_runtime_offset(ctx, ctx.read_data.io_ref, w, size_str);
             }
         }
         else {
@@ -643,7 +637,7 @@ DEFINE_VISITOR(entry_before) {
                 }
                 w.writeln("}");
                 if (track_offset) {
-                    cpp_append_runtime_offset(ctx, ctx.read_data.io_ref, w, "_sz");
+                    ebmcodegen::util::append_runtime_offset(ctx, ctx.read_data.io_ref, w, "_sz");
                 }
             }
             w.writeln("}");
@@ -673,7 +667,7 @@ DEFINE_VISITOR(entry_before) {
             w.writeln(std::format("return ::futils::error::Error<>(\"encode: {}: write failed\", ::futils::error::Category::lib);", layer_str));
         }
         w.writeln("}");
-        cpp_append_runtime_offset(ctx, ctx.write_data.io_ref, w, size_str);
+        ebmcodegen::util::append_runtime_offset(ctx, ctx.write_data.io_ref, w, size_str);
         return w;
     };
 

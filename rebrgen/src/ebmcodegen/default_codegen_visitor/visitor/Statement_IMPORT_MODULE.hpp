@@ -20,5 +20,16 @@
 /*here to write the hook*/
 MAYBE(prog_decl, module_.get_statement(import_decl.program));
 MAYBE(block, prog_decl.body.block());
+if (auto& modifier = ctx.config().imported_toplevel_variable_modifier; !modifier.empty()) {
+    CodeWriter w;
+    for (auto& stmt_ref : block.container) {
+        MAYBE(code, ctx.visit(stmt_ref));
+        if (ctx.get_kind(stmt_ref) == ebm::StatementKind::VARIABLE_DECL) {
+            w.write(modifier);
+        }
+        w.writeln(code.to_writer());
+    }
+    return w;
+}
 MAYBE(w, visit_Block(*this, block));
 return w;

@@ -969,6 +969,9 @@ DEFINE_VISITOR(entry_before) {
                     " { return ", tidy_condition_brace(then_str.to_string()),
                     " } else { return ", tidy_condition_brace(else_str.to_string()), " } }()");
     };
+    // ADR 0008/0039: absolute-offset companion increment line (Go naming).
+    ctx.config().runtime_offset_add_prefix = "runtimeState.Offset += int(";
+    ctx.config().runtime_offset_add_suffix = ")";
     ctx.config().expression_memoization_config.enable = true;
     ctx.config().expression_memoization_config.target_kinds = {
         ebm::ExpressionKind::BINARY_OP,

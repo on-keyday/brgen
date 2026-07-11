@@ -93,15 +93,4 @@ namespace ebm2go {
                (kind == ebm::TypeKind::UINT || kind == ebm::TypeKind::ARRAY);
     }
 
-    // ADR 0039: emit `runtime_state.offset += int(<size_expr>)` if the IO stream has
-    // has_absolute_offset (= lower_runtime_state threaded the RuntimeState companion,
-    // parameter name is always `runtime_state`). Used by READ_DATA and WRITE_DATA
-    // visitors to keep the companion in sync with the stream position; the increment
-    // stays backend-side per ADR 0008.
-    inline void append_runtime_offset(auto& ctx, ebm::StatementRef io_ref, auto& w, auto&& size_expr) {
-        if (ebmcodegen::util::has_absolute_offset(ctx, io_ref)) {
-            w.writeln("runtimeState.Offset += int(", size_expr, ")");
-        }
-    }
-
 }  // namespace ebm2go

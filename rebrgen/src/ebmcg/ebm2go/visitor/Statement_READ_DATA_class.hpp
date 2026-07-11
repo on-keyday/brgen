@@ -106,7 +106,7 @@ DEFINE_VISITOR(Statement_READ_DATA) {
             w.writeln(target.to_writer(), " = buf[0]");
         }
         w.writeln("}");
-        append_runtime_offset(rctx, rctx.read_data.io_ref, w, "1");
+        ebmcodegen::util::append_runtime_offset(rctx, rctx.read_data.io_ref, w, "1");
         return w;
     }
     if (auto cand = is_bytes_type(rctx, rctx.read_data.data_type)) {
@@ -279,10 +279,10 @@ DEFINE_VISITOR(Statement_READ_DATA) {
                 w.write(read_full(false));
             }
             if (auto dyn_size2 = rctx.read_data.size.ref(); dyn_size2 && ctx.is(ebm::ExpressionKind::GET_REMAINING_BYTES, *dyn_size2)) {
-                append_runtime_offset(rctx, rctx.read_data.io_ref, w, CODE("len(", target.to_writer(), ")"));
+                ebmcodegen::util::append_runtime_offset(rctx, rctx.read_data.io_ref, w, CODE("len(", target.to_writer(), ")"));
             }
             else {
-                append_runtime_offset(rctx, rctx.read_data.io_ref, w, size_str);
+                ebmcodegen::util::append_runtime_offset(rctx, rctx.read_data.io_ref, w, size_str);
             }
             return w;
         }
@@ -290,7 +290,7 @@ DEFINE_VISITOR(Statement_READ_DATA) {
             // until eof
             w.writeln(target.to_writer(), " = ", io_, "[", offset_ref(io_), ":]");
             w.writeln(offset_ref(io_), " += len(", target.to_writer(), ")");
-            append_runtime_offset(rctx, rctx.read_data.io_ref, w, CODE("len(", target.to_writer(), ")"));
+            ebmcodegen::util::append_runtime_offset(rctx, rctx.read_data.io_ref, w, CODE("len(", target.to_writer(), ")"));
         }
         else {
             ctx.config().imports.insert("errors");
@@ -328,13 +328,13 @@ DEFINE_VISITOR(Statement_READ_DATA) {
                         w.writeln("}");
                     }
                     w.writeln(offset_ref(io_), " += int(", size_str, ")");
-                    append_runtime_offset(rctx, rctx.read_data.io_ref, w, size_str);
+                    ebmcodegen::util::append_runtime_offset(rctx, rctx.read_data.io_ref, w, size_str);
                     return w;
                 }
                 w.writeln("copy(", target.to_writer(), "[:], ", size_range(size_str), ")");
             }
             w.writeln(offset_ref(io_), " += int(", size_str, ")");
-            append_runtime_offset(rctx, rctx.read_data.io_ref, w, size_str);
+            ebmcodegen::util::append_runtime_offset(rctx, rctx.read_data.io_ref, w, size_str);
         }
         return w;
     }

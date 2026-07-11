@@ -27,6 +27,9 @@ DEFINE_VISITOR(entry_before) {
     config.endof_statement = ";";
     config.self_value = "self";
     config.enum_member_accessor = "::";
+    // ADR 0008/0039: absolute-offset companion increment line.
+    config.runtime_offset_add_prefix = "runtime_state.offset += (";
+    config.runtime_offset_add_suffix = ") as usize;";
     // Rust spells bitwise NOT as `!` (not C/Go's `~`); the default
     // to_string(UnaryOp::bit_not) is `~`. Composite bit-field setters
     // (`storage & ~(mask << shift)`) are the first code to emit it.
@@ -776,7 +779,7 @@ DEFINE_VISITOR(entry_before) {
         const bool track_offset = !ctx.read_data.attribute.is_peek();
         auto append_offset = [&](auto& w, auto&& size_expr) {
             if (track_offset) {
-                ebm2rust::append_runtime_offset(ctx, ctx.read_data.io_ref, w, size_expr);
+                ebmcodegen::util::append_runtime_offset(ctx, ctx.read_data.io_ref, w, size_expr);
             }
         };
         CodeWriter w;
@@ -1012,7 +1015,7 @@ DEFINE_VISITOR(entry_before) {
         w.writeln("{");
         w.writeln("let _sz = ", size, " as usize;");
         w.writeln(io_name, ".write_all(&", target.to_writer(), "[.._sz])", ebm2rust::map_io_err(false, err_loc, ctx.flags().use_async), ";");
-        ebm2rust::append_runtime_offset(ctx, ctx.write_data.io_ref, w, "_sz");
+        ebmcodegen::util::append_runtime_offset(ctx, ctx.write_data.io_ref, w, "_sz");
         w.writeln("}");
         return w;
     };

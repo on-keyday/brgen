@@ -37,6 +37,9 @@ DEFINE_VISITOR(entry_before) {
     config.metadata_comment_prefix = "#";
     config.metadata_comment_suffix = "";
     config.self_value = "self";
+    // ADR 0008/0039: absolute-offset companion increment line.
+    config.runtime_offset_add_prefix = "runtime_state.offset += int(";
+    config.runtime_offset_add_suffix = ")";
     config.module_.register_default_prefix(ebm::StatementKind::STRUCT_DECL, "Struct");
     config.module_.register_default_prefix(ebm::StatementKind::ENUM_DECL, "Enum");
     config.module_.register_default_prefix(ebm::StatementKind::FUNCTION_DECL, "func");
@@ -272,7 +275,7 @@ DEFINE_VISITOR(entry_before) {
         CodeWriter w;
         w.writeln(target.to_writer(), " = struct.unpack(", fmt, ", ", io_, ".read(", size_str, "))[0]");
         if (!ctx.read_data.attribute.is_peek()) {
-            py_append_runtime_offset(ctx, ctx.read_data.io_ref, w, size_str);
+            ebmcodegen::util::append_runtime_offset(ctx, ctx.read_data.io_ref, w, size_str);
         }
         return w;
     };
@@ -286,13 +289,13 @@ DEFINE_VISITOR(entry_before) {
         if (auto dyn = ctx.read_data.size.ref(); dyn && ctx.is(ebm::ExpressionKind::GET_REMAINING_BYTES, *dyn)) {
             w.writeln(target.to_writer(), " = ", io_, ".read()");
             if (track_offset) {
-                py_append_runtime_offset(ctx, ctx.read_data.io_ref, w, CODE("builtins.len(", target.to_writer(), ")"));
+                ebmcodegen::util::append_runtime_offset(ctx, ctx.read_data.io_ref, w, CODE("builtins.len(", target.to_writer(), ")"));
             }
             return w;
         }
         w.writeln(target.to_writer(), " = ", io_, ".read(", size_str, ")");
         if (track_offset) {
-            py_append_runtime_offset(ctx, ctx.read_data.io_ref, w, size_str);
+            ebmcodegen::util::append_runtime_offset(ctx, ctx.read_data.io_ref, w, size_str);
         }
         return w;
     };
@@ -314,7 +317,7 @@ DEFINE_VISITOR(entry_before) {
         auto io_ = ctx.identifier(ctx.write_data.io_ref);
         CodeWriter w;
         w.writeln(io_, ".write(struct.pack(", fmt, ", ", target.to_writer(), "))");
-        py_append_runtime_offset(ctx, ctx.write_data.io_ref, w, size_str);
+        ebmcodegen::util::append_runtime_offset(ctx, ctx.write_data.io_ref, w, size_str);
         return w;
     };
     config.write_data_bytes_io_wrapper = [](Context_Statement_WRITE_DATA& ctx, BytesType cand, Result target, std::string io_) -> expected<Result> {
@@ -324,7 +327,7 @@ DEFINE_VISITOR(entry_before) {
         MAYBE(size_str, get_size_str(ctx, ctx.write_data.size));
         CodeWriter w;
         w.writeln(io_, ".write(", target.to_writer(), "[:", size_str, "])");
-        py_append_runtime_offset(ctx, ctx.write_data.io_ref, w, size_str);
+        ebmcodegen::util::append_runtime_offset(ctx, ctx.write_data.io_ref, w, size_str);
         return w;
     };
     return pass;

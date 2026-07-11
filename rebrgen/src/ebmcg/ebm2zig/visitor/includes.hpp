@@ -13,14 +13,4 @@
 
 namespace ebm2zig {
 
-// ADR 0039: emit `runtime_state.offset += ...` after an IO operation when the
-// stream is gated (lower_runtime_state threaded the RuntimeState companion;
-// parameter name is always `runtime_state`, a *RuntimeState in zig). The
-// increment stays backend-side per ADR 0008.
-inline void append_runtime_offset(auto&& ctx, ebm::StatementRef io_ref, auto& w, auto&& size_expr) {
-    if (ebmcodegen::util::has_absolute_offset(ctx, io_ref)) {
-        w.writeln("runtime_state.offset += @as(usize, @intCast(", size_expr, "));");
-    }
-}
-
 }  // namespace ebm2zig

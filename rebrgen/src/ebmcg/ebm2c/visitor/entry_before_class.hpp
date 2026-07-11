@@ -23,6 +23,9 @@ DEFINE_VISITOR(entry_before) {
     ctx.config().int_suffix = "_t";
     ctx.config().uint_prefix = "uint";
     ctx.config().uint_suffix = "_t";
+    // runtime_state is a pointer parameter in C (ADR 0039).
+    ctx.config().runtime_offset_add_prefix = "runtime_state->offset += (";
+    ctx.config().runtime_offset_add_suffix = ");";
     ctx.config().variant_prefix = "Union";
     ctx.config().void_type = "void";
     ctx.config().variable_type_separator = " ";
@@ -171,7 +174,7 @@ DEFINE_VISITOR(entry_before) {
             w.writeln("EBM_READ_ARRAY_BYTES(", io_, ", ", target.to_writer(), ", ", size_str, ", ", offset_val, ", ", layer_str, ");");
         }
         if (!ctx.read_data.attribute.is_peek()) {
-            ebm2c::append_runtime_offset(ctx, ctx.read_data.io_ref, w, size_str);
+            ebmcodegen::util::append_runtime_offset(ctx, ctx.read_data.io_ref, w, size_str);
         }
         return w;
     };
@@ -225,7 +228,7 @@ DEFINE_VISITOR(entry_before) {
         else {
             w.writeln("EBM_WRITE_ARRAY_BYTES(", io_, ", ", target.to_writer(), ", ", size_str, ", ", offset_val, ", ", layer_str, ");");
         }
-        ebm2c::append_runtime_offset(ctx, ctx.write_data.io_ref, w, size_str);
+        ebmcodegen::util::append_runtime_offset(ctx, ctx.write_data.io_ref, w, size_str);
         return w;
     };
     ctx.config().length_mismatch_wrapper = [](Context_Statement_LENGTH_CHECK& lctx, Result target, Result expected_len, std::string layer_str) -> expected<Result> {
