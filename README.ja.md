@@ -59,6 +59,14 @@ brgen には2世代のコードジェネレーターがあります:
 
 第2世代の詳細なアーキテクチャは [`rebrgen/README.md`](rebrgen/README.md) を参照してください。
 
+## 類似ツールとの違い
+
+- **Kaitai Struct** — 最も近いツール: バイナリフォーマット定義 → 多言語パーサー生成。ただし Kaitai が公式にサポートするのはデコードのみで、brgen はエンコード/デコード両方を生成します。また `.bgn` は制御フローや演算式を直接書け、brgen は IR (EBM) を独立したバイナリ形式として公開しています。
+- **Protocol Buffers / Thrift / Cap'n Proto** — 自分で設計するシリアライゼーションフォーマット用の IDL。既存のバイナリプロトコル(TCP ヘッダ、TLS レコード)の記述には使えません — そして既存フォーマットの記述こそが brgen の主目的です。
+- **Zeek Spicy** — アプローチが最も近いツール(明示的 IR パイプライン: Spicy → HILTI → C++)。ただし出力は C++ のみでランタイムライブラリが必須です。brgen は多言語出力で、生成コードのランタイム依存を最小化しています。
+
+これらのツールはそれぞれの領域で成功しており、brgen が上位互換を主張するものではありません。長期的な方向性は競合ではなく共存です: フォーマット定義の入口を `.bgn` で統一しつつ、各ツールのエコシステムをバックエンドとして活かす — `ebm2p4`(P4 出力)が既にその一例です。詳細な分析は [`rebrgen/docs/decisions/0021-positioning-among-idl-tools.md`](rebrgen/docs/decisions/0021-positioning-among-idl-tools.md) を参照してください。
+
 ## はじめかた
 
 - **インストール不要**: [Web Playground](https://on-keyday.github.io/brgen/) を使う。
