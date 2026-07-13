@@ -14,6 +14,8 @@ python script/build.py
 python script/auto_setup.py
 ```
 
+設定は `build_config.json`（`build_config.template.json` からコピー）にある。親 brgen のツールと futils を自動セットアップする場合は、それぞれ `AUTO_SETUP_BRGEN` と `AUTO_SETUP_FUTILS` を有効にする。言語ジェネレーターは設定で個別選択せず、`src/ebmcg/` と `src/ebmip/` から列挙される。
+
 ## EBM 構造変更後の再生成
 
 `extended_binary_module.bgn` を変更したら必ず実行:
