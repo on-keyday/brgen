@@ -124,12 +124,12 @@ namespace ebm2llvm {
         size_t idx = 0;
         std::optional<size_t> found;
         MAYBE_VOID(scan, for_each_slot(ctx, sd, [&](const ebm::StatementRef& sref, ebm::TypeRef) -> ebmgen::expected<void> {
-            if (get_id(sref) == get_id(target)) {
-                found = idx;
-            }
-            idx++;
-            return {};
-        }));
+                       if (get_id(sref) == get_id(target)) {
+                           found = idx;
+                       }
+                       idx++;
+                       return {};
+                   }));
         if (found) {
             return std::make_pair("%struct." + ctx.identifier(parent_struct), *found);
         }
@@ -341,11 +341,11 @@ namespace ebm2llvm {
     ebmgen::expected<LayoutInfo> layout_of_struct_fields(auto&& ctx, const ebm::StructDecl& sd) {
         LayoutInfo r{0, 1};
         MAYBE_VOID(scan, for_each_slot(ctx, sd, [&](const ebm::StatementRef&, ebm::TypeRef slot_type) -> ebmgen::expected<void> {
-            MAYBE(fl, layout_of(ctx, slot_type));
-            r.size = (r.size + fl.align - 1) / fl.align * fl.align + fl.size;
-            r.align = std::max(r.align, fl.align);
-            return {};
-        }));
+                       MAYBE(fl, layout_of(ctx, slot_type));
+                       r.size = (r.size + fl.align - 1) / fl.align * fl.align + fl.size;
+                       r.align = std::max(r.align, fl.align);
+                       return {};
+                   }));
         r.size = (r.size + r.align - 1) / r.align * r.align;
         return r;
     }
@@ -391,7 +391,7 @@ namespace ebm2llvm {
                 MAYBE(elem, ctx.template get_field<"body.element_type">(type_ref));
                 MAYBE(len, ctx.template get_field<"body.length">(type_ref));
                 MAYBE(el, layout_of(ctx, elem));
-                return LayoutInfo{el.size * len.value(), el.align};
+                return LayoutInfo{static_cast<size_t>(el.size * len.value()), el.align};
             }
             case ebm::TypeKind::STRUCT: {
                 MAYBE(sd, ctx.template get_field<"body.id.struct_decl">(type_ref));
@@ -659,7 +659,7 @@ DEFINE_VISITOR(entry_before) {
     // emitted early) before their own visit: pre-register them as globals,
     // including the toplevels of imported module programs
     config.program_decl_start_wrapper = [](Context_Statement_PROGRAM_DECL& pctx) -> expected<Result> {
-        auto register_block = [&](this auto&& self, const ebm::Block& block) -> void {
+        auto register_block = [&](auto&& self, const ebm::Block& block) -> void {
             for (auto& sref : block.container) {
                 if (pctx.is(ebm::StatementKind::VARIABLE_DECL, sref)) {
                     pctx.config().global_vars.insert(get_id(sref));
@@ -667,12 +667,12 @@ DEFINE_VISITOR(entry_before) {
                 }
                 else if (auto import_decl = pctx.get_field<"import_decl">(sref)) {
                     if (auto inner = pctx.get_field<"block">(import_decl->program)) {
-                        self(*inner);
+                        self(self, *inner);
                     }
                 }
             }
         };
-        register_block(pctx.block);
+        register_block(register_block, pctx.block);
         return Result(CodeWriter{});
     };
 
@@ -751,14 +751,14 @@ DEFINE_VISITOR(entry_before) {
             }
         }
         MAYBE_VOID(scan, ebm2llvm::for_each_slot(ctx, ctx.struct_decl, [&](const ebm::StatementRef&, ebm::TypeRef slot_type) -> expected<void> {
-            MAYBE(t, ctx.visit(slot_type));
-            if (!first) {
-                fields_str += ", ";
-            }
-            fields_str += t.to_string();
-            first = false;
-            return {};
-        }));
+                       MAYBE(t, ctx.visit(slot_type));
+                       if (!first) {
+                           fields_str += ", ";
+                       }
+                       fields_str += t.to_string();
+                       first = false;
+                       return {};
+                   }));
         if (first) {
             ctx.config().type_defs.writeln("%struct.", name, " = type {}");
         }
@@ -876,7 +876,7 @@ DEFINE_VISITOR(entry_before) {
             if (byte_lit) {
                 std::string body;
                 auto bytes = byte_lit->bytes;
-                bytes.resize(byte_lit->length     );
+                bytes.resize(byte_lit->length);
                 for (unsigned char c : bytes) {
                     if (c >= 0x20 && c < 0x7f && c != '"' && c != 0x5c) {
                         body += static_cast<char>(c);
