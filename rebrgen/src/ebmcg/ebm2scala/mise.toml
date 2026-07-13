@@ -2,4 +2,6 @@
 # scala-cli compiles/runs the generated single-file module (see unictest.py).
 # It bootstraps the Scala compiler itself via coursier; only a JVM is assumed
 # on the host (GitHub Actions ubuntu runners ship one).
-"aqua:VirtusLab/scala-cli" = "1.15.0"
+# Registry shorthand resolving to github:VirtusLab/scala-cli (the aqua
+# registry has no VirtusLab/scala-cli package -- CI-verified 404).
+scala-cli = "1.15.0"
