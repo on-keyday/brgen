@@ -403,7 +403,7 @@ python script/unictest.py [options]
 python script/unictest.py --target-runner ebm2rust
 
 # Run tests for ebm2rust with a specific input
-python script/unictest.py --target-runner ebm2rust --target-input simple_case
+python script/unictest.py --target-runner ebm2rust --target-input complex_case
 
 # Run all tests and print verbose output
 python script/unictest.py --print-stdout
