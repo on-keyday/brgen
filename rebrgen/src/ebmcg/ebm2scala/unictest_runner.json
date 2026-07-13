@@ -1,0 +1,22 @@
+{
+    "name": "ebm2scala",
+    "source_setup_command": [
+        "python",
+        "$WORK_DIR/script/unictest_setup.py",
+        "setup",
+        "ebm2scala"
+    ],
+    "run_command": [
+        "python",
+        "$WORK_DIR/script/unictest_setup.py",
+        "test",
+        "ebm2scala"
+    ],
+    "options": [
+        {
+            "name": "default",
+            "setup_options": [],
+            "run_options": []
+        }
+    ]
+}
