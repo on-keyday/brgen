@@ -38,35 +38,6 @@
 #include "ebmcodegen/stub/util.hpp"
 #include "ebmcodegen/stub/make_visitor.hpp"
 
-namespace CODEGEN_NAMESPACE {
-    struct BitFieldPointerGetterMarker {
-        TRAVERSAL_VISITOR_BASE_WITHOUT_FUNC(BitFieldPointerGetterMarker, BaseVisitor);
-        bool ptr_to_optional = false;
-        CodeWriter w;
-        expected<void> visit(Context_Expression_ADDRESS_OF& ctx) {
-            auto member = ctx.get_field<"member">(ctx.target_expr);
-            if (auto comp = get_composite_field(ctx, member)) {
-                // make as optional
-                ptr_to_optional = true;
-            }
-            return {};
-        }
-
-        template <typename Ctx>
-        expected<void> visit(Ctx&& ctx) {
-            if (ctx.is_before_or_after()) {
-                return pass;
-            }
-            if (ctx.context_name.contains("Type") || ptr_to_optional /*already marked*/) {
-                return {};
-            }
-            return traverse_children<void>(*this, std::forward<Ctx>(ctx));
-        }
-    };
-    static_assert(HasVisitor<void, BitFieldPointerGetterMarker, Context_Expression_ADDRESS_OF&>);
-
-}  // namespace CODEGEN_NAMESPACE
-
 DEFINE_VISITOR(Statement_FUNCTION_DECL) {
     using namespace CODEGEN_NAMESPACE;
     /*here to write the hook*/
@@ -109,10 +80,29 @@ DEFINE_VISITOR(Statement_FUNCTION_DECL) {
     }
 
     if (ctx.config().forward_decl && ctx.func_decl.kind == ebm::FunctionKind::PROPERTY_GETTER) {
-        BitFieldPointerGetterMarker traversal{ctx.visitor};
-        MAYBE_VOID(ok, ctx.visit(traversal, ctx.func_decl.body));
-        w.write(traversal.w);
-        if (traversal.ptr_to_optional) {
+        bool ptr_to_optional = false;
+        auto marker =
+            make_visitor<void>(ctx.visitor)
+                .name("BitFieldPointerGetterMarker")
+                .not_before_or_after()
+                .not_context("Type")
+                .on([&](auto&& self, Context_Expression_ADDRESS_OF& ctx) -> expected<void> {
+                    auto member = ctx.get_field<"member">(ctx.target_expr);
+                    if (auto comp = get_composite_field(ctx, member)) {
+                        // make as optional
+                        ptr_to_optional = true;
+                    }
+                    return {};
+                })
+                .on_default([&](auto&& self, auto& ctx) -> expected<void> {
+                    if (ptr_to_optional /*already marked*/) {
+                        return {};
+                    }
+                    return traverse_children<void>(self, ctx);
+                })
+                .build();
+        MAYBE_VOID(ok, ctx.visit(marker, ctx.func_decl.body));
+        if (ptr_to_optional) {
             ctx.config().ptr_to_optional_targets.insert(get_id(ctx.item_id));
         }
     }

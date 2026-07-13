@@ -37,108 +37,93 @@
 
 #include "../codegen.hpp"
 #include "ebm/extended_binary_module.hpp"
+#include "ebmcodegen/stub/make_visitor.hpp"
 
-namespace CODEGEN_NAMESPACE {
+DEFINE_VISITOR(Statement_FUNCTION_DECL_before) {
+    using namespace CODEGEN_NAMESPACE;
     // DefUseCollector は can_move_exprs の last-use 計算用。
     // CAN_READ_STREAM の検出は HasFillBuf フラグ事前伝播用:
     // 本体 visit 中に Expression_CAN_READ_STREAM_class がフラグを立てても wrapper
     // 関数の visit タイミング (default の Statement_FUNCTION_DECL が body → wrapper の順で visit する)
     // には間に合わないため、ここで先に body を traverse して impl 側と wrapper 側の両方に載せておく。
-    struct DefUseCollector {
-        TRAVERSAL_VISITOR_BASE_WITHOUT_FUNC(DefUseCollector, BaseVisitor);
-        std::unordered_map<size_t, std::vector<size_t>> def_to_uses;  // def_stmt_id → [use_expr_ids] in traversal order
-        bool needs_fill_buf = false;
-        bool addresses_composite = false;  // body takes &(composite bit-field); see config.ptr_to_owned
-
-        // Mirror ebm2c's BitFieldPointerGetterMarker: a property getter body that
-        // does `&<composite read>` can't return a reference (the read is a
-        // computed temporary), so flag it to switch the getter to owned return.
-        expected<void> visit(Context_Expression_ADDRESS_OF& ctx) {
-            auto member = ctx.get_field<"member">(ctx.target_expr);
-            if (ebm2rust::get_composite_field(ctx, member)) {
-                addresses_composite = true;
-            }
-            return traverse_children<void>(*this, ctx);
-        }
-
-        expected<void> visit(Context_Expression_IDENTIFIER& ctx) {
-            auto def_id = get_id(ctx.id.id);
-            def_to_uses[def_id].push_back(get_id(ctx.item_id));
-            return {};
-        }
-
-        expected<void> visit(Context_Expression_CAN_READ_STREAM& ctx) {
-            // io_ref が PARAMETER_DECL のときだけ HasFillBuf を立てる
-            // (Expression_CAN_READ_STREAM_class と同じ条件)
-            MAYBE(io_stmt, ctx.get(ctx.io_ref));
-            if (io_stmt.body.kind == ebm::StatementKind::PARAMETER_DECL) {
-                needs_fill_buf = true;
-            }
-            return {};
-        }
-
-        // Propagate the BufRead requirement up the decode call graph: a function
-        // that calls a sub-decode needing fill_buf must itself take BufRead so it
-        // can pass a BufRead reader down (otherwise the parent emits `impl Read`
-        // and the child's `impl BufRead` param fails E0277). Callees are emitted
-        // before their containers (definition order is bottom-up), so the callee's
-        // HasFillBuf marker is already set by the time we analyze the caller.
-        expected<void> visit(Context_Expression_CALL& ctx) {
-            if (auto callee_ref = ctx.get_field<"member.body.id">(ctx.call_desc.callee)) {
-                auto it = ctx.config().function_markers.find(get_id(from_weak(*callee_ref)));
-                if (it != ctx.config().function_markers.end() &&
-                    has_flag(it->second, ebm2rust::FunctionFlags::HasFillBuf)) {
+    std::unordered_map<size_t, std::vector<size_t>> def_to_uses;  // def_stmt_id → [use_expr_ids] in traversal order
+    bool needs_fill_buf = false;
+    bool addresses_composite = false;  // body takes &(composite bit-field); see config.ptr_to_owned
+    auto collector =
+        make_visitor<void>(ctx.visitor)
+            .name("DefUseCollector")
+            .not_before_or_after()
+            .not_context("Type")
+            // Mirror ebm2c's BitFieldPointerGetterMarker: a property getter body that
+            // does `&<composite read>` can't return a reference (the read is a
+            // computed temporary), so flag it to switch the getter to owned return.
+            .on([&](auto&& self, Context_Expression_ADDRESS_OF& ctx) -> expected<void> {
+                auto member = ctx.get_field<"member">(ctx.target_expr);
+                if (ebm2rust::get_composite_field(ctx, member)) {
+                    addresses_composite = true;
+                }
+                return traverse_children<void>(self, ctx);
+            })
+            .on([&](auto&& self, Context_Expression_IDENTIFIER& ctx) -> expected<void> {
+                auto def_id = get_id(ctx.id.id);
+                def_to_uses[def_id].push_back(get_id(ctx.item_id));
+                return {};
+            })
+            .on([&](auto&& self, Context_Expression_CAN_READ_STREAM& ctx) -> expected<void> {
+                // io_ref が PARAMETER_DECL のときだけ HasFillBuf を立てる
+                // (Expression_CAN_READ_STREAM_class と同じ条件)
+                MAYBE(io_stmt, ctx.get(ctx.io_ref));
+                if (io_stmt.body.kind == ebm::StatementKind::PARAMETER_DECL) {
                     needs_fill_buf = true;
                 }
-            }
-            return traverse_children<void>(*this, ctx);
-        }
-
-        // READ_DATA 文の lowered_statement は default traverse_children が辿らないため
-        // 明示的に降りる必要がある。CAN_READ_STREAM はここに埋まっている
-        // (例: `while can_read { read_byte }` として lowered された vector 終端判定)。
-        expected<void> visit(Context_Statement_READ_DATA& ctx) {
-            MAYBE_VOID(normal, traverse_children<void>(*this, ctx));
-            if (auto low = ctx.read_data.lowered_statement()) {
-                MAYBE_VOID(lowered, ctx.visit(*this, low->io_statement.id));
-            }
-            return {};
-        }
-
-        template <typename Ctx>
-        expected<void> visit(Ctx&& ctx) {
-            if (ctx.is_before_or_after()) return pass;
-            if (ctx.context_name.contains("Type")) return {};
-            return traverse_children<void>(*this, std::forward<Ctx>(ctx));
-        }
-
-        std::unordered_set<size_t> compute_last_uses() {
-            std::unordered_set<size_t> result;
-            for (auto& [def_id, uses] : def_to_uses) {
-                if (!uses.empty()) {
-                    result.insert(uses.back());
+                return {};
+            })
+            // Propagate the BufRead requirement up the decode call graph: a function
+            // that calls a sub-decode needing fill_buf must itself take BufRead so it
+            // can pass a BufRead reader down (otherwise the parent emits `impl Read`
+            // and the child's `impl BufRead` param fails E0277). Callees are emitted
+            // before their containers (definition order is bottom-up), so the callee's
+            // HasFillBuf marker is already set by the time we analyze the caller.
+            .on([&](auto&& self, Context_Expression_CALL& ctx) -> expected<void> {
+                if (auto callee_ref = ctx.get_field<"member.body.id">(ctx.call_desc.callee)) {
+                    auto it = ctx.config().function_markers.find(get_id(from_weak(*callee_ref)));
+                    if (it != ctx.config().function_markers.end() &&
+                        has_flag(it->second, ebm2rust::FunctionFlags::HasFillBuf)) {
+                        needs_fill_buf = true;
+                    }
                 }
-            }
-            return result;
-        }
-    };
-}  // namespace CODEGEN_NAMESPACE
-
-DEFINE_VISITOR(Statement_FUNCTION_DECL_before) {
-    using namespace CODEGEN_NAMESPACE;
-    DefUseCollector collector{ctx.visitor};
+                return traverse_children<void>(self, ctx);
+            })
+            // READ_DATA 文の lowered_statement は default traverse_children が辿らないため
+            // 明示的に降りる必要がある。CAN_READ_STREAM はここに埋まっている
+            // (例: `while can_read { read_byte }` として lowered された vector 終端判定)。
+            .on([&](auto&& self, Context_Statement_READ_DATA& ctx) -> expected<void> {
+                MAYBE_VOID(normal, traverse_children<void>(self, ctx));
+                if (auto low = ctx.read_data.lowered_statement()) {
+                    MAYBE_VOID(lowered, ctx.visit(self, low->io_statement.id));
+                }
+                return {};
+            })
+            .on_default_traverse_children()
+            .build();
     MAYBE_VOID(ok, ctx.visit(collector, ctx.func_decl.body));
+    std::unordered_set<size_t> last_uses;
+    for (auto& [def_id, uses] : def_to_uses) {
+        if (!uses.empty()) {
+            last_uses.insert(uses.back());
+        }
+    }
     auto prev_can_move = std::move(ctx.config().can_move_exprs);
     auto prev_parent_fmt = ctx.config().parent_format_stmt_id;
     auto prev_current = ctx.config().current_function;
     auto prev_ptr_to_owned = ctx.config().ptr_to_owned;
-    ctx.config().can_move_exprs = collector.compute_last_uses();
+    ctx.config().can_move_exprs = std::move(last_uses);
     ctx.config().parent_format_stmt_id = get_id(ctx.func_decl.parent_format.id);
     ctx.config().current_function = ctx.item_id;
     // A STRICT_TYPE property getter that addresses a composite bit-field must
     // return owned (Option<T>) instead of Option<&T>; see config.ptr_to_owned.
-    ctx.config().ptr_to_owned = ctx.func_decl.kind == ebm::FunctionKind::PROPERTY_GETTER && collector.addresses_composite;
-    if (collector.needs_fill_buf) {
+    ctx.config().ptr_to_owned = ctx.func_decl.kind == ebm::FunctionKind::PROPERTY_GETTER && addresses_composite;
+    if (needs_fill_buf) {
         add_flag(ctx.config().function_markers[get_id(ctx.item_id)], ebm2rust::FunctionFlags::HasFillBuf);
         if (auto wrapper_ref = ctx.func_decl.wrapper_function()) {
             add_flag(ctx.config().function_markers[get_id(*wrapper_ref)], ebm2rust::FunctionFlags::HasFillBuf);
