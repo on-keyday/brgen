@@ -4,6 +4,13 @@
 
 Operational guide for AI coding agents working in this repository.
 
+## Shared Agent Knowledge
+
+- This file is the canonical source for instructions shared by Codex CLI and Claude Code. `CLAUDE.md` imports it; do not duplicate shared rules there.
+- Detailed task workflows live in `.claude/skills/`. Codex adapters in `.agents/skills/` load the corresponding Claude skill, so edit the `.claude/skills/` copy when updating shared knowledge.
+- This directory is part of the parent `brgen` monorepo, not a separate repository or submodule. The Git root, branch, history, and CI workflows are in the parent repository; changes spanning brgen and rebrgen belong to the same commit.
+- Restrict repository searches to the parent `brgen/` tree and this `rebrgen/` subtree. Similarly named directories outside that tree are unrelated.
+
 ## Critical Warnings
 
 - **Windows environment.** NEVER redirect to `nul` (e.g., `2>nul`). This creates a literal file named `nul` on Windows. Use `2>/dev/null` instead, or omit redirection entirely.
@@ -64,6 +71,8 @@ python script/update_ebm.py
 ```
 
 **Build requirements:** CMake >= 3.25, Clang++ with C++23 support, Ninja, Python 3.x.
+
+Build configuration is stored in `build_config.json`, copied from `build_config.template.json`. `AUTO_SETUP_BRGEN` and `AUTO_SETUP_FUTILS` enable automatic setup of the parent brgen tools and futils dependency. Language generators are enumerated from `src/ebmcg/` and `src/ebmip/`, not selected individually in this config.
 
 ## Project Architecture
 
@@ -185,3 +194,11 @@ ctx.config().some_visitor = [&](Context_SomeType& sctx) -> expected<Result> {
 - Read type definitions in `extended_binary_module.hpp` to understand EBM node structure
 - Check `src/ebmgen/GEMINI.md` for comprehensive development guidelines on the ebmgen component
 - Debug output from tools is designed for core developers — do not over-rely on it
+
+## Documentation Routing
+
+- Prefer `../web/doc/content/docs/rebrgen/` for current public documentation.
+- Use `src/ebmgen/GEMINI.md` for detailed ebmgen development guidance.
+- Use `docs/decisions/` for architecture decisions and `docs/decisions/TEMPLATE.md` when adding an ADR.
+- Treat `docs/en/current_status.md` and other AI-oriented status snapshots as potentially stale; verify against the current tree and tests.
+- Treat `src/old/` as legacy code unless the task explicitly targets it.
