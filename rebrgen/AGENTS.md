@@ -36,22 +36,22 @@ python script/build.py native Release
 python script/unictest.py --target-runner ebm2go
 
 # Run a single test by input name
-python script/unictest.py --target-runner ebm2go --target-input simple_case
+python script/unictest.py --target-runner ebm2go --target-input complex_case
 
 # Run tests with stdout visible (for debugging)
 python script/unictest.py --target-runner ebm2go --print-stdout
 
 # Generate EBM from .bgn source
-./tool/ebmgen -i src/test/simple_case.bgn -o save/simple_case.ebm
+./tool/ebmgen -i src/test/complex_case.bgn -o save/complex_case.ebm
 
 # Generate target language code from EBM
-./tool/ebm2go -i save/simple_case.ebm 1> save/go/simple_case.go
+./tool/ebm2go -i save/complex_case.ebm 1> save/go/complex_case.go
 
 # Debug-print EBM to text
-./tool/ebmgen -i save/simple_case.ebm -d save/debug.txt
+./tool/ebmgen -i save/complex_case.ebm -d save/debug.txt
 
 # EBM interactive query
-./tool/ebmgen -i save/simple_case.ebm --query "<id>" --query-format=text
+./tool/ebmgen -i save/complex_case.ebm --query "<id>" --query-format=text
 
 # Create a new language generator skeleton
 python script/ebmcodegen.py <lang_name>

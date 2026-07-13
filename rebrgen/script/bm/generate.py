@@ -2,7 +2,7 @@ import subprocess as sp
 import sys
 
 LANG_LIST = ["c", "python", "haskell", "go", "cpp3", "kaitai"]
-INPUT = "src/test/simple_case.bgn" if len(sys.argv) < 2 else sys.argv[1]
+INPUT = "src/test/complex_case.bgn" if len(sys.argv) < 2 else sys.argv[1]
 BUILD_MODE = "native" if len(sys.argv) < 3 else sys.argv[2]
 BUILD_TYPE = "Debug" if len(sys.argv) < 4 else sys.argv[3]
 SRC2JSON = (

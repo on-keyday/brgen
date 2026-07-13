@@ -15,3 +15,36 @@ size_t next_reg() {
 }
 
 CodeWriter function_local_variables;
+
+// (continue target = latch label, break target = end label) per active loop
+std::vector<std::pair<std::string, std::string>> loop_labels;
+
+// true while emitting a function body: toplevel VARIABLE_DECLs become globals
+bool in_function = false;
+
+// StatementRef ids of toplevel VARIABLE_DECLs emitted as @globals
+std::unordered_set<std::uint64_t> global_vars;
+
+// identifier names of those globals: imported-module constants are duplicated
+// per use-site scope in EBM (distinct statement ids, same name), so reference
+// resolution must also match by name
+std::unordered_set<std::string> global_var_names;
+
+// global definitions already written (dedup of the same-name copies)
+std::unordered_set<std::string> emitted_globals;
+
+// STRUCT_DECL ids already emitted (dedup between nested_types and program blocks)
+std::unordered_set<std::uint64_t> declared_structs;
+
+// reference VARIABLE_DECLs (is_reference): id -> address register of the
+// aliased lvalue, computed once at declaration
+std::unordered_map<std::uint64_t, std::string> ref_var_addr;
+
+// %struct.X = type {...} lines, hoisted to the module head by the
+// PROGRAM_DECL end wrapper: the LLParser requires a struct type to be
+// defined before any getelementptr into it
+CodeWriter type_defs;
+
+// function definitions produced while emitting a type (variant arm structs
+// visited from emit_union_type); flushed at the module tail
+CodeWriter deferred_funcs;

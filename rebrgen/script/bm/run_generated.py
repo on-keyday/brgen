@@ -8,7 +8,7 @@ sp.run(
     stdout=sys.stdout,
     stderr=sys.stderr,
 )
-INPUT = "src/test/simple_case.bgn" if len(sys.argv) < 2 else sys.argv[1]
+INPUT = "src/test/complex_case.bgn" if len(sys.argv) < 2 else sys.argv[1]
 print(f"Input: {INPUT}")
 save = sp.check_output(
     ["C:/workspace/shbrgen/brgen/tool/src2json", INPUT],

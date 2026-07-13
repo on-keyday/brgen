@@ -20,29 +20,530 @@
 #include "ebmcodegen/stub/util.hpp"
 #include "ebmgen/mapping.hpp"
 namespace ebm2llvm {
-    expected<std::pair<std::string, std::string>> to_llvm_op(Context_Expression_BINARY_OP& ctx) {
+    // Operand model:
+    //   - scalar types (u/int, bool, float, enum, usize, encoder/decoder return) are SSA values
+    //   - aggregate types (struct, vector, array, variant, struct-union) are always ptr operands
+    // ABI (must stay in sync with the C harness in unictest.py):
+    //   %Vec    = type { ptr, i64, i64 }  ; data, size, capacity
+    //   %Stream = type { ptr, i64, i64 }  ; data, len(dec)/cap(enc), offset
+    //   define i32 @<Struct>_<fn>(ptr %self, ptr %<io>)  ; 0 = ok, -1 = error
+
+    inline bool is_aggregate_kind(auto kind) {
+        return kind == ebm::TypeKind::STRUCT || kind == ebm::TypeKind::RECURSIVE_STRUCT ||
+               kind == ebm::TypeKind::VECTOR || kind == ebm::TypeKind::ARRAY ||
+               kind == ebm::TypeKind::VARIANT || kind == ebm::TypeKind::STRUCT_UNION;
+    }
+
+    // types whose identifier denotes a pointer operand rather than a loadable
+    // scalar: aggregates plus the io stream objects (%Stream locals/params)
+    inline bool is_byptr_kind(auto kind) {
+        return is_aggregate_kind(kind) ||
+               kind == ebm::TypeKind::DECODER_INPUT || kind == ebm::TypeKind::ENCODER_INPUT;
+    }
+
+    // type-resolving variant of is_byptr_kind: a VARIANT with common_type
+    // renders as its common view, so its operand form follows that view
+    inline bool is_ptr_operand_type(auto&& ctx, ebm::TypeRef t) {
+        auto kind = ctx.get_kind(t);
+        if (kind == ebm::TypeKind::VARIANT) {
+            auto common = ctx.template get_field<"body.variant_desc.common_type">(t);
+            if (common && !is_nil(*common)) {
+                return is_ptr_operand_type(ctx, *common);
+            }
+            return true;
+        }
+        return is_byptr_kind(kind);
+    }
+
+    inline std::string next_tmp(auto&& ctx) {
+        return std::format("%t{}", ctx.config().next_reg());
+    }
+
+    // sizeof as a constant expression (alloc size, consistent with gep stride)
+    inline std::string sizeof_const(const std::string& llvm_type) {
+        return "ptrtoint (ptr getelementptr (" + llvm_type + ", ptr null, i32 1) to i64)";
+    }
+
+    // last non-empty line already terminates the basic block (ret/br/unreachable)
+    inline bool ends_with_terminator(const std::string& s) {
+        size_t end = s.find_last_not_of(" \t\r\n");
+        if (end == std::string::npos) {
+            return false;
+        }
+        size_t start = s.find_last_of('\n', end);
+        size_t begin = (start == std::string::npos) ? 0 : start + 1;
+        while (begin <= end && (s[begin] == ' ' || s[begin] == '\t')) {
+            begin++;
+        }
+        std::string_view line(s.data() + begin, end - begin + 1);
+        return line.starts_with("ret ") || line == "ret" || line.starts_with("br ") || line.starts_with("unreachable");
+    }
+
+    // enumerate the materialized slots of a struct in declaration order.
+    // BULK_PRIMITIVE composites are one storage word (members are virtual,
+    // accessed through accessor functions); every other composite kind
+    // materializes its member fields individually (mirrors the default
+    // COMPOSITE_FIELD_DECL visitor other backends rely on).
+    ebmgen::expected<void> for_each_slot(auto&& ctx, const ebm::StructDecl& sd, auto&& fn) {
+        for (auto& fref : sd.fields.container) {
+            if (auto fd = ctx.template get_field<"field_decl">(fref)) {
+                if (fd->is_state_variable() || fd->inner_composite()) {
+                    continue;
+                }
+                MAYBE_VOID(v, fn(fref, fd->field_type));
+            }
+            else if (auto cfd = ctx.template get_field<"composite_field_decl">(fref)) {
+                if (cfd->kind == ebm::CompositeFieldKind::BULK_PRIMITIVE) {
+                    MAYBE_VOID(v, fn(fref, cfd->composite_type));
+                }
+                else {
+                    for (auto& f : cfd->fields.container) {
+                        if (auto ifd = ctx.template get_field<"field_decl">(f)) {
+                            if (ifd->is_state_variable()) {
+                                continue;
+                            }
+                            MAYBE_VOID(v, fn(f, ifd->field_type));
+                        }
+                        else {
+                            return unexpect_error("llvm struct: unsupported nested composite member kind");
+                        }
+                    }
+                }
+            }
+            else {
+                return unexpect_error("llvm struct: unsupported field statement kind");
+            }
+        }
+        return {};
+    }
+
+    // (llvm struct type name, materialized field index) for a member statement
+    // within its parent struct
+    ebmgen::expected<std::pair<std::string, size_t>> field_slot_in(auto&& ctx, const auto& target, const ebm::WeakStatementRef& parent_struct) {
+        MAYBE(sd, ctx.template get_field<"struct_decl">(from_weak(parent_struct)));
+        size_t idx = 0;
+        std::optional<size_t> found;
+        MAYBE_VOID(scan, for_each_slot(ctx, sd, [&](const ebm::StatementRef& sref, ebm::TypeRef) -> ebmgen::expected<void> {
+                       if (get_id(sref) == get_id(target)) {
+                           found = idx;
+                       }
+                       idx++;
+                       return {};
+                   }));
+        if (found) {
+            return std::make_pair("%struct." + ctx.identifier(parent_struct), *found);
+        }
+        return unexpect_error("llvm member: field {} (id={}) not found in parent struct {}", ctx.identifier(target), get_id(target), ctx.identifier(parent_struct));
+    }
+
+    ebmgen::expected<std::pair<std::string, size_t>> resolve_field_slot(auto&& ctx, ebm::ExpressionRef member) {
+        MAYBE(mem, ctx.get(member));
+        auto sid = mem.body.id();
+        if (!sid) {
+            return unexpect_error("llvm member: member expression has no statement ref");
+        }
+        if (auto fd = ctx.template get_field<"field_decl">(*sid)) {
+            return field_slot_in(ctx, *sid, fd->parent_struct);
+        }
+        if (auto cfd = ctx.template get_field<"composite_field_decl">(*sid)) {
+            // the storage word itself (referenced from accessor bodies);
+            // CompositeFieldDecl has no parent link: take it from a member
+            for (auto& f : cfd->fields.container) {
+                if (auto inner = ctx.template get_field<"field_decl">(f)) {
+                    return field_slot_in(ctx, *sid, inner->parent_struct);
+                }
+            }
+            return unexpect_error("llvm member: composite storage without member fields");
+        }
+        return unexpect_error("llvm member: unsupported member statement kind");
+    }
+
+    // BULK_PRIMITIVE composite member: bit fields folded into one storage
+    // word, accessed through generated get_/set_ accessor functions
+    const ebm::FieldDecl* bulk_composite_member(auto&& ctx, ebm::ExpressionRef member) {
+        ebmgen::MappingTable& mapping = get_visitor(ctx).module_;
+        const ebm::FieldDecl* comp = ebmgen::access_field<"body.id.field_decl">(mapping, member);
+        if (!comp || !comp->composite_field()) {
+            return nullptr;
+        }
+        auto comp_type = ebmgen::access_field<"composite_field_decl">(mapping, *comp->composite_field());
+        if (comp_type && comp_type->kind == ebm::CompositeFieldKind::BULK_PRIMITIVE) {
+            return comp;
+        }
+        return nullptr;
+    }
+
+    // address of a named variable/param/global/reference-alias
+    inline ebmgen::expected<std::string> var_addr(auto&& ctx, const auto& sid) {
+        if (auto it = ctx.config().ref_var_addr.find(get_id(sid)); it != ctx.config().ref_var_addr.end()) {
+            return it->second;
+        }
+        auto name = ctx.identifier(sid);
+        // imported-module constants are duplicated per use-site scope in EBM
+        // (distinct statement ids, same name): match globals by name too
+        if (ctx.config().global_vars.contains(get_id(sid)) || ctx.config().global_var_names.contains(name)) {
+            return "@" + name;
+        }
+        // locals get an id suffix: inlined nested formats can declare the
+        // same user-visible name several times within one function
+        if (ctx.is(ebm::StatementKind::VARIABLE_DECL, sid)) {
+            return "%" + name + "." + std::to_string(get_id(sid));
+        }
+        return "%" + name;
+    }
+
+    // address of an assignable/addressable expression; instructions go to the ambient writer
+    ebmgen::expected<std::string> eval_lvalue(auto&& ctx, ebm::ExpressionRef expr) {
+        MAYBE(obj, ctx.get(expr));
+        switch (obj.body.kind) {
+            case ebm::ExpressionKind::SELF: {
+                return std::string("%self");
+            }
+            case ebm::ExpressionKind::IDENTIFIER: {
+                auto sid = obj.body.id();
+                if (!sid) {
+                    return unexpect_error("llvm lvalue: identifier without statement ref");
+                }
+                return var_addr(ctx, *sid);
+            }
+            case ebm::ExpressionKind::MEMBER_ACCESS: {
+                MAYBE(base_ptr, eval_lvalue(ctx, *obj.body.base()));
+                MAYBE(slot, resolve_field_slot(ctx, *obj.body.member()));
+                MAYBE(w, ctx.get_writer());
+                auto tmp = next_tmp(ctx);
+                w.get().writeln(tmp, " = getelementptr inbounds ", slot.first, ", ptr ", base_ptr, ", i32 0, i32 ", std::to_string(slot.second));
+                return tmp;
+            }
+            case ebm::ExpressionKind::INDEX_ACCESS: {
+                MAYBE(base_ptr, eval_lvalue(ctx, *obj.body.base()));
+                MAYBE(idx_val, ctx.visit(*obj.body.index()));
+                MAYBE(base_obj, ctx.get(*obj.body.base()));
+                auto btype = base_obj.body.type;
+                auto bkind = ctx.get_kind(btype);
+                MAYBE(w, ctx.get_writer());
+                if (bkind == ebm::TypeKind::ARRAY) {
+                    MAYBE(arr_ty, ctx.visit(btype));
+                    auto tmp = next_tmp(ctx);
+                    w.get().writeln(tmp, " = getelementptr inbounds ", arr_ty.to_string(), ", ptr ", base_ptr, ", i64 0, i64 ", idx_val.to_string());
+                    return tmp;
+                }
+                if (bkind == ebm::TypeKind::VECTOR) {
+                    MAYBE(elem_ref, ctx.template get_field<"body.element_type">(btype));
+                    MAYBE(elem_ty, ctx.visit(elem_ref));
+                    auto dptr_slot = next_tmp(ctx);
+                    w.get().writeln(dptr_slot, " = getelementptr inbounds %Vec, ptr ", base_ptr, ", i32 0, i32 0");
+                    auto dptr = next_tmp(ctx);
+                    w.get().writeln(dptr, " = load ptr, ptr ", dptr_slot);
+                    auto tmp = next_tmp(ctx);
+                    w.get().writeln(tmp, " = getelementptr inbounds ", elem_ty.to_string(), ", ptr ", dptr, ", i64 ", idx_val.to_string());
+                    return tmp;
+                }
+                return unexpect_error("llvm lvalue: unsupported index base type kind");
+            }
+            case ebm::ExpressionKind::TYPE_CAST: {
+                // representation-preserving cast around an lvalue (e.g.
+                // enum <-> base int): the storage location is the source's
+                MAYBE(src, ctx.template get_field<"type_cast_desc.source_expr">(expr));
+                return eval_lvalue(ctx, src);
+            }
+            default: {
+                return unexpect_error("llvm lvalue: unsupported expression kind {}", to_string(obj.body.kind));
+            }
+        }
+    }
+
+    // load a scalar from an address, or return the address itself for aggregates
+    ebmgen::expected<std::string> load_or_addr(auto&& ctx, const std::string& addr, ebm::TypeRef type) {
+        if (is_ptr_operand_type(ctx, type)) {
+            return addr;
+        }
+        MAYBE(ty, ctx.visit(type));
+        MAYBE(w, ctx.get_writer());
+        auto tmp = next_tmp(ctx);
+        w.get().writeln(tmp, " = load ", ty.to_string(), ", ptr ", addr);
+        return tmp;
+    }
+
+    // remaining = stream.len - stream.offset (also loads offset/data on demand)
+    struct StreamFields {
+        std::string data;    // ptr
+        std::string limit;   // i64: len (decode) / cap (encode)
+        std::string offset;  // i64
+    };
+    ebmgen::expected<StreamFields> load_stream_fields(auto&& ctx, const std::string& io) {
+        MAYBE(w, ctx.get_writer());
+        StreamFields f;
+        auto dp = next_tmp(ctx);
+        w.get().writeln(dp, " = getelementptr inbounds %Stream, ptr ", io, ", i32 0, i32 0");
+        f.data = next_tmp(ctx);
+        w.get().writeln(f.data, " = load ptr, ptr ", dp);
+        auto lp = next_tmp(ctx);
+        w.get().writeln(lp, " = getelementptr inbounds %Stream, ptr ", io, ", i32 0, i32 1");
+        f.limit = next_tmp(ctx);
+        w.get().writeln(f.limit, " = load i64, ptr ", lp);
+        auto op = next_tmp(ctx);
+        w.get().writeln(op, " = getelementptr inbounds %Stream, ptr ", io, ", i32 0, i32 2");
+        f.offset = next_tmp(ctx);
+        w.get().writeln(f.offset, " = load i64, ptr ", op);
+        return f;
+    }
+    ebmgen::expected<std::string> emit_stream_remaining(auto&& ctx, const std::string& io) {
+        MAYBE(f, load_stream_fields(ctx, io));
+        MAYBE(w, ctx.get_writer());
+        auto rem = next_tmp(ctx);
+        w.get().writeln(rem, " = sub i64 ", f.limit, ", ", f.offset);
+        return rem;
+    }
+
+    // evaluate an expression as an i64 value (sizes/lengths): extend narrower ints
+    ebmgen::expected<std::string> eval_expr_i64(auto&& ctx, ebm::ExpressionRef ref) {
+        MAYBE(v, ctx.visit(ref));
+        MAYBE(ty, ctx.template get_field<"type">(ref));
+        MAYBE(tyr, ctx.visit(ty));
+        auto t = tyr.to_string();
+        if (t == "i64") {
+            return v.to_string();
+        }
+        if (t.size() < 2 || t[0] != 'i') {
+            return unexpect_error("llvm size: non-integer size expression type {}", t);
+        }
+        size_t bits = std::stoul(t.substr(1));
+        MAYBE(w, ctx.get_writer());
+        auto tmp = next_tmp(ctx);
+        if (bits < 64) {
+            bool is_signed = ctx.get_kind(ty) == ebm::TypeKind::INT;
+            w.get().writeln(tmp, " = ", is_signed ? "sext" : "zext", " ", t, " ", v.to_string(), " to i64");
+        }
+        else {
+            w.get().writeln(tmp, " = trunc ", t, " ", v.to_string(), " to i64");
+        }
+        return tmp;
+    }
+
+    ebmgen::expected<std::string> eval_size_i64(auto&& ctx, const ebm::Size& s) {
+        if (auto size = s.size()) {
+            return std::format("{}", size->value());
+        }
+        if (auto ref = s.ref()) {
+            return eval_expr_i64(ctx, *ref);
+        }
+        return unexpect_error("llvm size: unsupported size unit {}", to_string(s.unit));
+    }
+
+    // x86-64 layout of the rendered LLVM types (byte_aligned_int keeps ints
+    // at 8/16/32/64 bits, so every scalar's alloc size equals its alignment)
+    struct LayoutInfo {
+        size_t size;
+        size_t align;
+    };
+    ebmgen::expected<LayoutInfo> layout_of(auto&& ctx, ebm::TypeRef type_ref);
+
+    ebmgen::expected<LayoutInfo> layout_of_struct_fields(auto&& ctx, const ebm::StructDecl& sd) {
+        LayoutInfo r{0, 1};
+        MAYBE_VOID(scan, for_each_slot(ctx, sd, [&](const ebm::StatementRef&, ebm::TypeRef slot_type) -> ebmgen::expected<void> {
+                       MAYBE(fl, layout_of(ctx, slot_type));
+                       r.size = (r.size + fl.align - 1) / fl.align * fl.align + fl.size;
+                       r.align = std::max(r.align, fl.align);
+                       return {};
+                   }));
+        r.size = (r.size + r.align - 1) / r.align * r.align;
+        return r;
+    }
+
+    ebmgen::expected<LayoutInfo> layout_of(auto&& ctx, ebm::TypeRef type_ref) {
+        auto kind = ctx.get_kind(type_ref);
+        if (!kind) {
+            return unexpect_error("llvm layout: unknown type");
+        }
+        switch (*kind) {
+            case ebm::TypeKind::BOOL:
+                return LayoutInfo{1, 1};
+            case ebm::TypeKind::UINT:
+            case ebm::TypeKind::INT: {
+                MAYBE(bits, get_type_size_bit(ctx, type_ref));
+                size_t bytes = bits <= 8 ? 1 : bits <= 16 ? 2
+                                           : bits <= 32   ? 4
+                                                          : 8;
+                return LayoutInfo{bytes, bytes};
+            }
+            case ebm::TypeKind::ENUM: {
+                MAYBE(base, ctx.template get_field<"body.base_type">(type_ref));
+                return layout_of(ctx, base);
+            }
+            case ebm::TypeKind::USIZE:
+                return LayoutInfo{8, 8};
+            case ebm::TypeKind::FLOAT: {
+                MAYBE(bits, get_type_size_bit(ctx, type_ref));
+                return bits <= 32 ? LayoutInfo{4, 4} : LayoutInfo{8, 8};
+            }
+            case ebm::TypeKind::VECTOR:
+                return LayoutInfo{24, 8};  // %Vec
+            case ebm::TypeKind::PTR:
+            case ebm::TypeKind::RECURSIVE_STRUCT:
+            case ebm::TypeKind::OPTIONAL:
+            case ebm::TypeKind::DECODER_INPUT:
+            case ebm::TypeKind::ENCODER_INPUT:
+                return LayoutInfo{8, 8};
+            case ebm::TypeKind::ENCODER_RETURN:
+            case ebm::TypeKind::DECODER_RETURN:
+                return LayoutInfo{4, 4};
+            case ebm::TypeKind::ARRAY: {
+                MAYBE(elem, ctx.template get_field<"body.element_type">(type_ref));
+                MAYBE(len, ctx.template get_field<"body.length">(type_ref));
+                MAYBE(el, layout_of(ctx, elem));
+                return LayoutInfo{static_cast<size_t>(el.size * len.value()), el.align};
+            }
+            case ebm::TypeKind::STRUCT: {
+                MAYBE(sd, ctx.template get_field<"body.id.struct_decl">(type_ref));
+                return layout_of_struct_fields(ctx, sd);
+            }
+            case ebm::TypeKind::VARIANT:
+            case ebm::TypeKind::STRUCT_UNION: {
+                // overlay storage: max member size, i64-aligned (see emit_union_type)
+                auto members = ctx.template get_field<"body.variant_desc.members">(type_ref);
+                if (!members) {
+                    members = ctx.template get_field<"body.struct_union_desc.variant_desc.members">(type_ref);
+                }
+                if (!members) {
+                    return unexpect_error("llvm layout: union without members");
+                }
+                size_t maxsize = 0;
+                for (auto& m : members->container) {
+                    MAYBE(ml, layout_of(ctx, m));
+                    maxsize = std::max(maxsize, ml.size);
+                }
+                size_t words = (maxsize + 7) / 8;
+                if (words == 0) {
+                    words = 1;
+                }
+                return LayoutInfo{words * 8, 8};
+            }
+            default:
+                return unexpect_error("llvm layout: unsupported type kind {}", to_string(*kind));
+        }
+    }
+
+    // unions (VARIANT / STRUCT_UNION) are opaque overlay storage: every arm
+    // starts at offset 0, so arm-struct GEPs work directly on the union ptr
+    ebmgen::expected<Result> emit_union_type(auto&& ctx, ebm::TypeRef type_ref) {
+        auto llvm_name = "%union." + ctx.config().variant_prefix + std::format("{}", get_id(type_ref));
+        if (ctx.config().declared_variants.insert(type_ref).second) {
+            MAYBE(l, layout_of(ctx, type_ref));
+            ctx.config().type_defs.writeln(llvm_name, " = type { [", std::to_string(l.size / 8), " x i64] }");
+            // arm structs only exist as union members: emit their type defs
+            // and codec functions here (functions go to the module tail)
+            auto members = ctx.template get_field<"body.variant_desc.members">(type_ref);
+            if (!members) {
+                members = ctx.template get_field<"body.struct_union_desc.variant_desc.members">(type_ref);
+            }
+            if (members) {
+                // the first reference to a union type can occur mid-function:
+                // save/restore the function emission context around arm codegen
+                auto saved_locals = std::move(ctx.config().function_local_variables);
+                auto saved_loops = std::move(ctx.config().loop_labels);
+                auto saved_in_fn = ctx.config().in_function;
+                ctx.config().function_local_variables = {};
+                ctx.config().loop_labels.clear();
+                ctx.config().in_function = false;
+                for (auto& m : members->container) {
+                    if (ctx.get_kind(m) != ebm::TypeKind::STRUCT) {
+                        continue;
+                    }
+                    MAYBE(sid, ctx.template get_field<"body.id">(m));
+                    MAYBE(arm, ctx.visit(from_weak(sid)));
+                    ctx.config().deferred_funcs.write(std::move(arm.to_writer()));
+                }
+                ctx.config().function_local_variables = std::move(saved_locals);
+                ctx.config().loop_labels = std::move(saved_loops);
+                ctx.config().in_function = saved_in_fn;
+            }
+        }
+        return Result(llvm_name);
+    }
+
+    // copy an expression's value into a module-level slot and return the
+    // slot address: pointer/optional views of computed values (bit-field
+    // getters) have no stable lvalue. The slot is consumed immediately
+    // after each call site, so reuse across calls is safe.
+    ebmgen::expected<std::string> copy_value_to_global_slot(auto&& ctx, ebm::ExpressionRef expr) {
+        MAYBE(val, ctx.visit(expr));
+        MAYBE(tty, ctx.template get_field<"type">(expr));
+        MAYBE(ty_r, ctx.visit(tty));
+        auto ty = ty_r.to_string();
+        auto slot = std::format("@opt.{}", ctx.config().next_reg());
+        ctx.config().type_defs.writeln(slot, " = internal global ", ty, " zeroinitializer");
+        MAYBE(w, ctx.get_writer());
+        // aggregates render as named %types and their value is a pointer
+        if (!ty.empty() && ty[0] == '%') {
+            w.get().writeln("call void @llvm.memcpy.p0.p0.i64(ptr ", slot, ", ptr ", val.to_writer(), ", i64 ", sizeof_const(ty), ", i1 false)");
+        }
+        else {
+            w.get().writeln("store ", ty, " ", val.to_writer(), ", ptr ", slot);
+        }
+        return slot;
+    }
+
+    // ADR 0008/0039: absolute-offset companion increment (IR form of
+    // ebmcodegen::util::append_runtime_offset). The companion is always the
+    // pointer param/local named %runtime_state of type %struct.RuntimeState.
+    ebmgen::expected<void> emit_runtime_offset_add(auto&& ctx, ebm::StatementRef io_ref, CodeWriter& w, const std::string& size_i64) {
+        if (!ebmcodegen::util::has_absolute_offset(ctx, io_ref)) {
+            return {};
+        }
+        auto p = next_tmp(ctx);
+        w.writeln(p, " = getelementptr inbounds %struct.RuntimeState, ptr %runtime_state, i32 0, i32 0");
+        auto v = next_tmp(ctx);
+        w.writeln(v, " = load i64, ptr ", p);
+        auto nv = next_tmp(ctx);
+        w.writeln(nv, " = add i64 ", v, ", ", size_i64);
+        w.writeln("store i64 ", nv, ", ptr ", p);
+        return {};
+    }
+
+    // bounds check: size <= remaining, else `ret i32 -1`
+    ebmgen::expected<void> emit_bounds_check(auto&& ctx, CodeWriter& w, const std::string& size_val, const std::string& remaining) {
+        auto id = ctx.config().next_reg();
+        auto ok = next_tmp(ctx);
+        w.writeln(ok, " = icmp ule i64 ", size_val, ", ", remaining);
+        w.writeln("br i1 ", ok, ", label %.Lio.ok.", std::to_string(id), ", label %.Lio.err.", std::to_string(id));
+        w.writeln_noindent(".Lio.err.", std::to_string(id), ":");
+        w.writeln("ret i32 -1");
+        w.writeln_noindent(".Lio.ok.", std::to_string(id), ":");
+        return {};
+    }
+
+    ebmgen::expected<std::pair<std::string, std::string>> to_llvm_op(Context_Expression_BINARY_OP& ctx) {
         switch (ctx.bop) {
             case ebm::BinaryOp::equal:
             case ebm::BinaryOp::not_equal:
             case ebm::BinaryOp::less:
-            case ebm::BinaryOp::greater: {
+            case ebm::BinaryOp::less_or_eq:
+            case ebm::BinaryOp::greater:
+            case ebm::BinaryOp::greater_or_eq: {
                 MAYBE(left_ty, ctx.get_field<"type">(ctx.left));
                 MAYBE(type_str, ctx.visit(left_ty));
                 auto kind = ctx.get_kind(left_ty);
                 bool is_float = kind == ebm::TypeKind::FLOAT;
                 bool is_signed = kind == ebm::TypeKind::INT;
                 auto cmp = std::string(is_float ? "fcmp" : "icmp");
+                auto rel = [&](const char* f, const char* s, const char* u) {
+                    return cmp + " " + (is_float ? f : (is_signed ? s : u));
+                };
                 switch (ctx.bop) {
                     case ebm::BinaryOp::equal:
-                        return std::make_pair(cmp + " eq", type_str.to_string());
+                        return std::make_pair(rel("oeq", "eq", "eq"), type_str.to_string());
                     case ebm::BinaryOp::not_equal:
-                        return std::make_pair(cmp + " ne", type_str.to_string());
+                        return std::make_pair(rel("one", "ne", "ne"), type_str.to_string());
                     case ebm::BinaryOp::less:
-                        return std::make_pair(cmp + (is_float ? " olt" : (is_signed ? " slt" : " ult")), type_str.to_string());
+                        return std::make_pair(rel("olt", "slt", "ult"), type_str.to_string());
+                    case ebm::BinaryOp::less_or_eq:
+                        return std::make_pair(rel("ole", "sle", "ule"), type_str.to_string());
                     case ebm::BinaryOp::greater:
-                        return std::make_pair(cmp + (is_float ? " ogt" : (is_signed ? " sgt" : " ugt")), type_str.to_string());
+                        return std::make_pair(rel("ogt", "sgt", "ugt"), type_str.to_string());
+                    case ebm::BinaryOp::greater_or_eq:
+                        return std::make_pair(rel("oge", "sge", "uge"), type_str.to_string());
                     default:
-                        return std::make_pair("unknown_cmp", type_str.to_string());
+                        return unexpect_error("unreachable comparison op");
                 }
             }
             default:
@@ -60,80 +561,230 @@ namespace ebm2llvm {
             case ebm::BinaryOp::mul:
                 return std::make_pair(is_float ? "fmul" : "mul", llvm_type.to_string());
             case ebm::BinaryOp::div:
-                if (is_float) return std::make_pair("fdiv", llvm_type.to_string());
+                if (is_float) {
+                    return std::make_pair("fdiv", llvm_type.to_string());
+                }
                 return std::make_pair(is_signed ? "sdiv" : "udiv", llvm_type.to_string());
             case ebm::BinaryOp::mod:
-                if (is_float) return std::make_pair("frem", llvm_type.to_string());
+                if (is_float) {
+                    return std::make_pair("frem", llvm_type.to_string());
+                }
                 return std::make_pair(is_signed ? "srem" : "urem", llvm_type.to_string());
+            case ebm::BinaryOp::bit_and:
+            case ebm::BinaryOp::logical_and:
+                return std::make_pair("and", llvm_type.to_string());
+            case ebm::BinaryOp::bit_or:
+            case ebm::BinaryOp::logical_or:
+                return std::make_pair("or", llvm_type.to_string());
+            case ebm::BinaryOp::bit_xor:
+                return std::make_pair("xor", llvm_type.to_string());
+            case ebm::BinaryOp::left_shift:
+                return std::make_pair("shl", llvm_type.to_string());
+            case ebm::BinaryOp::right_shift:
+                return std::make_pair(is_signed ? "ashr" : "lshr", llvm_type.to_string());
             default:
-                return std::make_pair("unknown", llvm_type.to_string());
+                return unexpect_error("llvm binary op: unsupported op {}", to_string(ctx.bop));
         }
     }
-
-    struct DebugInfoManager {
-        ebmgen::MappingTable& mod;
-        // LLVMのメタデータIDとスコープを管理する最小単位
-        struct DebugContext {
-            int unit_id = 0;        // DICompileUnit
-            int file_id = 1;        // DIFile
-            int subprogram_id = 2;  // DISubprogram
-        } ctx;
-
-        // キャッシュキーを line << 16 | col に詰め込んで map の負荷を減らす（簡易版）
-        std::unordered_map<std::uint32_t, int> loc_cache;
-        int next_id = 3;  // 0, 1, 2 は基本構造で使用済み
-
-       public:
-        // 命令生成時のロケーション付与
-        template <ebmgen::AnyRef T>
-        std::string get_dbg(T node) {
-            auto loc = mod.get_debug_loc(to_any_ref(node));
-            if (!loc) return "";  // デバッグ情報なし
-            uint32_t key = (static_cast<std::uint32_t>(loc->line.value()) << 16) | (loc->column.value() & 0xFFFF);
-            if (loc_cache.find(key) == loc_cache.end()) {
-                int id = next_id++;
-                // スコープは常に現在の関数 (!2) を指す
-                loc_cache[key] = id;
-                append_metadata(id, *loc);
-            }
-            return " !dbg !" + std::to_string(loc_cache[key]);
-        }
-
-       private:
-        CodeWriter metadata_buffer;
-        void append_metadata(int id, const ebm::Loc& loc) {
-            metadata_buffer.writeln("!", std::to_string(id), " = !DILocation(line: ", std::to_string(loc.line.value()), ", column: ", std::to_string(loc.column.value()), ", scope: !", std::to_string(ctx.subprogram_id), ")");
-        }
-    };
 }  // namespace ebm2llvm
 
 DEFINE_VISITOR(entry_before) {
     using namespace CODEGEN_NAMESPACE;
     /*here to write the hook*/
-    ctx.config().bool_type = "i1";
-    ctx.config().int_prefix = "i";
-    ctx.config().uint_prefix = "i";
-    ctx.config().usize_type_name = "i64";
+    auto& config = ctx.config();
 
-    ctx.config().program_decl_start_wrapper = [](Context_Statement_PROGRAM_DECL& pctx) -> expected<Result> {
+    ctx.module().register_default_prefix(ebm::StatementKind::STRUCT_DECL, "Struct");
+
+    config.bool_type = "i1";
+    config.bool_true = "true";
+    config.bool_false = "false";
+    config.property_setter_return_type = "i1";
+    config.native_endian_check = "true";  // tests run on little-endian hosts
+    config.metadata_comment_prefix = ";";
+    config.metadata_comment_suffix = "";
+    config.self_value = "%self";
+    config.int_prefix = "i";
+    config.uint_prefix = "i";
+    config.usize_type_name = "i64";
+    config.void_type = "void";
+    config.encoder_return_type = "i32";
+    config.decoder_return_type = "i32";
+    config.encoder_input_type = "ptr";
+    config.decoder_input_type = "ptr";
+    config.use_base_type_of_enum = true;
+    config.default_value_option.decoder_return_init = "0";
+    config.default_value_option.encoder_return_init = "0";
+    config.default_value_option.object_init = "zeroinitializer";
+    config.default_value_option.vector_init = "zeroinitializer";
+    config.default_value_option.pointer_init = "null";
+    config.default_value_option.optional_init = "null";
+
+    config.make_float_type = [](size_t bit_size) -> expected<Result> {
+        if (bit_size == 32) {
+            return Result("float");
+        }
+        if (bit_size == 64) {
+            return Result("double");
+        }
+        return unexpect_error("llvm: unsupported float size {}", bit_size);
+    };
+
+    config.vector_type_wrapper = [](Context_Type_VECTOR& ctx) -> expected<Result> {
+        return Result("%Vec");
+    };
+    config.struct_type_custom = [](Context_Type_STRUCT& ctx) -> expected<Result> {
+        return Result("%struct." + ctx.identifier(ctx.id));
+    };
+    config.array_type_wrapper = [](Context_Type_ARRAY& ctx) -> expected<Result> {
+        MAYBE(elem_type, ctx.visit(ctx.element_type));
+        return CODE("[", std::to_string(ctx.length.value()), " x ", elem_type.to_writer(), "]");
+    };
+    config.pointer_type_wrapper = [](Result elem_type) -> expected<Result> {
+        return Result("ptr");
+    };
+    config.optional_type_wrapper = [](Result elem_type) -> expected<Result> {
+        return Result("ptr");
+    };
+    config.variant_type_custom = [](Context_Type_VARIANT& ctx) -> expected<Result> {
+        if (!is_nil(ctx.variant_desc.common_type)) {
+            return pass;  // common-type view resolves to the common type (default)
+        }
+        return ebm2llvm::emit_union_type(ctx, ctx.item_id);
+    };
+    config.struct_union_type_custom = [](Context_Type_STRUCT_UNION& ctx) -> expected<Result> {
+        return ebm2llvm::emit_union_type(ctx, ctx.item_id);
+    };
+
+    // toplevel VARIABLE_DECLs may be referenced (from union arm functions
+    // emitted early) before their own visit: pre-register them as globals,
+    // including the toplevels of imported module programs
+    config.program_decl_start_wrapper = [](Context_Statement_PROGRAM_DECL& pctx) -> expected<Result> {
+        auto register_block = [&](auto&& self, const ebm::Block& block) -> void {
+            for (auto& sref : block.container) {
+                if (pctx.is(ebm::StatementKind::VARIABLE_DECL, sref)) {
+                    pctx.config().global_vars.insert(get_id(sref));
+                    pctx.config().global_var_names.insert(pctx.identifier(sref));
+                }
+                else if (auto import_decl = pctx.get_field<"import_decl">(sref)) {
+                    if (auto inner = pctx.get_field<"block">(import_decl->program)) {
+                        self(self, *inner);
+                    }
+                }
+            }
+        };
+        register_block(register_block, pctx.block);
+        return Result(CodeWriter{});
+    };
+
+    // type definitions are hoisted before all functions (see type_defs)
+    config.program_decl_end_wrapper = [](Context_Statement_PROGRAM_DECL& pctx, CodeWriter& result) -> expected<Result> {
         CodeWriter w;
         // LLVM IR line comments use ";".
         write_generated_banner(pctx, w, ";");
+        w.writeln("%Vec = type { ptr, i64, i64 } ; data, size, capacity");
+        w.writeln("%Stream = type { ptr, i64, i64 } ; data, len(dec)/cap(enc), offset");
+        w.writeln("declare void @llvm.memcpy.p0.p0.i64(ptr, ptr, i64, i1)");
+        w.writeln("declare ptr @realloc(ptr, i64)");
+        w.write(std::move(pctx.config().type_defs));
+        w.writeln();
+        w.write(std::move(result));
+        w.write(std::move(pctx.config().deferred_funcs));
         return w;
     };
 
-    ctx.config().loop_statement_custom = [](Context_Statement_LOOP_STATEMENT& ctx) -> expected<Result> {
+    // enums are represented as their base int type: no type-level declaration
+    config.enum_decl_visitor = [](Context_Statement_ENUM_DECL& ctx) -> expected<Result> {
+        CodeWriter w;
+        w.writeln("; enum ", ctx.identifier(), " (represented as its base int type)");
+        return w;
+    };
+
+    // enum member reference: fold to the member's constant value
+    config.enum_member_custom = [](Context_Expression_ENUM_MEMBER& ctx) -> expected<Result> {
+        MAYBE(mem, ctx.get(ctx.member));
+        auto sid = mem.body.id();
+        if (!sid) {
+            return unexpect_error("llvm enum member: no member statement ref");
+        }
+        MAYBE(emd, ctx.get_field<"enum_member_decl">(*sid));
+        if (is_nil(emd.value)) {
+            return unexpect_error("llvm enum member: no explicit value");
+        }
+        return ctx.visit(emd.value);
+    };
+
+    // %struct.Name = type { ... } followed by its codec/method functions
+    config.struct_decl_custom = [](Context_Statement_STRUCT_DECL& ctx) -> expected<Result> {
+        if (!ctx.config().declared_structs.insert(get_id(ctx.item_id)).second) {
+            return Result("");  // already emitted via nested_types of another struct
+        }
+        CodeWriter w;
+        auto name = ctx.identifier();
+        // nested formats must have their type defined in this module too
+        if (auto nested = ctx.struct_decl.nested_types()) {
+            for (auto& nref : nested->container) {
+                MAYBE(nw, ctx.visit(nref));
+                w.write(std::move(nw.to_writer()));
+            }
+        }
+        std::string fields_str;
+        bool first = true;
+        std::vector<ebm::StatementRef> accessor_fns;
+        // BULK_PRIMITIVE composite members are accessed through generated
+        // accessor functions which no block references: collect and emit them
+        for (auto& fref : ctx.struct_decl.fields.container) {
+            auto cfd = ctx.get_field<"composite_field_decl">(fref);
+            if (!cfd || cfd->kind != ebm::CompositeFieldKind::BULK_PRIMITIVE) {
+                continue;
+            }
+            for (auto& f : cfd->fields.container) {
+                auto decl = ctx.get_field<"field_decl">(f);
+                if (!decl) {
+                    continue;
+                }
+                if (auto getter = decl->composite_getter()) {
+                    accessor_fns.push_back(getter->id);
+                }
+                if (auto setter = decl->composite_setter()) {
+                    accessor_fns.push_back(setter->id);
+                }
+            }
+        }
+        MAYBE_VOID(scan, ebm2llvm::for_each_slot(ctx, ctx.struct_decl, [&](const ebm::StatementRef&, ebm::TypeRef slot_type) -> expected<void> {
+                       MAYBE(t, ctx.visit(slot_type));
+                       if (!first) {
+                           fields_str += ", ";
+                       }
+                       fields_str += t.to_string();
+                       first = false;
+                       return {};
+                   }));
+        if (first) {
+            ctx.config().type_defs.writeln("%struct.", name, " = type {}");
+        }
+        else {
+            ctx.config().type_defs.writeln("%struct.", name, " = type { ", fields_str, " }");
+        }
+        for (auto& fn : accessor_fns) {
+            MAYBE(fn_w, ctx.visit(fn));
+            w.write(std::move(fn_w.to_writer()));
+        }
+        MAYBE_VOID(m, ebmcodegen::util::emit_struct_methods(ctx, w));
+        return w;
+    };
+
+    config.loop_statement_custom = [](Context_Statement_LOOP_STATEMENT& ctx) -> expected<Result> {
         if (!is_nil(ctx.loop.lowered_statement.id)) {
             return ctx.visit(ctx.loop.lowered_statement.id);
         }
         CodeWriter w;
-        if (auto init = ctx.loop.init()) {
+        if (auto init = ctx.loop.init(); init && !is_nil(*init)) {
             MAYBE(init_str, ctx.visit(*init));
             w.write(std::move(init_str.to_writer()));
         }
         auto start_label = std::format(".L.start.{}", ctx.config().next_reg());
-        auto cond_label = std::format(".L.cond.{}", ctx.config().next_reg());
         auto body_label = std::format(".L.body.{}", ctx.config().next_reg());
+        auto latch_label = std::format(".L.latch.{}", ctx.config().next_reg());
         auto end_label = std::format(".L.end.{}", ctx.config().next_reg());
         w.writeln("br label %", start_label);
         w.writeln_noindent(start_label, ":");
@@ -144,9 +795,16 @@ DEFINE_VISITOR(entry_before) {
             w.writeln("br i1 ", cond_str.to_writer(), ", label %", body_label, ", label %", end_label);
             w.writeln_noindent(body_label, ":");
         }
+        ctx.config().loop_labels.emplace_back(latch_label, end_label);
         MAYBE(body_str, ctx.visit(ctx.loop.body));
+        ctx.config().loop_labels.pop_back();
+        auto body_txt = body_str.to_string();
         w.write(std::move(body_str.to_writer()));
-        if (auto step = ctx.loop.increment()) {
+        if (!ebm2llvm::ends_with_terminator(body_txt)) {
+            w.writeln("br label %", latch_label);
+        }
+        w.writeln_noindent(latch_label, ":");
+        if (auto step = ctx.loop.increment(); step && !is_nil(*step)) {
             MAYBE(step_str, ctx.visit(*step));
             w.write(std::move(step_str.to_writer()));
         }
@@ -155,15 +813,19 @@ DEFINE_VISITOR(entry_before) {
         return w;
     };
 
-    ctx.config().if_statement_custom = [](Context_Statement_IF_STATEMENT& ctx) -> expected<Result> {
+    config.if_statement_custom = [](Context_Statement_IF_STATEMENT& ctx) -> expected<Result> {
         MAYBE(if_thens, flatten_if_then(ctx, ctx.item_id));
         auto final_label = std::format(".L.{}", ctx.config().next_reg());
         CodeWriter output;
         std::string next_label = std::format(".L.{}", ctx.config().next_reg());
         for (size_t i = 0; i < if_thens.size(); i++) {
             const auto& if_then = if_thens[i];
+            if (i > 0) {
+                // open the chained else block targeted by the previous arm
+                output.writeln_noindent(next_label, ":");
+            }
             if (if_then.condition) {
-                auto then_label = next_label;
+                auto then_label = std::format(".L.{}", ctx.config().next_reg());
                 auto else_label = i != if_thens.size() - 1 ? std::format(".L.{}", ctx.config().next_reg()) : final_label;
                 auto added = ctx.add_writer();
                 MAYBE(cond_str, ctx.visit(*if_then.condition));
@@ -171,27 +833,107 @@ DEFINE_VISITOR(entry_before) {
                 output.writeln("br i1 ", cond_str.to_writer(), ", label %", then_label, ", label %", else_label);
                 output.writeln_noindent(then_label, ":");
                 MAYBE(then_str, ctx.visit(if_then.then_branch));
+                auto then_txt = then_str.to_string();
                 output.write(std::move(then_str.to_writer()));
-                output.writeln("br label %", final_label);
+                if (!ebm2llvm::ends_with_terminator(then_txt)) {
+                    output.writeln("br label %", final_label);
+                }
                 next_label = else_label;
             }
             else {
                 auto added = ctx.add_writer();
                 MAYBE(else_str, ctx.visit(if_then.then_branch));
+                output.write(std::move(ctx.get_writer()->get()));
+                auto else_txt = else_str.to_string();
                 output.write(std::move(else_str.to_writer()));
-                output.writeln("br label %", final_label);
+                if (!ebm2llvm::ends_with_terminator(else_txt)) {
+                    output.writeln("br label %", final_label);
+                }
             }
         }
         output.writeln_noindent(final_label, ":");
         return output;
     };
 
-    ctx.config().variable_decl_custom = [](Context_Statement_VARIABLE_DECL& ctx) -> expected<Result> {
+    config.variable_decl_custom = [](Context_Statement_VARIABLE_DECL& ctx) -> expected<Result> {
         CodeWriter output;
-        auto var_name = "%" + ctx.identifier();
+        if (ctx.var_decl.is_reference()) {
+            // alias variable: compute the aliased lvalue's address once and
+            // resolve every use of this identifier to it (see var_addr)
+            auto added = ctx.add_writer();
+            MAYBE(addr, ebm2llvm::eval_lvalue(ctx, ctx.var_decl.initial_value));
+            output.write(std::move(ctx.get_writer()->get()));
+            ctx.config().ref_var_addr[get_id(ctx.item_id)] = addr;
+            return output;
+        }
         MAYBE(llvm_type, ctx.visit(ctx.var_decl.var_type));
+        if (!ctx.config().in_function) {
+            // toplevel constants become globals; the initializer must fold to
+            // a constant (integer constants in LLVM globals are typeless, so
+            // TYPE_CAST wrappers around literals can simply be peeled)
+            std::string init_str = "zeroinitializer";
+            MAYBE(byte_lit, detect_byte_array_literal(ctx));
+            if (byte_lit) {
+                std::string body;
+                auto bytes = byte_lit->bytes;
+                bytes.resize(byte_lit->length);
+                for (unsigned char c : bytes) {
+                    if (c >= 0x20 && c < 0x7f && c != '"' && c != 0x5c) {
+                        body += static_cast<char>(c);
+                    }
+                    else {
+                        body += std::format("{}{:02X}", static_cast<char>(0x5c), c);
+                    }
+                }
+                ctx.config().global_vars.insert(get_id(ctx.item_id));
+                if (!ctx.config().emitted_globals.insert(ctx.identifier()).second) {
+                    return output;
+                }
+                output.writeln("@", ctx.identifier(), " = internal global ", llvm_type.to_writer(), " c\"", body, "\"");
+                return output;
+            }
+            if (!is_nil(ctx.var_decl.initial_value)) {
+                auto init_ref = ctx.var_decl.initial_value;
+                auto k = ctx.get_kind(init_ref);
+                while (k == ebm::ExpressionKind::TYPE_CAST) {
+                    MAYBE(src, ctx.get_field<"type_cast_desc.source_expr">(init_ref));
+                    init_ref = src;
+                    k = ctx.get_kind(init_ref);
+                }
+                if (k == ebm::ExpressionKind::LITERAL_INT ||
+                    k == ebm::ExpressionKind::LITERAL_INT64 ||
+                    k == ebm::ExpressionKind::LITERAL_CHAR ||
+                    k == ebm::ExpressionKind::LITERAL_BOOL) {
+                    MAYBE(v, ctx.visit(init_ref));
+                    init_str = v.to_string();
+                }
+                else if (k != ebm::ExpressionKind::DEFAULT_VALUE) {
+                    return unexpect_error("llvm global {}: non-constant initializer", ctx.identifier());
+                }
+            }
+            ctx.config().global_vars.insert(get_id(ctx.item_id));
+            if (!ctx.config().emitted_globals.insert(ctx.identifier()).second) {
+                return output;  // same-name copy already emitted (imported-module duplication)
+            }
+            output.writeln("@", ctx.identifier(), " = internal global ", llvm_type.to_writer(), " ", init_str);
+            return output;
+        }
+        auto var_name = "%" + ctx.identifier() + "." + std::to_string(get_id(ctx.item_id));
         ctx.config().function_local_variables.writeln(var_name, " = alloca ", llvm_type.to_writer());
         if (!is_nil(ctx.var_decl.initial_value)) {
+            bool agg = ebm2llvm::is_ptr_operand_type(ctx, ctx.var_decl.var_type);
+            if (agg) {
+                auto init_kind = ctx.get_kind(ctx.var_decl.initial_value);
+                if (init_kind == ebm::ExpressionKind::DEFAULT_VALUE) {
+                    output.writeln("store ", llvm_type.to_writer(), " zeroinitializer, ptr ", var_name);
+                    return output;
+                }
+                auto added = ctx.add_writer();
+                MAYBE(init_ptr, ctx.visit(ctx.var_decl.initial_value));
+                output.write(std::move(ctx.get_writer()->get()));
+                output.writeln("call void @llvm.memcpy.p0.p0.i64(ptr ", var_name, ", ptr ", init_ptr.to_writer(), ", i64 ", ebm2llvm::sizeof_const(llvm_type.to_string()), ", i1 false)");
+                return output;
+            }
             auto added = ctx.add_writer();
             MAYBE(init_val, ctx.visit(ctx.var_decl.initial_value));
             output.write(std::move(ctx.get_writer()->get()));
@@ -200,102 +942,382 @@ DEFINE_VISITOR(entry_before) {
         return output;
     };
 
-    ctx.config().identifier_custom = [](Context_Expression_IDENTIFIER& ctx) -> expected<Result> {
+    config.identifier_custom = [](Context_Expression_IDENTIFIER& ctx) -> expected<Result> {
         if (ctx.is(ebm::StatementKind::PARAMETER_DECL, ctx.id)) {
+            auto pd = ctx.get_field<"param_decl">(ctx.id);
+            // scalar inout params are pointers: load through them for rvalue use
+            if (pd && (pd->is_state_variable() || pd->is_runtime_state()) &&
+                !ebm2llvm::is_ptr_operand_type(ctx, pd->param_type)) {
+                MAYBE(got, ctx.get_writer());
+                MAYBE(llvm_type, ctx.visit(pd->param_type));
+                auto tmp = ebm2llvm::next_tmp(ctx);
+                got.get().writeln(tmp, " = load ", llvm_type.to_writer(), ", ptr %", ctx.identifier(ctx.id));
+                return Result(tmp);
+            }
             return "%" + ctx.identifier(ctx.id);
         }
-        // load
+        MAYBE(addr, ebm2llvm::var_addr(ctx, ctx.id));
+        // locals are alloca'd (globals are symbols): aggregates and io
+        // objects are used through their address
+        if (ebm2llvm::is_ptr_operand_type(ctx, ctx.type)) {
+            return Result(addr);
+        }
         MAYBE(got, ctx.get_writer());
-        auto var_name = "%" + ctx.identifier(ctx.id);
         MAYBE(llvm_type, ctx.visit(ctx.type));
-        auto tmp = std::format("%t{}", ctx.config().next_reg());
-        got.get().writeln(tmp, " = load ", llvm_type.to_writer(), ", ptr ", var_name);
+        auto tmp = ebm2llvm::next_tmp(ctx);
+        got.get().writeln(tmp, " = load ", llvm_type.to_writer(), ", ptr ", addr);
         return tmp;
     };
 
-    ctx.config().param_visitor = [](Context_Statement_PARAMETER_DECL& ctx, Result type) -> expected<Result> {
+    config.member_access_custom = [](Context_Expression_MEMBER_ACCESS& ctx) -> expected<Result> {
+        // property members resolve to a getter call returning ptr (nullable)
+        MAYBE(prop_info, analyze_property_member_access(ctx, ctx.member));
+        if (prop_info) {
+            MAYBE(base_ptr, ebm2llvm::eval_lvalue(ctx, ctx.base));
+            // hoisted variant-arm accessors take the outer format as their
+            // receiver, not the union field (mirrors ebm2c)
+            if (ctx.get_field<"member.body.id.field_decl.field_type.struct_union_desc">(ctx.base)) {
+                base_ptr = "%self";
+            }
+            auto getter_name = "@" + prop_info->parent_struct_ident + "_get_" + prop_info->member_ident;
+            // getter params are threaded state vars: pointer params sharing
+            // the caller's parameter names
+            CodeWriter extra_args;
+            if (!is_nil(prop_info->getter_ref)) {
+                MAYBE(getter_fn, ctx.get_field<"func_decl">(prop_info->getter_ref));
+                for (auto& pref : getter_fn.params.container) {
+                    extra_args.write(", ptr %", ctx.identifier(pref));
+                }
+            }
+            MAYBE(w, ctx.get_writer());
+            auto ret = ebm2llvm::next_tmp(ctx);
+            w.get().writeln(ret, " = call ptr ", getter_name, "(ptr ", base_ptr, extra_args, ")");
+            MAYBE(val, ebm2llvm::load_or_addr(ctx, ret, ctx.type));
+            return Result(val);
+        }
+        // BULK_PRIMITIVE composite members read through their accessor
+        if (auto comp = ebm2llvm::bulk_composite_member(ctx, ctx.member)) {
+            auto getter = comp->composite_getter();
+            if (!getter) {
+                return unexpect_error("llvm member: composite member without getter");
+            }
+            MAYBE(getter_fn, ctx.get_field<"func_decl">(getter->id));
+            MAYBE(ret_ty, ctx.visit(getter_fn.return_type));
+            MAYBE(base_ptr, ebm2llvm::eval_lvalue(ctx, ctx.base));
+            MAYBE(member_ident, ctx.identifier(ctx.member));
+            auto getter_name = "@" + ctx.identifier(comp->parent_struct) + "_get_" + member_ident;
+            MAYBE(w, ctx.get_writer());
+            auto ret = ebm2llvm::next_tmp(ctx);
+            w.get().writeln(ret, " = call ", ret_ty.to_writer(), " ", getter_name, "(ptr ", base_ptr, ")");
+            return Result(ret);
+        }
+        // only plain field access has an address; method callees etc. are
+        // resolved by call_custom before the callee is ever visited
+        MAYBE(mem, ctx.get(ctx.member));
+        auto sid = mem.body.id();
+        if (!sid) {
+            return pass;
+        }
+        if (!ctx.get_field<"field_decl">(*sid) && !ctx.get_field<"composite_field_decl">(*sid)) {
+            return pass;
+        }
+        MAYBE(addr, ebm2llvm::eval_lvalue(ctx, ctx.item_id));
+        MAYBE(val, ebm2llvm::load_or_addr(ctx, addr, ctx.type));
+        return Result(val);
+    };
+
+    config.index_access_custom = [](Context_Expression_INDEX_ACCESS& ctx) -> expected<Result> {
+        MAYBE(addr, ebm2llvm::eval_lvalue(ctx, ctx.item_id));
+        MAYBE(val, ebm2llvm::load_or_addr(ctx, addr, ctx.type));
+        return Result(val);
+    };
+
+    config.param_visitor = [](Context_Statement_PARAMETER_DECL& ctx, Result type) -> expected<Result> {
         auto param_name = "%" + ctx.identifier();
+        // aggregates and inout (state/runtime-state) params are passed by pointer
+        bool by_ptr = ctx.param_decl.is_state_variable() || ctx.param_decl.is_runtime_state() ||
+                      ebm2llvm::is_ptr_operand_type(ctx, ctx.param_decl.param_type);
+        if (by_ptr) {
+            return CODE("ptr ", param_name);
+        }
         return CODE(type.to_writer(), " ", param_name);
     };
 
-    ctx.config().assignment_custom = [](Context_Statement_ASSIGNMENT& ctx) -> expected<Result> {
+    config.assignment_custom = [](Context_Statement_ASSIGNMENT& ctx) -> expected<Result> {
         CodeWriter w;
-        MAYBE(target, ctx.get(ctx.target));
-        if (target.body.kind == ebm::ExpressionKind::IDENTIFIER) {
-            auto var_name = "%" + ctx.identifier(*target.body.id());
-            auto added = ctx.add_writer();
-            MAYBE(value_str, ctx.visit(ctx.value));
-            w.write(std::move(ctx.get_writer()->get()));
-            MAYBE(type, ctx.get_field<"type">(ctx.target));
-            MAYBE(llvm_type, ctx.visit(type));
-            w.writeln("store ", llvm_type.to_writer(), " ", value_str.to_writer(), ", ptr ", var_name);
-            return w;
-        }
-        return unexpect_error("unsupported assignment target: {}", to_string(target.body.kind));
-    };
-
-    ctx.config().function_decl_custom = [](Context_Statement_FUNCTION_DECL& ctx) -> expected<Result> {
-        CodeWriter output;
-        auto func_name = "@" + ctx.identifier(ctx.item_id);
-        MAYBE(return_type, ctx.visit(ctx.func_decl.return_type));
-        output.write("define ", return_type.to_writer(), " ", func_name, "(");
-        for (size_t i = 0; i < ctx.func_decl.params.container.size(); i++) {
-            MAYBE(param, ctx.visit(ctx.func_decl.params.container[i]));
-            output.write(std::move(param.to_writer()));
-            if (i != ctx.func_decl.params.container.size() - 1) {
-                output.write(", ");
+        // property members write through their setter function
+        if (auto member = ctx.get_field<"member">(ctx.target)) {
+            MAYBE(prop_info, analyze_property_member_access(ctx, *member, /*require_getter=*/false));
+            if (prop_info) {
+                MAYBE(prop, ctx.get_field<"property_decl">(prop_info->member_stmt));
+                if (is_nil(prop.setter_function.id)) {
+                    return unexpect_error("llvm assignment: property without setter");
+                }
+                auto added = ctx.add_writer();
+                MAYBE(base, ctx.get_field<"base">(ctx.target));
+                MAYBE(base_ptr, ebm2llvm::eval_lvalue(ctx, base));
+                if (ctx.get_field<"member.body.id.field_decl.field_type.struct_union_desc">(base)) {
+                    base_ptr = "%self";
+                }
+                MAYBE(value, ctx.visit(ctx.value));
+                MAYBE(vty, ctx.get_field<"type">(ctx.value));
+                std::string vty_str = "ptr";
+                if (!ebm2llvm::is_ptr_operand_type(ctx, vty)) {
+                    MAYBE(t, ctx.visit(vty));
+                    vty_str = t.to_string();
+                }
+                w.write(std::move(ctx.get_writer()->get()));
+                auto setter_name = "@" + prop_info->parent_struct_ident + "_set_" + prop_info->member_ident;
+                auto st = ebm2llvm::next_tmp(ctx);
+                w.writeln(st, " = call i1 ", setter_name, "(ptr ", base_ptr, ", ", vty_str, " ", value.to_writer(), ")");
+                return w;
             }
         }
-        output.writeln(") {");
+        // BULK_PRIMITIVE composite members write through their accessor
+        if (auto member = ctx.get_field<"member">(ctx.target)) {
+            if (auto comp = ebm2llvm::bulk_composite_member(ctx, *member)) {
+                if (auto setter = comp->composite_setter()) {
+                    auto added = ctx.add_writer();
+                    MAYBE(base, ctx.get_field<"base">(ctx.target));
+                    MAYBE(base_ptr, ebm2llvm::eval_lvalue(ctx, base));
+                    MAYBE(value, ctx.visit(ctx.value));
+                    MAYBE(vty, ctx.get_field<"type">(ctx.value));
+                    MAYBE(vty_str, ctx.visit(vty));
+                    w.write(std::move(ctx.get_writer()->get()));
+                    MAYBE(member_ident, ctx.identifier(*member));
+                    auto setter_name = "@" + ctx.identifier(comp->parent_struct) + "_set_" + member_ident;
+                    auto st = ebm2llvm::next_tmp(ctx);
+                    w.writeln(st, " = call i1 ", setter_name, "(ptr ", base_ptr, ", ", vty_str.to_writer(), " ", value.to_writer(), ")");
+                    return w;
+                }
+            }
+        }
+        auto added = ctx.add_writer();
+        MAYBE(value_str, ctx.visit(ctx.value));
+        MAYBE(type, ctx.get_field<"type">(ctx.target));
+        MAYBE(addr, ebm2llvm::eval_lvalue(ctx, ctx.target));
+        w.write(std::move(ctx.get_writer()->get()));
+        MAYBE(llvm_type, ctx.visit(type));
+        if (ebm2llvm::is_ptr_operand_type(ctx, type)) {
+            // aggregates are ptr operands: shallow copy by alloc size,
+            // except a zeroinitializer default which is a first-class constant
+            if (ctx.get_kind(ctx.value) == ebm::ExpressionKind::DEFAULT_VALUE) {
+                w.writeln("store ", llvm_type.to_writer(), " zeroinitializer, ptr ", addr);
+                return w;
+            }
+            w.writeln("call void @llvm.memcpy.p0.p0.i64(ptr ", addr, ", ptr ", value_str.to_writer(), ", i64 ", ebm2llvm::sizeof_const(llvm_type.to_string()), ", i1 false)");
+            return w;
+        }
+        w.writeln("store ", llvm_type.to_writer(), " ", value_str.to_writer(), ", ptr ", addr);
+        return w;
+    };
+
+    config.function_decl_custom = [](Context_Statement_FUNCTION_DECL& ctx) -> expected<Result> {
+        CodeWriter output;
+        std::string prefix;
+        CodeWriter params;
+        if (!is_nil(ctx.func_decl.parent_format)) {
+            // property accessors are named by the property's parent_struct:
+            // several variant arms may expose same-named properties under
+            // one parent_format (mirrors ebm2c)
+            auto name_owner = ctx.func_decl.parent_format;
+            if (auto prop = ctx.func_decl.property()) {
+                if (auto prop_decl = ctx.get_field<"property_decl">(prop->id)) {
+                    name_owner = prop_decl->parent_struct;
+                }
+            }
+            prefix = ctx.identifier(name_owner) + "_";
+            params.write("ptr %self");
+        }
+        // getters/setters share the property name: disambiguate like ebm2c
+        if (is_setter_func(ctx.func_decl.kind)) {
+            prefix += "set_";
+        }
+        else if (is_getter_func(ctx.func_decl.kind)) {
+            prefix += "get_";
+        }
+        for (auto& param_ref : ctx.func_decl.params.container) {
+            MAYBE(param, ctx.visit(param_ref));
+            if (!params.empty()) {
+                params.write(", ");
+            }
+            params.write(param.to_writer());
+        }
+        MAYBE(return_type, ctx.visit(ctx.func_decl.return_type));
+        auto func_name = "@" + prefix + ctx.identifier(ctx.item_id);
+        output.write("define ", return_type.to_writer(), " ", func_name, "(", params, ")");
+        output.writeln(" {");
         output.writeln("entry:");
         {
             auto scope = output.indent_scope();
-            MAYBE(body, ctx.visit(ctx.func_decl.body));
+            ctx.config().in_function = true;
+            auto body_res = ctx.visit(ctx.func_decl.body);
+            ctx.config().in_function = false;
+            MAYBE(body, std::move(body_res));
             output.write(std::move(ctx.config().function_local_variables));
             output.write(std::move(body.to_writer()));
         }
         output.writeln("}");
+        if (auto wrapper_ref = ctx.func_decl.wrapper_function()) {
+            output.writeln();
+            MAYBE(wrapper, ctx.visit(*wrapper_ref));
+            output.write(std::move(wrapper.to_writer()));
+        }
         return output;
     };
 
-    ctx.config().type_cast_custom = [](Context_Expression_TYPE_CAST& ctx) -> expected<Result> {
+    config.type_cast_custom = [](Context_Expression_TYPE_CAST& ctx) -> expected<Result> {
+        // user-defined cast function: the lowered call embeds the source
+        if (ctx.type_cast_desc.cast_kind == ebm::CastType::FUNCTION_CAST) {
+            if (auto call = ctx.type_cast_desc.cast_call()) {
+                MAYBE(v, ctx.visit(call->id));
+                MAYBE(cty, ctx.get_field<"type">(call->id));
+                MAYBE(fr, ctx.visit(cty));
+                MAYBE(to, ctx.visit(ctx.type));
+                auto fs = fr.to_string();
+                auto ts = to.to_string();
+                if (fs == ts || fs.size() < 2 || ts.size() < 2 || fs[0] != 'i' || ts[0] != 'i') {
+                    return v;
+                }
+                // adjust the call result to the cast's target width
+                size_t fb = std::stoul(fs.substr(1));
+                size_t tb = std::stoul(ts.substr(1));
+                bool sig = ctx.get_kind(cty) == ebm::TypeKind::INT;
+                MAYBE(w0, ctx.get_writer());
+                auto tmp = ebm2llvm::next_tmp(ctx);
+                w0.get().writeln(tmp, " = ", tb < fb ? "trunc" : (sig ? "sext" : "zext"), " ", fs, " ", v.to_writer(), " to ", ts);
+                return Result(tmp);
+            }
+            return unexpect_error("llvm cast: FUNCTION_CAST without cast_call");
+        }
         MAYBE(got, ctx.get_writer());
         MAYBE(value_str, ctx.visit(ctx.type_cast_desc.source_expr));
         MAYBE(from_type, ctx.visit(ctx.type_cast_desc.from_type));
         MAYBE(to_type, ctx.visit(ctx.type));
         MAYBE(type_info, ctx.get(ctx.type_cast_desc.from_type));
-        if (ctx.type_cast_desc.cast_kind == ebm::CastType::LARGE_INT_TO_SMALL_INT) {  // trunc
-            auto tmp = std::format("%t{}", ctx.config().next_reg());
-            got.get().writeln(tmp, " = trunc ", from_type.to_writer(), " ", value_str.to_writer(), " to ", to_type.to_writer());
-            return tmp;
-        }
-        else if (ctx.type_cast_desc.cast_kind == ebm::CastType::SMALL_INT_TO_LARGE_INT) {  // zext or sext
-            auto tmp = std::format("%t{}", ctx.config().next_reg());
-            bool is_signed = type_info.body.kind == ebm::TypeKind::INT;
-            got.get().writeln(tmp, " = ", is_signed ? "sext" : "zext", " ", from_type.to_writer(), " ", value_str.to_writer(), " to ", to_type.to_writer());
-            return tmp;
-        }
-        else if (ctx.type_cast_desc.cast_kind == ebm::CastType::USIZE_TO_INT) {  // usize is i64 so ext or trunc
-            MAYBE(to_type_info, ctx.get(ctx.type));
-            MAYBE(size, to_type_info.body.size());
-            if (size.value() < 64) {
-                auto tmp = std::format("%t{}", ctx.config().next_reg());
-                got.get().writeln(tmp, " = trunc ", from_type.to_writer(), " ", value_str.to_writer(), " to ", to_type.to_writer());
-                return tmp;
+        bool from_signed = type_info.body.kind == ebm::TypeKind::INT;
+        auto emit_conv = [&](const char* op) -> expected<Result> {
+            auto tmp = ebm2llvm::next_tmp(ctx);
+            got.get().writeln(tmp, " = ", op, " ", from_type.to_writer(), " ", value_str.to_writer(), " to ", to_type.to_writer());
+            return Result(tmp);
+        };
+        // compare rendered LLVM int types: the EBM bit size and the emitted
+        // width can differ (byte-aligned rounding), and same-width casts are
+        // invalid IR, so the rendered type is the source of truth
+        auto emit_int_conv = [&]() -> expected<Result> {
+            auto fs = from_type.to_string();
+            auto ts = to_type.to_string();
+            if (fs == ts) {
+                return value_str;
             }
-            if (size.value() > 64) {
-                auto tmp = std::format("%t{}", ctx.config().next_reg());
-                bool is_signed = type_info.body.kind == ebm::TypeKind::INT;
-                got.get().writeln(tmp, " = ", is_signed ? "sext" : "zext", " ", from_type.to_writer(), " ", value_str.to_writer(), " to ", to_type.to_writer());
-                return tmp;
+            if (fs.size() < 2 || ts.size() < 2 || fs[0] != 'i' || ts[0] != 'i') {
+                return unexpect_error("llvm cast: non-integer operand for int conversion: {} -> {}", fs, ts);
             }
-            // size == 64, so no cast needed
-            return value_str;
+            size_t fb = std::stoul(fs.substr(1));
+            size_t tb = std::stoul(ts.substr(1));
+            if (tb < fb) {
+                return emit_conv("trunc");
+            }
+            return emit_conv(from_signed ? "sext" : "zext");
+        };
+        switch (ctx.type_cast_desc.cast_kind) {
+            case ebm::CastType::LARGE_INT_TO_SMALL_INT:
+            case ebm::CastType::SMALL_INT_TO_LARGE_INT:
+            case ebm::CastType::USIZE_TO_INT:
+            case ebm::CastType::INT_TO_USIZE:
+            case ebm::CastType::ENUM_TO_INT:
+            case ebm::CastType::INT_TO_ENUM:
+                // ints, usize and enums are all rendered as iN
+                return emit_int_conv();
+            case ebm::CastType::SIGNED_TO_UNSIGNED:
+            case ebm::CastType::UNSIGNED_TO_SIGNED:
+                // same-width reinterpretation: no-op at the IR level
+                return value_str;
+            case ebm::CastType::BOOL_TO_INT:
+                return emit_conv("zext");
+            case ebm::CastType::INT_TO_BOOL: {
+                auto tmp = ebm2llvm::next_tmp(ctx);
+                got.get().writeln(tmp, " = icmp ne ", from_type.to_writer(), " ", value_str.to_writer(), ", 0");
+                return Result(tmp);
+            }
+            case ebm::CastType::FLOAT_TO_INT_BIT:
+            case ebm::CastType::INT_TO_FLOAT_BIT:
+                return emit_conv("bitcast");
+            default: {
+                auto fk = ctx.get_kind(ctx.type_cast_desc.from_type);
+                auto tk = ctx.get_kind(ctx.type);
+                bool from_float = fk == ebm::TypeKind::FLOAT;
+                bool to_float = tk == ebm::TypeKind::FLOAT;
+                if (from_float && to_float) {
+                    auto fs = from_type.to_string();
+                    auto ts = to_type.to_string();
+                    if (fs == ts) {
+                        return value_str;
+                    }
+                    return emit_conv(ts == "double" ? "fpext" : "fptrunc");
+                }
+                if (from_float && !to_float) {
+                    return emit_conv(tk == ebm::TypeKind::INT ? "fptosi" : "fptoui");
+                }
+                if (!from_float && to_float) {
+                    return emit_conv(from_signed ? "sitofp" : "uitofp");
+                }
+                auto fs = from_type.to_string();
+                auto ts = to_type.to_string();
+                auto is_int_ty = [](const std::string& t) {
+                    return t.size() >= 2 && t[0] == 'i' && std::isdigit(static_cast<unsigned char>(t[1]));
+                };
+                if (is_int_ty(fs) && is_int_ty(ts)) {
+                    return emit_int_conv();
+                }
+                // int -> union/struct value view: packed representation at
+                // offset 0 of a zeroed temp (overlay model, no tag)
+                auto conv_int = [&](const std::string& val, size_t fb, size_t tb) -> std::string {
+                    if (fb == tb) {
+                        return val;
+                    }
+                    auto tmp = ebm2llvm::next_tmp(ctx);
+                    if (tb < fb) {
+                        got.get().writeln(tmp, " = trunc i", std::to_string(fb), " ", val, " to i", std::to_string(tb));
+                    }
+                    else {
+                        got.get().writeln(tmp, " = zext i", std::to_string(fb), " ", val, " to i", std::to_string(tb));
+                    }
+                    return tmp;
+                };
+                if (is_int_ty(fs) && !ts.empty() && ts[0] == '%') {
+                    MAYBE(l, ebm2llvm::layout_of(ctx, ctx.type));
+                    size_t bits = std::min<size_t>(l.size, 8) * 8;
+                    auto slot = std::format("%cast{}", ctx.config().next_reg());
+                    ctx.config().function_local_variables.writeln(slot, " = alloca ", ts);
+                    got.get().writeln("store ", ts, " zeroinitializer, ptr ", slot);
+                    auto v = conv_int(value_str.to_string(), std::stoul(fs.substr(1)), bits);
+                    got.get().writeln("store i", std::to_string(bits), " ", v, ", ptr ", slot);
+                    return Result(slot);
+                }
+                // union/struct value view -> int: packed load at offset 0
+                if (!fs.empty() && fs[0] == '%' && is_int_ty(ts)) {
+                    MAYBE(l, ebm2llvm::layout_of(ctx, ctx.type_cast_desc.from_type));
+                    size_t bits = std::min<size_t>(l.size, 8) * 8;
+                    auto v = ebm2llvm::next_tmp(ctx);
+                    got.get().writeln(v, " = load i", std::to_string(bits), ", ptr ", value_str.to_writer());
+                    return Result(conv_int(v, bits, std::stoul(ts.substr(1))));
+                }
+                if (fs == ts) {
+                    return value_str;
+                }
+                // aggregate value-view conversion (e.g. union -> its common
+                // vector/struct view): overlay storage shares offset 0, so
+                // the pointer passes through
+                if (!fs.empty() && fs[0] == '%' && !ts.empty() && ts[0] == '%') {
+                    return value_str;
+                }
+                return unexpect_error("llvm cast: unsupported cast kind {} ({} -> {})", to_string(ctx.type_cast_desc.cast_kind), fs, ts);
+            }
         }
-        return value_str;  // TODO: support other
     };
 
-    ctx.config().return_visitor = [](Context_Statement_RETURN& ctx) -> expected<Result> {
+    config.return_visitor = [](Context_Statement_RETURN& ctx) -> expected<Result> {
         CodeWriter output;
         if (is_nil(ctx.value)) {
             output.writeln("ret void");
@@ -311,33 +1333,450 @@ DEFINE_VISITOR(entry_before) {
         return output;
     };
 
-    ctx.config().binary_op_custom = [](Context_Expression_BINARY_OP& ctx) -> expected<Result> {
-        // 1. 親の Writer（出力先）を確保
+    config.binary_op_custom = [](Context_Expression_BINARY_OP& ctx) -> expected<Result> {
         MAYBE(output, ctx.get_writer());
-
-        // 2. 子ノードを visit して「オペランド文字列」を取得
-        // リテラルなら "1", "41" が、入れ子の演算なら "%t0" などが返ってくる
+        // logical and/or must short-circuit: the right operand may only be
+        // evaluated when the left doesn't decide (e.g. guarded union getters)
+        if (ctx.bop == ebm::BinaryOp::logical_and || ctx.bop == ebm::BinaryOp::logical_or) {
+            bool is_and = ctx.bop == ebm::BinaryOp::logical_and;
+            auto slot = std::format("%sc{}", ctx.config().next_reg());
+            ctx.config().function_local_variables.writeln(slot, " = alloca i1");
+            auto id = std::to_string(ctx.config().next_reg());
+            MAYBE(left_val, ctx.visit(ctx.left));
+            output.get().writeln("store i1 ", left_val.to_writer(), ", ptr ", slot);
+            if (is_and) {
+                output.get().writeln("br i1 ", left_val.to_writer(), ", label %.Lsc.rhs.", id, ", label %.Lsc.end.", id);
+            }
+            else {
+                output.get().writeln("br i1 ", left_val.to_writer(), ", label %.Lsc.end.", id, ", label %.Lsc.rhs.", id);
+            }
+            output.get().writeln_noindent(".Lsc.rhs.", id, ":");
+            MAYBE(right_val, ctx.visit(ctx.right));
+            output.get().writeln("store i1 ", right_val.to_writer(), ", ptr ", slot);
+            output.get().writeln("br label %.Lsc.end.", id);
+            output.get().writeln_noindent(".Lsc.end.", id, ":");
+            auto res = ebm2llvm::next_tmp(ctx);
+            output.get().writeln(res, " = load i1, ptr ", slot);
+            return Result(res);
+        }
         MAYBE(left_val, ctx.visit(ctx.left));
         MAYBE(right_val, ctx.visit(ctx.right));
-
-        // 3. この演算結果を格納する新しいレジスタ名を生成
-        // ※ global_reg_count++ を利用した名前付きレジスタ（例: %t10）
-        std::string result_reg = std::format("%t{}", ctx.config().next_reg());
-
-        // 4. 型情報の取得（ソース言語の i32 -> LLVM の "i32"）
-
-        // 5. 命令の選択（+ -> add, - -> sub など）
-        MAYBE(llvm_op, to_llvm_op(ctx));
-        auto& llvm_op_str = llvm_op.first;
-        auto& llvm_type_str = llvm_op.second;
-
-        // 6. LLVM IR 命令の書き出し
-        // フォーマット: "%res = op type lhs, rhs"
-        output.get().writeln(result_reg, " = ", llvm_op_str, " ", llvm_type_str, " ",
+        std::string result_reg = ebm2llvm::next_tmp(ctx);
+        MAYBE(llvm_op, ebm2llvm::to_llvm_op(ctx));
+        output.get().writeln(result_reg, " = ", llvm_op.first, " ", llvm_op.second, " ",
                              left_val.to_writer(), ", ", right_val.to_writer());
-
-        // 7. 親ノードには「結果が入っているレジスタ名」を返す
         return result_reg;
+    };
+
+    config.unary_op_custom = [](Context_Expression_UNARY_OP& ctx) -> expected<Result> {
+        MAYBE(output, ctx.get_writer());
+        MAYBE(operand, ctx.visit(ctx.operand));
+        MAYBE(llvm_type, ctx.visit(ctx.type));
+        auto tmp = ebm2llvm::next_tmp(ctx);
+        switch (ctx.uop) {
+            case ebm::UnaryOp::logical_not:
+                output.get().writeln(tmp, " = xor i1 ", operand.to_writer(), ", true");
+                return Result(tmp);
+            case ebm::UnaryOp::bit_not:
+                output.get().writeln(tmp, " = xor ", llvm_type.to_writer(), " ", operand.to_writer(), ", -1");
+                return Result(tmp);
+            case ebm::UnaryOp::minus_sign:
+                output.get().writeln(tmp, " = sub ", llvm_type.to_writer(), " 0, ", operand.to_writer());
+                return Result(tmp);
+            default:
+                return unexpect_error("llvm unary op: unsupported op");
+        }
+    };
+
+    // lowered as control flow (not `select`): an arm may only be evaluated
+    // when the condition picks it (e.g. guarded union getters)
+    config.conditional_visitor = [](Context_Expression_CONDITIONAL& ctx) -> expected<Result> {
+        std::string ty = "ptr";
+        if (!ebm2llvm::is_ptr_operand_type(ctx, ctx.type)) {
+            MAYBE(t, ctx.visit(ctx.type));
+            ty = t.to_string();
+        }
+        auto slot = std::format("%sel{}", ctx.config().next_reg());
+        ctx.config().function_local_variables.writeln(slot, " = alloca ", ty);
+        auto id = std::to_string(ctx.config().next_reg());
+        MAYBE(w, ctx.get_writer());
+        MAYBE(cond, ctx.visit(ctx.condition));
+        w.get().writeln("br i1 ", cond.to_writer(), ", label %.Lsel.t.", id, ", label %.Lsel.f.", id);
+        w.get().writeln_noindent(".Lsel.t.", id, ":");
+        MAYBE(then_v, ctx.visit(ctx.then));
+        w.get().writeln("store ", ty, " ", then_v.to_writer(), ", ptr ", slot);
+        w.get().writeln("br label %.Lsel.end.", id);
+        w.get().writeln_noindent(".Lsel.f.", id, ":");
+        MAYBE(else_v, ctx.visit(ctx.else_));
+        w.get().writeln("store ", ty, " ", else_v.to_writer(), ", ptr ", slot);
+        w.get().writeln("br label %.Lsel.end.", id);
+        w.get().writeln_noindent(".Lsel.end.", id, ":");
+        auto res = ebm2llvm::next_tmp(ctx);
+        w.get().writeln(res, " = load ", ty, ", ptr ", slot);
+        return Result(res);
+    };
+
+    config.array_size_visitor = [](Context_Expression_ARRAY_SIZE& ctx) -> expected<Result> {
+        MAYBE(arr, ctx.get(ctx.array_expr));
+        auto akind = ctx.get_kind(arr.body.type);
+        if (akind == ebm::TypeKind::ARRAY) {
+            MAYBE(len, ctx.get_field<"body.length">(arr.body.type));
+            return Result(std::to_string(len.value()));
+        }
+        if (akind == ebm::TypeKind::VECTOR) {
+            MAYBE(base_ptr, ctx.visit(ctx.array_expr));
+            MAYBE(w, ctx.get_writer());
+            auto sp = ebm2llvm::next_tmp(ctx);
+            w.get().writeln(sp, " = getelementptr inbounds %Vec, ptr ", base_ptr.to_writer(), ", i32 0, i32 1");
+            auto sz = ebm2llvm::next_tmp(ctx);
+            w.get().writeln(sz, " = load i64, ptr ", sp);
+            return Result(sz);
+        }
+        return unexpect_error("llvm array size: unsupported type kind");
+    };
+
+    config.get_remaining_bytes_custom = [](Context_Expression_GET_REMAINING_BYTES& ctx) -> expected<Result> {
+        MAYBE(io, ebm2llvm::var_addr(ctx, ctx.io_ref));
+        MAYBE(rem, ebm2llvm::emit_stream_remaining(ctx, io));
+        return Result(rem);
+    };
+
+    config.can_read_stream_visitor = [](Context_Expression_CAN_READ_STREAM& ctx) -> expected<Result> {
+        MAYBE(io, ebm2llvm::var_addr(ctx, ctx.io_ref));
+        MAYBE(rem, ebm2llvm::emit_stream_remaining(ctx, io));
+        MAYBE(size_val, ebm2llvm::eval_size_i64(ctx, ctx.num_bytes));
+        MAYBE(w, ctx.get_writer());
+        auto ok = ebm2llvm::next_tmp(ctx);
+        w.get().writeln(ok, " = icmp ule i64 ", size_val, ", ", rem);
+        return Result(ok);
+    };
+
+    config.call_custom = [](Context_Expression_CALL& ctx) -> expected<Result> {
+        MAYBE(callee, ctx.get_field<"call_desc.callee.instance">());
+        std::string func_name;
+        CodeWriter args;
+        if (auto member = callee.body.member()) {
+            auto member_fd = ctx.get_field<"body.id.func_decl">(*member);
+            if (member_fd && is_nil(member_fd->parent_format)) {
+                // free function (e.g. an imported module's toplevel fn): no receiver
+                MAYBE(ident, ctx.identifier(*member));
+                func_name = "@" + ident;
+            }
+            else {
+                MAYBE(base, callee.body.base());
+                MAYBE(base_type, ctx.get_field<"type.instance">(base));
+                MAYBE(ident, ctx.identifier(*member));
+                MAYBE(base_type_name, ctx.identifier(base_type.id));
+                MAYBE(base_str, ctx.visit(base));
+                std::string accessor_prefix;
+                if (member_fd) {
+                    if (is_setter_func(member_fd->kind)) {
+                        accessor_prefix = "set_";
+                    }
+                    else if (is_getter_func(member_fd->kind)) {
+                        accessor_prefix = "get_";
+                    }
+                }
+                func_name = "@" + base_type_name + "_" + accessor_prefix + ident;
+                args.write("ptr ", base_str.to_writer());
+            }
+        }
+        else {
+            auto sid = callee.body.id();
+            if (!sid) {
+                return unexpect_error("llvm call: unsupported callee expression");
+            }
+            func_name = "@" + ctx.identifier(*sid);
+        }
+        for (auto& arg_ref : ctx.call_desc.arguments.container) {
+            MAYBE(arg_val, ctx.visit(arg_ref));
+            MAYBE(aty, ctx.get_field<"type">(arg_ref));
+            std::string tystr;
+            auto as_arg = ctx.get_field<"body.as_arg">(arg_ref);
+            if ((as_arg && as_arg->is_inout()) || ebm2llvm::is_ptr_operand_type(ctx, aty)) {
+                tystr = "ptr";
+            }
+            else {
+                MAYBE(t, ctx.visit(aty));
+                tystr = t.to_string();
+            }
+            if (!args.empty()) {
+                args.write(", ");
+            }
+            args.write(tystr, " ", arg_val.to_writer());
+        }
+        MAYBE(ret_ty, ctx.visit(ctx.type));
+        auto ret_str = ret_ty.to_string();
+        MAYBE(w, ctx.get_writer());
+        if (ret_str == "void") {
+            w.get().writeln("call void ", func_name, "(", args, ")");
+            return Result("");
+        }
+        auto tmp = ebm2llvm::next_tmp(ctx);
+        w.get().writeln(tmp, " = call ", ret_str, " ", func_name, "(", args, ")");
+        return Result(tmp);
+    };
+
+    config.as_arg_visitor = [](Context_Expression_AS_ARG& ctx) -> expected<Result> {
+        if (ctx.as_arg.is_inout()) {
+            MAYBE(addr, ebm2llvm::eval_lvalue(ctx, ctx.as_arg.target_expr));
+            return Result(addr);
+        }
+        return ctx.visit(ctx.as_arg.target_expr);
+    };
+
+    config.is_error_visitor = [](Context_Expression_IS_ERROR& ctx) -> expected<Result> {
+        MAYBE(val, ctx.visit(ctx.target_expr));
+        MAYBE(w, ctx.get_writer());
+        auto tmp = ebm2llvm::next_tmp(ctx);
+        w.get().writeln(tmp, " = icmp ne i32 ", val.to_writer(), ", 0");
+        return Result(tmp);
+    };
+
+    config.error_return_visitor = [](Context_Statement_ERROR_RETURN& ctx) -> expected<Result> {
+        CodeWriter w;
+        auto added = ctx.add_writer();
+        MAYBE(val, ctx.visit(ctx.value));
+        w.write(std::move(ctx.get_writer()->get()));
+        w.writeln("ret i32 ", val.to_writer());
+        return w;
+    };
+
+    config.error_report_visitor = [](Context_Statement_ERROR_REPORT& ctx) -> expected<Result> {
+        CodeWriter w;
+        MAYBE(err_msg, ctx.get(ctx.error_report.message));
+        auto msg = err_msg.body.data;
+        for (auto& c : msg) {
+            if (c == '\n' || c == '\r') {
+                c = ' ';
+            }
+        }
+        w.writeln("; error: ", msg);
+        w.writeln("ret i32 -1");
+        return w;
+    };
+
+    // vector append with realloc-based growth
+    config.append_visitor = [](Context_Statement_APPEND& ctx) -> expected<Result> {
+        CodeWriter w;
+        auto added = ctx.add_writer();
+        MAYBE(vec_ptr, ebm2llvm::eval_lvalue(ctx, ctx.target));
+        MAYBE(val, ctx.visit(ctx.value));
+        MAYBE(vty, ctx.get_field<"type">(ctx.value));
+        bool agg = ebm2llvm::is_ptr_operand_type(ctx, vty);
+        MAYBE(ety_r, ctx.visit(vty));
+        w.write(std::move(ctx.get_writer()->get()));
+        auto ety = ety_r.to_string();
+        auto elem_size = ebm2llvm::sizeof_const(ety);
+        auto id = std::to_string(ctx.config().next_reg());
+        auto sizep = ebm2llvm::next_tmp(ctx);
+        w.writeln(sizep, " = getelementptr inbounds %Vec, ptr ", vec_ptr, ", i32 0, i32 1");
+        auto size = ebm2llvm::next_tmp(ctx);
+        w.writeln(size, " = load i64, ptr ", sizep);
+        auto capp = ebm2llvm::next_tmp(ctx);
+        w.writeln(capp, " = getelementptr inbounds %Vec, ptr ", vec_ptr, ", i32 0, i32 2");
+        auto cap = ebm2llvm::next_tmp(ctx);
+        w.writeln(cap, " = load i64, ptr ", capp);
+        auto datap = ebm2llvm::next_tmp(ctx);
+        w.writeln(datap, " = getelementptr inbounds %Vec, ptr ", vec_ptr, ", i32 0, i32 0");
+        auto full = ebm2llvm::next_tmp(ctx);
+        w.writeln(full, " = icmp uge i64 ", size, ", ", cap);
+        w.writeln("br i1 ", full, ", label %.Lap.grow.", id, ", label %.Lap.st.", id);
+        w.writeln_noindent(".Lap.grow.", id, ":");
+        auto dbl = ebm2llvm::next_tmp(ctx);
+        w.writeln(dbl, " = shl i64 ", cap, ", 1");
+        auto iszero = ebm2llvm::next_tmp(ctx);
+        w.writeln(iszero, " = icmp eq i64 ", cap, ", 0");
+        auto newcap = ebm2llvm::next_tmp(ctx);
+        w.writeln(newcap, " = select i1 ", iszero, ", i64 8, i64 ", dbl);
+        auto bytes = ebm2llvm::next_tmp(ctx);
+        w.writeln(bytes, " = mul i64 ", newcap, ", ", elem_size);
+        auto olddata = ebm2llvm::next_tmp(ctx);
+        w.writeln(olddata, " = load ptr, ptr ", datap);
+        auto newdata = ebm2llvm::next_tmp(ctx);
+        w.writeln(newdata, " = call ptr @realloc(ptr ", olddata, ", i64 ", bytes, ")");
+        auto isnull = ebm2llvm::next_tmp(ctx);
+        w.writeln(isnull, " = icmp eq ptr ", newdata, ", null");
+        w.writeln("br i1 ", isnull, ", label %.Lap.err.", id, ", label %.Lap.ok.", id);
+        w.writeln_noindent(".Lap.err.", id, ":");
+        w.writeln("ret i32 -1");
+        w.writeln_noindent(".Lap.ok.", id, ":");
+        w.writeln("store ptr ", newdata, ", ptr ", datap);
+        w.writeln("store i64 ", newcap, ", ptr ", capp);
+        w.writeln("br label %.Lap.st.", id);
+        w.writeln_noindent(".Lap.st.", id, ":");
+        auto data = ebm2llvm::next_tmp(ctx);
+        w.writeln(data, " = load ptr, ptr ", datap);
+        auto slot = ebm2llvm::next_tmp(ctx);
+        w.writeln(slot, " = getelementptr inbounds ", ety, ", ptr ", data, ", i64 ", size);
+        if (agg) {
+            w.writeln("call void @llvm.memcpy.p0.p0.i64(ptr ", slot, ", ptr ", val.to_writer(), ", i64 ", elem_size, ", i1 false)");
+        }
+        else {
+            w.writeln("store ", ety, " ", val.to_writer(), ", ptr ", slot);
+        }
+        auto newsize = ebm2llvm::next_tmp(ctx);
+        w.writeln(newsize, " = add i64 ", size, ", 1");
+        w.writeln("store i64 ", newsize, ", ptr ", sizep);
+        return w;
+    };
+
+    config.init_check_visitor = [](Context_Statement_INIT_CHECK& ctx) -> expected<Result> {
+        // no init tracking at the IR level: fields live in a zeroed arena and
+        // union storage is byte-shared, so all init checks are no-ops
+        CodeWriter w;
+        w.writeln("; init check (", to_string(ctx.init_check.init_check_type), "): no-op");
+        return w;
+    };
+
+    // sub-range IO: a view Stream over [parent.offset, parent.offset + len)
+    config.sub_byte_range_visitor = [](Context_Statement_SUB_BYTE_RANGE& ctx) -> expected<Result> {
+        CodeWriter w;
+        MAYBE(io, ebm2llvm::var_addr(ctx, ctx.sub_byte_range.io_ref));
+        MAYBE(parent, ebm2llvm::var_addr(ctx, ctx.sub_byte_range.parent_io_ref));
+        auto added = ctx.add_writer();
+        MAYBE(len_ref, ctx.sub_byte_range.length());
+        MAYBE(len_val, ebm2llvm::eval_expr_i64(ctx, len_ref));
+        MAYBE(pf, ebm2llvm::load_stream_fields(ctx, parent));
+        auto rem = ebm2llvm::next_tmp(ctx);
+        ctx.get_writer()->get().writeln(rem, " = sub i64 ", pf.limit, ", ", pf.offset);
+        w.write(std::move(ctx.get_writer()->get()));
+        auto len_str = len_val;
+        MAYBE_VOID(chk, ebm2llvm::emit_bounds_check(ctx, w, len_str, rem));
+        ctx.config().function_local_variables.writeln(io, " = alloca %Stream");
+        auto subdata = ebm2llvm::next_tmp(ctx);
+        w.writeln(subdata, " = getelementptr inbounds i8, ptr ", pf.data, ", i64 ", pf.offset);
+        auto dslot = ebm2llvm::next_tmp(ctx);
+        w.writeln(dslot, " = getelementptr inbounds %Stream, ptr ", io, ", i32 0, i32 0");
+        w.writeln("store ptr ", subdata, ", ptr ", dslot);
+        auto lslot = ebm2llvm::next_tmp(ctx);
+        w.writeln(lslot, " = getelementptr inbounds %Stream, ptr ", io, ", i32 0, i32 1");
+        w.writeln("store i64 ", len_str, ", ptr ", lslot);
+        auto oslot = ebm2llvm::next_tmp(ctx);
+        w.writeln(oslot, " = getelementptr inbounds %Stream, ptr ", io, ", i32 0, i32 2");
+        w.writeln("store i64 0, ptr ", oslot);
+        // the window is consumed as a whole
+        auto newoff = ebm2llvm::next_tmp(ctx);
+        w.writeln(newoff, " = add i64 ", pf.offset, ", ", len_str);
+        auto poff = ebm2llvm::next_tmp(ctx);
+        w.writeln(poff, " = getelementptr inbounds %Stream, ptr ", parent, ", i32 0, i32 2");
+        w.writeln("store i64 ", newoff, ", ptr ", poff);
+        // ADR 0038/0039: pin the absolute-offset companion to start + length
+        // after the child ran (the leaf reads inside also increment it)
+        bool track_offset = ebmcodegen::util::has_absolute_offset(ctx, ctx.sub_byte_range.io_ref) &&
+                            ctx.sub_byte_range.stream_type == ebm::StreamType::INPUT;
+        std::string rs_slot;
+        std::string rs_start;
+        if (track_offset) {
+            rs_slot = ebm2llvm::next_tmp(ctx);
+            w.writeln(rs_slot, " = getelementptr inbounds %struct.RuntimeState, ptr %runtime_state, i32 0, i32 0");
+            rs_start = ebm2llvm::next_tmp(ctx);
+            w.writeln(rs_start, " = load i64, ptr ", rs_slot);
+        }
+        MAYBE(do_io, ctx.visit(ctx.sub_byte_range.io_statement));
+        w.write(std::move(do_io.to_writer()));
+        if (track_offset) {
+            auto pinned = ebm2llvm::next_tmp(ctx);
+            w.writeln(pinned, " = add i64 ", rs_start, ", ", len_str);
+            w.writeln("store i64 ", pinned, ", ptr ", rs_slot);
+        }
+        return w;
+    };
+
+    // bytes-level READ_DATA: zero-copy for vectors, memcpy for arrays
+    config.read_data_custom = [](Context_Statement_READ_DATA& ctx) -> expected<Result> {
+        if (ctx.read_data.lowered_statement()) {
+            return pass;  // VECTORIZED_IO etc: default hook dispatches the lowered statement
+        }
+        auto cand = is_bytes_type(ctx, ctx.read_data.data_type);
+        if (!cand) {
+            return pass;  // non-byte reads must come lowered; default reports unimplemented
+        }
+        if (ctx.read_data.offset()) {
+            return unexpect_error("llvm read: offset-based read not supported yet");
+        }
+        CodeWriter w;
+        MAYBE(io, ebm2llvm::var_addr(ctx, ctx.read_data.io_ref));
+        auto added = ctx.add_writer();
+        MAYBE(size_val, ebm2llvm::eval_size_i64(ctx, ctx.read_data.size));
+        MAYBE(target_ptr, ebm2llvm::eval_lvalue(ctx, ctx.read_data.target));
+        MAYBE(fields, ebm2llvm::load_stream_fields(ctx, io));
+        auto rem = ebm2llvm::next_tmp(ctx);
+        ctx.get_writer()->get().writeln(rem, " = sub i64 ", fields.limit, ", ", fields.offset);
+        w.write(std::move(ctx.get_writer()->get()));
+        auto size_str = size_val;
+        MAYBE_VOID(chk, ebm2llvm::emit_bounds_check(ctx, w, size_str, rem));
+        auto src = ebm2llvm::next_tmp(ctx);
+        w.writeln(src, " = getelementptr inbounds i8, ptr ", fields.data, ", i64 ", fields.offset);
+        if (*cand == BytesType::vector) {
+            // zero-copy: point the vector into the input buffer
+            auto vd = ebm2llvm::next_tmp(ctx);
+            w.writeln(vd, " = getelementptr inbounds %Vec, ptr ", target_ptr, ", i32 0, i32 0");
+            w.writeln("store ptr ", src, ", ptr ", vd);
+            auto vs = ebm2llvm::next_tmp(ctx);
+            w.writeln(vs, " = getelementptr inbounds %Vec, ptr ", target_ptr, ", i32 0, i32 1");
+            w.writeln("store i64 ", size_str, ", ptr ", vs);
+            auto vc = ebm2llvm::next_tmp(ctx);
+            w.writeln(vc, " = getelementptr inbounds %Vec, ptr ", target_ptr, ", i32 0, i32 2");
+            w.writeln("store i64 ", size_str, ", ptr ", vc);
+        }
+        else {
+            w.writeln("call void @llvm.memcpy.p0.p0.i64(ptr ", target_ptr, ", ptr ", src, ", i64 ", size_str, ", i1 false)");
+        }
+        if (!ctx.read_data.attribute.is_peek()) {
+            auto newoff = ebm2llvm::next_tmp(ctx);
+            w.writeln(newoff, " = add i64 ", fields.offset, ", ", size_str);
+            auto op = ebm2llvm::next_tmp(ctx);
+            w.writeln(op, " = getelementptr inbounds %Stream, ptr ", io, ", i32 0, i32 2");
+            w.writeln("store i64 ", newoff, ", ptr ", op);
+            MAYBE_VOID(rs, ebm2llvm::emit_runtime_offset_add(ctx, ctx.read_data.io_ref, w, size_str));
+        }
+        return w;
+    };
+
+    // bytes-level WRITE_DATA: bounds-checked memcpy into the output buffer
+    config.write_data_custom = [](Context_Statement_WRITE_DATA& ctx) -> expected<Result> {
+        if (ctx.write_data.lowered_statement()) {
+            return pass;
+        }
+        auto cand = is_bytes_type(ctx, ctx.write_data.data_type);
+        if (!cand) {
+            return pass;
+        }
+        if (ctx.write_data.offset()) {
+            return unexpect_error("llvm write: offset-based write not supported yet");
+        }
+        CodeWriter w;
+        MAYBE(io, ebm2llvm::var_addr(ctx, ctx.write_data.io_ref));
+        auto added = ctx.add_writer();
+        MAYBE(size_val, ebm2llvm::eval_size_i64(ctx, ctx.write_data.size));
+        MAYBE(target_ptr, ebm2llvm::eval_lvalue(ctx, ctx.write_data.target));
+        MAYBE(fields, ebm2llvm::load_stream_fields(ctx, io));
+        auto rem = ebm2llvm::next_tmp(ctx);
+        ctx.get_writer()->get().writeln(rem, " = sub i64 ", fields.limit, ", ", fields.offset);
+        std::string src;
+        if (*cand == BytesType::vector) {
+            auto vd = ebm2llvm::next_tmp(ctx);
+            ctx.get_writer()->get().writeln(vd, " = getelementptr inbounds %Vec, ptr ", target_ptr, ", i32 0, i32 0");
+            src = ebm2llvm::next_tmp(ctx);
+            ctx.get_writer()->get().writeln(src, " = load ptr, ptr ", vd);
+        }
+        else {
+            src = target_ptr;
+        }
+        w.write(std::move(ctx.get_writer()->get()));
+        auto size_str = size_val;
+        MAYBE_VOID(chk, ebm2llvm::emit_bounds_check(ctx, w, size_str, rem));
+        auto dst = ebm2llvm::next_tmp(ctx);
+        w.writeln(dst, " = getelementptr inbounds i8, ptr ", fields.data, ", i64 ", fields.offset);
+        w.writeln("call void @llvm.memcpy.p0.p0.i64(ptr ", dst, ", ptr ", src, ", i64 ", size_str, ", i1 false)");
+        auto newoff = ebm2llvm::next_tmp(ctx);
+        w.writeln(newoff, " = add i64 ", fields.offset, ", ", size_str);
+        auto op = ebm2llvm::next_tmp(ctx);
+        w.writeln(op, " = getelementptr inbounds %Stream, ptr ", io, ", i32 0, i32 2");
+        w.writeln("store i64 ", newoff, ", ptr ", op);
+        MAYBE_VOID(rs, ebm2llvm::emit_runtime_offset_add(ctx, ctx.write_data.io_ref, w, size_str));
+        return w;
     };
 
     return pass;
