@@ -38,7 +38,7 @@ jobs:
       # observes all subsequent dependency installs / test execution.
       # Pinned to a commit SHA; pre-release, so bump deliberately.
       - name: CI/CD runtime sensor
-        uses: cicd-sensor/cicd-sensor-action@31366296cb918b7f1413829aafc16dcf18fe8518 # v0.0.35
+        uses: cicd-sensor/cicd-sensor-action@2b76335ff1c2dd298e983961f7a200d3fe9076c2 # v0.0.36
       - name: Timeline
         uses: Kesin11/actions-timeline@7bf79990b7c09f5dfb570ac30b814ca597bd538e # v3.1
         with:
@@ -68,7 +68,7 @@ jobs:
           echo "runner dir not found for ${{ matrix.shard.runner }}" >&2; exit 1
       - name: Install mise
         if: hashFiles(format('{0}/mise.toml', steps.runner.outputs.path)) != ''
-        uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+        uses: jdx/mise-action@dad1bfd3df957f44999b559dd69dc1671cb4e9ea # v4.2.1
         with:
           working_directory: ${{ steps.runner.outputs.path }}
           install: false
