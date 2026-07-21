@@ -33,6 +33,14 @@
                 "--package=main"
             ],
             "run_options": []
+        },
+        {
+            "name": "bit-stream",
+            "setup_options": [
+                "--package=main",
+                "ebmgen:--very-slow-bit-ops"
+            ],
+            "run_options": []
         }
     ]
 }

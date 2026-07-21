@@ -85,6 +85,7 @@ namespace ebmgen {
             struct ReplacedWrite {
                 ebm::ExpressionRef target;  // the (cloned) buffer/source expression
                 ebm::Size size;
+                std::uint64_t fixed_fill_len = 0;  // buffer array length when the target is a fixed array (0: use reserve size)
             };
             std::unordered_map<std::uint64_t, ReplacedWrite> replaced_writes;  // cloned WRITE_DATA id -> info
 
@@ -199,39 +200,55 @@ namespace ebmgen {
                 // chain's index assignments then fill a real local buffer, and the bit
                 // loop reads it. The per-byte flush writes carry their own reserves.
                 for (auto& ref : cloned_stmts) {
-                    auto* s = ctx.repository().get_statement(ref);
-                    if (!s || s->body.kind != ebm::StatementKind::RESERVE_DATA) {
-                        continue;
+                    // copy everything needed up front: the EBM_* constructions below
+                    // add to the repository and relocate statement storage
+                    ebm::WeakStatementRef paired_write;
+                    ebm::Size reserve_size;
+                    {
+                        auto* s = ctx.repository().get_statement(ref);
+                        if (!s || s->body.kind != ebm::StatementKind::RESERVE_DATA) {
+                            continue;
+                        }
+                        auto rd = s->body.reserve_data();
+                        if (!rd) {
+                            continue;
+                        }
+                        paired_write = rd->write_data;
+                        reserve_size = rd->size;
                     }
-                    auto rd = s->body.reserve_data();
-                    if (!rd) {
-                        continue;
-                    }
-                    auto paired = replaced_writes.find(get_id(rd->write_data.id));
+                    auto paired = replaced_writes.find(get_id(paired_write.id));
                     if (paired == replaced_writes.end()) {
                         continue;  // paired write kept its byte-IO form; keep the reserve
                     }
-                    ebm::ExpressionRef len_expr;
-                    if (rd->size.unit == ebm::SizeUnit::BYTE_FIXED) {
-                        EBMU_INT_LITERAL(len_lit, rd->size.size()->value());
-                        len_expr = len_lit;
-                    }
-                    else if (rd->size.ref()) {
-                        len_expr = *rd->size.ref();
-                    }
-                    else {
-                        return unexpect_error("very_slow_bit_ops: reserve for replaced write {} has unsupported size unit {}", get_id(rd->write_data.id), to_string(rd->size.unit));
-                    }
-                    EBMU_U8(u8_ty);
-                    EBMU_INT_LITERAL(zero_lit, 0);
                     ebm::Block fill;
-                    EBM_COUNTER_LOOP_START(fill_counter);
-                    ebm::Block fill_body;
-                    EBM_APPEND(push_zero, paired->second.target, zero_lit);
-                    append(fill_body, push_zero);
-                    EBM_BLOCK(fill_body_ref, std::move(fill_body));
-                    EBM_COUNTER_LOOP_END(fill_loop, fill_counter, len_expr, fill_body_ref);
-                    append(fill, fill_loop);
+                    if (paired->second.fixed_fill_len > 0) {
+                        // fixed group buffer: materialize the FULL buffer once (guarded
+                        // by emptiness so branch-shared buffers are not double-filled)
+                        EBM_ARRAY_SIZE(cur_len, paired->second.target);
+                        EBMU_INT_LITERAL(zero_len, 0);
+                        EBMU_BOOL_TYPE(fill_bool);
+                        EBM_BINARY_OP(is_empty, ebm::BinaryOp::equal, fill_bool, cur_len, zero_len);
+                        EBMU_INT_LITERAL(fill_len_lit, paired->second.fixed_fill_len);
+                        EBMU_INT_LITERAL(zero_lit, 0);
+                        EBM_COUNTER_LOOP_START(fill_counter);
+                        ebm::Block fill_body;
+                        EBM_APPEND(push_zero, paired->second.target, zero_lit);
+                        append(fill_body, push_zero);
+                        EBM_BLOCK(fill_body_ref, std::move(fill_body));
+                        EBM_COUNTER_LOOP_END(fill_loop, fill_counter, fill_len_lit, fill_body_ref);
+                        ebm::Block then_blk;
+                        append(then_blk, fill_loop);
+                        EBM_BLOCK(then_ref, std::move(then_blk));
+                        EBM_IF_STATEMENT(fill_if, is_empty, then_ref, ebm::StatementRef{});
+                        append(fill, fill_if);
+                    }
+                    // non-array targets (vector data writes): the reserve was only a
+                    // byte-space pre-check; the per-byte flush writes carry their own
+                    // reserves, so an empty block is the correct conversion
+                    auto* s = ctx.repository().get_statement(ref);  // refetch: storage may have relocated
+                    if (!s) {
+                        return unexpect_error("very_slow_bit_ops: reserve statement {} vanished during conversion", get_id(ref));
+                    }
                     s->body = make_block(std::move(fill));
                 }
                 return {};
@@ -500,14 +517,18 @@ namespace ebmgen {
                     fallback_count++;
                     return std::nullopt;
                 }
+                // positioned IO: for bit-field group buffers the offset is a static
+                // position INSIDE the buffer (the stream itself is consumed
+                // sequentially), handled by the array-window path below. Dynamic
+                // offsets cannot be expressed on a bit stream.
+                std::optional<std::uint64_t> static_offset;
                 if (io.attribute.has_offset()) {
-                    // bit-field group buffer reads are positioned reads at relative
-                    // offset 0 — sequential in practice. Anything else cannot be
-                    // expressed on a bit stream; keep byte-IO form.
                     auto* off = io.offset();
-                    bool sequential = off && off->unit == ebm::SizeUnit::BYTE_FIXED && off->size()->value() == 0;
-                    if (!sequential) {
-                        print_if_verbose("very_slow_bit_ops: keeping byte-IO terminal (non-zero offset) for statement io_ref ", get_id(io.io_ref), "\n");
+                    if (off && off->unit == ebm::SizeUnit::BYTE_FIXED) {
+                        static_offset = off->size()->value();
+                    }
+                    else {
+                        print_if_verbose("very_slow_bit_ops: keeping byte-IO terminal (dynamic offset) for statement io_ref ", get_id(io.io_ref), "\n");
                         fallback_count++;
                         return std::nullopt;
                     }
@@ -527,6 +548,11 @@ namespace ebmgen {
                 auto type_kind = typ->body.kind;
 
                 if (type_kind == ebm::TypeKind::UINT || type_kind == ebm::TypeKind::INT) {
+                    if (static_offset && *static_offset != 0) {
+                        print_if_verbose("very_slow_bit_ops: keeping byte-IO terminal (positioned int IO)\n");
+                        fallback_count++;
+                        return std::nullopt;
+                    }
                     std::uint64_t n = 0;
                     if (io.size.unit == ebm::SizeUnit::BIT_FIXED) {
                         n = io.size.size()->value();
@@ -570,18 +596,112 @@ namespace ebmgen {
                         fallback_count++;
                         return std::nullopt;
                     }
-                    // length expression
+                    // window IO into a fixed group buffer (bit-field machinery): a static
+                    // in-buffer offset and/or a size smaller than the buffer. The stream
+                    // itself is consumed sequentially; only the buffer position varies.
+                    if (type_kind == ebm::TypeKind::ARRAY) {
+                        std::uint64_t arr_len = typ->body.length()->value();
+                        std::uint64_t window_off = static_offset.value_or(0);
+                        // whole-value handling is only safe when the IO provably covers
+                        // the entire buffer; dynamic sizes into a fixed array are windows
+                        bool is_window = window_off != 0 ||
+                                         io.size.unit != ebm::SizeUnit::BYTE_FIXED ||
+                                         io.size.size()->value() != arr_len;
+                        if (is_window) {
+                            ebm::ExpressionRef count_expr;
+                            if (io.size.unit == ebm::SizeUnit::BYTE_FIXED) {
+                                EBMU_INT_LITERAL(count_lit, io.size.size()->value());
+                                count_expr = count_lit;
+                            }
+                            else if (io.size.ref()) {
+                                count_expr = *io.size.ref();
+                            }
+                            else {
+                                print_if_verbose("very_slow_bit_ops: keeping byte-IO terminal (buffer window without size)\n");
+                                fallback_count++;
+                                return std::nullopt;
+                            }
+                            // annotated temporaries render as empty slices in slice-mode
+                            // backends and need explicit materialization; plain field
+                            // arrays are real fixed arrays and must NOT be appended to
+                            bool needs_materialize = typ->body.array_annotation() &&
+                                                     *typ->body.array_annotation() != ebm::ArrayAnnotation::none;
+                            EBMU_U8(u8_win_ty);
+                            EBMU_COUNTER_TYPE(counter_ty);
+                            EBMU_INT_LITERAL(window_off_lit, window_off);
+                            ebm::Block block;
+                            if (!write) {
+                                if (needs_materialize) {
+                                    EBM_ARRAY_SIZE(cur_len, io.target);
+                                    EBMU_INT_LITERAL(zero_len, 0);
+                                    EBMU_BOOL_TYPE(win_bool);
+                                    EBM_BINARY_OP(is_empty, ebm::BinaryOp::equal, win_bool, cur_len, zero_len);
+                                    EBMU_INT_LITERAL(arr_len_lit, arr_len);
+                                    EBM_COUNTER_LOOP_START(mat_counter);
+                                    ebm::Block mat_body;
+                                    EBMU_INT_LITERAL(zero_byte, 0);
+                                    EBM_APPEND(push_zero, io.target, zero_byte);
+                                    append(mat_body, push_zero);
+                                    EBM_BLOCK(mat_body_ref, std::move(mat_body));
+                                    EBM_COUNTER_LOOP_END(mat_loop, mat_counter, arr_len_lit, mat_body_ref);
+                                    ebm::Block then_blk;
+                                    append(then_blk, mat_loop);
+                                    EBM_BLOCK(then_ref, std::move(then_blk));
+                                    EBM_IF_STATEMENT(mat_if, is_empty, then_ref, ebm::StatementRef{});
+                                    append(block, mat_if);
+                                }
+                                // per byte: read 8 bits then store into target[off + j]
+                                EBM_COUNTER_LOOP_START(win_counter);
+                                ebm::Block wbody;
+                                EBM_DEFAULT_VALUE(b_init, u8_win_ty);
+                                EBM_DEFINE_ANONYMOUS_VARIABLE(one_b, u8_win_ty, b_init);
+                                append(wbody, one_b_def);
+                                MAYBE_VOID(win_read_ok, emit_bit_read(wbody, io, one_b, u8_win_ty, 8, true, true));
+                                EBM_BINARY_OP(idx, ebm::BinaryOp::add, counter_ty, window_off_lit, win_counter);
+                                EBM_INDEX(elem_at, u8_win_ty, io.target, idx);
+                                EBM_ASSIGNMENT(store_elem, elem_at, one_b);
+                                append(wbody, store_elem);
+                                EBM_BLOCK(wbody_ref, std::move(wbody));
+                                EBM_COUNTER_LOOP_END(win_loop, win_counter, count_expr, wbody_ref);
+                                append(block, win_loop);
+                            }
+                            else {
+                                EBM_COUNTER_LOOP_START(win_counter);
+                                ebm::Block wbody;
+                                EBM_BINARY_OP(idx, ebm::BinaryOp::add, counter_ty, window_off_lit, win_counter);
+                                EBM_INDEX(elem_at, u8_win_ty, io.target, idx);
+                                MAYBE_VOID(win_write_ok, emit_bit_write(wbody, io, elem_at, u8_win_ty, 8, true, true));
+                                EBM_BLOCK(wbody_ref, std::move(wbody));
+                                EBM_COUNTER_LOOP_END(win_loop, win_counter, count_expr, wbody_ref);
+                                append(block, win_loop);
+                            }
+                            return make_block(std::move(block));
+                        }
+                    }
+                    // length expression. For decode, a GET_REMAINING_BYTES-sized read
+                    // ("read all remaining") becomes a while(can_read(1)) loop instead:
+                    // the remaining-bytes expression is emitted by backends only in
+                    // special contexts, and lazy byte fetches keep the byte-based
+                    // availability check exact even at unaligned bit offsets.
                     ebm::ExpressionRef len_expr;
+                    bool remaining_read = false;
                     if (io.size.unit == ebm::SizeUnit::BYTE_FIXED) {
                         EBMU_INT_LITERAL(len_lit, io.size.size()->value());
                         len_expr = len_lit;
                     }
-                    else if (io.size.ref()) {
-                        len_expr = *io.size.ref();
-                    }
                     else if (write) {
+                        // the target array holds exactly what must be written
                         EBM_ARRAY_SIZE(dyn_len, io.target);
                         len_expr = dyn_len;
+                    }
+                    else if (io.size.ref()) {
+                        auto* len_body = ctx.repository().get_expression(*io.size.ref());
+                        if (len_body && len_body->body.kind == ebm::ExpressionKind::GET_REMAINING_BYTES) {
+                            remaining_read = true;
+                        }
+                        else {
+                            len_expr = *io.size.ref();
+                        }
                     }
                     else {
                         print_if_verbose("very_slow_bit_ops: keeping byte-IO terminal (byte array without length, unit ", to_string(io.size.unit), ")\n");
@@ -601,7 +721,6 @@ namespace ebmgen {
                         EBM_DEFAULT_VALUE(vec_init, u8_vec_ty);
                         EBM_DEFINE_ANONYMOUS_VARIABLE(read_arr, u8_vec_ty, vec_init);
                         append(block, read_arr_def);
-                        EBM_COUNTER_LOOP_START(byte_counter);
                         ebm::Block obody;
                         EBM_DEFAULT_VALUE(byte_init, u8_ty);
                         EBM_DEFINE_ANONYMOUS_VARIABLE(one_byte_tmp, u8_ty, byte_init);
@@ -610,8 +729,17 @@ namespace ebmgen {
                         EBM_APPEND(push_elem, read_arr, one_byte_tmp);
                         append(obody, push_elem);
                         EBM_BLOCK(obody_ref, std::move(obody));
-                        EBM_COUNTER_LOOP_END(byte_loop, byte_counter, len_expr, obody_ref);
-                        append(block, byte_loop);
+                        if (remaining_read) {
+                            MAYBE(one_byte_size, make_fixed_size(1, ebm::SizeUnit::BYTE_FIXED));
+                            EBM_CAN_READ_STREAM(can_read, io.io_ref, ebm::StreamType::INPUT, one_byte_size);
+                            EBM_WHILE_LOOP(byte_loop, can_read, obody_ref);
+                            append(block, byte_loop);
+                        }
+                        else {
+                            EBM_COUNTER_LOOP_START(byte_counter);
+                            EBM_COUNTER_LOOP_END(byte_loop, byte_counter, len_expr, obody_ref);
+                            append(block, byte_loop);
+                        }
                         EBM_CAST(read_arr_casted, io.data_type, u8_vec_ty, read_arr);
                         EBM_ASSIGNMENT(store_target, io.target, read_arr_casted);
                         append(block, store_target);
@@ -796,21 +924,106 @@ namespace ebmgen {
                 }
 
                 // clone body with terminal replacement
+                auto orig_body = func.body;
+                size_t cloned_exprs_before = cloned_exprs.size();
                 MAYBE(new_body, clone_stmt(func.body));
+
+                // gated-format wrappers seed a LOCAL RuntimeState and pass it to the
+                // impl; the bit-stream twin must thread the caller's companion param
+                // instead (the caller owns the bit position). Neutralize the cloned
+                // local, rebind its identifiers to the param, and downgrade the call
+                // argument from INOUT-local to plain param forwarding.
+                if (func.attribute.is_wrapper()) {
+                    std::vector<std::uint64_t> local_companions;
+                    if (auto* body_stmt = ctx.repository().get_statement(orig_body)) {
+                        if (auto* blk = body_stmt->body.block()) {
+                            for (auto& child : blk->container) {
+                                auto* child_stmt = ctx.repository().get_statement(child);
+                                if (!child_stmt) {
+                                    continue;
+                                }
+                                auto vd = child_stmt->body.var_decl();
+                                if (!vd) {
+                                    continue;
+                                }
+                                auto* vt = ctx.repository().get_type(vd->var_type);
+                                if (vt && vt->body.kind == ebm::TypeKind::STRUCT &&
+                                    get_id(from_weak(*vt->body.id())) == get_id(info.struct_id)) {
+                                    // record the id AS REFERENCED (the container ref), not
+                                    // child_stmt->id: content dedup aliases the identical
+                                    // wrapper locals to one canonical statement, and the
+                                    // canonical id may already be remapped by a previous
+                                    // wrapper's derive
+                                    local_companions.push_back(get_id(child));
+                                }
+                            }
+                        }
+                    }
+                    for (auto orig_local : local_companions) {
+                        auto it = stmt_map.find(orig_local);
+                        if (it == stmt_map.end()) {
+                            continue;
+                        }
+                        if (auto* cloned_local = ctx.repository().get_statement(it->second);
+                            cloned_local && cloned_local->body.kind == ebm::StatementKind::VARIABLE_DECL) {
+                            cloned_local->body = make_block(ebm::Block{});
+                        }
+                        // identifiers cloned from the local now rebind to the param
+                        it->second = companion_def;
+                    }
+                    if (!local_companions.empty()) {
+                        for (size_t i = cloned_exprs_before; i < cloned_exprs.size(); i++) {
+                            auto* e = ctx.repository().get_expression(cloned_exprs[i]);
+                            if (!e) {
+                                continue;
+                            }
+                            auto as_arg = e->body.as_arg();
+                            if (!as_arg || !as_arg->is_inout()) {
+                                continue;
+                            }
+                            auto* bound_param = ctx.repository().get_statement(from_weak(as_arg->param));
+                            if (!bound_param) {
+                                continue;
+                            }
+                            if (auto pd = bound_param->body.param_decl(); pd && pd->is_runtime_state()) {
+                                as_arg->is_inout(false);  // forwarding our own param, not a local
+                            }
+                        }
+                    }
+                }
 
                 func.name = variant_name_ref;
                 func.params = std::move(new_params);
                 func.body = new_body;
                 func.attribute.is_very_slow(true);
-                func.attribute.has_wrapper(false);
                 func.attribute.is_user_defined(false);
+                // keep the wrapper<->impl linkage inside the variant family so backends
+                // can reuse their has_wrapper naming (e.g. go's "_impl" suffix)
+                if (func.attribute.has_wrapper()) {
+                    bool relinked = false;
+                    if (auto wrapper_fn = func.wrapper_function()) {
+                        if (auto it = stmt_map.find(get_id(*wrapper_fn)); it != stmt_map.end()) {
+                            func.wrapper_function(it->second);
+                            relinked = true;
+                        }
+                    }
+                    if (!relinked) {
+                        func.attribute.has_wrapper(false);
+                    }
+                }
 
                 ebm::StatementBody stmt_body;
                 stmt_body.kind = ebm::StatementKind::FUNCTION_DECL;
                 auto parent_format = func.parent_format;
+                bool is_wrapper_variant = func.attribute.is_wrapper();
                 stmt_body.func_decl(std::move(func));
                 EBMA_ADD_STATEMENT(added, variant_ref, std::move(stmt_body));
-                MAYBE_VOID(reg, register_method(parent_format, added));
+                // wrapper variants are emitted paired with their impl (via the impl's
+                // wrapper_function link, like the byte-IO wrappers); registering them
+                // as methods too would emit them twice
+                if (!is_wrapper_variant) {
+                    MAYBE_VOID(reg, register_method(parent_format, added));
+                }
                 return {};
             }
         };
@@ -843,9 +1056,20 @@ namespace ebmgen {
             else if (auto wd = body.write_data(); wd && replace_at_this_node(*wd)) {
                 auto target = wd->target;
                 auto size = wd->size;
+                std::uint64_t fixed_fill_len = 0;
+                if (auto* target_expr = ctx.repository().get_expression(target)) {
+                    if (auto* target_type = ctx.repository().get_type(target_expr->body.type);
+                        target_type && target_type->body.kind == ebm::TypeKind::ARRAY &&
+                        target_type->body.array_annotation() &&
+                        *target_type->body.array_annotation() != ebm::ArrayAnnotation::none) {
+                        // only annotated temporaries (rendered as empty slices) need
+                        // zero-fill materialization; plain field arrays already exist
+                        fixed_fill_len = target_type->body.length()->value();
+                    }
+                }
                 MAYBE(replaced, build_terminal(*wd, true));
                 if (replaced) {
-                    replaced_writes.emplace(get_id(new_id), ReplacedWrite{target, size});
+                    replaced_writes.emplace(get_id(new_id), ReplacedWrite{target, size, fixed_fill_len});
                     body = std::move(*replaced);
                 }
             }
@@ -902,9 +1126,12 @@ namespace ebmgen {
                 if (func->kind != ebm::FunctionKind::ENCODE && func->kind != ebm::FunctionKind::DECODE) {
                     continue;
                 }
-                if (func->attribute.is_wrapper() || func->attribute.is_very_slow()) {
+                if (func->attribute.is_very_slow()) {
                     continue;
                 }
+                // wrappers are included: for state-variable formats the wrapper IS the
+                // public surface, and its bit-stream twin keeps the public signature
+                // (stream + companion) while seeding the state locals
                 targets.push_back({s.id, {}});
             }
         }
@@ -962,8 +1189,10 @@ namespace ebmgen {
         }
         // pass 2: derive each variant (params + body clone + terminal replacement)
         for (auto& t : targets) {
+            print_if_verbose("very_slow_bit_ops: deriving variant for function ", get_id(t.orig), "\n");
             MAYBE_VOID(derived, deriver.derive_one(t.orig, t.variant));
         }
+        print_if_verbose("very_slow_bit_ops: fixing weak refs\n");
         // pass 3: remap weak references (identifier bindings, related_function, loop back-refs)
         MAYBE_VOID(fixed, deriver.fix_weak_refs());
 

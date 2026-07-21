@@ -57,7 +57,7 @@ DEFINE_VISITOR(Expression_CALL_before) {
         else {
             return pass;
         }
-        if (!func_decl.attribute.is_very_slow() && func_decl.attribute.has_wrapper()) {
+        if (func_decl.attribute.has_wrapper()) {
             ident += "_impl";
         }
         MAYBE(base, callee.body.base());

@@ -63,6 +63,43 @@ def hexdump(data: bytes) -> str:
     return result
 
 
+# setup_options prefixed with "ebmgen:" are routed to ebmgen instead of the
+# ebm2<lang> generator (e.g. "ebmgen:--very-slow-bit-ops").
+EBMGEN_OPTION_PREFIX = "ebmgen:"
+VSLOW_EBMGEN_OPTION = EBMGEN_OPTION_PREFIX + "--very-slow-bit-ops"
+VSLOW_FALLBACK_MARKER = "vslow_fallback.txt"
+
+
+def split_setup_options() -> tuple[list, list]:
+    options = [
+        o
+        for o in unictest_env_vars["UNICTEST_OPTION_SET_SETUP_OPTIONS"].split(",")
+        if o
+    ]
+    ebmgen_args = [
+        o[len(EBMGEN_OPTION_PREFIX):] for o in options if o.startswith(EBMGEN_OPTION_PREFIX)
+    ]
+    target_args = [o for o in options if not o.startswith(EBMGEN_OPTION_PREFIX)]
+    return ebmgen_args, target_args
+
+
+def is_vslow_option_set() -> bool:
+    return VSLOW_EBMGEN_OPTION in unictest_env_vars[
+        "UNICTEST_OPTION_SET_SETUP_OPTIONS"
+    ].split(",")
+
+
+def shift_bits(data: bytes, k: int) -> bytes:
+    # prefix k zero bits (msb-first stream), pad the tail byte with zeros
+    total = k + len(data) * 8
+    out = bytearray((total + 7) // 8)
+    for i in range(len(data) * 8):
+        bit = (data[i // 8] >> (7 - (i % 8))) & 1
+        p = k + i
+        out[p // 8] |= bit << (7 - (p % 8))
+    return bytes(out)
+
+
 if mode == "setup":
 
     ebmgen = (pl.Path(original_workdir) / "tool/ebmgen").as_posix()
@@ -70,17 +107,37 @@ if mode == "setup":
         ebmgen += ".exe"
     ebm_input_file = (pl.Path(runner_dir) / "runner_input.ebm").as_posix()
 
+    ebmgen_args, additional_args = split_setup_options()
+
     cmd = [
         ebmgen,
         "-i",
         unictest_env_vars["UNICTEST_SOURCE_FILE"],
         "-o",
         ebm_input_file,
-    ]
+    ] + ebmgen_args
     print(f"\nRunning command: {' '.join(cmd)}")
-    sp.check_call(cmd, timeout=60)
+    ebmgen_result = sp.run(cmd, timeout=60, capture_output=True, text=True)
+    if ebmgen_result.stdout:
+        print(ebmgen_result.stdout, end="")
+    if ebmgen_result.stderr:
+        sys.stderr.write(ebmgen_result.stderr)
+    if ebmgen_result.returncode != 0:
+        sys.exit(ebmgen_result.returncode)
 
-    additional_args = unictest_env_vars["UNICTEST_OPTION_SET_SETUP_OPTIONS"].split(",")
+    # very_slow_bit_ops: terminals kept in byte-IO form are only correct at
+    # byte-aligned bit offsets; record a marker so the test phase downgrades
+    # shifted comparisons to the offset-0 differential only.
+    marker = pl.Path(runner_dir) / VSLOW_FALLBACK_MARKER
+    fallback_lines = [
+        line
+        for line in (ebmgen_result.stderr or "").splitlines()
+        if "very_slow_bit_ops" in line and "kept byte-IO form" in line
+    ]
+    if fallback_lines:
+        marker.write_text("\n".join(fallback_lines) + "\n")
+    elif marker.exists():
+        marker.unlink()
 
     if is_interpreter_tool(pl.Path(original_workdir), target_command):
         # Interpreter tools (ebmip) don't generate source code.
@@ -151,6 +208,24 @@ elif mode == "test":
     print(f"\nRunning test script: {test_script_file.as_posix()}", flush=True)
     additional_args = unictest_env_vars["UNICTEST_OPTION_SET_RUN_OPTIONS"].split(",")
     optionset_name = unictest_env_vars["UNICTEST_OPTION_SET_NAME"]
+
+    vslow_mode = is_vslow_option_set() and not fuzz_mode
+    vslow_offset0_only = False
+    if vslow_mode:
+        marker = pl.Path(runner_dir) / VSLOW_FALLBACK_MARKER
+        if marker.exists():
+            vslow_offset0_only = True
+            print(
+                "very_slow_bit_ops: byte-IO fallback terminals present; "
+                "shifted checks are downgraded to the offset-0 differential:"
+            )
+            print(marker.read_text(), end="")
+        else:
+            for k in range(1, 8):
+                shifted_file = pl.Path(task_dir) / f"shifted_input_{k}.bin"
+                with open(shifted_file, "wb") as f:
+                    f.write(shift_bits(input_data, k))
+
     cmds = [
         sys.executable,
         test_script_file.as_posix(),
@@ -161,6 +236,8 @@ elif mode == "test":
         optionset_name,
     ]
     cmds.extend(additional_args)
+    if vslow_offset0_only:
+        cmds.append("--vslow-offset0-only")
     # Put script/ on the child's PYTHONPATH so its `import unictest_report`
     # resolves - the test script is spawned from its own runner dir, which is
     # not otherwise on sys.path.
@@ -227,6 +304,48 @@ elif mode == "test":
             sys.exit(1)
         else:
             print("Output data matches input data.")
+        if vslow_mode:
+            if vslow_offset0_only:
+                print(
+                    "very_slow_bit_ops: shifted comparisons skipped "
+                    "(byte-IO fallback terminals); offset-0 differential was verified in-harness"
+                )
+            else:
+                # bit-exactness oracle: the harness re-encoded each shifted input at
+                # bit offset k; outputs must match the python-shifted reference
+                for k in range(1, 8):
+                    exp_file = pl.Path(task_dir) / f"shifted_input_{k}.bin"
+                    got_file = pl.Path(task_dir) / f"output_shifted_{k}.bin"
+                    if not got_file.exists():
+                        unictest_report.report(
+                            "vslow-shifted", f"harness did not produce output_shifted_{k}.bin"
+                        )
+                        sys.exit(1)
+                    with open(exp_file, "rb") as f:
+                        exp_data = f.read()
+                    with open(got_file, "rb") as f:
+                        got_data = f.read()
+                    if got_data != exp_data:
+                        first_diff = next(
+                            (
+                                i
+                                for i, (x, y) in enumerate(zip(exp_data, got_data))
+                                if x != y
+                            ),
+                            min(len(exp_data), len(got_data)),
+                        )
+                        unictest_report.report(
+                            "vslow-shifted",
+                            "k={} shifted encode mismatch (exp {}B vs got {}B, first diff @ 0x{:x})".format(
+                                k, len(exp_data), len(got_data), first_diff
+                            ),
+                        )
+                        print("Hex dump of expected (python-shifted input):")
+                        print(hexdump(exp_data))
+                        print("Hex dump of harness output:")
+                        print(hexdump(got_data))
+                        sys.exit(1)
+                print("very_slow_bit_ops: shifted encode outputs match reference (k=1..7)")
 else:
     print(f"Unknown mode: {mode}")
     sys.exit(1)
