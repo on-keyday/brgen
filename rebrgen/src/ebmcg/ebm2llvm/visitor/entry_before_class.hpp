@@ -59,6 +59,37 @@ namespace ebm2llvm {
         return std::format("%t{}", ctx.config().next_reg());
     }
 
+    // LLVM has no target-endian query instruction. Reading the first byte of
+    // an integer constant has the same semantics and folds to a constant once
+    // the module's target data layout is known.
+    ebmgen::expected<std::string> emit_native_little_endian(auto&& ctx) {
+        MAYBE(w, ctx.get_writer());
+        auto first = next_tmp(ctx);
+        w.get().writeln(first, " = load i8, ptr @__brgen_native_endian_probe, align 1");
+        auto is_little = next_tmp(ctx);
+        w.get().writeln(is_little, " = icmp eq i8 ", first, ", 1");
+        return is_little;
+    }
+
+    ebmgen::expected<std::string> adjust_fixed_endian(auto&& ctx, const std::string& value, size_t bit_size, ebm::Endian endian) {
+        if (endian != ebm::Endian::little && endian != ebm::Endian::big) {
+            return unexpect_error("llvm endian conversion: unsupported endian {}", to_string(endian));
+        }
+        MAYBE(w, ctx.get_writer());
+        MAYBE(is_little, emit_native_little_endian(ctx));
+        auto type = "i" + std::to_string(bit_size);
+        auto swapped = next_tmp(ctx);
+        w.get().writeln(swapped, " = call ", type, " @llvm.bswap.", type, "(", type, " ", value, ")");
+        auto adjusted = next_tmp(ctx);
+        if (endian == ebm::Endian::little) {
+            w.get().writeln(adjusted, " = select i1 ", is_little, ", ", type, " ", value, ", ", type, " ", swapped);
+        }
+        else {
+            w.get().writeln(adjusted, " = select i1 ", is_little, ", ", type, " ", swapped, ", ", type, " ", value);
+        }
+        return adjusted;
+    }
+
     // sizeof as a constant expression (alloc size, consistent with gep stride)
     inline std::string sizeof_const(const std::string& llvm_type) {
         return "ptrtoint (ptr getelementptr (" + llvm_type + ", ptr null, i32 1) to i64)";
@@ -599,7 +630,7 @@ DEFINE_VISITOR(entry_before) {
     config.bool_true = "true";
     config.bool_false = "false";
     config.property_setter_return_type = "i1";
-    config.native_endian_check = "true";  // tests run on little-endian hosts
+    config.native_endian_check = "";
     config.metadata_comment_prefix = ";";
     config.metadata_comment_suffix = "";
     config.self_value = "%self";
@@ -683,7 +714,11 @@ DEFINE_VISITOR(entry_before) {
         write_generated_banner(pctx, w, ";");
         w.writeln("%Vec = type { ptr, i64, i64 } ; data, size, capacity");
         w.writeln("%Stream = type { ptr, i64, i64 } ; data, len(dec)/cap(enc), offset");
+        w.writeln("@__brgen_native_endian_probe = private constant i16 1");
         w.writeln("declare void @llvm.memcpy.p0.p0.i64(ptr, ptr, i64, i1)");
+        w.writeln("declare i16 @llvm.bswap.i16(i16)");
+        w.writeln("declare i32 @llvm.bswap.i32(i32)");
+        w.writeln("declare i64 @llvm.bswap.i64(i64)");
         w.writeln("declare ptr @realloc(ptr, i64)");
         w.write(std::move(pctx.config().type_defs));
         w.writeln();
@@ -852,6 +887,80 @@ DEFINE_VISITOR(entry_before) {
             }
         }
         output.writeln_noindent(final_label, ":");
+        return output;
+    };
+
+    config.is_little_endian_visitor = [](Context_Expression_IS_LITTLE_ENDIAN& ctx) -> expected<Result> {
+        if (is_nil(ctx.endian_expr)) {
+            MAYBE(is_little, ebm2llvm::emit_native_little_endian(ctx));
+            return Result(is_little);
+        }
+        MAYBE(endian_var, ctx.get_field<"endian_variable">(ctx.endian_expr));
+        MAYBE(dynamic_expr, endian_var.dynamic_expr());
+        MAYBE(dynamic_type, ctx.get_field<"type">(dynamic_expr));
+        MAYBE(type, ctx.visit(dynamic_type));
+        MAYBE(addr, ebm2llvm::var_addr(ctx, ctx.endian_expr));
+        MAYBE(w, ctx.get_writer());
+        auto value = ebm2llvm::next_tmp(ctx);
+        w.get().writeln(value, " = load ", type.to_writer(), ", ptr ", addr);
+        auto is_little = ebm2llvm::next_tmp(ctx);
+        w.get().writeln(is_little, " = icmp eq ", type.to_writer(), " ", value, ", 1");
+        return Result(is_little);
+    };
+
+    config.int_to_array_custom = [](Context_Statement_INT_TO_ARRAY& ctx) -> expected<Result> {
+        MAYBE(target_type, ctx.get_field<"type.instance">(ctx.endian_convert.target));
+        MAYBE(length, target_type.body.length());
+        auto byte_size = length.value();
+        if (byte_size != 2 && byte_size != 4 && byte_size != 8) {
+            return pass;
+        }
+        auto added = ctx.add_writer();
+        MAYBE(target, ebm2llvm::eval_lvalue(ctx, ctx.endian_convert.target));
+        MAYBE(source, ctx.visit(ctx.endian_convert.source));
+        auto bit_size = byte_size * 8;
+        MAYBE(adjusted, ebm2llvm::adjust_fixed_endian(ctx, source.to_string(), bit_size, ctx.endian_convert.endian()));
+        CodeWriter output;
+        output.write(std::move(ctx.get_writer()->get()));
+        output.writeln("store i", std::to_string(bit_size), " ", adjusted, ", ptr ", target, ", align 1");
+        return output;
+    };
+
+    config.array_to_int_custom = [](Context_Statement_ARRAY_TO_INT& ctx) -> expected<Result> {
+        MAYBE(source_type, ctx.get_field<"type.instance">(ctx.endian_convert.source));
+        MAYBE(length, source_type.body.length());
+        auto byte_size = length.value();
+        if (byte_size != 2 && byte_size != 4 && byte_size != 8) {
+            return pass;
+        }
+        if (ebm2llvm::bulk_composite_member(ctx, ctx.endian_convert.target)) {
+            return pass;
+        }
+        MAYBE(target_type, ctx.get_field<"type">(ctx.endian_convert.target));
+        MAYBE(target_type_str, ctx.visit(target_type));
+        auto target_llvm_type = target_type_str.to_string();
+        auto bit_size = byte_size * 8;
+        auto int_type = "i" + std::to_string(bit_size);
+        bool matching_float = (target_llvm_type == "float" && bit_size == 32) ||
+                              (target_llvm_type == "double" && bit_size == 64);
+        if (target_llvm_type != int_type && !matching_float) {
+            return pass;
+        }
+        auto added = ctx.add_writer();
+        MAYBE(source, ebm2llvm::eval_lvalue(ctx, ctx.endian_convert.source));
+        MAYBE(target, ebm2llvm::eval_lvalue(ctx, ctx.endian_convert.target));
+        MAYBE(w, ctx.get_writer());
+        auto raw = ebm2llvm::next_tmp(ctx);
+        w.get().writeln(raw, " = load ", int_type, ", ptr ", source, ", align 1");
+        MAYBE(adjusted, ebm2llvm::adjust_fixed_endian(ctx, raw, bit_size, ctx.endian_convert.endian()));
+        auto value = adjusted;
+        if (target_llvm_type == "float" || target_llvm_type == "double") {
+            value = ebm2llvm::next_tmp(ctx);
+            w.get().writeln(value, " = bitcast ", int_type, " ", adjusted, " to ", target_llvm_type);
+        }
+        CodeWriter output;
+        output.write(std::move(ctx.get_writer()->get()));
+        output.writeln("store ", target_llvm_type, " ", value, ", ptr ", target);
         return output;
     };
 
