@@ -22,6 +22,12 @@ std::vector<std::pair<std::string, std::string>> loop_labels;
 // true while emitting a function body: toplevel VARIABLE_DECLs become globals
 bool in_function = false;
 
+// optional-returning functions use a caller-owned result slot and return i1
+bool optional_out_param = false;
+
+// scalar strict-property getters return the pointee value directly
+bool scalar_property_return = false;
+
 // StatementRef ids of toplevel VARIABLE_DECLs emitted as @globals
 std::unordered_set<std::uint64_t> global_vars;
 

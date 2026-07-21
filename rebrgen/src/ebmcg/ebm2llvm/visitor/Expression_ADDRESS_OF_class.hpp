@@ -23,14 +23,14 @@
 DEFINE_VISITOR(Expression_ADDRESS_OF) {
     using namespace CODEGEN_NAMESPACE;
     /*here to write the hook*/
-    // pointers are `ptr` operands: prefer the target's storage address;
-    // computed values (bit-field getter results) have none, so fall back
-    // to a read-only copy in a module-level slot
+    if (ctx.config().scalar_property_return) {
+        return ctx.visit(ctx.target_expr);
+    }
+    // DSL address-of targets refer to storage within self, including storage
+    // exposed through a strict property getter.
     auto addr = ebm2llvm::eval_lvalue(ctx, ctx.target_expr);
     if (addr) {
         return Result(*addr);
     }
-    MAYBE(slot, ebm2llvm::copy_value_to_global_slot(ctx, ctx.target_expr));
-    return Result(slot);
+    return unexpect_error("llvm address-of: target has no storage address");
 }
-

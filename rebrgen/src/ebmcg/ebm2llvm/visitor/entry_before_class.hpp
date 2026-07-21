@@ -238,6 +238,29 @@ namespace ebm2llvm {
                 return var_addr(ctx, *sid);
             }
             case ebm::ExpressionKind::MEMBER_ACCESS: {
+                MAYBE(prop_info, analyze_property_member_access(ctx, *obj.body.member()));
+                if (prop_info) {
+                    if (is_nil(prop_info->getter_ref)) {
+                        return unexpect_error("llvm lvalue: property without getter");
+                    }
+                    MAYBE(getter_fn, ctx.template get_field<"func_decl">(prop_info->getter_ref));
+                    if (ctx.get_kind(getter_fn.return_type) != ebm::TypeKind::PTR) {
+                        return unexpect_error("llvm lvalue: property getter does not return a pointer");
+                    }
+                    MAYBE(base_ptr, eval_lvalue(ctx, *obj.body.base()));
+                    if (ctx.template get_field<"member.body.id.field_decl.field_type.struct_union_desc">(*obj.body.base())) {
+                        base_ptr = "%self";
+                    }
+                    CodeWriter extra_args;
+                    for (auto& pref : getter_fn.params.container) {
+                        extra_args.write(", ptr %", ctx.identifier(pref));
+                    }
+                    MAYBE(w, ctx.get_writer());
+                    auto ret = next_tmp(ctx);
+                    auto getter_name = "@" + prop_info->parent_struct_ident + "_get_" + prop_info->member_ident;
+                    w.get().writeln(ret, " = call ptr ", getter_name, "(ptr ", base_ptr, extra_args, ")");
+                    return ret;
+                }
                 MAYBE(base_ptr, eval_lvalue(ctx, *obj.body.base()));
                 MAYBE(slot, resolve_field_slot(ctx, *obj.body.member()));
                 MAYBE(w, ctx.get_writer());
@@ -1092,13 +1115,47 @@ DEFINE_VISITOR(entry_before) {
             // getter params are threaded state vars: pointer params sharing
             // the caller's parameter names
             CodeWriter extra_args;
+            bool optional_return = false;
+            bool scalar_property_return = false;
+            ebm::TypeRef scalar_property_type;
+            ebm::TypeRef optional_inner;
             if (!is_nil(prop_info->getter_ref)) {
                 MAYBE(getter_fn, ctx.get_field<"func_decl">(prop_info->getter_ref));
                 for (auto& pref : getter_fn.params.container) {
                     extra_args.write(", ptr %", ctx.identifier(pref));
                 }
+                if (ctx.get_kind(getter_fn.return_type) == ebm::TypeKind::OPTIONAL) {
+                    MAYBE(return_type, ctx.get_field<"body">(getter_fn.return_type));
+                    MAYBE(inner_type, return_type.inner_type());
+                    optional_inner = inner_type;
+                    optional_return = true;
+                }
+                else if (ctx.get_kind(getter_fn.return_type) == ebm::TypeKind::PTR) {
+                    MAYBE(inner_type, ctx.get_field<"body.pointee_type">(getter_fn.return_type));
+                    if (!ebm2llvm::is_ptr_operand_type(ctx, inner_type)) {
+                        scalar_property_type = inner_type;
+                        scalar_property_return = true;
+                    }
+                }
             }
             MAYBE(w, ctx.get_writer());
+            if (scalar_property_return) {
+                MAYBE(llvm_type, ctx.visit(scalar_property_type));
+                auto ret = ebm2llvm::next_tmp(ctx);
+                w.get().writeln(ret, " = call ", llvm_type.to_writer(), " ", getter_name, "(ptr ", base_ptr, extra_args, ")");
+                return Result(ret);
+            }
+            if (optional_return) {
+                MAYBE(inner_llvm_type, ctx.visit(optional_inner));
+                auto slot = std::format("%optout{}", ctx.config().next_reg());
+                ctx.config().function_local_variables.writeln(slot, " = alloca ", inner_llvm_type.to_writer());
+                auto has_value = ebm2llvm::next_tmp(ctx);
+                w.get().writeln(has_value, " = call i1 ", getter_name, "(ptr ", base_ptr, extra_args, ", ptr ", slot, ")");
+                auto ret = ebm2llvm::next_tmp(ctx);
+                w.get().writeln(ret, " = select i1 ", has_value, ", ptr ", slot, ", ptr null");
+                MAYBE(val, ebm2llvm::load_or_addr(ctx, ret, ctx.type));
+                return Result(val);
+            }
             auto ret = ebm2llvm::next_tmp(ctx);
             w.get().writeln(ret, " = call ptr ", getter_name, "(ptr ", base_ptr, extra_args, ")");
             MAYBE(val, ebm2llvm::load_or_addr(ctx, ret, ctx.type));
@@ -1252,16 +1309,43 @@ DEFINE_VISITOR(entry_before) {
             }
             params.write(param.to_writer());
         }
+        auto optional_return = ctx.get_kind(ctx.func_decl.return_type) == ebm::TypeKind::OPTIONAL;
+        bool scalar_property_return = false;
+        ebm::TypeRef scalar_property_type;
+        if (is_getter_func(ctx.func_decl.kind) && ctx.get_kind(ctx.func_decl.return_type) == ebm::TypeKind::PTR) {
+            MAYBE(inner_type, ctx.get_field<"body.pointee_type">(ctx.func_decl.return_type));
+            if (!ebm2llvm::is_ptr_operand_type(ctx, inner_type)) {
+                scalar_property_type = inner_type;
+                scalar_property_return = true;
+            }
+        }
         MAYBE(return_type, ctx.visit(ctx.func_decl.return_type));
+        if (scalar_property_return) {
+            MAYBE(scalar_return_type, ctx.visit(scalar_property_type));
+            return_type = std::move(scalar_return_type);
+        }
+        if (optional_return) {
+            if (!params.empty()) {
+                params.write(", ");
+            }
+            params.write("ptr %optional_out");
+        }
         auto func_name = "@" + prefix + ctx.identifier(ctx.item_id);
-        output.write("define ", return_type.to_writer(), " ", func_name, "(", params, ")");
+        output.write("define ", optional_return ? "i1" : return_type.to_string(), " ", func_name, "(", params, ")");
         output.writeln(" {");
         output.writeln("entry:");
         {
             auto scope = output.indent_scope();
+            auto saved_in_function = ctx.config().in_function;
+            auto saved_optional_out_param = ctx.config().optional_out_param;
+            auto saved_scalar_property_return = ctx.config().scalar_property_return;
             ctx.config().in_function = true;
+            ctx.config().optional_out_param = optional_return;
+            ctx.config().scalar_property_return = scalar_property_return;
             auto body_res = ctx.visit(ctx.func_decl.body);
-            ctx.config().in_function = false;
+            ctx.config().in_function = saved_in_function;
+            ctx.config().optional_out_param = saved_optional_out_param;
+            ctx.config().scalar_property_return = saved_scalar_property_return;
             MAYBE(body, std::move(body_res));
             output.write(std::move(ctx.config().function_local_variables));
             output.write(std::move(body.to_writer()));
@@ -1428,6 +1512,31 @@ DEFINE_VISITOR(entry_before) {
 
     config.return_visitor = [](Context_Statement_RETURN& ctx) -> expected<Result> {
         CodeWriter output;
+        if (ctx.config().scalar_property_return) {
+            if (is_nil(ctx.value) || ctx.get_kind(ctx.value) == ebm::ExpressionKind::DEFAULT_VALUE) {
+                output.writeln("unreachable");
+                return output;
+            }
+            MAYBE(target_expr, ctx.get_field<"target_expr">(ctx.value));
+            auto added = ctx.add_writer();
+            MAYBE(ret_val, ctx.visit(ctx.value));
+            output.write(std::move(ctx.get_writer()->get()));
+            MAYBE(type, ctx.get_field<"type">(target_expr));
+            MAYBE(llvm_type, ctx.visit(type));
+            output.writeln("ret ", llvm_type.to_writer(), " ", ret_val.to_writer());
+            return output;
+        }
+        if (ctx.config().optional_out_param) {
+            if (is_nil(ctx.value) || ctx.get_kind(ctx.value) == ebm::ExpressionKind::DEFAULT_VALUE) {
+                output.writeln("ret i1 false");
+                return output;
+            }
+            auto added = ctx.add_writer();
+            MAYBE(has_value, ctx.visit(ctx.value));
+            output.write(std::move(ctx.get_writer()->get()));
+            output.writeln("ret i1 ", has_value.to_writer());
+            return output;
+        }
         if (is_nil(ctx.value)) {
             output.writeln("ret void");
         }

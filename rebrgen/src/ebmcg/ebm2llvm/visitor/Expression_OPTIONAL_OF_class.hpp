@@ -18,15 +18,26 @@
 */
 /*DO NOT EDIT ABOVE SECTION MANUALLY*/
 
-
 #include "../codegen.hpp"
 DEFINE_VISITOR(Expression_OPTIONAL_OF) {
     using namespace CODEGEN_NAMESPACE;
     /*here to write the hook*/
-    // optionals are `ptr` operands. The wrapped value may be a computed
-    // temporary (non-strict getters), so returning a stack address would
-    // dangle across the getter's return: copy into a module-level slot.
+    if (ctx.config().optional_out_param) {
+        MAYBE(value, ctx.visit(ctx.target_expr));
+        MAYBE(type, ctx.get_field<"type">(ctx.target_expr));
+        MAYBE(llvm_type, ctx.visit(type));
+        auto ty = llvm_type.to_string();
+        MAYBE(w, ctx.get_writer());
+        if (!ty.empty() && ty[0] == '%') {
+            w.get().writeln("call void @llvm.memcpy.p0.p0.i64(ptr %optional_out, ptr ", value.to_writer(), ", i64 ", ebm2llvm::sizeof_const(ty), ", i1 false)");
+        }
+        else {
+            w.get().writeln("store ", ty, " ", value.to_writer(), ", ptr %optional_out");
+        }
+        return Result("true");
+    }
+    // Other optional expressions still need stable storage for their pointer
+    // representation. Optional function returns use the caller-owned path.
     MAYBE(slot, ebm2llvm::copy_value_to_global_slot(ctx, ctx.target_expr));
     return Result(slot);
 }
-
