@@ -154,6 +154,7 @@ add_library(ebmgen_lib STATIC
     "src/ebmgen/transform/derive_encode_decode_wrapper.cpp"
     "src/ebmgen/transform/propagate_io_input_desc.cpp"
     "src/ebmgen/transform/lower_runtime_state.cpp"
+    "src/ebmgen/transform/very_slow_bit_ops.cpp"
 )
 
 target_link_libraries(ebm_mapping ebm futils)

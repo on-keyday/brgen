@@ -477,7 +477,8 @@ format FunctionAttribute:
     has_wrapper :u1 # 1: this function has a convenience wrapper (wrapper_function field is valid)
     is_mutable :u1 # whether this function has mutable self
     is_wrapper :u1
-    reserved :u4 # Reserved for future use
+    is_very_slow :u1 # 1: bit-stream (very_slow_bit_ops) variant of an ENCODE/DECODE function (see ADR 0046)
+    reserved :u3 # Reserved for future use
 
 format FunctionDecl:
     name :IdentifierRef # Function name

@@ -1,0 +1,7 @@
+
+input.bit_order = config.bit_order.lsb
+input.bit_order.stream = config.bit_order.lsb
+input.bit_order.mapping = config.bit_order.msb
+format VerySlowBitOpsTest:
+    a :u62
+    b :u64

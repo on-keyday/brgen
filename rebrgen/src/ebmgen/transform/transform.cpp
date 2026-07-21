@@ -8,7 +8,7 @@
 
 namespace ebmgen {
 
-    expected<void> transform(TransformContext& ctx, bool debug, std::function<void(const char*)> timer) {
+    expected<void> transform(TransformContext& ctx, bool debug, std::function<void(const char*)> timer, bool very_slow_bit_ops) {
         MAYBE_VOID(flatten_io_expression, flatten_io_expression(ctx));
         if (timer) {
             timer("flatten io expression");
@@ -64,6 +64,12 @@ namespace ebmgen {
         MAYBE_VOID(runtime_state, lower_runtime_state(ctx));
         if (timer) {
             timer("lower runtime state");
+        }
+        if (very_slow_bit_ops) {
+            MAYBE_VOID(very_slow, derive_very_slow_bit_ops(ctx));
+            if (timer) {
+                timer("derive very slow bit ops");
+            }
         }
         if (!debug) {
             MAYBE_VOID(remove_unused, remove_unused_object(ctx, timer));

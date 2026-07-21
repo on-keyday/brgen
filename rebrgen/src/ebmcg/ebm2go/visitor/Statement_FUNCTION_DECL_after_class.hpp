@@ -27,6 +27,7 @@
           has_wrapper: bool
           is_mutable: bool
           is_wrapper: bool
+          is_very_slow: bool
           reserved: std::uint8_t
         wrapper_function: *StatementRef
         body: StatementRef
