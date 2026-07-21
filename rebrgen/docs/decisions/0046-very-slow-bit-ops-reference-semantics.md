@@ -51,9 +51,16 @@ very_slow_bit_ops (bit 単位 IO の dual 実装) を、brgen 言語の 3 軸ビ
    encode/decode を生成する (排他でも合成でもない、呼び出し側が選ぶ)。
 2. **terminal 置換**: very_slow 版は既存 lowered チェーン構造を再利用し、
    終端の byte IO のみ bit-stream 読み書きに置換する。
-3. **状態は inout パラメータ**: `bit_offset` (0-7) と `current_byte` を
-   state variable 機構と同型の inout パラメータとして thread する。
-   バックエンドに BitStream 抽象は要求しない。
+3. **状態は RuntimeState companion (ADR 0039) で thread する** (2026-07-22 決定、
+   当初案の inout u8 パラメータ 2 個から変更): バックエンドはスカラーパラメータを
+   値渡しで emit するため、参照渡しスカラーという新パターンを言語ごとに実装する
+   代わりに、既存 companion の配管 (gate / param 追加 / call site 引数 / pointer 化)
+   を再利用する。フィールドは `current_bit` (0-7) と `current_byte` (部分バイト) を
+   **新設**する。既存の `bit_offset` フィールドは lower_runtime_state の絶対 bit
+   位置概念であり、0-7 のバイト内カーソルと混同してはならない。companion が
+   未合成のモジュールでは derive が合成する (offset + current_bit + current_byte)。
+   variant の companion param は公開シグネチャの一部であり (呼び出し側が開始
+   bit 位置を与えるのが目的なので) wrapper による隠蔽はしない。
 4. **呼び出し閉包**: very_slow 版の STRUCT_CALL は very_slow 版 callee を
    呼ぶ (very_slow 関数集合は呼び出しについて閉じる)。
 5. **encode は flush しない**: 端数 bit は inout 状態として返す。最終 flush と
@@ -65,6 +72,33 @@ very_slow_bit_ops (bit 単位 IO の dual 実装) を、brgen 言語の 3 軸ビ
    含まれない新規決定であり、疑似コードの
    `target_shift = i if is_little_endian else (bit_size-1-i)`
    (純粋なビット列マッピング方向) を採用する。
+
+## 実装で確定した規則 (2026-07-22, ebm2go で検証済み)
+
+- **置換位置は「バックエンドが native emit するノード」**: スカラー IO は lowered
+  チェーン経由で emit される (ADR 0045) のでチェーン終端を置換する。bytes 型
+  (u8 配列/ベクタ) IO はデフォルト visitor が (VECTORIZED_IO / SCAN_UNTIL の委譲を
+  除き) そのノードで native emit するため、lowered の有無に関わらず**そのノードで**
+  置換する。チェーン終端だけ置換すると bytes wrapper が先勝ちして素通りする。
+- **offset 付き read は offset==0 (BYTE_FIXED) のみ許容**: bit-field 群バッファの
+  位置指定読みは相対 offset 0 の逐次読みなので置換可能。それ以外は byte-IO 形
+  維持 + 警告 (bit_offset==0 でのみ正しい)。
+- **RESERVE_DATA の役割変換**: slice 系バックエンドの reserve は「出力窓への
+  re-slice によるバッファ実体化」を兼ねる。対の write を bit ループへ置換した
+  reserve は「バッファの zero-fill 実体化」に置き換える (チェーンの index 代入が
+  実バッファに書き、bit ループがそれを読む)。flush 側の 1 byte write は実証済みの
+  buffer→reserve→index 代入→write 形をそのまま生成する。
+- **複製は dedup を迂回する (`add_unique`)**: リポジトリの内容ベース dedup は
+  「ノード = immutable な値」前提の最適化。weak ref 付け替えを後回しにする複製は
+  追加時点で原本とバイト同一になり得て、通常 add では原本への alias になり
+  後段の付け替えが**原本を破壊**する。clone 経路は identity を明示する。
+- **until-EOF (`[..]T`) は byte fetch の遅延性により shift 下でも正しい**: byte
+  残量ベースの EOF 判定でも、バイトは必要になった時にのみ fetch されるため、
+  末尾の部分バイトは最後の要素の読取り中に消費済みになり、判定はズレない
+  (ipv6 NDP options で k=1..7 検証)。
+- **呼び出し側契約**: 開始時 `current_bit=k` と (k>0 なら) 消費途中の
+  `current_byte` を companion に seed する。encode 終了後の端数 bit の flush は
+  最上位呼び出し側の責務 (ADR 0046 原則 5)。
 
 ## 段階計画
 
