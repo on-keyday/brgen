@@ -16,6 +16,9 @@ namespace ebmcodegen {
 
         std::string_view lang;
         std::string_view program_name;
+        // when true, ns_name is the CODEGEN_NAMESPACE macro (not a literal namespace) and
+        // per-language strings (lang, program_name) must be emitted via preprocessor macros
+        bool parameterized_ns = false;
     };
     void generate(const IncludeLocations& locations, CodeWriter& hdr, CodeWriter& src, std::map<std::string_view, Struct>& structs);
 }  // namespace ebmcodegen

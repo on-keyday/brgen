@@ -14,6 +14,53 @@ if os.name == "nt":
     TOOL_PATH += ".exe"
 TOOL_PATH = os.path.abspath(TOOL_PATH)
 
+SHARED_BODY_DIR = "src/ebmcodegen/generated"
+
+
+def write_if_changed(path: str, content: bytes) -> bool:
+    """Write content to path only when it differs; returns True when written.
+
+    Keeping mtimes stable matters here: ninja rebuilds every ebm2<lang> target
+    whose (wrapper) main.cpp or the shared body changed.
+    """
+    if os.path.exists(path):
+        with open(path, "rb") as f:
+            if f.read() == content:
+                return False
+    with open(path, "wb") as f:
+        f.write(content)
+    return True
+
+
+_shared_bodies_done: set = set()
+
+
+def ensure_shared_bodies(mode: str):
+    """Generate the language-agnostic shared bodies included by per-language wrappers."""
+    if mode in _shared_bodies_done:
+        return
+    _shared_bodies_done.add(mode)
+    isInterpreter = mode == "interpret" or mode == "interpret-class"
+    family = "interpret" if isInterpreter else "codegen"
+    DEFAULT_VISITOR_LOCATION = f"ebmcodegen/default_{family}_visitor/visitor/"
+    os.makedirs(SHARED_BODY_DIR, exist_ok=True)
+    for kind in ("header", "source"):
+        content = execute(
+            [
+                TOOL_PATH,
+                "--mode",
+                f"{mode}-{kind}-body",
+                "--default-visitor-impl-dir",
+                DEFAULT_VISITOR_LOCATION,
+            ],
+            None,
+        )
+        path = os.path.join(SHARED_BODY_DIR, f"class_{family}_{kind}.inc")
+        if write_if_changed(path, content):
+            print(f"Generated shared body: {path}")
+        else:
+            print(f"Shared body is up to date: {path}")
+
 
 def do_default_dummy_header(lang_name: str, mode: str):
     isInterpreter = mode == "interpret" or mode == "interpret-class"
@@ -74,18 +121,16 @@ def do_setup(lang_name: str, mode: str, file_extension: str):
 
     CMAKE = execute([TOOL_PATH, "--mode", "cmake", "--lang", lang_name], None)
 
-    DEFAULT_VISITOR_LOCATION = f"ebmcodegen/default_{"interpret" if isInterpreter else "codegen"}_visitor/visitor/"
-
     if isClassBased:
+        # per-language files are thin wrappers over the shared bodies in src/ebmcodegen/generated/
+        ensure_shared_bodies(mode)
         CODE_GENERATOR_HEADER = execute(
             [
                 TOOL_PATH,
                 "--mode",
-                mode + "-header",
+                mode + "-header-wrapper",
                 "--lang",
                 lang_name,
-                "--default-visitor-impl-dir",
-                DEFAULT_VISITOR_LOCATION,
             ],
             None,
         )
@@ -93,11 +138,9 @@ def do_setup(lang_name: str, mode: str, file_extension: str):
             [
                 TOOL_PATH,
                 "--mode",
-                mode + "-source",
+                mode + "-source-wrapper",
                 "--lang",
                 lang_name,
-                "--default-visitor-impl-dir",
-                DEFAULT_VISITOR_LOCATION,
             ],
             None,
         )
@@ -109,13 +152,10 @@ def do_setup(lang_name: str, mode: str, file_extension: str):
     VISITOR_DIR = os.path.join(OUTPUT_DIR, "visitor")
     os.makedirs(VISITOR_DIR, exist_ok=True)
 
-    with open(os.path.join(OUTPUT_DIR, "CMakeLists.txt"), "wb") as f:
-        f.write(CMAKE)
-    with open(os.path.join(OUTPUT_DIR, "main.cpp"), "wb") as f:
-        f.write(CODE_GENERATOR)
+    write_if_changed(os.path.join(OUTPUT_DIR, "CMakeLists.txt"), CMAKE)
+    write_if_changed(os.path.join(OUTPUT_DIR, "main.cpp"), CODE_GENERATOR)
     if CODE_GENERATOR_HEADER is not None:
-        with open(os.path.join(OUTPUT_DIR, "codegen.hpp"), "wb") as f:
-            f.write(CODE_GENERATOR_HEADER)
+        write_if_changed(os.path.join(OUTPUT_DIR, "codegen.hpp"), CODE_GENERATOR_HEADER)
 
     # add FILE_EXTENSIONS(ext) to Flags.hpp using script/ebmtemplate.py
     flags_path = os.path.join(VISITOR_DIR, "Flags.hpp")

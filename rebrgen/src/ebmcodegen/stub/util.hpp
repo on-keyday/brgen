@@ -17,6 +17,10 @@
 #include "url.hpp"
 #include "helper/scoped.h"  // temporary added here
 
+// expands macro argument (e.g. CODEGEN_NAMESPACE) before stringification
+#define EBMCG_STRINGIFY_IMPL(x) #x
+#define EBMCG_STRINGIFY(x) EBMCG_STRINGIFY_IMPL(x)
+
 namespace ebmcodegen::util {
 
     template <class T>

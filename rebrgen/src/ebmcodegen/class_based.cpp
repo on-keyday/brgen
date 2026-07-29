@@ -12,6 +12,7 @@
 namespace ebmcodegen {
     constexpr auto macro_CODEGEN_COMMON_INCLUDE_GUARD = "EBM_CODEGEN_COMMON_INCLUDE_GUARD";
     constexpr auto macro_CODEGEN_NAMESPACE = "CODEGEN_NAMESPACE";
+    constexpr auto macro_CODEGEN_LANG_NAME = "CODEGEN_LANG_NAME";
     constexpr auto macro_CODEGEN_VISITOR = "CODEGEN_VISITOR";
     constexpr auto macro_CODEGEN_CONTEXT_PARAMETERS = "CODEGEN_CONTEXT_PARAMETERS";
     constexpr auto macro_CODEGEN_CONTEXT = "CODEGEN_CONTEXT";
@@ -946,7 +947,12 @@ namespace ebmcodegen {
             for (auto& field : base_visitor.fields) {
                 w.write(field.type, " ", field.name);
                 if (field.name == "program_name") {
-                    w.write(" = \"", includes_info.includes.program_name, "\"");
+                    if (includes_info.includes.parameterized_ns) {
+                        w.write(" = EBMCG_STRINGIFY(", macro_CODEGEN_NAMESPACE, ")");
+                    }
+                    else {
+                        w.write(" = \"", includes_info.includes.program_name, "\"");
+                    }
                 }
                 w.writeln(";");
             }
@@ -1101,11 +1107,22 @@ namespace ebmcodegen {
             user_config_include(w, includes_info.user_include.flags_struct, includes_info);
             w.writeln("void bind(futils::cmdline::option::Context& ctx) {");
             auto nested_scope = w.indent_scope();
-            w.writeln("lang_name = \"", flags.lang, "\";");
+            if (flags.parameterized_ns) {
+                w.writeln("lang_name = ", macro_CODEGEN_LANG_NAME, ";");
+            }
+            else {
+                w.writeln("lang_name = \"", flags.lang, "\";");
+            }
             w.writeln("ui_lang_name = lang_name;");
             w.writeln("lsp_name = lang_name;");
-            w.writeln("webworker_name = \"", flags.program_name, "\";");
-            w.writeln("file_extensions = {\".", flags.lang, "\"};");
+            if (flags.parameterized_ns) {
+                w.writeln("webworker_name = EBMCG_STRINGIFY(", macro_CODEGEN_NAMESPACE, ");");
+                w.writeln("file_extensions = {\".\" ", macro_CODEGEN_LANG_NAME, "};");
+            }
+            else {
+                w.writeln("webworker_name = \"", flags.program_name, "\";");
+                w.writeln("file_extensions = {\".", flags.lang, "\"};");
+            }
             w.writeln("ebmcodegen::Flags::bind(ctx); // bind basis");
             with_flag_bind(false);
             user_config_include(w, includes_info.user_include.flags_bind, includes_info);
@@ -1348,10 +1365,56 @@ namespace ebmcodegen {
         w.writeln("#endif");
     }
 
-    auto define_local_macro(CodeWriter& w, std::string_view macro_name, std::string_view func_arg, std::string_view body) {
+    // build the expected-string expression for TEMPORARY_CHECK_MACRO.
+    // when parameterized, occurrences of the CODEGEN_NAMESPACE token in `body` are emitted as
+    // EBMCG_STRINGIFY(CODEGEN_NAMESPACE) so the concatenated literal equals the stringified expansion.
+    std::string expected_string_expr(std::string_view body, bool parameterized) {
+        if (!parameterized) {
+            return std::format("\"{}\"", body);
+        }
+        std::string_view ns_token = macro_CODEGEN_NAMESPACE;
+        std::string out;
+        size_t pos = 0;
+        auto append_literal = [&](std::string_view part) {
+            if (part.empty()) {
+                return;
+            }
+            if (!out.empty()) {
+                out += " ";
+            }
+            out += "\"";
+            out += part;
+            out += "\"";
+        };
+        for (;;) {
+            auto found = body.find(ns_token, pos);
+            if (found == std::string_view::npos) {
+                append_literal(body.substr(pos));
+                break;
+            }
+            auto end = found + ns_token.size();
+            bool head_ok = found == 0 || !(std::isalnum((unsigned char)body[found - 1]) || body[found - 1] == '_');
+            bool tail_ok = end == body.size() || !(std::isalnum((unsigned char)body[end]) || body[end] == '_');
+            if (!head_ok || !tail_ok) {
+                append_literal(body.substr(pos, end - pos));
+                pos = end;
+                continue;
+            }
+            append_literal(body.substr(pos, found - pos));
+            if (!out.empty()) {
+                out += " ";
+            }
+            out += std::format("EBMCG_STRINGIFY({})", ns_token);
+            pos = end;
+        }
+        return out;
+    }
+
+    auto define_local_macro(CodeWriter& w, std::string_view macro_name, std::string_view func_arg, std::string_view body, bool parameterized) {
         w.writeln("#define ", macro_name, func_arg, " ", body);
+        auto expected = expected_string_expr(body, parameterized);
         return futils::helper::defer([=, &w]() {
-            w.writeln("#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view(\"", body, "\"))");
+            w.writeln("#define TEMPORARY_CHECK_MACRO(x) static_assert(std::string_view(#x) == std::string_view(", expected, "))");
             w.writeln("#define PASS_TO_CHECK(x) TEMPORARY_CHECK_MACRO(x)");
             w.writeln("PASS_TO_CHECK(", macro_name, func_arg, ");");
             w.writeln("#undef TEMPORARY_CHECK_MACRO");
@@ -1416,7 +1479,9 @@ namespace ebmcodegen {
                 generate_dummy_macro_for_class(hdr, ns_name, hook, cls);
             }
         }
-        hdr.writeln("#define ", macro_CODEGEN_NAMESPACE, " ", ns_name);
+        if (ns_name != macro_CODEGEN_NAMESPACE) {  // in parameterized mode the wrapper defines CODEGEN_NAMESPACE
+            hdr.writeln("#define ", macro_CODEGEN_NAMESPACE, " ", ns_name);
+        }
         hdr.writeln("#define ", macro_CODEGEN_VISITOR, "(name) ", upper(ns_name), "_", macro_CODEGEN_VISITOR, "_##name");
         hdr.writeln("#define ", macro_CODEGEN_CONTEXT_PARAMETERS, "(name) ", upper(ns_name), "_", macro_CODEGEN_CONTEXT_PARAMETERS, "_##name");
         hdr.writeln("#define ", macro_CODEGEN_CONTEXT, "(name) ", upper(ns_name), "_", macro_CODEGEN_CONTEXT, "_##name");
@@ -1546,9 +1611,9 @@ namespace ebmcodegen {
                             }
                             else {
                                 // auto type_param_body = cls.type_parameters_body(true);
-                                auto current_class = define_local_macro(w, macro_CODEGEN_VISITOR, "(dummy_name)", instance);
+                                auto current_class = define_local_macro(w, macro_CODEGEN_VISITOR, "(dummy_name)", instance, locations.parameterized_ns);
                                 // auto current_context_parameters = define_local_macro(w, macro_CODEGEN_CONTEXT_PARAMETERS, "(dummy_name)", type_param_body);
-                                auto current_context = define_local_macro(w, macro_CODEGEN_CONTEXT, "(dummy_name)", ctx_instance);
+                                auto current_context = define_local_macro(w, macro_CODEGEN_CONTEXT, "(dummy_name)", ctx_instance, locations.parameterized_ns);
                                 w.writeln("#include ", header);
                             }
                             w.writeln("static_assert(sizeof(", instance, ")); // ensure included");

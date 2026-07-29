@@ -34,9 +34,17 @@ enum class GenerateMode {
     CodeGenerator,
     ClassBasedCodeGeneratorHeader,
     ClassBasedCodeGeneratorSource,
+    ClassBasedCodeGeneratorHeaderWrapper,
+    ClassBasedCodeGeneratorSourceWrapper,
+    ClassBasedCodeGeneratorHeaderBody,
+    ClassBasedCodeGeneratorSourceBody,
     Interpreter,
     ClassBasedInterpreterHeader,
     ClassBasedInterpreterSource,
+    ClassBasedInterpreterHeaderWrapper,
+    ClassBasedInterpreterSourceWrapper,
+    ClassBasedInterpreterHeaderBody,
+    ClassBasedInterpreterSourceBody,
     EbmgenVisitor,
     Accessor,
     HookList,
@@ -64,7 +72,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
         ctx.VarString<true>(&default_visitor_impl_dir, "default-visitor-impl-dir", "directory for default visitor implementation", "DIR");
         ctx.VarString<true>(&template_target, "template-target", "template target name. see --mode hooklist", "target_name");
         ctx.VarString<true>(&dsl_file, "dsl-file", "DSL source file for --mode dsl", "FILE");
-        ctx.VarMap(&mode, "mode", "generate mode (default: codegen)", "{subset,codegen,interpret,hooklist,hookkind,template,spec-json,dsl,accessor,ebmgen-visitor,codegen-class-header,codegen-class-source,interpret-class-header,interpret-class-source,json-conv-header,json-conv-source,cmake}",
+        ctx.VarMap(&mode, "mode", "generate mode (default: codegen)", "{subset,codegen,interpret,hooklist,hookkind,template,spec-json,dsl,accessor,ebmgen-visitor,codegen-class-header,codegen-class-source,codegen-class-header-wrapper,codegen-class-source-wrapper,codegen-class-header-body,codegen-class-source-body,interpret-class-header,interpret-class-source,interpret-class-header-wrapper,interpret-class-source-wrapper,interpret-class-header-body,interpret-class-source-body,json-conv-header,json-conv-source,cmake}",
                    std::map<std::string, GenerateMode>{
                        {"template", GenerateMode::Template},
                        {"subset", GenerateMode::BodySubset},
@@ -74,9 +82,17 @@ struct Flags : futils::cmdline::templ::HelpOption {
                        {"codegen", GenerateMode::CodeGenerator},
                        {"codegen-class-header", GenerateMode::ClassBasedCodeGeneratorHeader},
                        {"codegen-class-source", GenerateMode::ClassBasedCodeGeneratorSource},
+                       {"codegen-class-header-wrapper", GenerateMode::ClassBasedCodeGeneratorHeaderWrapper},
+                       {"codegen-class-source-wrapper", GenerateMode::ClassBasedCodeGeneratorSourceWrapper},
+                       {"codegen-class-header-body", GenerateMode::ClassBasedCodeGeneratorHeaderBody},
+                       {"codegen-class-source-body", GenerateMode::ClassBasedCodeGeneratorSourceBody},
                        {"interpret", GenerateMode::Interpreter},
                        {"interpret-class-header", GenerateMode::ClassBasedInterpreterHeader},
                        {"interpret-class-source", GenerateMode::ClassBasedInterpreterSource},
+                       {"interpret-class-header-wrapper", GenerateMode::ClassBasedInterpreterHeaderWrapper},
+                       {"interpret-class-source-wrapper", GenerateMode::ClassBasedInterpreterSourceWrapper},
+                       {"interpret-class-header-body", GenerateMode::ClassBasedInterpreterHeaderBody},
+                       {"interpret-class-source-body", GenerateMode::ClassBasedInterpreterSourceBody},
                        {"ebmgen-visitor", GenerateMode::EbmgenVisitor},
                        {"hooklist", GenerateMode::HookList},
                        {"hookkind", GenerateMode::HookKind},
@@ -207,6 +223,8 @@ int print_cmake(CodeWriter& w, Flags& flags) {
     w.writeln("add_executable(", target_name);
     w.indent_writeln("\"main.cpp\"");
     w.writeln(")");
+    w.writeln("# so that the shared body (ebmcodegen/generated/) can find this language's visitor/ hooks via __has_include");
+    w.writeln("target_include_directories(", target_name, " PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})");
     w.write("target_precompile_headers(", target_name, " REUSE_FROM codegen_pch)\n");
     w.writeln("if(UNIX)");
     w.writeln("set_target_properties(", target_name, " PROPERTIES INSTALL_RPATH \"${CMAKE_SOURCE_DIR}/tool\")");
@@ -219,6 +237,28 @@ int print_cmake(CodeWriter& w, Flags& flags) {
     w.indent_writeln("install(FILES \"${CMAKE_BINARY_DIR}/tool/", target_name, ".wasm\" DESTINATION tool)");
     w.indent_writeln("install(FILES \"${CMAKE_BINARY_DIR}/tool/", target_name, ".wasm.map\" DESTINATION tool)");
     w.writeln("endif()");
+    cout << w.out();
+    return 0;
+}
+
+constexpr std::string_view shared_body_include_path(bool is_codegen, bool is_source) {
+    if (is_codegen) {
+        return is_source ? "ebmcodegen/generated/class_codegen_source.inc" : "ebmcodegen/generated/class_codegen_header.inc";
+    }
+    return is_source ? "ebmcodegen/generated/class_interpret_source.inc" : "ebmcodegen/generated/class_interpret_header.inc";
+}
+
+int print_class_wrapper(CodeWriter& w, Flags& flags, bool is_codegen, bool is_source) {
+    w.writeln("/*license*/");
+    w.writeln("// Code generated by ebmcodegen at ", repo_url);
+    w.writeln("// DO NOT EDIT THIS FILE MANUALLY. you should edit visitor implementation files instead.");
+    w.writeln("// Thin wrapper: the language-agnostic implementation lives in the shared body below.");
+    if (!is_source) {
+        w.writeln("#pragma once");
+    }
+    w.writeln("#define CODEGEN_NAMESPACE ", flags.program_name);
+    w.writeln("#define CODEGEN_LANG_NAME \"", flags.lang, "\"");
+    w.writeln("#include <", shared_body_include_path(is_codegen, is_source), ">");
     cout << w.out();
     return 0;
 }
@@ -451,6 +491,36 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
     if (flags.mode == GenerateMode::HookKind) {
         return print_hook_kind();
     }
+    // wrapper/body modes are variants of the class-based modes; normalize them to the base mode here
+    bool shared_body = false;
+    switch (flags.mode) {
+        case GenerateMode::ClassBasedCodeGeneratorHeaderWrapper:
+            return print_class_wrapper(w, flags, true, false);
+        case GenerateMode::ClassBasedCodeGeneratorSourceWrapper:
+            return print_class_wrapper(w, flags, true, true);
+        case GenerateMode::ClassBasedInterpreterHeaderWrapper:
+            return print_class_wrapper(w, flags, false, false);
+        case GenerateMode::ClassBasedInterpreterSourceWrapper:
+            return print_class_wrapper(w, flags, false, true);
+        case GenerateMode::ClassBasedCodeGeneratorHeaderBody:
+            shared_body = true;
+            flags.mode = GenerateMode::ClassBasedCodeGeneratorHeader;
+            break;
+        case GenerateMode::ClassBasedCodeGeneratorSourceBody:
+            shared_body = true;
+            flags.mode = GenerateMode::ClassBasedCodeGeneratorSource;
+            break;
+        case GenerateMode::ClassBasedInterpreterHeaderBody:
+            shared_body = true;
+            flags.mode = GenerateMode::ClassBasedInterpreterHeader;
+            break;
+        case GenerateMode::ClassBasedInterpreterSourceBody:
+            shared_body = true;
+            flags.mode = GenerateMode::ClassBasedInterpreterSource;
+            break;
+        default:
+            break;
+    }
     auto write_header = [&] {
         w.writeln("/*license*/");
         w.writeln("// Code generated by ebmcodegen at ", repo_url);
@@ -490,6 +560,9 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
     w.writeln("#include <ebmcodegen/stub/writer_manager.hpp>");
 
     auto ns_name = flags.program_name;
+    if (shared_body) {
+        ns_name = "CODEGEN_NAMESPACE";  // resolved per language by the thin wrapper
+    }
     ebmcodegen::IncludeLocations locations;
     locations.include_locations = {
         {flags.visitor_impl_dir, std::string{suffixes[suffix_class]}},
@@ -506,6 +579,7 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
     locations.program_name = flags.program_name;
     locations.is_codegen = (flags.mode == GenerateMode::ClassBasedCodeGeneratorHeader || flags.mode == GenerateMode::ClassBasedCodeGeneratorSource);
     locations.ebmgen_mode = (flags.mode == GenerateMode::EbmgenVisitor);
+    locations.parameterized_ns = shared_body;
 
     if (flags.mode == GenerateMode::ClassBasedCodeGeneratorHeader || flags.mode == GenerateMode::ClassBasedCodeGeneratorSource ||
         flags.mode == GenerateMode::ClassBasedInterpreterHeader || flags.mode == GenerateMode::ClassBasedInterpreterSource ||
