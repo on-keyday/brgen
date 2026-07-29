@@ -5,6 +5,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tool)
 add_executable(ebm2json
     "main.cpp"
 )
+# so that the shared body (ebmcodegen/generated/) can find this language's visitor/ hooks via __has_include
+target_include_directories(ebm2json PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_precompile_headers(ebm2json REUSE_FROM codegen_pch)
 if(UNIX)
 set_target_properties(ebm2json PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool")

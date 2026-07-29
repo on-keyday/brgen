@@ -5,6 +5,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tool)
 add_executable(ebm2zig
     "main.cpp"
 )
+# so that the shared body (ebmcodegen/generated/) can find this language's visitor/ hooks via __has_include
+target_include_directories(ebm2zig PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_precompile_headers(ebm2zig REUSE_FROM codegen_pch)
 if(UNIX)
 set_target_properties(ebm2zig PROPERTIES INSTALL_RPATH "${CMAKE_SOURCE_DIR}/tool")
