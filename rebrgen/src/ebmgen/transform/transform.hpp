@@ -6,7 +6,7 @@
 
 namespace ebmgen {
 
-    expected<void> transform(TransformContext& ctx, bool debug, std::function<void(const char*)> timer);
+    expected<void> transform(TransformContext& ctx, bool debug, std::function<void(const char*)> timer, bool very_slow_bit_ops = false);
 
     ebm::Block* get_block(ebm::StatementBody& body);
     expected<void> vectorized_io(TransformContext& tctx, bool write);
@@ -20,4 +20,5 @@ namespace ebmgen {
     expected<void> derive_encode_decode_wrapper(TransformContext& tctx);
     expected<void> propagate_io_input_desc(TransformContext& tctx, std::function<void(const char*)> timer);
     expected<void> lower_runtime_state(TransformContext& tctx);
+    expected<void> derive_very_slow_bit_ops(TransformContext& tctx);
 }  // namespace ebmgen

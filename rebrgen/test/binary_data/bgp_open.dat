@@ -1,0 +1,23 @@
+# BGP OPEN message (example/bgp.bgn BGPPacket)
+# BGPHeader
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF # marker
+00 25 # length = 37 (19 header + 18 body)
+01    # type = open
+
+# Open
+04          # version
+FD E8       # as = 65000
+00 B4       # hold = 180
+0A 00 00 01 # id = 10.0.0.1
+08          # optlen = 8
+
+# BGPOption (capability)
+02 # type = capability
+06 # len = 6
+# Capability (multiprotocol)
+01 # code = multiprotocol
+04 # len = 4
+# MultiProtocolCapability
+00 01 # afi = IPv4
+00    # reserved
+01    # safi = Unicast

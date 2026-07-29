@@ -1,0 +1,43 @@
+# BGP UPDATE message (example/bgp.bgn BGPPacket)
+# BGPHeader
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF # marker
+00 35 # length = 53 (19 header + 34 body)
+02    # type = update
+
+# Update
+# WithdrawnRoutes
+00 00 # len = 0
+
+# PathAttributes
+00 1A # len = 26
+
+# PathAttribute: ORIGIN (flags: transitive=1, extended=0 -> len:u8)
+40 # option=0 transitive=1 partial=0 extended=0 reserved=0
+01 # code = ORIGIN
+01 # len (u8)
+00 # Origin.IGP
+
+# PathAttribute: AS_PATH
+40 # transitive
+02 # code = AS_PATH
+04 # len (u8)
+# AsPathSegment
+02    # type = AS_SEQUENCE
+01    # len = 1
+FD E8 # as 65000
+
+# PathAttribute: NEXT_HOP
+40 # transitive
+03 # code = NEXT_HOP
+04 # len (u8)
+0A 00 00 63 # 10.0.0.99
+
+# PathAttribute: COMMUNITIES (flags: extended=1 -> len:u16)
+50 # option=0 transitive=1 partial=0 extended=1 reserved=0
+08 # code = COMMUNITIES
+00 04 # len (u16)
+FD E8 00 01 # community 65000:1
+
+# NetWorkReachabilityInfo
+18       # prefix_len = 24 bits -> 3 bytes
+0A 14 1E # 10.20.30.0/24

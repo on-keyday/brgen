@@ -10,6 +10,7 @@ namespace ebmgen {
     struct Option {
         bool not_remove_unused = false;  // for debug transformation
         bool verify_uniqueness = false;  // verify uniqueness of identifiers
+        bool very_slow_bit_ops = false;  // derive bit-stream (very slow bit ops) encode/decode variants (ADR 0046)
         std::function<void(const char*)> timer_cb;
     };
 

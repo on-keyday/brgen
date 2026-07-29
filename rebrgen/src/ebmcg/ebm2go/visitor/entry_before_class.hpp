@@ -518,6 +518,8 @@ DEFINE_VISITOR(entry_before) {
             sctx.config().imports.insert("bytes");
             sctx.config().encode_fn_name = "WriteBuffer";
             sctx.config().io_strategy = IOStrategy{IOKind::BytesIO};
+            // memoized expression text may embed strategy-specific IO access; drop it on strategy switch
+            sctx.config().expression_memoization_config.memoized_items.clear();
             MAYBE(enc, sctx.visit(encode_fn));
             w.write(std::move(enc.to_writer()));
             h.write_bytes_io_encode(w, "WriteBuffer");
@@ -527,6 +529,8 @@ DEFINE_VISITOR(entry_before) {
             sctx.config().imports.insert("io");
             sctx.config().encode_fn_name = "Write";
             sctx.config().io_strategy = IOStrategy{IOKind::StdIO};
+            // memoized expression text may embed strategy-specific IO access; drop it on strategy switch
+            sctx.config().expression_memoization_config.memoized_items.clear();
             MAYBE(enc, sctx.visit(encode_fn));
             w.write(std::move(enc.to_writer()));
             h.write_std_io_encode(w, "Write");
@@ -535,6 +539,8 @@ DEFINE_VISITOR(entry_before) {
             sctx.config().encoder_input_type = "[]byte";
             sctx.config().encode_fn_name = "EncodeSlice";
             sctx.config().io_strategy = IOStrategy{IOKind::Slice};
+            // memoized expression text may embed strategy-specific IO access; drop it on strategy switch
+            sctx.config().expression_memoization_config.memoized_items.clear();
             MAYBE(enc, sctx.visit(encode_fn));
             w.write(std::move(enc.to_writer()));
             h.write_slice_io_encode(w, "EncodeSlice");
@@ -542,6 +548,8 @@ DEFINE_VISITOR(entry_before) {
             sctx.config().encoder_return_type = "([]byte,error)";
             sctx.config().encode_fn_name = "Append";
             sctx.config().io_strategy = IOStrategy{IOKind::Append};
+            // memoized expression text may embed strategy-specific IO access; drop it on strategy switch
+            sctx.config().expression_memoization_config.memoized_items.clear();
             MAYBE(enc2, sctx.visit(encode_fn));
             w.write(std::move(enc2.to_writer()));
             sctx.config().encoder_return_type = "error";
@@ -558,6 +566,8 @@ DEFINE_VISITOR(entry_before) {
             sctx.config().imports.insert("bytes");
             sctx.config().decode_fn_name = "ReadBuffer";
             sctx.config().io_strategy = IOStrategy{IOKind::BytesIO};
+            // memoized expression text may embed strategy-specific IO access; drop it on strategy switch
+            sctx.config().expression_memoization_config.memoized_items.clear();
             MAYBE(dec, sctx.visit(decode_fn));
             w.write(std::move(dec.to_writer()));
             h.write_bytes_io_decode(w, "ReadBuffer");
@@ -567,6 +577,8 @@ DEFINE_VISITOR(entry_before) {
             sctx.config().imports.insert("io");
             sctx.config().decode_fn_name = "Read";
             sctx.config().io_strategy = IOStrategy{IOKind::StdIO};
+            // memoized expression text may embed strategy-specific IO access; drop it on strategy switch
+            sctx.config().expression_memoization_config.memoized_items.clear();
             MAYBE(dec, sctx.visit(decode_fn));
             w.write(std::move(dec.to_writer()));
             h.write_std_io_decode(w, "Read");
@@ -575,6 +587,8 @@ DEFINE_VISITOR(entry_before) {
             sctx.config().decoder_input_type = "[]byte";
             sctx.config().decode_fn_name = "DecodeSlice";
             sctx.config().io_strategy = IOStrategy{IOKind::Slice};
+            // memoized expression text may embed strategy-specific IO access; drop it on strategy switch
+            sctx.config().expression_memoization_config.memoized_items.clear();
             MAYBE(dec, sctx.visit(decode_fn));
             w.write(std::move(dec.to_writer()));
             h.write_slice_io_decode(w, "DecodeSlice");
@@ -940,6 +954,19 @@ DEFINE_VISITOR(entry_before) {
             return CODE("true");
         }
         return CODE("len(", stream, ") - ", offset_ref(stream), " >= ", size_str);
+    };
+    ctx.config().get_remaining_bytes_custom = [&](Context_Expression_GET_REMAINING_BYTES& gctx) -> expected<Result> {
+        auto io_ = gctx.identifier(gctx.io_ref);
+        if (ctx.config().io_strategy.is_bytes_io()) {
+            return CODE(io_, ".Len()");
+        }
+        if (ctx.config().io_strategy.is_std_io()) {
+            ctx.config().imports.insert("io");
+            // io.Reader has no length; probe via io.Seeker and restore the position.
+            // Non-seekable readers yield -1, which downstream length checks reject.
+            return CODE("func() int { seeker, ok := ", io_, ".(io.Seeker); if !ok { return -1 }; current, err := seeker.Seek(0, io.SeekCurrent); if err != nil { return -1 }; end, err := seeker.Seek(0, io.SeekEnd); if err != nil { return -1 }; if _, err := seeker.Seek(current, io.SeekStart); err != nil { return -1 }; return int(end - current) }()");
+        }
+        return CODE("(len(", io_, ") - ", offset_ref(io_), ")");
     };
     ctx.config().pointer_type_wrapper = [](Result r) -> expected<Result> {
         return CODE("*", r.to_writer());

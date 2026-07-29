@@ -134,6 +134,14 @@ namespace ebmgen {
             return add_internal(id, std::move(body));
         }
 
+        // Clone path (very_slow_bit_ops etc.): skip content dedup so the new node
+        // keeps its own identity. Deduping a clone whose deferred fixups make it
+        // momentarily byte-identical to the original would alias it to the original,
+        // and later fixups would then mutate the original through the alias.
+        expected<ID> add_unique(ID id, Body&& body) {
+            return add_internal(id, std::move(body));
+        }
+
         expected<ID> add(ReferenceSource& source, Body&& body) {
             auto serialized = serialize(body);
             if (!serialized) {
@@ -699,6 +707,10 @@ namespace ebmgen {
             return statement_repo.add(id, std::move(body));
         }
 
+        expected<ebm::StatementRef> add_statement_unique(ebm::StatementRef id, ebm::StatementBody&& body) {
+            return statement_repo.add_unique(id, std::move(body));
+        }
+
         expected<ebm::StatementRef> add_statement(ebm::StatementBody&& body) {
             return statement_repo.add(ident_source, std::move(body));
         }
@@ -726,6 +738,13 @@ namespace ebmgen {
                 return unexpect_error("Expression type is not set: {}", to_string(body.kind));
             }
             return expression_repo.add(id, std::move(body));
+        }
+
+        expected<ebm::ExpressionRef> add_expr_unique(ebm::ExpressionRef id, ebm::ExpressionBody&& body) {
+            if (is_nil(body.type)) {
+                return unexpect_error("Expression type is not set: {}", to_string(body.kind));
+            }
+            return expression_repo.add_unique(id, std::move(body));
         }
 
         ebm::Statement* get_statement(const ebm::StatementRef& ref) {
@@ -990,6 +1009,22 @@ namespace ebmgen {
             return ctx;
         }
 
+        // RuntimeState companion synthesized by lower_runtime_state (ADR 0039).
+        // nil struct_id means no companion exists yet; later passes
+        // (derive_very_slow_bit_ops) may synthesize or extend it.
+        struct RuntimeStateInfo {
+            ebm::StatementRef struct_id;
+            ebm::TypeRef type;
+            ebm::StatementRef offset_field;
+            ebm::StatementRef bit_offset_field;   // absolute bit offset (gated)
+            ebm::StatementRef current_bit_field;  // very_slow: bit position 0-7 in current_byte
+            ebm::StatementRef current_byte_field;  // very_slow: partially consumed/filled byte
+        };
+
+        RuntimeStateInfo& runtime_state_info() {
+            return runtime_state_info_;
+        }
+
         void recalculate_id_index_map() {
             type_repository().recalculate_id_index_map();
             identifier_repository().recalculate_id_index_map();
@@ -997,6 +1032,9 @@ namespace ebmgen {
             statement_repository().recalculate_id_index_map();
             string_repository().recalculate_id_index_map();
         }
+
+       private:
+        RuntimeStateInfo runtime_state_info_;
     };
 
     auto print_if_verbose(auto&&... args) {

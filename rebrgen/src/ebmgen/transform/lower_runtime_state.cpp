@@ -144,6 +144,13 @@ namespace ebmgen {
             EBMA_ADD_TYPE(type_ref, std::move(struct_type_body));
             runtime_state_type = type_ref;
         }
+        {
+            auto& info = tctx.runtime_state_info();
+            info.struct_id = struct_id;
+            info.type = runtime_state_type;
+            info.offset_field = offset_field_ref;
+            info.bit_offset_field = bit_offset_field_ref;
+        }
 
         // --- 3. append the companion parameter to each gated function ---
         std::unordered_map<std::uint64_t, ebm::StatementRef> fn_to_param;  // gated fn id -> param stmt

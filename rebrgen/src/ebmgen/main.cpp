@@ -84,6 +84,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
     bool timing = false;
     bool print_output_size = false;
     bool verify_uniqueness = false;
+    bool very_slow_bit_ops = false;
 
     void bind(futils::cmdline::option::Context& ctx) {
         auto exe_path = futils::wrap::get_exepath();
@@ -137,6 +138,7 @@ struct Flags : futils::cmdline::templ::HelpOption {
         ctx.VarBool(&timing, "timing", "Processing timing (for performance debug)");
         ctx.VarBool(&print_output_size, "output-size", "print output size to stderr (for debugging)");
         ctx.VarBool(&verify_uniqueness, "verify-uniqueness", "verify uniqueness of identifiers during conversion (for debugging)");
+        ctx.VarBool(&very_slow_bit_ops, "very-slow-bit-ops", "derive bit-stream (very slow bit ops) encode/decode variants (experimental)");
     }
 };
 
@@ -302,7 +304,7 @@ int Main(Flags& flags, futils::cmdline::option::Context& ctx) {
         }
         TIMING("load and parse");
 
-        auto output = ebmgen::convert_ast_to_ebm(ast->first, std::move(ast->second), ebm, {.not_remove_unused = flags.debug, .verify_uniqueness = flags.verify_uniqueness, .timer_cb = [&](const char* phase) {
+        auto output = ebmgen::convert_ast_to_ebm(ast->first, std::move(ast->second), ebm, {.not_remove_unused = flags.debug, .verify_uniqueness = flags.verify_uniqueness, .very_slow_bit_ops = flags.very_slow_bit_ops, .timer_cb = [&](const char* phase) {
                                                                                                TIMING(phase);
                                                                                            }});
         if (!output) {

@@ -35,7 +35,20 @@ DEFINE_VISITOR(Expression_CALL_before) {
         }
         auto& func_decl = *func_decl_res;
         std::string ident;
-        if (func_decl.kind == ebm::FunctionKind::ENCODE) {
+        if (func_decl.attribute.is_very_slow()) {
+            // bit-stream variants have a fixed name regardless of the io mode the
+            // config currently reflects (ADR 0046)
+            if (func_decl.kind == ebm::FunctionKind::ENCODE) {
+                ident = "EncodeBitStream";
+            }
+            else if (func_decl.kind == ebm::FunctionKind::DECODE) {
+                ident = "DecodeBitStream";
+            }
+            else {
+                return pass;
+            }
+        }
+        else if (func_decl.kind == ebm::FunctionKind::ENCODE) {
             ident = ctx.config().encode_fn_name;
         }
         else if (func_decl.kind == ebm::FunctionKind::DECODE) {

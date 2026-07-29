@@ -2115,12 +2115,13 @@ namespace ebm::zc {
         }
     };
     struct EBM_API FunctionAttribute{
-        ::futils::binary::flags_t<std::uint8_t, 1, 1, 1, 1, 4> flags_2_;
+        ::futils::binary::flags_t<std::uint8_t, 1, 1, 1, 1, 1, 3> flags_2_;
         bits_flag_alias_method(flags_2_,0,is_user_defined);
         bits_flag_alias_method(flags_2_,1,has_wrapper);
         bits_flag_alias_method(flags_2_,2,is_mutable);
         bits_flag_alias_method(flags_2_,3,is_wrapper);
-        bits_flag_alias_method(flags_2_,4,reserved);
+        bits_flag_alias_method(flags_2_,4,is_very_slow);
+        bits_flag_alias_method(flags_2_,5,reserved);
         ::futils::error::Error<> encode(::futils::binary::writer& w) const ;
         ::futils::error::Error<> decode(::futils::binary::reader& r);
         static constexpr size_t fixed_header_size = 1;
@@ -2131,6 +2132,7 @@ namespace ebm::zc {
             v(v, "has_wrapper",(*this).has_wrapper());
             v(v, "is_mutable",(*this).is_mutable());
             v(v, "is_wrapper",(*this).is_wrapper());
+            v(v, "is_very_slow",(*this).is_very_slow());
             v(v, "reserved",(*this).reserved());
         }
         template<typename Visitor>
@@ -2139,6 +2141,7 @@ namespace ebm::zc {
             v(v, "has_wrapper",(*this).has_wrapper());
             v(v, "is_mutable",(*this).is_mutable());
             v(v, "is_wrapper",(*this).is_wrapper());
+            v(v, "is_very_slow",(*this).is_very_slow());
             v(v, "reserved",(*this).reserved());
         }
         template<typename T,bool rvalue = false>
@@ -2152,6 +2155,7 @@ namespace ebm::zc {
             v(v, "has_wrapper",visitor_tag<decltype(std::declval<FunctionAttribute>().has_wrapper()),true>{});
             v(v, "is_mutable",visitor_tag<decltype(std::declval<FunctionAttribute>().is_mutable()),true>{});
             v(v, "is_wrapper",visitor_tag<decltype(std::declval<FunctionAttribute>().is_wrapper()),true>{});
+            v(v, "is_very_slow",visitor_tag<decltype(std::declval<FunctionAttribute>().is_very_slow()),true>{});
             v(v, "reserved",visitor_tag<decltype(std::declval<FunctionAttribute>().reserved()),true>{});
         }
     };

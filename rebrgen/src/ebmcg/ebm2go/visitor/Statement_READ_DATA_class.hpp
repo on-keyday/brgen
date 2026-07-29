@@ -87,10 +87,12 @@ DEFINE_VISITOR(Statement_READ_DATA) {
         {
             // use io.ReadFull as fallback
             auto scope = w.indent_scope();
+            // unique name: a bare `n` can shadow the method receiver (e.g. NetWorkReachabilityInfo -> `n`)
+            auto n_var = std::format("ioN{}", get_id(ctx.item_id));
             w.writeln("var err error");
-            w.writeln("var n int");
+            w.writeln("var ", n_var, " int");
             w.writeln("buf := [1]byte{0}");
-            w.writeln("if n, err = io.ReadFull(", io_, ", buf[:]); err != nil {");
+            w.writeln("if ", n_var, ", err = io.ReadFull(", io_, ", buf[:]); err != nil {");
             if (ctx.config().on_until_eof_loop) {
                 auto scope = w.indent_scope();
                 w.writeln("if err == io.EOF {");
@@ -99,9 +101,9 @@ DEFINE_VISITOR(Statement_READ_DATA) {
             }
             w.indent_writeln("return err");
             w.writeln("}");
-            w.writeln("if n != 1 {");
+            w.writeln("if ", n_var, " != 1 {");
             ctx.config().imports.insert("fmt");
-            w.indent_writeln("return fmt.Errorf(\"failed to read byte for field ", layer_str, ": expected to read 1 byte, but read %d bytes\", n)");
+            w.indent_writeln("return fmt.Errorf(\"failed to read byte for field ", layer_str, ": expected to read 1 byte, but read %d bytes\", ", n_var, ")");
             w.writeln("}");
             w.writeln(target.to_writer(), " = buf[0]");
         }
@@ -191,14 +193,16 @@ DEFINE_VISITOR(Statement_READ_DATA) {
                     w.writeln("{");
                     {
                         auto scope = w.indent_scope();
+                        // unique name: a bare `n` can shadow the method receiver
+                        auto n_var = std::format("ioN{}", get_id(ctx.item_id));
                         w.writeln(target.to_writer(), " = make([]byte, ", io_, ".Len())");
-                        w.writeln("n,err := ", io_, ".Read(", target.to_writer(), ")");
+                        w.writeln(n_var, ",err := ", io_, ".Read(", target.to_writer(), ")");
                         w.writeln("if err != nil {");
                         w.indent_writeln("return err");
                         w.writeln("}");
-                        w.writeln("if n != ", io_, ".Len() {");
+                        w.writeln("if ", n_var, " != len(", target.to_writer(), ") {");
                         ctx.config().imports.insert("fmt");
-                        w.indent_writeln("return fmt.Errorf(\"failed to read all remaining bytes: expected %d, got %d\", ", io_, ".Len(), n)");
+                        w.indent_writeln("return fmt.Errorf(\"failed to read all remaining bytes: expected %d, got %d\", len(", target.to_writer(), "), ", n_var, ")");
                         w.writeln("}");
                     }
                     w.writeln("}");
