@@ -9,6 +9,17 @@ cache_path: "./license_cache" # source_pathからの相対パス。デフォル�
 sources: # 今回はnpmを使います
   npm: true
 
+ignored:
+  npm:
+    # TypeScript 7 は Go 移植版で、ネイティブバイナリを
+    # @typescript/typescript-<os>-<arch> という optionalDependencies として配布する。
+    # lockfile には全プラットフォーム分 (aix / darwin / freebsd / linux / netbsd /
+    # openbsd / sunos / win32 の約20個) が記録されるが、node_modules に実際に展開
+    # されるのはホストの1つだけなので、残りを licensed cache が
+    # "dependency path not found" として扱い exit 1 する。
+    # typescript 本体 (Apache-2.0) は引き続き監査対象に残る。
+    - "@typescript/typescript-*"
+
 allowed: # 以下のライセンスならOKとします
   - mit
   - blueoak-1.0.0 # permissive (MIT 相当); minimatch v10 が ISC から移行

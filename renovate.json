@@ -6,6 +6,21 @@
       "matchUpdateTypes": ["major"],
       "groupName": "all major dependencies",
       "groupSlug": "all-major"
+    },
+    {
+      "description": [
+        "web/dev だけ TypeScript 6 に留める。typescript-eslint 8.x の peer は",
+        "typescript '>=4.8.4 <6.1.0' で、TS7 を入れると",
+        "@typescript-eslint/typescript-estree が TS7 の compiler API 変更により",
+        "読み込み時点で TypeError (undefined 'Cjs') を投げて eslint が起動しない。",
+        "web/dev は typescript をコンパイラとして使っておらず (vite/vitest が",
+        "esbuild で変換、CI に tsc 呼び出し無し)、TS7 に上げる利得が無い一方で",
+        "linter を失う。tsc を実際に回す astlib/ast2ts と lsp は TS7 に追随済み。",
+        "typescript-eslint が TS7 を peer に含めたらこのルールは削除する。"
+      ],
+      "matchFileNames": ["web/dev/package.json"],
+      "matchPackageNames": ["typescript"],
+      "allowedVersions": "<7"
     }
   ]
 }
