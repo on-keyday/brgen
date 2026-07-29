@@ -792,6 +792,7 @@ format SRSegment:
     verification :u1 # V
     resolved :u1 # R
     algorithm_inidicated :u1 # A
+    reserved2 :u3
     if segmentTypeIsIPv6(segment_type):
         sid :[16]u8
     else:
@@ -888,7 +889,7 @@ enum SAFI:
     EVPN = 70
     LS = 71
     SRPOLICY = 73
-    MUP = 73
+    MUP = 85
     MPLS_VPN = 128
     MPLS_VPN_MULTICAST = 129
     ROUTE_TARGET_CONSTRAINTS = 132

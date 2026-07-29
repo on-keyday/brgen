@@ -61,11 +61,22 @@ DEFINE_VISITOR(Statement_SUB_BYTE_RANGE) {
             if (ctx.sub_byte_range.stream_type == ebm::StreamType::INPUT) {
                 // Decode: read length bytes from reader, wrap in bytes.Reader for child
                 w.writeln(io_, " := io.LimitReader(", parent_io_, ",int64(", length_str.to_writer(), "))");
+                if (ctx.config().has_byte_io && ctx.config().io_strategy.is_std_io()) {
+                    // Single-byte IO refers to the <io>ByteIO companion; sub streams need their own.
+                    ctx.config().imports.insert("io");
+                    w.writeln(byte_io_ref(io_), ", _ := ", io_, ".(io.ByteReader)");
+                    w.writeln("_ = ", byte_io_ref(io_));
+                }
             }
             else {
                 // Encode: create bytes.Buffer for child to write to
                 ctx.config().imports.insert("bytes");
                 w.writeln(io_, " := &bytes.Buffer{}");
+                if (ctx.config().has_byte_io && ctx.config().io_strategy.is_std_io()) {
+                    ctx.config().imports.insert("io");
+                    w.writeln("var ", byte_io_ref(io_), " io.ByteWriter = ", io_);
+                    w.writeln("_ = ", byte_io_ref(io_));
+                }
             }
 
             begin_offset_window();

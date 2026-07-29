@@ -262,5 +262,21 @@
         "source": "$WORK_DIR/src/test/signed_bytes.bgn",
         "failure_case": false,
         "hex": true
+    },
+    {
+        "name": "bgp_open_test",
+        "binary": "$WORK_DIR/test/binary_data/bgp_open.dat",
+        "format_name": "BGPPacket",
+        "source": "$WORK_DIR/../example/bgp.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "bgp_update_test",
+        "binary": "$WORK_DIR/test/binary_data/bgp_update.dat",
+        "format_name": "BGPPacket",
+        "source": "$WORK_DIR/../example/bgp.bgn",
+        "failure_case": false,
+        "hex": true
     }
 ]
