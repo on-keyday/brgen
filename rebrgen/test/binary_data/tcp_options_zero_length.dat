@@ -1,0 +1,20 @@
+# TCP options sitting exactly on their length bounds:
+#   SACK with length==2 satisfies `length >= 2` with equality and yields a zero-byte
+#   subrange, so the inner [..]SackBlock loop runs zero times.
+#   The `..` default arm with length==2 yields data :[0]u8, a zero-length array.
+01 bb # src port
+c0 a8 # dst port
+00 00 00 01 # seq number
+00 00 00 00 # ack number
+6 # data offset (6*4 = 24 -> 4 bytes of options)
+0 # reserved
+10 # flags ACK=true
+00 1c # window size
+00 00 # check sum
+00 00 # urgent pointer
+# Options (4 bytes)
+05 # SACK
+02 # len=2 -> subrange of 0 bytes, zero SackBlocks
+1e # MPTCP -> `..` default arm
+02 # len=2 -> data :[0]u8
+# no payload

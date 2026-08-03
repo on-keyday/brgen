@@ -49,7 +49,9 @@ enum H2Type:
     CONTINUATION = 0x9
 
 format Flag:
-    reserved_flag :u4(0)
+    reserved_flag :u2(0)
+    priority :u1 # 0x20, only defined for HEADERS
+    reserved_flag_2 :u1(0)
     padding :u1
     end_headers :u1
     unused :u1
@@ -82,11 +84,14 @@ format Http2Frame:
         if header.flag.padding == 1:
             padding :[padding_len]u8
     elif header.type == H2Type.HEADERS:
-        priority :StreamWeight
+        # RFC 9113 6.2: Pad Length comes first, the priority fields are only present when
+        # the PRIORITY flag is set, and both are counted inside the frame Length.
         if header.flag.padding == 1:
             padding_len :u8
             u32(header.len) > u32(padding_len + 1)
-        len ::= u32(header.len) - u32(available(padding_len)?padding_len:0)
+        if header.flag.priority == 1:
+            priority :StreamWeight
+        len ::= u32(header.len) - (header.flag.padding == 1 ? u32(padding_len) + 1 : 0) - (header.flag.priority == 1 ? 5 : 0)
         header_block :[len]u8
         if header.flag.padding == 1:
             padding :[padding_len]u8
@@ -103,9 +108,16 @@ format Http2Frame:
         else:
             settings :[header.len / 6]Setting
     elif header.type == H2Type.PUSH_PROMISE:
+        # RFC 9113 6.6: PUSH_PROMISE carries the same padding as HEADERS.
+        if header.flag.padding == 1:
+            padding_len :u8
+            u32(header.len) > u32(padding_len + 1)
         reserved :u1(0)
         promised_stream_id :u31
-        header_block :[header.len - 4]u8
+        len ::= u32(header.len) - 4 - (header.flag.padding == 1 ? u32(padding_len) + 1 : 0)
+        header_block :[len]u8
+        if header.flag.padding == 1:
+            padding :[padding_len]u8
     elif header.type == H2Type.PING:
         header.len == 8
         opaque_data :u64

@@ -1,0 +1,53 @@
+# HTTP/2 control frames: SETTINGS, SETTINGS(ack), PING, WINDOW_UPDATE, RST_STREAM, PRIORITY, GOAWAY
+
+# --- SETTINGS (2 entries) ---
+00 00 0c # len=12
+04 # type SETTINGS
+00 # flag
+00 00 00 00 # reserved + stream id = 0
+00 03 00 00 00 64 # id=3 MAX_CONCURRENT_STREAMS, value=100
+00 04 00 01 00 00 # id=4 INITIAL_WINDOW_SIZE, value=65536
+
+# --- SETTINGS ack (end_stream_or_ack=1 -> len must be 0, body returns early) ---
+00 00 00 # len=0
+04 # type SETTINGS
+01 # flag ack
+00 00 00 00 # reserved + stream id = 0
+
+# --- PING (len must be 8) ---
+00 00 08 # len=8
+06 # type PING
+00 # flag
+00 00 00 00 # reserved + stream id = 0
+01 02 03 04 05 06 07 08 # opaque data
+
+# --- WINDOW_UPDATE (len must be 4) ---
+00 00 04 # len=4
+08 # type WINDOW_UPDATE
+00 # flag
+00 00 00 00 # reserved + stream id = 0
+00 01 00 00 # reserved + window size increment = 65536
+
+# --- RST_STREAM (len must be 4) ---
+00 00 04 # len=4
+03 # type RST_STREAM
+00 # flag
+00 00 00 01 # reserved + stream id = 1
+00 00 00 08 # error code = cancel
+
+# --- PRIORITY (len must be 5) ---
+00 00 05 # len=5
+02 # type PRIORITY
+00 # flag
+00 00 00 03 # reserved + stream id = 3
+00 00 00 01 # exclusive=0, dependency stream id = 1
+10 # weight
+
+# --- GOAWAY (debug_data is len-8 bytes) ---
+00 00 0c # len=12
+07 # type GOAWAY
+00 # flag
+00 00 00 00 # reserved + stream id = 0
+00 00 00 05 # reserved + last stream id = 5
+00 00 00 00 # error code = none
+64 65 61 64 # debug data "dead"

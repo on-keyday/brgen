@@ -1,0 +1,22 @@
+# TCP Segment - SACK option carrying two blocks (exercises the nested [..]SackBlock loop)
+01 bb # src port
+c0 a8 # dst port
+69 81 43 41 # seq number
+c1 cb 78 b6 # ack number
+a # data offset (10*4 = 40 -> 20 bytes of options)
+0 # reserved
+10 # flags ACK=true
+00 1c # window size
+00 00 # check sum
+00 00 # urgent pointer
+# Options (20 bytes)
+01 # NOP
+01 # NOP
+05 # SACK
+12 # len=18 (2 + 8*2)
+00 00 10 00 # block 1 left
+00 00 20 00 # block 1 right
+00 00 30 00 # block 2 left
+00 00 40 00 # block 2 right
+# Payload
+de ad be ef

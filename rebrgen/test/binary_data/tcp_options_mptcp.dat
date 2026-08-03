@@ -1,0 +1,18 @@
+# TCP Segment - MPTCP (kind 30) has no match arm, so it falls through to the `..` default branch
+c0 a8 # src port
+01 bb # dst port
+00 00 00 02 # seq number
+00 00 00 01 # ack number
+7 # data offset (7*4 = 28 -> 8 bytes of options)
+0 # reserved
+18 # flags ACK=true PSH=true
+00 1c # window size
+00 00 # check sum
+00 00 # urgent pointer
+# Options (8 bytes)
+1e # MPTCP
+06 # len=6
+de ad be ef # data [len-2]
+01 # NOP
+01 # NOP
+# no payload

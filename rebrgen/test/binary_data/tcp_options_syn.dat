@@ -1,0 +1,24 @@
+# TCP Segment - SYN with MAXIMUM_SEGMENT_SIZE / SACK_PERMITTED / WINDOW_SCALE / END_OF_OPTIONS_LIST
+c0 a8 # src port
+01 bb # dst port
+00 00 00 01 # seq number
+00 00 00 00 # ack number
+8 # data offset (8*4 = 32 -> 12 bytes of options)
+0 # reserved
+02 # flags SYN=true
+ff ff # window size
+00 00 # check sum
+00 00 # urgent pointer
+# Options (12 bytes)
+02 # MAXIMUM_SEGMENT_SIZE
+04 # len=4
+05 b4 # mss = 1460
+04 # SACK_PERMITTED
+02 # len=2
+03 # WINDOW_SCALE
+03 # len=3
+07 # shift count
+01 # NOP
+01 # NOP
+00 # END_OF_OPTIONS_LIST
+# no payload

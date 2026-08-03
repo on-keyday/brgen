@@ -1,0 +1,47 @@
+# Two DNS messages back to back, exercising the outer [..]DNSMessage loop with more than
+# one element, plus the authorities and additionals record loops (both are zero in every
+# other sample).
+
+# ================= message 1: query =================
+ab cd # id
+01 # response=0, opcode=QUERY, authoritative=0, truncated=0, recursion_desired=1
+00 # recursion_available=0, z=0, return_code=NOERROR
+00 01 # query count
+00 00 # answer count
+00 00 # authority count
+00 00 # additional count
+04 74 65 73 74 # "test"
+00 # root label
+00 02 # type NS
+00 01 # class IN
+
+# ================= message 2: response with authority + additional =================
+ab ce # id
+81 # response=1, opcode=QUERY, authoritative=0, truncated=0, recursion_desired=1
+80 # recursion_available=1, z=0, return_code=NOERROR
+00 01 # query count
+00 00 # answer count
+00 01 # authority count
+00 01 # additional count
+
+# question: test NS IN
+04 74 65 73 74 # "test"
+00 # root label
+00 02 # type NS
+00 01 # class IN
+
+# authority record
+c0 0c # pointer to offset 12
+00 02 # type NS
+00 01 # class IN
+00 00 0e 10 # ttl = 3600
+00 06 # data length
+03 6e 73 31 c0 0c # "ns1" + pointer (opaque bytes here)
+
+# additional record
+c0 0c # pointer to offset 12
+00 01 # type A
+00 01 # class IN
+00 00 01 2c # ttl = 300
+00 04 # data length
+c0 00 02 01 # 192.0.2.1

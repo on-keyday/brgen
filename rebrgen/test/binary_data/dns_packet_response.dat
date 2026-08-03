@@ -1,0 +1,25 @@
+# DNS response: 1 question + 1 answer.
+# The answer name uses a compression pointer, taking the prefix==0b11 arm of DNSLabel
+# (the existing dns_packet.dat only exercises the 0b00 length-prefixed arm).
+12 34 # id
+81 # response=1, opcode=QUERY, authoritative=0, truncated=0, recursion_desired=1
+80 # recursion_available=1, z=0, return_code=NOERROR
+00 01 # query count
+00 01 # answer count
+00 00 # authority count
+00 00 # additional count
+
+# --- question: example.com A IN ---
+07 65 78 61 6d 70 6c 65 # "example"
+03 63 6f 6d # "com"
+00 # root label (len=0 terminates the name)
+00 01 # type A
+00 01 # class IN
+
+# --- answer: pointer to offset 12, A IN ---
+c0 0c # prefix=0b11, pointer=12
+00 01 # type A
+00 01 # class IN
+00 00 01 2c # ttl = 300
+00 04 # data length
+5d b8 d8 22 # 93.184.216.34

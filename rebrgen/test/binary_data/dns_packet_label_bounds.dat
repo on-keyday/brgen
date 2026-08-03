@@ -1,0 +1,23 @@
+# DNS query whose names sit on the DNSLabel bounds: the first name is the root
+# label alone (len=0 terminates immediately, so DomainName holds one label), and
+# the second uses len=63, the largest value a u6 can hold.
+ab cd # id
+01 # response=0, opcode=QUERY, authoritative=0, truncated=0, recursion_desired=1
+00 # recursion_available=0, z=0, return_code=NOERROR
+00 02 # query count
+00 00 # answer count
+00 00 # authority count
+00 00 # additional count
+# question 1: root name only
+00 # root label (len=0)
+00 01 # type A
+00 01 # class IN
+# question 2: a single 63-byte label
+3f # prefix=0b00, len=63
+61 62 63 64 65 66 67 68 69 6a 6b 6c 6d 6e 6f 70
+71 72 73 74 75 76 77 78 79 7a 61 62 63 64 65 66
+67 68 69 6a 6b 6c 6d 6e 6f 70 71 72 73 74 75 76
+77 78 79 7a 61 62 63 64 65 66 67 68 69 6a 6b
+00 # root label
+00 01 # type A
+00 01 # class IN

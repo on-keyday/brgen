@@ -35,7 +35,9 @@ enum H2Type:
     CONTINUATION = 0x9
 
 format Flag:
-    reserved_flag :u4(0)
+    reserved_flag :u2(0)
+    priority :u1 # 0x20, only defined for HEADERS
+    reserved_flag_2 :u1(0)
     padding :u1
     end_headers :u1
     unused :u1
@@ -83,11 +85,14 @@ format StreamWeight:
 
 
 format HeadersFrame:
-    priority :StreamWeight
+    # RFC 9113 6.2: Pad Length comes first, the priority fields are only present when the
+    # PRIORITY flag is set, and both are counted inside the frame Length.
     if header_state.header.flag.padding == 1:
         padding_len :u8
         u32(header_state.header.len) > u32(padding_len + 1) # violate this is protocol error
-    len ::= u32(header_state.header.len) - u32(available(padding_len)?padding_len:0)
+    if header_state.header.flag.priority == 1:
+        priority :StreamWeight
+    len ::= u32(header_state.header.len) - (header_state.header.flag.padding == 1 ? u32(padding_len) + 1 : 0) - (header_state.header.flag.priority == 1 ? 5 : 0)
     header_block :[len]u8
     if header_state.header.flag.padding == 1:
         padding :[padding_len]u8
@@ -112,9 +117,16 @@ format SettingsFrame:
     settings :[header_state.header.len / 6]Setting
 
 format PushPromiseFrame:
+    # RFC 9113 6.6: PUSH_PROMISE carries the same padding as HEADERS.
+    if header_state.header.flag.padding == 1:
+        padding_len :u8
+        u32(header_state.header.len) > u32(padding_len + 1) # violate this is protocol error
     reserved :u1(0)
     promised_stream_id :u31
-    header_block :[header_state.header.len - 4]u8
+    len ::= u32(header_state.header.len) - 4 - (header_state.header.flag.padding == 1 ? u32(padding_len) + 1 : 0)
+    header_block :[len]u8
+    if header_state.header.flag.padding == 1:
+        padding :[padding_len]u8
 
 format PingFrame:
     header_state.header.len == 8

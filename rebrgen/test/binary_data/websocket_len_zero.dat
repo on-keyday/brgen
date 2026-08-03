@@ -1,0 +1,5 @@
+# WebSocket frame with PayloadLength=0: Payload :[0]u8 is zero-length and no
+# ExtendedPayloadLength arm is taken.
+8 # FIN=true, RSV1-RSV3=false
+a # Pong
+00 # Mask=false, PayloadLength=0

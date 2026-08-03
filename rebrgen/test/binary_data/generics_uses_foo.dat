@@ -1,0 +1,13 @@
+# generics_basic.bgn / UsesFoo: three separate instantiations of Foo plus a
+# two-parameter Bar, so monomorphization has to emit Foo[u8], Foo[u16],
+# Foo[u32] and Bar[u16,u32] side by side.
+# f :Foo[u8]
+11 # f.x :u8
+22 33 # f.y :u16
+# g :Bar[u16, u32]
+44 55 # g.a.x :u16
+66 77 # g.a.y :u16
+88 99 aa bb # g.b :u32
+# x :Foo[u32]
+cc dd ee ff # x.x :u32
+01 02 # x.y :u16

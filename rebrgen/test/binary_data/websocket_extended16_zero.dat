@@ -1,0 +1,6 @@
+# WebSocket frame taking the u16 ExtendedPayloadLength arm with the length itself
+# set to 0, so the arm is exercised while Payload :[0]u8 stays zero-length.
+8 # FIN=true, RSV1-RSV3=false
+2 # BinaryFrame
+7e # Mask=false, PayloadLength=126
+00 00 # ExtendedPayloadLength = 0

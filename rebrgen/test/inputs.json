@@ -278,5 +278,197 @@
         "source": "$WORK_DIR/../example/bgp.bgn",
         "failure_case": false,
         "hex": true
+    },
+    {
+        "name": "tcp_options_syn",
+        "binary": "$WORK_DIR/test/binary_data/tcp_options_syn.dat",
+        "format_name": "TCPSegment",
+        "source": "$WORK_DIR/../example/tcp_segment.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "tcp_options_sack",
+        "binary": "$WORK_DIR/test/binary_data/tcp_options_sack.dat",
+        "format_name": "TCPSegment",
+        "source": "$WORK_DIR/../example/tcp_segment.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "tcp_options_mptcp",
+        "binary": "$WORK_DIR/test/binary_data/tcp_options_mptcp.dat",
+        "format_name": "TCPSegment",
+        "source": "$WORK_DIR/../example/tcp_segment.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "tcp_no_options",
+        "binary": "$WORK_DIR/test/binary_data/tcp_no_options.dat",
+        "format_name": "TCPSegment",
+        "source": "$WORK_DIR/../example/tcp_segment.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "http2_frame_control",
+        "binary": "$WORK_DIR/test/binary_data/http2_frame_control.dat",
+        "format_name": "HTTP2FrameTest",
+        "source": "$WORK_DIR/src/test/http2_frame_test.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "http2_frame_headers",
+        "binary": "$WORK_DIR/test/binary_data/http2_frame_headers.dat",
+        "format_name": "HTTP2FrameTest",
+        "source": "$WORK_DIR/src/test/http2_frame_test.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "http2_frame_unknown_type",
+        "binary": "$WORK_DIR/test/binary_data/http2_frame_unknown_type.dat",
+        "format_name": "HTTP2FrameTest",
+        "source": "$WORK_DIR/src/test/http2_frame_test.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "dns_packet_response",
+        "binary": "$WORK_DIR/test/binary_data/dns_packet_response.dat",
+        "format_name": "DNSPacketTest",
+        "source": "$WORK_DIR/src/test/dns_packet.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "dns_packet_multi",
+        "binary": "$WORK_DIR/test/binary_data/dns_packet_multi.dat",
+        "format_name": "DNSPacketTest",
+        "source": "$WORK_DIR/src/test/dns_packet.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "websocket_masked_ping",
+        "binary": "$WORK_DIR/test/binary_data/websocket_masked_ping.dat",
+        "format_name": "Frame",
+        "source": "$WORK_DIR/../example/websocket.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "websocket_extended16",
+        "binary": "$WORK_DIR/test/binary_data/websocket_extended16.dat",
+        "format_name": "Frame",
+        "source": "$WORK_DIR/../example/websocket.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "websocket_extended64",
+        "binary": "$WORK_DIR/test/binary_data/websocket_extended64.dat",
+        "format_name": "Frame",
+        "source": "$WORK_DIR/../example/websocket.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "ipv6_ndp_options",
+        "binary": "$WORK_DIR/test/binary_data/ipv6_ndp_options.dat",
+        "format_name": "TestPacket",
+        "source": "$WORK_DIR/src/test/ipv6.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "varint_boundary_max_14bit",
+        "binary": "$WORK_DIR/test/binary_data/varint/boundary_max_14bit.dat",
+        "format_name": "VarInt",
+        "source": "$WORK_DIR/../example/quic_varint.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "varint_boundary_max_30bit",
+        "binary": "$WORK_DIR/test/binary_data/varint/boundary_max_30bit.dat",
+        "format_name": "VarInt",
+        "source": "$WORK_DIR/../example/quic_varint.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "tcp_options_zero_length",
+        "binary": "$WORK_DIR/test/binary_data/tcp_options_zero_length.dat",
+        "format_name": "TCPSegment",
+        "source": "$WORK_DIR/../example/tcp_segment.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "http2_frame_zero_length",
+        "binary": "$WORK_DIR/test/binary_data/http2_frame_zero_length.dat",
+        "format_name": "HTTP2FrameTest",
+        "source": "$WORK_DIR/src/test/http2_frame_test.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "websocket_len_zero",
+        "binary": "$WORK_DIR/test/binary_data/websocket_len_zero.dat",
+        "format_name": "Frame",
+        "source": "$WORK_DIR/../example/websocket.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "websocket_len_125",
+        "binary": "$WORK_DIR/test/binary_data/websocket_len_125.dat",
+        "format_name": "Frame",
+        "source": "$WORK_DIR/../example/websocket.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "websocket_extended16_zero",
+        "binary": "$WORK_DIR/test/binary_data/websocket_extended16_zero.dat",
+        "format_name": "Frame",
+        "source": "$WORK_DIR/../example/websocket.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "dns_packet_label_bounds",
+        "binary": "$WORK_DIR/test/binary_data/dns_packet_label_bounds.dat",
+        "format_name": "DNSPacketTest",
+        "source": "$WORK_DIR/src/test/dns_packet.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "generics_uses_foo",
+        "binary": "$WORK_DIR/test/binary_data/generics_uses_foo.dat",
+        "format_name": "UsesFoo",
+        "source": "$WORK_DIR/src/test/generics_basic.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "tar_single_file",
+        "binary": "$WORK_DIR/test/binary_data/tar_single_file.dat",
+        "format_name": "TarFile",
+        "source": "$WORK_DIR/../example/tar.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "softether_pack_unistr",
+        "binary": "$WORK_DIR/test/binary_data/softether_pack_unistr.dat",
+        "format_name": "Pack",
+        "source": "$WORK_DIR/../example/softether.bgn",
+        "failure_case": false,
+        "hex": true
     }
 ]

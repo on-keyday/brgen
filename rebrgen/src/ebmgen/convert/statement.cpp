@@ -267,9 +267,25 @@ namespace ebmgen {
         return make_loop(std::move(result_loop_stmt));
     }
 
+    // INVARIANT: a statement's id becomes visible before its body exists.
+    //
+    // The id is allocated and recorded in the visited map here, but the body is only
+    // stored by EBMA_ADD_STATEMENT at the end of the overload below. That gap is
+    // deliberate - it is what terminates conversion on a cyclic type graph
+    // (`format A: c :C` / `format C: b :B` / `format B: a :A`): re-entry hits
+    // is_visited and returns the id instead of recursing forever.
+    //
+    // The consequence is that during conversion, holding a StatementRef does NOT mean
+    // repository().get_statement() on it will succeed. It fails for any statement still
+    // on the conversion stack. Code that needs a statement's *contents* while conversion
+    // is in flight must get them from somewhere that is populated up front - e.g.
+    // ConverterState::format_encode_decode, whose PARAMETER_DECL refs are recorded
+    // before the function bodies are converted (see convert_format below). By the time
+    // the transform passes run, every statement is materialized and the restriction is
+    // gone.
     expected<ebm::StatementRef> StatementConverter::convert_statement(const std::shared_ptr<ast::Node>& node) {
         if (auto it = ctx.state().is_visited(node)) {
-            return *it;
+            return *it;  // may still be in flight: id valid, body not yet stored
         }
         MAYBE(new_ref, ctx.repository().new_statement_id());
         ctx.state().add_visited_node(node, new_ref);
@@ -797,6 +813,11 @@ namespace ebmgen {
             });
         }
 
+        // Recorded before the bodies below are converted, on purpose: this is the only
+        // way a caller can learn the encode/decode PARAMETER_DECLs of a format that is
+        // still on the conversion stack (see the INVARIANT note on convert_statement).
+        // `writer_def` / `reader_def` and each state var's enc_var_def / dec_var_def are
+        // the very refs appended to FunctionDecl::params below, in the same order.
         ctx.state().add_format_encode_decode(
             node, id,
             encode, enc_type, writer, writer_def, encoder_input,

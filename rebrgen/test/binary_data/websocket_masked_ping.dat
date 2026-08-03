@@ -1,0 +1,6 @@
+# WebSocket Ping frame, masked (Mask=1 pulls in MaskingKey and the input.xor payload)
+8 # FIN=true, RSV1-RSV3=false
+9 # Ping
+85 # Mask=true, PayloadLength=5
+37 fa 21 3d # masking key
+7f 9f 4d 51 58 # "Hello" xor masking key

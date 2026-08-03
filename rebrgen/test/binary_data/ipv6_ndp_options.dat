@@ -1,0 +1,26 @@
+# IPv6 neighbor solicitation carrying three NDP options, so the [..]NDPOption loop
+# runs more than once and NDPOption.length > 1 is exercised (ipv6.dat has a single
+# option with length=1).
+33 33 ff 97 55 94 # dst mac
+9a 9e 67 97 55 94 # src mac
+86 dd # ether type IPv6
+6 # version
+00 # traffic class
+0 00 00 # flow label
+00 48 # payload length = 72
+3a # next header ICMPV6
+ff # hop limit
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 # src addr
+ff 02 00 00 00 00 00 00 00 00 00 01 ff 97 55 94 # dst addr
+87 # ICMP type neighbor_solicitation
+00 # code
+ae 7a # checksum
+00 00 00 00 # NDP reserved
+fe 80 00 00 00 00 00 00 98 9e 67 ff fe 97 55 94 # target addr
+# NDP option: source_link_layer_address, length=1 -> 6 data bytes
+01 01 9a 9e 67 97 55 94
+# NDP option: mtu, length=1 -> 6 data bytes
+05 01 00 00 00 00 05 dc
+# NDP option: prefix_information, length=4 -> 30 data bytes
+03 04 05 10 1b 26 31 3c 47 52 5d 68 73 7e 89 94
+9f aa b5 c0 cb d6 e1 ec f7 02 0d 18 23 2e 39 44

@@ -1,0 +1,41 @@
+# HTTP/2 frames sitting on their length bounds. Every body here computes to a
+# zero-length array, or satisfies `len > padding_len + 1` with the smallest value
+# that still holds.
+
+# --- SETTINGS, len=0 without the ack flag: settings :[0/6]Setting runs zero times ---
+00 00 00 # len=0
+04 # type SETTINGS
+00 # flag (not ack)
+00 00 00 00 # reserved + stream id = 0
+
+# --- CONTINUATION, len=0: header_block :[0]u8 ---
+00 00 00 # len=0
+09 # type CONTINUATION
+04 # flag end_headers
+00 00 00 01 # reserved + stream id = 1
+
+# --- GOAWAY, len=8 exactly: debug_data :[len-8]u8 is zero-length ---
+00 00 08 # len=8
+07 # type GOAWAY
+00 # flag
+00 00 00 00 # reserved + stream id = 0
+00 00 00 05 # reserved + last stream id = 5
+00 00 00 00 # error code = none
+
+# --- DATA padded with padding_len=0: `len > padding_len + 1` holds as 2 > 1 ---
+00 00 02 # len=2
+00 # type DATA
+08 # flag padding
+00 00 00 01 # reserved + stream id = 1
+00 # pad length = 0
+7f # data (len - 1 - 0 = 1 byte)
+# padding :[0]u8
+
+# --- HEADERS padded, header_block computes to 1 byte ---
+00 00 03 # len=3
+01 # type HEADERS
+0c # flag padding + end_headers
+00 00 00 03 # reserved + stream id = 3
+01 # pad length = 1
+82 # header block fragment (3 - (1+1) = 1 byte)
+00 # padding

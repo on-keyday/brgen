@@ -974,6 +974,14 @@ namespace ebmgen {
     // ADR 0034: resolve the callee's parameter list so each argument can be tagged with
     // the PARAMETER_DECL it is passed to. Returns nullopt when the callee isn't a plain
     // function/method reference (codegen then falls back to passing by value).
+    //
+    // Only for callees we know nothing about but the expression - i.e. a user-written
+    // ast::Call. It reads the callee's FUNCTION_DECL out of the repository, so it fails
+    // outright (not nullopt) if that statement is still being converted; see the
+    // INVARIANT note on convert_statement in statement.cpp. Do not call it from a site
+    // that already holds the params: the synthesized encode/decode calls in encode.cpp /
+    // decode.cpp take them from ConverterState::format_encode_decode instead, which is
+    // populated up front and therefore works on cyclic type graphs too.
     expected<std::optional<std::vector<ebm::StatementRef>>> resolve_callee_params(ConverterContext& ctx, ebm::ExpressionRef callee) {
         MAYBE(ce, ctx.repository().get_expression(callee));
         ebm::ExpressionRef fn_ident = callee;

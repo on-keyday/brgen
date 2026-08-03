@@ -1,0 +1,11 @@
+# softether.bgn / Pack: a single UNISTR element. UniStr asserts isUtf8(data),
+# and every ASCII byte in the payload takes the `continue` branch of that
+# loop - the only `continue` statement in any format brgen can convert today.
+00 00 00 01 # num_elements :u32
+# element
+00 00 00 04 # name.len :u32 (data is len-1 bytes)
+61 62 63 # name.data [3]u8 = "abc"
+00 00 00 03 # type :ValueType = UNISTR
+00 00 00 01 # value_len :u32
+00 00 00 05 # value[0].len :u32
+68 65 6c 6c 6f # value[0].data [5]u8 = "hello" (all ASCII -> continue)

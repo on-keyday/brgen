@@ -376,29 +376,30 @@ namespace ebmgen {
 
         EBM_MEMBER_ACCESS(enc_access, par_encdec.encode_type, base_ref, par_encdec.encode);
         call_desc.callee = enc_access;
-        // ADR 0034: tag each argument with the callee param it targets (coder_input is
-        // params[0], state vars follow in par.state order).
-        MAYBE(callee_params, resolve_callee_params(ctx, enc_access));
-        auto nth_param = [&](std::size_t i) -> ebm::StatementRef {
-            if (callee_params.has_value() && i < callee_params->size()) {
-                return (*callee_params)[i];
-            }
-            return ebm::StatementRef{};
-        };
+        // ADR 0034: tag each argument with the callee param it targets, so the call site
+        // and the declaration agree on borrow vs own.
+        //
+        // Take the PARAMETER_DECLs straight from par_encdec rather than resolving them
+        // out of the callee expression. resolve_callee_params() walks the callee id back
+        // to its FUNCTION_DECL, which needs that statement to be materialized - and on a
+        // cyclic type graph it is not: the force-convert above re-enters a format still
+        // on the conversion stack and returns early from is_visited, so the body has not
+        // been stored yet (see the INVARIANT note on convert_statement in statement.cpp).
+        // convert_format records these same refs before converting the bodies, so they
+        // are always available here. This also drops the positional assumption that
+        // state var i lives at params[i + 1].
         MAYBE(enc_in_def, ctx.repository().get_expression(cur_encdec.encoder_input));
-        EBM_AS_ARG_PARAM(enc_in_arg, enc_in_def.body.type, cur_encdec.encoder_input, nth_param(0));
+        EBM_AS_ARG_PARAM(enc_in_arg, enc_in_def.body.type, cur_encdec.encoder_input, par_encdec.encoder_input_def);
         append(call_desc.arguments, enc_in_arg);
-        std::size_t st_idx = 0;
         for (auto& st : par_encdec.state_variables) {
             for (auto& cur_st : cur_encdec.state_variables) {
                 if (cur_st.ast_field == st.ast_field) {
                     MAYBE(expr, ctx.repository().get_expression(cur_st.enc_var_expr));
-                    EBM_AS_ARG_PARAM(as_arg, expr.body.type, cur_st.enc_var_expr, nth_param(st_idx + 1));
+                    EBM_AS_ARG_PARAM(as_arg, expr.body.type, cur_st.enc_var_expr, st.enc_var_def);
                     append(call_desc.arguments, as_arg);
                     break;
                 }
             }
-            ++st_idx;
         }
 
         // TODO: add arguments

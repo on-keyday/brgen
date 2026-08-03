@@ -1,0 +1,45 @@
+# HTTP/2 header-block frames: HEADERS with PRIORITY, HEADERS with padding, CONTINUATION,
+# PUSH_PROMISE with padding, DATA without padding.
+# Frame Length counts Pad Length, the priority fields and the padding (RFC 9113 6.2 / 6.6).
+
+# --- HEADERS with the PRIORITY flag (body = 5 priority bytes + 4 fragment bytes) ---
+00 00 09 # len=9
+01 # type HEADERS
+20 # flag priority
+00 00 00 01 # reserved + stream id = 1
+00 00 00 00 # priority: exclusive=0, dependency stream id = 0
+0f # priority: weight
+82 86 84 41 # header block fragment
+
+# --- HEADERS with the PADDED flag (body = 1 pad length + 4 fragment + 3 padding) ---
+00 00 08 # len=8
+01 # type HEADERS
+0c # flag padding + end_headers
+00 00 00 03 # reserved + stream id = 3
+03 # pad length
+82 86 84 41 # header block fragment
+00 00 00 # padding
+
+# --- CONTINUATION (header_block is [header.len] bytes) ---
+00 00 04 # len=4
+09 # type CONTINUATION
+04 # flag end_headers
+00 00 00 01 # reserved + stream id = 1
+7a 7b 7c 7d # header block fragment
+
+# --- PUSH_PROMISE with the PADDED flag (body = 1 pad length + 4 promised id + 4 fragment + 2 padding) ---
+00 00 0b # len=11
+05 # type PUSH_PROMISE
+0c # flag padding + end_headers
+00 00 00 01 # reserved + stream id = 1
+02 # pad length
+00 00 00 02 # reserved + promised stream id = 2
+82 86 84 41 # header block fragment
+00 00 # padding
+
+# --- DATA without padding (exercises the padding==0 side of the conditional) ---
+00 00 05 # len=5
+00 # type DATA
+01 # flag end_stream
+00 00 00 01 # reserved + stream id = 1
+48 65 6c 6c 6f # "Hello"

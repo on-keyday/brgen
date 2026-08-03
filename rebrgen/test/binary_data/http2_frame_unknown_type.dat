@@ -1,0 +1,7 @@
+# HTTP/2 frame with a type outside H2Type, taking the `..` default arm of FrameBody
+# (unknown :[header_state.header.len]u8)
+00 00 06 # len=6
+0f # type 0x0f is not defined in H2Type
+00 # flag
+00 00 00 01 # reserved + stream id = 1
+ca fe ba be 12 34 # opaque body

@@ -1,0 +1,14 @@
+# TCP Segment - minimum header (dataOffset=5), empty option list, payload only
+01 bb # src port
+c0 a8 # dst port
+00 00 00 10 # seq number
+00 00 00 20 # ack number
+5 # data offset (5*4 = 20 -> 0 bytes of options)
+0 # reserved
+11 # flags ACK=true FIN=true
+01 00 # window size
+00 00 # check sum
+00 00 # urgent pointer
+# Options: none
+# Payload
+48 65 6c 6c 6f 2c 20 54 43 50 # "Hello, TCP"

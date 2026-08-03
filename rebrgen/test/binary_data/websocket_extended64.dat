@@ -1,0 +1,11 @@
+# WebSocket ConnectionClose frame with PayloadLength=127, taking the u64
+# ExtendedPayloadLength arm, and masked. RFC 6455 would require a length above
+# 65535 here; websocket.bgn does not constrain it, so a short payload is used.
+8 # FIN=true, RSV1-RSV3=false
+8 # ConnectionClose
+ff # Mask=true, PayloadLength=127
+00 00 00 00 00 00 00 18 # ExtendedPayloadLength = 24
+a1 b2 c3 d4 # masking key
+# payload (24 bytes, xor masking key)
+a0 bc d8 fc 94 f0 8c 88 c8 c4 40 44 3c 18 74 10
+70 6c 28 2c a4 a0 dc f8
