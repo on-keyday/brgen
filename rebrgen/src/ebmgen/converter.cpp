@@ -45,19 +45,32 @@ namespace ebmgen {
         return e;
     }
 
-    // NOTE: `on_function` is currently never set - nothing calls set_on_function() - so
-    // the local_endian branches below and in get_io_attribute above are inert, and every
-    // assignment lands on global_endian. That is fine now that ConverterState::
-    // scoped_endian() gives global_endian block-lexical lifetime; it is recorded here
-    // because the dead branches otherwise read as the scoping mechanism.
+    // UNFINISHED, not dead: nothing calls set_on_function(), so on_function is false for
+    // the whole run and the branch below never executes. That branch holds the only
+    // assignment to current_dynamic_endian, so get_io_attribute above always reports an
+    // empty dynamic_ref, add_endian_specific() therefore builds IS_LITTLE_ENDIAN with no
+    // endian_expr, and every dynamic endian is generated as if it were native. The rest
+    // of the feature is in place - ebm::EndianVariable, the ENDIAN_VARIABLE lowering in
+    // default_codegen_visitor and Expression_IS_LITTLE_ENDIAN's non-nil branch - so this
+    // one assignment is the missing link, not leftover scaffolding. `input.endian = <expr>`
+    // is written 16 times across elf.bgn, media/tiff.bgn, bpf.bgn and omg_cdr.bgn.
+    //
+    // The predecessor generator did wire it: src/bm/convert.hpp had enter_function()
+    // setting on_function and seeding local_endian from global_endian, with a phi stack
+    // for control-flow joins. ebmgen carried the fields over without the entry hook.
+    //
+    // Endian lifetime is otherwise handled by ConverterState::scoped_endian(), which is
+    // block-lexical and independent of this.
     bool ConverterState::set_endian(ebm::Endian e, ebm::StatementRef id) {
+        // Non-nil only for Endian::dynamic, where it points at the ENDIAN_VARIABLE
+        // statement carrying the selector expression. get_io_attribute() hands it to
+        // add_endian_specific(), which puts it in IS_LITTLE_ENDIAN::endian_expr; the
+        // backend hook then compares the lowered variable against little_endian_value.
+        // Leaving it unset is what made every dynamic endian generate as native.
+        current_dynamic_endian = id;
         if (on_function) {
             local_endian = e;
-            current_dynamic_endian = id;
             return true;
-        }
-        if (e == ebm::Endian::dynamic) {
-            return false;
         }
         global_endian = e;
         return true;

@@ -44,12 +44,12 @@ unictest の入力コーパスは EBM ノード種別の粒度では既に飽和
 `std::source_location` を付けて伝播チェーンを出力するので、**最深フレームで分類する**。
 その粒度では 72 件 = **38 グループ**。
 
-主要なもの（件数はフレーム単位、2026-07-30 時点 = 65 件 / 39 グループ）:
+主要なもの（件数はフレーム単位、2026-07-30 時点 = 61 件 / 36 グループ）:
 
 | 件数 | 発生箇所 | メッセージ |
 | --- | --- | --- |
-| 8 | `convert/expression.cpp:719` | `Unhandled IOMethod:` — `input_backward` 4 / `config_endian_little` 2 / `config_endian_big` 1 / `config_bit_order_lsb` 1 |
-| 5 | `converter.cpp:215` | `Unsupported endian type: unspec` |
+| 5 | `converter.cpp:233` | `Unsupported endian type: unspec` |
+| 4 | `convert/expression.cpp:746` | `Unhandled IOMethod: input_backward` |
 | 4 | `convert/union_property.cpp:222` | `This is a bug: inconsistent merged size`（メッセージ自体が bug 宣言） |
 | 4 | `convert/union_property.cpp:240` | `cannot get common type: UINT vs RANGE` 3 / `ENUM vs RANGE` 1 |
 | 4 | `convert/expression.cpp:239` | `Expression has no type` 2 / src2json warning 2 |
@@ -59,7 +59,7 @@ unictest の入力コーパスは EBM ノード種別の粒度では既に飽和
 | 3 | `convert/statement.cpp:418` | `Trial match is not supported yet` |
 | 3 | `convert/type.cpp:149` | `IdentType has no base type` |
 | 2 | `convert/encode.cpp:242` | `Array length is not specified` |
-| 2 | `convert/statement.cpp:1092` | `Currently field argument must be 1` |
+| 2 | `convert/statement.cpp:1095` | `Currently field argument must be 1` |
 | 2 | `convert/decode.cpp:387` | `Invalid follow type` |
 | 2 | `convert/type.cpp:244` | `Unsupported type for conversion: regex_literal_type` / src2json warning |
 | 4 | (フレームなし) | src2json 側の parse error / warning |
@@ -102,6 +102,39 @@ callee 式しか手がかりが無い一般の `ast::Call` 用として残って
   `http2_frame_inline_test`）と、新規追加入力が露出させた既知 2 件
   （`tar_single_file`, `softether_pack_unistr`）のみ。ADR 0034 の borrow/own は
   ebm2rust が最も影響を受けるため、ここが無回帰なら他も同様と判断した。
+
+## 経過: 動的エンディアンの配線（2026-07-30）
+
+`input.endian = <式>` が変換時に一切効いておらず、**65 → 61**。欠けていたのは 2 箇所だけで、
+機能自体は EBM・converter・backend の 3 層に既に実装されていた。
+
+- `convert/expression.cpp`: `config.endian.*` / `config.bit_order.*` を式として変換できな
+  かった（`Unhandled IOMethod`）。定数形は `typing_specify_order` が `SpecifyOrder::order_value`
+  へ畳み込むのでこのパスを通らないが、`endian == Endian.LittleEndian ? config.endian.little :
+  config.endian.big` のような動的形は枝を式として変換する必要がある。値は
+  `src/core/ast/tool/eval.h` と一致させる（big/msb=0、little/lsb=1、native=2）。畳み込み済みの
+  `order_value` も `Expression_IS_LITTLE_ENDIAN` の比較（1 == little）も同じ定数を前提にしている。
+- `ConverterState::set_endian`: `current_dynamic_endian` への唯一の代入が `on_function` の分岐内に
+  あり、`set_on_function()` は誰も呼ばないためその分岐は実行されない。結果 `dynamic_ref` が常に
+  空になり、`add_endian_specific` が `endian_expr` 無しの `IS_LITTLE_ENDIAN` を作り、動的指定が
+  すべて native として生成されていた。代入を実行されるパスへ移した。
+
+**`on_function` / `local_endian` は未使用ではなく未完成だった。** 出所は前世代の
+`src/bm/convert.hpp` で、そこには `enter_function()` が `on_function` を立てて `local_endian` を
+`global_endian` から引き継ぐ実装と、制御フロー合流用の phi スタックがあった。ebmgen 移行で
+フィールドだけ移り進入フックが移らなかった。一度「死にコード」と判断して削除しかけたが、
+`current_dynamic_endian` への唯一の代入を含むため誤りだった。
+
+結果:
+
+- 変換できるようになった 4 件: `elf.bgn`, `bpf.bgn`, `media/tiff.bgn`,
+  `feature_test/analyze_block_trait.bgn`
+- 生成コードが動的判定になった: ebm2go で
+  `tmp64 := func() uint8 { if e.Endian == Endian_LittleEndian { return 1 } else { return 0 } }()`
+  と各読み取りの `if tmp64 == 1`。修正前は `NativeEndian` が出ていた。
+- 対象はコーパスの動的指定 16 箇所（`elf.bgn` ×3、`media/tiff.bgn` ×3、`bpf.bgn` ×8、
+  `omg_cdr.bgn` ×1、`src/test/test_cases.bgn` ×1）
+- 回帰なし: ebm2go std-io が 74 PASS / 4 FAIL で、失敗する入力もエンディアンスコープ修正時点と同一
 
 ## 具体例
 

@@ -715,6 +715,33 @@ namespace ebmgen {
             case ast::IOMethod::input_subrange: {
                 return unexpect_error("not implemented yet: {}", ast::to_string(node->method));
             }
+            case ast::IOMethod::config_endian_big:
+            case ast::IOMethod::config_bit_order_msb:
+            case ast::IOMethod::config_endian_little:
+            case ast::IOMethod::config_bit_order_lsb:
+            case ast::IOMethod::config_endian_native: {
+                // Selector constants for `input.endian = <expr>` / `input.bit_order = <expr>`.
+                // A constant assignment never reaches here: typing_specify_order folds it into
+                // SpecifyOrder::order_value, which convert_statement_impl(ast::SpecifyOrder)
+                // reads directly. This path is for the dynamic form, e.g. elf.bgn's
+                // `endian == Endian.LittleEndian ? config.endian.little : config.endian.big`.
+                //
+                // The values must match src/core/ast/tool/eval.h, which is what produced
+                // order_value on the folded path, and what Expression_IS_LITTLE_ENDIAN
+                // compares the lowered endian variable against (1 == little).
+                std::uint64_t selector = 0;  // big / msb
+                if (node->method == ast::IOMethod::config_endian_little || node->method == ast::IOMethod::config_bit_order_lsb) {
+                    selector = 1;
+                }
+                else if (node->method == ast::IOMethod::config_endian_native) {
+                    selector = 2;
+                }
+                // Fixed width so both arms of a conditional selector share a type. The
+                // narrowest type per value would make 0 and 1 u1 but 2 u2.
+                EBMU_U8(selector_type);
+                body = get_int_literal_body(selector_type, selector);
+                break;
+            }
             default: {
                 return unexpect_error("Unhandled IOMethod: {}", ast::to_string(node->method));
             }
