@@ -45,6 +45,11 @@ namespace ebmgen {
         return e;
     }
 
+    // NOTE: `on_function` is currently never set - nothing calls set_on_function() - so
+    // the local_endian branches below and in get_io_attribute above are inert, and every
+    // assignment lands on global_endian. That is fine now that ConverterState::
+    // scoped_endian() gives global_endian block-lexical lifetime; it is recorded here
+    // because the dead branches otherwise read as the scoping mechanism.
     bool ConverterState::set_endian(ebm::Endian e, ebm::StatementRef id) {
         if (on_function) {
             local_endian = e;

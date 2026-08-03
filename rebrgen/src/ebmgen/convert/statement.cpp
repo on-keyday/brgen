@@ -533,6 +533,9 @@ namespace ebmgen {
         body.kind = ebm::StatementKind::BLOCK;
         ebm::Block block_body;
         const auto _scope = ctx.state().set_current_block(&block_body);
+        // A block is the lexical scope of `input.endian = ...`; restore on the way out so
+        // one format's endian does not carry over to whatever is converted next.
+        const auto _endian = ctx.state().scoped_endian();
         MAYBE(variant_alt, handle_variant_alternative(ctx, node->struct_type));
         auto for_each_node = [&]() -> expected<void> {
             for (auto& element : node->elements) {

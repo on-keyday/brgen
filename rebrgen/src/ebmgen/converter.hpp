@@ -459,6 +459,23 @@ namespace ebmgen {
         expected<ebm::IOAttribute> get_io_attribute(ebm::Endian base, bool sign);
         bool set_endian(ebm::Endian e, ebm::StatementRef id = ebm::StatementRef{});
 
+        // `input.endian = ...` is lexically scoped: it applies from the statement to the
+        // end of the block it is written in, and does not follow the call graph into
+        // nested formats. Callers enter a scope on every ast::IndentBlock (a format body,
+        // an if/match/loop body); a top-level assignment lives in ast::Program, which is
+        // not a block, so it keeps applying to the whole file - see netlink.bgn / yara.bgn
+        // for that form, and bpf.bgn for the per-format form.
+        [[nodiscard]] auto scoped_endian() {
+            auto old_global = global_endian;
+            auto old_local = local_endian;
+            auto old_dynamic = current_dynamic_endian;
+            return futils::helper::defer([this, old_global, old_local, old_dynamic]() {
+                global_endian = old_global;
+                local_endian = old_local;
+                current_dynamic_endian = old_dynamic;
+            });
+        }
+
         bool is_on_function() const {
             return on_function;
         }

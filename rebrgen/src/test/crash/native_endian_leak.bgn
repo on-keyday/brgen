@@ -1,0 +1,51 @@
+# `input.endian = config.endian.native` set inside PcapHeader / PcapRecordHeader leaks
+# out to EthernetFrame, which declares no endian of its own and should therefore stay
+# big endian. ether_type comes out little endian in the generated code.
+
+PCAP_MAGIC ::= 0xa1b2c3d4
+
+format PcapHeader:
+    input.endian = config.endian.native
+    magic :u32
+    magic == 0xa1b2c3d4 || magic == 0xa1b2cd34
+    version_major :u16
+    version_minor :u16
+    thiszone :i32
+    sigfigs :u32
+    snaplen :u32
+    network :u32
+    if magic == 0xa1b2cd34:
+        ifindex :u32
+        protocol :u16
+        pkt_type :u8
+        pad :u8
+
+format PcapRecordHeader:
+    input.endian = config.endian.native
+    ts_sec :u32
+    ts_usec :u32
+    incl_len :u32
+    orig_len :u32
+
+format PcapRecord:
+    hdr :PcapRecordHeader
+    data :[hdr.incl_len]u8
+
+
+enum EtherType:
+    :u16
+    ipv4 = 0x0800
+    arp = 0x0806
+    vlan = 0x8100
+    ipv6 = 0x86DD
+    service_vlen = 0x88A8
+    pppoe_discovery = 0x8863
+    pppoe_session = 0x8864
+    lldp = 0x88cc
+
+LLC_BORDER ::= 1500
+
+format EthernetFrame:
+    dstMac :[6]u8
+    srcMac :[6]u8
+    ether_type :u16
