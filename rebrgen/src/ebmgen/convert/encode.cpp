@@ -431,7 +431,15 @@ namespace ebmgen {
         MAYBE(cur_encdec, ctx.state().get_format_encode_decode(ctx.state().get_current_node()));
 
         EBMA_CONVERT_TYPE(typ_ref, typ, field);
-        ebm::IOData io_desc = make_io_data(cur_encdec.encoder_input_def, field_ref, base_ref, typ_ref, ebm::IOAttribute{}, ebm::Size{});
+        // Seed with the ambient endian instead of leaving it unspec. Only the int, float
+        // and enum branches below overwrite the attribute, so a struct / array / string
+        // member keeps whatever this holds. Unspec is harmless while the member is a plain
+        // byte copy, but transform/bit_fields.cpp hands the attribute of every member it
+        // merges into a bit run to add_endian_specific(), which rejects unspec. That is
+        // reachable: `format Outer: flag :ub1  inner :Inner` with Inner made of bit fields
+        // puts a struct-typed IOData in the middle of a bit run.
+        MAYBE(ambient_attr, ctx.state().get_io_attribute(ebm::Endian::unspec, false));
+        ebm::IOData io_desc = make_io_data(cur_encdec.encoder_input_def, field_ref, base_ref, typ_ref, ambient_attr, ebm::Size{});
         std::vector<ebm::StatementRef> pre_statements;
 
         if (auto ity = ast::as<ast::IntType>(typ)) {

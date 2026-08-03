@@ -44,17 +44,17 @@ unictest の入力コーパスは EBM ノード種別の粒度では既に飽和
 `std::source_location` を付けて伝播チェーンを出力するので、**最深フレームで分類する**。
 その粒度では 72 件 = **38 グループ**。
 
-主要なもの（件数はフレーム単位、2026-07-30 時点 = 61 件 / 36 グループ）:
+主要なもの（件数はフレーム単位、2026-07-30 時点 = 58 件 / 35 グループ）:
 
 | 件数 | 発生箇所 | メッセージ |
 | --- | --- | --- |
-| 5 | `converter.cpp:233` | `Unsupported endian type: unspec` |
 | 4 | `convert/expression.cpp:746` | `Unhandled IOMethod: input_backward` |
 | 4 | `convert/union_property.cpp:222` | `This is a bug: inconsistent merged size`（メッセージ自体が bug 宣言） |
 | 4 | `convert/union_property.cpp:240` | `cannot get common type: UINT vs RANGE` 3 / `ENUM vs RANGE` 1 |
 | 4 | `convert/expression.cpp:239` | `Expression has no type` 2 / src2json warning 2 |
 | 3 | `convert/encode.cpp:147` | `EnumType without base type cannot be used in encoding` |
 | 3 | `convert/encode.cpp:191` | `Unexpected nullptr` |
+| 3 | `transform/bit_fields.cpp:72` | `Unexpected nullptr` |
 | 3 | `converter.hpp:446` | `No current yield statement` |
 | 3 | `convert/statement.cpp:418` | `Trial match is not supported yet` |
 | 3 | `convert/type.cpp:149` | `IdentType has no base type` |
@@ -170,3 +170,44 @@ WebSocket / IPv6 に 21 サンプルを追加していた。それ自体は分�
   責任側の話であり、CI に scapy 依存を持ち込む対価に見合わない（ADR 0021 の責任分界と整合）。
 - **`--fuzz` を CI に載せる。** 構造の妥当性には効かない。`ebm2rmw` はモデルから入力を生成する
   ので、fuzz 入力は構成上モデルと整合する。クラッシュ耐性の検査としては別途有効。
+
+## 経過: ビット連結に参加する struct メンバーの endian（2026-07-30）
+
+`Unsupported endian type: unspec` 5 件を解消し、**61 → 58**。
+
+`encode_field_type` / `decode_field_type` は `io_desc` を `ebm::IOAttribute{}`（endian =
+unspec）で初期化し、型別処理で埋める作りだった。埋めるのは int / float / enum の 3 経路だけで、
+struct / array / 文字列リテラルは unspec のまま残る。IOData がバイト列を素通しするだけなら
+それで無害だが、`transform/bit_fields.cpp` はビットフィールドを連結するとき連結対象の
+IOData の属性をそのまま `add_endian_specific()` に渡すため、struct メンバーが連結に参加すると
+unspec が渡って落ちる。
+
+最小再現は 7 行:
+
+```
+format Inner:
+    a : ub7
+    b : ub8
+
+format Outer:
+    flag : ub1
+    inner : Inner      # ビット連結に参加する struct メンバー
+```
+
+対照として `flag : ub1` + `rest : ub15`（ビットのみ）と `flag : u8` + `inner : Inner`
+（バイト境界なので連結されない）はどちらも通る。
+
+**判断: 初期値を ambient endian にする。** `get_io_attribute(Endian::unspec, false)` は元々
+「unspec を渡すと現在のエンディアンへ解決する」関数なので、用途どおりの使い方。int / float /
+enum による上書きは従来のまま。連結時に外側フォーマットのエンディアンを採ることになるが、
+各フィールドは `ub` / `ul` 接尾辞で自分のエンディアンを明示できるため、曖昧さは残らない。
+
+`bit_fields.cpp` 側でフォールバックする案は「unspec の IOData が存在しうる」前提を残すので
+採らなかった。
+
+結果:
+
+- 変換できるようになった 3 件: `src/test/partial_bit_union.bgn`, `3gpp_mib.bgn`, `net/tlp.bgn`
+- より後段へ移動した 2 件: `media/ac3.bgn`, `ripple.bgn` →
+  `transform/bit_fields.cpp:72` の `Unexpected nullptr`（同グループが 1 → 3 件に）
+- 回帰なし: ebm2go std-io が 74 PASS / 4 FAIL で、失敗する入力も前段階と同一

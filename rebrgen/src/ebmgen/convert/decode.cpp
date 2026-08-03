@@ -539,7 +539,10 @@ namespace ebmgen {
         MAYBE(cur_encdec, ctx.state().get_format_encode_decode(ctx.state().get_current_node()));
 
         EBMA_CONVERT_TYPE(typ_ref, typ, field);
-        ebm::IOData io_desc = make_io_data(cur_encdec.decoder_input_def, field_ref, base_ref, typ_ref, ebm::IOAttribute{}, ebm::Size{});
+        // Mirror of the encode side - see the note in encode.cpp::encode_field_type for why
+        // this is the ambient endian rather than a default-constructed (unspec) attribute.
+        MAYBE(ambient_attr, ctx.state().get_io_attribute(ebm::Endian::unspec, false));
+        ebm::IOData io_desc = make_io_data(cur_encdec.decoder_input_def, field_ref, base_ref, typ_ref, ambient_attr, ebm::Size{});
 
         if (auto ity = ast::as<ast::IntType>(typ)) {
             MAYBE_VOID(ok, decode_int_type(io_desc, ast::cast_to<ast::IntType>(typ), base_ref));
