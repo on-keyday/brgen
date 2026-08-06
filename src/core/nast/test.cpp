@@ -1,0 +1,179 @@
+/*license*/
+// nast の単体スモークテスト。build.py から呼ばれる。
+// 生成された nodes.h が「コンパイルできる」だけでなく、
+// 型変換・ダウンキャスト・シリアライズが意図どおり動くところまで見る。
+#include "nodes.h"
+
+#include <algorithm>
+#include <cstdio>
+#include <string>
+#include <vector>
+
+// futils があれば as_json を実際に走らせる。nodes.h 自体は futils に依存しないので、
+// futils が無い環境でも構造のテストだけは通るようにしておく (build.py が定義する)。
+#ifdef NAST_TEST_WITH_JSON
+#include <json/stringer.h>
+#endif
+
+namespace {
+
+    int failures = 0;
+
+    void check(bool ok, const char* what) {
+        std::printf("  [%s] %s\n", ok ? "ok" : "NG", what);
+        if (!ok) {
+            failures++;
+        }
+    }
+
+}  // namespace
+
+int main() {
+    using namespace brgen::nast;
+
+    std::printf("nast smoke test\n");
+
+    Arena arena;
+    auto fmt = arena.make<Format>();
+    auto body = arena.make<Body>();
+    auto name = arena.make<Ident>();
+    auto field_a = arena.make<Field>();
+    auto func = arena.make<Function>();
+
+    name->identifier = "Sample";
+    fmt->name = name;
+    fmt->body = body;
+
+    // Ref<T> から基底の Node<U> へ 1 段で変換できること。
+    // operator Node<T> だけだとユーザー定義変換 2 段になり push_back が通らない。
+    body->elements.push_back(field_a);
+    body->elements.push_back(func);
+    check(body->elements.size() == 2, "Ref -> Node<Statement> implicit conversion");
+
+    Node<Statement> as_stmt = fmt;
+    Node<NamedStatement> as_named = fmt;  // 中間の抽象基底へも直接
+    check(as_stmt.type() == NodeType::Format && as_named.type() == NodeType::Format,
+          "conversion keeps the concrete node type");
+
+    // 継承ビットによる判定
+    check(is_derived<Statement>(NodeType::Field) &&
+              is_derived<NamedTypeStatement>(NodeType::Field) &&
+              !is_derived<NamedTypeStatement>(NodeType::Function),
+          "is_derived<> bit test");
+
+    // 抽象 Node からの取得 (switch で具象プールへ降りる)
+    check(arena.get<Statement>(as_stmt) != nullptr, "get<Abstract>() resolves to concrete data");
+
+    // チェック付きダウンキャスト
+    check(bool(as_stmt.as<Format>()), "as<Format>() succeeds");
+    check(!bool(as_stmt.as<Function>()), "as<Function>() returns null on mismatch");
+
+    // null / 不正な Node
+    Node<Format> nil{};
+    check(!bool(nil) && arena.as_ref(nil).get() == nullptr, "null Node yields null Ref");
+
+    // NodeHeader が代入可能であること (到達不能ノードの除去などで vector を編集するため)
+    std::vector<NodeHeader> headers{
+        {NodeType::Field, 0},
+        {NodeType::Function, 1},
+        {NodeType::Format, 2},
+    };
+    headers.erase(headers.begin());
+    std::sort(headers.begin(), headers.end(),
+              [](const NodeHeader& l, const NodeHeader& r) { return ordinal(l.type) < ordinal(r.type); });
+    headers.resize(1);
+    check(headers.size() == 1, "NodeHeader is assignable (erase/sort/resize)");
+
+    // ---- enum ヘルパ (ast::enum_array<T> 相当) -----------------------------
+    static_assert(enum_elem_count<UnaryOp>() == 1);
+    static_assert(enum_array<UnaryOp>[0].first == UnaryOp::minus);
+    static_assert(enum_array<UnaryOp>[0].second == "-");        // 代表表記 (alt_names)
+    static_assert(enum_name_array<UnaryOp>[0].second == "minus");  // 名前
+    static_assert(from_string<UnaryOp>("-") == UnaryOp::minus);
+    static_assert(from_string<UnaryOp>("minus") == UnaryOp::minus);  // as_json と round-trip
+    static_assert(!from_string<UnaryOp>("nope").has_value());
+    static_assert(enum_type_name<UnaryOp>() != nullptr);
+    check(true, "enum helpers are constexpr-usable (checked by static_assert)");
+
+    // NodeType にも出しているので、全ノード種を走査できる
+    static_assert(enum_elem_count<NodeType>() == enum_array<NodeType>.size());
+    bool node_names_ok = true;
+    for (auto& [t, n] : enum_array<NodeType>) {
+        if (n != to_string(t) || from_string<NodeType>(n) != t) {
+            node_names_ok = false;
+        }
+    }
+    check(node_names_ok && enum_array<NodeType>.size() > 1,
+          "enum_array<NodeType> enumerates every node kind and round-trips");
+
+    // ---- side table -------------------------------------------------------
+    // 解析結果をノードの外に置く表。storage が違っても API は共通。
+    auto ident_b = arena.make<Ident>();
+
+    // 表は Arena とは別の入れ物にまとめる。Arena に持たせると
+    // 「持ち回す入れ物に構文と解析結果が同居する」形が 1 段上で再現するため。
+    SideTables tables;
+
+    auto& resolution = tables.table<Resolution>();  // dense
+    check(!resolution.contains(name) && resolution.get(name) == nullptr,
+          "dense table: empty lookup misses");
+    resolution.set(name, Resolution{.target = fmt.id()});
+    check(resolution.contains(name) && resolution.get(name)->target.id() == fmt.id().id(),
+          "dense table: set/get round-trips");
+    check(!resolution.contains(ident_b) && resolution.size() == 1,
+          "dense table: unset node stays absent");
+    check(resolution.set(Node<Ident>{}, Resolution{}) == nullptr,
+          "dense table: null node is rejected");
+
+    auto& docs = tables.table<DocComment>();  // sparse
+    docs.set(field_a, DocComment{.leading = brgen::lexer::Loc{.line = 1}});
+    docs.set(fmt, DocComment{.leading = brgen::lexer::Loc{.line = 5}});
+    docs.set(func, DocComment{.leading = brgen::lexer::Loc{.line = 9}});
+    check(docs.size() == 3 && docs.get(fmt)->leading.line == 5,
+          "sparse table: holds entries and looks them up");
+    check(std::is_sorted(docs.entries().begin(), docs.entries().end(),
+                         [](const auto& l, const auto& r) { return l.node < r.node; }),
+          "sparse table: entries stay sorted regardless of insertion order");
+    check(docs.erase(fmt) && !docs.contains(fmt) && docs.size() == 2,
+          "sparse table: erase removes the entry");
+
+    auto& mutated = tables.table<IsMutated>();  // flag
+    check(mutated.set(field_a) && !mutated.set(field_a),
+          "flag table: set is idempotent and reports novelty");
+    check(mutated.contains(field_a) && mutated.size() == 1, "flag table: membership");
+
+    // const 側からも同じキーで引けること
+    const SideTables& const_tables = tables;
+    check(const_tables.table<Resolution>().contains(name) &&
+              const_tables.table<IsMutated>().size() == 1,
+          "table<T>() works on a const aggregate");
+
+#ifdef NAST_TEST_WITH_JSON
+    // 生成された as_json が実際に動くこと。
+    // collect() のような事前走査なしで arena をそのまま出せるのが狙い。
+    futils::json::Stringer<> s;
+    arena.as_json(s);
+    const std::string& out = s.out();
+    check(out.size() > 2 && out.front() == '{' && out.back() == '}',
+          "Arena::as_json produces an object");
+    check(out.find("\"headers\"") != std::string::npos &&
+              out.find("\"data_Format\"") != std::string::npos &&
+              out.find("\"Sample\"") != std::string::npos,
+          "serialized output contains headers, per-type pools and payload");
+
+    // 表は arena とは別に出せる。構文木と解析結果が JSON 上でも分かれる。
+    futils::json::Stringer<> ts;
+    tables.as_json(ts);
+    const std::string& tout = ts.out();
+    check(tout.find("\"Resolution\"") != std::string::npos &&
+              tout.find("\"DocComment\"") != std::string::npos &&
+              tout.find("\"IsMutated\"") != std::string::npos,
+          "SideTables::as_json serializes every table independently of the arena");
+#else
+    std::printf("  [--] Arena::as_json (skipped: futils not available)\n");
+#endif
+
+    std::printf("%s (%d failure%s)\n", failures == 0 ? "PASS" : "FAIL", failures,
+                failures == 1 ? "" : "s");
+    return failures == 0 ? 0 : 1;
+}
