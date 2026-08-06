@@ -1,11 +1,64 @@
 {
     "includes": [
+        "<algorithm>",
+        "<array>",
         "<concepts>",
+        "<cstdint>",
+        "<optional>",
+        "<string_view>",
         "<vector>",
         "<string>",
-        "<type_traits>"
+        "<type_traits>",
+        "\"../lexer/token.h\""
     ],
-    "types" : {},
+    "types": {
+        "std::uint32_t": {
+            "init": "{}"
+        },
+        "bool": {
+            "init": "{}"
+        }
+    },
+    "structs": [
+        {
+            "name": "CommentRange",
+            "fields": [
+                {
+                    "name": "loc",
+                    "type": "lexer::Loc"
+                }
+            ]
+        }
+    ],
+    "side_tables": [
+        {
+            "name": "Resolution",
+            "over": "Ident",
+            "storage": "dense",
+            "fields": [
+                {
+                    "name": "target",
+                    "type": "Node<Statement>"
+                }
+            ]
+        },
+        {
+            "name": "DocComment",
+            "over": "Statement",
+            "storage": "sparse",
+            "fields": [
+                {
+                    "name": "leading",
+                    "type": "lexer::Loc"
+                }
+            ]
+        },
+        {
+            "name": "IsMutated",
+            "over": "Field",
+            "storage": "flag"
+        }
+    ],
     "header": {
         "fields": [
             {
@@ -15,25 +68,56 @@
             {
                 "name": "data_index",
                 "type": "uint32"
+            },
+            {
+                "name": "loc",
+                "type": "lexer::Loc"
             }
         ]
     },
     "enums": [
         {
             "name": "BinaryOp",
-            "enums" : [
+            "enums": [
                 {
                     "name": "add",
-                    "alt_names": ["+"]
+                    "alt_names": [
+                        "+"
+                    ]
                 }
             ]
         },
         {
             "name": "UnaryOp",
-            "enums" : [
+            "enums": [
                 {
                     "name": "minus",
-                    "alt_names": ["-"]
+                    "alt_names": [
+                        "-"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "SpecialLiteralKind",
+            "enums": [
+                {
+                    "name": "input_",
+                    "alt_names": [
+                        "input"
+                    ]
+                },
+                {
+                    "name": "output_",
+                    "alt_names": [
+                        "output"
+                    ]
+                },
+                {
+                    "name": "config_",
+                    "alt_names": [
+                        "config"
+                    ]
                 }
             ]
         }
@@ -50,14 +134,13 @@
         },
         {
             "name": "Statement",
-            "fields": [
-            ],
+            "fields": [],
             "abstract": true
         },
         {
             "name": "NamedStatement",
             "derive": "Statement",
-            "fields":[
+            "fields": [
                 {
                     "name": "name",
                     "type": "Node<Ident>"
@@ -68,7 +151,7 @@
         {
             "name": "NamedBodyStatement",
             "derive": "NamedStatement",
-            "fields":[
+            "fields": [
                 {
                     "name": "body",
                     "type": "Node<Body>"
@@ -79,7 +162,7 @@
         {
             "name": "NamedTypeStatement",
             "derive": "NamedStatement",
-            "fields":[
+            "fields": [
                 {
                     "name": "type",
                     "type": "Node<Type>"
@@ -87,26 +170,26 @@
             ],
             "abstract": true
         },
-                {
+        {
             "name": "BodyStatement",
             "derive": "Statement",
             "fields": [
                 {
                     "name": "body",
-                    "type": "Node<Body>" 
+                    "type": "Node<Body>"
                 }
             ]
         },
         {
-            "name": "Expression",
+            "name": "Expr",
             "derive": "Statement",
-            "fields" : [
+            "fields": [
                 {
                     "name": "type",
                     "type": "Node<Type>"
                 }
             ],
-            "abstract":true
+            "abstract": true
         },
         {
             "name": "Field",
@@ -138,33 +221,33 @@
             ]
         },
         {
-            "name": "ConditionalExpression",
+            "name": "ConditionalExpr",
             "abstract": true,
-            "derive": "Expression",
-            "fields": [
-               {
-                "name": "blocks",
-                "type": "vector<Node<BodyStatement>>"
-               }
-            ]
-        },
-        {
-            "name": "If",
-            "derive": "ConditionalExpression",
-            "fields": []
-        },
-        {
-            "name": "Match",
-            "derive": "ConditionalExpression",
+            "derive": "Expr",
             "fields": [
                 {
-                    "name": "condition",
-                    "type": "Node<Expression>"
+                    "name": "blocks",
+                    "type": "vector<Node<BodyStatement>>"
                 }
             ]
         },
         {
-            "name": "For",
+            "name": "If",
+            "derive": "ConditionalExpr",
+            "fields": []
+        },
+        {
+            "name": "Match",
+            "derive": "ConditionalExpr",
+            "fields": [
+                {
+                    "name": "condition",
+                    "type": "Node<Expr>"
+                }
+            ]
+        },
+        {
+            "name": "Loop",
             "derive": "BodyStatement",
             "fields": [
                 {
@@ -173,7 +256,7 @@
                 },
                 {
                     "name": "condition",
-                    "type": "Node<Expression>"
+                    "type": "Node<Expr>"
                 },
                 {
                     "name": "step",
@@ -182,7 +265,7 @@
             ]
         },
         {
-            "name": "ForRange",
+            "name": "RangeLoop",
             "derive": "BodyStatement",
             "fields": [
                 {
@@ -191,23 +274,23 @@
                 },
                 {
                     "name": "container",
-                    "type": "Node<Expression>"
+                    "type": "Node<Expr>"
                 }
             ]
         },
         {
             "name": "Assign",
             "derive": "Statement",
-            "fields":[
+            "fields": [
                 {
                     "name": "asignee",
-                    "type": "Node<Expression>"
+                    "type": "Node<Expr>"
                 }
             ]
         },
         {
             "name": "Binary",
-            "derive": "Expression",
+            "derive": "Expr",
             "fields": [
                 {
                     "name": "op",
@@ -215,17 +298,17 @@
                 },
                 {
                     "name": "left",
-                    "type": "Node<Expression>"
+                    "type": "Node<Expr>"
                 },
                 {
                     "name": "right",
-                    "type": "Node<Expression>"
+                    "type": "Node<Expr>"
                 }
             ]
         },
         {
             "name": "Unary",
-            "derive": "Expression",
+            "derive": "Expr",
             "fields": [
                 {
                     "name": "op",
@@ -233,17 +316,17 @@
                 },
                 {
                     "name": "target",
-                    "type": "Node<Expression>"
+                    "type": "Node<Expr>"
                 }
             ]
         },
         {
             "name": "Call",
-            "derive": "Expression",
+            "derive": "Expr",
             "fields": [
                 {
                     "name": "callee",
-                    "type": "Node<Expression>"
+                    "type": "Node<Expr>"
                 },
                 {
                     "name": "arguments",
@@ -253,7 +336,7 @@
         },
         {
             "name": "Reference",
-            "derive": "Expression",
+            "derive": "Expr",
             "fields": [
                 {
                     "name": "name",
@@ -263,11 +346,11 @@
         },
         {
             "name": "MemberAccess",
-            "derive": "Expression",
+            "derive": "Expr",
             "fields": [
                 {
                     "name": "base",
-                    "type": "Node<Expression>"
+                    "type": "Node<Expr>"
                 },
                 {
                     "name": "member",
@@ -277,7 +360,7 @@
         },
         {
             "name": "TypeLiteral",
-            "derive": "Expression",
+            "derive": "Expr",
             "fields": [
                 {
                     "name": "literal",
@@ -291,14 +374,14 @@
             "fields": [
                 {
                     "name": "condition",
-                    "type": "Node<Expression>"
+                    "type": "Node<Expr>"
                 }
             ]
         },
         {
             "name": "Parameter",
             "derive": "NamedTypeStatement",
-            "fields":[]
+            "fields": []
         },
         {
             "name": "Body",
@@ -320,10 +403,10 @@
         },
         {
             "name": "Argument",
-            "fields" : [
+            "fields": [
                 {
                     "name": "expression",
-                    "type": "Node<Expression>"
+                    "type": "Node<Expr>"
                 }
             ]
         },
@@ -349,7 +432,7 @@
         {
             "name": "Type",
             "fields": [],
-            "abstract":true
+            "abstract": true
         },
         {
             "name": "IntType",
@@ -362,6 +445,166 @@
                 {
                     "name": "is_signed",
                     "type": "bool"
+                }
+            ]
+        },
+        {
+            "name": "Literal",
+            "derive": "Expr",
+            "fields": [],
+            "abstract": true
+        },
+        {
+            "name": "IntLiteral",
+            "derive": "Literal",
+            "fields": [
+                {
+                    "name": "value",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "BoolLiteral",
+            "derive": "Literal",
+            "fields": [
+                {
+                    "name": "value",
+                    "type": "bool"
+                }
+            ]
+        },
+        {
+            "name": "StrLiteral",
+            "derive": "Literal",
+            "fields": [
+                {
+                    "name": "value",
+                    "type": "string"
+                },
+                {
+                    "name": "binary_value",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "CharLiteral",
+            "derive": "Literal",
+            "fields": [
+                {
+                    "name": "value",
+                    "type": "string"
+                },
+                {
+                    "name": "code",
+                    "type": "uint32"
+                }
+            ]
+        },
+        {
+            "name": "RegexLiteral",
+            "derive": "Literal",
+            "fields": [
+                {
+                    "name": "value",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "SpecialLiteral",
+            "derive": "Literal",
+            "fields": [
+                {
+                    "name": "kind",
+                    "type": "SpecialLiteralKind"
+                }
+            ]
+        },
+        {
+            "name": "Paren",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "expr",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "end_loc",
+                    "type": "lexer::Loc"
+                }
+            ]
+        },
+        {
+            "name": "Index",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "expr",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "index",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "end_loc",
+                    "type": "lexer::Loc"
+                }
+            ]
+        },
+        {
+            "name": "Cond",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "cond",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "then",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "els_loc",
+                    "type": "lexer::Loc"
+                },
+                {
+                    "name": "els",
+                    "type": "Node<Expr>"
+                }
+            ]
+        },
+        {
+            "name": "Range",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "start",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "end",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "op",
+                    "type": "BinaryOp"
+                }
+            ]
+        },
+        {
+            "name": "BadExpr",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "content",
+                    "type": "string"
+                },
+                {
+                    "name": "bad_expr",
+                    "type": "Node<Expr>"
                 }
             ]
         }
