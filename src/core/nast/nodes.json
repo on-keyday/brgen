@@ -1,0 +1,369 @@
+{
+    "includes": [
+        "<concepts>",
+        "<vector>",
+        "<string>",
+        "<type_traits>"
+    ],
+    "types" : {},
+    "header": {
+        "fields": [
+            {
+                "name": "type",
+                "type": "NodeType"
+            },
+            {
+                "name": "data_index",
+                "type": "uint32"
+            }
+        ]
+    },
+    "enums": [
+        {
+            "name": "BinaryOp",
+            "enums" : [
+                {
+                    "name": "add",
+                    "alt_names": ["+"]
+                }
+            ]
+        },
+        {
+            "name": "UnaryOp",
+            "enums" : [
+                {
+                    "name": "minus",
+                    "alt_names": ["-"]
+                }
+            ]
+        }
+    ],
+    "nodes": [
+        {
+            "name": "Module",
+            "fields": [
+                {
+                    "name": "statements",
+                    "type": "vector<Node<Statement>>"
+                }
+            ]
+        },
+        {
+            "name": "Statement",
+            "fields": [
+            ],
+            "abstract": true
+        },
+        {
+            "name": "NamedStatement",
+            "derive": "Statement",
+            "fields":[
+                {
+                    "name": "name",
+                    "type": "Node<Ident>"
+                }
+            ],
+            "abstract": true
+        },
+        {
+            "name": "NamedBodyStatement",
+            "derive": "NamedStatement",
+            "fields":[
+                {
+                    "name": "body",
+                    "type": "Node<Body>"
+                }
+            ],
+            "abstract": true
+        },
+        {
+            "name": "NamedTypeStatement",
+            "derive": "NamedStatement",
+            "fields":[
+                {
+                    "name": "type",
+                    "type": "Node<Type>"
+                }
+            ],
+            "abstract": true
+        },
+                {
+            "name": "BodyStatement",
+            "derive": "Statement",
+            "fields": [
+                {
+                    "name": "body",
+                    "type": "Node<Body>" 
+                }
+            ]
+        },
+        {
+            "name": "Expression",
+            "derive": "Statement",
+            "fields" : [
+                {
+                    "name": "type",
+                    "type": "Node<Type>"
+                }
+            ],
+            "abstract":true
+        },
+        {
+            "name": "Field",
+            "derive": "NamedTypeStatement",
+            "fields": [
+                {
+                    "name": "arguments",
+                    "type": "Node<Arguments>"
+                }
+            ]
+        },
+        {
+            "name": "Format",
+            "derive": "NamedBodyStatement",
+            "fields": []
+        },
+        {
+            "name": "Function",
+            "derive": "NamedBodyStatement",
+            "fields": [
+                {
+                    "name": "parameters",
+                    "type": "vector<Node<Parameter>>"
+                },
+                {
+                    "name": "return_type",
+                    "type": "Node<Type>"
+                }
+            ]
+        },
+        {
+            "name": "ConditionalExpression",
+            "abstract": true,
+            "derive": "Expression",
+            "fields": [
+               {
+                "name": "blocks",
+                "type": "vector<Node<BodyStatement>>"
+               }
+            ]
+        },
+        {
+            "name": "If",
+            "derive": "ConditionalExpression",
+            "fields": []
+        },
+        {
+            "name": "Match",
+            "derive": "ConditionalExpression",
+            "fields": [
+                {
+                    "name": "condition",
+                    "type": "Node<Expression>"
+                }
+            ]
+        },
+        {
+            "name": "For",
+            "derive": "BodyStatement",
+            "fields": [
+                {
+                    "name": "init",
+                    "type": "Node<Statement>"
+                },
+                {
+                    "name": "condition",
+                    "type": "Node<Expression>"
+                },
+                {
+                    "name": "step",
+                    "type": "Node<Statement>"
+                }
+            ]
+        },
+        {
+            "name": "ForRange",
+            "derive": "BodyStatement",
+            "fields": [
+                {
+                    "name": "bind_variable",
+                    "type": "Node<Ident>"
+                },
+                {
+                    "name": "container",
+                    "type": "Node<Expression>"
+                }
+            ]
+        },
+        {
+            "name": "Assign",
+            "derive": "Statement",
+            "fields":[
+                {
+                    "name": "asignee",
+                    "type": "Node<Expression>"
+                }
+            ]
+        },
+        {
+            "name": "Binary",
+            "derive": "Expression",
+            "fields": [
+                {
+                    "name": "op",
+                    "type": "BinaryOp"
+                },
+                {
+                    "name": "left",
+                    "type": "Node<Expression>"
+                },
+                {
+                    "name": "right",
+                    "type": "Node<Expression>"
+                }
+            ]
+        },
+        {
+            "name": "Unary",
+            "derive": "Expression",
+            "fields": [
+                {
+                    "name": "op",
+                    "type": "UnaryOp"
+                },
+                {
+                    "name": "target",
+                    "type": "Node<Expression>"
+                }
+            ]
+        },
+        {
+            "name": "Call",
+            "derive": "Expression",
+            "fields": [
+                {
+                    "name": "callee",
+                    "type": "Node<Expression>"
+                },
+                {
+                    "name": "arguments",
+                    "type": "Node<Arguments>"
+                }
+            ]
+        },
+        {
+            "name": "Reference",
+            "derive": "Expression",
+            "fields": [
+                {
+                    "name": "name",
+                    "type": "Node<Ident>"
+                }
+            ]
+        },
+        {
+            "name": "MemberAccess",
+            "derive": "Expression",
+            "fields": [
+                {
+                    "name": "base",
+                    "type": "Node<Expression>"
+                },
+                {
+                    "name": "member",
+                    "type": "Node<Ident>"
+                }
+            ]
+        },
+        {
+            "name": "TypeLiteral",
+            "derive": "Expression",
+            "fields": [
+                {
+                    "name": "literal",
+                    "type": "Node<Type>"
+                }
+            ]
+        },
+        {
+            "name": "ConditionalStatement",
+            "derive": "BodyStatement",
+            "fields": [
+                {
+                    "name": "condition",
+                    "type": "Node<Expression>"
+                }
+            ]
+        },
+        {
+            "name": "Parameter",
+            "derive": "NamedTypeStatement",
+            "fields":[]
+        },
+        {
+            "name": "Body",
+            "fields": [
+                {
+                    "name": "elements",
+                    "type": "vector<Node<Statement>>"
+                }
+            ]
+        },
+        {
+            "name": "Arguments",
+            "fields": [
+                {
+                    "name": "arguments",
+                    "type": "vector<Node<Argument>>"
+                }
+            ]
+        },
+        {
+            "name": "Argument",
+            "fields" : [
+                {
+                    "name": "expression",
+                    "type": "Node<Expression>"
+                }
+            ]
+        },
+        {
+            "name": "NamedArgument",
+            "derive": "Argument",
+            "fields": [
+                {
+                    "name": "name",
+                    "type": "Node<Ident>"
+                }
+            ]
+        },
+        {
+            "name": "Ident",
+            "fields": [
+                {
+                    "name": "identifier",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "Type",
+            "fields": [],
+            "abstract":true
+        },
+        {
+            "name": "IntType",
+            "derive": "Type",
+            "fields": [
+                {
+                    "name": "bit_size",
+                    "type": "uint32"
+                },
+                {
+                    "name": "is_signed",
+                    "type": "bool"
+                }
+            ]
+        }
+    ]
+}
