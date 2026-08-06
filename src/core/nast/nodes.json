@@ -9,7 +9,8 @@
         "<vector>",
         "<string>",
         "<type_traits>",
-        "\"../lexer/token.h\""
+        "\"../lexer/token.h\"",
+        "<utility>"
     ],
     "types": {
         "std::uint32_t": {
@@ -80,9 +81,255 @@
             "name": "BinaryOp",
             "enums": [
                 {
+                    "name": "mul",
+                    "alt_names": [
+                        "*"
+                    ]
+                },
+                {
+                    "name": "div",
+                    "alt_names": [
+                        "/"
+                    ]
+                },
+                {
+                    "name": "mod",
+                    "alt_names": [
+                        "%"
+                    ]
+                },
+                {
+                    "name": "left_arithmetic_shift",
+                    "alt_names": [
+                        "<<<"
+                    ]
+                },
+                {
+                    "name": "right_arithmetic_shift",
+                    "alt_names": [
+                        ">>>"
+                    ]
+                },
+                {
+                    "name": "left_logical_shift",
+                    "alt_names": [
+                        "<<"
+                    ]
+                },
+                {
+                    "name": "right_logical_shift",
+                    "alt_names": [
+                        ">>"
+                    ]
+                },
+                {
+                    "name": "bit_and",
+                    "alt_names": [
+                        "&"
+                    ]
+                },
+                {
                     "name": "add",
                     "alt_names": [
                         "+"
+                    ]
+                },
+                {
+                    "name": "sub",
+                    "alt_names": [
+                        "-"
+                    ]
+                },
+                {
+                    "name": "bit_or",
+                    "alt_names": [
+                        "|"
+                    ]
+                },
+                {
+                    "name": "bit_xor",
+                    "alt_names": [
+                        "^"
+                    ]
+                },
+                {
+                    "name": "equal",
+                    "alt_names": [
+                        "=="
+                    ]
+                },
+                {
+                    "name": "not_equal",
+                    "alt_names": [
+                        "!="
+                    ]
+                },
+                {
+                    "name": "less",
+                    "alt_names": [
+                        "<"
+                    ]
+                },
+                {
+                    "name": "less_or_eq",
+                    "alt_names": [
+                        "<="
+                    ]
+                },
+                {
+                    "name": "grater",
+                    "alt_names": [
+                        ">"
+                    ]
+                },
+                {
+                    "name": "grater_or_eq",
+                    "alt_names": [
+                        ">="
+                    ]
+                },
+                {
+                    "name": "logical_and",
+                    "alt_names": [
+                        "&&"
+                    ]
+                },
+                {
+                    "name": "logical_or",
+                    "alt_names": [
+                        "||"
+                    ]
+                },
+                {
+                    "name": "cond_op1",
+                    "alt_names": [
+                        "?"
+                    ]
+                },
+                {
+                    "name": "cond_op2",
+                    "alt_names": [
+                        ":"
+                    ]
+                },
+                {
+                    "name": "range_exclusive",
+                    "alt_names": [
+                        ".."
+                    ]
+                },
+                {
+                    "name": "range_inclusive",
+                    "alt_names": [
+                        "..="
+                    ]
+                },
+                {
+                    "name": "assign",
+                    "alt_names": [
+                        "="
+                    ]
+                },
+                {
+                    "name": "define_assign",
+                    "alt_names": [
+                        ":="
+                    ]
+                },
+                {
+                    "name": "const_assign",
+                    "alt_names": [
+                        "::="
+                    ]
+                },
+                {
+                    "name": "add_assign",
+                    "alt_names": [
+                        "+="
+                    ]
+                },
+                {
+                    "name": "sub_assign",
+                    "alt_names": [
+                        "-="
+                    ]
+                },
+                {
+                    "name": "mul_assign",
+                    "alt_names": [
+                        "*="
+                    ]
+                },
+                {
+                    "name": "div_assign",
+                    "alt_names": [
+                        "/="
+                    ]
+                },
+                {
+                    "name": "mod_assign",
+                    "alt_names": [
+                        "%="
+                    ]
+                },
+                {
+                    "name": "left_logical_shift_assign",
+                    "alt_names": [
+                        "<<="
+                    ]
+                },
+                {
+                    "name": "right_logical_shift_assign",
+                    "alt_names": [
+                        ">>="
+                    ]
+                },
+                {
+                    "name": "left_arithmetic_shift_assign",
+                    "alt_names": [
+                        "<<<="
+                    ]
+                },
+                {
+                    "name": "right_arithmetic_shift_assign",
+                    "alt_names": [
+                        ">>>="
+                    ]
+                },
+                {
+                    "name": "bit_and_assign",
+                    "alt_names": [
+                        "&="
+                    ]
+                },
+                {
+                    "name": "bit_or_assign",
+                    "alt_names": [
+                        "|="
+                    ]
+                },
+                {
+                    "name": "bit_xor_assign",
+                    "alt_names": [
+                        "^="
+                    ]
+                },
+                {
+                    "name": "comma",
+                    "alt_names": [
+                        ","
+                    ]
+                },
+                {
+                    "name": "in_assign",
+                    "alt_names": [
+                        "in"
+                    ]
+                },
+                {
+                    "name": "append_assign",
+                    "alt_names": [
+                        "append"
                     ]
                 }
             ]
@@ -91,7 +338,13 @@
             "name": "UnaryOp",
             "enums": [
                 {
-                    "name": "minus",
+                    "name": "not_",
+                    "alt_names": [
+                        "!"
+                    ]
+                },
+                {
+                    "name": "minus_sign",
                     "alt_names": [
                         "-"
                     ]
@@ -118,6 +371,23 @@
                     "alt_names": [
                         "config"
                     ]
+                }
+            ]
+        },
+        {
+            "name": "Endian",
+            "enums": [
+                {
+                    "name": "unspec"
+                },
+                {
+                    "name": "big"
+                },
+                {
+                    "name": "little"
+                },
+                {
+                    "name": "native"
                 }
             ]
         }
@@ -153,6 +423,10 @@
             "derive": "NamedStatement",
             "fields": [
                 {
+                    "name": "belong",
+                    "type": "Node<Statement>"
+                },
+                {
                     "name": "body",
                     "type": "Node<Body>"
                 }
@@ -174,6 +448,10 @@
             "name": "BodyStatement",
             "derive": "Statement",
             "fields": [
+                {
+                    "name": "belong",
+                    "type": "Node<Statement>"
+                },
                 {
                     "name": "body",
                     "type": "Node<Body>"
@@ -389,6 +667,10 @@
                 {
                     "name": "elements",
                     "type": "vector<Node<Statement>>"
+                },
+                {
+                    "name": "struct_type",
+                    "type": "Node<StructType>"
                 }
             ]
         },
@@ -445,6 +727,10 @@
                 {
                     "name": "is_signed",
                     "type": "bool"
+                },
+                {
+                    "name": "endian",
+                    "type": "Endian"
                 }
             ]
         },
@@ -605,6 +891,443 @@
                 {
                     "name": "bad_expr",
                     "type": "Node<Expr>"
+                }
+            ]
+        },
+        {
+            "name": "FloatType",
+            "derive": "Type",
+            "fields": [
+                {
+                    "name": "bit_size",
+                    "type": "uint32"
+                },
+                {
+                    "name": "endian",
+                    "type": "Endian"
+                }
+            ]
+        },
+        {
+            "name": "BoolType",
+            "derive": "Type",
+            "fields": []
+        },
+        {
+            "name": "VoidType",
+            "derive": "Type",
+            "fields": []
+        },
+        {
+            "name": "IdentType",
+            "derive": "Type",
+            "fields": [
+                {
+                    "name": "ident",
+                    "type": "Node<Ident>"
+                },
+                {
+                    "name": "import_ref",
+                    "type": "Node<MemberAccess>"
+                },
+                {
+                    "name": "base",
+                    "type": "Node<Type>"
+                }
+            ]
+        },
+        {
+            "name": "IntLiteralType",
+            "derive": "Type",
+            "fields": [
+                {
+                    "name": "base",
+                    "type": "Node<IntLiteral>"
+                }
+            ]
+        },
+        {
+            "name": "StrLiteralType",
+            "derive": "Type",
+            "fields": [
+                {
+                    "name": "base",
+                    "type": "Node<StrLiteral>"
+                }
+            ]
+        },
+        {
+            "name": "RegexLiteralType",
+            "derive": "Type",
+            "fields": [
+                {
+                    "name": "base",
+                    "type": "Node<RegexLiteral>"
+                }
+            ]
+        },
+        {
+            "name": "ArrayType",
+            "derive": "Type",
+            "fields": [
+                {
+                    "name": "length",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "end_loc",
+                    "type": "lexer::Loc"
+                },
+                {
+                    "name": "element_type",
+                    "type": "Node<Type>"
+                },
+                {
+                    "name": "is_bytes",
+                    "type": "bool"
+                }
+            ]
+        },
+        {
+            "name": "FunctionType",
+            "derive": "Type",
+            "fields": [
+                {
+                    "name": "return_type",
+                    "type": "Node<Type>"
+                },
+                {
+                    "name": "parameters",
+                    "type": "vector<Node<Type>>"
+                }
+            ]
+        },
+        {
+            "name": "StructType",
+            "derive": "Type",
+            "fields": [
+                {
+                    "name": "fields",
+                    "type": "vector<Node<Statement>>"
+                },
+                {
+                    "name": "base",
+                    "type": "Node<Statement>"
+                },
+                {
+                    "name": "recursive",
+                    "type": "bool"
+                }
+            ]
+        },
+        {
+            "name": "StructUnionType",
+            "derive": "Type",
+            "fields": [
+                {
+                    "name": "base",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "cond",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "conds",
+                    "type": "vector<Node<Expr>>"
+                },
+                {
+                    "name": "structs",
+                    "type": "vector<Node<StructType>>"
+                },
+                {
+                    "name": "union_fields",
+                    "type": "vector<Node<Field>>"
+                },
+                {
+                    "name": "exhaustive",
+                    "type": "bool"
+                }
+            ]
+        },
+        {
+            "name": "UnionType",
+            "derive": "Type",
+            "fields": [
+                {
+                    "name": "cond",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "candidates",
+                    "type": "vector<Node<UnionCandidate>>"
+                },
+                {
+                    "name": "base_type",
+                    "type": "Node<StructUnionType>"
+                },
+                {
+                    "name": "common_type",
+                    "type": "Node<Type>"
+                },
+                {
+                    "name": "is_strict_common_type",
+                    "type": "bool"
+                },
+                {
+                    "name": "member_candidates",
+                    "type": "vector<Node<Field>>"
+                }
+            ]
+        },
+        {
+            "name": "RangeType",
+            "derive": "Type",
+            "fields": [
+                {
+                    "name": "base_type",
+                    "type": "Node<Type>"
+                },
+                {
+                    "name": "range",
+                    "type": "Node<Range>"
+                }
+            ]
+        },
+        {
+            "name": "EnumType",
+            "derive": "Type",
+            "fields": [
+                {
+                    "name": "base",
+                    "type": "Node<Enum>"
+                }
+            ]
+        },
+        {
+            "name": "MetaType",
+            "derive": "Type",
+            "fields": []
+        },
+        {
+            "name": "OptionalType",
+            "derive": "Type",
+            "fields": [
+                {
+                    "name": "base_type",
+                    "type": "Node<Type>"
+                }
+            ]
+        },
+        {
+            "name": "GenericType",
+            "derive": "Type",
+            "fields": [
+                {
+                    "name": "base_type",
+                    "type": "Node<IdentType>"
+                },
+                {
+                    "name": "type_arguments",
+                    "type": "vector<Node<Type>>"
+                }
+            ]
+        },
+        {
+            "name": "ScopedStatement",
+            "derive": "Statement",
+            "fields": [
+                {
+                    "name": "statement",
+                    "type": "Node<Statement>"
+                },
+                {
+                    "name": "struct_type",
+                    "type": "Node<StructType>"
+                }
+            ]
+        },
+        {
+            "name": "MatchBranch",
+            "derive": "Statement",
+            "fields": [
+                {
+                    "name": "belong",
+                    "type": "Node<Match>"
+                },
+                {
+                    "name": "cond",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "sym_loc",
+                    "type": "lexer::Loc"
+                },
+                {
+                    "name": "then",
+                    "type": "Node<Statement>"
+                }
+            ]
+        },
+        {
+            "name": "UnionCandidate",
+            "derive": "Statement",
+            "fields": [
+                {
+                    "name": "cond",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "field",
+                    "type": "Node<Field>"
+                }
+            ]
+        },
+        {
+            "name": "Return",
+            "derive": "Statement",
+            "fields": [
+                {
+                    "name": "expr",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "related_function",
+                    "type": "Node<Function>"
+                }
+            ]
+        },
+        {
+            "name": "Break",
+            "derive": "Statement",
+            "fields": [
+                {
+                    "name": "related_loop",
+                    "type": "Node<Loop>"
+                }
+            ]
+        },
+        {
+            "name": "Continue",
+            "derive": "Statement",
+            "fields": [
+                {
+                    "name": "related_loop",
+                    "type": "Node<Loop>"
+                }
+            ]
+        },
+        {
+            "name": "Enum",
+            "derive": "NamedStatement",
+            "fields": [
+                {
+                    "name": "base_type",
+                    "type": "Node<Type>"
+                },
+                {
+                    "name": "members",
+                    "type": "vector<Node<EnumMember>>"
+                },
+                {
+                    "name": "enum_type",
+                    "type": "Node<EnumType>"
+                }
+            ]
+        },
+        {
+            "name": "EnumMember",
+            "derive": "NamedStatement",
+            "fields": [
+                {
+                    "name": "raw_expr",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "value",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "str_literal",
+                    "type": "Node<StrLiteral>"
+                }
+            ]
+        },
+        {
+            "name": "State",
+            "derive": "NamedBodyStatement",
+            "fields": []
+        },
+        {
+            "name": "TypeParameter",
+            "derive": "NamedStatement",
+            "fields": []
+        },
+        {
+            "name": "FieldArgument",
+            "derive": "Statement",
+            "fields": [
+                {
+                    "name": "raw_arguments",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "arguments",
+                    "type": "vector<Node<Expr>>"
+                },
+                {
+                    "name": "assigns",
+                    "type": "vector<Node<Binary>>"
+                },
+                {
+                    "name": "alignment",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "sub_byte_length",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "sub_byte_begin",
+                    "type": "Node<Expr>"
+                }
+            ]
+        },
+        {
+            "name": "Identity",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "expr",
+                    "type": "Node<Expr>"
+                }
+            ]
+        },
+        {
+            "name": "Cast",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "base",
+                    "type": "Node<Call>"
+                },
+                {
+                    "name": "arguments",
+                    "type": "vector<Node<Expr>>"
+                }
+            ]
+        },
+        {
+            "name": "OrCond",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "base",
+                    "type": "Node<Binary>"
+                },
+                {
+                    "name": "conds",
+                    "type": "vector<Node<Expr>>"
                 }
             ]
         }

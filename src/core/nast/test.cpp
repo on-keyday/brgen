@@ -84,13 +84,48 @@ int main() {
     headers.resize(1);
     check(headers.size() == 1, "NodeHeader is assignable (erase/sort/resize)");
 
+    // ---- make の引数 -------------------------------------------------------
+    // loc は NodeHeader へ、残りは NodeData<T> の集成初期化へ渡る。
+    auto lit = arena.make<IntLiteral>(brgen::lexer::Loc{.line = 42});
+    check(arena.get_header(lit.id())->loc.line == 42, "make(loc) stores loc in the header");
+
+    // 基底のフィールドを持つ型は、基底の集成を先に渡す (集成初期化の規則どおり)
+    auto typed = arena.make<IntLiteral>(brgen::lexer::Loc{.line = 7},
+                                        NodeData<Literal>{}, std::string{"123"});
+    check(typed->value == "123" && arena.get_header(typed.id())->loc.line == 7,
+          "make(loc, args...) aggregate-initializes NodeData");
+
+    auto plain = arena.make<Ident>();
+    check(plain->identifier.empty() && arena.get_header(plain.id())->loc.line == 0,
+          "make() with no arguments still works");
+
+    // ---- Node の比較 -------------------------------------------------------
+    auto other = arena.make<Format>();
+    check(fmt.id() == fmt.id() && fmt.id() != other.id(), "Node == / != compares identity");
+
+    // 派生 -> 基底の暗黙変換が両辺に効く
+    Node<Statement> fmt_as_stmt = fmt;
+    check(fmt_as_stmt == fmt.id() && !(fmt_as_stmt == other.id()),
+          "Node comparison works across derived/base");
+
+    // null 同士は型が違っても等しい (id_ のみで比べているため)
+    check(Node<Format>{} == Node<Statement>{} && Node<Format>{} == nullref,
+          "null Nodes compare equal regardless of the static type");
+
+    // 順序付けがあるので map/sort に載る
+    std::vector<Node<Statement>> sorted{func.id(), field_a.id(), fmt.id()};
+    std::sort(sorted.begin(), sorted.end());
+    check(std::is_sorted(sorted.begin(), sorted.end()) && sorted.front() < sorted.back(),
+          "Node is ordered (usable as a map key / sortable)");
+
     // ---- enum ヘルパ (ast::enum_array<T> 相当) -----------------------------
-    static_assert(enum_elem_count<UnaryOp>() == 1);
-    static_assert(enum_array<UnaryOp>[0].first == UnaryOp::minus);
-    static_assert(enum_array<UnaryOp>[0].second == "-");        // 代表表記 (alt_names)
-    static_assert(enum_name_array<UnaryOp>[0].second == "minus");  // 名前
-    static_assert(from_string<UnaryOp>("-") == UnaryOp::minus);
-    static_assert(from_string<UnaryOp>("minus") == UnaryOp::minus);  // as_json と round-trip
+    static_assert(enum_elem_count<UnaryOp>() == 2);
+    static_assert(enum_array<UnaryOp>[0].first == UnaryOp::not_);
+    static_assert(enum_array<UnaryOp>[0].second == "!");          // 代表表記 (alt_names)
+    static_assert(enum_name_array<UnaryOp>[0].second == "not_");  // 名前
+    static_assert(from_string<UnaryOp>("!") == UnaryOp::not_);
+    static_assert(from_string<UnaryOp>("not_") == UnaryOp::not_);  // as_json と round-trip
+    static_assert(enum_elem_count<BinaryOp>() == 42);              // ast から取り込んだ全演算子
     static_assert(!from_string<UnaryOp>("nope").has_value());
     static_assert(enum_type_name<UnaryOp>() != nullptr);
     check(true, "enum helpers are constexpr-usable (checked by static_assert)");

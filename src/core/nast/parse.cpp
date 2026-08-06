@@ -2,8 +2,7 @@
 #include "core/lexer/token.h"
 #include "nodes.h"
 #include "stream.h"
-// #include "node/scope.h"
-#include "strutil/append.h"
+// #include "strutil/append.h"
 #include "parse.h"
 #include <fnet/util/base64.h>
 #include <memory>
@@ -25,11 +24,11 @@ namespace brgen::nast {
        private:
         size_t indent = 0;
         ScopeStack stack;
-        std::shared_ptr<Member> current_fmt_;
-        std::shared_ptr<StructType> current_struct_;
+        Node<NamedStatement> current_fmt_;
+        Node<StructType> current_struct_;
 
        public:
-        auto cond_scope(scope_ptr& frame, const std::shared_ptr<Node>& scope_owner) {
+        auto cond_scope(scope_ptr& frame, const Node<Node>& scope_owner) {
             auto br = stack.enter_branch();
             frame = stack.current_scope();
             frame->owner = scope_owner;
@@ -42,7 +41,7 @@ namespace brgen::nast {
             return br;
         }
 
-        auto new_indent(Stream& s, size_t new_, scope_ptr& frame, const std::shared_ptr<Node>& scope_owner) {
+        auto new_indent(Stream& s, size_t new_, scope_ptr& frame, const Node<Node>& scope_owner) {
             if (indent >= new_) {
                 s.report_error("expect larger indent but not");
             }
@@ -62,7 +61,7 @@ namespace brgen::nast {
             });
         }
 
-        auto enter_member(const std::shared_ptr<Member>& f) {
+        auto enter_member(const Node<NamedStatement>& f) {
             f->belong = current_fmt_;
             current_fmt_ = f;
             return futils::helper::defer([this] {
@@ -70,7 +69,7 @@ namespace brgen::nast {
             });
         }
 
-        auto enter_struct(const std::shared_ptr<StructType>& type) {
+        auto enter_struct(const Node<StructType>& type) {
             auto tmp = current_struct_;
             current_struct_ = type;
             return futils::helper::defer([this, tmp] {
@@ -78,16 +77,16 @@ namespace brgen::nast {
             });
         }
 
-        std::shared_ptr<Member> current_member() {
+        Node<NamedStatement> current_member() {
             return current_fmt_;
         }
 
-        void add_to_struct(const std::shared_ptr<Member>& f) {
+        void add_to_struct(const Node<NamedStatement>& f) {
             f->belong_struct = current_struct_;
-            if (auto field = ast::as<Field>(f)) {
+            if (auto field = as<Field>(f)) {
                 for (auto it = current_struct_->fields.rbegin(); it != current_struct_->fields.rend(); it++) {
-                    if (auto p = ast::as<Field>(*it)) {
-                        p->next = ast::cast_to<Field>(f);
+                    if (auto p = as<Field>(*it)) {
+                        p->next = (f).as<Field>();
                         break;
                     }
                 }
@@ -113,6 +112,10 @@ namespace brgen::nast {
     struct Parser {
         Stream& s;
         // ParserState state;
+        struct {
+            bool error_tolerant = false;
+            LocationError errors;
+        } state;
         Arena& a;
 
         Parser(Stream& s, LocationError& errors)
@@ -122,26 +125,29 @@ namespace brgen::nast {
         Node<Module> parse() {
             s.set_regex_mode(true);  // default regex mode is on
             auto prog = a.make<Module>();
-            prog->loc = s.loc();
-            prog->global_scope = state.reset_stack();
-            prog->global_scope->owner = prog;
-            // global_scope spans the whole file; begin = 0, end is updated after
-            // all top-level statements are parsed.
-            prog->global_scope->loc = prog->loc;
-            prog->global_scope->loc.pos.begin = 0;
-            prog->struct_type = std::make_shared<StructType>(prog->loc);
-            prog->struct_type->base = prog;
-            auto st = state.enter_struct(prog->struct_type);
+            prog.loc() = s.loc();
+            // prog->global_scope = state.reset_stack();
+            // prog->global_scope->owner = prog;
+            //  global_scope spans the whole file; begin = 0, end is updated after
+            //  all top-level statements are parsed.
+            // prog->global_scope->loc = prog.loc();
+            // prog->global_scope->loc.pos.begin = 0;
+            // prog->struct_type = a.make<StructType>(prog.loc());
+            // prog->struct_type->base = prog;
+            // auto st = state.enter_struct(prog->struct_type);
             s.skip_line();
-            std::shared_ptr<Node> comment;
+            /*
+            Node<Statement> comment;
             auto collect_comments = [&] {
                 // get comments and add to scope
                 comment = s.get_comments();
             };
+            */
             while (!s.eos()) {
-                collect_comments();
-                auto expr = parse_statement();
-                if (auto member = ast::as<Member>(expr)) {
+                //  collect_comments();
+                auto stmt = parse_statement();
+                /*
+                if (auto member = as<NamedStatement>(expr)) {
                     member->comment = std::move(comment);
                 }
                 else {
@@ -150,13 +156,16 @@ namespace brgen::nast {
                         prog->elements.push_back(std::move(comment));
                     }
                 }
-                prog->elements.push_back(std::move(expr));
+                */
+                prog->statements.push_back(stmt);
                 s.shrink();
                 s.skip_white();
             }
+            /*
             if (!prog->elements.empty()) {
                 prog->global_scope->loc.pos.end = prog->elements.back()->loc.pos.end;
             }
+            */
             return prog;
         }
 
@@ -189,47 +198,50 @@ namespace brgen::nast {
         /*
             <indent scope> ::= ":" <line> (<indent> <statement>)+
         */
-        Node<Body> parse_indent_block(const std::shared_ptr<Node>& scope_owner, std::string_view hint, std::vector<std::shared_ptr<Ident>>* ident = nullptr) {
+        Node<Body> parse_indent_block(Node<Statement> scope_owner, std::string_view hint, std::vector<Node<Ident>>* ident = nullptr) {
             // Consume the initial indent sign
             // auto follow_comment = must_consume_indent_sign(hint);
 
             // Get the base indent token
             auto base = s.must_consume_token(lexer::Tag::indent, "indent expected after ':'");
 
-            // Create a shared pointer for the IndentBlock
-            auto block = std::make_shared<IndentBlock>(base.loc);
+            // Create a shared pointer for the Body
+            auto block = a.make<Body>(base.loc);
 
-            block->follow_comment = std::move(follow_comment);
-            block->struct_type = std::make_shared<StructType>(base.loc);
+            // block->follow_comment = std::move(follow_comment);
+            // block->struct_type = a.make<StructType>(base.loc);
 
-            assert(scope_owner != nullptr);
-            block->struct_type->base = scope_owner;
+            assert(scope_owner != nullref);
+            block->struct_type.ref(a)->base = scope_owner;
 
             // Create a new context for the current indent level
             auto current_indent = base.token.size();
-            auto c = state.new_indent(s, current_indent, block->scope, scope_owner);
-            auto ss = state.enter_struct(block->struct_type);
+            // auto c = state.new_indent(s, current_indent, block->scope, scope_owner);
+            // auto ss = state.enter_struct(block->struct_type);
 
+            /*
             if (ident) {
                 for (auto& i : *ident) {
-                    i->scope = block->scope;
-                    block->scope->push(i);
-                    check_duplicated_def(i.get());
+                    // i->scope = block->scope;
+                    // block->scope->push(i);
+                    // check_duplicated_def(i.get());
                 }
             }
 
-            std::shared_ptr<Node> comment;
+            Node<Node> comment;
             auto collect_comments = [&] {
                 // get comments and add to scope
                 comment = s.get_comments();
             };
+            */
 
             auto parse_a_line = [&] {
-                collect_comments();
+                // collect_comments();
                 bool line_skipped = false;
                 while (!line_skipped) {
                     auto expr = parse_statement(&line_skipped);
-                    if (auto member = ast::as<Member>(expr)) {
+                    /*
+                    if (auto member = as<NamedStatement>(expr)) {
                         member->comment = std::move(comment);
                     }
                     else {
@@ -237,6 +249,7 @@ namespace brgen::nast {
                             block->elements.push_back(std::move(comment));
                         }
                     }
+                    */
                     block->elements.push_back(std::move(expr));
                     if (s.peek_token(lexer::Tag::indent) || s.eos()) {
                         break;
@@ -260,73 +273,76 @@ namespace brgen::nast {
             // position->scope lookups. begin = first body indent, end = last
             // body element end (or base end for empty bodies — shouldn't happen
             // since indent blocks require at least one statement, but be safe).
+            /*
             block->scope->loc.file = base.loc.file;
             block->scope->loc.line = base.loc.line;
             block->scope->loc.col = base.loc.col;
             block->scope->loc.pos.begin = base.loc.pos.begin;
             if (!block->elements.empty()) {
-                block->scope->loc.pos.end = block->elements.back()->loc.pos.end;
+                block->scope->loc.pos.end = block->elements.back().ref(a).loc().pos.end;
             }
             else {
                 block->scope->loc.pos.end = base.loc.pos.end;
             }
+            */
 
             return block;
         }
 
-        void export_union_field(const std::shared_ptr<Identity>& cond0, std::vector<std::shared_ptr<Identity>>& cond, const std::shared_ptr<StructUnionType>& type) {
+        /*
+        void export_union_field(Node<Identity>& cond0, std::vector<Node<Identity>>& cond, const Node<StructUnionType>& type) {
             assert(cond.size() == type->structs.size());
             type->cond = cond0;
             for (auto& c : cond) {
                 type->conds.push_back(c);
             }
-            std::map<std::string, std::vector<std::shared_ptr<UnionCandidate>>> m;
+            std::map<std::string, std::vector<Node<UnionCandidate>>> m;
             for (size_t i = 0; i < type->conds.size(); i++) {
                 auto& c = type->conds[i];
                 auto& f = type->structs[i];
                 for (auto& d : f->fields) {
-                    if (!d->ident) {
+                    if (!d->name) {
                         continue;
                     }
-                    if (!ast::as<Field>(d)) {
+                    if (!as<Field>(d)) {
                         continue;
                     }
-                    if (auto found = m.find(d->ident->ident); found != m.end()) {
+                    if (auto found = m.find(d->name->name); found != m.end()) {
                         for (auto& c1 : found->second) {
                             if (c1->cond.lock() == c) {
-                                error(d->loc, "duplicate field name: ", d->ident->ident).error(c->loc, "previous definition is here").report();
+                                error(d->loc, "duplicate field name: ", d->name->name).error(c->loc, "previous definition is here").report();
                             }
                         }
                     }
-                    auto cand = std::make_shared<UnionCandidate>(d->loc);
+                    auto cand = a.make<UnionCandidate>(d->loc);
                     cand->cond = c;
-                    cand->field = ast::cast_to<Field>(d);
-                    m[d->ident->ident].push_back(std::move(cand));
+                    cand->field = (d).as<Field>();
+                    m[d->name->name].push_back(std::move(cand));
                 }
             }
-            std::vector<std::shared_ptr<UnionCandidate>> null_cache;
+            std::vector<Node<UnionCandidate>> null_cache;
             auto get_null_cache = [&](size_t i) {
                 assert(i < type->conds.size());
                 if (null_cache.size() <= i) {
                     null_cache.resize(i + 1);
                 }
                 if (!null_cache[i]) {
-                    null_cache[i] = std::make_shared<UnionCandidate>(type->loc);
-                    null_cache[i]->cond = type->conds[i];
+                    null_cache[i] = a.make<UnionCandidate>(type->loc);
+                    null_cache[i].ref(a)->cond = type->conds[i];
                 }
                 return null_cache[i];
             };
             for (auto& [k, v] : m) {
-                auto union_type = std::make_shared<UnionType>();
+                auto union_type = a.make<UnionType>();
                 union_type->cond = cond0;
-                union_type->loc = v[0]->loc;
-                auto ident = std::make_shared<Ident>(union_type->loc, k);
+                union_type.loc() = v[0].ref(a).loc();
+                auto ident = a.make<Ident>(union_type.loc(), k);
                 ident->usage = IdentUsage::define_field;
                 ident->scope = state.current_scope();
                 ident->scope->push(ident);
                 ident->expr_type = union_type;
-                auto field = std::make_shared<Field>(union_type->loc);
-                field->ident = ident;
+                auto field = a.make<Field>(union_type.loc());
+                field->name = ident;
                 ident->base = field;
                 field->field_type = union_type;
                 field->belong = state.current_member();
@@ -344,79 +360,87 @@ namespace brgen::nast {
                 state.add_to_struct(std::move(field));
             }
         }
+        */
 
         /*
             <match> ::= "match" <expr>? <match branch>*
             <match branch> ::= <expr> [":" <indent block> | "=>" <statement>]
         */
-        std::shared_ptr<Match> parse_match(lexer::Token&& token) {
+        Node<Match> parse_match(lexer::Token&& token) {
             // Create a shared pointer for the Match
-            auto match = std::make_shared<Match>(token.loc);
+            auto match = a.make<Match>(token.loc);
 
-            std::shared_ptr<StructUnionType> union_ = std::make_shared<StructUnionType>(match->loc);
-            match->struct_union_type = union_;
-            union_->base = match;
+            // Node<StructUnionType> union_ = a.make<StructUnionType>(match.loc());
+            // match->struct_union_type = union_;
+            // union_.ref(a)->base = match;
 
-            std::vector<std::shared_ptr<Identity>> cond;
+            // std::vector<Node<Identity>> cond;
 
-            auto cs = state.cond_scope(match->cond_scope, match);
+            // auto cs = state.cond_scope(match->cond_scope, match);
 
+            /*
             auto push_union_to_current_struct = [&] {
-                auto f = std::make_shared<Field>(match->loc);
+                auto f = a.make<Field>(match.loc());
                 f->field_type = union_;
                 f->belong = state.current_member();
                 state.add_to_struct(std::move(f));
                 cs.execute();
                 export_union_field(match->cond, cond, union_);
             };
+            */
 
             s.skip_white();
 
             if (!s.expect_token(":")) {
-                match->cond = parse_expr_identity();
+                match->condition = parse_expr_identity();
             }
 
             // Consume the initial indent sign
             must_consume_indent_sign("to start match branch");
 
-            auto stmt_with_struct = [&](lexer::Loc loc, std::shared_ptr<ast::MatchBranch>& br) {
-                auto scoped = std::make_shared<ScopedStatement>(loc);
-                scoped->struct_type = std::make_shared<StructType>(loc);
-                scoped->struct_type->base = br;
-                auto s_scope = state.enter_struct(scoped->struct_type);
-                auto c_scope = state.cond_scope(scoped->scope, br);
-                scoped->statement = parse_statement();
-                union_->structs.push_back(scoped->struct_type);
-                br->then = std::move(scoped);
+            auto stmt_with_struct = [&](lexer::Loc loc, Ref<Arena, ConditionalStatement>& br) {
+                // auto scoped = a.make<ScopedStatement>(loc);
+                // scoped->struct_type = a.make<StructType>(loc);
+                // scoped->struct_type.ref(a)->base = br;
+                // auto s_scope = state.enter_struct(scoped->struct_type);
+                // auto c_scope = state.cond_scope(scoped->scope, br);
+                auto bdy = a.make<Body>(loc);
+                bdy->elements.push_back(parse_statement());
+                br->body = bdy;
+                // union_.ref(a)->structs.push_back(scoped->struct_type);
+                // br.ref(a)->then = std::move(scoped);
             };
 
-            auto collect_comments = [&](std::shared_ptr<MatchBranch>& b) {
-                b->comment = s.get_comments();
+            /*
+            auto collect_comments = [&](Node<MatchBranch>& b) {
+                b.ref(a)->comment = s.get_comments();
             };
+            */
 
-            auto parse_match_branch = [&]() -> std::shared_ptr<MatchBranch> {
-                auto br = std::make_shared<MatchBranch>();
+            auto parse_match_branch = [&]() -> Node<BodyStatement> {
+                auto br = a.make<ConditionalStatement>();
                 br->belong = match;
-                br->cond = parse_expr_identity();
-                collect_comments(br);
-                if (auto b = ast::as<ast::Binary>(br->cond->expr); b && b->op == ast::BinaryOp::comma) {
-                    auto c = std::make_shared<ast::OrCond>(b->loc, ast::cast_to<ast::Binary>(br->cond->expr));
+                br->condition = parse_expr_identity();
+                br.set_loc(br->condition.ref(a).loc());
+                // collect_comments(br);
+                if (auto b = as<Binary>(br->cond.ref(a)->expr); b && b->op == BinaryOp::comma) {
+                    auto c = a.make<OrCond>(b->loc, (br->cond.ref(a)->expr).as<Binary>());
                     collect_args(c->base, c->conds);
-                    br->cond->expr = std::move(c);
+                    br->cond.ref(a)->expr = std::move(c);
                 }
-                cond.push_back(br->cond);
-                br->loc = br->cond->loc;
+                // cond.push_back(br->cond);
+                // br.loc() = br->cond.ref(a).loc();
                 s.skip_white();
                 auto sym = s.consume_token("=>");
                 if (!sym) {
                     auto tok = s.peek_token(":");
                     auto block = parse_indent_block(br, "to start block style match branch");
-                    union_->structs.push_back(block->struct_type);
-                    br->then = std::move(block);
-                    br->sym_loc = tok->loc;
+                    // union_.ref(a)->structs.push_back(block.ref(a)->struct_type);
+                    br->body = block;
+                    // br->sym_loc = tok->loc;
                     return br;
                 }
-                br->sym_loc = sym->loc;
+                // br->sym_loc = sym->loc;
                 s.skip_white();
                 stmt_with_struct(sym->loc, br);
                 return br;
@@ -427,10 +451,10 @@ namespace brgen::nast {
 
             // Create a new context for the current indent level
             auto current_indent = base.token.size();
-            auto c = state.new_indent_no_scope(s, current_indent);
+            // auto c = state.new_indent_no_scope(s, current_indent);
 
             // Parse and add the first element
-            match->branch.push_back(parse_match_branch());
+            match->blocks.push_back(parse_match_branch());
 
             // Parse and add subsequent elements with the same indent level
             while (auto indent = s.peek_token(lexer::Tag::indent)) {
@@ -449,23 +473,23 @@ namespace brgen::nast {
         /*
             <if> ::= "if" <expr> <indent scope> ("elif" <expr> <block>)* ("else" <indent scope>)?
         */
-        std::shared_ptr<If> parse_if(lexer::Token&& token) {
+        Node<If> parse_if(lexer::Token&& token) {
             s.skip_white();
-            auto if_ = std::make_shared<If>(token.loc);
+            auto if_ = a.make<If>(token.loc);
 
             auto cs = state.cond_scope(if_->cond_scope, if_);
 
             // 解析して if の条件式とブロックを設定
             if_->cond = parse_expr_identity();
-            std::shared_ptr<StructUnionType> union_ = std::make_shared<StructUnionType>(if_->loc);
+            Node<StructUnionType> union_ = a.make<StructUnionType>(if_.loc());
             if_->struct_union_type = union_;
-            union_->base = if_;
+            union_.ref(a)->base = if_;
 
-            std::vector<std::shared_ptr<Identity>> cond;
+            std::vector<Node<Identity>> cond;
             cond.push_back(if_->cond);
 
             auto push_union_to_current_struct = [&] {
-                auto f = std::make_shared<Field>(if_->loc);
+                auto f = a.make<Field>(if_.loc());
                 f->field_type = union_;
                 f->belong = state.current_member();
                 state.add_to_struct(std::move(f));
@@ -473,13 +497,13 @@ namespace brgen::nast {
                 export_union_field(nullptr, cond, union_);
             };
 
-            auto body_with_struct = [&](lexer::Loc loc, auto& block, const std::shared_ptr<If>& owner, std::string_view hint) {
+            auto body_with_struct = [&](lexer::Loc loc, auto& block, const Node<If>& owner, std::string_view hint) {
                 auto tmp = parse_indent_block(owner, hint);
-                union_->structs.push_back(tmp->struct_type);
+                union_.ref(a)->structs.push_back(tmp.ref(a)->struct_type);
                 block = std::move(tmp);
             };
 
-            body_with_struct(if_->loc, if_->then, if_, "to start `if` body");
+            body_with_struct(if_.loc(), if_->then, if_, "to start `if` body");
 
             auto cur_indent = state.current_indent();
 
@@ -507,14 +531,14 @@ namespace brgen::nast {
             consume_indent();  // elif or else のため次のインデントを消費
 
             // elif ブロックの解析
-            std::shared_ptr<If> current_if = if_;
+            Node<If> current_if = if_;
             while (auto tok = s.consume_token("elif")) {
-                auto elif = std::make_shared<If>(tok->loc);
+                auto elif = a.make<If>(tok->loc);
                 s.skip_white();
                 elif->cond = parse_expr_identity();
                 cond.push_back(elif->cond);
                 body_with_struct(tok->loc, elif->then, elif, "to start `elif` body");
-                current_if->els = elif;
+                current_if.ref(a)->els = elif;
                 current_if = std::move(elif);
                 if (detect_end()) {
                     push_union_to_current_struct();
@@ -529,15 +553,15 @@ namespace brgen::nast {
                 // because JSONConverter not accept nullptr for array element
                 // use range_exclusive(in syntax, `..`) for else cond
                 // `..` match to any condition
-                auto range = std::make_shared<Range>();
-                range->loc = l->loc;
-                range->op = ast::BinaryOp::range_exclusive;
-                auto identity = std::make_shared<Identity>();
-                identity->loc = l->loc;
+                auto range = a.make<Range>();
+                range.loc() = l->loc;
+                range->op = BinaryOp::range_exclusive;
+                auto identity = a.make<Identity>();
+                identity.loc() = l->loc;
                 identity->expr = range;
                 cond.push_back(std::move(identity));
                 if_->struct_union_type->exhaustive = true;
-                body_with_struct(if_->loc, current_if->els, current_if, "to start `else` body");
+                body_with_struct(if_.loc(), current_if.ref(a)->els, current_if, "to start `else` body");
             }
             else {
                 if (cur_indent != 0) {
@@ -551,28 +575,28 @@ namespace brgen::nast {
             return if_;
         }
 
-        std::shared_ptr<Ident> parse_ident_no_scope(std::string_view hint) {
+        Node<Ident> parse_ident_no_scope(std::string_view hint) {
             if (state.error_tolerant) {
                 auto f = s.consume_token(lexer::Tag::ident);
                 if (!f) {
                     auto errs = s.token_error(lexer::Tag::ident, hint);
                     state.errors.locations.insert(state.errors.locations.end(), errs.locations.begin(), errs.locations.end());
                     s.recover_to_prev_skip();
-                    auto ident = std::make_shared<Ident>(s.loc(), "$dummy");  // error tolerant mode; return dummy ident
+                    auto ident = a.make<Ident>(s.loc(), "$dummy");  // error tolerant mode; return dummy ident
                     ident->usage = IdentUsage::bad_ident;
                     return ident;
                 }
-                return std::make_shared<Ident>(f->loc, std::move(f->token));
+                return a.make<Ident>(f->loc, std::move(f->token));
             }
             auto token = s.must_consume_token(lexer::Tag::ident, hint);
-            return std::make_shared<Ident>(token.loc, std::move(token.token));
+            return a.make<Ident>(token.loc, std::move(token.token));
         }
 
-        std::shared_ptr<Ident> parse_ident(std::string_view hint) {
+        Node<Ident> parse_ident(std::string_view hint) {
             auto ident = parse_ident_no_scope(hint);
             auto scope = state.current_scope();
             scope->push(ident);
-            ident->scope = std::move(scope);
+            ident.ref(a)->scope = std::move(scope);
             return ident;
         }
 
@@ -586,8 +610,8 @@ namespace brgen::nast {
             return paren;
         }
 
-        std::shared_ptr<StrLiteral> parse_str_literal(lexer::Token&& lit) {
-            auto literal = std::make_shared<StrLiteral>(lit.loc, std::move(lit.token));
+        Node<StrLiteral> parse_str_literal(lexer::Token&& lit) {
+            auto literal = a.make<StrLiteral>(lit.loc, std::move(lit.token));
             auto c = unescape(literal->value);
             if (!c) {
                 s.report_error(lit.loc, "invalid string literal");
@@ -599,22 +623,22 @@ namespace brgen::nast {
             return literal;
         }
 
-        std::shared_ptr<RegexLiteral> parse_regex_literal(lexer::Token&& lit) {
-            auto literal = std::make_shared<RegexLiteral>(lit.loc, std::move(lit.token));
+        Node<RegexLiteral> parse_regex_literal(lexer::Token&& lit) {
+            auto literal = a.make<RegexLiteral>(lit.loc, std::move(lit.token));
             return literal;
         }
 
-        std::shared_ptr<TypeLiteral> parse_type_literal(lexer::Token&& lit) {
+        Node<TypeLiteral> parse_type_literal(lexer::Token&& lit) {
             s.skip_line();
             auto typ = parse_type(false);
             s.skip_line();
             auto end_tok = s.must_consume_token(">", "to close type literal");
-            auto literal = std::make_shared<TypeLiteral>(lit.loc, std::move(typ), end_tok.loc);
+            auto literal = a.make<TypeLiteral>(lit.loc, std::move(typ), end_tok.loc);
             return literal;
         }
 
-        std::shared_ptr<CharLiteral> parse_char_literal(lexer::Token&& lit) {
-            auto literal = std::make_shared<CharLiteral>(lit.loc, std::move(lit.token));
+        Node<CharLiteral> parse_char_literal(lexer::Token&& lit) {
+            auto literal = a.make<CharLiteral>(lit.loc, std::move(lit.token));
             auto c = unescape(literal->value);
             if (!c) {
                 s.report_error(lit.loc, "invalid char literal");
@@ -640,12 +664,12 @@ namespace brgen::nast {
         /*
             <prim> ::= <int-literal> | <bool-literal> | <str-literal> | <ident> | "(" <expr> ")" | <if>
         */
-        std::shared_ptr<Expr> parse_prim(bool* line_skipped) {
+        Node<Expr> parse_prim(bool* line_skipped) {
             if (auto token = s.consume_token(lexer::Tag::int_literal)) {
-                return std::make_shared<IntLiteral>(token->loc, std::move(token->token));
+                return a.make<IntLiteral>(token->loc, std::move(token->token));
             }
             if (auto b = s.consume_token(lexer::Tag::bool_literal)) {
-                return std::make_shared<BoolLiteral>(b->loc, b->token == "true");
+                return a.make<BoolLiteral>(b->loc, b->token == "true");
             }
             if (auto t = s.consume_token(lexer::Tag::str_literal)) {
                 return parse_str_literal(std::move(*t));
@@ -657,13 +681,13 @@ namespace brgen::nast {
                 return parse_char_literal(std::move(*t));
             }
             if (auto i = s.consume_token("input")) {
-                return std::make_shared<SpecialLiteral>(i->loc, SpecialLiteralKind::input_);
+                return a.make<SpecialLiteral>(i->loc, SpecialLiteralKind::input_);
             }
             if (auto o = s.consume_token("output")) {
-                return std::make_shared<SpecialLiteral>(o->loc, SpecialLiteralKind::output_);
+                return a.make<SpecialLiteral>(o->loc, SpecialLiteralKind::output_);
             }
             if (auto c = s.consume_token("config")) {
-                return std::make_shared<SpecialLiteral>(c->loc, SpecialLiteralKind::config_);
+                return a.make<SpecialLiteral>(c->loc, SpecialLiteralKind::config_);
             }
             if (auto paren = s.consume_token("(")) {
                 return parse_paren(std::move(*paren));
@@ -684,26 +708,26 @@ namespace brgen::nast {
                 return parse_type_literal(std::move(*typ));
             }
             if (auto i = s.peek_token(lexer::Tag::ident)) {
-                auto i_desc = ast::is_int_type(i->token);
-                auto f_desc = ast::is_float_type(i->token);
+                auto i_desc = is_int_type(i->token);
+                auto f_desc = is_float_type(i->token);
                 if (i_desc || f_desc || i->token == "void" || i->token == "bool") {
-                    std::shared_ptr<ast::Type> type;
+                    Node<Type> type;
                     if (i_desc) {
-                        type = std::make_shared<ast::IntType>(i->loc, i_desc->bit_size, i_desc->endian, i_desc->is_signed);
+                        type = a.make<IntType>(i->loc, i_desc->bit_size, i_desc->endian, i_desc->is_signed);
                     }
                     else if (f_desc) {
-                        type = std::make_shared<ast::FloatType>(i->loc, f_desc->bit_size, f_desc->endian);
+                        type = a.make<FloatType>(i->loc, f_desc->bit_size, f_desc->endian);
                     }
                     else if (i->token == "void") {
-                        type = std::make_shared<ast::VoidType>(i->loc);
+                        type = a.make<VoidType>(i->loc);
                     }
                     else if (i->token == "bool") {
-                        type = std::make_shared<ast::BoolType>(i->loc);
+                        type = a.make<BoolType>(i->loc);
                     }
                     else {
                         assert(false);
                     }
-                    auto type_literal = std::make_shared<TypeLiteral>(i->loc, std::move(type), i->loc);
+                    auto type_literal = a.make<TypeLiteral>(i->loc, std::move(type), i->loc);
                     s.must_consume_token(lexer::Tag::ident, "THIS MUST BE SUCCESS; if shown, parser bug!!");
                     return type_literal;
                 }
@@ -712,13 +736,13 @@ namespace brgen::nast {
                 s.recover_to_prev_skip();
                 auto err = s.token_error(lexer::Tag::ident, "field, variable, type name for type literal or function name expected");
                 state.errors.locations.insert(state.errors.locations.end(), err.locations.begin(), err.locations.end());
-                return std::make_shared<BadExpr>(s.loc(), brgen::concat(state.errors.locations.back().msg));
+                return a.make<BadExpr>(s.loc(), brgen::concat(state.errors.locations.back().msg));
             }
             return parse_ident("field, variable, type name for type literal or function name expected");
         }
 
         void collect_args(const Node<Expr>& args, auto& res) {
-            if (auto a = ast::as<Binary>(args); a && a->op == ast::BinaryOp::comma) {
+            if (auto a = as<Binary>(args); a && a->op == BinaryOp::comma) {
                 collect_args(a->left, res);
                 collect_args(a->right, res);
             }
@@ -727,8 +751,8 @@ namespace brgen::nast {
             }
         }
 
-        std::shared_ptr<Call> parse_call(lexer::Token&& token, std::shared_ptr<Expr>& p) {
-            auto call = std::make_shared<Call>(token.loc, std::move(p));
+        Node<Call> parse_call(lexer::Token&& token, Node<Expr>& p) {
+            auto call = a.make<Call>(token.loc, std::move(p));
             s.skip_white();
             if (!s.expect_token(")")) {
                 call->raw_arguments = parse_expr();
@@ -740,17 +764,17 @@ namespace brgen::nast {
             return call;
         }
 
-        std::shared_ptr<Expr> parse_call_or_cast(lexer::Token&& token, std::shared_ptr<Expr>& p) {
+        Node<Expr> parse_call_or_cast(lexer::Token&& token, Node<Expr>& p) {
             auto call = parse_call(std::move(token), p);
-            if (auto typ = ast::as<ast::TypeLiteral>(call->callee)) {
+            if (auto typ = as<TypeLiteral>(call.ref(a)->callee)) {
                 auto copy = typ->type_literal;
-                return std::make_shared<Cast>(std::move(call), std::move(copy), call->arguments);
+                return a.make<Cast>(std::move(call), std::move(copy), call.ref(a)->arguments);
             }
             return call;
         }
 
-        std::shared_ptr<Index> parse_index(lexer::Token&& token, std::shared_ptr<Expr>& p) {
-            auto call = std::make_shared<Index>(token.loc, std::move(p));
+        Node<Index> parse_index(lexer::Token&& token, Node<Expr>& p) {
+            auto call = a.make<Index>(token.loc, std::move(p));
             s.skip_white();
             call->index = parse_expr();
             s.skip_white();
@@ -759,19 +783,19 @@ namespace brgen::nast {
             return call;
         }
 
-        std::shared_ptr<MemberAccess> parse_access(lexer::Token&& token, auto&& p) {
+        Node<MemberAccess> parse_access(lexer::Token&& token, auto&& p) {
             s.skip_white();
             auto ident = parse_ident_no_scope("member ident expected after '.'");
-            ident->usage = IdentUsage::reference_member;
-            auto member = std::make_shared<MemberAccess>(token.loc, std::move(p), std::move(ident));
-            member->member->base = member;
+            ident.ref(a)->usage = IdentUsage::reference_member;
+            auto member = a.make<MemberAccess>(token.loc, std::move(p), std::move(ident));
+            member->member.ref(a)->base = member;
             return member;
         }
 
         /*
             <post> ::= <prim>  ("(" <expr> ")" | <post> "." <ident> | <post> "[" <expr> "]")*
         */
-        std::shared_ptr<Expr> parse_post(bool* line_skipped) {
+        Node<Expr> parse_post(bool* line_skipped) {
             auto p = parse_prim(line_skipped);
             s.set_regex_mode(false);  // from here, regex literal is not allowed
             for (;;) {
@@ -818,7 +842,7 @@ namespace brgen::nast {
             s.skip_space();
             for (;;) {
                 if (auto token = consume_op(i, nast::enum_array<UnaryOp>)) {
-                    stack.push_back(std::make_shared<Unary>(token->loc, UnaryOp(i)));
+                    stack.push_back(a.make<Unary>(token->loc, UnaryOp(i)));
                     s.skip_white();
                     continue;
                 }
@@ -834,42 +858,42 @@ namespace brgen::nast {
             return target;
         }
 
-        bool is_finally_ident(const std::shared_ptr<ast::Expr>& expr, std::shared_ptr<ast::Ident>* ident) {
-            if (expr->node_type == ast::NodeType::ident) {
+        bool is_finally_ident(const Node<Expr>& expr, Node<Ident>* ident) {
+            if (expr.type() == NodeType::ident) {
                 if (ident) {
-                    *ident = ast::cast_to<ast::Ident>(expr);
+                    *ident = (expr).as<Ident>();
                 }
                 return true;
             }
-            if (expr->node_type == ast::NodeType::index) {
-                return is_finally_ident(static_cast<ast::Index*>(expr.get())->expr, ident);
+            if (expr.type() == NodeType::index) {
+                return is_finally_ident(static_cast<Index*>(expr.get())->expr, ident);
             }
-            if (expr->node_type == ast::NodeType::member_access) {
-                return is_finally_ident(static_cast<ast::MemberAccess*>(expr.get())->target, ident);
+            if (expr.type() == NodeType::member_access) {
+                return is_finally_ident(static_cast<MemberAccess*>(expr.get())->target, ident);
             }
-            if (expr->node_type == ast::NodeType::special_literal) {
+            if (expr.type() == NodeType::special_literal) {
                 return true;
             }
             return false;
         }
 
-        void check_duplicated_def(ast::Ident* ident) {
+        void check_duplicated_def(Ident* ident) {
             auto found = ident->scope->lookup_current(
-                [&](std::shared_ptr<ast::Ident>& i) {
-                    if (i->usage != ast::IdentUsage::unknown && i->ident == ident->ident) {
+                [&](Node<Ident>& i) {
+                    if (i.ref(a)->usage != IdentUsage::unknown && i.ref(a)->name == ident->name) {
                         return true;
                     }
                     return false;
                 },
                 ident);
             if (found) {
-                error(ident->loc, "duplicate definition of ", ident->ident)
+                error(ident->loc, "duplicate definition of ", ident->name)
                     .error((*found)->loc, "previous definition is here")
                     .report();
             }
         }
 
-        void rewrite_ident_scope(const std::shared_ptr<ast::Ident>& ident) {
+        void rewrite_ident_scope(const Node<Ident>& ident) {
             std::erase_if(ident->scope->objects, [&](auto& i) {
                 return i.lock() == ident;
             });
@@ -877,11 +901,11 @@ namespace brgen::nast {
             ident->scope->push(ident);
         }
 
-        void check_assignment(const std::shared_ptr<Binary>& assign) {
-            if (assign->op == ast::BinaryOp::define_assign ||
-                assign->op == ast::BinaryOp::const_assign ||
-                assign->op == ast::BinaryOp::in_assign) {
-                auto ident = ast::as<ast::Ident>(assign->left);
+        void check_assignment(const Node<Binary>& assign) {
+            if (assign->op == BinaryOp::define_assign ||
+                assign->op == BinaryOp::const_assign ||
+                assign->op == BinaryOp::in_assign) {
+                auto ident = as<Ident>(assign->left);
                 if (!ident) {
                     if (state.error_tolerant) {
                         (void)state.errors.error(assign->left->loc, "left of `:=`, `::=`, or `in` must be ident");
@@ -889,16 +913,16 @@ namespace brgen::nast {
                     }
                     s.report_error(assign->left->loc, "left of `:=`, `::=`, or `in` must be ident");
                 }
-                ident->usage = assign->op == ast::BinaryOp::const_assign
-                                   ? ast::IdentUsage::define_const
-                                   : ast::IdentUsage::define_variable;
+                ident->usage = assign->op == BinaryOp::const_assign
+                                   ? IdentUsage::define_const
+                                   : IdentUsage::define_variable;
                 ident->base = assign;
                 // rewrite scope information for semantic analysis
-                rewrite_ident_scope(ast::cast_to<ast::Ident>(assign->left));
+                rewrite_ident_scope((assign->left).as<Ident>());
                 check_duplicated_def(ident);
             }
             else {  // otherwise, assign
-                std::shared_ptr<ast::Ident> ident;
+                Node<Ident> ident;
                 if (!is_finally_ident(assign->left, &ident)) {
                     if (state.error_tolerant) {
                         (void)state.errors.error(assign->left->loc, "left of `=` must be ident, member access, indexed or input/output/config");
@@ -914,11 +938,11 @@ namespace brgen::nast {
 
         struct BinOpStack {
             size_t depth = 0;
-            std::shared_ptr<Expr> expr;
+            Node<Expr> expr;
         };
 
         bool appear_valid_range_end() {
-            for (auto u : enum_array<ast::UnaryOp>) {
+            for (auto u : enum_array<UnaryOp>) {
                 if (s.expect_token(u.second)) {
                     return true;
                 }
@@ -935,16 +959,16 @@ namespace brgen::nast {
             return false;
         }
 
-        std::shared_ptr<Identity> parse_expr_identity(bool* line_skipped = nullptr) {
-            return std::make_shared<Identity>(parse_expr(line_skipped));
+        Node<Identity> parse_expr_identity(bool* line_skipped = nullptr) {
+            return a.make<Identity>(parse_expr(line_skipped));
         }
 
         /*
             <expr> ::= <unary> | <unary> <bin-op> <expr>
             <bin-op> ::= <bin-op> | <bin-op> <bin-op> <expr>
         */
-        std::shared_ptr<Expr> parse_expr(bool* line_skipped = nullptr) {
-            std::shared_ptr<Expr> expr;
+        Node<Expr> parse_expr(bool* line_skipped = nullptr) {
+            Node<Expr> expr;
             size_t depth;
             std::vector<BinOpStack> stack;
             size_t i;
@@ -966,8 +990,8 @@ namespace brgen::nast {
             auto update_stack = [&] {  // returns true if `continue` required
                 if (stack_is_on_depth()) {
                     auto op = pop_stack();
-                    if (op.expr->node_type == NodeType::binary) {
-                        if (depth == ast::bin_assign_layer) {
+                    if (op.expr.type() == NodeType::binary) {
+                        if (depth == bin_assign_layer) {
                             stack.push_back(std::move(op));
                         }
                         else {
@@ -976,12 +1000,12 @@ namespace brgen::nast {
                             expr = std::move(op.expr);
                         }
                     }
-                    else if (op.expr->node_type == NodeType::range) {
+                    else if (op.expr.type() == NodeType::range) {
                         auto b = static_cast<Range*>(op.expr.get());
                         b->end = std::move(expr);
                         expr = std::move(op.expr);
                     }
-                    else if (op.expr->node_type == NodeType::cond) {
+                    else if (op.expr.type() == NodeType::cond) {
                         auto cop = static_cast<Cond*>(op.expr.get());
                         if (!cop->then) {
                             cop->then = std::move(expr);
@@ -1002,7 +1026,7 @@ namespace brgen::nast {
             };
 
             auto post_update_stack = [&] {
-                if (depth == ast::bin_cond_layer) {
+                if (depth == bin_cond_layer) {
                     while (stack_is_on_depth()) {
                         auto op = pop_stack();
                         auto cop = static_cast<Cond*>(op.expr.get());
@@ -1013,7 +1037,7 @@ namespace brgen::nast {
                         expr = std::move(op.expr);
                     }
                 }
-                else if (depth == ast::bin_assign_layer) {
+                else if (depth == bin_assign_layer) {
                     while (stack_is_on_depth()) {
                         auto op = pop_stack();
                         auto b = static_cast<Binary*>(op.expr.get());
@@ -1021,7 +1045,7 @@ namespace brgen::nast {
                             s.report_error("expect binary with `left` but not; parser bug");
                         }
                         b->right = std::move(expr);
-                        check_assignment(ast::cast_to<Binary>(op.expr));
+                        check_assignment((op.expr).as<Binary>());
                         expr = std::move(op.expr);
                     }
                 }
@@ -1036,36 +1060,36 @@ namespace brgen::nast {
             }
             s.set_regex_mode(false);  // from here, regex literal is not allowed
 
-            while (depth < ast::bin_layer_len) {
+            while (depth < bin_layer_len) {
                 if (update_stack()) {
                     continue;
                 }
                 s.skip_space();
-                if (depth == ast::bin_cond_layer) {
+                if (depth == bin_cond_layer) {
                     if (auto token = s.consume_token("?")) {
                         s.set_regex_mode(true);  // from here, regex literal is allowed
-                        stack.push_back(BinOpStack{.depth = depth, .expr = std::make_shared<Cond>(token->loc, std::move(expr))});
+                        stack.push_back(BinOpStack{.depth = depth, .expr = a.make<Cond>(token->loc, std::move(expr))});
                         s.skip_white();
                         parse_low();
                         continue;
                     }
                 }
                 else {
-                    if (auto token = consume_op(i, ast::bin_layers[depth])) {
+                    if (auto token = consume_op(i, bin_layers[depth])) {
                         s.set_regex_mode(true);  // from here, regex literal is allowed
-                        if (depth == ast::bin_compare_layer) {
+                        if (depth == bin_compare_layer) {
                             if (auto bin = as<Binary>(expr); bin && is_compare_op(bin->op)) {
                                 // this is like `a == b == c` but this language not support it
                                 s.report_error(token->loc, "unexpected `", token->token, "`");
                             }
                         }
-                        if (depth == ast::bin_range_layer) {
+                        if (depth == bin_range_layer) {
                             if (auto bin = as<Range>(expr); bin && is_range_op(bin->op)) {
                                 // this is like `a .. b .. c` but this language not support it
                                 s.report_error(token->loc, "unexpected `", token->token, "`");
                             }
                             s.skip_space();  // for safety, skip only space, not line
-                            auto r = std::make_shared<Range>(token->loc, std::move(expr), *ast::from_string<ast::BinaryOp>(ast::bin_layers[depth][i]));
+                            auto r = a.make<Range>(token->loc, std::move(expr), *from_string<BinaryOp>(bin_layers[depth][i]));
                             if (appear_valid_range_end()) {
                                 s.skip_white();
                                 stack.push_back(BinOpStack{.depth = depth, .expr = std::move(r)});
@@ -1076,7 +1100,7 @@ namespace brgen::nast {
                             continue;
                         }
                         s.skip_white();
-                        auto b = std::make_shared<Binary>(token->loc, std::move(expr), *ast::from_string<ast::BinaryOp>(ast::bin_layers[depth][i]));
+                        auto b = a.make<Binary>(token->loc, std::move(expr), *from_string<BinaryOp>(bin_layers[depth][i]));
                         if (depth == 0) {                          // special case, needless to use stack
                             b->right = parse_unary(line_skipped);  // return non-nullptr or throw error
                             expr = std::move(b);
@@ -1098,8 +1122,8 @@ namespace brgen::nast {
         /*
             <loop> ::= "for" <expr>? (";" <expr>?)? (";" <expr>?)? <indent block>
         */
-        std::shared_ptr<Loop> parse_for(lexer::Token&& token) {
-            auto for_ = std::make_shared<Loop>(token.loc);
+        Node<Loop> parse_for(lexer::Token&& token) {
+            auto for_ = a.make<Loop>(token.loc);
             auto cs = state.cond_scope(for_->cond_scope, for_);
             s.skip_white();
             constexpr auto hint = "to start `for` body";
@@ -1114,7 +1138,7 @@ namespace brgen::nast {
                 if (auto in_ = s.consume_token("in")) {
                     s.skip_white();
                     auto range = parse_expr();
-                    auto bin = std::make_shared<ast::Binary>(in_->loc, std::move(for_->init), ast::BinaryOp::in_assign);
+                    auto bin = a.make<Binary>(in_->loc, std::move(for_->init), BinaryOp::in_assign);
                     bin->right = std::move(range);
                     check_assignment(bin);
                     for_->init = std::move(bin);
@@ -1152,8 +1176,8 @@ namespace brgen::nast {
             <func type> ::= "fn" "(" (<type> ("," <type>)*)? ")" ("->" <type>)?
         */
         // fn (a :int,b :int) -> int
-        std::shared_ptr<FunctionType> parse_func_type(lexer::Token&& tok) {
-            auto func_type = std::make_shared<FunctionType>(tok.loc, true);
+        Node<FunctionType> parse_func_type(lexer::Token&& tok) {
+            auto func_type = a.make<FunctionType>(tok.loc, true);
             s.skip_white();
             s.must_consume_token("(", "to open function type parameter list");
             s.skip_white();
@@ -1187,10 +1211,10 @@ namespace brgen::nast {
             <str literal type> ::= <str literal>
             <ident type> ::= <ident> ("." <ident>)* ( "[" <type> "]" )?
         */
-        std::shared_ptr<Type> parse_type(bool as_argument) {
+        Node<Type> parse_type(bool as_argument) {
             if (auto arr_begin = s.consume_token("[")) {
                 s.skip_white();
-                std::shared_ptr<Expr> expr;
+                Node<Expr> expr;
                 if (!s.expect_token("]")) {
                     expr = parse_expr();
                     s.skip_white();
@@ -1198,15 +1222,15 @@ namespace brgen::nast {
                 auto end_tok = s.must_consume_token("]", "to close array type");
                 s.skip_space();
                 auto base_type = parse_type(as_argument);
-                return std::make_shared<ArrayType>(arr_begin->loc, std::move(expr), end_tok.loc, std::move(base_type), true);
+                return a.make<ArrayType>(arr_begin->loc, std::move(expr), end_tok.loc, std::move(base_type), true);
             }
 
             if (auto lit = s.consume_token(lexer::Tag::str_literal)) {
-                return std::make_shared<StrLiteralType>(std::move(parse_str_literal(std::move(*lit))), true);
+                return a.make<StrLiteralType>(std::move(parse_str_literal(std::move(*lit))), true);
             }
 
             if (auto lit = s.consume_token(lexer::Tag::regex_literal)) {
-                return std::make_shared<RegexLiteralType>(std::move(parse_regex_literal(std::move(*lit))), true);
+                return a.make<RegexLiteralType>(std::move(parse_regex_literal(std::move(*lit))), true);
             }
 
             if (auto fn = s.consume_token("fn")) {
@@ -1214,16 +1238,16 @@ namespace brgen::nast {
             }
 
             if (auto void_ = s.consume_token("void")) {
-                return std::make_shared<VoidType>(void_->loc, true);
+                return a.make<VoidType>(void_->loc, true);
             }
 
             if (auto bool_ = s.consume_token("bool")) {
-                return std::make_shared<BoolType>(bool_->loc, true);
+                return a.make<BoolType>(bool_->loc, true);
             }
 
             if (auto format = s.consume_token("format")) {
                 auto fmt = parse_format(std::move(*format), true);
-                return fmt->body->struct_type;
+                return fmt.ref(a)->body.ref(a)->struct_type;
             }
 
             lexer::Token ident;
@@ -1250,29 +1274,29 @@ namespace brgen::nast {
             }
 
             if (auto desc = is_int_type(ident.token)) {
-                return std::make_shared<IntType>(ident.loc, desc->bit_size, desc->endian, desc->is_signed, true);
+                return a.make<IntType>(ident.loc, desc->bit_size, desc->endian, desc->is_signed, true);
             }
             if (auto desc = is_float_type(ident.token)) {
-                return std::make_shared<FloatType>(ident.loc, desc->bit_size, desc->endian, true);
+                return a.make<FloatType>(ident.loc, desc->bit_size, desc->endian, true);
             }
 
-            auto base = std::make_shared<Ident>(ident.loc, std::move(ident.token));
+            auto base = a.make<Ident>(ident.loc, std::move(ident.token));
             base->usage = IdentUsage::maybe_type;
             base->scope = state.current_scope();
 
             s.skip_space();
-            std::shared_ptr<ast::MemberAccess> import_ref;
+            Node<MemberAccess> import_ref;
 
             // import type
             if (auto dot = s.consume_token(".")) {
                 import_ref = parse_access(std::move(*dot), std::move(base));
-                base = import_ref->member;
+                base = import_ref.ref(a)->member;
             }
 
-            auto id = std::make_shared<IdentType>(ident.loc, std::move(base));
+            auto id = a.make<IdentType>(ident.loc, std::move(base));
             id->import_ref = std::move(import_ref);
             if (!as_argument) {
-                if (auto fmt = ast::as<ast::Format>(state.current_member())) {
+                if (auto fmt = as<Format>(state.current_member())) {
                     fmt->depends.push_back(id);
                 }
             }
@@ -1280,7 +1304,7 @@ namespace brgen::nast {
             // generic type instantiation: `X[T, ...]`
             s.skip_space();
             if (auto lb = s.consume_token("[")) {
-                auto generic = std::make_shared<GenericType>(id->loc, true);
+                auto generic = a.make<GenericType>(id.loc(), true);
                 generic->base_type = std::move(id);
                 for (;;) {
                     s.skip_white();
@@ -1314,9 +1338,9 @@ namespace brgen::nast {
         // may returns expr if not field
         Node<Statement> parse_field(Node<Expr> expr, bool as_parameter) {
             lexer::Token token;
-            std::shared_ptr<Ident> ident;
+            Node<Ident> ident;
             if (expr) {
-                if (expr->node_type != NodeType::ident) {
+                if (expr.type() != NodeType::ident) {
                     return expr;
                 }
                 s.skip_space();
@@ -1324,28 +1348,28 @@ namespace brgen::nast {
                 if (!tmp) {
                     return expr;
                 }
-                ident = cast_to<Ident>(expr);
+                ident = (expr).as<Ident>();
                 token = std::move(*tmp);
             }
             else {
                 token = s.must_consume_token(":", "to specify field type");
             }
 
-            auto field = std::make_shared<Field>(ident ? ident->loc : token.loc);
+            auto field = a.make<Field>(ident ? ident.ref(a).loc() : token.loc);
             field->colon_loc = token.loc;
 
-            field->ident = std::move(ident);
+            field->name = std::move(ident);
             s.skip_space();
 
             field->field_type = parse_type(as_parameter);
 
-            if (field->ident) {
-                field->ident->expr_type = field->field_type;
-                field->ident->base = field;
-                field->ident->constant_level = ConstantLevel::variable;
+            if (field->name) {
+                field->name.ref(a)->expr_type = field->field_type;
+                field->name.ref(a)->base = field;
+                field->name.ref(a)->constant_level = ConstantLevel::variable;
                 if (!as_parameter) {  // as parameter, duplication check is delayed until all parameters are parsed, because of this case: `fn foo(x :int, x :int)`
-                    field->ident->usage = IdentUsage::define_field;
-                    check_duplicated_def(field->ident.get());
+                    field->name.ref(a)->usage = IdentUsage::define_field;
+                    check_duplicated_def(field->name.get());
                 }
             }
 
@@ -1356,7 +1380,7 @@ namespace brgen::nast {
             if (auto b = s.consume_token("(")) {
                 s.skip_white();
 
-                auto field_argument = std::make_shared<FieldArgument>(b->loc);
+                auto field_argument = a.make<FieldArgument>(b->loc);
 
                 if (!s.expect_token(")")) {
                     field_argument->raw_arguments = parse_expr();
@@ -1383,54 +1407,54 @@ namespace brgen::nast {
             return field;
         }
 
-        void set_enum_value(std::shared_ptr<EnumMember>& member, size_t& offset, ast::EnumMember*& prev_specified) {
+        void set_enum_value(Node<EnumMember>& member, size_t& offset, EnumMember*& prev_specified) {
             if (!prev_specified) {
-                auto int_lit = std::make_shared<ast::IntLiteral>(member->loc, "0");
-                member->value = int_lit;
+                auto int_lit = a.make<IntLiteral>(member.ref(a).loc(), "0");
+                member.ref(a)->value = int_lit;
                 prev_specified = member.get();
             }
             else {
                 // make (prev expr) + offset
-                if (auto i_lit = ast::as<ast::IntLiteral>(prev_specified->value);
+                if (auto i_lit = as<IntLiteral>(prev_specified->value);
                     i_lit && i_lit->value == "0") {
-                    member->value = std::make_shared<ast::IntLiteral>(member->loc, brgen::nums(offset));
+                    member.ref(a)->value = a.make<IntLiteral>(member.ref(a).loc(), brgen::nums(offset));
                 }
                 else {
-                    auto add = std::make_shared<ast::Binary>();
-                    add->loc = member->loc;
-                    add->op = ast::BinaryOp::add;
+                    auto add = a.make<Binary>();
+                    add.loc() = member.ref(a).loc();
+                    add->op = BinaryOp::add;
                     add->left = prev_specified->value;
-                    add->right = std::make_shared<ast::IntLiteral>(member->loc, brgen::nums(offset));
-                    member->value = add;
+                    add->right = a.make<IntLiteral>(member.ref(a).loc(), brgen::nums(offset));
+                    member.ref(a)->value = add;
                 }
             }
         }
 
-        std::shared_ptr<EnumMember> parse_enum_member(const std::shared_ptr<ast::Enum>& enum_, size_t& offset, ast::EnumMember*& prev_specified) {
+        Node<EnumMember> parse_enum_member(const Node<Enum>& enum_, size_t& offset, EnumMember*& prev_specified) {
             auto ident = parse_ident("enum member ident expected");
-            ident->usage = IdentUsage::define_enum_member;
-            ident->expr_type = enum_->enum_type;
-            ident->constant_level = ConstantLevel::constant;
+            ident.ref(a)->usage = IdentUsage::define_enum_member;
+            ident.ref(a)->expr_type = enum_->enum_type;
+            ident.ref(a)->constant_level = ConstantLevel::constant;
             check_duplicated_def(ident.get());
-            auto member = std::make_shared<EnumMember>(ident->loc);
-            member->ident = ident;
+            auto member = a.make<EnumMember>(ident.ref(a).loc());
+            member->name = ident;
             member->belong = enum_;
-            ident->base = member;
+            ident.ref(a)->base = member;
             s.skip_space();
             if (s.consume_token("=")) {
                 s.skip_white();
                 member->raw_expr = parse_expr();
-                std::vector<std::shared_ptr<ast::Expr>> commas;
+                std::vector<Node<Expr>> commas;
                 collect_args(member->raw_expr, commas);
                 if (commas.size() > 2) {
-                    s.report_error(member->raw_expr->loc, "enum member value must be 1 or 2 elements but got ", nums(commas.size()));
+                    s.report_error(member->raw_expr.ref(a).loc(), "enum member value must be 1 or 2 elements but got ", nums(commas.size()));
                 }
                 for (auto& expr : commas) {
-                    if (ast::as<ast::StrLiteral>(expr)) {
+                    if (as<StrLiteral>(expr)) {
                         if (member->str_literal) {
                             s.report_error(expr->loc, "enum member str literal already specified");
                         }
-                        member->str_literal = cast_to<ast::StrLiteral>(expr);
+                        member->str_literal = (expr).as<StrLiteral>();
                     }
                     else {
                         if (member->value) {
@@ -1455,10 +1479,10 @@ namespace brgen::nast {
             return member;
         }
 
-        void parse_enum_base_type(std::shared_ptr<ast::Enum>& enum_, lexer::Token& base) {
+        void parse_enum_base_type(Node<Enum>& enum_, lexer::Token& base) {
             s.skip_white();
-            enum_->base_type = parse_type(false);
-            enum_->enum_type->bit_size = enum_->base_type->bit_size;
+            enum_.ref(a)->base_type = parse_type(false);
+            enum_.ref(a)->enum_type.ref(a)->bit_size = enum_.ref(a)->base_type.ref(a)->bit_size;
             s.skip_space_comment();
             s.must_consume_token(lexer::Tag::line, "to separate enum base type");
             s.skip_line();
@@ -1472,16 +1496,16 @@ namespace brgen::nast {
             <enum> ::= "enum" <ident> ":\r\n" (":"<type>)? <enum member>+
             <enum member> ::= <indent> <ident> ("=" <expr>)?
          */
-        std::shared_ptr<Enum> parse_enum(lexer::Token&& token) {
+        Node<Enum> parse_enum(lexer::Token&& token) {
             // set enum type
-            auto enum_ = std::make_shared<Enum>(token.loc);
+            auto enum_ = a.make<Enum>(token.loc);
             s.skip_white();
-            enum_->ident = parse_ident("enum name expected");
-            enum_->ident->usage = IdentUsage::define_enum;
-            enum_->ident->base = enum_;
-            check_duplicated_def(enum_->ident.get());
-            enum_->enum_type = std::make_shared<EnumType>(enum_->loc);
-            enum_->enum_type->base = enum_;
+            enum_->name = parse_ident("enum name expected");
+            enum_->name.ref(a)->usage = IdentUsage::define_enum;
+            enum_->name.ref(a)->base = enum_;
+            check_duplicated_def(enum_->name.get());
+            enum_->enum_type = a.make<EnumType>(enum_.loc());
+            enum_->enum_type.ref(a)->base = enum_;
             must_consume_indent_sign("to start enum member block");  // :<CR><LF>
 
             auto base = s.must_consume_token(lexer::Tag::indent, "to start enum member block");
@@ -1491,7 +1515,7 @@ namespace brgen::nast {
                 parse_enum_base_type(enum_, base);
             }
 
-            ast::EnumMember* prev_specified = nullptr;
+            EnumMember* prev_specified = nullptr;
             size_t offset = 0;
             parse_enum_member(enum_, offset, prev_specified);
             while (auto indent = s.peek_token(lexer::Tag::indent)) {
@@ -1508,14 +1532,14 @@ namespace brgen::nast {
         /*
             <format> ::= "format" <ident> <indent block>
         */
-        std::shared_ptr<Format> parse_format(lexer::Token&& token, bool allow_anonymous) {
-            auto fmt = std::make_shared<Format>(token.loc);
+        Node<Format> parse_format(lexer::Token&& token, bool allow_anonymous) {
+            auto fmt = a.make<Format>(token.loc);
             s.skip_white();
             auto ident_parse = [&] {
-                fmt->ident = parse_ident("format name expected");
-                fmt->ident->usage = IdentUsage::define_format;
-                fmt->ident->base = fmt;
-                check_duplicated_def(fmt->ident.get());
+                fmt->name = parse_ident("format name expected");
+                fmt->name.ref(a)->usage = IdentUsage::define_format;
+                fmt->name.ref(a)->base = fmt;
+                check_duplicated_def(fmt->name.get());
             };
             if (allow_anonymous) {
                 if (!s.peek_token(":")) {
@@ -1526,7 +1550,7 @@ namespace brgen::nast {
                 ident_parse();
             }
             // optional generic type parameter list: `format Foo[T, U]:`
-            std::vector<std::shared_ptr<Ident>> type_param_idents;
+            std::vector<Node<Ident>> type_param_idents;
             s.skip_space();
             if (s.consume_token("[")) {
                 for (;;) {
@@ -1535,11 +1559,11 @@ namespace brgen::nast {
                         break;
                     }
                     auto name = parse_ident_no_scope("type parameter name expected");
-                    name->usage = IdentUsage::define_type_parameter;
-                    auto tp = std::make_shared<TypeParameter>(name->loc);
-                    tp->ident = name;
+                    name.ref(a)->usage = IdentUsage::define_type_parameter;
+                    auto tp = a.make<TypeParameter>(name.ref(a).loc());
+                    tp->name = name;
                     tp->belong = fmt;
-                    name->base = tp;
+                    name.ref(a)->base = tp;
                     type_param_idents.push_back(name);
                     fmt->type_parameters.push_back(std::move(tp));
                     s.skip_white();
@@ -1554,44 +1578,44 @@ namespace brgen::nast {
                 auto m_scope = state.enter_member(fmt);
                 fmt->body = parse_indent_block(fmt, "to start `format` body", &type_param_idents);
             }
-            // because fmt->ident->expr_type = fmt->body->struct_type
+            // because fmt->name->expr_type = fmt->body->struct_type
             // makes circular reference, so not use it
             state.add_to_struct(fmt);
 
             // fetch encode_fn and decode_fn
-            auto enc = fmt->body->struct_type->lookup("encode");
+            auto enc = fmt->body.ref(a)->struct_type.ref(a)->lookup("encode");
             if (auto fn = as<Function>(enc)) {
-                fmt->encode_fn = cast_to<Function>(enc);
+                fmt->encode_fn = (enc).as<Function>();
             }
-            auto dec = fmt->body->struct_type->lookup("decode");
+            auto dec = fmt->body.ref(a)->struct_type.ref(a)->lookup("decode");
             if (auto fn = as<Function>(dec)) {
-                fmt->decode_fn = cast_to<Function>(dec);
+                fmt->decode_fn = (dec).as<Function>();
             }
             // lookup cast fn
-            fmt->body->struct_type->lookup([&](std::shared_ptr<Member>& m) {
-                if (auto fn = ast::as<ast::Function>(m); fn && fn->parameters.size() == 0) {
-                    if (auto i_ty = ast::is_int_type(fn->ident->ident); i_ty) {
-                        auto ok_ty = ast::as<ast::IntType>(fn->return_type);
+            fmt->body.ref(a)->struct_type.ref(a)->lookup([&](Node<NamedStatement>& m) {
+                if (auto fn = as<Function>(m); fn && fn->parameters.size() == 0) {
+                    if (auto i_ty = is_int_type(fn->name->name); i_ty) {
+                        auto ok_ty = as<IntType>(fn->return_type);
                         if (ok_ty && ok_ty->is_signed == i_ty->is_signed && ok_ty->bit_size == i_ty->bit_size) {
                             fn->is_cast = true;
-                            fn->ident->usage = IdentUsage::define_cast_fn;
-                            fmt->cast_fns.push_back(ast::cast_to<ast::Function>(m));
+                            fn->name->usage = IdentUsage::define_cast_fn;
+                            fmt->cast_fns.push_back((m).as<Function>());
                         }
                     }
-                    if (auto f_ty = ast::is_float_type(fn->ident->ident); f_ty) {
-                        auto ok_ty = ast::as<ast::FloatType>(fn->return_type);
+                    if (auto f_ty = is_float_type(fn->name->name); f_ty) {
+                        auto ok_ty = as<FloatType>(fn->return_type);
                         if (ok_ty && ok_ty->bit_size == f_ty->bit_size) {
                             fn->is_cast = true;
-                            fn->ident->usage = IdentUsage::define_cast_fn;
-                            fmt->cast_fns.push_back(ast::cast_to<ast::Function>(m));
+                            fn->name->usage = IdentUsage::define_cast_fn;
+                            fmt->cast_fns.push_back((m).as<Function>());
                         }
                     }
-                    if (fn->ident->ident == "bool") {
-                        auto ok_ty = ast::as<ast::BoolType>(fn->return_type);
+                    if (fn->name->name == "bool") {
+                        auto ok_ty = as<BoolType>(fn->return_type);
                         if (ok_ty) {
                             fn->is_cast = true;
-                            fn->ident->usage = IdentUsage::define_cast_fn;
-                            fmt->cast_fns.push_back(ast::cast_to<ast::Function>(m));
+                            fn->name->usage = IdentUsage::define_cast_fn;
+                            fmt->cast_fns.push_back((m).as<Function>());
                         }
                     }
                 }
@@ -1604,19 +1628,19 @@ namespace brgen::nast {
         /*
             <state> ::= "state" <ident> <indent block>
         */
-        std::shared_ptr<State> parse_state(lexer::Token&& token) {
-            auto state_ = std::make_shared<State>(token.loc);
+        Node<State> parse_state(lexer::Token&& token) {
+            auto state_ = a.make<State>(token.loc);
             s.skip_white();
 
-            state_->ident = parse_ident("state name expected");
-            state_->ident->usage = IdentUsage::define_state;
-            state_->ident->base = state_;
-            check_duplicated_def(state_->ident.get());
+            state_->name = parse_ident("state name expected");
+            state_->name.ref(a)->usage = IdentUsage::define_state;
+            state_->name.ref(a)->base = state_;
+            check_duplicated_def(state_->name.get());
             {
                 auto m_scope = state.enter_member(state_);
                 state_->body = parse_indent_block(state_, "to start `state` body");
             }
-            // `state_->ident->expr_type = state_->body->struct_type`
+            // `state_->name->expr_type = state_->body->struct_type`
             // makes circular reference, so not use it
             state.add_to_struct(state_);
 
@@ -1626,20 +1650,20 @@ namespace brgen::nast {
         /*
             <fn> ::= "fn" <ident> "(" (<ident> : <type> ("," <ident > <type>)*)? ")" ("->" <type>)? <indent block>
         */
-        std::shared_ptr<Function> parse_fn(lexer::Token&& token) {
-            auto fn = std::make_shared<Function>(token.loc);
+        Node<Function> parse_fn(lexer::Token&& token) {
+            auto fn = a.make<Function>(token.loc);
             s.skip_white();
-            fn->ident = parse_ident("function name expected");
-            fn->ident->usage = IdentUsage::define_fn;
-            fn->ident->base = fn;
-            check_duplicated_def(fn->ident.get());
-            fn->ident->constant_level = ConstantLevel::constant;
+            fn->name = parse_ident("function name expected");
+            fn->name.ref(a)->usage = IdentUsage::define_fn;
+            fn->name.ref(a)->base = fn;
+            check_duplicated_def(fn->name.get());
+            fn->name.ref(a)->constant_level = ConstantLevel::constant;
             fn->belong = state.current_member();
-            fn->func_type = std::make_shared<FunctionType>(fn->loc);
-            fn->ident->expr_type = fn->func_type;
+            fn->func_type = a.make<FunctionType>(fn.loc());
+            fn->name.ref(a)->expr_type = fn->func_type;
             s.skip_white();
             lexer::Loc end_loc;
-            std::vector<std::shared_ptr<Ident>> ident_param;
+            std::vector<Node<Ident>> ident_param;
             auto b = s.must_consume_token("(", "to open function parameter list");
             for (;;) {
                 s.skip_white();
@@ -1647,10 +1671,10 @@ namespace brgen::nast {
                     end_loc = t->loc;
                     break;
                 }
-                std::shared_ptr<Ident> ident;
+                Node<Ident> ident;
                 if (!s.expect_token(":")) {
                     ident = parse_ident_no_scope("to specify function parameter name");
-                    ident->usage = IdentUsage::define_arg;
+                    ident.ref(a)->usage = IdentUsage::define_arg;
                     // ident->scope = state.current_scope();
                     ident_param.push_back(ident);
                     s.skip_white();
@@ -1660,7 +1684,7 @@ namespace brgen::nast {
                 }
 
                 auto f = parse_field(std::move(ident), true);
-                auto field = cast_to<Field>(f);
+                auto field = (f).as<Field>();
                 field->belong = fn;
                 fn->parameters.push_back(field);
                 fn->func_type->parameters.push_back(field->field_type);
@@ -1676,7 +1700,7 @@ namespace brgen::nast {
                 fn->return_type = parse_type(false);
             }
             else {
-                fn->return_type = std::make_shared<VoidType>(end_loc);
+                fn->return_type = a.make<VoidType>(end_loc);
             }
 
             fn->func_type->return_type = fn->return_type;
@@ -1692,21 +1716,21 @@ namespace brgen::nast {
             return fn;
         }
 
-        std::shared_ptr<Loop> lookup_loop_scope() {
+        Node<Loop> lookup_loop_scope() {
             auto scope = state.current_scope();
             for (auto s = scope; s; s = s->prev.lock()) {
-                if (auto loop = s->owner.lock(); ast::as<ast::Loop>(loop)) {
-                    return ast::cast_to<ast::Loop>(loop);
+                if (auto loop = s->owner.lock(); as<Loop>(loop)) {
+                    return (loop).as<Loop>();
                 }
             }
             return nullptr;
         }
 
-        std::shared_ptr<Function> lookup_function_scope() {
+        Node<Function> lookup_function_scope() {
             auto scope = state.current_scope();
             for (auto s = scope; s; s = s->prev.lock()) {
-                if (auto fn = s->owner.lock(); ast::as<ast::Function>(fn)) {
-                    return ast::cast_to<ast::Function>(fn);
+                if (auto fn = s->owner.lock(); as<Function>(fn)) {
+                    return (fn).as<Function>();
                 }
             }
             return nullptr;
@@ -1716,7 +1740,7 @@ namespace brgen::nast {
             <statement> ::= <for> | <if> | <format> | <fn> | <return> | <break> | <continue> | <expr or field>
             <expr or field> ::= <expr>? <field type>
         */
-        std::shared_ptr<Node> parse_statement(bool* prev_skip_line = nullptr) {
+        Node<Statement> parse_statement(bool* prev_skip_line = nullptr) {
             auto set_skip = [&] {
                 if (prev_skip_line) {
                     *prev_skip_line = true;
@@ -1769,7 +1793,7 @@ namespace brgen::nast {
             }
 
             if (auto ret = s.consume_token("return")) {
-                auto ret_ = std::make_shared<Return>(ret->loc);
+                auto ret_ = a.make<Return>(ret->loc);
                 s.skip_space();
                 if (!s.eos() && !s.consume_token(lexer::Tag::line)) {
                     ret_->expr = parse_expr(prev_skip_line);
@@ -1781,19 +1805,19 @@ namespace brgen::nast {
 
             if (auto br = s.consume_token("break")) {
                 skip_last();
-                auto brk = std::make_shared<Break>(br->loc);
+                auto brk = a.make<Break>(br->loc);
                 brk->related_loop = lookup_loop_scope();
                 return brk;
             }
 
             if (auto cont = s.consume_token("continue")) {
                 skip_last();
-                auto con = std::make_shared<Continue>(cont->loc);
+                auto con = a.make<Continue>(cont->loc);
                 con->related_loop = lookup_loop_scope();
                 return con;
             }
 
-            std::shared_ptr<Node> node;
+            Node<Statement> node;
             if (s.expect_token(":")) {
                 node = parse_field(nullptr, false);
             }
@@ -1808,7 +1832,7 @@ namespace brgen::nast {
         }
     };
 
-    std::shared_ptr<ast::Program> parse(Stream& stream, LocationError* err_or_warn, ParseOption option) {
+    Node<Module> parse(Stream& stream, LocationError* err_or_warn, ParseOption option) {
         LocationError ignore;
         if (!err_or_warn) {
             err_or_warn = &ignore;

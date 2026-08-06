@@ -145,8 +145,10 @@ def print_field(body: Writer, node: dict):
     if node.get("derive") is not None:
         print_field(body, [n for n in nodes if n["name"] == node["derive"]][0])
     for field in fields:
+        # ローカル名は obj_ にしてある。field という名前のフィールドを持つノード
+        # (UnionCandidate::field) があり、field だとローカルが実体を隠すため。
         body.write(
-            "        field(", json.dumps(field["name"]), ",", field["name"], ");\n"
+            "        obj_(", json.dumps(field["name"]), ",", field["name"], ");\n"
         )
 
 
@@ -158,7 +160,7 @@ def print_node_field(body: Writer, node: dict):
         init = field.get("init", types.get(field_type, {}).get("init", ""))
         body.write("    ", field_type, " ", field_name, init, ";\n")
     body.write("    constexpr void as_json(auto&& s) const {\n")
-    body.write("        auto field = s.object();\n")
+    body.write("        auto obj_ = s.object();\n")
     print_field(body, node)
     body.write("    }\n")
 
@@ -182,6 +184,16 @@ header_def.write(
     "    template<std::derived_from<T> U>  constexpr Node(Node<U> x) : id_{x.id_},type_{x.type_} {}\n"
 )
 header_def.write("    constexpr Node(nullref_t) : Node() {}\n")
+# 比較は id_ のみで行う。= default にすると type_ も比べてしまい、
+# 既定構築した Node<Format>{} と Node<Function>{} が (どちらも null なのに) 不一致になる。
+# id_ は headers の添字なのでノードを一意に決める。
+# friend にしてあるので、派生 -> 基底の暗黙変換と nullref_t からの変換が両辺に効く。
+#   n == nullref / Node<Format> == Node<Statement> は通り、
+#   Node<Format> == Node<Function> のような無関係な比較はコンパイルエラーになる。
+header_def.write(
+    "    friend constexpr bool operator==(const Node& l, const Node& r) { return l.id_ == r.id_; }\n"
+    "    friend constexpr auto operator<=>(const Node& l, const Node& r) { return l.id_ <=> r.id_; }\n"
+)
 header_def.write("    constexpr NodeType type() const { return type_; }\n")
 header_def.write("    constexpr std::uint32_t id() const { return id_; }\n")
 header_def.write("    constexpr bool is_null() const { return id_ == 0; }")
@@ -328,6 +340,17 @@ header_def.write(
     "    constexpr NodeData<T>* get() { return arena_ ? arena_->get(id_) : nullptr; }\n"
 )
 header_def.write("    constexpr NodeData<T>* operator->() { return get(); }\n")
+# loc は NodeData ではなく NodeHeader にあるので、payload 経由では届かない。
+# 旧 AST の node->loc に相当する経路をここで用意する。
+header_def.write(
+    "    constexpr lexer::Loc loc() const {\n"
+    "        auto* h = arena_ ? arena_->get_header(id_) : nullptr;\n"
+    "        return h ? h->loc : lexer::Loc{};\n"
+    "    }\n"
+    "    constexpr void set_loc(lexer::Loc l) {\n"
+    "        if (auto* h = arena_ ? arena_->get_header(id_) : nullptr) { h->loc = l; }\n"
+    "    }\n"
+)
 header_def.write("    constexpr NodeData<T>& operator*() { return *get(); }\n")
 header_def.write(
     "    constexpr explicit operator bool() const { return arena_ && !id_.is_null(); }\n"
@@ -342,7 +365,23 @@ arena.write("    template<std::uint32_t ord> constexpr auto& get_arena();\n")
 arena.write(
     "    template<class T> constexpr auto& get_arena() {  return get_arena<ordinal(get_node_type<T>())>(); }\n"
 )
-arena.write("    template<class T> constexpr Ref<Arena,T> make();\n")
+# make は型ごとに特殊化しない。get_arena<T>() が既に具象プールへ解決するので、
+# 1 つの可変長テンプレートで足りる。
+#   make<T>()                       -> 既定構築
+#   make<T>(loc)                    -> loc は NodeHeader へ (NodeData には入らない)
+#   make<T>(loc, a, b, ...)         -> NodeData<T> を集成初期化
+# 抽象ノードは get_arena<T>() の特殊化が無いのでコンパイルエラーになる (意図どおり)。
+arena.write(
+    "    template<class T, class... A>\n"
+    "    constexpr Ref<Arena,T> make(lexer::Loc loc = {}, A&&... args) {\n"
+    "        auto& pool = get_arena<T>();\n"
+    "        pool.push_back(NodeData<T>{std::forward<A>(args)...});\n"
+    "        headers.push_back(NodeHeader{.type = get_node_type<T>(),\n"
+    "                                     .data_index = static_cast<std::uint32_t>(pool.size() - 1),\n"
+    "                                     .loc = loc});\n"
+    "        return Ref<Arena,T>{this,Node<T>{static_cast<std::uint32_t>(headers.size()),get_node_type<T>()}};\n"
+    "    }\n"
+)
 arena.write("    template<class T> constexpr NodeData<T>* get(Node<T> id);\n")
 arena.write("    template<class T> constexpr bool is_valid(Node<T> id) const {\n")
 arena.write("        if (id.id() == 0 || headers.size() < id.id()) { return false; }\n")
@@ -363,8 +402,8 @@ arena.write("   public:\n")
 
 arena_as_json = Writer()
 arena_as_json.write("    constexpr void as_json(auto&& s) const {\n")
-arena_as_json.write("        auto field = s.object();\n")
-arena_as_json.write('        field("headers",headers);\n')
+arena_as_json.write("        auto obj_ = s.object();\n")
+arena_as_json.write('        obj_("headers",headers);\n')
 
 
 def switch_cases(node: dict):
@@ -403,7 +442,7 @@ for node in nodes:
         "    std::vector<NodeData<", node["name"], ">> data_", node["name"], ";\n"
     )
     arena_as_json.write(
-        '        field("data_', node["name"], '",data_', node["name"], ");\n"
+        '        obj_("data_', node["name"], '",data_', node["name"], ");\n"
     )
     arena.write("   public:\n")
     arena.write("    template<>\n")
@@ -414,24 +453,6 @@ for node in nodes:
         node["name"],
         "; }\n",
     )
-    arena.write("    template<> Ref<Arena,", node["name"], "> make() {\n")
-    arena.write("        get_arena<", node["name"], ">().push_back({});\n")
-    arena.write(
-        "        headers.push_back(NodeHeader{.type = get_node_type<",
-        node["name"],
-        ">(),.data_index = static_cast<std::uint32_t>(get_arena<",
-        node["name"],
-        ">().size() - 1)});\n",
-    )
-    arena.write(
-        "        Node<",
-        node["name"],
-        "> id{static_cast<std::uint32_t>(headers.size()),get_node_type<",
-        node["name"],
-        ">()};\n",
-    )
-    arena.write("        return Ref<Arena,", node["name"], ">{this,id};\n")
-    arena.write("    }\n")
 
 
 arena_as_json.write("    }")
@@ -514,12 +535,12 @@ def emit_side_table(t: dict):
             "        return n;\n"
             "    }\n"
             "    void as_json(auto&& s) const {\n"
-            "        auto field = s.object();\n"
+            "        auto obj_ = s.object();\n"
             "        std::string key;\n"
             "        for (std::uint32_t i = 1; i < present_.size(); i++) {\n"
             "            if (!present_[i]) { continue; }\n"
             "            key = std::to_string(i);\n"
-            "            field(key.c_str(), values_[i]);\n"
+            "            obj_(key.c_str(), values_[i]);\n"
             "        }\n"
             "    }\n"
         )
@@ -530,9 +551,9 @@ def emit_side_table(t: dict):
             "        std::uint32_t node{};\n"
             "        value_type value{};\n"
             "        constexpr void as_json(auto&& s) const {\n"
-            "            auto field = s.object();\n"
-            "            field(\"node\",node);\n"
-            "            field(\"value\",value);\n"
+            "            auto obj_ = s.object();\n"
+            "            obj_(\"node\",node);\n"
+            "            obj_(\"value\",value);\n"
             "        }\n"
             "    };\n"
             "   private:\n"
@@ -579,11 +600,11 @@ def emit_side_table(t: dict):
             "    std::size_t size() const { return entries_.size(); }\n"
             "    const std::vector<Entry>& entries() const { return entries_; }\n"
             "    void as_json(auto&& s) const {\n"
-            "        auto field = s.object();\n"
+            "        auto obj_ = s.object();\n"
             "        std::string key;\n"
             "        for (auto& e : entries_) {\n"
             "            key = std::to_string(e.node);\n"
-            "            field(key.c_str(), e.value);\n"
+            "            obj_(key.c_str(), e.value);\n"
             "        }\n"
             "    }\n"
         )
@@ -614,11 +635,11 @@ def emit_side_table(t: dict):
             "    std::size_t size() const { return nodes_.size(); }\n"
             "    const std::vector<std::uint32_t>& nodes() const { return nodes_; }\n"
             "    void as_json(auto&& s) const {\n"
-            "        auto field = s.object();\n"
+            "        auto obj_ = s.object();\n"
             "        std::string key;\n"
             "        for (auto id : nodes_) {\n"
             "            key = std::to_string(id);\n"
-            "            field(key.c_str(), true);\n"
+            "            obj_(key.c_str(), true);\n"
             "        }\n"
             "    }\n"
         )
@@ -657,10 +678,10 @@ if side_tables:
             f"    template<> constexpr const auto& table<{name}>() const {{ return {name}_; }}\n"
         )
     table_def.write("    void as_json(auto&& s) const {\n")
-    table_def.write("        auto field = s.object();\n")
+    table_def.write("        auto obj_ = s.object();\n")
     for t in side_tables:
         name = t["name"]
-        table_def.write(f'        field("{name}",{name}_);\n')
+        table_def.write(f'        obj_("{name}",{name}_);\n')
     table_def.write("    }\n")
     table_def.write("};\n")
 
