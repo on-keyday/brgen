@@ -5,11 +5,11 @@
 // #include "strutil/append.h"
 #include "parse.h"
 #include <fnet/util/base64.h>
-#include <memory>
+#include "builtin.h"
 
 namespace brgen::nast {
 
-    constexpr auto must_success = "THIS MUST BE SUCCESS; if shown, parser bug!!";
+    constexpr auto must_success = "THIS MUST SUCCESS; if shown, parser bug!!";
 
     /*
     struct ParserState {
@@ -83,7 +83,7 @@ namespace brgen::nast {
 
         void add_to_struct(const Node<NamedStatement>& f) {
             f->belong_struct = current_struct_;
-            if (auto field = as<Field>(f)) {
+            if (auto field = f.as<Field>()) {
                 for (auto it = current_struct_->fields.rbegin(); it != current_struct_->fields.rend(); it++) {
                     if (auto p = as<Field>(*it)) {
                         p->next = (f).as<Field>();
@@ -109,23 +109,72 @@ namespace brgen::nast {
     };
     */
 
+    struct ParserState {
+        bool collect_comment = false;
+        bool error_tolerant = false;
+        LocationError& errors;  // for error tolerant mode
+
+        ParserState(LocationError& errors)
+            : errors(errors) {
+        }
+
+       private:
+        size_t indent = 0;
+        // ScopeStack stack;
+        // Node<NamedStatement> current_fmt_;
+        // Node<StructType> current_struct_;
+
+       public:
+        /*
+        auto cond_scope(scope_ptr& frame, const Node<Node>& scope_owner) {
+            auto br = stack.enter_branch();
+            frame = stack.current_scope();
+            frame->owner = scope_owner;
+            // initialize extent to owner's head loc; callers may widen begin/end later
+            // (parse_indent_block sets begin to the first body indent and end to the
+            // last body element).
+            if (scope_owner) {
+                frame->loc = scope_owner->loc;
+            }
+            return br;
+        }
+        */
+
+        auto new_indent_no_scope(Stream& s, size_t new_) {
+            if (indent >= new_) {
+                s.report_error("expect larger indent but not");
+            }
+            auto old = std::exchange(indent, std::move(new_));
+            return futils::helper::defer([=, this] {
+                indent = std::move(old);
+            });
+        }
+
+        /*
+        Node<NamedStatement> current_member() {
+            return current_fmt_;
+        }
+        */
+
+        size_t current_indent() {
+            return indent;
+        }
+    };
+
     struct Parser {
         Stream& s;
         // ParserState state;
-        struct {
-            bool error_tolerant = false;
-            LocationError errors;
-        } state;
+        ParserState state;
         Arena& a;
 
-        Parser(Stream& s, LocationError& errors)
-            : s(s), state(errors) {
+        Parser(Stream& s, LocationError& errors, Arena& arena)
+            : s(s), state(errors), a(arena) {
         }
 
         Node<Module> parse() {
             s.set_regex_mode(true);  // default regex mode is on
             auto prog = a.make<Module>();
-            prog.loc() = s.loc();
+            prog.set_loc(s.loc());
             // prog->global_scope = state.reset_stack();
             // prog->global_scope->owner = prog;
             //  global_scope spans the whole file; begin = 0, end is updated after
@@ -147,7 +196,7 @@ namespace brgen::nast {
                 //  collect_comments();
                 auto stmt = parse_statement();
                 /*
-                if (auto member = as<NamedStatement>(expr)) {
+                if (auto member = expr.as<NamedStatement>()) {
                     member->comment = std::move(comment);
                 }
                 else {
@@ -216,7 +265,7 @@ namespace brgen::nast {
 
             // Create a new context for the current indent level
             auto current_indent = base.token.size();
-            // auto c = state.new_indent(s, current_indent, block->scope, scope_owner);
+            auto c = state.new_indent_no_scope(s, current_indent);
             // auto ss = state.enter_struct(block->struct_type);
 
             /*
@@ -224,7 +273,7 @@ namespace brgen::nast {
                 for (auto& i : *ident) {
                     // i->scope = block->scope;
                     // block->scope->push(i);
-                    // check_duplicated_def(i.get());
+                    // check_duplicated_def(i.ref(a).get());
                 }
             }
 
@@ -241,7 +290,7 @@ namespace brgen::nast {
                 while (!line_skipped) {
                     auto expr = parse_statement(&line_skipped);
                     /*
-                    if (auto member = as<NamedStatement>(expr)) {
+                    if (auto member = expr.as<NamedStatement>()) {
                         member->comment = std::move(comment);
                     }
                     else {
@@ -304,7 +353,7 @@ namespace brgen::nast {
                     if (!d->name) {
                         continue;
                     }
-                    if (!as<Field>(d)) {
+                    if (!d.as<Field>()) {
                         continue;
                     }
                     if (auto found = m.find(d->name->name); found != m.end()) {
@@ -335,7 +384,7 @@ namespace brgen::nast {
             for (auto& [k, v] : m) {
                 auto union_type = a.make<UnionType>();
                 union_type->cond = cond0;
-                union_type.loc() = v[0].ref(a).loc();
+                union_type.set_loc(v[0].ref(a).loc());
                 auto ident = a.make<Ident>(union_type.loc(), k);
                 ident->usage = IdentUsage::define_field;
                 ident->scope = state.current_scope();
@@ -398,7 +447,7 @@ namespace brgen::nast {
             // Consume the initial indent sign
             must_consume_indent_sign("to start match branch");
 
-            auto stmt_with_struct = [&](lexer::Loc loc, Ref<Arena, ConditionalStatement>& br) {
+            auto stmt_with_struct = [&](lexer::Loc loc, Ref<ConditionalStatement>& br) {
                 // auto scoped = a.make<ScopedStatement>(loc);
                 // scoped->struct_type = a.make<StructType>(loc);
                 // scoped->struct_type.ref(a)->base = br;
@@ -423,13 +472,14 @@ namespace brgen::nast {
                 br->condition = parse_expr_identity();
                 br.set_loc(br->condition.ref(a).loc());
                 // collect_comments(br);
-                if (auto b = as<Binary>(br->cond.ref(a)->expr); b && b->op == BinaryOp::comma) {
-                    auto c = a.make<OrCond>(b->loc, (br->cond.ref(a)->expr).as<Binary>());
-                    collect_args(c->base, c->conds);
-                    br->cond.ref(a)->expr = std::move(c);
+                if (auto b = br->condition.as<Binary>().ref(a); b && b->op == BinaryOp::comma) {
+                    auto c = a.make<OrCond>(b.loc());
+                    c->base = br->condition.as<Binary>();
+                    collect_comma(c->base, c->conds);
+                    br->condition = c;
                 }
                 // cond.push_back(br->cond);
-                // br.loc() = br->cond.ref(a).loc();
+                // br.set_loc(br->cond.ref(a).loc());
                 s.skip_white();
                 auto sym = s.consume_token("=>");
                 if (!sym) {
@@ -462,10 +512,10 @@ namespace brgen::nast {
                     break;
                 }
                 s.must_consume_token(lexer::Tag::indent, "to start a new line in match branch");
-                match->branch.push_back(parse_match_branch());
+                match->blocks.push_back(parse_match_branch());
             }
 
-            push_union_to_current_struct();
+            // push_union_to_current_struct();
 
             return match;
         }
@@ -477,17 +527,22 @@ namespace brgen::nast {
             s.skip_white();
             auto if_ = a.make<If>(token.loc);
 
-            auto cs = state.cond_scope(if_->cond_scope, if_);
+            // auto cs = state.cond_scope(if_->cond_scope, if_);
+
+            auto then = a.make<ConditionalStatement>(if_.loc());
+            then->belong = if_;
+            if_->blocks.push_back(then);
 
             // 解析して if の条件式とブロックを設定
-            if_->cond = parse_expr_identity();
-            Node<StructUnionType> union_ = a.make<StructUnionType>(if_.loc());
-            if_->struct_union_type = union_;
-            union_.ref(a)->base = if_;
+            then->condition = parse_expr_identity();
+            // Node<StructUnionType> union_ = a.make<StructUnionType>(if_.loc());
+            // if_->struct_union_type = union_;
+            // union_.ref(a)->base = if_;
 
-            std::vector<Node<Identity>> cond;
-            cond.push_back(if_->cond);
+            // std::vector<Node<Identity>> cond;
+            // cond.push_back(if_->cond);
 
+            /*
             auto push_union_to_current_struct = [&] {
                 auto f = a.make<Field>(if_.loc());
                 f->field_type = union_;
@@ -496,14 +551,14 @@ namespace brgen::nast {
                 cs.execute();
                 export_union_field(nullptr, cond, union_);
             };
+            */
 
-            auto body_with_struct = [&](lexer::Loc loc, auto& block, const Node<If>& owner, std::string_view hint) {
-                auto tmp = parse_indent_block(owner, hint);
-                union_.ref(a)->structs.push_back(tmp.ref(a)->struct_type);
-                block = std::move(tmp);
+            auto body_with_struct = [&](Ref<BodyStatement> owner, std::string_view hint) {
+                owner->body = parse_indent_block(owner, hint);
+                // union_.ref(a)->structs.push_back(tmp.ref(a)->struct_type);
             };
 
-            body_with_struct(if_.loc(), if_->then, if_, "to start `if` body");
+            body_with_struct(then, "to start `if` body");
 
             auto cur_indent = state.current_indent();
 
@@ -524,24 +579,23 @@ namespace brgen::nast {
             };
 
             if (detect_end()) {
-                push_union_to_current_struct();
+                // push_union_to_current_struct();
                 return if_;
             }
 
             consume_indent();  // elif or else のため次のインデントを消費
 
             // elif ブロックの解析
-            Node<If> current_if = if_;
             while (auto tok = s.consume_token("elif")) {
-                auto elif = a.make<If>(tok->loc);
+                auto elif = a.make<ConditionalStatement>(tok->loc);
+                elif->belong = if_;
+                if_->blocks.push_back(elif);
                 s.skip_white();
-                elif->cond = parse_expr_identity();
-                cond.push_back(elif->cond);
-                body_with_struct(tok->loc, elif->then, elif, "to start `elif` body");
-                current_if.ref(a)->els = elif;
-                current_if = std::move(elif);
+                elif->condition = parse_expr_identity();
+                // cond.push_back(elif->cond);
+                body_with_struct(elif, "to start `elif` body");
                 if (detect_end()) {
-                    push_union_to_current_struct();
+                    // push_union_to_current_struct();
                     return if_;
                 }
                 consume_indent();  // else or elif のため次のインデントを消費
@@ -553,15 +607,19 @@ namespace brgen::nast {
                 // because JSONConverter not accept nullptr for array element
                 // use range_exclusive(in syntax, `..`) for else cond
                 // `..` match to any condition
+                /*
                 auto range = a.make<Range>();
-                range.loc() = l->loc;
+                range.set_loc(l->loc);
                 range->op = BinaryOp::range_exclusive;
                 auto identity = a.make<Identity>();
-                identity.loc() = l->loc;
+                identity.set_loc(l->loc);
                 identity->expr = range;
                 cond.push_back(std::move(identity));
-                if_->struct_union_type->exhaustive = true;
-                body_with_struct(if_.loc(), current_if.ref(a)->els, current_if, "to start `else` body");
+                */
+                // if_->struct_union_type->exhaustive = true;
+                auto body = a.make<BodyStatement>(l->loc);
+                if_->blocks.push_back(body);
+                body_with_struct(body, "to start `else` body");
             }
             else {
                 if (cur_indent != 0) {
@@ -570,7 +628,7 @@ namespace brgen::nast {
                 }
             }
 
-            push_union_to_current_struct();
+            // push_union_to_current_struct();
 
             return if_;
         }
@@ -583,7 +641,7 @@ namespace brgen::nast {
                     state.errors.locations.insert(state.errors.locations.end(), errs.locations.begin(), errs.locations.end());
                     s.recover_to_prev_skip();
                     auto ident = a.make<Ident>(s.loc(), "$dummy");  // error tolerant mode; return dummy ident
-                    ident->usage = IdentUsage::bad_ident;
+                    // ident->usage = IdentUsage::bad_ident;
                     return ident;
                 }
                 return a.make<Ident>(f->loc, std::move(f->token));
@@ -594,9 +652,9 @@ namespace brgen::nast {
 
         Node<Ident> parse_ident(std::string_view hint) {
             auto ident = parse_ident_no_scope(hint);
-            auto scope = state.current_scope();
-            scope->push(ident);
-            ident.ref(a)->scope = std::move(scope);
+            // auto scope = state.current_scope();
+            // scope->push(ident);
+            // ident.ref(a)->scope = std::move(scope);
             return ident;
         }
 
@@ -611,12 +669,12 @@ namespace brgen::nast {
         }
 
         Node<StrLiteral> parse_str_literal(lexer::Token&& lit) {
-            auto literal = a.make<StrLiteral>(lit.loc, std::move(lit.token));
+            auto literal = a.make<StrLiteral>(lit.loc);
+            literal->value = std::move(lit.token);
             auto c = unescape(literal->value);
             if (!c) {
                 s.report_error(lit.loc, "invalid string literal");
             }
-            literal->length = c->size();
             if (!futils::base64::encode(*c, literal->binary_value)) {
                 s.report_error(lit.loc, "failed to encode string to base64 (internal error)");
             }
@@ -624,7 +682,7 @@ namespace brgen::nast {
         }
 
         Node<RegexLiteral> parse_regex_literal(lexer::Token&& lit) {
-            auto literal = a.make<RegexLiteral>(lit.loc, std::move(lit.token));
+            auto literal = a.make<RegexLiteral>(lit.loc, NodeData<Literal>{}, std::move(lit.token));
             return literal;
         }
 
@@ -633,12 +691,12 @@ namespace brgen::nast {
             auto typ = parse_type(false);
             s.skip_line();
             auto end_tok = s.must_consume_token(">", "to close type literal");
-            auto literal = a.make<TypeLiteral>(lit.loc, std::move(typ), end_tok.loc);
+            auto literal = a.make<TypeLiteral>(lit.loc, NodeData<Literal>{}, std::move(typ));
             return literal;
         }
 
         Node<CharLiteral> parse_char_literal(lexer::Token&& lit) {
-            auto literal = a.make<CharLiteral>(lit.loc, std::move(lit.token));
+            auto literal = a.make<CharLiteral>(lit.loc, NodeData<Literal>{}, std::move(lit.token));
             auto c = unescape(literal->value);
             if (!c) {
                 s.report_error(lit.loc, "invalid char literal");
@@ -666,10 +724,10 @@ namespace brgen::nast {
         */
         Node<Expr> parse_prim(bool* line_skipped) {
             if (auto token = s.consume_token(lexer::Tag::int_literal)) {
-                return a.make<IntLiteral>(token->loc, std::move(token->token));
+                return a.make<IntLiteral>(token->loc, NodeData<Literal>{}, std::move(token->token));
             }
             if (auto b = s.consume_token(lexer::Tag::bool_literal)) {
-                return a.make<BoolLiteral>(b->loc, b->token == "true");
+                return a.make<BoolLiteral>(b->loc, NodeData<Literal>{}, b->token == "true");
             }
             if (auto t = s.consume_token(lexer::Tag::str_literal)) {
                 return parse_str_literal(std::move(*t));
@@ -681,13 +739,13 @@ namespace brgen::nast {
                 return parse_char_literal(std::move(*t));
             }
             if (auto i = s.consume_token("input")) {
-                return a.make<SpecialLiteral>(i->loc, SpecialLiteralKind::input_);
+                return a.make<SpecialLiteral>(i->loc, NodeData<Literal>{}, SpecialLiteralKind::input_);
             }
             if (auto o = s.consume_token("output")) {
-                return a.make<SpecialLiteral>(o->loc, SpecialLiteralKind::output_);
+                return a.make<SpecialLiteral>(o->loc, NodeData<Literal>{}, SpecialLiteralKind::output_);
             }
             if (auto c = s.consume_token("config")) {
-                return a.make<SpecialLiteral>(c->loc, SpecialLiteralKind::config_);
+                return a.make<SpecialLiteral>(c->loc, NodeData<Literal>{}, SpecialLiteralKind::config_);
             }
             if (auto paren = s.consume_token("(")) {
                 return parse_paren(std::move(*paren));
@@ -713,10 +771,10 @@ namespace brgen::nast {
                 if (i_desc || f_desc || i->token == "void" || i->token == "bool") {
                     Node<Type> type;
                     if (i_desc) {
-                        type = a.make<IntType>(i->loc, i_desc->bit_size, i_desc->endian, i_desc->is_signed);
+                        type = a.make<IntType>(i->loc, NodeData<Type>{}, std::uint32_t(i_desc->bit_size), i_desc->is_signed, i_desc->endian);
                     }
                     else if (f_desc) {
-                        type = a.make<FloatType>(i->loc, f_desc->bit_size, f_desc->endian);
+                        type = a.make<FloatType>(i->loc, NodeData<Type>{}, std::uint32_t(f_desc->bit_size), f_desc->endian);
                     }
                     else if (i->token == "void") {
                         type = a.make<VoidType>(i->loc);
@@ -727,8 +785,8 @@ namespace brgen::nast {
                     else {
                         assert(false);
                     }
-                    auto type_literal = a.make<TypeLiteral>(i->loc, std::move(type), i->loc);
-                    s.must_consume_token(lexer::Tag::ident, "THIS MUST BE SUCCESS; if shown, parser bug!!");
+                    auto type_literal = a.make<TypeLiteral>(i->loc, NodeData<TypeLiteral>{}, std::move(type));
+                    s.must_consume_token(lexer::Tag::ident, must_success);
                     return type_literal;
                 }
             }
@@ -736,45 +794,66 @@ namespace brgen::nast {
                 s.recover_to_prev_skip();
                 auto err = s.token_error(lexer::Tag::ident, "field, variable, type name for type literal or function name expected");
                 state.errors.locations.insert(state.errors.locations.end(), err.locations.begin(), err.locations.end());
-                return a.make<BadExpr>(s.loc(), brgen::concat(state.errors.locations.back().msg));
+                return a.make<BadExpr>(s.loc(), NodeData<Expr>{}, brgen::concat(state.errors.locations.back().msg));
             }
-            return parse_ident("field, variable, type name for type literal or function name expected");
+            auto ident = parse_ident("field, variable, type name for type literal or function name expected");
+            return a.make<Reference>(ident.ref(a).loc(), NodeData<Expr>{}, std::move(ident));
         }
 
-        void collect_args(const Node<Expr>& args, auto& res) {
-            if (auto a = as<Binary>(args); a && a->op == BinaryOp::comma) {
-                collect_args(a->left, res);
-                collect_args(a->right, res);
+        void collect_comma(Node<Expr> args, std::vector<Node<Expr>>& res) {
+            auto b = args.as<Binary>().ref(a);
+            if (b && b->op == BinaryOp::comma) {
+                collect_comma(b->left, res);
+                collect_comma(b->right, res);
             }
             else {
-                res.push_back(args);
+                res.push_back(std::move(args));
+            }
+        }
+
+        void collect_args(Node<Expr> args, std::vector<Node<Argument>>& res) {
+            auto b = args.as<Binary>().ref(a);
+            if (b && b->op == BinaryOp::comma) {
+                collect_args(b->left, res);
+                collect_args(b->right, res);
+            }
+            else if (b && b->op == BinaryOp::assign) {
+                auto named_arg = a.make<NamedArgument>(b->left.ref(a).loc());
+                named_arg->name = b->left;
+                named_arg->value = b->right;
+                res.push_back(named_arg);
+            }
+            else {
+                auto arg = a.make<Argument>(args.ref(a).loc());
+                arg->value = std::move(args);
+                res.push_back(arg);
             }
         }
 
         Node<Call> parse_call(lexer::Token&& token, Node<Expr>& p) {
-            auto call = a.make<Call>(token.loc, std::move(p));
+            auto call = a.make<Call>(token.loc, NodeData<Expr>{}, p);
             s.skip_white();
             if (!s.expect_token(")")) {
-                call->raw_arguments = parse_expr();
-                collect_args(call->raw_arguments, call->arguments);
+                auto raw = parse_expr();
+                auto args = a.make<Arguments>(raw.ref(a).loc());
+                collect_args(raw, args->arguments);
                 s.skip_white();
             }
             token = s.must_consume_token(")", "to close function call");
-            call->end_loc = token.loc;
+            // call->end_loc = token.loc;
             return call;
         }
 
         Node<Expr> parse_call_or_cast(lexer::Token&& token, Node<Expr>& p) {
             auto call = parse_call(std::move(token), p);
-            if (auto typ = as<TypeLiteral>(call.ref(a)->callee)) {
-                auto copy = typ->type_literal;
-                return a.make<Cast>(std::move(call), std::move(copy), call.ref(a)->arguments);
+            if (auto typ = call.ref(a)->callee.as<TypeLiteral>().ref(a)) {
+                return a.make<Cast>(call.ref(a).loc(), NodeData<Expr>{}, call, call.ref(a)->arguments);
             }
             return call;
         }
 
         Node<Index> parse_index(lexer::Token&& token, Node<Expr>& p) {
-            auto call = a.make<Index>(token.loc, std::move(p));
+            auto call = a.make<Index>(token.loc, NodeData<Expr>{}, std::move(p));
             s.skip_white();
             call->index = parse_expr();
             s.skip_white();
@@ -783,12 +862,12 @@ namespace brgen::nast {
             return call;
         }
 
-        Node<MemberAccess> parse_access(lexer::Token&& token, auto&& p) {
+        Node<MemberAccess> parse_access(lexer::Token&& token, Node<Expr> p) {
             s.skip_white();
             auto ident = parse_ident_no_scope("member ident expected after '.'");
-            ident.ref(a)->usage = IdentUsage::reference_member;
-            auto member = a.make<MemberAccess>(token.loc, std::move(p), std::move(ident));
-            member->member.ref(a)->base = member;
+            // ident.ref(a)->usage = IdentUsage::reference_member;
+            auto member = a.make<MemberAccess>(token.loc, NodeData<Expr>{}, std::move(p), std::move(ident));
+            // member->member.ref(a)->base = member;
             return member;
         }
 
@@ -837,12 +916,12 @@ namespace brgen::nast {
             <unary-op> ::= <unary-op> | <unary-op> <unary-op> <unary>
         */
         Node<Expr> parse_unary(bool* line_skipped) {
-            std::vector<Node<Unary>> stack;
+            std::vector<Ref<Unary>> stack;
             size_t i;
             s.skip_space();
             for (;;) {
                 if (auto token = consume_op(i, nast::enum_array<UnaryOp>)) {
-                    stack.push_back(a.make<Unary>(token->loc, UnaryOp(i)));
+                    stack.push_back(a.make<Unary>(token->loc, NodeData<Expr>{}, UnaryOp(i)));
                     s.skip_white();
                     continue;
                 }
@@ -852,31 +931,32 @@ namespace brgen::nast {
             while (stack.size()) {
                 auto ptr = std::move(stack.back());
                 stack.pop_back();
-                ptr->expr = std::move(target);
+                ptr->target = std::move(target);
                 target = std::move(ptr);
             }
             return target;
         }
 
-        bool is_finally_ident(const Node<Expr>& expr, Node<Ident>* ident) {
-            if (expr.type() == NodeType::ident) {
+        bool is_finally_ident(const Node<Expr>& expr, Node<Reference>* ident) {
+            if (expr.type() == NodeType::Reference) {
                 if (ident) {
-                    *ident = (expr).as<Ident>();
+                    *ident = expr.as<Reference>();
                 }
                 return true;
             }
-            if (expr.type() == NodeType::index) {
-                return is_finally_ident(static_cast<Index*>(expr.get())->expr, ident);
+            if (expr.type() == NodeType::Index) {
+                return is_finally_ident(expr.as<Index>().ref(a)->base, ident);
             }
-            if (expr.type() == NodeType::member_access) {
-                return is_finally_ident(static_cast<MemberAccess*>(expr.get())->target, ident);
+            if (expr.type() == NodeType::MemberAccess) {
+                return is_finally_ident(expr.as<MemberAccess>().ref(a)->base, ident);
             }
-            if (expr.type() == NodeType::special_literal) {
+            if (expr.type() == NodeType::SpecialLiteral) {
                 return true;
             }
             return false;
         }
 
+        /*
         void check_duplicated_def(Ident* ident) {
             auto found = ident->scope->lookup_current(
                 [&](Node<Ident>& i) {
@@ -900,38 +980,41 @@ namespace brgen::nast {
             ident->scope = state.current_scope();
             ident->scope->push(ident);
         }
+        */
 
-        void check_assignment(const Node<Binary>& assign) {
-            if (assign->op == BinaryOp::define_assign ||
-                assign->op == BinaryOp::const_assign ||
-                assign->op == BinaryOp::in_assign) {
-                auto ident = as<Ident>(assign->left);
+        void check_assignment(BinaryOp op, Node<Expr> left) {
+            if (op == BinaryOp::define_assign ||
+                op == BinaryOp::const_assign ||
+                op == BinaryOp::in_assign) {
+                auto ident = left.as<Reference>();
                 if (!ident) {
                     if (state.error_tolerant) {
-                        (void)state.errors.error(assign->left->loc, "left of `:=`, `::=`, or `in` must be ident");
+                        (void)state.errors.error(left.ref(a).loc(), "left of `:=`, `::=`, or `in` must be ident");
                         return;
                     }
-                    s.report_error(assign->left->loc, "left of `:=`, `::=`, or `in` must be ident");
+                    s.report_error(left.ref(a).loc(), "left of `:=`, `::=`, or `in` must be ident");
                 }
+                /*
                 ident->usage = assign->op == BinaryOp::const_assign
                                    ? IdentUsage::define_const
                                    : IdentUsage::define_variable;
                 ident->base = assign;
+                */
                 // rewrite scope information for semantic analysis
-                rewrite_ident_scope((assign->left).as<Ident>());
-                check_duplicated_def(ident);
+                // rewrite_ident_scope((assign->left).as<Ident>());
+                // check_duplicated_def(ident);
             }
             else {  // otherwise, assign
-                Node<Ident> ident;
-                if (!is_finally_ident(assign->left, &ident)) {
+                Node<Reference> ident;
+                if (!is_finally_ident(left, &ident)) {
                     if (state.error_tolerant) {
-                        (void)state.errors.error(assign->left->loc, "left of `=` must be ident, member access, indexed or input/output/config");
+                        (void)state.errors.error(left.ref(a).loc(), "left of `=` must be ident, member access, indexed or input/output/config");
                         return;
                     }
-                    s.report_error(assign->left->loc, "left of `=` must be ident, member access, indexed or input/output/config");
+                    s.report_error(left.ref(a).loc(), "left of `=` must be ident, member access, indexed or input/output/config");
                 }
                 if (ident) {
-                    rewrite_ident_scope(ident);
+                    // rewrite_ident_scope(ident);
                 }
             }
         }
@@ -960,7 +1043,8 @@ namespace brgen::nast {
         }
 
         Node<Identity> parse_expr_identity(bool* line_skipped = nullptr) {
-            return a.make<Identity>(parse_expr(line_skipped));
+            auto expr = parse_expr(line_skipped);
+            return a.make<Identity>(expr.ref(a).loc(), NodeData<Expr>{}, std::move(expr));
         }
 
         /*
@@ -990,23 +1074,23 @@ namespace brgen::nast {
             auto update_stack = [&] {  // returns true if `continue` required
                 if (stack_is_on_depth()) {
                     auto op = pop_stack();
-                    if (op.expr.type() == NodeType::binary) {
+                    if (op.expr.type() == NodeType::Binary) {
                         if (depth == bin_assign_layer) {
                             stack.push_back(std::move(op));
                         }
                         else {
-                            auto b = static_cast<Binary*>(op.expr.get());
+                            auto b = op.expr.as<Binary>().ref(a);
                             b->right = std::move(expr);
                             expr = std::move(op.expr);
                         }
                     }
-                    else if (op.expr.type() == NodeType::range) {
-                        auto b = static_cast<Range*>(op.expr.get());
+                    else if (op.expr.type() == NodeType::Range) {
+                        auto b = op.expr.as<Range>().ref(a);
                         b->end = std::move(expr);
                         expr = std::move(op.expr);
                     }
-                    else if (op.expr.type() == NodeType::cond) {
-                        auto cop = static_cast<Cond*>(op.expr.get());
+                    else if (op.expr.type() == NodeType::Cond) {
+                        auto cop = op.expr.as<Cond>().ref(a);
                         if (!cop->then) {
                             cop->then = std::move(expr);
                             s.skip_white();
@@ -1029,7 +1113,7 @@ namespace brgen::nast {
                 if (depth == bin_cond_layer) {
                     while (stack_is_on_depth()) {
                         auto op = pop_stack();
-                        auto cop = static_cast<Cond*>(op.expr.get());
+                        auto cop = op.expr.as<Cond>().ref(a);
                         if (!cop->then || !cop->cond) {
                             s.report_error("expect cond with `cond` and `then` but not; parser bug");
                         }
@@ -1040,12 +1124,12 @@ namespace brgen::nast {
                 else if (depth == bin_assign_layer) {
                     while (stack_is_on_depth()) {
                         auto op = pop_stack();
-                        auto b = static_cast<Binary*>(op.expr.get());
+                        auto b = op.expr.as<Binary>().ref(a);
                         if (!b->left) {
                             s.report_error("expect binary with `left` but not; parser bug");
                         }
                         b->right = std::move(expr);
-                        check_assignment((op.expr).as<Binary>());
+                        check_assignment(b->op, b->left);
                         expr = std::move(op.expr);
                     }
                 }
@@ -1068,7 +1152,7 @@ namespace brgen::nast {
                 if (depth == bin_cond_layer) {
                     if (auto token = s.consume_token("?")) {
                         s.set_regex_mode(true);  // from here, regex literal is allowed
-                        stack.push_back(BinOpStack{.depth = depth, .expr = a.make<Cond>(token->loc, std::move(expr))});
+                        stack.push_back(BinOpStack{.depth = depth, .expr = a.make<Cond>(token->loc, NodeData<Expr>{}, std::move(expr))});
                         s.skip_white();
                         parse_low();
                         continue;
@@ -1078,18 +1162,18 @@ namespace brgen::nast {
                     if (auto token = consume_op(i, bin_layers[depth])) {
                         s.set_regex_mode(true);  // from here, regex literal is allowed
                         if (depth == bin_compare_layer) {
-                            if (auto bin = as<Binary>(expr); bin && is_compare_op(bin->op)) {
+                            if (auto bin = expr.as<Binary>().ref(a); bin && is_compare_op(bin->op)) {
                                 // this is like `a == b == c` but this language not support it
                                 s.report_error(token->loc, "unexpected `", token->token, "`");
                             }
                         }
                         if (depth == bin_range_layer) {
-                            if (auto bin = as<Range>(expr); bin && is_range_op(bin->op)) {
+                            if (auto bin = expr.as<Range>().ref(a); bin && is_range_op(bin->op)) {
                                 // this is like `a .. b .. c` but this language not support it
                                 s.report_error(token->loc, "unexpected `", token->token, "`");
                             }
                             s.skip_space();  // for safety, skip only space, not line
-                            auto r = a.make<Range>(token->loc, std::move(expr), *from_string<BinaryOp>(bin_layers[depth][i]));
+                            auto r = a.make<Range>(token->loc, NodeData<Expr>{}, std::move(expr), Node<Expr>{}, *from_string<BinaryOp>(bin_layers[depth][i]));
                             if (appear_valid_range_end()) {
                                 s.skip_white();
                                 stack.push_back(BinOpStack{.depth = depth, .expr = std::move(r)});
@@ -1100,7 +1184,7 @@ namespace brgen::nast {
                             continue;
                         }
                         s.skip_white();
-                        auto b = a.make<Binary>(token->loc, std::move(expr), *from_string<BinaryOp>(bin_layers[depth][i]));
+                        auto b = a.make<Binary>(token->loc, NodeData<Expr>{}, *from_string<BinaryOp>(bin_layers[depth][i]), std::move(expr));
                         if (depth == 0) {                          // special case, needless to use stack
                             b->right = parse_unary(line_skipped);  // return non-nullptr or throw error
                             expr = std::move(b);
@@ -1122,40 +1206,43 @@ namespace brgen::nast {
         /*
             <loop> ::= "for" <expr>? (";" <expr>?)? (";" <expr>?)? <indent block>
         */
-        Node<Loop> parse_for(lexer::Token&& token) {
-            auto for_ = a.make<Loop>(token.loc);
-            auto cs = state.cond_scope(for_->cond_scope, for_);
+        Node<Statement> parse_for(lexer::Token&& token) {
+            // auto cs = state.cond_scope(for_->cond_scope, for_);
             s.skip_white();
             constexpr auto hint = "to start `for` body";
             if (s.expect_token(":")) {
+                auto for_ = a.make<Loop>(token.loc);
                 for_->body = parse_indent_block(for_, hint);
                 return for_;
             }
+            Node<Expr> init;
             if (!s.expect_token(";")) {
-                for_->init = parse_expr();
+                auto init = parse_expr();
                 s.skip_white();
                 // like `for x in 0..10`
                 if (auto in_ = s.consume_token("in")) {
+                    auto range_loop = a.make<RangeLoop>(token.loc);
                     s.skip_white();
                     auto range = parse_expr();
-                    auto bin = a.make<Binary>(in_->loc, std::move(for_->init), BinaryOp::in_assign);
-                    bin->right = std::move(range);
-                    check_assignment(bin);
-                    for_->init = std::move(bin);
+                    check_assignment(BinaryOp::in_assign, init);
+                    range_loop->bind_variable = init.as<Reference>().ref(a)->name;
+                    range_loop->container = range;
                     s.skip_white();
-                    for_->body = parse_indent_block(for_, hint);
-                    return for_;
+                    range_loop->body = parse_indent_block(range_loop, hint);
+                    return range_loop;
                 }
             }
+            auto for_ = a.make<Loop>(token.loc);
+            for_->init = std::move(init);
             if (s.expect_token(":")) {
-                for_->cond = std::move(for_->init);
+                for_->condition = init;
                 for_->body = parse_indent_block(for_, hint);
                 return for_;
             }
             s.must_consume_token(";", " to separate `init` and `cond` part of `for` loop");
             s.skip_white();
             if (!s.expect_token(";")) {
-                for_->cond = parse_expr();
+                for_->condition = parse_expr();
                 s.skip_white();
             }
             if (s.expect_token(":")) {
@@ -1177,7 +1264,7 @@ namespace brgen::nast {
         */
         // fn (a :int,b :int) -> int
         Node<FunctionType> parse_func_type(lexer::Token&& tok) {
-            auto func_type = a.make<FunctionType>(tok.loc, true);
+            auto func_type = a.make<FunctionType>(tok.loc, NodeData<Type>{.is_explicit = true});
             s.skip_white();
             s.must_consume_token("(", "to open function type parameter list");
             s.skip_white();
@@ -1222,15 +1309,15 @@ namespace brgen::nast {
                 auto end_tok = s.must_consume_token("]", "to close array type");
                 s.skip_space();
                 auto base_type = parse_type(as_argument);
-                return a.make<ArrayType>(arr_begin->loc, std::move(expr), end_tok.loc, std::move(base_type), true);
+                return a.make<ArrayType>(arr_begin->loc, NodeData<Type>{.is_explicit = true}, std::move(expr), end_tok.loc, std::move(base_type), true);
             }
 
             if (auto lit = s.consume_token(lexer::Tag::str_literal)) {
-                return a.make<StrLiteralType>(std::move(parse_str_literal(std::move(*lit))), true);
+                return a.make<StrLiteralType>(lit->loc, NodeData<Type>{.is_explicit = true}, std::move(parse_str_literal(std::move(*lit))));
             }
 
             if (auto lit = s.consume_token(lexer::Tag::regex_literal)) {
-                return a.make<RegexLiteralType>(std::move(parse_regex_literal(std::move(*lit))), true);
+                return a.make<RegexLiteralType>(lit->loc, NodeData<Type>{.is_explicit = true}, std::move(parse_regex_literal(std::move(*lit))));
             }
 
             if (auto fn = s.consume_token("fn")) {
@@ -1238,11 +1325,11 @@ namespace brgen::nast {
             }
 
             if (auto void_ = s.consume_token("void")) {
-                return a.make<VoidType>(void_->loc, true);
+                return a.make<VoidType>(void_->loc, NodeData<Type>{.is_explicit = true});
             }
 
             if (auto bool_ = s.consume_token("bool")) {
-                return a.make<BoolType>(bool_->loc, true);
+                return a.make<BoolType>(bool_->loc, NodeData<Type>{.is_explicit = true});
             }
 
             if (auto format = s.consume_token("format")) {
@@ -1274,38 +1361,44 @@ namespace brgen::nast {
             }
 
             if (auto desc = is_int_type(ident.token)) {
-                return a.make<IntType>(ident.loc, desc->bit_size, desc->endian, desc->is_signed, true);
+                return a.make<IntType>(ident.loc, NodeData<Type>{.is_explicit = true}, desc->bit_size, desc->is_signed, desc->endian);
             }
             if (auto desc = is_float_type(ident.token)) {
-                return a.make<FloatType>(ident.loc, desc->bit_size, desc->endian, true);
+                return a.make<FloatType>(ident.loc, NodeData<Type>{.is_explicit = true}, desc->bit_size, desc->endian);
             }
 
             auto base = a.make<Ident>(ident.loc, std::move(ident.token));
-            base->usage = IdentUsage::maybe_type;
-            base->scope = state.current_scope();
+            // base->usage = IdentUsage::maybe_type;
+            // base->scope = state.current_scope();
 
             s.skip_space();
-            Node<MemberAccess> import_ref;
 
+            Ref<WrapperType> type;
             // import type
             if (auto dot = s.consume_token(".")) {
-                import_ref = parse_access(std::move(*dot), std::move(base));
-                base = import_ref.ref(a)->member;
+                auto ref = a.make<Reference>(base.loc(), NodeData<Expr>{}, std::move(base));
+                auto import_ref = parse_access(std::move(*dot), std::move(ref));
+                auto imported_type = a.make<ImportedType>(import_ref.ref(a).loc(), NodeData<WrapperType>{NodeData<Type>{.is_explicit = true}}, std::move(import_ref));
+                type = imported_type;
             }
-
-            auto id = a.make<IdentType>(ident.loc, std::move(base));
-            id->import_ref = std::move(import_ref);
-            if (!as_argument) {
-                if (auto fmt = as<Format>(state.current_member())) {
-                    fmt->depends.push_back(id);
+            else {
+                auto id = a.make<IdentType>(ident.loc, NodeData<WrapperType>{NodeData<Type>{.is_explicit = true}}, std::move(base));
+                // id->import_ref = std::move(import_ref);
+                if (!as_argument) {
+                    /*
+                    if (auto fmt = as<Format>(state.current_member())) {
+                        fmt->depends.push_back(id);
+                    }
+                    */
                 }
+                type = id;
             }
 
             // generic type instantiation: `X[T, ...]`
             s.skip_space();
             if (auto lb = s.consume_token("[")) {
-                auto generic = a.make<GenericType>(id.loc(), true);
-                generic->base_type = std::move(id);
+                auto generic = a.make<GenericType>(type.loc(), NodeData<Type>{.is_explicit = true});
+                generic->base_type = type;
                 for (;;) {
                     s.skip_white();
                     if (s.consume_token("]")) {
@@ -1329,7 +1422,7 @@ namespace brgen::nast {
                 return generic;
             }
 
-            return id;
+            return type;
         }
 
         /*
@@ -1340,7 +1433,7 @@ namespace brgen::nast {
             lexer::Token token;
             Node<Ident> ident;
             if (expr) {
-                if (expr.type() != NodeType::ident) {
+                if (expr.type() != NodeType::Reference) {
                     return expr;
                 }
                 s.skip_space();
@@ -1348,7 +1441,7 @@ namespace brgen::nast {
                 if (!tmp) {
                     return expr;
                 }
-                ident = (expr).as<Ident>();
+                ident = expr.as<Reference>().ref(a)->name;
                 token = std::move(*tmp);
             }
             else {
@@ -1356,109 +1449,116 @@ namespace brgen::nast {
             }
 
             auto field = a.make<Field>(ident ? ident.ref(a).loc() : token.loc);
-            field->colon_loc = token.loc;
+            // field->colon_loc = token.loc;
 
             field->name = std::move(ident);
             s.skip_space();
 
-            field->field_type = parse_type(as_parameter);
+            field->type = parse_type(as_parameter);
 
+            /*
             if (field->name) {
                 field->name.ref(a)->expr_type = field->field_type;
                 field->name.ref(a)->base = field;
                 field->name.ref(a)->constant_level = ConstantLevel::variable;
                 if (!as_parameter) {  // as parameter, duplication check is delayed until all parameters are parsed, because of this case: `fn foo(x :int, x :int)`
                     field->name.ref(a)->usage = IdentUsage::define_field;
-                    check_duplicated_def(field->name.get());
+                    check_duplicated_def(field->name.ref(a).get());
                 }
             }
-
+            */
+            /*
             if (!as_parameter) {
                 field->belong = state.current_member();
             }
+            */
 
             if (auto b = s.consume_token("(")) {
                 s.skip_white();
 
-                auto field_argument = a.make<FieldArgument>(b->loc);
+                auto field_argument = a.make<Arguments>(b->loc);
 
                 if (!s.expect_token(")")) {
-                    field_argument->raw_arguments = parse_expr();
-                    collect_args(field_argument->raw_arguments, field_argument->collected_arguments);
+                    auto raw = parse_expr();
+                    collect_args(raw, field_argument->arguments);
                     s.skip_white();
                 }
 
                 auto e = s.must_consume_token(")", "to close field argument");
-                field_argument->end_loc = e.loc;
+                // field_argument->end_loc = e.loc;
 
                 field->arguments = std::move(field_argument);
             }
 
+            /*
             if (!as_parameter) {
                 state.add_to_struct(field);
             }
+            */
 
             s.skip_space();
             s.consume_token(lexer::Tag::comment);  // enforce parser to recognize comment after field definition
 
+            /*
             if (auto comment = s.get_comments()) {
                 field->follow_comment = std::move(comment);
             }
+            */
             return field;
         }
 
-        void set_enum_value(Node<EnumMember>& member, size_t& offset, EnumMember*& prev_specified) {
+        void set_enum_value(Node<EnumMember> member, size_t& offset, NodeData<EnumMember>*& prev_specified) {
             if (!prev_specified) {
-                auto int_lit = a.make<IntLiteral>(member.ref(a).loc(), "0");
+                auto int_lit = a.make<IntLiteral>(member.ref(a).loc(), NodeData<Literal>{}, "0");
                 member.ref(a)->value = int_lit;
-                prev_specified = member.get();
+                prev_specified = member.ref(a).get();
             }
             else {
                 // make (prev expr) + offset
-                if (auto i_lit = as<IntLiteral>(prev_specified->value);
-                    i_lit && i_lit->value == "0") {
-                    member.ref(a)->value = a.make<IntLiteral>(member.ref(a).loc(), brgen::nums(offset));
+                if (auto i_lit = prev_specified->value.as<IntLiteral>();
+                    i_lit && i_lit.ref(a)->value == "0") {
+                    member.ref(a)->value = a.make<IntLiteral>(member.ref(a).loc(), NodeData<Literal>{}, brgen::nums(offset));
                 }
                 else {
                     auto add = a.make<Binary>();
-                    add.loc() = member.ref(a).loc();
+                    add.set_loc(member.ref(a).loc());
                     add->op = BinaryOp::add;
                     add->left = prev_specified->value;
-                    add->right = a.make<IntLiteral>(member.ref(a).loc(), brgen::nums(offset));
+                    add->right = a.make<IntLiteral>(member.ref(a).loc(), NodeData<Literal>{}, brgen::nums(offset));
                     member.ref(a)->value = add;
                 }
             }
         }
 
-        Node<EnumMember> parse_enum_member(const Node<Enum>& enum_, size_t& offset, EnumMember*& prev_specified) {
+        Node<EnumMember> parse_enum_member(const Node<Enum>& enum_, size_t& offset, NodeData<EnumMember>*& prev_specified) {
             auto ident = parse_ident("enum member ident expected");
-            ident.ref(a)->usage = IdentUsage::define_enum_member;
-            ident.ref(a)->expr_type = enum_->enum_type;
-            ident.ref(a)->constant_level = ConstantLevel::constant;
-            check_duplicated_def(ident.get());
+            // ident.ref(a)->usage = IdentUsage::define_enum_member;
+            // ident.ref(a)->expr_type = enum_.ref(a)->enum_type;
+            // ident.ref(a)->constant_level = ConstantLevel::constant;
+            // check_duplicated_def(ident.ref(a).get());
             auto member = a.make<EnumMember>(ident.ref(a).loc());
             member->name = ident;
-            member->belong = enum_;
-            ident.ref(a)->base = member;
+            // member->belong = enum_;
+            // ident.ref(a)->base = member;
             s.skip_space();
             if (s.consume_token("=")) {
                 s.skip_white();
                 member->raw_expr = parse_expr();
                 std::vector<Node<Expr>> commas;
-                collect_args(member->raw_expr, commas);
+                collect_comma(member->raw_expr, commas);
                 if (commas.size() > 2) {
                     s.report_error(member->raw_expr.ref(a).loc(), "enum member value must be 1 or 2 elements but got ", nums(commas.size()));
                 }
                 for (auto& expr : commas) {
-                    if (as<StrLiteral>(expr)) {
+                    if (expr.as<StrLiteral>()) {
                         if (member->str_literal) {
-                            s.report_error(expr->loc, "enum member str literal already specified");
+                            s.report_error(expr.ref(a).loc(), "enum member str literal already specified");
                         }
                         member->str_literal = (expr).as<StrLiteral>();
                     }
                     else {
                         if (member->value) {
-                            s.report_error(expr->loc, "enum member value already specified");
+                            s.report_error(expr.ref(a).loc(), "enum member value already specified");
                         }
                         member->value = expr;
                         offset = 0;
@@ -1466,14 +1566,14 @@ namespace brgen::nast {
                     }
                 }
                 if (!member->value) {
-                    set_enum_value(member, offset, prev_specified);
+                    set_enum_value(member.id(), offset, prev_specified);
                 }
             }
             else {
-                set_enum_value(member, offset, prev_specified);
+                set_enum_value(member.id(), offset, prev_specified);
             }
-            member->comment = s.get_comments();
-            enum_->members.push_back(member);
+            // member->comment = s.get_comments();
+            enum_.ref(a)->members.push_back(member);
             s.skip_line();
             offset++;
             return member;
@@ -1482,7 +1582,7 @@ namespace brgen::nast {
         void parse_enum_base_type(Node<Enum>& enum_, lexer::Token& base) {
             s.skip_white();
             enum_.ref(a)->base_type = parse_type(false);
-            enum_.ref(a)->enum_type.ref(a)->bit_size = enum_.ref(a)->base_type.ref(a)->bit_size;
+            // enum_.ref(a)->enum_type.ref(a)->bit_size = enum_.ref(a)->base_type.ref(a)->bit_size;
             s.skip_space_comment();
             s.must_consume_token(lexer::Tag::line, "to separate enum base type");
             s.skip_line();
@@ -1501,31 +1601,32 @@ namespace brgen::nast {
             auto enum_ = a.make<Enum>(token.loc);
             s.skip_white();
             enum_->name = parse_ident("enum name expected");
-            enum_->name.ref(a)->usage = IdentUsage::define_enum;
-            enum_->name.ref(a)->base = enum_;
-            check_duplicated_def(enum_->name.get());
+            // enum_->name.ref(a)->usage = IdentUsage::define_enum;
+            // enum_->name.ref(a)->base = enum_;
+            // check_duplicated_def(enum_->name.ref(a).get());
             enum_->enum_type = a.make<EnumType>(enum_.loc());
             enum_->enum_type.ref(a)->base = enum_;
             must_consume_indent_sign("to start enum member block");  // :<CR><LF>
 
             auto base = s.must_consume_token(lexer::Tag::indent, "to start enum member block");
-            auto m_scope = state.enter_member(enum_);
-            auto s_scope = state.new_indent(s, base.token.size(), enum_->scope, enum_);
+            // auto m_scope = state.enter_member(enum_);
+            // auto s_scope = state.new_indent(s, base.token.size(), enum_->scope, enum_);
+            Node<Enum> enum_id = enum_;
             if (auto tok = s.consume_token(":")) {
-                parse_enum_base_type(enum_, base);
+                parse_enum_base_type(enum_id, base);
             }
 
-            EnumMember* prev_specified = nullptr;
+            NodeData<EnumMember>* prev_specified = nullptr;
             size_t offset = 0;
-            parse_enum_member(enum_, offset, prev_specified);
+            parse_enum_member(enum_id, offset, prev_specified);
             while (auto indent = s.peek_token(lexer::Tag::indent)) {
                 if (indent->token.size() != base.token.size()) {
                     break;
                 }
                 s.must_consume_token(lexer::Tag::indent, "to continue enum member block");
-                parse_enum_member(enum_, offset, prev_specified);
+                parse_enum_member(enum_id, offset, prev_specified);
             }
-            state.add_to_struct(enum_);
+            // state.add_to_struct(enum_);
             return enum_;
         }
 
@@ -1537,9 +1638,9 @@ namespace brgen::nast {
             s.skip_white();
             auto ident_parse = [&] {
                 fmt->name = parse_ident("format name expected");
-                fmt->name.ref(a)->usage = IdentUsage::define_format;
-                fmt->name.ref(a)->base = fmt;
-                check_duplicated_def(fmt->name.get());
+                // fmt->name.ref(a)->usage = IdentUsage::define_format;
+                // fmt->name.ref(a)->base = fmt;
+                // check_duplicated_def(fmt->name.ref(a).get());
             };
             if (allow_anonymous) {
                 if (!s.peek_token(":")) {
@@ -1559,13 +1660,13 @@ namespace brgen::nast {
                         break;
                     }
                     auto name = parse_ident_no_scope("type parameter name expected");
-                    name.ref(a)->usage = IdentUsage::define_type_parameter;
+                    // name.ref(a)->usage = IdentUsage::define_type_parameter;
                     auto tp = a.make<TypeParameter>(name.ref(a).loc());
                     tp->name = name;
-                    tp->belong = fmt;
-                    name.ref(a)->base = tp;
+                    // tp->belong = fmt;
+                    // name.ref(a)->base = tp;
                     type_param_idents.push_back(name);
-                    fmt->type_parameters.push_back(std::move(tp));
+                    // fmt->type_parameters.push_back(std::move(tp));
                     s.skip_white();
                     if (s.expect_token("]")) {
                         continue;
@@ -1575,52 +1676,52 @@ namespace brgen::nast {
                 s.skip_space();
             }
             {
-                auto m_scope = state.enter_member(fmt);
+                // auto m_scope = state.enter_member(fmt);
                 fmt->body = parse_indent_block(fmt, "to start `format` body", &type_param_idents);
             }
             // because fmt->name->expr_type = fmt->body->struct_type
             // makes circular reference, so not use it
-            state.add_to_struct(fmt);
+            // state.add_to_struct(fmt);
 
             // fetch encode_fn and decode_fn
-            auto enc = fmt->body.ref(a)->struct_type.ref(a)->lookup("encode");
-            if (auto fn = as<Function>(enc)) {
-                fmt->encode_fn = (enc).as<Function>();
-            }
-            auto dec = fmt->body.ref(a)->struct_type.ref(a)->lookup("decode");
-            if (auto fn = as<Function>(dec)) {
-                fmt->decode_fn = (dec).as<Function>();
-            }
+            // auto enc = fmt->body.ref(a)->struct_type.ref(a)->lookup("encode");
+            // if (auto fn = enc.as<Function>()) {
+            // fmt->encode_fn = (enc).as<Function>();
+            // }
+            // auto dec = fmt->body.ref(a)->struct_type.ref(a)->lookup("decode");
+            // if (auto fn = dec.as<Function>()) {
+            // fmt->decode_fn = (dec).as<Function>();
+            // }
             // lookup cast fn
-            fmt->body.ref(a)->struct_type.ref(a)->lookup([&](Node<NamedStatement>& m) {
-                if (auto fn = as<Function>(m); fn && fn->parameters.size() == 0) {
-                    if (auto i_ty = is_int_type(fn->name->name); i_ty) {
-                        auto ok_ty = as<IntType>(fn->return_type);
-                        if (ok_ty && ok_ty->is_signed == i_ty->is_signed && ok_ty->bit_size == i_ty->bit_size) {
-                            fn->is_cast = true;
-                            fn->name->usage = IdentUsage::define_cast_fn;
-                            fmt->cast_fns.push_back((m).as<Function>());
-                        }
-                    }
-                    if (auto f_ty = is_float_type(fn->name->name); f_ty) {
-                        auto ok_ty = as<FloatType>(fn->return_type);
-                        if (ok_ty && ok_ty->bit_size == f_ty->bit_size) {
-                            fn->is_cast = true;
-                            fn->name->usage = IdentUsage::define_cast_fn;
-                            fmt->cast_fns.push_back((m).as<Function>());
-                        }
-                    }
-                    if (fn->name->name == "bool") {
-                        auto ok_ty = as<BoolType>(fn->return_type);
-                        if (ok_ty) {
-                            fn->is_cast = true;
-                            fn->name->usage = IdentUsage::define_cast_fn;
-                            fmt->cast_fns.push_back((m).as<Function>());
-                        }
-                    }
-                }
-                return false;
-            });
+            // fmt->body.ref(a)->struct_type.ref(a)->lookup([&](Node<NamedStatement>& m) {
+            // if (auto fn = m.as<Function>(); fn && fn.ref(a)->parameters.size() == 0) {
+            // if (auto i_ty = is_int_type(fn.ref(a)->name.ref(a)->name); i_ty) {
+            // auto ok_ty = fn.ref(a)->return_type.as<IntType>();
+            // if (ok_ty && ok_ty.ref(a)->is_signed == i_ty->is_signed && ok_ty.ref(a)->bit_size == i_ty->bit_size) {
+            // fn.ref(a)->is_cast = true;
+            // fn.ref(a)->name.ref(a)->usage = IdentUsage::define_cast_fn;
+            // fmt->cast_fns.push_back((m).as<Function>());
+            // }
+            // }
+            // if (auto f_ty = is_float_type(fn.ref(a)->name.ref(a)->name); f_ty) {
+            // auto ok_ty = fn.ref(a)->return_type.as<FloatType>();
+            // if (ok_ty && ok_ty.ref(a)->bit_size == f_ty->bit_size) {
+            // fn.ref(a)->is_cast = true;
+            // fn.ref(a)->name.ref(a)->usage = IdentUsage::define_cast_fn;
+            // fmt->cast_fns.push_back((m).as<Function>());
+            // }
+            // }
+            // if (fn.ref(a)->name.ref(a)->name == "bool") {
+            // auto ok_ty = fn.ref(a)->return_type.as<BoolType>();
+            // if (ok_ty) {
+            // fn.ref(a)->is_cast = true;
+            // fn.ref(a)->name.ref(a)->usage = IdentUsage::define_cast_fn;
+            // fmt->cast_fns.push_back((m).as<Function>());
+            // }
+            // }
+            // }
+            // return false;
+            // });
 
             return fmt;
         }
@@ -1633,16 +1734,16 @@ namespace brgen::nast {
             s.skip_white();
 
             state_->name = parse_ident("state name expected");
-            state_->name.ref(a)->usage = IdentUsage::define_state;
-            state_->name.ref(a)->base = state_;
-            check_duplicated_def(state_->name.get());
+            // state_->name.ref(a)->usage = IdentUsage::define_state;
+            // state_->name.ref(a)->base = state_;
+            // check_duplicated_def(state_->name.ref(a).get());
             {
-                auto m_scope = state.enter_member(state_);
+                // auto m_scope = state.enter_member(state_);
                 state_->body = parse_indent_block(state_, "to start `state` body");
             }
             // `state_->name->expr_type = state_->body->struct_type`
             // makes circular reference, so not use it
-            state.add_to_struct(state_);
+            // state.add_to_struct(state_);
 
             return state_;
         }
@@ -1654,13 +1755,13 @@ namespace brgen::nast {
             auto fn = a.make<Function>(token.loc);
             s.skip_white();
             fn->name = parse_ident("function name expected");
-            fn->name.ref(a)->usage = IdentUsage::define_fn;
-            fn->name.ref(a)->base = fn;
-            check_duplicated_def(fn->name.get());
-            fn->name.ref(a)->constant_level = ConstantLevel::constant;
-            fn->belong = state.current_member();
-            fn->func_type = a.make<FunctionType>(fn.loc());
-            fn->name.ref(a)->expr_type = fn->func_type;
+            // fn->name.ref(a)->usage = IdentUsage::define_fn;
+            // fn->name.ref(a)->base = fn;
+            // check_duplicated_def(fn->name.ref(a).get());
+            // fn->name.ref(a)->constant_level = ConstantLevel::constant;
+            // fn->belong = state.current_member();
+            // fn->func_type = a.make<FunctionType>(fn.loc());
+            // fn->name.ref(a)->expr_type = fn->func_type;
             s.skip_white();
             lexer::Loc end_loc;
             std::vector<Node<Ident>> ident_param;
@@ -1674,20 +1775,23 @@ namespace brgen::nast {
                 Node<Ident> ident;
                 if (!s.expect_token(":")) {
                     ident = parse_ident_no_scope("to specify function parameter name");
-                    ident.ref(a)->usage = IdentUsage::define_arg;
+                    // ident.ref(a)->usage = IdentUsage::define_arg;
                     // ident->scope = state.current_scope();
                     ident_param.push_back(ident);
                     s.skip_white();
                 }
-                if (!s.expect_token(":")) {
-                    s.must_consume_token(":", "to separate function parameter name and type");
-                }
+                s.must_consume_token(":", "to separate function parameter name and type");
 
-                auto f = parse_field(std::move(ident), true);
-                auto field = (f).as<Field>();
-                field->belong = fn;
-                fn->parameters.push_back(field);
-                fn->func_type->parameters.push_back(field->field_type);
+                auto type = parse_type(true);
+                auto param = a.make<Parameter>(ident ? ident.ref(a).loc() : type.ref(a).loc());
+                param->name = ident;
+                param->type = type;
+                fn->parameters.push_back(param);
+                // auto f = parse_field(std::move(ident), true);
+                // auto field = (f).as<Field>();
+                // field->belong = fn;
+                // fn->parameters.push_back(field);
+                // fn->func_type->parameters.push_back(field->field_type);
                 if (s.expect_token(")") || s.consume_token(",")) {
                     continue;
                 }
@@ -1703,12 +1807,12 @@ namespace brgen::nast {
                 fn->return_type = a.make<VoidType>(end_loc);
             }
 
-            fn->func_type->return_type = fn->return_type;
+            // fn->func_type->return_type = fn->return_type;
 
-            state.add_to_struct(fn);
+            // state.add_to_struct(fn);
 
             {
-                auto m_scope = state.enter_member(fn);
+                // auto m_scope = state.enter_member(fn);
                 // auto typ = state.enter_struct(fn->struct_type);
                 fn->body = parse_indent_block(fn, "to start `fn` body", &ident_param);
             }
@@ -1717,23 +1821,23 @@ namespace brgen::nast {
         }
 
         Node<Loop> lookup_loop_scope() {
-            auto scope = state.current_scope();
-            for (auto s = scope; s; s = s->prev.lock()) {
-                if (auto loop = s->owner.lock(); as<Loop>(loop)) {
-                    return (loop).as<Loop>();
-                }
-            }
-            return nullptr;
+            // auto scope = state.current_scope();
+            // for (auto s = scope; s; s = s->prev.lock()) {
+            //     if (auto loop = s->owner.lock(); loop.as<Loop>()) {
+            //         return (loop).as<Loop>();
+            //     }
+            // }
+            return nullref;
         }
 
         Node<Function> lookup_function_scope() {
-            auto scope = state.current_scope();
-            for (auto s = scope; s; s = s->prev.lock()) {
-                if (auto fn = s->owner.lock(); as<Function>(fn)) {
-                    return (fn).as<Function>();
-                }
-            }
-            return nullptr;
+            // auto scope = state.current_scope();
+            // for (auto s = scope; s; s = s->prev.lock()) {
+            //     if (auto fn = s->owner.lock(); fn.as<Function>()) {
+            //         return (fn).as<Function>();
+            //     }
+            // }
+            return nullref;
         }
 
         /*
@@ -1819,7 +1923,7 @@ namespace brgen::nast {
 
             Node<Statement> node;
             if (s.expect_token(":")) {
-                node = parse_field(nullptr, false);
+                node = parse_field(nullref, false);
             }
             else {
                 auto expr = parse_expr(prev_skip_line);
@@ -1832,12 +1936,12 @@ namespace brgen::nast {
         }
     };
 
-    Node<Module> parse(Stream& stream, LocationError* err_or_warn, ParseOption option) {
+    Node<Module> parse(Arena& a, Stream& stream, LocationError* err_or_warn, ParseOption option) {
         LocationError ignore;
         if (!err_or_warn) {
             err_or_warn = &ignore;
         }
-        Parser p(stream, *err_or_warn);
+        Parser p(stream, *err_or_warn, a);
         stream.set_collect_comments(option.collect_comments);
         p.state.error_tolerant = option.error_tolerant;
         return p.parse();

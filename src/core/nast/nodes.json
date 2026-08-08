@@ -1,5 +1,6 @@
 {
     "includes": [
+        "<span>",
         "<algorithm>",
         "<array>",
         "<concepts>",
@@ -79,257 +80,342 @@
     "enums": [
         {
             "name": "BinaryOp",
-            "enums": [
+            "layers": [
                 {
                     "name": "mul",
-                    "alt_names": [
-                        "*"
-                    ]
-                },
-                {
-                    "name": "div",
-                    "alt_names": [
-                        "/"
-                    ]
-                },
-                {
-                    "name": "mod",
-                    "alt_names": [
-                        "%"
-                    ]
-                },
-                {
-                    "name": "left_arithmetic_shift",
-                    "alt_names": [
-                        "<<<"
-                    ]
-                },
-                {
-                    "name": "right_arithmetic_shift",
-                    "alt_names": [
-                        ">>>"
-                    ]
-                },
-                {
-                    "name": "left_logical_shift",
-                    "alt_names": [
-                        "<<"
-                    ]
-                },
-                {
-                    "name": "right_logical_shift",
-                    "alt_names": [
-                        ">>"
-                    ]
-                },
-                {
-                    "name": "bit_and",
-                    "alt_names": [
-                        "&"
+                    "enums": [
+                        {
+                            "name": "mul",
+                            "alt_names": [
+                                "*"
+                            ]
+                        },
+                        {
+                            "name": "div",
+                            "alt_names": [
+                                "/"
+                            ]
+                        },
+                        {
+                            "name": "mod",
+                            "alt_names": [
+                                "%"
+                            ]
+                        },
+                        {
+                            "name": "left_arithmetic_shift",
+                            "alt_names": [
+                                "<<<"
+                            ]
+                        },
+                        {
+                            "name": "right_arithmetic_shift",
+                            "alt_names": [
+                                ">>>"
+                            ]
+                        },
+                        {
+                            "name": "left_logical_shift",
+                            "alt_names": [
+                                "<<"
+                            ]
+                        },
+                        {
+                            "name": "right_logical_shift",
+                            "alt_names": [
+                                ">>"
+                            ]
+                        },
+                        {
+                            "name": "bit_and",
+                            "alt_names": [
+                                "&"
+                            ]
+                        }
                     ]
                 },
                 {
                     "name": "add",
-                    "alt_names": [
-                        "+"
+                    "enums": [
+                        {
+                            "name": "add",
+                            "alt_names": [
+                                "+"
+                            ]
+                        },
+                        {
+                            "name": "sub",
+                            "alt_names": [
+                                "-"
+                            ]
+                        },
+                        {
+                            "name": "bit_or",
+                            "alt_names": [
+                                "|"
+                            ]
+                        },
+                        {
+                            "name": "bit_xor",
+                            "alt_names": [
+                                "^"
+                            ]
+                        }
                     ]
                 },
                 {
-                    "name": "sub",
-                    "alt_names": [
-                        "-"
-                    ]
-                },
-                {
-                    "name": "bit_or",
-                    "alt_names": [
-                        "|"
-                    ]
-                },
-                {
-                    "name": "bit_xor",
-                    "alt_names": [
-                        "^"
-                    ]
-                },
-                {
-                    "name": "equal",
-                    "alt_names": [
-                        "=="
-                    ]
-                },
-                {
-                    "name": "not_equal",
-                    "alt_names": [
-                        "!="
-                    ]
-                },
-                {
-                    "name": "less",
-                    "alt_names": [
-                        "<"
-                    ]
-                },
-                {
-                    "name": "less_or_eq",
-                    "alt_names": [
-                        "<="
-                    ]
-                },
-                {
-                    "name": "grater",
-                    "alt_names": [
-                        ">"
-                    ]
-                },
-                {
-                    "name": "grater_or_eq",
-                    "alt_names": [
-                        ">="
+                    "name": "compare",
+                    "enums": [
+                        {
+                            "name": "equal",
+                            "alt_names": [
+                                "=="
+                            ]
+                        },
+                        {
+                            "name": "not_equal",
+                            "alt_names": [
+                                "!="
+                            ]
+                        },
+                        {
+                            "name": "less",
+                            "alt_names": [
+                                "<"
+                            ]
+                        },
+                        {
+                            "name": "less_or_eq",
+                            "alt_names": [
+                                "<="
+                            ]
+                        },
+                        {
+                            "name": "grater",
+                            "alt_names": [
+                                ">"
+                            ]
+                        },
+                        {
+                            "name": "grater_or_eq",
+                            "alt_names": [
+                                ">="
+                            ]
+                        }
                     ]
                 },
                 {
                     "name": "logical_and",
-                    "alt_names": [
-                        "&&"
+                    "enums": [
+                        {
+                            "name": "logical_and",
+                            "alt_names": [
+                                "&&"
+                            ]
+                        }
                     ]
                 },
                 {
                     "name": "logical_or",
-                    "alt_names": [
-                        "||"
+                    "enums": [
+                        {
+                            "name": "logical_or",
+                            "alt_names": [
+                                "||"
+                            ]
+                        }
                     ]
                 },
                 {
-                    "name": "cond_op1",
-                    "alt_names": [
-                        "?"
+                    "name": "cond",
+                    "enums": [
+                        {
+                            "name": "cond_op1",
+                            "alt_names": [
+                                "?"
+                            ]
+                        },
+                        {
+                            "name": "cond_op2",
+                            "alt_names": [
+                                ":"
+                            ]
+                        }
                     ]
                 },
                 {
-                    "name": "cond_op2",
-                    "alt_names": [
-                        ":"
-                    ]
-                },
-                {
-                    "name": "range_exclusive",
-                    "alt_names": [
-                        ".."
-                    ]
-                },
-                {
-                    "name": "range_inclusive",
-                    "alt_names": [
-                        "..="
+                    "name": "range",
+                    "enums": [
+                        {
+                            "name": "range_exclusive",
+                            "alt_names": [
+                                ".."
+                            ]
+                        },
+                        {
+                            "name": "range_inclusive",
+                            "alt_names": [
+                                "..="
+                            ]
+                        }
                     ]
                 },
                 {
                     "name": "assign",
-                    "alt_names": [
-                        "="
-                    ]
-                },
-                {
-                    "name": "define_assign",
-                    "alt_names": [
-                        ":="
-                    ]
-                },
-                {
-                    "name": "const_assign",
-                    "alt_names": [
-                        "::="
-                    ]
-                },
-                {
-                    "name": "add_assign",
-                    "alt_names": [
-                        "+="
-                    ]
-                },
-                {
-                    "name": "sub_assign",
-                    "alt_names": [
-                        "-="
-                    ]
-                },
-                {
-                    "name": "mul_assign",
-                    "alt_names": [
-                        "*="
-                    ]
-                },
-                {
-                    "name": "div_assign",
-                    "alt_names": [
-                        "/="
-                    ]
-                },
-                {
-                    "name": "mod_assign",
-                    "alt_names": [
-                        "%="
-                    ]
-                },
-                {
-                    "name": "left_logical_shift_assign",
-                    "alt_names": [
-                        "<<="
-                    ]
-                },
-                {
-                    "name": "right_logical_shift_assign",
-                    "alt_names": [
-                        ">>="
-                    ]
-                },
-                {
-                    "name": "left_arithmetic_shift_assign",
-                    "alt_names": [
-                        "<<<="
-                    ]
-                },
-                {
-                    "name": "right_arithmetic_shift_assign",
-                    "alt_names": [
-                        ">>>="
-                    ]
-                },
-                {
-                    "name": "bit_and_assign",
-                    "alt_names": [
-                        "&="
-                    ]
-                },
-                {
-                    "name": "bit_or_assign",
-                    "alt_names": [
-                        "|="
-                    ]
-                },
-                {
-                    "name": "bit_xor_assign",
-                    "alt_names": [
-                        "^="
+                    "enums": [
+                        {
+                            "name": "assign",
+                            "alt_names": [
+                                "="
+                            ]
+                        },
+                        {
+                            "name": "define_assign",
+                            "alt_names": [
+                                ":="
+                            ]
+                        },
+                        {
+                            "name": "const_assign",
+                            "alt_names": [
+                                "::="
+                            ]
+                        },
+                        {
+                            "name": "add_assign",
+                            "alt_names": [
+                                "+="
+                            ]
+                        },
+                        {
+                            "name": "sub_assign",
+                            "alt_names": [
+                                "-="
+                            ]
+                        },
+                        {
+                            "name": "mul_assign",
+                            "alt_names": [
+                                "*="
+                            ]
+                        },
+                        {
+                            "name": "div_assign",
+                            "alt_names": [
+                                "/="
+                            ]
+                        },
+                        {
+                            "name": "mod_assign",
+                            "alt_names": [
+                                "%="
+                            ]
+                        },
+                        {
+                            "name": "left_logical_shift_assign",
+                            "alt_names": [
+                                "<<="
+                            ]
+                        },
+                        {
+                            "name": "right_logical_shift_assign",
+                            "alt_names": [
+                                ">>="
+                            ]
+                        },
+                        {
+                            "name": "left_arithmetic_shift_assign",
+                            "alt_names": [
+                                "<<<="
+                            ]
+                        },
+                        {
+                            "name": "right_arithmetic_shift_assign",
+                            "alt_names": [
+                                ">>>="
+                            ]
+                        },
+                        {
+                            "name": "bit_and_assign",
+                            "alt_names": [
+                                "&="
+                            ]
+                        },
+                        {
+                            "name": "bit_or_assign",
+                            "alt_names": [
+                                "|="
+                            ]
+                        },
+                        {
+                            "name": "bit_xor_assign",
+                            "alt_names": [
+                                "^="
+                            ]
+                        }
                     ]
                 },
                 {
                     "name": "comma",
-                    "alt_names": [
-                        ","
+                    "enums": [
+                        {
+                            "name": "comma",
+                            "alt_names": [
+                                ","
+                            ]
+                        }
                     ]
                 },
                 {
-                    "name": "in_assign",
-                    "alt_names": [
-                        "in"
+                    "name": "ignored",
+                    "enums": [
+                        {
+                            "name": "in_assign",
+                            "alt_names": [
+                                "in"
+                            ]
+                        },
+                        {
+                            "name": "append_assign",
+                            "alt_names": [
+                                "append"
+                            ]
+                        }
+                    ],
+                    "ignored": true
+                }
+            ],
+            "groups": [
+                {
+                    "name": "compare_op",
+                    "from": "equal",
+                    "to": "grater_or_eq"
+                },
+                {
+                    "name": "boolean_op",
+                    "from": "equal",
+                    "to": "logical_or"
+                },
+                {
+                    "name": "range_op",
+                    "from": "range_exclusive",
+                    "to": "range_inclusive"
+                },
+                {
+                    "name": "assign_op",
+                    "from": "assign",
+                    "to": "bit_xor_assign",
+                    "extra": [
+                        "in_assign",
+                        "append_assign"
                     ]
                 },
                 {
-                    "name": "append_assign",
-                    "alt_names": [
-                        "append"
+                    "name": "define_op",
+                    "members": [
+                        "define_assign",
+                        "const_assign",
+                        "in_assign"
                     ]
                 }
             ]
@@ -687,7 +773,7 @@
             "name": "Argument",
             "fields": [
                 {
-                    "name": "expression",
+                    "name": "value",
                     "type": "Node<Expr>"
                 }
             ]
@@ -698,7 +784,7 @@
             "fields": [
                 {
                     "name": "name",
-                    "type": "Node<Ident>"
+                    "type": "Node<Expr>"
                 }
             ]
         },
@@ -713,7 +799,12 @@
         },
         {
             "name": "Type",
-            "fields": [],
+            "fields": [
+                {
+                    "name": "is_explicit",
+                    "type": "bool"
+                }
+            ],
             "abstract": true
         },
         {
@@ -722,7 +813,7 @@
             "fields": [
                 {
                     "name": "bit_size",
-                    "type": "uint32"
+                    "type": "size"
                 },
                 {
                     "name": "is_signed",
@@ -827,7 +918,7 @@
             "derive": "Expr",
             "fields": [
                 {
-                    "name": "expr",
+                    "name": "base",
                     "type": "Node<Expr>"
                 },
                 {
@@ -900,7 +991,7 @@
             "fields": [
                 {
                     "name": "bit_size",
-                    "type": "uint32"
+                    "type": "size"
                 },
                 {
                     "name": "endian",
@@ -919,20 +1010,33 @@
             "fields": []
         },
         {
-            "name": "IdentType",
+            "name": "WrapperType",
+            "abstract": true,
             "derive": "Type",
+            "fields": [
+                {
+                    "name": "base",
+                    "type": "Node<Type>"
+                }
+            ]
+        },
+        {
+            "name": "IdentType",
+            "derive": "WrapperType",
             "fields": [
                 {
                     "name": "ident",
                     "type": "Node<Ident>"
-                },
+                }
+            ]
+        },
+        {
+            "name": "ImportedType",
+            "derive": "WrapperType",
+            "fields": [
                 {
                     "name": "import_ref",
                     "type": "Node<MemberAccess>"
-                },
-                {
-                    "name": "base",
-                    "type": "Node<Type>"
                 }
             ]
         },
@@ -942,7 +1046,8 @@
             "fields": [
                 {
                     "name": "base",
-                    "type": "Node<IntLiteral>"
+                    "type": "Node<IntLiteral>",
+                    "weak": true
                 }
             ]
         },
@@ -952,7 +1057,8 @@
             "fields": [
                 {
                     "name": "base",
-                    "type": "Node<StrLiteral>"
+                    "type": "Node<StrLiteral>",
+                    "weak": true
                 }
             ]
         },
@@ -962,7 +1068,8 @@
             "fields": [
                 {
                     "name": "base",
-                    "type": "Node<RegexLiteral>"
+                    "type": "Node<RegexLiteral>",
+                    "weak": true
                 }
             ]
         },
@@ -1012,7 +1119,8 @@
                 },
                 {
                     "name": "base",
-                    "type": "Node<Statement>"
+                    "type": "Node<Statement>",
+                    "weak": true
                 },
                 {
                     "name": "recursive",
@@ -1026,7 +1134,8 @@
             "fields": [
                 {
                     "name": "base",
-                    "type": "Node<Expr>"
+                    "type": "Node<Expr>",
+                    "weak": true
                 },
                 {
                     "name": "cond",
@@ -1042,7 +1151,8 @@
                 },
                 {
                     "name": "union_fields",
-                    "type": "vector<Node<Field>>"
+                    "type": "vector<Node<Field>>",
+                    "weak": true
                 },
                 {
                     "name": "exhaustive",
@@ -1056,7 +1166,8 @@
             "fields": [
                 {
                     "name": "cond",
-                    "type": "Node<Expr>"
+                    "type": "Node<Expr>",
+                    "weak": true
                 },
                 {
                     "name": "candidates",
@@ -1064,7 +1175,8 @@
                 },
                 {
                     "name": "base_type",
-                    "type": "Node<StructUnionType>"
+                    "type": "Node<StructUnionType>",
+                    "weak": true
                 },
                 {
                     "name": "common_type",
@@ -1090,7 +1202,8 @@
                 },
                 {
                     "name": "range",
-                    "type": "Node<Range>"
+                    "type": "Node<Range>",
+                    "weak": true
                 }
             ]
         },
@@ -1100,7 +1213,8 @@
             "fields": [
                 {
                     "name": "base",
-                    "type": "Node<Enum>"
+                    "type": "Node<Enum>",
+                    "weak": true
                 }
             ]
         },
@@ -1125,7 +1239,7 @@
             "fields": [
                 {
                     "name": "base_type",
-                    "type": "Node<IdentType>"
+                    "type": "Node<WrapperType>"
                 },
                 {
                     "name": "type_arguments",
@@ -1153,7 +1267,8 @@
             "fields": [
                 {
                     "name": "belong",
-                    "type": "Node<Match>"
+                    "type": "Node<Match>",
+                    "weak": true
                 },
                 {
                     "name": "cond",
@@ -1175,11 +1290,13 @@
             "fields": [
                 {
                     "name": "cond",
-                    "type": "Node<Expr>"
+                    "type": "Node<Expr>",
+                    "weak": true
                 },
                 {
                     "name": "field",
-                    "type": "Node<Field>"
+                    "type": "Node<Field>",
+                    "weak": true
                 }
             ]
         },
@@ -1193,7 +1310,8 @@
                 },
                 {
                     "name": "related_function",
-                    "type": "Node<Function>"
+                    "type": "Node<Function>",
+                    "weak": true
                 }
             ]
         },
@@ -1203,7 +1321,8 @@
             "fields": [
                 {
                     "name": "related_loop",
-                    "type": "Node<Loop>"
+                    "type": "Node<Loop>",
+                    "weak": true
                 }
             ]
         },
@@ -1213,7 +1332,8 @@
             "fields": [
                 {
                     "name": "related_loop",
-                    "type": "Node<Loop>"
+                    "type": "Node<Loop>",
+                    "weak": true
                 }
             ]
         },
@@ -1313,7 +1433,7 @@
                 },
                 {
                     "name": "arguments",
-                    "type": "vector<Node<Expr>>"
+                    "type": "Node<Arguments>"
                 }
             ]
         },
