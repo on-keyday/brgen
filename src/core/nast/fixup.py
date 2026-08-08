@@ -26,7 +26,7 @@ FUTILS_INCLUDE = "C:/workspace/utils_backup/src/include"
 # member reference type 'brgen::nast::Node<...>' is not a pointer
 NOT_PTR = re.compile(
     r"^(?P<file>.+?):(?P<line>\d+):(?P<col>\d+): error: member reference type "
-    r"'(?:brgen::nast::)?Node<.*?>'.*? is not a pointer"
+    r".*?Node<.*? is not a pointer"
 )
 # no member named 'loc' in 'brgen::nast::NodeData<...>'  (Ref 経由で loc を触った)
 NO_LOC = re.compile(
@@ -88,12 +88,60 @@ def apply_edits(path, edits):
     return applied
 
 
+MISSING = re.compile(
+    r"^(?P<file>.+?):(?P<line>\d+):(?P<col>\d+): error: "
+    r"(no member named|use of undeclared identifier|no matching member function)"
+)
+
+# 宣言を含む行は後続で参照されうるので落とさない
+DECL = re.compile(r"^\s*(auto|const|Node<|std::|if|for|while|return|else|case|\}|//)\b")
+
+
+def comment_out(path, diags):
+    """機械変換では直せない行のうち、単独の文だけを潰す"""
+    targets = set()
+    for d in diags:
+        m = MISSING.match(d)
+        if m:
+            targets.add(int(m["line"]))
+    with open(path, encoding="utf-8") as f:
+        lines = f.read().split("\n")
+    done = 0
+    for ln in sorted(targets):
+        i = ln - 1
+        if i >= len(lines):
+            continue
+        text = lines[i]
+        stripped = text.strip()
+        if not stripped.endswith(";") or DECL.match(text):
+            continue
+        indent = text[: len(text) - len(text.lstrip())]
+        lines[i] = indent + "// " + stripped
+        done += 1
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+    return done
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--file", default="parse.cpp")
     ap.add_argument("--futils", default=FUTILS_INCLUDE)
     ap.add_argument("--max-round", type=int, default=40)
+    ap.add_argument("--comment-out", action="store_true",
+                    help="機械変換で直せない単独の文をコメントアウトする")
     args = ap.parse_args()
+
+    if args.comment_out:
+        path = os.path.join(SCRIPT_DIR, args.file)
+        for rnd in range(1, args.max_round + 1):
+            diags = compile_diags(path, args.futils)
+            errors = sum(1 for d in diags if ": error:" in d)
+            done = comment_out(path, diags)
+            print(f"round {rnd}: errors={errors}, commented={done}")
+            if done == 0:
+                return 0 if errors == 0 else 1
+        return 1
 
     path = os.path.join(SCRIPT_DIR, args.file)
     for rnd in range(1, args.max_round + 1):

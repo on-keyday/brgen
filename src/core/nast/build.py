@@ -93,6 +93,18 @@ def find_futils(explicit):
     return None
 
 
+def find_futils_lib(include_dir):
+    """<futils>/built/<mode>/<type>/lib/futils.lib を探す"""
+    root = os.path.abspath(os.path.join(include_dir, "..", ".."))
+    for mode in ("shared", "freestanding-static"):
+        for build_type in ("Debug", "Release"):
+            for name in ("futils.lib", "libfutils.lib", "libfutils.a"):
+                p = os.path.join(root, "built", mode, build_type, "lib", name)
+                if os.path.exists(p):
+                    return p
+    return None
+
+
 def run(cmd):
     print("$", " ".join(cmd), flush=True)
     result = subprocess.run(cmd)
@@ -120,12 +132,25 @@ def main():
     compiler = find_compiler(args.compiler)
     cmd = [compiler, f"-std={args.std}", f"-O{args.optimize}", "-I", SCRIPT_DIR]
 
+    link_args = []
     if args.no_futils:
         print("note: skipping the as_json check (--no-futils)")
     else:
         futils_include = find_futils(args.futils)
         if futils_include:
             cmd += ["-I", futils_include, "-DNAST_TEST_WITH_JSON"]
+            # as_json はヘッダのみで足りるが、JSON のパース (from_json のテスト) は
+            # 実体が futils のライブラリにあるのでリンクが要る
+            lib = find_futils_lib(futils_include)
+            if lib:
+                link_args += [lib]
+                cmd += ["-DNAST_TEST_WITH_JSON_PARSE"]
+                # futils の Debug ビルドとは CRT を揃える必要がある。
+                # 揃えないと std::string がライブラリ境界を跨いだ時点でヒープが壊れる。
+                if os.name == "nt" and os.sep + "Debug" + os.sep in lib:
+                    cmd += ["-fms-runtime-lib=dll_dbg"]
+            else:
+                print("note: futils library not found; skipping the from_json check")
         else:
             print("note: futils not found; skipping the as_json check "
                   "(set FUTILS_DIR or pass --futils to enable it)")
@@ -137,7 +162,7 @@ def main():
 
     os.makedirs(BUILD_DIR, exist_ok=True)
     exe = os.path.join(BUILD_DIR, "nast_test" + (".exe" if os.name == "nt" else ""))
-    run(cmd + [TEST_CPP, "-o", exe])
+    run(cmd + [TEST_CPP, "-o", exe] + link_args)
     print(f"built: {exe}")
 
     if not args.no_run:

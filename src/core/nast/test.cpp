@@ -3,6 +3,8 @@
 // 生成された nodes.h が「コンパイルできる」だけでなく、
 // 型変換・ダウンキャスト・シリアライズが意図どおり動くところまで見る。
 #include "nodes.h"
+#include "printer.h"
+#include "from_json.h"
 
 #include <algorithm>
 #include <cstdio>
@@ -130,6 +132,39 @@ int main() {
     static_assert(enum_type_name<UnaryOp>() != nullptr);
     check(true, "enum helpers are constexpr-usable (checked by static_assert)");
 
+    // ---- 演算子の優先順位層 (ast::expr_layer.h 相当) -----------------------
+    // 層を平坦化したものが enum の並びそのものなので、ast 側の check_layers() に
+    // 相当する「ズレていないか」の static_assert は要らない。ここでは対応だけ確認する。
+    static_assert(bin_layer_count == 10 && bin_layer_len == 9);  // ignored を除くと 9
+    static_assert(bin_compare_layer == 2 && bin_cond_layer == 5 &&
+                  bin_range_layer == 6 && bin_assign_layer == 7 && bin_comma_layer == 8);
+    static_assert(bin_layers[bin_compare_layer][0] == "==");
+    static_assert(bin_layers[bin_assign_layer].size() == 15);
+
+    // 層の並びと enum の並びが一致していること (生成の前提そのもの)
+    bool layers_match = true;
+    std::size_t seq = 0;
+    for (std::size_t i = 0; i < bin_layer_count; i++) {
+        for (auto op : bin_layers[i]) {
+            if (enum_array<BinaryOp>[seq].second != op) {
+                layers_match = false;
+            }
+            seq++;
+        }
+    }
+    check(layers_match && seq == enum_elem_count<BinaryOp>(),
+          "precedence layers flatten to exactly the BinaryOp order");
+
+    // 述語。from/to は生成時に順序を正規化するので、schema で逆に書いても壊れない。
+    // ast 側の is_range_op は begin=range_inclusive / end=range_exclusive で常に false だった。
+    static_assert(is_compare_op(BinaryOp::equal) && is_compare_op(BinaryOp::grater_or_eq));
+    static_assert(!is_compare_op(BinaryOp::add));
+    static_assert(is_range_op(BinaryOp::range_exclusive) && is_range_op(BinaryOp::range_inclusive));
+    static_assert(!is_range_op(BinaryOp::add));
+    static_assert(is_assign_op(BinaryOp::assign) && is_assign_op(BinaryOp::in_assign));
+    static_assert(is_define_op(BinaryOp::const_assign) && !is_define_op(BinaryOp::assign));
+    check(true, "operator predicates are constexpr-usable (checked by static_assert)");
+
     // NodeType にも出しているので、全ノード種を走査できる
     static_assert(enum_elem_count<NodeType>() == enum_array<NodeType>.size());
     bool node_names_ok = true;
@@ -140,6 +175,43 @@ int main() {
     }
     check(node_names_ok && enum_array<NodeType>.size() > 1,
           "enum_array<NodeType> enumerates every node kind and round-trips");
+
+    // ---- pretty printer ----------------------------------------------------
+    {
+        Arena pa;
+        auto mod = pa.make<Module>();
+        auto f = pa.make<Format>(brgen::lexer::Loc{.line = 3, .col = 1});
+        auto fn_name = pa.make<Ident>();
+        auto fbody = pa.make<Body>();
+        auto fld = pa.make<Field>(brgen::lexer::Loc{.line = 4, .col = 5});
+        auto fld_name = pa.make<Ident>();
+        auto ity = pa.make<IntType>();
+        auto st = pa.make<StructType>();
+
+        fn_name->identifier = "Sample";
+        fld_name->identifier = "value";
+        ity->bit_size = 8;
+        f->name = fn_name;
+        f->body = fbody;
+        fld->name = fld_name;
+        fld->type = ity;
+        fbody->elements.push_back(fld);
+        fbody->struct_type = st;
+        st->base = f;  // weak
+        mod->statements.push_back(f);
+
+        auto text = pretty_print(pa, mod.id());
+        check(text.find("Module #") != std::string::npos &&
+                  text.find("Format #") != std::string::npos &&
+                  text.find("\"Sample\"") != std::string::npos &&
+                  text.find("\"value\"") != std::string::npos,
+              "pretty printer walks the owning tree");
+        check(text.find("base -> Format #") != std::string::npos,
+              "weak edges are shown as a reference, not descended into");
+        // weak を降りていたら StructType -> Format -> ... で無限に回る
+        check(std::count(text.begin(), text.end(), '\n') < 40,
+              "weak edges do not cause the walk to recurse");
+    }
 
     // ---- side table -------------------------------------------------------
     // 解析結果をノードの外に置く表。storage が違っても API は共通。
@@ -195,6 +267,21 @@ int main() {
               out.find("\"data_Format\"") != std::string::npos &&
               out.find("\"Sample\"") != std::string::npos,
           "serialized output contains headers, per-type pools and payload");
+
+#ifdef NAST_TEST_WITH_JSON_PARSE
+    // as_json -> from_json -> as_json が一致すること
+    {
+        futils::json::JSON parsed;
+        check(bool(futils::json::parse(out, parsed, true)), "serialized arena re-parses as JSON");
+        Arena restored;
+        check(from_json(restored, parsed), "from_json rebuilds the arena");
+        check(restored.node_count() == arena.node_count(),
+              "from_json restores every node");
+        futils::json::Stringer<> again;
+        restored.as_json(again);
+        check(again.out() == out, "as_json -> from_json -> as_json round-trips");
+    }
+#endif
 
     // 表は arena とは別に出せる。構文木と解析結果が JSON 上でも分かれる。
     futils::json::Stringer<> ts;
