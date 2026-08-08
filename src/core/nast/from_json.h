@@ -3,7 +3,9 @@
 #include "nodes.h"
 
 #include <json/json_export.h>
+#include <concepts>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 // Arena::as_json の逆。ebmgen/json_conv.cpp と同じく futils::json::JSON を読むが、
@@ -13,9 +15,20 @@ namespace brgen::nast {
 
     using JSON = futils::json::JSON;
 
-    // for_each_field 版が vector を含みうるので、こちらだけ先に宣言する
+    // 添字で埋められる列。std::vector と StablePool の両方が該当する。
+    // std::string も同じ操作を持つので明示的に除く。
     template <class V>
-    bool read_json(const JSON& j, std::vector<V>& v);
+    concept json_array = !std::is_same_v<V, std::string> && requires(V v) {
+        typename V::value_type;
+        v.clear();
+        v.resize(std::size_t{});
+        { v.size() } -> std::convertible_to<std::size_t>;
+        v[std::size_t{}];
+    };
+
+    // for_each_field 版が列を含みうるので、こちらだけ先に宣言する
+    template <json_array V>
+    bool read_json(const JSON& j, V& v);
 
     inline bool read_json(const JSON& j, std::string& v) {
         return j.as_string(v);
@@ -108,8 +121,8 @@ namespace brgen::nast {
         return ok;
     }
 
-    template <class V>
-    bool read_json(const JSON& j, std::vector<V>& v) {
+    template <json_array V>
+    bool read_json(const JSON& j, V& v) {
         if (!j.is_array()) {
             return false;
         }

@@ -83,7 +83,9 @@ def emit_arena(w: Writer, schema: Schema) -> None:
         if node.get("abstract"):
             continue
         w.write("   private:\n")
-        w.write("    std::vector<NodeData<", name, ">> data_", name, ";\n")
+        # vector だと push_back の再確保で既存要素が動き、
+        # x->vec.push_back(f()) の f() が同じプールへ確保したときに壊れる (pool.h)
+        w.write("    StablePool<NodeData<", name, ">> data_", name, ";\n")
         as_json.write('        obj_("data_', name, '",data_', name, ");\n")
         w.write("   public:\n")
         w.write("    template<>\n")
