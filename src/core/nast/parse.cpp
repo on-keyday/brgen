@@ -237,7 +237,7 @@ namespace brgen::nast {
                 s.must_consume_token(":", msg);
             }
             s.skip_space();
-            // s.consume_token(lexer::Tag::comment);  // optional comment after ':'
+            s.consume_token(lexer::Tag::comment);  // optional comment after ':'
             // auto follow_comment = s.get_comments();
             s.must_consume_token(lexer::Tag::line, "line expected after ':'");
             s.skip_line();
@@ -249,7 +249,7 @@ namespace brgen::nast {
         */
         Node<Body> parse_indent_block(Node<Statement> scope_owner, std::string_view hint, std::vector<Node<Ident>>* ident = nullptr) {
             // Consume the initial indent sign
-            // auto follow_comment = must_consume_indent_sign(hint);
+            must_consume_indent_sign(hint);
 
             // Get the base indent token
             auto base = s.must_consume_token(lexer::Tag::indent, "indent expected after ':'");
@@ -258,7 +258,7 @@ namespace brgen::nast {
             auto block = a.make<Body>(base.loc);
 
             // block->follow_comment = std::move(follow_comment);
-            // block->struct_type = a.make<StructType>(base.loc);
+            block->struct_type = a.make<StructType>(base.loc);
 
             assert(scope_owner != nullref);
             block->struct_type.ref(a)->base = scope_owner;
@@ -454,7 +454,8 @@ namespace brgen::nast {
                 // auto s_scope = state.enter_struct(scoped->struct_type);
                 // auto c_scope = state.cond_scope(scoped->scope, br);
                 auto bdy = a.make<Body>(loc);
-                bdy->elements.push_back(parse_statement());
+                auto tmp_push_0_ = parse_statement();
+                bdy->elements.push_back(tmp_push_0_);
                 br->body = bdy;
                 // union_.ref(a)->structs.push_back(scoped->struct_type);
                 // br.ref(a)->then = std::move(scoped);
@@ -504,7 +505,8 @@ namespace brgen::nast {
             // auto c = state.new_indent_no_scope(s, current_indent);
 
             // Parse and add the first element
-            match->blocks.push_back(parse_match_branch());
+            auto tmp_push_1_ = parse_match_branch();
+            match->blocks.push_back(tmp_push_1_);
 
             // Parse and add subsequent elements with the same indent level
             while (auto indent = s.peek_token(lexer::Tag::indent)) {
@@ -512,7 +514,8 @@ namespace brgen::nast {
                     break;
                 }
                 s.must_consume_token(lexer::Tag::indent, "to start a new line in match branch");
-                match->blocks.push_back(parse_match_branch());
+                auto tmp_push_2_ = parse_match_branch();
+                match->blocks.push_back(tmp_push_2_);
             }
 
             // push_union_to_current_struct();
@@ -1278,7 +1281,8 @@ namespace brgen::nast {
                 }
                 s.must_consume_token(":", "to separate function type parameter name and type");
                 s.skip_white();
-                func_type->parameters.push_back(parse_type(true));
+                auto tmp_push_3_ = parse_type(true);
+                func_type->parameters.push_back(tmp_push_3_);
                 s.skip_white();
                 second = true;
             }
@@ -1412,7 +1416,8 @@ namespace brgen::nast {
                         }
                         break;
                     }
-                    generic->type_arguments.push_back(parse_type(true));
+                    auto tmp_push_4_ = parse_type(true);
+                    generic->type_arguments.push_back(tmp_push_4_);
                     s.skip_white();
                     if (s.expect_token("]")) {
                         continue;
