@@ -11,7 +11,8 @@
         "<string>",
         "<type_traits>",
         "\"../lexer/token.h\"",
-        "<utility>"
+        "<utility>",
+        "\"pool.h\""
     ],
     "types": {
         "std::uint32_t": {
