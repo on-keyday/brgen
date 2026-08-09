@@ -578,8 +578,58 @@
       "name": "部分範囲による限定",
       "category": "stream",
       "summary": "input=input.subrange(n) をフィールド引数で渡し、そのフィールドが読める範囲を先に区切る。[..]T を長さつきで使うときの形。",
-      "covers": ["example/bgp.bgn"],
-      "notes": "F0026-field-argument の具体的な使い方の 1 つ。後続から決まる F0063 / F0064 と違い、これは書いた側が明示する。"
+      "covers": ["example/bgp.bgn", "example/elf.bgn", "example/bson.bgn"],
+      "notes": "F0026-field-argument の具体的な使い方の 1 つ。後続から決まる F0063 / F0064 と違い、これは書いた側が明示する。example 全体で 207 箇所 / 37 ファイルと、フィールド引数の中では突出して多い。covers は代表例で、網羅ではない。"
+    },
+    {
+      "id": "F0066",
+      "slug": "non-native-int-width",
+      "name": "ネイティブでないバイト境界幅",
+      "category": "type",
+      "summary": "u24 や u48 のように 8 の倍数だが、対象言語に対応する整数型が無い幅。ビットフィールドとは別で、境界は揃っているが型が無い。",
+      "covers": ["example/archive/bzip2.bgn"],
+      "notes": "example 全体で u24 が 52 箇所 / 28 ファイル、u48 が 6 箇所 / 5 ファイル。バイト境界に乗るので F0019-bit-field のビット詰め機構は要らないが、より広い型に載せて読み書きする必要がある点が固定幅整数と違う。"
+    },
+    {
+      "id": "F0067",
+      "slug": "wide-int-width",
+      "name": "64 ビットを超える幅",
+      "category": "type",
+      "summary": "u96 / u104 / u128 など、どの対象言語にも単一のネイティブ整数型が無い幅。",
+      "covers": ["example/ipv6addr.bgn"],
+      "notes": "F0066 と違い、より広い整数型に載せるという逃げ道が無い。多倍長かバイト配列のどちらで表すかを対象言語ごとに決める必要がある。"
+    },
+    {
+      "id": "F0068",
+      "slug": "input-align",
+      "name": "境界合わせ",
+      "category": "stream",
+      "summary": "input.align = N をフィールド引数に渡し、読み位置を N ビット境界まで進める。",
+      "covers": ["example/llvm_ir.bgn"]
+    },
+    {
+      "id": "F0069",
+      "slug": "input-peek",
+      "name": "先読み",
+      "category": "stream",
+      "summary": "input.peek = true で、読み位置を進めずに値を得る。",
+      "covers": ["example/brgen_help/ast_enum.bgn"]
+    },
+    {
+      "id": "F0070",
+      "slug": "input-skip",
+      "name": "読み捨て",
+      "category": "stream",
+      "summary": "input.skip = true で、読んだ結果を保持せず位置だけ進める。",
+      "covers": ["example/feature_test/regexp.bgn"]
+    },
+    {
+      "id": "F0071",
+      "slug": "input-xor",
+      "name": "読みながらのマスク解除",
+      "category": "stream",
+      "summary": "input.xor = key で、読み取ったバイト列に鍵を XOR する。",
+      "covers": ["example/websocket.bgn"]
     },
     {
       "id": "F0062",
