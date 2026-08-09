@@ -505,11 +505,12 @@
     },
     {
       "id": "F0057",
-      "slug": "config-url",
-      "name": "config.url",
+      "slug": "provenance-annotation",
+      "name": "出典の注記",
       "category": "meta",
-      "summary": "そのフォーマットの出典 URL を書く。生成物の注釈に使う。",
-      "covers": []
+      "summary": "config.url / config.rfc / config.generator。そのフォーマットがどこから来たかを .bgn に書き残す。",
+      "covers": ["example/3gpp_mib.bgn", "example/etherip.bgn", "example/9p.bgn"],
+      "notes": "読み手は人間であり、生成器が消費しないのが正常。消費者が無いことを未実装と数えてはいけない。F0072 の汎用機構に乗るので AST には metadata として残る。config.url は 231 箇所 / 175 ファイルで、書く側は定着している。"
     },
     {
       "id": "F0058",
@@ -622,7 +623,7 @@
       "category": "stream",
       "summary": "input.skip = true で、読んだ結果を保持せず位置だけ進める。",
       "covers": ["example/feature_test/regexp.bgn"],
-      "notes": "意味論が未実装。typing.cpp が名前で解釈するフィールド引数は input.align / input.peek / config.type / input の 4 つだけだが、それ以外は捨てられるのではなく ast::Metadata{name, values} として保存され、JSON AST に残って生成器まで届く (typing.cpp:1862)。src2json は input.skip を metadata として出す。つまり運ぶ機構はあり、消費する側が無い。"
+      "notes": "意味論が未実装。typing.cpp が名前で解釈するフィールド引数は input.align / input.peek / config.type / input の 4 つだけだが、それ以外は F0072 の機構で metadata として生成器まで届く。src2json は input.skip を metadata として出す。つまり運ぶ機構はあり、消費する側が無い。"
     },
     {
       "id": "F0071",
@@ -631,7 +632,34 @@
       "category": "stream",
       "summary": "input.xor = key で、読み取ったバイト列に鍵を XOR する。",
       "covers": ["example/websocket.bgn"],
-      "notes": "意味論が未実装。F0070 と同じく ast::Metadata として AST に残り生成器まで届くが、消費する生成器が無い。拡張点として作られて意味論が後回しになったまま残っている形。汎化してストリーム変換にする案があり、その場合この ID は消える可能性がある。"
+      "notes": "意味論が未実装。F0070 と同じく F0072 の機構で生成器まで届くが、消費する生成器が無い。拡張点として作られて意味論が後回しになったまま残っている形。汎化してストリーム変換にする案があり、その場合この ID は消える可能性がある。"
+    },
+    {
+      "id": "F0072",
+      "slug": "metadata-passthrough",
+      "name": "未知の設定名の受け渡し",
+      "category": "meta",
+      "summary": "言語が解釈しない config.X / input.X を ast::Metadata{name, values} として保存し、JSON AST 経由で生成器へ渡す。言語側に意味論を足さずに生成器固有の設定を書ける。",
+      "covers": ["example/bgp.bgn", "example/http2.bgn", "example/brgen_help/share.bgn"],
+      "notes": "middle/typing.cpp:1862。フィールド引数の位置と文の位置の両方で働く。これが実装済みなので、意味論の無い名前 (F0070 / F0071 / F0073 / F0074) は「運べないから未実装」ではなく「運ばれているが消費する側が無い」状態にある。config.go.package や config.cpp.namespace はこの機構の上で生成器が実際に消費している例。"
+    },
+    {
+      "id": "F0073",
+      "slug": "config-export",
+      "name": "公開する定義の指定",
+      "category": "declaration",
+      "summary": "config.export(Name) で、そのファイルが外に見せる定義を指定する。config.import と対になる。",
+      "covers": ["example/zip.bgn"],
+      "notes": "意味論が未実装。代入形の他の config と違って呼び出し形で書かれている。F0017-import は実装されているが、対になる側は構文だけが残っている。"
+    },
+    {
+      "id": "F0074",
+      "slug": "format-replacement",
+      "name": "生成物の言語固有型への置き換え",
+      "category": "meta",
+      "summary": "config.<lang>.replace = \"型名\" で、その format から生成される型を対象言語の既存の型に差し替える。config.must_replace = true は置換先が無い言語で既定の生成物を出すことを禁じる意図。",
+      "covers": ["example/llvm_ir.bgn"],
+      "notes": "意味論が未実装。src/tool のどの生成器も replace / must_replace を読んでいない。同じ cpp. 名前空間でも config.cpp.namespace は json2cpp2 が消費しており、この 2 つだけが未消費。"
     },
     {
       "id": "F0062",
