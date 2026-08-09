@@ -21,6 +21,10 @@ namespace {
 
     int failures = 0;
 
+    // 検査は substring でやるので、木そのものは既定では出さない。
+    // --verbose を付けると組み立てた入力を目で見られる。
+    bool verbose = false;
+
     void check(bool ok, const char* what) {
         std::printf("  [%s] %s\n", ok ? "ok" : "NG", what);
         if (!ok) {
@@ -28,10 +32,24 @@ namespace {
         }
     }
 
+    void dump(const char* title, const std::string& text) {
+        if (!verbose) {
+            return;
+        }
+        std::printf("\n--- %s ---\n%s\n", title, text.c_str());
+    }
+
 }  // namespace
 
-int main() {
+int main(int argc, char** argv) {
     using namespace brgen::nast;
+
+    for (int i = 1; i < argc; i++) {
+        std::string a = argv[i];
+        if (a == "--verbose" || a == "-v") {
+            verbose = true;
+        }
+    }
 
     std::printf("nast smoke test\n");
 
@@ -201,6 +219,7 @@ int main() {
         mod->statements.push_back(f);
 
         auto text = pretty_print(pa, mod.id());
+        dump("pretty_print", text);
         check(text.find("Module #") != std::string::npos &&
                   text.find("Format #") != std::string::npos &&
                   text.find("\"Sample\"") != std::string::npos &&
@@ -261,6 +280,8 @@ int main() {
     futils::json::Stringer<> s;
     arena.as_json(s);
     const std::string& out = s.out();
+    dump("Arena::as_json", out);
+    dump("pretty_print (main arena, from Format)", pretty_print(arena, fmt.id()));
     check(out.size() > 2 && out.front() == '{' && out.back() == '}',
           "Arena::as_json produces an object");
     check(out.find("\"headers\"") != std::string::npos &&
@@ -287,6 +308,7 @@ int main() {
     futils::json::Stringer<> ts;
     tables.as_json(ts);
     const std::string& tout = ts.out();
+    dump("SideTables::as_json", tout);
     check(tout.find("\"Resolution\"") != std::string::npos &&
               tout.find("\"DocComment\"") != std::string::npos &&
               tout.find("\"IsMutated\"") != std::string::npos,
