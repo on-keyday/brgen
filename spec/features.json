@@ -192,10 +192,11 @@
     {
       "id": "F0021",
       "slug": "unbounded-array",
-      "name": "終端まで読む配列",
+      "name": "長さを書かない配列",
       "category": "type",
-      "summary": "[..]T。入力の終わりまで読む。",
-      "covers": ["example/feature_test/utf8_test.bgn"]
+      "summary": "[..]T。長さを式で書かず、どこで終わるかは後続から決まる。終端の決まり方が 4 通りあり、それぞれ F0063 / F0064 / F0065 と、後続が無い場合の入力終端まで。",
+      "covers": ["example/feature_test/utf8_test.bgn"],
+      "notes": "middle/type_attribute.cpp の analyze_forward_bit_alignment_and_size が、後続フィールドの型を見て 1 つ前のフィールドの Follow を決める (end / fixed / constant / normal)。したがって [..]T 単体では意味が定まらず、直後に何が来るかとセットで初めて決まる。後続も可変長だと Follow::normal になり終端を決められない。"
     },
     {
       "id": "F0022",
@@ -541,6 +542,44 @@
       "category": "analysis",
       "summary": "format ごとに固定長か / 入力全体を要るか / 動的な順序か などを導出する。",
       "covers": ["example/feature_test/analyze_block_trait.bgn"]
+    },
+    {
+      "id": "F0063",
+      "slug": "fixed-tail-termination",
+      "name": "固定長の後続による終端",
+      "category": "type",
+      "summary": "[..]T の後ろに大きさの決まったフィールドが続くとき、末尾からその分を残して読む。MAC / チェックサム / タグの形。",
+      "covers": [
+        "example/noise_protocol.bgn",
+        "example/png.bgn",
+        "example/quic_packet.bgn",
+        "example/ax25.bgn",
+        "example/ppp.bgn",
+        "example/rudp.bgn",
+        "example/att.bgn",
+        "example/ieee802_11.bgn",
+        "example/ipsec.bgn",
+        "example/bgp.bgn"
+      ],
+      "notes": "残す量は StructType::fixed_tail_size に入る (middle/type_attribute.cpp の analyze_backward_size_and_follow が後ろから積む)。復号は入力全体の長さを先に知る必要があり、逐次読みだけでは成立しない。"
+    },
+    {
+      "id": "F0064",
+      "slug": "literal-termination",
+      "name": "後続リテラルによる終端",
+      "category": "type",
+      "summary": "[..]T の後ろに文字列リテラル型のフィールドが続くとき、そのリテラルに当たるまで読む。区切り文字で切るテキスト系プロトコルと NUL 終端文字列の形。",
+      "covers": ["example/http.bgn"],
+      "notes": "後続の型が StrLiteralType のときだけ Follow::constant になる (type_attribute.cpp:205)。http.bgn は method :[..]u8 の直後に無名フィールド :\" \" を置いてこれを作っている。"
+    },
+    {
+      "id": "F0065",
+      "slug": "subrange-bound",
+      "name": "部分範囲による限定",
+      "category": "stream",
+      "summary": "input=input.subrange(n) をフィールド引数で渡し、そのフィールドが読める範囲を先に区切る。[..]T を長さつきで使うときの形。",
+      "covers": ["example/bgp.bgn"],
+      "notes": "F0026-field-argument の具体的な使い方の 1 つ。後続から決まる F0063 / F0064 と違い、これは書いた側が明示する。"
     },
     {
       "id": "F0062",

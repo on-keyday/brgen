@@ -112,7 +112,12 @@ def show(ledger):
     for category in sorted(by_category):
         print("[{}]".format(category))
         for f in sorted(by_category[category], key=lambda x: x["id"]):
-            mark = "" if f["covers"] else "   (no input)"
+            if not f["covers"]:
+                mark = "   (no input)"
+            elif not any("feature_test/" in c for c in f["covers"]):
+                mark = "   (only exercised by real formats)"
+            else:
+                mark = ""
             print("  {}-{}{}".format(f["id"], f["slug"], mark))
         print()
 
@@ -132,7 +137,12 @@ def main():
         print("error: " + p)
     n = len(ledger["features"])
     no_input = sum(1 for f in ledger["features"] if not f["covers"])
-    print("{} features, {} without a dedicated input, {} problem(s)".format(n, no_input, len(problems)))
+    # 実フォーマットが偶然通しているだけの機能と、機能として狙った入力がある機能は
+    # 別物である。前者は壊れても気づけない。
+    no_dedicated = sum(1 for f in ledger["features"]
+                       if not any("feature_test/" in c for c in f["covers"]))
+    print("{} features, {} with no input at all, {} with no feature_test input, {} problem(s)".format(
+        n, no_input, no_dedicated, len(problems)))
     return 1 if problems else 0
 
 
