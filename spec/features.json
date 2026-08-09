@@ -18,11 +18,12 @@
       "slug": "int-literal",
       "name": "整数リテラル",
       "category": "lexical",
-      "summary": "10 進 / 0x 16 進 / 0b 2 進。",
+      "summary": "10 進 / 0x 16 進 / 0b 2 進 / 0o 8 進。",
       "covers": [
         "example/feature_test/bit_fields.bgn",
         "example/feature_test/union.bgn"
-      ]
+      ],
+      "notes": "0o は bnf.md にあるが example では一度も使われていない。"
     },
     {
       "id": "F0003",
@@ -229,7 +230,8 @@
         "example/feature_test/const_length.bgn",
         "example/feature_test/union.bgn",
         "example/feature_test/analyze_block_trait.bgn"
-      ]
+      ],
+      "notes": "length が静的に決まり要素型も固定長なら固定長配列、そうでなければ動的配列になる。手書き codec (F0052) の中では、静的に決まらない length は無視され任意長として扱われる (language.md 配列型)。"
     },
     {
       "id": "F0021",
@@ -587,11 +589,12 @@
       "slug": "stream-io",
       "name": "入出力ストリームの直接操作",
       "category": "stream",
-      "summary": "input.get(T) / output.put(x) でバイト列を直接読み書きする。",
+      "summary": "input.get([Type],[length]) / input.peek([Type],[length]) / output.put(value) でバイト列を直接読み書きする。手書きの codec で使う。",
       "covers": [
         "example/feature_test/union.bgn",
         "example/feature_test/analyze_block_trait.bgn"
-      ]
+      ],
+      "notes": "peek は読むが位置を進めない。F0069-input-peek はフィールド引数としての同じ指定で、こちらは関数としての形。"
     },
     {
       "id": "F0054",
@@ -619,7 +622,7 @@
       "slug": "config-type",
       "name": "config.type",
       "category": "stream",
-      "summary": "そのブロックの既定の整数型を指定する。",
+      "summary": "config.type = T でフィールドの表現型を指定する。可変ビット配列を整数型へ写す形 ([len]u1(config.type = u32)) と、enum の符号化幅を決める形 (C(config.type = u8)) がある。",
       "covers": [
         "example/feature_test/inline_format.bgn"
       ]
@@ -858,6 +861,276 @@
         "example/http.bgn"
       ],
       "notes": "型としては ast::StrLiteralType。F0027 が引数で値を固定するのとは別の機構で、こちらは型そのものがリテラル。直前のフィールドの Follow を constant にするのはこの型だけなので (type_attribute.cpp:205)、F0064-literal-termination はこれに依存する。http.bgn の :\" \" が無名フィールドとしての使い方。"
+    },
+    {
+      "id": "F0077",
+      "slug": "arithmetic-operators",
+      "name": "算術演算子",
+      "category": "expression",
+      "summary": "+ - * / % と単項の -。",
+      "covers": [
+        "example/feature_test/fn_test.bgn",
+        "example/feature_test/import_and_use.bgn",
+        "example/feature_test/regex_ident.bgn"
+      ]
+    },
+    {
+      "id": "F0078",
+      "slug": "comparison-operators",
+      "name": "比較演算子",
+      "category": "expression",
+      "summary": "== != < <= > >=。",
+      "covers": [
+        "example/feature_test/analyze_block_trait.bgn",
+        "example/feature_test/assert_or_implicit_yeild.bgn",
+        "example/feature_test/comma_match.bgn"
+      ]
+    },
+    {
+      "id": "F0079",
+      "slug": "logical-operators",
+      "name": "論理演算子",
+      "category": "expression",
+      "summary": "&& || と単項の !。",
+      "covers": [
+        "example/feature_test/simple_binary.bgn",
+        "example/feature_test/state_variable.bgn",
+        "example/feature_test/tree_test.bgn"
+      ]
+    },
+    {
+      "id": "F0080",
+      "slug": "bitwise-operators",
+      "name": "ビット演算子",
+      "category": "expression",
+      "summary": "& | ^ によるビットごとの演算。",
+      "covers": [
+        "example/feature_test/tree_test.bgn",
+        "example/feature_test/union.bgn",
+        "example/archive/cpio_newc.bgn"
+      ],
+      "notes": "サブバイト幅 (F0019) の値に適用したときの結果幅が、対象言語の整数型の幅と一致しない。"
+    },
+    {
+      "id": "F0081",
+      "slug": "shift-operators",
+      "name": "シフト演算子",
+      "category": "expression",
+      "summary": "<< と >> による左右シフト。",
+      "covers": [
+        "example/feature_test/fn_test.bgn",
+        "example/feature_test/tree_test.bgn",
+        "example/feature_test/union.bgn"
+      ],
+      "notes": "右シフトが論理か算術かは被演算子の符号で決まる。サブバイト幅では対象言語の型幅とずれる。"
+    },
+    {
+      "id": "F0082",
+      "slug": "rotate-operators",
+      "name": "回転演算子",
+      "category": "expression",
+      "summary": "<<< と >>> によるビット回転。",
+      "covers": [
+        "example/brgen_help/ast_enum.bgn"
+      ],
+      "notes": "ネイティブの演算子を持つ対象言語がほとんど無く、幅を明示したシフトと論理和の組で書き下す必要がある。回転幅はその値のビット幅であって、対象言語の型幅ではない。"
+    },
+    {
+      "id": "F0083",
+      "slug": "bool-literal",
+      "name": "真偽リテラル",
+      "category": "lexical",
+      "summary": "true と false。",
+      "covers": [
+        "example/feature_test/assert_or_implicit_yeild.bgn",
+        "example/feature_test/comma_match.bgn",
+        "example/feature_test/enum_is_defined.bgn"
+      ]
+    },
+    {
+      "id": "F0084",
+      "slug": "bool-type",
+      "name": "bool 型",
+      "category": "type",
+      "summary": "真偽値の型。state の要素やアサーションの結果に使う。",
+      "covers": [
+        "example/feature_test/analyze_block_trait.bgn",
+        "example/feature_test/nested_state.bgn",
+        "example/feature_test/state_variable.bgn"
+      ]
+    },
+    {
+      "id": "F0085",
+      "slug": "float-type",
+      "name": "浮動小数点型",
+      "category": "type",
+      "summary": "f16 / f32 / f64。接頭辞 f にビット幅を続ける。",
+      "covers": [
+        "example/brgen_help/game.bgn",
+        "example/bson.bgn",
+        "example/cbor.bgn"
+      ]
+    },
+    {
+      "id": "F0086",
+      "slug": "endian-type-prefix",
+      "name": "型名によるエンディアン指定",
+      "category": "type",
+      "summary": "ub32 / ul16 / il8 のように、符号の接頭辞の後に b(ビッグ) か l(リトル) を挟んでその型だけのバイト順を決める。",
+      "covers": [
+        "example/attestation_object.bgn",
+        "example/bmp.bgn",
+        "example/bpf.bgn"
+      ],
+      "notes": "ast::is_int_type が <i|u><b|l>?<N> を解釈する (ast/node/type.h:106)。F0054-endian-control が以降全体の既定を変えるのに対し、これはその型 1 つに閉じる。"
+    },
+    {
+      "id": "F0087",
+      "slug": "return-statement",
+      "name": "return",
+      "category": "control-flow",
+      "summary": "fn から値を返して抜ける。",
+      "covers": [
+        "example/feature_test/comma_match.bgn",
+        "example/feature_test/lookup_phase.bgn",
+        "example/feature_test/tree_test.bgn"
+      ]
+    },
+    {
+      "id": "F0088",
+      "slug": "break-statement",
+      "name": "break",
+      "category": "control-flow",
+      "summary": "ループを抜ける。",
+      "covers": [
+        "example/feature_test/tree_test.bgn",
+        "example/archive/lz4_frame.bgn",
+        "example/archive/rar5.bgn"
+      ]
+    },
+    {
+      "id": "F0089",
+      "slug": "continue-statement",
+      "name": "continue",
+      "category": "control-flow",
+      "summary": "ループの次の周回へ進む。",
+      "covers": [
+        "example/feature_test/tree_test.bgn",
+        "example/softether.bgn"
+      ]
+    },
+    {
+      "id": "F0090",
+      "slug": "c-style-for",
+      "name": "3 部構成の for",
+      "category": "control-flow",
+      "summary": "for init; cond; step: の形。F0036 の for x in expr、F0037 の条件のみの形とは別の構文。",
+      "covers": [
+        "example/feature_test/tree_test.bgn",
+        "example/dq2.bgn",
+        "example/llvm_ir.bgn"
+      ]
+    },
+    {
+      "id": "F0091",
+      "slug": "function-call",
+      "name": "関数呼び出し",
+      "category": "expression",
+      "summary": "宣言した fn を式として呼ぶ。",
+      "covers": [
+        "example/feature_test/analyze_block_trait.bgn",
+        "example/feature_test/comma_match.bgn",
+        "example/feature_test/exhaustive_check.bgn"
+      ]
+    },
+    {
+      "id": "F0092",
+      "slug": "type-literal",
+      "name": "型リテラル",
+      "category": "expression",
+      "summary": "<T> で型そのものを式の位置に書く。generic 型のように名前だけでは書けない型を sizeof や cast に渡すのに使う。",
+      "covers": [
+        "example/feature_test/type_parameter.bgn",
+        "example/archive/lz4_frame.bgn",
+        "example/http.bgn"
+      ]
+    },
+    {
+      "id": "F0093",
+      "slug": "enum-member-string",
+      "name": "enum メンバの文字列",
+      "category": "declaration",
+      "summary": "A = 1, \"name\" のように enum メンバへ値と併せて文字列を書く。",
+      "covers": [
+        "example/brgen_help/ast_enum.bgn",
+        "example/radius.bgn",
+        "example/webauthn.bgn"
+      ],
+      "notes": "AST では EnumMember::str_literal。値と文字列はどちらの順でも書ける (bnf.md の enum member)。"
+    },
+    {
+      "id": "F0094",
+      "slug": "fn-type",
+      "name": "関数型",
+      "category": "type",
+      "summary": "fn(p :T, :U) -> R を型の位置に書く。",
+      "covers": [
+        "example/llvm_ir.bgn"
+      ]
+    },
+    {
+      "id": "F0095",
+      "slug": "stream-position",
+      "name": "入力位置の参照",
+      "category": "stream",
+      "summary": "input.offset で現在位置、input.remain で残り長さを読む。参照した位置によって値が変わる。",
+      "covers": [
+        "example/ast_step/step7.bgn",
+        "example/ipsec.bgn",
+        "example/mactelnet.bgn"
+      ]
+    },
+    {
+      "id": "F0096",
+      "slug": "input-backward",
+      "name": "読み戻し",
+      "category": "stream",
+      "summary": "input.backward([length]) で入力位置を戻す。省略すると 1 バイト。",
+      "covers": [
+        "example/smf.bgn"
+      ]
+    },
+    {
+      "id": "F0097",
+      "slug": "config-word-map",
+      "name": "語のマッピング",
+      "category": "meta",
+      "summary": "config.word.map(\"Id\",\"ID\") で、生成先の識別子に使う語の綴りを指定する。",
+      "covers": [
+        "example/brgen_help/share.bgn",
+        "example/brgen_help/ssa.bgn",
+        "example/webauthn.bgn"
+      ],
+      "notes": "metadata.md がジェネレーター共通のメタデータとして規定。json2go が消費する。"
+    },
+    {
+      "id": "F0098",
+      "slug": "config-order-after",
+      "name": "宣言順の指定",
+      "category": "meta",
+      "summary": "config.order.after = \"Object\" で、生成先での宣言順を別の format の後ろに置く。",
+      "covers": [],
+      "notes": "識別子の宣言順を要求する言語 (C / C++) のためのもの。src/core が名前として認識するが example では一度も使われていない。metadata.md に規定あり。"
+    },
+    {
+      "id": "F0099",
+      "slug": "void-type",
+      "name": "void 型",
+      "category": "type",
+      "summary": "値を持たないことを表す型。フィールドの型としても書ける。",
+      "covers": [
+        "example/feature_test/tree_test.bgn"
+      ]
     }
   ]
 }
