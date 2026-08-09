@@ -545,6 +545,19 @@
       "covers": ["example/feature_test/analyze_block_trait.bgn"]
     },
     {
+      "id": "F0062",
+      "slug": "error-tolerant-parsing",
+      "name": "誤りを含む入力の解析",
+      "category": "analysis",
+      "summary": "構文誤りがあっても解析を続け、可能な範囲の木と複数の診断を返す。LSP が要る。",
+      "covers": [
+        "example/feature_test/error_tolerant.bgn",
+        "example/feature_test/fn_test.bgn",
+        "example/feature_test/partial_regex.bgn"
+      ],
+      "notes": "この機能は既定では働かない。ParseOption.error_tolerant を立てたときだけで、既定は fail fast。したがってこれらのファイルが素の解析で落ちるのは正しい挙動であって、対応状況を測るときはフラグを立てた側で測る必要がある。"
+    },
+    {
       "id": "F0063",
       "slug": "fixed-tail-termination",
       "name": "固定長の後続による終端",
@@ -660,19 +673,6 @@
       "summary": "config.<lang>.replace = \"型名\" で、その format から生成される型を対象言語の既存の型に差し替える。config.must_replace = true は置換先が無い言語で既定の生成物を出すことを禁じる意図。",
       "covers": ["example/llvm_ir.bgn"],
       "notes": "意味論が未実装。src/tool のどの生成器も replace / must_replace を読んでいない。同じ cpp. 名前空間でも config.cpp.namespace は json2cpp2 が消費しており、この 2 つだけが未消費。"
-    },
-    {
-      "id": "F0062",
-      "slug": "error-tolerant-parsing",
-      "name": "誤りを含む入力の解析",
-      "category": "analysis",
-      "summary": "構文誤りがあっても解析を続け、可能な範囲の木と複数の診断を返す。LSP が要る。",
-      "covers": [
-        "example/feature_test/error_tolerant.bgn",
-        "example/feature_test/fn_test.bgn",
-        "example/feature_test/partial_regex.bgn"
-      ],
-      "notes": "この機能は既定では働かない。ParseOption.error_tolerant を立てたときだけで、既定は fail fast。したがってこれらのファイルが素の解析で落ちるのは正しい挙動であって、対応状況を測るときはフラグを立てた側で測る必要がある。"
     }
   ]
 }

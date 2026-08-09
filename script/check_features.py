@@ -86,6 +86,14 @@ def check(ledger):
             problems.append("{}: duplicate slug '{}' (also {})".format(fid, slug, seen_slug[slug]))
         seen_id[fid], seen_slug[slug] = slug, fid
 
+    # 同一性は id なので順序に意味は無いが、並んでいないと読むときも diff を見るときも
+    # 追いにくい。新しい項目を末尾以外に挿し込むと簡単に崩れるので機械で見る。
+    ids = [f["id"] for f in features]
+    if ids != sorted(ids):
+        out_of_place = [b for a, b in zip(ids, ids[1:]) if a > b]
+        problems.append("features are not in id order (out of place: {})".format(
+            ", ".join(out_of_place)))
+
     # 1. 台帳が指す入力が実在するか
     referenced = set()
     for f in features:
