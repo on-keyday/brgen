@@ -622,7 +622,7 @@
       "category": "stream",
       "summary": "input.skip = true で、読んだ結果を保持せず位置だけ進める。",
       "covers": ["example/feature_test/regexp.bgn"],
-      "notes": "未実装。middle/typing.cpp が名前で認識するフィールド引数は input.align / input.peek / config.type / input の 4 つだけで、input.skip はどれにも当たらず汎用の assigns に落ちる。assigns を読むのは analyze_block_trait だけなので意味論としては誰も消費しない。構文は通り、警告も出ない。"
+      "notes": "意味論が未実装。typing.cpp が名前で解釈するフィールド引数は input.align / input.peek / config.type / input の 4 つだけだが、それ以外は捨てられるのではなく ast::Metadata{name, values} として保存され、JSON AST に残って生成器まで届く (typing.cpp:1862)。src2json は input.skip を metadata として出す。つまり運ぶ機構はあり、消費する側が無い。"
     },
     {
       "id": "F0071",
@@ -631,7 +631,7 @@
       "category": "stream",
       "summary": "input.xor = key で、読み取ったバイト列に鍵を XOR する。",
       "covers": ["example/websocket.bgn"],
-      "notes": "未実装。input.skip (F0070) と同じく typing.cpp に認識される名前が無く、汎用 assigns に落ちて無視される。websocket.bgn にこの構文はあるが何も起きない。汎化してストリーム変換にする案があり、その場合この ID は消える可能性がある。"
+      "notes": "意味論が未実装。F0070 と同じく ast::Metadata として AST に残り生成器まで届くが、消費する生成器が無い。拡張点として作られて意味論が後回しになったまま残っている形。汎化してストリーム変換にする案があり、その場合この ID は消える可能性がある。"
     },
     {
       "id": "F0062",
