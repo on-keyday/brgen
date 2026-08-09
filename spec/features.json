@@ -913,27 +913,27 @@
     },
     {
       "id": "F0081",
-      "slug": "shift-operators",
-      "name": "シフト演算子",
+      "slug": "logical-shift-operators",
+      "name": "論理シフト演算子",
       "category": "expression",
-      "summary": "<< と >> による左右シフト。",
+      "summary": "<< と >> による論理シフト。空いた側には 0 が入る。",
       "covers": [
-        "example/feature_test/fn_test.bgn",
         "example/feature_test/tree_test.bgn",
-        "example/feature_test/union.bgn"
+        "example/feature_test/union.bgn",
+        "example/archive/cpio_newc.bgn"
       ],
-      "notes": "右シフトが論理か算術かは被演算子の符号で決まる。サブバイト幅では対象言語の型幅とずれる。"
+      "notes": "brgen は算術シフトと論理シフトを演算子で分ける (F0082)。被演算子の符号では決まらないので、対象言語で被演算子がどう型付けされるかに関係なく意味が定まる。サブバイト幅 (F0019) では値のビット幅が対象言語の型幅より狭く、そのままシフトすると桁が残る。"
     },
     {
       "id": "F0082",
-      "slug": "rotate-operators",
-      "name": "回転演算子",
+      "slug": "arithmetic-shift-operators",
+      "name": "算術シフト演算子",
       "category": "expression",
-      "summary": "<<< と >>> によるビット回転。",
+      "summary": "<<< と >>> による算術シフト。右シフトでは符号ビットが伸びる。",
       "covers": [
         "example/brgen_help/ast_enum.bgn"
       ],
-      "notes": "ネイティブの演算子を持つ対象言語がほとんど無く、幅を明示したシフトと論理和の組で書き下す必要がある。回転幅はその値のビット幅であって、対象言語の型幅ではない。"
+      "notes": "ast_enum.h の left_arithmetic_shift / right_arithmetic_shift。符号の扱いを演算子側が持つので、対象言語で符号なし型に載せている値でも >>> は符号拡張しなければならない。逆に <</>> (F0081) は符号つき型に載せていても 0 埋めになる。"
     },
     {
       "id": "F0083",
@@ -1131,6 +1131,19 @@
       "covers": [
         "example/feature_test/tree_test.bgn"
       ]
+    },
+    {
+      "id": "F0100",
+      "slug": "compound-assignment",
+      "name": "複合代入",
+      "category": "expression",
+      "summary": "+= -= *= /= %= &= |= ^= <<= >>= <<<= >>>= の形で、演算と代入をまとめて書く。",
+      "covers": [
+        "example/feature_test/fn_test.bgn",
+        "example/brgen_help/ast_enum.bgn",
+        "example/dnssec.bgn"
+      ],
+      "notes": "シフトの複合代入も論理 (<<= >>=) と算術 (<<<= >>>=) に分かれる。"
     }
   ]
 }
