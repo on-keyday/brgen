@@ -16,14 +16,23 @@ namespace brgen::nast {
         std::string scalar;
     };
 
+    struct PrintOptions {
+        // weak を落とすと所有辺だけの純粋な木になる。
+        bool show_weak = true;
+        // null の Node フィールドは既定では項目ごと落とす。出すと
+        // 「そのノードが持ちうるフィールド」が全部並ぶので、
+        // parser がどこを埋め損ねたかを見るときに要る。
+        bool show_null = false;
+    };
+
     struct PrettyPrinter {
         Arena* arena = nullptr;
         std::string out;
         bool show_weak = true;
         bool show_null = false;
 
-        explicit PrettyPrinter(Arena& a)
-            : arena(&a) {}
+        explicit PrettyPrinter(Arena& a, PrintOptions opt = {})
+            : arena(&a), show_weak(opt.show_weak), show_null(opt.show_null) {}
 
         template <class T>
         void print(Node<T> root) {
@@ -144,8 +153,8 @@ namespace brgen::nast {
     };
 
     template <class T>
-    std::string pretty_print(Arena& a, Node<T> root) {
-        PrettyPrinter p{a};
+    std::string pretty_print(Arena& a, Node<T> root, PrintOptions opt = {}) {
+        PrettyPrinter p{a, opt};
         p.print(root);
         return std::move(p.out);
     }
