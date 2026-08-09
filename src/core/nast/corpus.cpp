@@ -9,7 +9,7 @@
 #include "printer.h"
 
 #include <core/common/file.h>
-#include <cstdio>
+#include <print>
 #include <string>
 #include <vector>
 
@@ -64,7 +64,7 @@ int main(int argc, char** argv) {
         }
     }
     if (paths.empty()) {
-        std::fprintf(stderr, "usage: nast_corpus [--tree] <file.bgn>...\n");
+        std::println(stderr, "usage: nast_corpus [--tree] <file.bgn>...");
         return 2;
     }
 
@@ -75,16 +75,16 @@ int main(int argc, char** argv) {
         auto r = run(path, arena, root);
         if (r.ok) {
             ok++;
-            std::printf("ok    %-60s %5zu nodes\n", path.c_str(), r.nodes);
+            std::println("ok    {:<60} {:>5} nodes", path, r.nodes);
             if (show_tree) {
-                std::printf("%s", brgen::nast::pretty_print(arena, root).c_str());
+                std::print("{}", brgen::nast::pretty_print(arena, root));
             }
         }
         else {
             ng++;
-            std::printf("ERROR %-60s %s\n", path.c_str(), r.message.c_str());
+            std::println("ERROR {:<60} {}", path, r.message);
         }
     }
-    std::printf("\n%zu ok / %zu error / %zu total\n", ok, ng, ok + ng);
+    std::println("\n{} ok / {} error / {} total", ok, ng, ok + ng);
     return ng == 0 ? 0 : 1;
 }

@@ -7,7 +7,7 @@
 #include "from_json.h"
 
 #include <algorithm>
-#include <cstdio>
+#include <print>
 #include <string>
 #include <vector>
 
@@ -26,7 +26,7 @@ namespace {
     bool verbose = false;
 
     void check(bool ok, const char* what) {
-        std::printf("  [%s] %s\n", ok ? "ok" : "NG", what);
+        std::println("  [{}] {}", ok ? "ok" : "NG", what);
         if (!ok) {
             failures++;
         }
@@ -36,7 +36,7 @@ namespace {
         if (!verbose) {
             return;
         }
-        std::printf("\n--- %s ---\n%s\n", title, text.c_str());
+        std::println("\n--- {} ---\n{}", title, text);
     }
 
 }  // namespace
@@ -51,7 +51,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    std::printf("nast smoke test\n");
+    std::println("nast smoke test");
 
     Arena arena;
     auto fmt = arena.make<Format>();
@@ -314,10 +314,10 @@ int main(int argc, char** argv) {
               tout.find("\"IsMutated\"") != std::string::npos,
           "SideTables::as_json serializes every table independently of the arena");
 #else
-    std::printf("  [--] Arena::as_json (skipped: futils not available)\n");
+    std::println("  [--] Arena::as_json (skipped: futils not available)");
 #endif
 
-    std::printf("%s (%d failure%s)\n", failures == 0 ? "PASS" : "FAIL", failures,
-                failures == 1 ? "" : "s");
+    std::println("{} ({} failure{})", failures == 0 ? "PASS" : "FAIL", failures,
+                 failures == 1 ? "" : "s");
     return failures == 0 ? 0 : 1;
 }
