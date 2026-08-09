@@ -1,0 +1,75 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "description": "brgen language feature ledger schema. The ledger declares that a feature exists and gives it a stable identifier; it does NOT record which backends support it. Support is measured, not declared - see rebrgen/docs/draft/ast_prototype_analysis.md for why.",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "version": {
+      "type": "integer",
+      "description": "Ledger format version"
+    },
+    "note": {
+      "type": "string",
+      "description": "Free-text note about the ledger itself"
+    },
+    "features": {
+      "type": "array",
+      "description": "The features. Order is not significant; id is the identity.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^F[0-9]{4}$",
+            "description": "Stable identifier. Never reused, even if the feature is removed - a gap is expected."
+          },
+          "slug": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+            "description": "Readable identifier. Referenced as <id>-<slug>, e.g. F0034-trial-match, matching the docs/decisions/ ADR convention."
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable name"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "lexical",
+              "declaration",
+              "type",
+              "field",
+              "control-flow",
+              "expression",
+              "stream",
+              "analysis",
+              "meta"
+            ],
+            "description": "Which layer of the language the feature lives in. Categories group; they carry no semantics."
+          },
+          "summary": {
+            "type": "string",
+            "description": "One or two sentences on what the feature is"
+          },
+          "covers": {
+            "type": "array",
+            "description": "Repository-relative paths of .bgn inputs exercising this feature. Many-to-many: one file may cover several features and one feature may span several files. An empty array means the feature has no dedicated input yet - that gap is the point of recording it.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "notes": {
+            "type": "string",
+            "description": "Known limits, partial implementations, or pointers to an ADR. Only record what a file or document already states - do not put guesses here."
+          }
+        },
+        "required": ["id", "slug", "name", "category", "summary", "covers"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["version", "features"],
+  "additionalProperties": false
+}
