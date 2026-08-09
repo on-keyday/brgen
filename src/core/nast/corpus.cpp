@@ -3,8 +3,10 @@
 // 意味論 (スコープ構築 / 束縛 / union 導出) は parse.cpp で落としてあるので、
 // ここで確認できるのは「構文の骨格が出るか」まで。
 //
-//   nast_corpus <file.bgn>...        1 行 1 ファイルで ok / error を出す
-//   nast_corpus --tree <file.bgn>    構文木を表示する
+//   nast_corpus <file.bgn>...          1 行 1 ファイルで ok / error を出す
+//   nast_corpus --tree <file.bgn>      構文木を表示する
+//   nast_corpus --tree --show-null ... 埋まっていないフィールドも出す
+//   nast_corpus --tree --no-weak ...   weak を落として所有辺だけにする
 #include "parse.h"
 #include "printer.h"
 
@@ -53,18 +55,25 @@ namespace {
 
 int main(int argc, char** argv) {
     bool show_tree = false;
+    brgen::nast::PrintOptions opt;
     std::vector<std::string> paths;
     for (int i = 1; i < argc; i++) {
         std::string a = argv[i];
         if (a == "--tree") {
             show_tree = true;
         }
+        else if (a == "--show-null") {
+            opt.show_null = true;
+        }
+        else if (a == "--no-weak") {
+            opt.show_weak = false;
+        }
         else {
             paths.push_back(std::move(a));
         }
     }
     if (paths.empty()) {
-        std::println(stderr, "usage: nast_corpus [--tree] <file.bgn>...");
+        std::println(stderr, "usage: nast_corpus [--tree [--show-null] [--no-weak]] <file.bgn>...");
         return 2;
     }
 
@@ -77,7 +86,7 @@ int main(int argc, char** argv) {
             ok++;
             std::println("ok    {:<60} {:>5} nodes", path, r.nodes);
             if (show_tree) {
-                std::print("{}", brgen::nast::pretty_print(arena, root));
+                std::print("{}", brgen::nast::pretty_print(arena, root, opt));
             }
         }
         else {
