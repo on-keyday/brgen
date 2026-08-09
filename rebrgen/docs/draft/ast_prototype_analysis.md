@@ -628,6 +628,46 @@ AST ノード種と EBM ノード種がそれぞれ「どの feature に属す�
 ここを正本にして AST ノード種と EBM ノード種を「その feature の実装手段」として下に紐づけるのが、
 既存の運用と整合しそうに見える (未検証)。
 
+#### 測定: AST ノード種では機能を区別できない (2026-08-09)
+
+上の「未検証」を測った。`feature_test/*.bgn` を nast のパーサに通し、木に現れるノード種の集合を
+ファイルごとに取って重なりを見た (31/34 が解析可能。残り 3 は後述)。
+
+| 見たもの | 結果 |
+| --- | --- |
+| 他のどのファイルにも無いノード種を持ち込むファイル | **5 / 31** |
+| ノード種集合が他ファイルに完全に含まれるファイル | 6 / 31 |
+| ノード種の総数 | 31 種 |
+
+新規ノード種を持ち込むのは `enum_is_defined` (Enum/EnumMember/EnumType)、`for_in` (RangeLoop)、
+`import_and_use` (ImportedType)、`recurse_defs` (Cast/TypeLiteral)、`regexp` (Arguments/
+NamedArgument/RegexLiteralType) の 5 つだけ。**`trial_match` / `state_variable` / `sizeof` /
+`exhaustive_check` / `union_member_access` / `type_parameter` はいずれも新規ノード種を持ち込まない。**
+`Binary` / `If` / `Match` / `Field` の組み合わせでできているためで、機能の区別はその層に存在しない。
+
+ADR 0048 が EBM 側で自ら書いている限界 (「ノード種別の**有無**しか見ていない」) と同じ形が、
+一層上の AST でも成立している。**したがって feature ID はノード種から導出できず、宣言するしかない。**
+一方で対価は無く、対応状況の列は測定で埋められる — 上の分業案はこの測定と矛盾しない。
+
+#### 実体
+
+`brgen/spec/features.json` に置いた (schema: `brgen/spec/brgen_features_schema.json`)。
+62 feature。ID は `F0034-trial-match` のように ADR と同じ「番号 + slug」形式。
+`covers` で `feature_test/*.bgn` と多対多に紐づく。宣言するのは存在と識別子だけで、
+バックエンド対応欄は持たない。
+
+`python script/check_features.py` が機械的な整合だけを見る — `covers` のパスが実在するか、
+`feature_test/*.bgn` がどれかの feature から参照されているか、ID と slug が一意か。
+「実装されているか」は見ない。
+
+#### 落とし穴: 既定で働かない機能がある
+
+`F0062-error-tolerant-parsing` は `ParseOption.error_tolerant` を立てたときだけ働き、
+既定は fail fast である。この区別を落とすと、`error_tolerant.bgn` のような
+**意図的に構文誤りを含む入力**が落ちるのを実装の欠落と読み違える。実際に読み違えた。
+対応状況を測るときは、機能ごとに「どのモードで測るのが正しいか」が要る。
+`covers` だけでは足りない情報がここにある。
+
 ### 順序
 
 軸1 は単独で価値がある (§2 の対価が消える)。軸2 は JSON 境界を壊さないがスキーマ経由で生成 API に

@@ -1,0 +1,559 @@
+{
+  "$schema": "./brgen_features_schema.json",
+  "version": 1,
+  "note": "brgen の言語機能台帳。宣言するのは「機能の存在と識別子」だけで、バックエンド対応状況は書かない (測定から出す)。詳細は brgen_features_schema.json を参照。",
+  "features": [
+    {
+      "id": "F0001",
+      "slug": "comment",
+      "name": "コメント",
+      "category": "lexical",
+      "summary": "# から行末まで。フィールド宣言と同じ行にも書ける。",
+      "covers": ["example/feature_test/edge_case1.bgn"]
+    },
+    {
+      "id": "F0002",
+      "slug": "int-literal",
+      "name": "整数リテラル",
+      "category": "lexical",
+      "summary": "10 進 / 0x 16 進 / 0b 2 進。",
+      "covers": ["example/feature_test/bit_fields.bgn", "example/feature_test/union.bgn"]
+    },
+    {
+      "id": "F0003",
+      "slug": "string-literal",
+      "name": "文字列リテラル",
+      "category": "lexical",
+      "summary": "\" で囲む。\\xNN によるバイト列表記を含む。",
+      "covers": ["example/feature_test/union.bgn", "example/feature_test/for_in.bgn"]
+    },
+    {
+      "id": "F0004",
+      "slug": "char-literal",
+      "name": "文字リテラル",
+      "category": "lexical",
+      "summary": "' で囲む単一文字。整数として扱われる。",
+      "covers": ["example/feature_test/comma_match.bgn"]
+    },
+    {
+      "id": "F0005",
+      "slug": "regex-literal",
+      "name": "正規表現リテラル",
+      "category": "lexical",
+      "summary": "/pattern/flags。識別子との字句的な曖昧さがある。",
+      "covers": ["example/feature_test/regexp.bgn", "example/feature_test/regex_ident.bgn"]
+    },
+    {
+      "id": "F0006",
+      "slug": "same-line-declarations",
+      "name": "同一行の複数宣言",
+      "category": "lexical",
+      "summary": "1 行に複数のフィールド宣言を並べられる。インデントブロックの終端判定と絡む。",
+      "covers": ["example/feature_test/edge_case1.bgn"]
+    },
+    {
+      "id": "F0007",
+      "slug": "format-decl",
+      "name": "format 宣言",
+      "category": "declaration",
+      "summary": "バイナリ構造の単位。インデントブロックで本体を書く。",
+      "covers": ["example/feature_test/simple_binary.bgn", "example/feature_test/union.bgn"]
+    },
+    {
+      "id": "F0008",
+      "slug": "empty-format-body",
+      "name": "空の format 本体",
+      "category": "declaration",
+      "summary": ".. をプレースホルダとして置き、フィールドの無い format を書く。",
+      "covers": ["example/feature_test/analyze_block_trait.bgn", "example/feature_test/sizeof.bgn"]
+    },
+    {
+      "id": "F0009",
+      "slug": "inline-format-anonymous",
+      "name": "無名インライン format",
+      "category": "declaration",
+      "summary": "フィールドの型位置に format: を直接書く。",
+      "covers": ["example/feature_test/inline_format.bgn", "example/feature_test/inline_format_last.bgn"]
+    },
+    {
+      "id": "F0010",
+      "slug": "inline-format-named",
+      "name": "名前つきインライン format",
+      "category": "declaration",
+      "summary": "format Name: をフィールド位置に書き、その名前で後から再利用する。",
+      "covers": ["example/feature_test/inline_format.bgn", "example/feature_test/inline_format_last.bgn"]
+    },
+    {
+      "id": "F0011",
+      "slug": "inline-format-array",
+      "name": "インライン format の配列",
+      "category": "declaration",
+      "summary": "[n]format: の形で、インライン定義した構造の配列を作る。",
+      "covers": ["example/feature_test/inline_format.bgn", "example/feature_test/inline_format_last.bgn"]
+    },
+    {
+      "id": "F0012",
+      "slug": "enum-decl",
+      "name": "enum 宣言",
+      "category": "declaration",
+      "summary": "名前つき定数の集合。値を省略すると連番になる。",
+      "covers": ["example/feature_test/enum_is_defined.bgn", "example/feature_test/union.bgn"]
+    },
+    {
+      "id": "F0013",
+      "slug": "enum-base-type",
+      "name": "enum の基底型指定",
+      "category": "declaration",
+      "summary": "enum 本体の先頭に :u8 のように書いて表現型を固定する。",
+      "covers": ["example/feature_test/type_parameter.bgn"]
+    },
+    {
+      "id": "F0014",
+      "slug": "state-decl",
+      "name": "state 宣言",
+      "category": "declaration",
+      "summary": "ワイヤ上に現れない、符号化/復号の間で持ち回る状態の型。",
+      "covers": [
+        "example/feature_test/state_variable.bgn",
+        "example/feature_test/state_variable2.bgn",
+        "example/feature_test/nested_state.bgn",
+        "example/feature_test/analyze_block_trait.bgn"
+      ]
+    },
+    {
+      "id": "F0015",
+      "slug": "fn-decl",
+      "name": "fn 宣言",
+      "category": "declaration",
+      "summary": "引数と戻り値型を持つ関数。format の内外どちらにも置ける。",
+      "covers": [
+        "example/feature_test/lookup_phase.bgn",
+        "example/feature_test/union.bgn",
+        "example/feature_test/comma_match.bgn",
+        "example/feature_test/union_member_access.bgn"
+      ]
+    },
+    {
+      "id": "F0016",
+      "slug": "type-parameter",
+      "name": "型パラメータ (generics)",
+      "category": "declaration",
+      "summary": "format Foo[T] の形で型を引数に取る。",
+      "covers": ["example/feature_test/type_parameter.bgn"],
+      "notes": "type_parameter.bgn 自身が「Phase 1: 宣言と使用まで。instantiation / monomorphization と型引数の個数検査は未対応」と書いている。ADR 0002 が事前単相化の方針。"
+    },
+    {
+      "id": "F0017",
+      "slug": "import",
+      "name": "他ファイルの取り込み",
+      "category": "declaration",
+      "summary": "config.import(\"path\") で別の .bgn を読み、その型や関数を参照する。",
+      "covers": [
+        "example/feature_test/import_and_use.bgn",
+        "example/feature_test/tree_test.bgn",
+        "example/feature_test/test_import.bgn",
+        "example/feature_test/utf8_test.bgn",
+        "example/feature_test/varint_test.bgn"
+      ]
+    },
+    {
+      "id": "F0018",
+      "slug": "int-type",
+      "name": "固定幅整数型",
+      "category": "type",
+      "summary": "u8 / u16 / u32 / u64 と符号つきの i8 などバイト境界の整数型。",
+      "covers": ["example/feature_test/simple_binary.bgn", "example/feature_test/bit_fields.bgn"]
+    },
+    {
+      "id": "F0019",
+      "slug": "bit-field",
+      "name": "ビットフィールド",
+      "category": "type",
+      "summary": "u1〜u63 のようなバイト境界に乗らない幅。連続する宣言がビット単位で詰められる。",
+      "covers": [
+        "example/feature_test/bit_fields.bgn",
+        "example/feature_test/varint_test.bgn",
+        "example/feature_test/sizeof.bgn",
+        "example/feature_test/analyze_block_trait.bgn"
+      ]
+    },
+    {
+      "id": "F0020",
+      "slug": "array-type",
+      "name": "長さ式つき配列型",
+      "category": "type",
+      "summary": "[expr]T。長さに他フィールドや算術式を書ける。",
+      "covers": [
+        "example/feature_test/const_length.bgn",
+        "example/feature_test/union.bgn",
+        "example/feature_test/analyze_block_trait.bgn"
+      ]
+    },
+    {
+      "id": "F0021",
+      "slug": "unbounded-array",
+      "name": "終端まで読む配列",
+      "category": "type",
+      "summary": "[..]T。入力の終わりまで読む。",
+      "covers": ["example/feature_test/utf8_test.bgn"]
+    },
+    {
+      "id": "F0022",
+      "slug": "dynamic-array",
+      "name": "長さ未指定の配列",
+      "category": "type",
+      "summary": "[]T。実行時に伸ばす配列で、fn の中の作業用に使う。",
+      "covers": ["example/feature_test/for_in.bgn", "example/feature_test/analyze_block_trait.bgn"]
+    },
+    {
+      "id": "F0023",
+      "slug": "format-type-reference",
+      "name": "format 型の参照",
+      "category": "type",
+      "summary": "宣言済みの format をフィールドの型として使い、構造を入れ子にする。",
+      "covers": ["example/feature_test/loop_ref.bgn", "example/feature_test/sizeof.bgn"]
+    },
+    {
+      "id": "F0024",
+      "slug": "generic-type-instantiation",
+      "name": "generic 型の実体化",
+      "category": "type",
+      "summary": "Foo[u8] のように型引数を与えて使う。入れ子も書ける。",
+      "covers": ["example/feature_test/type_parameter.bgn"]
+    },
+    {
+      "id": "F0025",
+      "slug": "regex-field-type",
+      "name": "正規表現をフィールド型にする",
+      "category": "type",
+      "summary": "reg : /\\s/ のように、正規表現に一致する範囲を読むフィールド。",
+      "covers": ["example/feature_test/regexp.bgn"]
+    },
+    {
+      "id": "F0026",
+      "slug": "field-argument",
+      "name": "フィールド引数",
+      "category": "type",
+      "summary": "型の後ろに (input.skip = true) のような引数を付けて読み方を変える。",
+      "covers": ["example/feature_test/regexp.bgn"]
+    },
+    {
+      "id": "F0027",
+      "slug": "magic-field",
+      "name": "マジックナンバー / 固定値フィールド",
+      "category": "field",
+      "summary": "magic :\"\\xab\\xcd\" や fixed :u8(0x12) で値そのものを型位置に書く。",
+      "covers": ["example/feature_test/union.bgn", "example/feature_test/trial_match.bgn"]
+    },
+    {
+      "id": "F0028",
+      "slug": "conditional-field",
+      "name": "条件つきフィールド (if)",
+      "category": "control-flow",
+      "summary": "if / elif / else のブロックに置いたフィールドは条件成立時だけ存在する。",
+      "covers": [
+        "example/feature_test/state_variable.bgn",
+        "example/feature_test/state_variable2.bgn",
+        "example/feature_test/nested_state.bgn",
+        "example/feature_test/union_member_access.bgn",
+        "example/feature_test/type_parameter.bgn"
+      ]
+    },
+    {
+      "id": "F0029",
+      "slug": "match-statement",
+      "name": "match 文",
+      "category": "control-flow",
+      "summary": "値で分岐する。分岐先に => の 1 行形とインデントブロック形の両方がある。",
+      "covers": ["example/feature_test/union.bgn", "example/feature_test/lookup_phase.bgn"]
+    },
+    {
+      "id": "F0030",
+      "slug": "match-derived-union",
+      "name": "分岐から導出される union 型",
+      "category": "control-flow",
+      "summary": "異なる分岐で同名フィールドを宣言すると、それらの union 型のフィールドになる。",
+      "covers": ["example/feature_test/union.bgn", "example/feature_test/lookup_phase.bgn"],
+      "notes": "この導出を parser が行っている点は rebrgen/docs/draft/ast_prototype_analysis.md §1-9 の対象。"
+    },
+    {
+      "id": "F0031",
+      "slug": "match-pattern-comma",
+      "name": "カンマ区切りの match パターン",
+      "category": "control-flow",
+      "summary": "0,1 => のように 1 分岐に複数の値を並べる。",
+      "covers": ["example/feature_test/comma_match.bgn"]
+    },
+    {
+      "id": "F0032",
+      "slug": "match-pattern-range",
+      "name": "範囲の match パターン",
+      "category": "control-flow",
+      "summary": "'0'..='9' のような範囲を分岐条件に書く。",
+      "covers": ["example/feature_test/comma_match.bgn"]
+    },
+    {
+      "id": "F0033",
+      "slug": "match-pattern-default",
+      "name": "既定の match パターン",
+      "category": "control-flow",
+      "summary": ".. => が他のどれにも当たらない場合の分岐になる。",
+      "covers": ["example/feature_test/union.bgn", "example/feature_test/comma_match.bgn"]
+    },
+    {
+      "id": "F0034",
+      "slug": "trial-match",
+      "name": "対象を書かない match",
+      "category": "control-flow",
+      "summary": "match: に続く各分岐を順に試し、読めたものを採用する。",
+      "covers": ["example/feature_test/trial_match.bgn"]
+    },
+    {
+      "id": "F0035",
+      "slug": "exhaustive-check",
+      "name": "match の網羅性検査",
+      "category": "analysis",
+      "summary": "型の取りうる値を分岐が覆っているかを見る。u2 に 0..3 が揃えば既定分岐は要らない。",
+      "covers": ["example/feature_test/exhaustive_check.bgn"]
+    },
+    {
+      "id": "F0036",
+      "slug": "for-loop",
+      "name": "for ループ",
+      "category": "control-flow",
+      "summary": "整数 / 範囲 / 文字列 / 配列を回す for x in expr。",
+      "covers": ["example/feature_test/for_in.bgn", "example/feature_test/simple_binary.bgn"]
+    },
+    {
+      "id": "F0037",
+      "slug": "conditional-loop",
+      "name": "条件つきループ",
+      "category": "control-flow",
+      "summary": "for cond: の形で条件が成り立つ間繰り返す。",
+      "covers": ["example/feature_test/union.bgn"]
+    },
+    {
+      "id": "F0038",
+      "slug": "assertion",
+      "name": "アサーション",
+      "category": "control-flow",
+      "summary": "文の位置に真偽式を書くと、成り立たない場合に復号を失敗させる。",
+      "covers": [
+        "example/feature_test/assert_or_implicit_yeild.bgn",
+        "example/feature_test/sizeof.bgn",
+        "example/feature_test/union.bgn"
+      ]
+    },
+    {
+      "id": "F0039",
+      "slug": "implicit-yield",
+      "name": "暗黙の値返し",
+      "category": "control-flow",
+      "summary": "if / match を ::= の右辺に置くと、各分岐の式が値になる。文の位置に置けばアサーションとして働く。",
+      "covers": ["example/feature_test/assert_or_implicit_yeild.bgn", "example/feature_test/simple_binary.bgn"]
+    },
+    {
+      "id": "F0040",
+      "slug": "error-builtin",
+      "name": "error()",
+      "category": "control-flow",
+      "summary": "その場で復号を失敗させる。メッセージと値を渡せる。",
+      "covers": [
+        "example/feature_test/simple_binary.bgn",
+        "example/feature_test/union.bgn",
+        "example/feature_test/analyze_block_trait.bgn",
+        "example/feature_test/inline_format.bgn"
+      ]
+    },
+    {
+      "id": "F0041",
+      "slug": "const-binding",
+      "name": "定数束縛 (::=)",
+      "category": "expression",
+      "summary": "評価結果に名前を付ける。再代入できない。",
+      "covers": ["example/feature_test/simple_binary.bgn", "example/feature_test/recurse_defs.bgn"]
+    },
+    {
+      "id": "F0042",
+      "slug": "variable-binding",
+      "name": "変数束縛 (:=)",
+      "category": "expression",
+      "summary": "再代入できる局所変数を作る。",
+      "covers": ["example/feature_test/simple_binary.bgn", "example/feature_test/union.bgn"]
+    },
+    {
+      "id": "F0043",
+      "slug": "cast",
+      "name": "型変換",
+      "category": "expression",
+      "summary": "u8(x) と <T>(x) の 2 つの書き方。後者は generic 型のように名前が式として書けない型に使う。",
+      "covers": [
+        "example/feature_test/union.bgn",
+        "example/feature_test/type_parameter.bgn",
+        "example/feature_test/recurse_defs.bgn"
+      ]
+    },
+    {
+      "id": "F0044",
+      "slug": "member-access",
+      "name": "メンバアクセス",
+      "category": "expression",
+      "summary": "a.b で構造体のフィールド、enum の値、取り込んだモジュールの型を参照する。",
+      "covers": ["example/feature_test/import_and_use.bgn", "example/feature_test/type_parameter.bgn"]
+    },
+    {
+      "id": "F0045",
+      "slug": "union-member-access",
+      "name": "union 越しのメンバアクセス",
+      "category": "expression",
+      "summary": "条件つきフィールドのメンバを、union の共通型を通して参照する。",
+      "covers": ["example/feature_test/union_member_access.bgn"]
+    },
+    {
+      "id": "F0046",
+      "slug": "index-access",
+      "name": "添字アクセス",
+      "category": "expression",
+      "summary": "arr[i] で配列の要素を読み書きする。",
+      "covers": ["example/feature_test/type_parameter.bgn", "example/feature_test/analyze_block_trait.bgn"]
+    },
+    {
+      "id": "F0047",
+      "slug": "sizeof",
+      "name": "sizeof",
+      "category": "expression",
+      "summary": "型または値のバイト長。配列長や padding の式に使える。",
+      "covers": ["example/feature_test/sizeof.bgn", "example/feature_test/type_parameter.bgn"],
+      "notes": "sizeof.bgn がビット幅の合計が 8 の倍数でない場合を未定義として残している。"
+    },
+    {
+      "id": "F0048",
+      "slug": "available",
+      "name": "available()",
+      "category": "expression",
+      "summary": "条件つきフィールドがその場で存在するかを問う。",
+      "covers": ["example/feature_test/union_member_access.bgn"]
+    },
+    {
+      "id": "F0049",
+      "slug": "enum-is-defined",
+      "name": "is_defined",
+      "category": "expression",
+      "summary": "enum 値が宣言された名前のどれかに一致するかを問う。",
+      "covers": ["example/feature_test/enum_is_defined.bgn"]
+    },
+    {
+      "id": "F0050",
+      "slug": "length-property",
+      "name": "length",
+      "category": "expression",
+      "summary": "配列や文字列の要素数。",
+      "covers": [
+        "example/feature_test/assert_or_implicit_yeild.bgn",
+        "example/feature_test/analyze_block_trait.bgn",
+        "example/feature_test/type_parameter.bgn"
+      ]
+    },
+    {
+      "id": "F0051",
+      "slug": "ternary",
+      "name": "条件演算子",
+      "category": "expression",
+      "summary": "cond ? a : b。",
+      "covers": ["example/feature_test/analyze_block_trait.bgn"]
+    },
+    {
+      "id": "F0052",
+      "slug": "custom-codec-fn",
+      "name": "encode / decode の手書き",
+      "category": "stream",
+      "summary": "format の中に fn encode() / fn decode() を書き、自動生成の代わりに使う。",
+      "covers": ["example/feature_test/union.bgn", "example/feature_test/analyze_block_trait.bgn"]
+    },
+    {
+      "id": "F0053",
+      "slug": "stream-io",
+      "name": "入出力ストリームの直接操作",
+      "category": "stream",
+      "summary": "input.get(T) / output.put(x) でバイト列を直接読み書きする。",
+      "covers": ["example/feature_test/union.bgn", "example/feature_test/analyze_block_trait.bgn"]
+    },
+    {
+      "id": "F0054",
+      "slug": "endian-control",
+      "name": "エンディアン指定",
+      "category": "stream",
+      "summary": "input.endian = config.endian.little のように、以降の読み書きのバイト順を切り替える。",
+      "covers": ["example/feature_test/inline_format.bgn"]
+    },
+    {
+      "id": "F0055",
+      "slug": "bit-order-control",
+      "name": "ビット順指定",
+      "category": "stream",
+      "summary": "input.bit_order = config.bit_order.lsb で、ビットフィールドの詰め方を切り替える。実行時の値で切り替えることもできる。",
+      "covers": ["example/feature_test/bit_fields.bgn", "example/feature_test/analyze_block_trait.bgn"]
+    },
+    {
+      "id": "F0056",
+      "slug": "config-type",
+      "name": "config.type",
+      "category": "stream",
+      "summary": "そのブロックの既定の整数型を指定する。",
+      "covers": ["example/feature_test/inline_format.bgn"]
+    },
+    {
+      "id": "F0057",
+      "slug": "config-url",
+      "name": "config.url",
+      "category": "meta",
+      "summary": "そのフォーマットの出典 URL を書く。生成物の注釈に使う。",
+      "covers": []
+    },
+    {
+      "id": "F0058",
+      "slug": "lookup-phase",
+      "name": "名前解決の順序規則",
+      "category": "analysis",
+      "summary": "フィールドは宣言より前から参照できないが、型と format は同一スコープ内なら前方参照できる。match の別分岐で同名を宣言できる。",
+      "covers": ["example/feature_test/lookup_phase.bgn"]
+    },
+    {
+      "id": "F0059",
+      "slug": "recursive-definitions",
+      "name": "再帰的な定義",
+      "category": "analysis",
+      "summary": "format が互いを参照する循環と、定数定義の循環を検出する。",
+      "covers": ["example/feature_test/recurse_defs.bgn", "example/feature_test/loop_ref.bgn"]
+    },
+    {
+      "id": "F0060",
+      "slug": "dependency-sort",
+      "name": "依存順の整列",
+      "category": "analysis",
+      "summary": "format を依存関係の順に並べ替える。config.test.sort.expect で期待順を書ける。",
+      "covers": ["example/feature_test/sort_test.bgn"]
+    },
+    {
+      "id": "F0061",
+      "slug": "block-trait",
+      "name": "ブロック特性の解析",
+      "category": "analysis",
+      "summary": "format ごとに固定長か / 入力全体を要るか / 動的な順序か などを導出する。",
+      "covers": ["example/feature_test/analyze_block_trait.bgn"]
+    },
+    {
+      "id": "F0062",
+      "slug": "error-tolerant-parsing",
+      "name": "誤りを含む入力の解析",
+      "category": "analysis",
+      "summary": "構文誤りがあっても解析を続け、可能な範囲の木と複数の診断を返す。LSP が要る。",
+      "covers": [
+        "example/feature_test/error_tolerant.bgn",
+        "example/feature_test/fn_test.bgn",
+        "example/feature_test/partial_regex.bgn"
+      ],
+      "notes": "この機能は既定では働かない。ParseOption.error_tolerant を立てたときだけで、既定は fail fast。したがってこれらのファイルが素の解析で落ちるのは正しい挙動であって、対応状況を測るときはフラグを立てた側で測る必要がある。"
+    }
+  ]
+}
