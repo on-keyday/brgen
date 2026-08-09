@@ -9,7 +9,9 @@
       "name": "コメント",
       "category": "lexical",
       "summary": "# から行末まで。フィールド宣言と同じ行にも書ける。",
-      "covers": ["example/feature_test/edge_case1.bgn"]
+      "covers": [
+        "example/feature_test/edge_case1.bgn"
+      ]
     },
     {
       "id": "F0002",
@@ -17,7 +19,10 @@
       "name": "整数リテラル",
       "category": "lexical",
       "summary": "10 進 / 0x 16 進 / 0b 2 進。",
-      "covers": ["example/feature_test/bit_fields.bgn", "example/feature_test/union.bgn"]
+      "covers": [
+        "example/feature_test/bit_fields.bgn",
+        "example/feature_test/union.bgn"
+      ]
     },
     {
       "id": "F0003",
@@ -25,7 +30,10 @@
       "name": "文字列リテラル",
       "category": "lexical",
       "summary": "\" で囲む。\\xNN によるバイト列表記を含む。",
-      "covers": ["example/feature_test/union.bgn", "example/feature_test/for_in.bgn"]
+      "covers": [
+        "example/feature_test/union.bgn",
+        "example/feature_test/for_in.bgn"
+      ]
     },
     {
       "id": "F0004",
@@ -33,7 +41,9 @@
       "name": "文字リテラル",
       "category": "lexical",
       "summary": "' で囲む単一文字。整数として扱われる。",
-      "covers": ["example/feature_test/comma_match.bgn"]
+      "covers": [
+        "example/feature_test/comma_match.bgn"
+      ]
     },
     {
       "id": "F0005",
@@ -41,7 +51,10 @@
       "name": "正規表現リテラル",
       "category": "lexical",
       "summary": "/pattern/flags。識別子との字句的な曖昧さがある。",
-      "covers": ["example/feature_test/regexp.bgn", "example/feature_test/regex_ident.bgn"]
+      "covers": [
+        "example/feature_test/regexp.bgn",
+        "example/feature_test/regex_ident.bgn"
+      ]
     },
     {
       "id": "F0006",
@@ -49,7 +62,10 @@
       "name": "文の区切りとインデントブロックの終端",
       "category": "syntax",
       "summary": "1 行に複数の宣言を並べられ、列 0 の定義がインデントブロックを終わらせる。どこで文とブロックが終わるかの規則。",
-      "covers": ["example/feature_test/edge_case1.bgn", "example/feature_test/inline_format_last.bgn"],
+      "covers": [
+        "example/feature_test/edge_case1.bgn",
+        "example/feature_test/inline_format_last.bgn"
+      ],
       "notes": "inline_format_last.bgn が「最後のインライン format が後続の定義を飲み込まないこと」を試している (parse.cpp の skip_last)。内側のインデントブロックがフィールドの終端改行を消費するため、列 0 の定義にはインデントトークンが無く、それでも行が終端される必要がある。"
     },
     {
@@ -58,7 +74,10 @@
       "name": "format 宣言",
       "category": "declaration",
       "summary": "バイナリ構造の単位。インデントブロックで本体を書く。",
-      "covers": ["example/feature_test/simple_binary.bgn", "example/feature_test/union.bgn"]
+      "covers": [
+        "example/feature_test/simple_binary.bgn",
+        "example/feature_test/union.bgn"
+      ]
     },
     {
       "id": "F0008",
@@ -66,7 +85,10 @@
       "name": "空の format 本体",
       "category": "declaration",
       "summary": ".. をプレースホルダとして置き、フィールドの無い format を書く。",
-      "covers": ["example/feature_test/analyze_block_trait.bgn", "example/feature_test/sizeof.bgn"]
+      "covers": [
+        "example/feature_test/analyze_block_trait.bgn",
+        "example/feature_test/sizeof.bgn"
+      ]
     },
     {
       "id": "F0009",
@@ -74,7 +96,10 @@
       "name": "無名インライン format",
       "category": "declaration",
       "summary": "フィールドの型位置に format: を直接書く。",
-      "covers": ["example/feature_test/inline_format.bgn", "example/feature_test/inline_format_last.bgn"]
+      "covers": [
+        "example/feature_test/inline_format.bgn",
+        "example/feature_test/inline_format_last.bgn"
+      ]
     },
     {
       "id": "F0010",
@@ -82,7 +107,10 @@
       "name": "名前つきインライン format",
       "category": "declaration",
       "summary": "format Name: をフィールド位置に書き、その名前で後から再利用する。",
-      "covers": ["example/feature_test/inline_format.bgn", "example/feature_test/inline_format_last.bgn"]
+      "covers": [
+        "example/feature_test/inline_format.bgn",
+        "example/feature_test/inline_format_last.bgn"
+      ]
     },
     {
       "id": "F0011",
@@ -90,7 +118,10 @@
       "name": "インライン format の配列",
       "category": "declaration",
       "summary": "[n]format: の形で、インライン定義した構造の配列を作る。",
-      "covers": ["example/feature_test/inline_format.bgn", "example/feature_test/inline_format_last.bgn"]
+      "covers": [
+        "example/feature_test/inline_format.bgn",
+        "example/feature_test/inline_format_last.bgn"
+      ]
     },
     {
       "id": "F0012",
@@ -98,7 +129,10 @@
       "name": "enum 宣言",
       "category": "declaration",
       "summary": "名前つき定数の集合。値を省略すると連番になる。",
-      "covers": ["example/feature_test/enum_is_defined.bgn", "example/feature_test/union.bgn"]
+      "covers": [
+        "example/feature_test/enum_is_defined.bgn",
+        "example/feature_test/union.bgn"
+      ]
     },
     {
       "id": "F0013",
@@ -106,7 +140,9 @@
       "name": "enum の基底型指定",
       "category": "declaration",
       "summary": "enum 本体の先頭に :u8 のように書いて表現型を固定する。",
-      "covers": ["example/feature_test/type_parameter.bgn"]
+      "covers": [
+        "example/feature_test/type_parameter.bgn"
+      ]
     },
     {
       "id": "F0014",
@@ -140,7 +176,9 @@
       "name": "型パラメータ (generics)",
       "category": "declaration",
       "summary": "format Foo[T] の形で型を引数に取る。",
-      "covers": ["example/feature_test/type_parameter.bgn"],
+      "covers": [
+        "example/feature_test/type_parameter.bgn"
+      ],
       "notes": "type_parameter.bgn 自身が「Phase 1: 宣言と使用まで。instantiation / monomorphization と型引数の個数検査は未対応」と書いている。ADR 0002 が事前単相化の方針。"
     },
     {
@@ -163,7 +201,10 @@
       "name": "固定幅整数型",
       "category": "type",
       "summary": "u8 / u16 / u32 / u64 と符号つきの i8 などバイト境界の整数型。",
-      "covers": ["example/feature_test/simple_binary.bgn", "example/feature_test/bit_fields.bgn"]
+      "covers": [
+        "example/feature_test/simple_binary.bgn",
+        "example/feature_test/bit_fields.bgn"
+      ]
     },
     {
       "id": "F0019",
@@ -196,7 +237,9 @@
       "name": "長さを書かない配列",
       "category": "type",
       "summary": "[..]T。長さを式で書かず、どこで終わるかは後続から決まる。終端の決まり方が 4 通りあり、それぞれ F0063 / F0064 / F0065 と、後続が無い場合の入力終端まで。",
-      "covers": ["example/feature_test/utf8_test.bgn"],
+      "covers": [
+        "example/feature_test/utf8_test.bgn"
+      ],
       "notes": "middle/type_attribute.cpp の analyze_forward_bit_alignment_and_size が、後続フィールドの型を見て 1 つ前のフィールドの Follow を決める (end / fixed / constant / normal)。したがって [..]T 単体では意味が定まらず、直後に何が来るかとセットで初めて決まる。後続も可変長だと Follow::normal になり終端を決められない。"
     },
     {
@@ -205,7 +248,10 @@
       "name": "長さ未指定の配列",
       "category": "type",
       "summary": "[]T。実行時に伸ばす配列で、fn の中の作業用に使う。",
-      "covers": ["example/feature_test/for_in.bgn", "example/feature_test/analyze_block_trait.bgn"]
+      "covers": [
+        "example/feature_test/for_in.bgn",
+        "example/feature_test/analyze_block_trait.bgn"
+      ]
     },
     {
       "id": "F0023",
@@ -213,7 +259,10 @@
       "name": "format 型の参照",
       "category": "type",
       "summary": "宣言済みの format をフィールドの型として使い、構造を入れ子にする。",
-      "covers": ["example/feature_test/loop_ref.bgn", "example/feature_test/sizeof.bgn"]
+      "covers": [
+        "example/feature_test/loop_ref.bgn",
+        "example/feature_test/sizeof.bgn"
+      ]
     },
     {
       "id": "F0024",
@@ -221,7 +270,9 @@
       "name": "generic 型の実体化",
       "category": "type",
       "summary": "Foo[u8] のように型引数を与えて使う。入れ子も書ける。",
-      "covers": ["example/feature_test/type_parameter.bgn"]
+      "covers": [
+        "example/feature_test/type_parameter.bgn"
+      ]
     },
     {
       "id": "F0025",
@@ -229,7 +280,9 @@
       "name": "正規表現をフィールド型にする",
       "category": "type",
       "summary": "reg : /\\s/ のように、正規表現に一致する範囲を読むフィールド。",
-      "covers": ["example/feature_test/regexp.bgn"]
+      "covers": [
+        "example/feature_test/regexp.bgn"
+      ]
     },
     {
       "id": "F0026",
@@ -237,15 +290,21 @@
       "name": "フィールド引数",
       "category": "type",
       "summary": "型の後ろに (input.skip = true) のような引数を付けて読み方を変える。",
-      "covers": ["example/feature_test/regexp.bgn"]
+      "covers": [
+        "example/feature_test/regexp.bgn"
+      ]
     },
     {
       "id": "F0027",
-      "slug": "magic-field",
-      "name": "マジックナンバー / 固定値フィールド",
+      "slug": "fixed-value-field",
+      "name": "固定値フィールド",
       "category": "field",
-      "summary": "magic :\"\\xab\\xcd\" や fixed :u8(0x12) で値そのものを型位置に書く。",
-      "covers": ["example/feature_test/union.bgn", "example/feature_test/trial_match.bgn"]
+      "summary": "fixed :u8(0x12) のようにフィールド引数へ値を渡し、そのフィールドが取る値を固定する。複数渡すと候補の列挙になる。",
+      "covers": [
+        "example/feature_test/union.bgn",
+        "example/feature_test/trial_match.bgn"
+      ],
+      "notes": "F0026-field-argument の機構に乗る。ast::FieldArgumentMapping が direct / repeat / some_candidate を区別し、引数が 1 つを超えると some_candidate になる (typing.cpp:1874)。BlockTrait::magic_value は 引数が 1 つ以上あることで立つ (analyze_block_trait.cpp:54)。F0034-trial-match が各分岐を試すのはこの候補判定に依る。"
     },
     {
       "id": "F0028",
@@ -267,7 +326,10 @@
       "name": "match 文",
       "category": "control-flow",
       "summary": "値で分岐する。分岐先に => の 1 行形とインデントブロック形の両方がある。",
-      "covers": ["example/feature_test/union.bgn", "example/feature_test/lookup_phase.bgn"]
+      "covers": [
+        "example/feature_test/union.bgn",
+        "example/feature_test/lookup_phase.bgn"
+      ]
     },
     {
       "id": "F0030",
@@ -275,7 +337,10 @@
       "name": "分岐から導出される union 型",
       "category": "control-flow",
       "summary": "異なる分岐で同名フィールドを宣言すると、それらの union 型のフィールドになる。",
-      "covers": ["example/feature_test/union.bgn", "example/feature_test/lookup_phase.bgn"],
+      "covers": [
+        "example/feature_test/union.bgn",
+        "example/feature_test/lookup_phase.bgn"
+      ],
       "notes": "この導出を parser が行っている点は rebrgen/docs/draft/ast_prototype_analysis.md §1-9 の対象。"
     },
     {
@@ -284,7 +349,9 @@
       "name": "カンマ区切りの match パターン",
       "category": "control-flow",
       "summary": "0,1 => のように 1 分岐に複数の値を並べる。",
-      "covers": ["example/feature_test/comma_match.bgn"]
+      "covers": [
+        "example/feature_test/comma_match.bgn"
+      ]
     },
     {
       "id": "F0032",
@@ -292,7 +359,9 @@
       "name": "範囲の match パターン",
       "category": "control-flow",
       "summary": "'0'..='9' のような範囲を分岐条件に書く。",
-      "covers": ["example/feature_test/comma_match.bgn"]
+      "covers": [
+        "example/feature_test/comma_match.bgn"
+      ]
     },
     {
       "id": "F0033",
@@ -300,7 +369,10 @@
       "name": "既定の match パターン",
       "category": "control-flow",
       "summary": ".. => が他のどれにも当たらない場合の分岐になる。",
-      "covers": ["example/feature_test/union.bgn", "example/feature_test/comma_match.bgn"]
+      "covers": [
+        "example/feature_test/union.bgn",
+        "example/feature_test/comma_match.bgn"
+      ]
     },
     {
       "id": "F0034",
@@ -308,7 +380,9 @@
       "name": "対象を書かない match",
       "category": "control-flow",
       "summary": "match: に続く各分岐を順に試し、読めたものを採用する。",
-      "covers": ["example/feature_test/trial_match.bgn"]
+      "covers": [
+        "example/feature_test/trial_match.bgn"
+      ]
     },
     {
       "id": "F0035",
@@ -316,7 +390,9 @@
       "name": "match の網羅性検査",
       "category": "analysis",
       "summary": "型の取りうる値を分岐が覆っているかを見る。u2 に 0..3 が揃えば既定分岐は要らない。",
-      "covers": ["example/feature_test/exhaustive_check.bgn"]
+      "covers": [
+        "example/feature_test/exhaustive_check.bgn"
+      ]
     },
     {
       "id": "F0036",
@@ -324,7 +400,10 @@
       "name": "for ループ",
       "category": "control-flow",
       "summary": "整数 / 範囲 / 文字列 / 配列を回す for x in expr。",
-      "covers": ["example/feature_test/for_in.bgn", "example/feature_test/simple_binary.bgn"]
+      "covers": [
+        "example/feature_test/for_in.bgn",
+        "example/feature_test/simple_binary.bgn"
+      ]
     },
     {
       "id": "F0037",
@@ -332,7 +411,9 @@
       "name": "条件つきループ",
       "category": "control-flow",
       "summary": "for cond: の形で条件が成り立つ間繰り返す。",
-      "covers": ["example/feature_test/union.bgn"]
+      "covers": [
+        "example/feature_test/union.bgn"
+      ]
     },
     {
       "id": "F0038",
@@ -352,7 +433,10 @@
       "name": "暗黙の値返し",
       "category": "control-flow",
       "summary": "if / match を ::= の右辺に置くと、各分岐の式が値になる。文の位置に置けばアサーションとして働く。",
-      "covers": ["example/feature_test/assert_or_implicit_yeild.bgn", "example/feature_test/simple_binary.bgn"]
+      "covers": [
+        "example/feature_test/assert_or_implicit_yeild.bgn",
+        "example/feature_test/simple_binary.bgn"
+      ]
     },
     {
       "id": "F0040",
@@ -373,7 +457,10 @@
       "name": "定数束縛 (::=)",
       "category": "expression",
       "summary": "評価結果に名前を付ける。再代入できない。",
-      "covers": ["example/feature_test/simple_binary.bgn", "example/feature_test/recurse_defs.bgn"]
+      "covers": [
+        "example/feature_test/simple_binary.bgn",
+        "example/feature_test/recurse_defs.bgn"
+      ]
     },
     {
       "id": "F0042",
@@ -381,7 +468,10 @@
       "name": "変数束縛 (:=)",
       "category": "expression",
       "summary": "再代入できる局所変数を作る。",
-      "covers": ["example/feature_test/simple_binary.bgn", "example/feature_test/union.bgn"]
+      "covers": [
+        "example/feature_test/simple_binary.bgn",
+        "example/feature_test/union.bgn"
+      ]
     },
     {
       "id": "F0043",
@@ -401,7 +491,10 @@
       "name": "メンバアクセス",
       "category": "expression",
       "summary": "a.b で構造体のフィールド、enum の値、取り込んだモジュールの型を参照する。",
-      "covers": ["example/feature_test/import_and_use.bgn", "example/feature_test/type_parameter.bgn"]
+      "covers": [
+        "example/feature_test/import_and_use.bgn",
+        "example/feature_test/type_parameter.bgn"
+      ]
     },
     {
       "id": "F0045",
@@ -409,7 +502,9 @@
       "name": "union 越しのメンバアクセス",
       "category": "expression",
       "summary": "条件つきフィールドのメンバを、union の共通型を通して参照する。",
-      "covers": ["example/feature_test/union_member_access.bgn"]
+      "covers": [
+        "example/feature_test/union_member_access.bgn"
+      ]
     },
     {
       "id": "F0046",
@@ -417,7 +512,10 @@
       "name": "添字アクセス",
       "category": "expression",
       "summary": "arr[i] で配列の要素を読み書きする。",
-      "covers": ["example/feature_test/type_parameter.bgn", "example/feature_test/analyze_block_trait.bgn"]
+      "covers": [
+        "example/feature_test/type_parameter.bgn",
+        "example/feature_test/analyze_block_trait.bgn"
+      ]
     },
     {
       "id": "F0047",
@@ -425,7 +523,10 @@
       "name": "sizeof",
       "category": "expression",
       "summary": "型または値のバイト長。配列長や padding の式に使える。",
-      "covers": ["example/feature_test/sizeof.bgn", "example/feature_test/type_parameter.bgn"],
+      "covers": [
+        "example/feature_test/sizeof.bgn",
+        "example/feature_test/type_parameter.bgn"
+      ],
       "notes": "sizeof.bgn がビット幅の合計が 8 の倍数でない場合を未定義として残している。"
     },
     {
@@ -434,7 +535,9 @@
       "name": "available()",
       "category": "expression",
       "summary": "条件つきフィールドがその場で存在するかを問う。",
-      "covers": ["example/feature_test/union_member_access.bgn"]
+      "covers": [
+        "example/feature_test/union_member_access.bgn"
+      ]
     },
     {
       "id": "F0049",
@@ -442,7 +545,9 @@
       "name": "is_defined",
       "category": "expression",
       "summary": "enum 値が宣言された名前のどれかに一致するかを問う。",
-      "covers": ["example/feature_test/enum_is_defined.bgn"]
+      "covers": [
+        "example/feature_test/enum_is_defined.bgn"
+      ]
     },
     {
       "id": "F0050",
@@ -462,7 +567,9 @@
       "name": "条件演算子",
       "category": "expression",
       "summary": "cond ? a : b。",
-      "covers": ["example/feature_test/analyze_block_trait.bgn"]
+      "covers": [
+        "example/feature_test/analyze_block_trait.bgn"
+      ]
     },
     {
       "id": "F0052",
@@ -470,7 +577,10 @@
       "name": "encode / decode の手書き",
       "category": "stream",
       "summary": "format の中に fn encode() / fn decode() を書き、自動生成の代わりに使う。",
-      "covers": ["example/feature_test/union.bgn", "example/feature_test/analyze_block_trait.bgn"]
+      "covers": [
+        "example/feature_test/union.bgn",
+        "example/feature_test/analyze_block_trait.bgn"
+      ]
     },
     {
       "id": "F0053",
@@ -478,7 +588,10 @@
       "name": "入出力ストリームの直接操作",
       "category": "stream",
       "summary": "input.get(T) / output.put(x) でバイト列を直接読み書きする。",
-      "covers": ["example/feature_test/union.bgn", "example/feature_test/analyze_block_trait.bgn"]
+      "covers": [
+        "example/feature_test/union.bgn",
+        "example/feature_test/analyze_block_trait.bgn"
+      ]
     },
     {
       "id": "F0054",
@@ -486,7 +599,9 @@
       "name": "エンディアン指定",
       "category": "stream",
       "summary": "input.endian = config.endian.little のように、以降の読み書きのバイト順を切り替える。",
-      "covers": ["example/feature_test/inline_format.bgn"]
+      "covers": [
+        "example/feature_test/inline_format.bgn"
+      ]
     },
     {
       "id": "F0055",
@@ -494,7 +609,10 @@
       "name": "ビット順指定",
       "category": "stream",
       "summary": "input.bit_order = config.bit_order.lsb で、ビットフィールドの詰め方を切り替える。実行時の値で切り替えることもできる。",
-      "covers": ["example/feature_test/bit_fields.bgn", "example/feature_test/analyze_block_trait.bgn"]
+      "covers": [
+        "example/feature_test/bit_fields.bgn",
+        "example/feature_test/analyze_block_trait.bgn"
+      ]
     },
     {
       "id": "F0056",
@@ -502,7 +620,9 @@
       "name": "config.type",
       "category": "stream",
       "summary": "そのブロックの既定の整数型を指定する。",
-      "covers": ["example/feature_test/inline_format.bgn"]
+      "covers": [
+        "example/feature_test/inline_format.bgn"
+      ]
     },
     {
       "id": "F0057",
@@ -510,7 +630,11 @@
       "name": "出典の注記",
       "category": "meta",
       "summary": "config.url / config.rfc / config.generator。そのフォーマットがどこから来たかを .bgn に書き残す。",
-      "covers": ["example/3gpp_mib.bgn", "example/etherip.bgn", "example/9p.bgn"],
+      "covers": [
+        "example/3gpp_mib.bgn",
+        "example/etherip.bgn",
+        "example/9p.bgn"
+      ],
       "notes": "読み手は人間であり、生成器が消費しないのが正常。消費者が無いことを未実装と数えてはいけない。F0072 の汎用機構に乗るので AST には metadata として残る。config.url は 231 箇所 / 175 ファイルで、書く側は定着している。"
     },
     {
@@ -519,7 +643,9 @@
       "name": "名前解決の順序規則",
       "category": "analysis",
       "summary": "フィールドは宣言より前から参照できないが、型と format は同一スコープ内なら前方参照できる。match の別分岐で同名を宣言できる。",
-      "covers": ["example/feature_test/lookup_phase.bgn"]
+      "covers": [
+        "example/feature_test/lookup_phase.bgn"
+      ]
     },
     {
       "id": "F0059",
@@ -527,7 +653,10 @@
       "name": "再帰的な定義",
       "category": "analysis",
       "summary": "format が互いを参照する循環と、定数定義の循環を検出する。",
-      "covers": ["example/feature_test/recurse_defs.bgn", "example/feature_test/loop_ref.bgn"]
+      "covers": [
+        "example/feature_test/recurse_defs.bgn",
+        "example/feature_test/loop_ref.bgn"
+      ]
     },
     {
       "id": "F0060",
@@ -535,7 +664,9 @@
       "name": "依存順の整列",
       "category": "analysis",
       "summary": "format を依存関係の順に並べ替える。config.test.sort.expect で期待順を書ける。",
-      "covers": ["example/feature_test/sort_test.bgn"]
+      "covers": [
+        "example/feature_test/sort_test.bgn"
+      ]
     },
     {
       "id": "F0061",
@@ -543,7 +674,9 @@
       "name": "ブロック特性の解析",
       "category": "analysis",
       "summary": "format ごとに固定長か / 入力全体を要るか / 動的な順序か などを導出する。",
-      "covers": ["example/feature_test/analyze_block_trait.bgn"]
+      "covers": [
+        "example/feature_test/analyze_block_trait.bgn"
+      ]
     },
     {
       "id": "F0062",
@@ -584,7 +717,9 @@
       "name": "後続リテラルによる終端",
       "category": "type",
       "summary": "[..]T の後ろに文字列リテラル型のフィールドが続くとき、そのリテラルに当たるまで読む。区切り文字で切るテキスト系プロトコルと NUL 終端文字列の形。",
-      "covers": ["example/http.bgn"],
+      "covers": [
+        "example/http.bgn"
+      ],
       "notes": "後続の型が StrLiteralType のときだけ Follow::constant になる (type_attribute.cpp:205)。http.bgn は method :[..]u8 の直後に無名フィールド :\" \" を置いてこれを作っている。"
     },
     {
@@ -593,7 +728,11 @@
       "name": "部分範囲による限定",
       "category": "stream",
       "summary": "input=input.subrange(n) をフィールド引数で渡し、そのフィールドが読める範囲を先に区切る。[..]T を長さつきで使うときの形。",
-      "covers": ["example/bgp.bgn", "example/elf.bgn", "example/bson.bgn"],
+      "covers": [
+        "example/bgp.bgn",
+        "example/elf.bgn",
+        "example/bson.bgn"
+      ],
       "notes": "F0026-field-argument の具体的な使い方の 1 つ。後続から決まる F0063 / F0064 と違い、これは書いた側が明示する。example 全体で 207 箇所 / 37 ファイルと、フィールド引数の中では突出して多い。covers は代表例で、網羅ではない。"
     },
     {
@@ -602,7 +741,9 @@
       "name": "ネイティブでないバイト境界幅",
       "category": "type",
       "summary": "u24 や u48 のように 8 の倍数だが、対象言語に対応する整数型が無い幅。ビットフィールドとは別で、境界は揃っているが型が無い。",
-      "covers": ["example/archive/bzip2.bgn"],
+      "covers": [
+        "example/archive/bzip2.bgn"
+      ],
       "notes": "example 全体で u24 が 52 箇所 / 28 ファイル、u48 が 6 箇所 / 5 ファイル。バイト境界に乗るので F0019-bit-field のビット詰め機構は要らないが、より広い型に載せて読み書きする必要がある点が固定幅整数と違う。"
     },
     {
@@ -611,7 +752,9 @@
       "name": "64 ビットを超える幅",
       "category": "type",
       "summary": "u96 / u104 / u128 など、どの対象言語にも単一のネイティブ整数型が無い幅。",
-      "covers": ["example/ipv6addr.bgn"],
+      "covers": [
+        "example/ipv6addr.bgn"
+      ],
       "notes": "F0066 と違い、より広い整数型に載せるという逃げ道が無い。多倍長かバイト配列のどちらで表すかを対象言語ごとに決める必要がある。"
     },
     {
@@ -620,7 +763,9 @@
       "name": "境界合わせ",
       "category": "stream",
       "summary": "input.align = N をフィールド引数に渡し、読み位置を N ビット境界まで進める。",
-      "covers": ["example/llvm_ir.bgn"]
+      "covers": [
+        "example/llvm_ir.bgn"
+      ]
     },
     {
       "id": "F0069",
@@ -628,7 +773,9 @@
       "name": "先読み",
       "category": "stream",
       "summary": "input.peek = true で、読み位置を進めずに値を得る。",
-      "covers": ["example/brgen_help/ast_enum.bgn"]
+      "covers": [
+        "example/brgen_help/ast_enum.bgn"
+      ]
     },
     {
       "id": "F0070",
@@ -636,7 +783,9 @@
       "name": "読み捨て",
       "category": "stream",
       "summary": "input.skip = true で、読んだ結果を保持せず位置だけ進める。",
-      "covers": ["example/feature_test/regexp.bgn"],
+      "covers": [
+        "example/feature_test/regexp.bgn"
+      ],
       "notes": "意味論が未実装。typing.cpp が名前で解釈するフィールド引数は input.align / input.peek / config.type / input の 4 つだけだが、それ以外は F0072 の機構で metadata として生成器まで届く。src2json は input.skip を metadata として出す。つまり運ぶ機構はあり、消費する側が無い。"
     },
     {
@@ -645,7 +794,9 @@
       "name": "読みながらのマスク解除",
       "category": "stream",
       "summary": "input.xor = key で、読み取ったバイト列に鍵を XOR する。",
-      "covers": ["example/websocket.bgn"],
+      "covers": [
+        "example/websocket.bgn"
+      ],
       "notes": "意味論が未実装。F0070 と同じく F0072 の機構で生成器まで届くが、消費する生成器が無い。拡張点として作られて意味論が後回しになったまま残っている形。汎化してストリーム変換にする案があり、その場合この ID は消える可能性がある。"
     },
     {
@@ -654,7 +805,11 @@
       "name": "未知の設定名の受け渡し",
       "category": "meta",
       "summary": "言語が解釈しない config.X / input.X を ast::Metadata{name, values} として保存し、JSON AST 経由で生成器へ渡す。言語側に意味論を足さずに生成器固有の設定を書ける。",
-      "covers": ["example/bgp.bgn", "example/http2.bgn", "example/brgen_help/share.bgn"],
+      "covers": [
+        "example/bgp.bgn",
+        "example/http2.bgn",
+        "example/brgen_help/share.bgn"
+      ],
       "notes": "middle/typing.cpp:1862。フィールド引数の位置と文の位置の両方で働く。これが実装済みなので、意味論の無い名前 (F0070 / F0071 / F0073 / F0074) は「運べないから未実装」ではなく「運ばれているが消費する側が無い」状態にある。config.go.package や config.cpp.namespace はこの機構の上で生成器が実際に消費している例。"
     },
     {
@@ -663,7 +818,9 @@
       "name": "公開する定義の指定",
       "category": "declaration",
       "summary": "config.export(Name) で、そのファイルが外に見せる定義を指定する。config.import と対になる。",
-      "covers": ["example/zip.bgn"],
+      "covers": [
+        "example/zip.bgn"
+      ],
       "notes": "意味論が未実装。代入形の他の config と違って呼び出し形で書かれている。F0017-import は実装されているが、対になる側は構文だけが残っている。"
     },
     {
@@ -672,8 +829,35 @@
       "name": "生成物の言語固有型への置き換え",
       "category": "meta",
       "summary": "config.<lang>.replace = \"型名\" で、その format から生成される型を対象言語の既存の型に差し替える。config.must_replace = true は置換先が無い言語で既定の生成物を出すことを禁じる意図。",
-      "covers": ["example/llvm_ir.bgn"],
+      "covers": [
+        "example/llvm_ir.bgn"
+      ],
       "notes": "意味論が未実装。src/tool のどの生成器も replace / must_replace を読んでいない。同じ cpp. 名前空間でも config.cpp.namespace は json2cpp2 が消費しており、この 2 つだけが未消費。"
+    },
+    {
+      "id": "F0075",
+      "slug": "field-decl",
+      "name": "フィールド宣言",
+      "category": "field",
+      "summary": "name :Type でワイヤ上の 1 要素を宣言する。format 本体に並べた順がそのままレイアウトの順になる。",
+      "covers": [
+        "example/feature_test/bit_fields.bgn",
+        "example/feature_test/const_length.bgn",
+        "example/feature_test/union.bgn"
+      ],
+      "notes": "名前を書かない無名フィールド (:\" \" や :[..]u1(input.align = 32)) も同じ構文で、読むが名前で参照しない要素になる。F0064 はこの無名の形に依存している。"
+    },
+    {
+      "id": "F0076",
+      "slug": "literal-type-field",
+      "name": "リテラルを型に持つフィールド",
+      "category": "type",
+      "summary": "magic :\"\\xab\\xcd\" のように文字列リテラルを型位置に書き、その並びがそのまま現れることを要求する。",
+      "covers": [
+        "example/feature_test/union.bgn",
+        "example/http.bgn"
+      ],
+      "notes": "型としては ast::StrLiteralType。F0027 が引数で値を固定するのとは別の機構で、こちらは型そのものがリテラル。直前のフィールドの Follow を constant にするのはこの型だけなので (type_attribute.cpp:205)、F0064-literal-termination はこれに依存する。http.bgn の :\" \" が無名フィールドとしての使い方。"
     }
   ]
 }
