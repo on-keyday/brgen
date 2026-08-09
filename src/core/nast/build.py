@@ -2,11 +2,14 @@
 """nast を単体でビルドする。
 
 brgen 本体の CMake ビルド (build.py native / rebrgen script/build.py) には依存しない。
-nodes.json -> nodegen.py -> nodes.h を再生成し、test.cpp をコンパイルして実行する。
+nodes.json -> nodegen.py -> nodes.h を再生成し、test.cpp (単体テスト) と
+corpus.cpp (.bgn を食わせる driver) をコンパイルして、test のほうを実行する。
+あわせて clangd 用の compile_commands.json を書く。
 
   python src/core/nast/build.py                # 生成 + ビルド + 実行
   python src/core/nast/build.py --syntax-only  # 生成 + 構文チェックのみ
   python src/core/nast/build.py --no-generate  # 既存の nodes.h でビルド
+  python src/core/nast/build.py --no-corpus    # test.cpp だけ建てる
   python src/core/nast/build.py --compiler g++ --std c++23
 
 nodes.h 自体は futils に依存しないが、test.cpp は as_json の検証に
@@ -32,6 +35,9 @@ BUILD_DIR = os.path.join(SCRIPT_DIR, "build")
 NODEGEN = os.path.join(SCRIPT_DIR, "nodegen.py")
 NODES_H = os.path.join(SCRIPT_DIR, "nodes.h")
 TEST_CPP = os.path.join(SCRIPT_DIR, "test.cpp")
+# corpus はパーサ本体を要る。test.cpp はヘッダだけで足りる。
+PARSER_CPP = [os.path.join(SCRIPT_DIR, n) for n in ("parse.cpp", "stream.cpp")]
+CORPUS_CPP = os.path.join(SCRIPT_DIR, "corpus.cpp")
 
 # 本体と同じく C++23 / clang を既定にする。無ければ順に探す。
 DEFAULT_COMPILERS = ["clang++", "g++", "c++"]
@@ -112,6 +118,30 @@ def run(cmd):
         sys.exit(result.returncode)
 
 
+def write_compile_commands(compile_flags):
+    """clangd 用の compilation database を出す。
+
+    このディレクトリは CMake を通らないので、置かないと clangd が既定の -std と
+    include パスで解釈し、<print> や parse.h が見つからないという誤検出を出す。
+    ビルドに使うフラグをそのまま書くので、実際のビルドと食い違わない。
+    """
+    entries = []
+    for name in sorted(os.listdir(SCRIPT_DIR)):
+        if not name.endswith(".cpp"):
+            continue
+        path = os.path.join(SCRIPT_DIR, name)
+        entries.append({
+            "directory": SCRIPT_DIR,
+            "file": path,
+            "arguments": compile_flags + [path],
+        })
+    out = os.path.join(SCRIPT_DIR, "compile_commands.json")
+    with open(out, "w", encoding="utf-8", newline="\n") as f:
+        json.dump(entries, f, indent=2)
+        f.write("\n")
+    print(f"wrote: {out} ({len(entries)} entries)")
+
+
 def main():
     parser = argparse.ArgumentParser(description="build nast standalone")
     parser.add_argument("--compiler", help="C++ compiler to use (default: clang++ if available)")
@@ -121,6 +151,9 @@ def main():
     parser.add_argument("--no-generate", action="store_true", help="skip regenerating nodes.h")
     parser.add_argument("--syntax-only", action="store_true", help="compile check only, do not link or run")
     parser.add_argument("--no-run", action="store_true", help="build but do not run the test")
+    parser.add_argument("--no-corpus", action="store_true", help="do not build the corpus driver")
+    parser.add_argument("--no-compile-commands", action="store_true",
+                        help="do not write compile_commands.json")
     parser.add_argument("-O", "--optimize", default="0", help="optimization level passed as -O<level> (default: 0)")
     args = parser.parse_args()
 
@@ -130,9 +163,14 @@ def main():
         sys.exit(f"error: {NODES_H} not found (run without --no-generate)")
 
     compiler = find_compiler(args.compiler)
-    cmd = [compiler, f"-std={args.std}", f"-O{args.optimize}", "-I", SCRIPT_DIR]
+    # parse.cpp / corpus.cpp は core/common/file.h を使うので brgen の src も要る。
+    # test.cpp には不要だが、足しても害がないのでフラグは 1 本にまとめる
+    # (compile_commands.json をファイルごとに分けなくて済む)。
+    cmd = [compiler, f"-std={args.std}", f"-O{args.optimize}",
+           "-I", SCRIPT_DIR, "-I", os.path.join(REPO_ROOT, "src")]
 
     link_args = []
+    futils_include = None
     if args.no_futils:
         print("note: skipping the as_json check (--no-futils)")
     else:
@@ -155,15 +193,30 @@ def main():
             print("note: futils not found; skipping the as_json check "
                   "(set FUTILS_DIR or pass --futils to enable it)")
 
+    if not args.no_compile_commands:
+        write_compile_commands(cmd)
+
     if args.syntax_only:
         run(cmd + ["-fsyntax-only", TEST_CPP])
         print("syntax OK")
         return
 
     os.makedirs(BUILD_DIR, exist_ok=True)
-    exe = os.path.join(BUILD_DIR, "nast_test" + (".exe" if os.name == "nt" else ""))
+    suffix = ".exe" if os.name == "nt" else ""
+    exe = os.path.join(BUILD_DIR, "nast_test" + suffix)
     run(cmd + [TEST_CPP, "-o", exe] + link_args)
     print(f"built: {exe}")
+
+    # nodes.h と違って parse.cpp / corpus.cpp は core/common/file.h 経由で
+    # futils を実際に使うので、無い場合はビルドできない。
+    if args.no_corpus:
+        pass
+    elif not futils_include:
+        print("note: futils not found; skipping the corpus driver")
+    else:
+        corpus = os.path.join(BUILD_DIR, "nast_corpus" + suffix)
+        run(cmd + [CORPUS_CPP] + PARSER_CPP + ["-o", corpus] + link_args)
+        print(f"built: {corpus}")
 
     if not args.no_run:
         run([exe])
