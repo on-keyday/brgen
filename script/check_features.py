@@ -39,7 +39,7 @@ def load():
 
 REQUIRED = ("id", "slug", "name", "category", "summary", "covers")
 OPTIONAL = ("notes",)
-CATEGORIES = ("lexical", "declaration", "type", "field", "control-flow",
+CATEGORIES = ("lexical", "syntax", "declaration", "type", "field", "control-flow",
               "expression", "stream", "analysis", "meta")
 
 

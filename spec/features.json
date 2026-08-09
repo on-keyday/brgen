@@ -45,11 +45,12 @@
     },
     {
       "id": "F0006",
-      "slug": "same-line-declarations",
-      "name": "同一行の複数宣言",
-      "category": "lexical",
-      "summary": "1 行に複数のフィールド宣言を並べられる。インデントブロックの終端判定と絡む。",
-      "covers": ["example/feature_test/edge_case1.bgn"]
+      "slug": "statement-separation",
+      "name": "文の区切りとインデントブロックの終端",
+      "category": "syntax",
+      "summary": "1 行に複数の宣言を並べられ、列 0 の定義がインデントブロックを終わらせる。どこで文とブロックが終わるかの規則。",
+      "covers": ["example/feature_test/edge_case1.bgn", "example/feature_test/inline_format_last.bgn"],
+      "notes": "inline_format_last.bgn が「最後のインライン format が後続の定義を飲み込まないこと」を試している (parse.cpp の skip_last)。内側のインデントブロックがフィールドの終端改行を消費するため、列 0 の定義にはインデントトークンが無く、それでも行が終端される必要がある。"
     },
     {
       "id": "F0007",

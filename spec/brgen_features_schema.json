@@ -38,6 +38,7 @@
             "type": "string",
             "enum": [
               "lexical",
+              "syntax",
               "declaration",
               "type",
               "field",
@@ -47,7 +48,7 @@
               "analysis",
               "meta"
             ],
-            "description": "Which layer of the language the feature lives in. Categories group; they carry no semantics."
+            "description": "Which layer of the language the feature lives in. lexical is token shapes only; grammar-level rules that are not tied to one construct (statement separation, indent blocks) are syntax. Categories group; they carry no semantics."
           },
           "summary": {
             "type": "string",
