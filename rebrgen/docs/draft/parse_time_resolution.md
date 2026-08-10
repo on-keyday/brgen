@@ -133,6 +133,22 @@ parse に入れると **1 箇所の分岐順**になるので、暗黙の実行�
 **LSP には利得がある。** middle を走らせずに parser 単体でこれらのノードが得られる。
 `ast_prototype_analysis.md` の「最初から parser 単体で外部から使いやすくしたい」に直接効く。
 
+## nast 側の実装 (2026-08-10)
+
+`nodes.json` に `SpecifyOrder` / `Metadata` / `ExplicitError` / `Available` / `Sizeof` が追加され、
+上の 1 を除く 5 つを `parse.cpp` に入れた。`IOOperation` はノードが無いので未着手。
+
+nast が解析できる 306 ファイルでの個数 (右は同じコーパスでの `src2json`):
+`SpecifyOrder` 110/112、`Metadata` 301/325、`ExplicitError` 40/46、`Available` 21/23、
+`Sizeof` 30/47、`Assert` 330/417。差は nast がまだ落ちる 6 ファイルと、
+コメントアウト中の意味論層に到達しない箇所。
+
+`Available` の `type :Node<TypeLiteral>` は、union の候補が型のときにどれかを判別するためのもの
+(作者確認)。現状の parse は `target` だけを埋めていて `type` は未設定。
+
+`SpecifyOrder` には 4 種 (`input.endian` / `input.bit_order` / `.stream` / `.mapping`) の
+どれかを記録する場所が無い。元の `ast::SpecifyOrder` は `OrderType` を持つ。
+
 ## 未確認
 
 - `input.bit_order.stream` / `.mapping` と `config.order.after` は example に用例が無い。
