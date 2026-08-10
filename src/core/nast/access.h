@@ -1,6 +1,7 @@
 /*license*/
 #pragma once
 #include "nodes.h"
+#include "traverse.h"
 
 #include <optional>
 
@@ -98,27 +99,7 @@ namespace brgen::nast {
             return n;
         }
 
-        template <class T>
-        struct node_of {
-            static constexpr bool is_node = false;
-        };
-
-        template <class U>
-        struct node_of<Node<U>> {
-            static constexpr bool is_node = true;
-            using type = U;
-        };
-
-        template <class T>
-        struct vector_of {
-            static constexpr bool is_vector = false;
-        };
-
-        template <class U>
-        struct vector_of<std::vector<Node<U>>> {
-            static constexpr bool is_vector = true;
-            using type = U;
-        };
+        // node_of / vector_of は traverse.h と共有する。
 
         template <auto Path, class T>
         constexpr auto walk(Arena& a, NodeData<T>* d);
