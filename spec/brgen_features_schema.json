@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
-  "description": "brgen language feature ledger schema. The ledger declares that a feature exists and gives it a stable identifier; it does NOT record which backends support it. Support is measured, not declared - see rebrgen/docs/draft/ast_prototype_analysis.md for why.",
+  "description": "brgen language feature ledger schema. The ledger declares that a feature exists and gives it a stable identifier; it does NOT record which backends support it. Support is measured, not declared - see rebrgen/docs/draft/ast_prototype_analysis.md for why. Entries are split by kind into what the language has and what the toolchain does.",
   "properties": {
     "$schema": {
       "type": "string"
@@ -33,6 +33,14 @@
           "name": {
             "type": "string",
             "description": "Human-readable name"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "language",
+              "toolchain"
+            ],
+            "description": "Whether a format author has to know this to write .bgn (language), or it is something the toolchain does or derives on its own (toolchain). Orthogonal to category - a toolchain entry still lives in some layer."
           },
           "category": {
             "type": "string",
@@ -66,11 +74,22 @@
             "description": "Known limits, partial implementations, or pointers to an ADR. Only record what a file or document already states - do not put guesses here."
           }
         },
-        "required": ["id", "slug", "name", "category", "summary", "covers"],
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "kind",
+          "category",
+          "summary",
+          "covers"
+        ],
         "additionalProperties": false
       }
     }
   },
-  "required": ["version", "features"],
+  "required": [
+    "version",
+    "features"
+  ],
   "additionalProperties": false
 }

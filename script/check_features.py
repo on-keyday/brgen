@@ -37,10 +37,13 @@ def load():
         return json.load(f)
 
 
-REQUIRED = ("id", "slug", "name", "category", "summary", "covers")
+REQUIRED = ("id", "slug", "name", "kind", "category", "summary", "covers")
 OPTIONAL = ("notes",)
 CATEGORIES = ("lexical", "syntax", "declaration", "type", "field", "control-flow",
               "expression", "stream", "analysis", "meta")
+# 著者が .bgn を書くのに知る必要があるか (language)、処理系が勝手にやることか (toolchain)。
+# category と直交する軸で、これを混ぜると analysis が両方の受け皿になる。
+KINDS = ("language", "toolchain")
 
 
 def check_shape(features):
@@ -58,6 +61,9 @@ def check_shape(features):
         for key in f:
             if key not in REQUIRED and key not in OPTIONAL:
                 problems.append("{}: unknown key '{}'".format(where, key))
+        if f.get("kind") not in KINDS:
+            problems.append("{}: kind '{}' is not one of {}".format(
+                where, f.get("kind"), ", ".join(KINDS)))
         if f.get("category") not in CATEGORIES:
             problems.append("{}: category '{}' is not one of {}".format(
                 where, f.get("category"), ", ".join(CATEGORIES)))
@@ -114,8 +120,18 @@ def check(ledger):
 
 
 def show(ledger):
+    for kind in KINDS:
+        entries = [f for f in ledger["features"] if f.get("kind") == kind]
+        if not entries:
+            continue
+        print("==== {} ({}) ====".format(kind, len(entries)))
+        print()
+        show_by_category(entries)
+
+
+def show_by_category(entries):
     by_category = {}
-    for f in ledger["features"]:
+    for f in entries:
         by_category.setdefault(f["category"], []).append(f)
     for category in sorted(by_category):
         print("[{}]".format(category))
@@ -149,8 +165,10 @@ def main():
     # 別物である。前者は壊れても気づけない。
     no_dedicated = sum(1 for f in ledger["features"]
                        if not any("feature_test/" in c for c in f["covers"]))
-    print("{} features, {} with no input at all, {} with no feature_test input, {} problem(s)".format(
-        n, no_input, no_dedicated, len(problems)))
+    kinds = ", ".join("{} {}".format(sum(1 for f in ledger["features"] if f.get("kind") == k), k)
+                      for k in KINDS)
+    print("{} features ({}), {} with no input at all, {} with no feature_test input, {} problem(s)".format(
+        n, kinds, no_input, no_dedicated, len(problems)))
     return 1 if problems else 0
 
 
