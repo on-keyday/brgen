@@ -7,6 +7,7 @@
       "id": "F0001",
       "slug": "comment",
       "name": "コメント",
+      "kind": "language",
       "category": "lexical",
       "summary": "# から行末まで。フィールド宣言と同じ行にも書ける。",
       "covers": [
@@ -17,6 +18,7 @@
       "id": "F0002",
       "slug": "int-literal",
       "name": "整数リテラル",
+      "kind": "language",
       "category": "lexical",
       "summary": "10 進 / 0x 16 進 / 0b 2 進 / 0o 8 進。",
       "covers": [
@@ -29,6 +31,7 @@
       "id": "F0003",
       "slug": "string-literal",
       "name": "文字列リテラル",
+      "kind": "language",
       "category": "lexical",
       "summary": "\" で囲む。\\xNN によるバイト列表記を含む。",
       "covers": [
@@ -40,6 +43,7 @@
       "id": "F0004",
       "slug": "char-literal",
       "name": "文字リテラル",
+      "kind": "language",
       "category": "lexical",
       "summary": "' で囲む単一文字。整数として扱われる。",
       "covers": [
@@ -50,6 +54,7 @@
       "id": "F0005",
       "slug": "regex-literal",
       "name": "正規表現リテラル",
+      "kind": "language",
       "category": "lexical",
       "summary": "/pattern/flags。識別子との字句的な曖昧さがある。",
       "covers": [
@@ -61,6 +66,7 @@
       "id": "F0006",
       "slug": "statement-separation",
       "name": "文の区切りとインデントブロックの終端",
+      "kind": "language",
       "category": "syntax",
       "summary": "1 行に複数の宣言を並べられ、列 0 の定義がインデントブロックを終わらせる。どこで文とブロックが終わるかの規則。",
       "covers": [
@@ -73,6 +79,7 @@
       "id": "F0007",
       "slug": "format-decl",
       "name": "format 宣言",
+      "kind": "language",
       "category": "declaration",
       "summary": "バイナリ構造の単位。インデントブロックで本体を書く。",
       "covers": [
@@ -84,6 +91,7 @@
       "id": "F0008",
       "slug": "empty-format-body",
       "name": "空の format 本体",
+      "kind": "language",
       "category": "declaration",
       "summary": ".. をプレースホルダとして置き、フィールドの無い format を書く。",
       "covers": [
@@ -95,6 +103,7 @@
       "id": "F0009",
       "slug": "inline-format-anonymous",
       "name": "無名インライン format",
+      "kind": "language",
       "category": "declaration",
       "summary": "フィールドの型位置に format: を直接書く。",
       "covers": [
@@ -106,6 +115,7 @@
       "id": "F0010",
       "slug": "inline-format-named",
       "name": "名前つきインライン format",
+      "kind": "language",
       "category": "declaration",
       "summary": "format Name: をフィールド位置に書き、その名前で後から再利用する。",
       "covers": [
@@ -117,6 +127,7 @@
       "id": "F0011",
       "slug": "inline-format-array",
       "name": "インライン format の配列",
+      "kind": "language",
       "category": "declaration",
       "summary": "[n]format: の形で、インライン定義した構造の配列を作る。",
       "covers": [
@@ -128,6 +139,7 @@
       "id": "F0012",
       "slug": "enum-decl",
       "name": "enum 宣言",
+      "kind": "language",
       "category": "declaration",
       "summary": "名前つき定数の集合。値を省略すると連番になる。",
       "covers": [
@@ -139,6 +151,7 @@
       "id": "F0013",
       "slug": "enum-base-type",
       "name": "enum の基底型指定",
+      "kind": "language",
       "category": "declaration",
       "summary": "enum 本体の先頭に :u8 のように書いて表現型を固定する。",
       "covers": [
@@ -149,6 +162,7 @@
       "id": "F0014",
       "slug": "state-decl",
       "name": "state 宣言",
+      "kind": "language",
       "category": "declaration",
       "summary": "ワイヤ上に現れない、符号化/復号の間で持ち回る状態の型。",
       "covers": [
@@ -162,6 +176,7 @@
       "id": "F0015",
       "slug": "fn-decl",
       "name": "fn 宣言",
+      "kind": "language",
       "category": "declaration",
       "summary": "引数と戻り値型を持つ関数。format の内外どちらにも置ける。",
       "covers": [
@@ -175,6 +190,7 @@
       "id": "F0016",
       "slug": "type-parameter",
       "name": "型パラメータ (generics)",
+      "kind": "language",
       "category": "declaration",
       "summary": "format Foo[T] の形で型を引数に取る。",
       "covers": [
@@ -186,6 +202,7 @@
       "id": "F0017",
       "slug": "import",
       "name": "他ファイルの取り込み",
+      "kind": "language",
       "category": "declaration",
       "summary": "config.import(\"path\") で別の .bgn を読み、その型や関数を参照する。",
       "covers": [
@@ -200,6 +217,7 @@
       "id": "F0018",
       "slug": "int-type",
       "name": "固定幅整数型",
+      "kind": "language",
       "category": "type",
       "summary": "u8 / u16 / u32 / u64 と符号つきの i8 などバイト境界の整数型。",
       "covers": [
@@ -211,6 +229,7 @@
       "id": "F0019",
       "slug": "bit-field",
       "name": "ビットフィールド",
+      "kind": "language",
       "category": "type",
       "summary": "u1〜u63 のようなバイト境界に乗らない幅。連続する宣言がビット単位で詰められる。",
       "covers": [
@@ -224,6 +243,7 @@
       "id": "F0020",
       "slug": "array-type",
       "name": "長さ式つき配列型",
+      "kind": "language",
       "category": "type",
       "summary": "[expr]T。長さに他フィールドや算術式を書ける。",
       "covers": [
@@ -237,6 +257,7 @@
       "id": "F0021",
       "slug": "unbounded-array",
       "name": "長さを書かない配列",
+      "kind": "language",
       "category": "type",
       "summary": "[..]T。長さを式で書かず、どこで終わるかは後続から決まる。終端の決まり方が 4 通りあり、それぞれ F0063 / F0064 / F0065 と、後続が無い場合の入力終端まで。",
       "covers": [
@@ -248,6 +269,7 @@
       "id": "F0022",
       "slug": "dynamic-array",
       "name": "長さ未指定の配列",
+      "kind": "language",
       "category": "type",
       "summary": "[]T。実行時に伸ばす配列で、fn の中の作業用に使う。",
       "covers": [
@@ -259,6 +281,7 @@
       "id": "F0023",
       "slug": "format-type-reference",
       "name": "format 型の参照",
+      "kind": "language",
       "category": "type",
       "summary": "宣言済みの format をフィールドの型として使い、構造を入れ子にする。",
       "covers": [
@@ -270,6 +293,7 @@
       "id": "F0024",
       "slug": "generic-type-instantiation",
       "name": "generic 型の実体化",
+      "kind": "language",
       "category": "type",
       "summary": "Foo[u8] のように型引数を与えて使う。入れ子も書ける。",
       "covers": [
@@ -280,6 +304,7 @@
       "id": "F0025",
       "slug": "regex-field-type",
       "name": "正規表現をフィールド型にする",
+      "kind": "language",
       "category": "type",
       "summary": "reg : /\\s/ のように、正規表現に一致する範囲を読むフィールド。",
       "covers": [
@@ -290,6 +315,7 @@
       "id": "F0026",
       "slug": "field-argument",
       "name": "フィールド引数",
+      "kind": "language",
       "category": "type",
       "summary": "型の後ろに (input.skip = true) のような引数を付けて読み方を変える。",
       "covers": [
@@ -300,6 +326,7 @@
       "id": "F0027",
       "slug": "fixed-value-field",
       "name": "固定値フィールド",
+      "kind": "language",
       "category": "field",
       "summary": "fixed :u8(0x12) のようにフィールド引数へ値を渡し、そのフィールドが取る値を固定する。複数渡すと候補の列挙になる。",
       "covers": [
@@ -312,6 +339,7 @@
       "id": "F0028",
       "slug": "conditional-field",
       "name": "条件つきフィールド (if)",
+      "kind": "language",
       "category": "control-flow",
       "summary": "if / elif / else のブロックに置いたフィールドは条件成立時だけ存在する。",
       "covers": [
@@ -326,6 +354,7 @@
       "id": "F0029",
       "slug": "match-statement",
       "name": "match 文",
+      "kind": "language",
       "category": "control-flow",
       "summary": "値で分岐する。分岐先に => の 1 行形とインデントブロック形の両方がある。",
       "covers": [
@@ -337,6 +366,7 @@
       "id": "F0030",
       "slug": "match-derived-union",
       "name": "分岐から導出される union 型",
+      "kind": "language",
       "category": "control-flow",
       "summary": "異なる分岐で同名フィールドを宣言すると、それらの union 型のフィールドになる。",
       "covers": [
@@ -349,6 +379,7 @@
       "id": "F0031",
       "slug": "match-pattern-comma",
       "name": "カンマ区切りの match パターン",
+      "kind": "language",
       "category": "control-flow",
       "summary": "0,1 => のように 1 分岐に複数の値を並べる。",
       "covers": [
@@ -359,6 +390,7 @@
       "id": "F0032",
       "slug": "match-pattern-range",
       "name": "範囲の match パターン",
+      "kind": "language",
       "category": "control-flow",
       "summary": "'0'..='9' のような範囲を分岐条件に書く。",
       "covers": [
@@ -369,6 +401,7 @@
       "id": "F0033",
       "slug": "match-pattern-default",
       "name": "既定の match パターン",
+      "kind": "language",
       "category": "control-flow",
       "summary": ".. => が他のどれにも当たらない場合の分岐になる。",
       "covers": [
@@ -380,6 +413,7 @@
       "id": "F0034",
       "slug": "trial-match",
       "name": "対象を書かない match",
+      "kind": "language",
       "category": "control-flow",
       "summary": "match: に続く各分岐を順に試し、読めたものを採用する。",
       "covers": [
@@ -390,6 +424,7 @@
       "id": "F0035",
       "slug": "exhaustive-check",
       "name": "match の網羅性検査",
+      "kind": "language",
       "category": "analysis",
       "summary": "型の取りうる値を分岐が覆っているかを見る。u2 に 0..3 が揃えば既定分岐は要らない。",
       "covers": [
@@ -400,6 +435,7 @@
       "id": "F0036",
       "slug": "for-loop",
       "name": "for ループ",
+      "kind": "language",
       "category": "control-flow",
       "summary": "整数 / 範囲 / 文字列 / 配列を回す for x in expr。",
       "covers": [
@@ -411,6 +447,7 @@
       "id": "F0037",
       "slug": "conditional-loop",
       "name": "条件つきループ",
+      "kind": "language",
       "category": "control-flow",
       "summary": "for cond: の形で条件が成り立つ間繰り返す。",
       "covers": [
@@ -421,6 +458,7 @@
       "id": "F0038",
       "slug": "assertion",
       "name": "アサーション",
+      "kind": "language",
       "category": "control-flow",
       "summary": "文の位置に真偽式を書くと、成り立たない場合に復号を失敗させる。",
       "covers": [
@@ -433,6 +471,7 @@
       "id": "F0039",
       "slug": "implicit-yield",
       "name": "暗黙の値返し",
+      "kind": "language",
       "category": "control-flow",
       "summary": "if / match を ::= の右辺に置くと、各分岐の式が値になる。文の位置に置けばアサーションとして働く。",
       "covers": [
@@ -444,6 +483,7 @@
       "id": "F0040",
       "slug": "error-builtin",
       "name": "error()",
+      "kind": "language",
       "category": "control-flow",
       "summary": "その場で復号を失敗させる。メッセージと値を渡せる。",
       "covers": [
@@ -457,6 +497,7 @@
       "id": "F0041",
       "slug": "const-binding",
       "name": "定数束縛 (::=)",
+      "kind": "language",
       "category": "expression",
       "summary": "評価結果に名前を付ける。再代入できない。",
       "covers": [
@@ -468,6 +509,7 @@
       "id": "F0042",
       "slug": "variable-binding",
       "name": "変数束縛 (:=)",
+      "kind": "language",
       "category": "expression",
       "summary": "再代入できる局所変数を作る。",
       "covers": [
@@ -479,6 +521,7 @@
       "id": "F0043",
       "slug": "cast",
       "name": "型変換",
+      "kind": "language",
       "category": "expression",
       "summary": "u8(x) と <T>(x) の 2 つの書き方。後者は generic 型のように名前が式として書けない型に使う。",
       "covers": [
@@ -491,6 +534,7 @@
       "id": "F0044",
       "slug": "member-access",
       "name": "メンバアクセス",
+      "kind": "language",
       "category": "expression",
       "summary": "a.b で構造体のフィールド、enum の値、取り込んだモジュールの型を参照する。",
       "covers": [
@@ -502,6 +546,7 @@
       "id": "F0045",
       "slug": "union-member-access",
       "name": "union 越しのメンバアクセス",
+      "kind": "language",
       "category": "expression",
       "summary": "条件つきフィールドのメンバを、union の共通型を通して参照する。",
       "covers": [
@@ -512,6 +557,7 @@
       "id": "F0046",
       "slug": "index-access",
       "name": "添字アクセス",
+      "kind": "language",
       "category": "expression",
       "summary": "arr[i] で配列の要素を読み書きする。",
       "covers": [
@@ -523,6 +569,7 @@
       "id": "F0047",
       "slug": "sizeof",
       "name": "sizeof",
+      "kind": "language",
       "category": "expression",
       "summary": "型または値のバイト長。配列長や padding の式に使える。",
       "covers": [
@@ -535,6 +582,7 @@
       "id": "F0048",
       "slug": "available",
       "name": "available()",
+      "kind": "language",
       "category": "expression",
       "summary": "条件つきフィールドがその場で存在するかを問う。",
       "covers": [
@@ -545,6 +593,7 @@
       "id": "F0049",
       "slug": "enum-is-defined",
       "name": "is_defined",
+      "kind": "language",
       "category": "expression",
       "summary": "enum 値が宣言された名前のどれかに一致するかを問う。",
       "covers": [
@@ -555,6 +604,7 @@
       "id": "F0050",
       "slug": "length-property",
       "name": "length",
+      "kind": "language",
       "category": "expression",
       "summary": "配列や文字列の要素数。",
       "covers": [
@@ -567,6 +617,7 @@
       "id": "F0051",
       "slug": "ternary",
       "name": "条件演算子",
+      "kind": "language",
       "category": "expression",
       "summary": "cond ? a : b。",
       "covers": [
@@ -577,6 +628,7 @@
       "id": "F0052",
       "slug": "custom-codec-fn",
       "name": "encode / decode の手書き",
+      "kind": "language",
       "category": "stream",
       "summary": "format の中に fn encode() / fn decode() を書き、自動生成の代わりに使う。",
       "covers": [
@@ -588,6 +640,7 @@
       "id": "F0053",
       "slug": "stream-io",
       "name": "入出力ストリームの直接操作",
+      "kind": "language",
       "category": "stream",
       "summary": "input.get([Type],[length]) / input.peek([Type],[length]) / output.put(value) でバイト列を直接読み書きする。手書きの codec で使う。",
       "covers": [
@@ -600,6 +653,7 @@
       "id": "F0054",
       "slug": "endian-control",
       "name": "エンディアン指定",
+      "kind": "language",
       "category": "stream",
       "summary": "input.endian = config.endian.little のように、以降の読み書きのバイト順を切り替える。",
       "covers": [
@@ -610,6 +664,7 @@
       "id": "F0055",
       "slug": "bit-order-control",
       "name": "ビット順指定",
+      "kind": "language",
       "category": "stream",
       "summary": "input.bit_order = config.bit_order.lsb で、ビットフィールドの詰め方を切り替える。実行時の値で切り替えることもできる。",
       "covers": [
@@ -621,6 +676,7 @@
       "id": "F0056",
       "slug": "config-type",
       "name": "config.type",
+      "kind": "language",
       "category": "stream",
       "summary": "config.type = T でフィールドの表現型を指定する。可変ビット配列を整数型へ写す形 ([len]u1(config.type = u32)) と、enum の符号化幅を決める形 (C(config.type = u8)) がある。",
       "covers": [
@@ -631,6 +687,7 @@
       "id": "F0057",
       "slug": "provenance-annotation",
       "name": "出典の注記",
+      "kind": "language",
       "category": "meta",
       "summary": "config.url / config.rfc / config.generator。そのフォーマットがどこから来たかを .bgn に書き残す。",
       "covers": [
@@ -644,6 +701,7 @@
       "id": "F0058",
       "slug": "lookup-phase",
       "name": "名前解決の順序規則",
+      "kind": "language",
       "category": "analysis",
       "summary": "フィールドは宣言より前から参照できないが、型と format は同一スコープ内なら前方参照できる。match の別分岐で同名を宣言できる。",
       "covers": [
@@ -654,6 +712,7 @@
       "id": "F0059",
       "slug": "recursive-definitions",
       "name": "再帰的な定義",
+      "kind": "language",
       "category": "analysis",
       "summary": "format が互いを参照する循環と、定数定義の循環を検出する。",
       "covers": [
@@ -665,6 +724,7 @@
       "id": "F0060",
       "slug": "dependency-sort",
       "name": "依存順の整列",
+      "kind": "toolchain",
       "category": "analysis",
       "summary": "format を依存関係の順に並べ替える。config.test.sort.expect で期待順を書ける。",
       "covers": [
@@ -675,6 +735,7 @@
       "id": "F0061",
       "slug": "block-trait",
       "name": "ブロック特性の解析",
+      "kind": "toolchain",
       "category": "analysis",
       "summary": "format ごとに、符号化/復号をどう組み立てられるかを 24 個のフラグ (ast::BlockTrait) として導出する。生成器はこれを見て出す形を決める。",
       "covers": [
@@ -686,6 +747,7 @@
       "id": "F0062",
       "slug": "error-tolerant-parsing",
       "name": "誤りを含む入力の解析",
+      "kind": "toolchain",
       "category": "analysis",
       "summary": "構文誤りがあっても解析を続け、可能な範囲の木と複数の診断を返す。LSP が要る。",
       "covers": [
@@ -699,6 +761,7 @@
       "id": "F0063",
       "slug": "fixed-tail-termination",
       "name": "固定長の後続による終端",
+      "kind": "language",
       "category": "type",
       "summary": "[..]T の後ろに大きさの決まったフィールドが続くとき、末尾からその分を残して読む。MAC / チェックサム / タグの形。",
       "covers": [
@@ -719,6 +782,7 @@
       "id": "F0064",
       "slug": "literal-termination",
       "name": "後続リテラルによる終端",
+      "kind": "language",
       "category": "type",
       "summary": "[..]T の後ろに文字列リテラル型のフィールドが続くとき、そのリテラルに当たるまで読む。区切り文字で切るテキスト系プロトコルと NUL 終端文字列の形。",
       "covers": [
@@ -730,6 +794,7 @@
       "id": "F0065",
       "slug": "subrange-bound",
       "name": "部分範囲による限定",
+      "kind": "language",
       "category": "stream",
       "summary": "input=input.subrange(n) をフィールド引数で渡し、そのフィールドが読める範囲を先に区切る。[..]T を長さつきで使うときの形。",
       "covers": [
@@ -743,6 +808,7 @@
       "id": "F0066",
       "slug": "non-native-int-width",
       "name": "ネイティブでないバイト境界幅",
+      "kind": "language",
       "category": "type",
       "summary": "u24 や u48 のように 8 の倍数だが、対象言語に対応する整数型が無い幅。ビットフィールドとは別で、境界は揃っているが型が無い。",
       "covers": [
@@ -754,6 +820,7 @@
       "id": "F0067",
       "slug": "wide-int-width",
       "name": "64 ビットを超える幅",
+      "kind": "language",
       "category": "type",
       "summary": "u96 / u104 / u128 など、どの対象言語にも単一のネイティブ整数型が無い幅。",
       "covers": [
@@ -765,6 +832,7 @@
       "id": "F0068",
       "slug": "input-align",
       "name": "境界合わせ",
+      "kind": "language",
       "category": "stream",
       "summary": "input.align = N をフィールド引数に渡し、読み位置を N ビット境界まで進める。",
       "covers": [
@@ -775,6 +843,7 @@
       "id": "F0069",
       "slug": "input-peek",
       "name": "先読み",
+      "kind": "language",
       "category": "stream",
       "summary": "input.peek = true で、読み位置を進めずに値を得る。",
       "covers": [
@@ -785,6 +854,7 @@
       "id": "F0070",
       "slug": "input-skip",
       "name": "読み捨て",
+      "kind": "language",
       "category": "stream",
       "summary": "input.skip = true で、読んだ結果を保持せず位置だけ進める。",
       "covers": [
@@ -796,6 +866,7 @@
       "id": "F0071",
       "slug": "input-xor",
       "name": "読みながらのマスク解除",
+      "kind": "language",
       "category": "stream",
       "summary": "input.xor = key で、読み取ったバイト列に鍵を XOR する。",
       "covers": [
@@ -807,6 +878,7 @@
       "id": "F0072",
       "slug": "metadata-passthrough",
       "name": "未知の設定名の受け渡し",
+      "kind": "toolchain",
       "category": "meta",
       "summary": "言語が解釈しない config.X / input.X を ast::Metadata{name, values} として保存し、JSON AST 経由で生成器へ渡す。言語側に意味論を足さずに生成器固有の設定を書ける。",
       "covers": [
@@ -820,6 +892,7 @@
       "id": "F0073",
       "slug": "config-export",
       "name": "公開する定義の指定",
+      "kind": "language",
       "category": "declaration",
       "summary": "config.export(Name) で、そのファイルが外に見せる定義を指定する。config.import と対になる。",
       "covers": [
@@ -831,6 +904,7 @@
       "id": "F0074",
       "slug": "format-replacement",
       "name": "生成物の言語固有型への置き換え",
+      "kind": "language",
       "category": "meta",
       "summary": "config.<lang>.replace = \"型名\" で、その format から生成される型を対象言語の既存の型に差し替える。config.must_replace = true は置換先が無い言語で既定の生成物を出すことを禁じる意図。",
       "covers": [
@@ -842,6 +916,7 @@
       "id": "F0075",
       "slug": "field-decl",
       "name": "フィールド宣言",
+      "kind": "language",
       "category": "field",
       "summary": "name :Type でワイヤ上の 1 要素を宣言する。format 本体に並べた順がそのままレイアウトの順になる。",
       "covers": [
@@ -855,6 +930,7 @@
       "id": "F0076",
       "slug": "literal-type-field",
       "name": "リテラルを型に持つフィールド",
+      "kind": "language",
       "category": "type",
       "summary": "magic :\"\\xab\\xcd\" のように文字列リテラルを型位置に書き、その並びがそのまま現れることを要求する。",
       "covers": [
@@ -867,6 +943,7 @@
       "id": "F0077",
       "slug": "arithmetic-operators",
       "name": "算術演算子",
+      "kind": "language",
       "category": "expression",
       "summary": "+ - * / % と単項の -。",
       "covers": [
@@ -879,6 +956,7 @@
       "id": "F0078",
       "slug": "comparison-operators",
       "name": "比較演算子",
+      "kind": "language",
       "category": "expression",
       "summary": "== != < <= > >=。",
       "covers": [
@@ -891,6 +969,7 @@
       "id": "F0079",
       "slug": "logical-operators",
       "name": "論理演算子",
+      "kind": "language",
       "category": "expression",
       "summary": "&& || と単項の !。",
       "covers": [
@@ -903,6 +982,7 @@
       "id": "F0080",
       "slug": "bitwise-operators",
       "name": "ビット演算子",
+      "kind": "language",
       "category": "expression",
       "summary": "& | ^ によるビットごとの演算。",
       "covers": [
@@ -916,6 +996,7 @@
       "id": "F0081",
       "slug": "logical-shift-operators",
       "name": "論理シフト演算子",
+      "kind": "language",
       "category": "expression",
       "summary": "<< と >> による論理シフト。空いた側には 0 が入る。",
       "covers": [
@@ -929,6 +1010,7 @@
       "id": "F0082",
       "slug": "arithmetic-shift-operators",
       "name": "算術シフト演算子",
+      "kind": "language",
       "category": "expression",
       "summary": "<<< と >>> による算術シフト。右シフトでは符号ビットが伸びる。",
       "covers": [
@@ -940,6 +1022,7 @@
       "id": "F0083",
       "slug": "bool-literal",
       "name": "真偽リテラル",
+      "kind": "language",
       "category": "lexical",
       "summary": "true と false。",
       "covers": [
@@ -952,6 +1035,7 @@
       "id": "F0084",
       "slug": "bool-type",
       "name": "bool 型",
+      "kind": "language",
       "category": "type",
       "summary": "真偽値の型。state の要素やアサーションの結果に使う。",
       "covers": [
@@ -964,6 +1048,7 @@
       "id": "F0085",
       "slug": "float-type",
       "name": "浮動小数点型",
+      "kind": "language",
       "category": "type",
       "summary": "f16 / f32 / f64。接頭辞 f にビット幅を続ける。",
       "covers": [
@@ -976,6 +1061,7 @@
       "id": "F0086",
       "slug": "endian-type-prefix",
       "name": "型名によるエンディアン指定",
+      "kind": "language",
       "category": "type",
       "summary": "ub32 / ul16 / il8 のように、符号の接頭辞の後に b(ビッグ) か l(リトル) を挟んでその型だけのバイト順を決める。",
       "covers": [
@@ -989,6 +1075,7 @@
       "id": "F0087",
       "slug": "return-statement",
       "name": "return",
+      "kind": "language",
       "category": "control-flow",
       "summary": "fn から値を返して抜ける。",
       "covers": [
@@ -1001,6 +1088,7 @@
       "id": "F0088",
       "slug": "break-statement",
       "name": "break",
+      "kind": "language",
       "category": "control-flow",
       "summary": "ループを抜ける。",
       "covers": [
@@ -1013,6 +1101,7 @@
       "id": "F0089",
       "slug": "continue-statement",
       "name": "continue",
+      "kind": "language",
       "category": "control-flow",
       "summary": "ループの次の周回へ進む。",
       "covers": [
@@ -1024,6 +1113,7 @@
       "id": "F0090",
       "slug": "c-style-for",
       "name": "3 部構成の for",
+      "kind": "language",
       "category": "control-flow",
       "summary": "for init; cond; step: の形。F0036 の for x in expr、F0037 の条件のみの形とは別の構文。",
       "covers": [
@@ -1036,6 +1126,7 @@
       "id": "F0091",
       "slug": "function-call",
       "name": "関数呼び出し",
+      "kind": "language",
       "category": "expression",
       "summary": "宣言した fn を式として呼ぶ。",
       "covers": [
@@ -1048,6 +1139,7 @@
       "id": "F0092",
       "slug": "type-literal",
       "name": "型リテラル",
+      "kind": "language",
       "category": "expression",
       "summary": "<T> で型そのものを式の位置に書く。generic 型のように名前だけでは書けない型を sizeof や cast に渡すのに使う。",
       "covers": [
@@ -1060,6 +1152,7 @@
       "id": "F0093",
       "slug": "enum-member-string",
       "name": "enum メンバの文字列",
+      "kind": "language",
       "category": "declaration",
       "summary": "A = 1, \"name\" のように enum メンバへ値と併せて文字列を書く。",
       "covers": [
@@ -1073,6 +1166,7 @@
       "id": "F0094",
       "slug": "fn-type",
       "name": "関数型",
+      "kind": "language",
       "category": "type",
       "summary": "fn(p :T, :U) -> R を型の位置に書く。",
       "covers": [
@@ -1083,6 +1177,7 @@
       "id": "F0095",
       "slug": "stream-position",
       "name": "入力位置の参照",
+      "kind": "language",
       "category": "stream",
       "summary": "input.offset で現在位置、input.remain で残り長さを読む。参照した位置によって値が変わる。",
       "covers": [
@@ -1095,6 +1190,7 @@
       "id": "F0096",
       "slug": "input-backward",
       "name": "読み戻し",
+      "kind": "language",
       "category": "stream",
       "summary": "input.backward([length]) で入力位置を戻す。省略すると 1 バイト。",
       "covers": [
@@ -1105,6 +1201,7 @@
       "id": "F0097",
       "slug": "config-word-map",
       "name": "語のマッピング",
+      "kind": "language",
       "category": "meta",
       "summary": "config.word.map(\"Id\",\"ID\") で、生成先の識別子に使う語の綴りを指定する。",
       "covers": [
@@ -1118,6 +1215,7 @@
       "id": "F0098",
       "slug": "config-order-after",
       "name": "宣言順の指定",
+      "kind": "language",
       "category": "meta",
       "summary": "config.order.after = \"Object\" で、生成先での宣言順を別の format の後ろに置く。",
       "covers": [],
@@ -1127,6 +1225,7 @@
       "id": "F0099",
       "slug": "void-type",
       "name": "void 型",
+      "kind": "language",
       "category": "type",
       "summary": "値を持たないことを表す型。フィールドの型としても書ける。",
       "covers": [
@@ -1137,6 +1236,7 @@
       "id": "F0100",
       "slug": "compound-assignment",
       "name": "複合代入",
+      "kind": "language",
       "category": "expression",
       "summary": "+= -= *= /= %= &= |= ^= <<= >>= <<<= >>>= の形で、演算と代入をまとめて書く。",
       "covers": [
@@ -1150,6 +1250,7 @@
       "id": "F0101",
       "slug": "recursive-format",
       "name": "再帰的な format",
+      "kind": "language",
       "category": "type",
       "summary": "format が自分自身を (直接または他の format を経由して) 含む。CBOR や MessagePack のように入れ子の深さが実行時に決まる形式で要る。",
       "covers": [
@@ -1164,6 +1265,7 @@
       "id": "F0102",
       "slug": "non-dynamic-allocation",
       "name": "動的確保の要否の判定",
+      "kind": "toolchain",
       "category": "analysis",
       "summary": "その型が動的確保を要さずに表現できるか (全フィールドが固定長か) を導出する。",
       "covers": [
