@@ -4,10 +4,11 @@
 
 // 名前でノードを辿る。ebmgen の access.hpp に当たるもの。
 //
-//   auto body = get_path<"body">(arena, fmt);                 // Ref<Body>
-//   auto st   = get_path<"body.struct_type">(arena, fmt);     // Ref<StructType>
-//   auto f0   = get_path<"body.elements.0">(arena, fmt);      // Ref<Statement>
-//   auto name = get_path<"name.identifier">(arena, fmt);      // std::string*
+//   auto body = fmt.field<"body">();                     // Ref<Body>   (Ref は arena を持つ)
+//   auto st   = fmt.field<"body.struct_type">();         // Ref<StructType>
+//   auto f0   = fmt.field<"body.elements.0">();          // Ref<Statement>
+//   auto name = fmt.field<"name.identifier">();          // std::string*
+//   auto st2  = node.field<"body.struct_type">(arena);   // Node は arena を渡す
 //
 // 途中が null なら null (Ref なら空 Ref、スカラーなら nullptr) が返る。
 // 存在しないフィールド名を書くと FieldOf の特殊化が無く、不完全型としてコンパイルエラーになる。
@@ -154,23 +155,12 @@ namespace brgen::nast {
 
     }  // namespace path_detail
 
-    // nodes.h が Node::field / Ref::field からこの名前で呼ぶ。宣言はそちらにある。
+    // nodes.h の Node::field / Ref::field がこの名前で呼ぶ。宣言はそちらにある。
     // A をテンプレートにしてあるのは、Node の定義時点で Arena がまだ無いため。
+    // 呼ぶときは field<"..."> を使う。ここを直接呼ぶ必要はない。
     template <fixed_string Path, class A, class T>
     constexpr auto node_field(A& a, Node<T> id) {
         return path_detail::walk<Path, T>(a, a.template get<T>(id));
-    }
-
-    // 文字列リテラルから fixed_string を推論させるため、auto ではなく
-    // クラステンプレートを非型引数の型に置く (auto だと const char* に減衰して通らない)。
-    template <fixed_string Path, class T>
-    constexpr auto get_path(Arena& a, Node<T> id) {
-        return node_field<Path>(a, id);
-    }
-
-    template <fixed_string Path, class T>
-    constexpr auto get_path(Arena& a, const RefBase<Arena, T>& ref) {
-        return node_field<Path>(a, ref.id());
     }
 
 }  // namespace brgen::nast

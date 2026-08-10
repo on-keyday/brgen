@@ -235,22 +235,31 @@ int main(int argc, char** argv) {
         // ---- 名前で辿る (access.h) ----------------------------------------
         // 存在しないフィールド名を書くと FieldOf の特殊化が無く、
         // 不完全型としてコンパイルエラーになる (実行時に落ちるのではない)。
-        check(get_path<"body">(pa, f.id()).id() == fbody.id() &&
-                  get_path<"body.struct_type">(pa, f.id()).id() == st.id(),
-              "get_path follows Node fields through the arena");
-        check(get_path<"body.elements.0">(pa, f.id()).id() == fld.id(),
-              "get_path indexes into a vector field");
-        check(!get_path<"body.elements.9">(pa, f.id()),
+        // Node は arena を持たないので渡す。Ref は自分で持っているので取らない。
+        check(f.field<"body">().id() == fbody.id() &&
+                  f.id().field<"body.struct_type">(pa).id() == st.id(),
+              "field<> follows Node fields through the arena, from Ref and from Node");
+        check(f.field<"body.elements.0">().id() == fld.id(),
+              "field<> indexes into a vector field");
+        check(!f.field<"body.elements.9">(),
               "out of range index yields a null ref, not a crash");
-        auto* ident = get_path<"name.identifier">(pa, f.id());
+        auto* ident = f.field<"name.identifier">();
         check(ident && *ident == "Sample",
               "a scalar at the end of the path comes back as a pointer");
-        check(get_path<"body.struct_type">(pa, Node<Format>{}).id().id() == 0,
+        check(Node<Format>{}.field<"body.struct_type">(pa).id().id() == 0,
               "a null node anywhere in the path yields a null result");
-        // Node は arena を持たないので渡す。Ref は自分で持っているので取らない。
-        check(f.id().field<"body.struct_type">(pa).id() == st.id() &&
-                  f.field<"body.struct_type">().id() == st.id(),
-              "field<> is reachable from Node and Ref");
+
+        // パスから切り出した綴りが、生成側が書いた綴りと同じ型・同じ値になること。
+        // ここがずれると FieldOf<T, h> が引けないので、長さは合っていないといけない。
+        using namespace path_detail;
+        static_assert(head<fixed_string("body.struct_type.fields.0")>().view() == "body");
+        static_assert(tail<fixed_string("body.struct_type.fields.0")>().view() ==
+                      "struct_type.fields.0");
+        static_assert(tail<fixed_string("body")>().view().empty());
+        static_assert(std::is_same_v<decltype(head<fixed_string("binary_value")>()),
+                                     fixed_string<13>>);
+        static_assert(head<fixed_string("binary_value.x")>() == fixed_string("binary_value"));
+        check(true, "path segments keep the spelling the generated table uses");
     }
 
     // ---- side table -------------------------------------------------------
