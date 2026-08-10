@@ -179,7 +179,7 @@ int main(int argc, char** argv) {
     static_assert(!is_compare_op(BinaryOp::add));
     static_assert(is_range_op(BinaryOp::range_exclusive) && is_range_op(BinaryOp::range_inclusive));
     static_assert(!is_range_op(BinaryOp::add));
-    static_assert(is_assign_op(BinaryOp::assign) && is_assign_op(BinaryOp::in_assign));
+    static_assert(is_assign_op(BinaryOp::assign) && is_assign_op(BinaryOp::append_assign));
     static_assert(is_define_op(BinaryOp::const_assign) && !is_define_op(BinaryOp::assign));
     check(true, "operator predicates are constexpr-usable (checked by static_assert)");
 
