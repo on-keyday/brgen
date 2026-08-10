@@ -60,6 +60,17 @@
             "name": "IsMutated",
             "over": "Field",
             "storage": "flag"
+        },
+        {
+            "name": "ImportResolution",
+            "over": "Import",
+            "storage": "sparse",
+            "fields": [
+                {
+                    "name": "module",
+                    "type": "Node<Module>"
+                }
+            ]
         }
     ],
     "header": {
@@ -848,6 +859,10 @@
                 {
                     "name": "arguments",
                     "type": "vector<Node<Argument>>"
+                },
+                {
+                    "name": "end_loc",
+                    "type": "lexer::Loc"
                 }
             ]
         },
@@ -1540,6 +1555,16 @@
                 {
                     "name": "conds",
                     "type": "vector<Node<Expr>>"
+                }
+            ]
+        },
+        {
+            "name": "Import",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "path",
+                    "type": "string"
                 }
             ]
         }
