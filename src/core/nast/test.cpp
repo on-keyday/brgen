@@ -244,6 +244,22 @@ int main(int argc, char** argv) {
         check(std::count(text.begin(), text.end(), '\n') < 40,
               "weak edges do not cause the walk to recurse");
 
+        // ---- side table を木に併記する ------------------------------------
+        // binder が何をどこに書いたかを、木の形のまま見るためのもの。
+        SideTables pt;
+        pt.table<Resolution>().set(fld_name.id(), Resolution{.target = fld.id()});   // dense
+        pt.table<DocComment>().set(fld.id(), DocComment{.leading = {.line = 3}});    // sparse
+        pt.table<IsMutated>().set(fld.id());                                         // flag
+        auto with_tables = pretty_print(pa, pt, mod.id());
+        dump("pretty_print (with side tables)", with_tables);
+        check(with_tables.find("[Resolution].target -> Field #") != std::string::npos &&
+                  with_tables.find("[DocComment].leading = 3:0") != std::string::npos &&
+                  with_tables.find("[IsMutated] = true") != std::string::npos,
+              "side table entries are printed under the node they key on");
+        // 表の中の Node を降りると Ident -> Resolution -> Field -> name -> Ident で回る
+        check(std::count(with_tables.begin(), with_tables.end(), '\n') < 40,
+              "table entries are shown as references, not descended into");
+
         // ---- 親から子へ辿る (traverse.h) ----------------------------------
         // field<"..."> はパスがコンパイル時に決まるので、深さが実行時に
         // 決まる走査はこちら。weak は所有辺でないので渡さない。
