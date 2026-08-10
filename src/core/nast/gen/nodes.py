@@ -95,6 +95,13 @@ def emit_node(w: Writer) -> None:
     # 既存 AST の ast::as<T>(node) と同じ意味なので名前を合わせる。
     w.write(
         "    template<class U> requires std::derived_from<U,T> constexpr Node<U> as() const"
+        " { return as_any<U>();  }\n"
+    )
+    # 派生関係の制約を外した版。generic なコードでは T が U の基底とは限らないので
+    # as<U>() が通らない。判定自体は type_ のビットを見るだけなので静的な関係は要らず、
+    # 当たらなければ null が返る。
+    w.write(
+        "    template<class U> constexpr Node<U> as_any() const"
         " { return is_derived<U>(type_) ? Node<U>{id_,type_} : Node<U>{};  }\n"
     )
     w.write("};\n")
@@ -175,7 +182,12 @@ def emit_ref(w: Writer) -> None:
     w.write("    template<fixed_string Path> constexpr auto field() const"
             " { return node_field<Path>(*arena_, id_); }\n")
     w.write("    template<class U> requires std::derived_from<U,T>\n")
-    w.write("    constexpr RefBase<A,U> as() const { return id_.template as<U>().ref(arena_); }\n")
+    w.write("    constexpr RefBase<A,U> as() const { return as_any<U>(); }\n")
+    # arena_ はポインタなので ref(A&) には渡せない。実体化されるまで気づかなかった。
+    w.write("    template<class U> constexpr RefBase<A,U> as_any() const {\n")
+    w.write("        auto n = id_.template as_any<U>();\n")
+    w.write("        return n ? RefBase<A,U>{arena_,n} : RefBase<A,U>{};\n")
+    w.write("    }\n")
     w.write("    template<class U> requires std::derived_from<T,U>\n")
     w.write("    constexpr operator RefBase<A,U>() const { return RefBase<A,U>{arena_,id_}; }\n")
     # Node<T> だけでなく基底の Node<U> へも直接変換できるようにする。

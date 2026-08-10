@@ -90,6 +90,17 @@ int main(int argc, char** argv) {
     check(bool(as_stmt.as<Format>()), "as<Format>() succeeds");
     check(!bool(as_stmt.as<Function>()), "as<Function>() returns null on mismatch");
 
+    // as<U>() は U が T の派生であることを要求するので、generic な走査のように
+    // T が実行時まで決まらない場所では書けない。as_any<U>() は静的な関係を問わず、
+    // type_ のビットだけで判定して当たらなければ null を返す。
+    check(bool(as_stmt.as_any<Format>()) && !bool(as_stmt.as_any<Ident>()) &&
+              !bool(as_stmt.as_any<IntType>()),
+          "as_any<U>() drops the derived-from requirement and checks at runtime");
+    // Ref 側の as は実体化されていなかったので壊れていた (arena_ を A& に渡していた)
+    RefBase<Arena, Statement> fmt_ref = fmt;
+    check(bool(fmt_ref.as<Format>()) && !bool(fmt_ref.as_any<Ident>()),
+          "Ref::as / Ref::as_any resolve through the arena");
+
     // null / 不正な Node
     Node<Format> nil{};
     check(!bool(nil) && arena.as_ref(nil).get() == nullptr, "null Node yields null Ref");
