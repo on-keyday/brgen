@@ -222,6 +222,12 @@ def _emit_aggregate(w: Writer, schema: Schema) -> None:
         w.write("   public:\n")
         w.write(f"    template<> constexpr auto& table<{name}>() {{ return {name}_; }}\n")
         w.write(f"    template<> constexpr const auto& table<{name}>() const {{ return {name}_; }}\n")
+    # 表を名前つきで列挙する。Arena::for_each_pool と同じ役目で、
+    # どの表があるかを静的に知らない側 (printer など) が回すのに要る。
+    w.write("    constexpr void for_each_table(auto&& f_) const {\n")
+    for name in names:
+        w.write(f'        f_("{name}",{name}_);\n')
+    w.write("    }\n")
     w.write("    void as_json(auto&& s) const {\n")
     w.write("        auto obj_ = s.object();\n")
     for name in names:

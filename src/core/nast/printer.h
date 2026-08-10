@@ -23,16 +23,25 @@ namespace brgen::nast {
         // 「そのノードが持ちうるフィールド」が全部並ぶので、
         // parser がどこを埋め損ねたかを見るときに要る。
         bool show_null = false;
+        // side table のエントリを、キーになっているノードの下に併記する。
+        // binder が何をどこに書いたかを木の形のまま見るためのもの。
+        bool show_tables = true;
     };
 
     struct PrettyPrinter {
         Arena* arena = nullptr;
+        // 省略可。渡すと各ノードの下にそのノードを指す表の中身を出す。
+        const SideTables* tables = nullptr;
         std::string out;
         bool show_weak = true;
         bool show_null = false;
+        bool show_tables = true;
 
         explicit PrettyPrinter(Arena& a, PrintOptions opt = {})
-            : arena(&a), show_weak(opt.show_weak), show_null(opt.show_null) {}
+            : arena(&a), show_weak(opt.show_weak), show_null(opt.show_null), show_tables(opt.show_tables) {}
+
+        PrettyPrinter(Arena& a, const SideTables& t, PrintOptions opt = {})
+            : arena(&a), tables(&t), show_weak(opt.show_weak), show_null(opt.show_null), show_tables(opt.show_tables) {}
 
         template <class T>
         void print(Node<T> root) {
@@ -97,6 +106,36 @@ namespace brgen::nast {
             items.push_back(PrintItem{name, 0, NodeType{}, false, false, scalar_of(v)});
         }
 
+        // このノードを指す side table の中身を項目として足す。
+        // 表は node_type で型付けされているが contains/get は id しか見ないので、
+        // 実行時の型で Node を組み直して引く。
+        void add_table_entries(std::vector<PrintItem>& items, std::uint32_t id, NodeType type) {
+            if (!tables || !show_tables) {
+                return;
+            }
+            tables->for_each_table([&](const char* table_name, const auto& table) {
+                using table_t = std::decay_t<decltype(table)>;
+                using key_node = Node<typename table_t::node_type>;
+                auto key = key_node::from_unique_id((std::uint64_t(type) << 32) | id);
+                if (!table.contains(key)) {
+                    return;
+                }
+                if constexpr (requires { table.get(key); }) {
+                    if (const auto* entry = table.get(key)) {
+                        entry->for_each_field([&](const char* field, const auto& v, bool) {
+                            // 表の中の Node は所有辺ではない。降りると
+                            // Ident -> [Resolution].target -> Field -> name -> Ident で回る。
+                            add(items, (std::string("[") + table_name + "]." + field).c_str(), v, true);
+                        });
+                        return;
+                    }
+                }
+                // flag は値を持たないので、在ることだけを出す
+                items.push_back(PrintItem{std::string("[") + table_name + "]", 0, NodeType{},
+                                          false, false, "true"});
+            });
+        }
+
         void walk(std::uint32_t id, const std::string& prefix, const std::string& branch, bool last) {
             out += prefix;
             out += branch;
@@ -117,6 +156,7 @@ namespace brgen::nast {
             out += "\n";
 
             std::vector<PrintItem> items;
+            add_table_entries(items, id, h->type);
             auto index = h->data_index;
             visit_node_type(h->type, [&](auto tag) {
                 using T = typename decltype(tag)::type;
@@ -155,6 +195,14 @@ namespace brgen::nast {
     template <class T>
     std::string pretty_print(Arena& a, Node<T> root, PrintOptions opt = {}) {
         PrettyPrinter p{a, opt};
+        p.print(root);
+        return std::move(p.out);
+    }
+
+    // 表つき。binder が何をどこに書いたかを木の形のまま見る。
+    template <class T>
+    std::string pretty_print(Arena& a, const SideTables& tables, Node<T> root, PrintOptions opt = {}) {
+        PrettyPrinter p{a, tables, opt};
         p.print(root);
         return std::move(p.out);
     }
