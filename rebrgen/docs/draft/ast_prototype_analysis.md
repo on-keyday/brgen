@@ -635,15 +635,23 @@ AST ノード種と EBM ノード種がそれぞれ「どの feature に属す�
 
 | 見たもの | 結果 |
 | --- | --- |
-| 他のどのファイルにも無いノード種を持ち込むファイル | **5 / 31** |
-| ノード種集合が他ファイルに完全に含まれるファイル | 6 / 31 |
-| ノード種の総数 | 31 種 |
+| 他のどのファイルにも無いノード種を持ち込むファイル | **7 / 31** |
+| ノード種集合が他ファイルに完全に含まれるファイル | **17 / 31** |
+| ノード種の総数 | 59 種 |
 
-新規ノード種を持ち込むのは `enum_is_defined` (Enum/EnumMember/EnumType)、`for_in` (RangeLoop)、
-`import_and_use` (ImportedType)、`recurse_defs` (Cast/TypeLiteral)、`regexp` (Arguments/
-NamedArgument/RegexLiteralType) の 5 つだけ。**`trial_match` / `state_variable` / `sizeof` /
-`exhaustive_check` / `union_member_access` / `type_parameter` はいずれも新規ノード種を持ち込まない。**
+新規ノード種を持ち込むのは `comma_match` (CharLiteral/OrCond)、`regexp` (NamedArgument/
+RegexLiteralType)、`sort_test` (Metadata)、`tree_test` (Break/Continue)、`type_parameter`
+(GenericType)、`union` (StrLiteralType)、`union_member_access` (Available) の 7 つ。
+**`trial_match` / `state_variable` / `sizeof` / `exhaustive_check` / `nested_state` /
+`state_variable2` はいずれも新規ノード種を持ち込まず、うち 4 つは他ファイルの完全な部分集合である。**
 `Binary` / `If` / `Match` / `Field` の組み合わせでできているためで、機能の区別はその層に存在しない。
+
+初回 (2026-08-09) はこの表を「5 / 31」「6 / 31」「31 種」と記録していたが、これは誤りだった。
+当時 `nast` の pretty printer が `if` を含む入力でスタックオーバーフローしており
+(`BodyStatement.belong` に `weak` が付いておらず `If -> blocks[] -> belong -> If` で循環していた)、
+落ちたファイルが空出力のまま「解析成功・ノード種ゼロ」として数えられていた。
+ノード種ゼロの集合は他のどの集合の部分集合でもあるため、部分集合の数が過小に、
+総ノード種数も過小に出ていた。**結論の向きは変わらない**が、数値は上の通り。
 
 ADR 0048 が EBM 側で自ら書いている限界 (「ノード種別の**有無**しか見ていない」) と同じ形が、
 一層上の AST でも成立している。**したがって feature ID はノード種から導出できず、宣言するしかない。**

@@ -840,6 +840,7 @@ namespace brgen::nast {
                 auto raw = parse_expr();
                 auto args = a.make<Arguments>(raw.ref(a).loc());
                 collect_args(raw, args->arguments);
+                call->arguments = args;
                 s.skip_white();
             }
             token = s.must_consume_token(")", "to close function call");
@@ -851,6 +852,23 @@ namespace brgen::nast {
             auto call = parse_call(std::move(token), p);
             if (auto typ = call.ref(a)->callee.as<TypeLiteral>().ref(a)) {
                 return a.make<Cast>(call.ref(a).loc(), NodeData<Expr>{}, call, call.ref(a)->arguments);
+            }
+            // available(x) / sizeof(x) は名前の文字列一致だけで決まる。
+            // 同名の fn を定義しても奪われないのは元の実装と同じ。
+            auto name = callee_name(call.ref(a)->callee);
+            if (name == "available" || name == "sizeof") {
+                auto target = first_argument(call.ref(a)->arguments);
+                if (!target) {
+                    s.report_error(call.ref(a).loc(), name, "() requires at least one argument");
+                }
+                if (name == "available") {
+                    auto avail = a.make<Available>(call.ref(a).loc());
+                    avail->target = target;
+                    return avail;
+                }
+                auto size = a.make<Sizeof>(call.ref(a).loc());
+                size->target = target;
+                return size;
             }
             return call;
         }
@@ -1045,9 +1063,10 @@ namespace brgen::nast {
             return false;
         }
 
-        Node<Identity> parse_expr_identity(bool* line_skipped = nullptr) {
-            auto expr = parse_expr(line_skipped);
-            return a.make<Identity>(expr.ref(a).loc(), NodeData<Expr>{}, std::move(expr));
+        Node<Expr> parse_expr_identity(bool* line_skipped = nullptr) {
+            // auto expr = parse_expr(line_skipped);
+            // return a.make<Identity>(expr.ref(a).loc(), NodeData<Expr>{}, std::move(expr));
+            return parse_expr(line_skipped);
         }
 
         /*
@@ -1220,14 +1239,14 @@ namespace brgen::nast {
             }
             Node<Expr> init;
             if (!s.expect_token(";")) {
-                auto init = parse_expr();
+                auto init = parse_expr_like(nullptr);
                 s.skip_white();
                 // like `for x in 0..10`
                 if (auto in_ = s.consume_token("in")) {
                     auto range_loop = a.make<RangeLoop>(token.loc);
                     s.skip_white();
                     auto range = parse_expr();
-                    check_assignment(BinaryOp::in_assign, init);
+                    check_assignment(BinaryOp::in_assign, init.as<Expr>());
                     range_loop->bind_variable = init.as<Reference>().ref(a)->name;
                     range_loop->container = range;
                     s.skip_white();
@@ -1255,7 +1274,7 @@ namespace brgen::nast {
             s.must_consume_token(";", " to separate `cond` and `step` part of `for` loop");
             s.skip_white();
             if (!s.expect_token(":")) {
-                for_->step = parse_expr();
+                for_->step = parse_expr_like(nullptr);
                 s.skip_white();
             }
             for_->body = parse_indent_block(for_, hint);
@@ -1434,19 +1453,19 @@ namespace brgen::nast {
             <field type> ::= ":" <type> ("(" <expr> ")")?
         */
         // may returns expr if not field
-        Node<Statement> parse_field(Node<Expr> expr, bool as_parameter) {
+        Node<Statement> parse_field(Node<Statement> may_ident, bool as_parameter) {
             lexer::Token token;
             Node<Ident> ident;
-            if (expr) {
-                if (expr.type() != NodeType::Reference) {
-                    return expr;
+            if (may_ident) {
+                if (may_ident.type() != NodeType::Reference) {
+                    return may_ident;
                 }
                 s.skip_space();
                 auto tmp = s.consume_token(":");
                 if (!tmp) {
-                    return expr;
+                    return may_ident;
                 }
-                ident = expr.as<Reference>().ref(a)->name;
+                ident = may_ident.as<Reference>().ref(a)->name;
                 token = std::move(*tmp);
             }
             else {
@@ -1456,7 +1475,7 @@ namespace brgen::nast {
             auto field = a.make<Field>(ident ? ident.ref(a).loc() : token.loc);
             // field->colon_loc = token.loc;
 
-            field->name = std::move(ident);
+            field->name = ident;
             s.skip_space();
 
             field->type = parse_type(as_parameter);
@@ -1845,6 +1864,128 @@ namespace brgen::nast {
             return nullref;
         }
 
+        // 原文に書かれた名前の並びを取り出す。input.endian や config.url のように
+        // SpecialLiteral から始まる MemberAccess の連鎖だけを見る。
+        // 識別子が何を指すかは問わないので、解決の前でも決まる。
+        std::string extract_name(const Node<Expr>& expr) {
+            if (expr.type() == NodeType::SpecialLiteral) {
+                return to_string(expr.as<SpecialLiteral>().ref(a)->kind, 1);
+            }
+            if (expr.type() == NodeType::MemberAccess) {
+                auto access = expr.as<MemberAccess>().ref(a);
+                auto base = extract_name(access->base);
+                if (base.empty()) {
+                    return {};
+                }
+                return base + "." + access->member.ref(a)->identifier;
+            }
+            return {};
+        }
+
+        // 呼び出し先が素の識別子ならその名前。error / available / sizeof の判定に使う。
+        std::string callee_name(const Node<Expr>& expr) {
+            if (expr.type() != NodeType::Reference) {
+                return {};
+            }
+            return expr.as<Reference>().ref(a)->name.ref(a)->identifier;
+        }
+
+        Node<Expr> first_argument(const Node<Arguments>& args) {
+            auto list = args.ref(a);
+            if (!list || list->arguments.empty()) {
+                return nullref;
+            }
+            return list->arguments[0].ref(a)->value;
+        }
+
+        bool is_order_name(std::string_view name) {
+            return name == "input.endian" || name == "input.bit_order" ||
+                   name == "input.bit_order.stream" || name == "input.bit_order.mapping";
+        }
+
+        // 文の位置に来た組み込みの書き換え。名前の並びと形だけで決まるものに限る。
+        // input.* / config.* は同じ構文空間を共有するので、判定の順序が意味を持つ。
+        Node<Statement> rewrite_builtin_statement(const Node<Statement>& node) {
+            if (node.type() == NodeType::Call) {
+                auto call = node.as<Call>();
+                auto args = call.ref(a)->arguments;
+                if (callee_name(call.ref(a)->callee) == "error") {
+                    auto first = first_argument(args);
+                    if (first.type() != NodeType::StrLiteral) {
+                        s.report_error(call.ref(a).loc(), "error() requires a string literal as the first argument");
+                    }
+                    auto err = a.make<ExplicitError>(call.ref(a).loc());
+                    err->message = first.as<StrLiteral>();
+                    err->extra_arguments = args;
+                    return err;
+                }
+                auto name = extract_name(call.ref(a)->callee);
+                if (name.starts_with("config.")) {
+                    auto meta = a.make<Metadata>(call.ref(a).loc());
+                    meta->name = a.make<Ident>(call.ref(a).loc(), name);
+                    meta->arguments = args;
+                    return meta;
+                }
+                return nullref;
+            }
+            auto bin = node.as<Binary>().ref(a);
+            if (!bin || bin->op != BinaryOp::assign) {
+                return nullref;
+            }
+            auto name = extract_name(bin->left);
+            if (name.empty()) {
+                return nullref;
+            }
+            if (is_order_name(name)) {
+                auto order = a.make<SpecifyOrder>(bin.loc());
+                order->order = bin->right;
+                return order;
+            }
+            if (name.starts_with("config.")) {
+                auto arg = a.make<Argument>(bin->right.ref(a).loc());
+                arg->value = bin->right;
+                auto args = a.make<Arguments>(bin->right.ref(a).loc());
+                args->arguments.push_back(arg);
+                auto meta = a.make<Metadata>(bin.loc());
+                meta->name = a.make<Ident>(bin.loc(), name);
+                meta->arguments = args;
+                return meta;
+            }
+            return nullref;
+        }
+
+        Node<Statement> parse_expr_like(bool* prev_skip_line) {
+            Node<Statement> node = parse_expr(prev_skip_line);
+            if (auto rewritten = rewrite_builtin_statement(node); rewritten) {
+                return rewritten;
+            }
+            if (auto bin = node.as<Binary>().ref(a); bin) {
+                if (is_boolean_op(bin->op)) {
+                    auto assert = a.make<Assert>(bin.loc());
+                    assert->expr = bin;
+                    node = assert;
+                }
+                // is_assign_op の範囲は define_assign / const_assign を含むので、
+                // 定義側を先に見ないと VariableDefinition に到達しない。
+                else if (is_define_op(bin->op)) {
+                    auto var_def = a.make<VariableDefinition>(bin.loc());
+                    auto ref = bin->left.as<Reference>().ref(a)->name;
+                    var_def->name = ref;
+                    var_def->value = bin->right;
+                    var_def->op = bin->op;
+                    node = var_def;
+                }
+                else if (is_assign_op(bin->op)) {
+                    auto assign = a.make<Assign>(bin.loc());
+                    assign->assignee = bin->left;
+                    assign->value = bin->right;
+                    assign->op = bin->op;
+                    node = assign;
+                }
+            }
+            return node;
+        }
+
         /*
             <statement> ::= <for> | <if> | <format> | <fn> | <return> | <break> | <continue> | <expr or field>
             <expr or field> ::= <expr>? <field type>
@@ -1931,7 +2072,7 @@ namespace brgen::nast {
                 node = parse_field(nullref, false);
             }
             else {
-                auto expr = parse_expr(prev_skip_line);
+                auto expr = parse_expr_like(prev_skip_line);
                 node = parse_field(expr, false);
             }
 

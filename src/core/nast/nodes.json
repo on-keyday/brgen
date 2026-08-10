@@ -407,7 +407,6 @@
                     "from": "assign",
                     "to": "bit_xor_assign",
                     "extra": [
-                        "in_assign",
                         "append_assign"
                     ]
                 },
@@ -511,7 +510,8 @@
             "fields": [
                 {
                     "name": "belong",
-                    "type": "Node<Statement>"
+                    "type": "Node<Statement>",
+                    "weak": true
                 },
                 {
                     "name": "body",
@@ -537,7 +537,8 @@
             "fields": [
                 {
                     "name": "belong",
-                    "type": "Node<Statement>"
+                    "type": "Node<Statement>",
+                    "weak": true
                 },
                 {
                     "name": "body",
@@ -648,8 +649,88 @@
             "derive": "Statement",
             "fields": [
                 {
-                    "name": "asignee",
+                    "name": "assignee",
                     "type": "Node<Expr>"
+                },
+                {
+                    "name": "value",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "op",
+                    "type": "BinaryOp"
+                }
+            ]
+        },
+        {
+            "name": "VariableDefinition",
+            "derive": "NamedStatement",
+            "fields": [
+                {
+                    "name": "value",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "op",
+                    "type": "BinaryOp"
+                }
+            ]
+        },
+        {
+            "name": "Metadata",
+            "derive": "NamedStatement",
+            "fields": [
+                {
+                    "name": "arguments",
+                    "type": "Node<Arguments>"
+                }
+            ]
+        },
+        {
+            "name": "SpecifyOrder",
+            "derive": "Statement",
+            "fields": [
+                {
+                    "name": "order",
+                    "type": "Node<Expr>"
+                }
+            ]
+        },
+        {
+            "name": "Sizeof",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "target",
+                    "type": "Node<Expr>"
+                }
+            ]
+        },
+        {
+            "name": "Available",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "target",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "type",
+                    "type": "Node<TypeLiteral>"
+                }
+            ]
+        },
+        {
+            "name": "ExplicitError",
+            "derive": "Statement",
+            "fields": [
+                {
+                    "name": "message",
+                    "type": "Node<StrLiteral>"
+                },
+                {
+                    "name": "extra_arguments",
+                    "type": "Node<Arguments>"
                 }
             ]
         },
@@ -982,6 +1063,16 @@
                 },
                 {
                     "name": "bad_expr",
+                    "type": "Node<Expr>"
+                }
+            ]
+        },
+        {
+            "name": "Assert",
+            "derive": "Statement",
+            "fields": [
+                {
+                    "name": "expr",
                     "type": "Node<Expr>"
                 }
             ]
