@@ -1144,6 +1144,31 @@
         "example/dnssec.bgn"
       ],
       "notes": "シフトの複合代入も論理 (<<= >>=) と算術 (<<<= >>>=) に分かれる。"
+    },
+    {
+      "id": "F0101",
+      "slug": "recursive-format",
+      "name": "再帰的な format",
+      "category": "type",
+      "summary": "format が自分自身を (直接または他の format を経由して) 含む。CBOR や MessagePack のように入れ子の深さが実行時に決まる形式で要る。",
+      "covers": [
+        "example/cbor.bgn",
+        "example/msgpack.bgn",
+        "example/java_class.bgn",
+        "example/feature_test/loop_ref.bgn"
+      ],
+      "notes": "middle/type_attribute.cpp の mark_recursive_reference が StructType::recursive を立てる。json2cpp2 は再帰する型を recursive_type<T> で包み参照側を (*x) にする (generate.h:331, 995 ほか 3 箇所)。再帰の経路が配列 (cbor.bgn の data :[length]Value) なら配列自体が間接参照なので型の工夫は要らないが、match 分岐の中の直接フィールド (cbor.bgn の tagged :Value) は生成型に間接参照が要る。両者は StructType::recursive では区別されない。loop_ref.bgn のように条件のない相互再帰はサイズが無限になるが src2json はエラーにせず recursive を立てるだけで、扱いは生成器に委ねられている。"
+    },
+    {
+      "id": "F0102",
+      "slug": "non-dynamic-allocation",
+      "name": "動的確保の要否の判定",
+      "category": "analysis",
+      "summary": "その型が動的確保を要さずに表現できるか (全フィールドが固定長か) を導出する。",
+      "covers": [
+        "example/feature_test/sizeof.bgn"
+      ],
+      "notes": "middle/type_attribute.cpp の detect_non_dynamic_type が Type::non_dynamic_allocation に入れる。再帰する型は判定から除外される。src/tool のどの生成器もこの属性を読んでいない (2026-08-10 時点)。"
     }
   ]
 }
