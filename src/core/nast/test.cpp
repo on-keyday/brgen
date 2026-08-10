@@ -246,6 +246,17 @@ int main(int argc, char** argv) {
         auto* ident = f.field<"name.identifier">();
         check(ident && *ident == "Sample",
               "a scalar at the end of the path comes back as a pointer");
+
+        // 終端の .optional。ポインタや空 Ref を検査せず値として扱えるようにする。
+        check(f.field<"name.identifier.optional">() == std::optional<std::string>("Sample"),
+              ".optional turns the result into a value you can compare");
+        check(f.field<"body.struct_type.optional">().has_value(),
+              ".optional works on a Node field too");
+        auto bare = pa.make<Format>();
+        check(!bare.field<"body.struct_type.optional">().has_value() &&
+                  !bare.field<"name.identifier.optional">().has_value() &&
+                  !fbody.field<"elements.9.optional">().has_value(),
+              ".optional is nullopt when anything on the way is null or out of range");
         check(Node<Format>{}.field<"body.struct_type">(pa).id().id() == 0,
               "a null node anywhere in the path yields a null result");
 
