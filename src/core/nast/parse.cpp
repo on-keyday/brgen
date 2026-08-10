@@ -1,6 +1,7 @@
 /*license*/
 #include "core/lexer/token.h"
 #include "nodes.h"
+#include "access.h"
 #include "stream.h"
 // #include "strutil/append.h"
 #include "parse.h"
@@ -1927,7 +1928,7 @@ namespace brgen::nast {
             if (node.type() == NodeType::Call) {
                 auto call = node.as<Call>();
                 auto args = call.ref(a)->arguments;
-                if (callee_name(call.ref(a)->callee) == "error") {
+                if (callee_name(call.field<"callee">(a)) == "error") {
                     auto first = first_argument(args);
                     if (first.type() != NodeType::StrLiteral) {
                         s.report_error(call.ref(a).loc(), "error() requires a string literal as the first argument");

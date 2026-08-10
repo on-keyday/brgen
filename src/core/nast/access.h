@@ -2,6 +2,8 @@
 #pragma once
 #include "nodes.h"
 
+#include <optional>
+
 // 名前でノードを辿る。ebmgen の access.hpp に当たるもの。
 //
 //   auto body = fmt.field<"body">();                     // Ref<Body>   (Ref は arena を持つ)
@@ -9,6 +11,10 @@
 //   auto f0   = fmt.field<"body.elements.0">();          // Ref<Statement>
 //   auto name = fmt.field<"name.identifier">();          // std::string*
 //   auto st2  = node.field<"body.struct_type">(arena);   // Node は arena を渡す
+//   auto id   = fmt.field<"name.identifier.optional">();  // std::optional<std::string>
+//
+// 終端の .optional は結果を std::optional にする。途中が null なら nullopt。
+// ポインタや空 Ref を毎回検査せずに if (auto x = ...; x) と書けるようにするためのもの。
 //
 // 途中が null なら null (Ref なら空 Ref、スカラーなら nullptr) が返る。
 // 存在しないフィールド名を書くと FieldOf の特殊化が無く、不完全型としてコンパイルエラーになる。
@@ -48,6 +54,25 @@ namespace brgen::nast {
         template <auto Path>
         consteval bool is_empty() {
             return Path.view().empty();
+        }
+
+        // 終端に付けて、結果を std::optional にする擬似区間。
+        // 値をそのまま比べたり if (auto x = ...; x) と書きたいときに使う。
+        // 途中のどこかが null なら nullopt になる (walk の result{} がそれ)。
+        // 同名のフィールドがあると隠れるが、nodes.json に optional という名前は無い。
+        template <auto Path>
+        consteval bool is_optional_marker() {
+            return Path.view() == "optional";
+        }
+
+        template <class U>
+        constexpr std::optional<U> as_optional(const U& v) {
+            if constexpr (requires { bool(v); }) {
+                if (!bool(v)) {
+                    return std::nullopt;
+                }
+            }
+            return v;
         }
 
         // 添字の区間。"elements.0" の "0" を配列の添字として扱う。
@@ -107,6 +132,9 @@ namespace brgen::nast {
                 if constexpr (is_empty<Rest>()) {
                     return a.as_ref(member);
                 }
+                else if constexpr (is_optional_marker<Rest>()) {
+                    return as_optional(a.as_ref(member));
+                }
                 else {
                     return walk<Rest, U>(a, a.template get<U>(member));
                 }
@@ -122,6 +150,9 @@ namespace brgen::nast {
                     if constexpr (is_empty<after>()) {
                         return RefBase<Arena, U>{};
                     }
+                    else if constexpr (is_optional_marker<after>()) {
+                        return std::optional<RefBase<Arena, U>>{};
+                    }
                     else {
                         return walk<after, U>(a, static_cast<NodeData<U>*>(nullptr));
                     }
@@ -129,13 +160,24 @@ namespace brgen::nast {
                 if constexpr (is_empty<after>()) {
                     return a.as_ref(member[i]);
                 }
+                else if constexpr (is_optional_marker<after>()) {
+                    return as_optional(a.as_ref(member[i]));
+                }
                 else {
                     return walk<after, U>(a, a.template get<U>(member[i]));
                 }
             }
             else {
-                static_assert(is_empty<Rest>(), "cannot descend into a scalar field");
-                return &member;
+                // スカラーはここまで来た時点で必ず在る。手前が null なら
+                // walk が result{} (= nullopt) を返しているので、ここは engaged で良い。
+                if constexpr (is_optional_marker<Rest>()) {
+                    return std::optional<M>(member);
+                }
+                else {
+                    // else に入れないと .optional の枝でもこれが評価される。
+                    static_assert(is_empty<Rest>(), "cannot descend into a scalar field");
+                    return &member;
+                }
             }
         }
 
