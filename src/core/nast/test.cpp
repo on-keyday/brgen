@@ -3,6 +3,7 @@
 // 生成された nodes.h が「コンパイルできる」だけでなく、
 // 型変換・ダウンキャスト・シリアライズが意図どおり動くところまで見る。
 #include "nodes.h"
+#include "access.h"
 #include "printer.h"
 #include "from_json.h"
 
@@ -230,6 +231,22 @@ int main(int argc, char** argv) {
         // weak を降りていたら StructType -> Format -> ... で無限に回る
         check(std::count(text.begin(), text.end(), '\n') < 40,
               "weak edges do not cause the walk to recurse");
+
+        // ---- 名前で辿る (access.h) ----------------------------------------
+        // 存在しないフィールド名を書くと FieldOf の特殊化が無く、
+        // 不完全型としてコンパイルエラーになる (実行時に落ちるのではない)。
+        check(get_path<"body">(pa, f.id()).id() == fbody.id() &&
+                  get_path<"body.struct_type">(pa, f.id()).id() == st.id(),
+              "get_path follows Node fields through the arena");
+        check(get_path<"body.elements.0">(pa, f.id()).id() == fld.id(),
+              "get_path indexes into a vector field");
+        check(!get_path<"body.elements.9">(pa, f.id()),
+              "out of range index yields a null ref, not a crash");
+        auto* ident = get_path<"name.identifier">(pa, f.id());
+        check(ident && *ident == "Sample",
+              "a scalar at the end of the path comes back as a pointer");
+        check(get_path<"body.struct_type">(pa, Node<Format>{}).id().id() == 0,
+              "a null node anywhere in the path yields a null result");
     }
 
     // ---- side table -------------------------------------------------------

@@ -1273,7 +1273,7 @@ namespace brgen::nast {
                 }
             }
             auto for_ = a.make<Loop>(token.loc);
-            for_->init = std::move(init);
+            for_->init = init;
             if (s.expect_token(":")) {
                 for_->condition = init;
                 for_->body = parse_indent_block(for_, hint);
