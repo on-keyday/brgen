@@ -676,10 +676,11 @@
       "slug": "block-trait",
       "name": "ブロック特性の解析",
       "category": "analysis",
-      "summary": "format ごとに固定長か / 入力全体を要るか / 動的な順序か などを導出する。",
+      "summary": "format ごとに、符号化/復号をどう組み立てられるかを 24 個のフラグ (ast::BlockTrait) として導出する。生成器はこれを見て出す形を決める。",
       "covers": [
         "example/feature_test/analyze_block_trait.bgn"
-      ]
+      ],
+      "notes": "軸として効くのは 3 つ。(1) ストリームのみで済むか、全長が先に要るか — full_input / backward_input / terminal_pattern / dynamic_order。(2) バイト境界に乗るか、ビット単位か — bit_field / bit_stream。(3) 追加の状態を持つか — read_state / write_state (F0014-state-decl)。他は fixed_primitive / fixed_float / fixed_array / variable_array / struct_ / conditional / static_peek / magic_value / assertion / explicit_error / procedural / for_loop / local_variable / description_only / uncommon_size / control_flow_change。example 全体 3369 ブロックでの出現 (2026-08-10): fixed_primitive 2179 / struct_ 1155 / variable_array 952 / fixed_array 385 / conditional 425 / bit_field 344 / assertion 318 / control_flow_change 300 / magic_value 288 / local_variable 191 / procedural 140 / bit_stream 122 / for_loop 88 / explicit_error 55 / uncommon_size 53 / read_state 47 / dynamic_order 40 / write_state 31 / description_only 5 / static_peek 4 / backward_input 2。fixed_float / terminal_pattern / full_input は 0 で、コーパスに立てる入力が無い。"
     },
     {
       "id": "F0062",
