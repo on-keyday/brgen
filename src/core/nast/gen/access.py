@@ -9,7 +9,8 @@ from .schema import Schema
 from .writer import Writer
 
 
-def emit_field_access(w: Writer, schema: Schema) -> None:
+def emit_fixed_string(w: Writer) -> None:
+    """Node/Ref の field<"..."> がこれを非型引数に取るので、Node より前に出す。"""
     # 文字列リテラルを非型テンプレート引数にするための入れ物。
     # 構造体型 (公開メンバのみ) なので auto NTTP に渡せる。
     w.write(
@@ -26,6 +27,13 @@ def emit_field_access(w: Writer, schema: Schema) -> None:
         "template<std::size_t N> fixed_string(const char (&)[N]) -> fixed_string<N>;\n"
     )
 
+    # パス走査の実体は access.h。Node/Ref から呼べるように宣言だけ先に置く。
+    w.write("template<class T> struct Node;\n")
+    w.write("template<fixed_string Path, class A, class T> constexpr auto node_field(A& a, Node<T> id);\n")
+
+
+def emit_field_of(w: Writer, schema: Schema) -> None:
+    """フィールド名からメンバを引く対応表。NodeData が出た後でないと書けない。"""
     # 一次テンプレートは定義しない。存在しないフィールド名を書いたら
     # 「不完全型」としてコンパイルエラーになるのが狙い。
     w.write("template<class T, auto Name> struct FieldOf;\n")

@@ -87,6 +87,10 @@ def emit_node(w: Writer) -> None:
         "    }\n"
     )
     w.write("    template<class A> constexpr auto ref(A& a) const { return a.as_ref(*this); }\n")
+    # 名前でフィールドを辿る。走査の実体は access.h にあるので、
+    # nodes.h だけを include した状態では実体化できない。
+    w.write("    template<fixed_string Path, class A> constexpr auto field(A& a) const"
+            " { return node_field<Path>(a, *this); }\n")
     # U は T の派生なので基底 -> 派生 のチェック付きダウンキャスト。
     # 既存 AST の ast::as<T>(node) と同じ意味なので名前を合わせる。
     w.write(
@@ -167,6 +171,9 @@ def emit_ref(w: Writer) -> None:
     w.write("    constexpr RefBase(nullref_t) : arena_{nullptr},id_{} {}\n")
     w.write("    constexpr Node<T> id() const {  return id_; }\n")
     w.write("    constexpr A* arena() { return arena_; }\n")
+    # arena を持っているので引数を取らない。
+    w.write("    template<fixed_string Path> constexpr auto field() const"
+            " { return node_field<Path>(*arena_, id_); }\n")
     w.write("    template<class U> requires std::derived_from<U,T>\n")
     w.write("    constexpr RefBase<A,U> as() const { return id_.template as<U>().ref(arena_); }\n")
     w.write("    template<class U> requires std::derived_from<T,U>\n")

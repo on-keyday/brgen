@@ -247,6 +247,10 @@ int main(int argc, char** argv) {
               "a scalar at the end of the path comes back as a pointer");
         check(get_path<"body.struct_type">(pa, Node<Format>{}).id().id() == 0,
               "a null node anywhere in the path yields a null result");
+        // Node は arena を持たないので渡す。Ref は自分で持っているので取らない。
+        check(f.id().field<"body.struct_type">(pa).id() == st.id() &&
+                  f.field<"body.struct_type">().id() == st.id(),
+              "field<> is reachable from Node and Ref");
     }
 
     // ---- side table -------------------------------------------------------
