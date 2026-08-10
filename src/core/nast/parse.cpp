@@ -834,17 +834,19 @@ namespace brgen::nast {
         }
 
         Node<Call> parse_call(lexer::Token&& token, Node<Expr>& p) {
-            auto call = a.make<Call>(token.loc, NodeData<Expr>{}, p);
+            auto call = a.make<Call>(p.ref(a).loc(), NodeData<Expr>{}, p);
+            // 引数が無くても Arguments は作る。f() でも end_loc を持たせるためと、
+            // 参照側が毎回 null 検査をしなくて済むようにするため。
+            auto args = a.make<Arguments>(token.loc);
+            call->arguments = args;
             s.skip_white();
             if (!s.expect_token(")")) {
                 auto raw = parse_expr();
-                auto args = a.make<Arguments>(raw.ref(a).loc());
                 collect_args(raw, args->arguments);
-                call->arguments = args;
                 s.skip_white();
             }
             token = s.must_consume_token(")", "to close function call");
-            // call->end_loc = token.loc;
+            args->end_loc = token.loc;
             return call;
         }
 
@@ -852,6 +854,22 @@ namespace brgen::nast {
             auto call = parse_call(std::move(token), p);
             if (auto typ = call.ref(a)->callee.as<TypeLiteral>().ref(a)) {
                 return a.make<Cast>(call.ref(a).loc(), NodeData<Expr>{}, call, call.ref(a)->arguments);
+            }
+            // config.import("path") はパスが文字列リテラルなので parse で確定する。
+            // 実際にファイルを読んで繋ぐのは別段の仕事なので、結果はここには置かず
+            // side table (ImportResolution) 側に分ける。
+            if (extract_name(call.ref(a)->callee) == "config.import") {
+                auto arg = first_argument(call.ref(a)->arguments);
+                if (arg.type() != NodeType::StrLiteral) {
+                    s.report_error(call.ref(a).loc(), "config.import() requires a string literal path");
+                }
+                auto path = unescape(arg.as<StrLiteral>().ref(a)->value);
+                if (!path) {
+                    s.report_error(call.ref(a).loc(), "invalid string literal in config.import()");
+                }
+                auto import_ = a.make<Import>(call.ref(a).loc());
+                import_->path = std::move(*path);
+                return import_;
             }
             // available(x) / sizeof(x) は名前の文字列一致だけで決まる。
             // 同名の fn を定義しても奪われないのは元の実装と同じ。
@@ -1239,7 +1257,7 @@ namespace brgen::nast {
             }
             Node<Expr> init;
             if (!s.expect_token(";")) {
-                auto init = parse_expr_like(nullptr);
+                auto init = parse_expr_like_statement(nullptr);
                 s.skip_white();
                 // like `for x in 0..10`
                 if (auto in_ = s.consume_token("in")) {
@@ -1274,7 +1292,7 @@ namespace brgen::nast {
             s.must_consume_token(";", " to separate `cond` and `step` part of `for` loop");
             s.skip_white();
             if (!s.expect_token(":")) {
-                for_->step = parse_expr_like(nullptr);
+                for_->step = parse_expr_like_statement(nullptr);
                 s.skip_white();
             }
             for_->body = parse_indent_block(for_, hint);
@@ -1509,9 +1527,8 @@ namespace brgen::nast {
                 }
 
                 auto e = s.must_consume_token(")", "to close field argument");
-                // field_argument->end_loc = e.loc;
-
-                field->arguments = std::move(field_argument);
+                field_argument->end_loc = e.loc;
+                field->arguments = field_argument;
             }
 
             /*
@@ -1805,6 +1822,7 @@ namespace brgen::nast {
                     s.skip_white();
                 }
                 s.must_consume_token(":", "to separate function parameter name and type");
+                s.skip_white();
 
                 auto type = parse_type(true);
                 auto param = a.make<Parameter>(ident ? ident.ref(a).loc() : type.ref(a).loc());
@@ -1954,7 +1972,7 @@ namespace brgen::nast {
             return nullref;
         }
 
-        Node<Statement> parse_expr_like(bool* prev_skip_line) {
+        Node<Statement> parse_expr_like_statement(bool* prev_skip_line) {
             Node<Statement> node = parse_expr(prev_skip_line);
             if (auto rewritten = rewrite_builtin_statement(node); rewritten) {
                 return rewritten;
@@ -2072,7 +2090,7 @@ namespace brgen::nast {
                 node = parse_field(nullref, false);
             }
             else {
-                auto expr = parse_expr_like(prev_skip_line);
+                auto expr = parse_expr_like_statement(prev_skip_line);
                 node = parse_field(expr, false);
             }
 
