@@ -726,7 +726,7 @@
                     "type": "Node<Expr>"
                 },
                 {
-                    "name": "type",
+                    "name": "selected_type",
                     "type": "Node<TypeLiteral>"
                 }
             ]

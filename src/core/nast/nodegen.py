@@ -13,6 +13,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from gen import Schema, Writer  # noqa: E402
+from gen.access import emit_field_access  # noqa: E402
 from gen.arena import emit_arena  # noqa: E402
 from gen.enums import (  # noqa: E402
     emit_enum_helper_decls,
@@ -50,7 +51,7 @@ def generate(schema: Schema) -> str:
 
     C++ は前方参照が効かないので順番に意味がある。
     タグ型 -> NodeType -> enum ヘルパ -> Node/Ref -> 値型 -> NodeData ->
-    走査の入口 -> Arena -> side table。
+    フィールド名の対応表 -> 走査の入口 -> Arena -> side table。
     """
     includes = Writer()
     for inc in schema.includes:
@@ -88,6 +89,9 @@ def generate(schema: Schema) -> str:
     data = Writer()
     emit_node_data(data, schema)
 
+    access = Writer()
+    emit_field_access(access, schema)
+
     dispatch = Writer()
     emit_dispatch(dispatch, schema)
 
@@ -101,7 +105,8 @@ def generate(schema: Schema) -> str:
     out.write(PROLOGUE)
     out.write(includes.getvalue())
     out.write("namespace brgen::nast {\n")
-    for part in (fwd, types, helpers, layers, node_type_map, core, values, data, dispatch, arena, tables):
+    for part in (fwd, types, helpers, layers, node_type_map, core, values, data, access, dispatch,
+                 arena, tables):
         out.write(part.getvalue())
     out.write("}\n")
     return out.getvalue()
