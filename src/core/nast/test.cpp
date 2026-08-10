@@ -241,6 +241,9 @@ int main(int argc, char** argv) {
               "field<> follows Node fields through the arena, from Ref and from Node");
         check(f.field<"body.elements.0">().id() == fld.id(),
               "field<> indexes into a vector field");
+        auto* elems = f.field<"body.elements">();
+        check(elems && elems->size() == 1 && (*elems)[0] == fld.id(),
+              "ending the path at a vector gives the vector itself");
         check(!f.field<"body.elements.9">(),
               "out of range index yields a null ref, not a crash");
         auto* ident = f.field<"name.identifier">();

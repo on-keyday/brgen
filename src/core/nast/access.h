@@ -9,6 +9,7 @@
 //   auto body = fmt.field<"body">();                     // Ref<Body>   (Ref は arena を持つ)
 //   auto st   = fmt.field<"body.struct_type">();         // Ref<StructType>
 //   auto f0   = fmt.field<"body.elements.0">();          // Ref<Statement>
+//   auto all  = fmt.field<"body.elements">();            // std::vector<Node<Statement>>*
 //   auto name = fmt.field<"name.identifier">();          // std::string*
 //   auto st2  = node.field<"body.struct_type">(arena);   // Node は arena を渡す
 //   auto id   = fmt.field<"name.identifier.optional">();  // std::optional<std::string>
@@ -139,11 +140,21 @@ namespace brgen::nast {
                     return walk<Rest, U>(a, a.template get<U>(member));
                 }
             }
+            else if constexpr (vec::is_vector && is_empty<Rest>()) {
+                // 配列そのもの。スカラーと同じくポインタで返す (回すのに要る)。
+                return &member;
+            }
+            else if constexpr (vec::is_vector && is_optional_marker<Rest>()) {
+                // 値で返すと配列を複製することになる。null かどうかは
+                // ポインタ形で判定できるので、そちらを使わせる。
+                static_assert(!is_optional_marker<Rest>(),
+                              "a vector cannot take .optional; drop it and check the pointer");
+            }
             else if constexpr (vec::is_vector) {
                 using U = typename vec::type;
                 constexpr auto idx_seg = head<Rest>();
                 static_assert(all_digit(idx_seg.view()),
-                              "a vector field must be followed by an array index");
+                              "a vector field must be followed by an array index, or end the path here");
                 constexpr auto i = to_index<idx_seg>();
                 constexpr auto after = tail<Rest>();
                 if (member.size() <= i) {
