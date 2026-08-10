@@ -13,7 +13,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from gen import Schema, Writer  # noqa: E402
-from gen.access import emit_field_access  # noqa: E402
+from gen.access import emit_field_of, emit_fixed_string  # noqa: E402
 from gen.arena import emit_arena  # noqa: E402
 from gen.enums import (  # noqa: E402
     emit_enum_helper_decls,
@@ -63,6 +63,8 @@ def generate(schema: Schema) -> str:
     types = Writer()
     emit_enums(types, schema)
     emit_node_type(types, schema)
+    # Node/Ref の field<"..."> が非型引数に取るので、Node より前に要る。
+    emit_fixed_string(types)
 
     helpers = Writer()
     emit_enum_helper_decls(helpers)
@@ -90,7 +92,7 @@ def generate(schema: Schema) -> str:
     emit_node_data(data, schema)
 
     access = Writer()
-    emit_field_access(access, schema)
+    emit_field_of(access, schema)
 
     dispatch = Writer()
     emit_dispatch(dispatch, schema)
