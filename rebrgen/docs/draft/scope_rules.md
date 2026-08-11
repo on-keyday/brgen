@@ -141,9 +141,23 @@ line 6 col 11  y  usage=reference  base=12   5 行目の local の y
 ```
 
 4 行目が global に落ちるのは、その時点で local の `y` がまだ宣言されていないため。
-ファイル自身が `# global y` と書いているので、**外へ抜けて global に落ちる部分は意図されている**。
-1 行目のように **global の定数を前方参照できる**点についてはコメントが無く、
-fallback が型限定でないことの副作用として出ているのか、そう決めたのかは分からない。
+ファイル自身が `# global y` / `# local y` と書いている。
+
+**この非対称は意図されている。** 根拠は 2 つ。
+
+1. このファイルの global の定義は `x ::= y` / `y ::= z` / `z ::= y` で**循環している**。
+   1 行目の前方参照が解決しなければ循環が構成されず、`recurse_defs` というテストが成立しない
+2. `typing.cpp:1344-1353` に、解決先の定義にまだ型が付いていない場合
+   (`def && !def->expr_type`) その定義を先に型付けしに行く機構がある。
+   `recurse_detect` はその再入を止めるためのもので、**前方参照が解決するからこそ要る**。
+   後方参照だけなら解決先は既に型付け済みである
+
+```cpp
+recurse_detect.insert(ident.get());
+auto guard = futils::helper::defer([&] { recurse_detect.erase(ident.get()); });
+typing_expr(bin->right);
+typing_assign(bin);
+```
 
 ## 5. スコープを作る構文
 
@@ -174,8 +188,7 @@ fallback が型限定でないことの副作用として出ているのか、�
 
 ## 7. 未確認
 
-- global の定数を前方参照できること (§4) が、そう決めたものか、
-  fallback を型限定にしなかった副作用か
-- `recurse_detect` (`typing.cpp:856`) がどの循環を止めているか
 - 型パラメータ (`define_type_parameter`) が `is_type_ident` に入っているが、
   スコープのどの段に push されるか
+
+§4 の非対称と `recurse_detect` は確認済みなのでここから外した。
