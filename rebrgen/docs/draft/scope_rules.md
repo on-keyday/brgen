@@ -213,7 +213,35 @@ if (ident) {
 - `objects` は名前索引ではなく vector なので、探索は
   **O(区間の鎖の長さ × 各区間の宣言数)**。`Ident::base` がその memo
 
-## 7. 未確認
+## 7. nast で再現できるか
+
+できる。元の `Scope` グラフは **(木, 文の順序, ノード種) の関数**であり、木に無い情報を持っていない。
+
+| 元の仕組み | 木から出るもの |
+| --- | --- |
+| `objects` の順序 | `Body::statements` の順 |
+| 区間分割 (`next`) | 入れ子ブロックの位置。順に走査すれば自然に得られる |
+| `branch_root` + `owner` | ノード種 (Format / State / Enum か、If / Match / For か) |
+| `self` まで飛ばす | 位置 |
+| `is_type_ident` | 宣言しているノードの種類。`usage` enum を経由するより直接的 |
+| global fallback | そのまま |
+
+`rewrite_ident_scope` (parse.cpp:869) は不要になる。`x := expr` で左辺の ident を右辺より先に
+push するため、右辺が入れ子ブロックを開くと区間がずれる、その補正である。
+**文を処理し終えてから束縛すれば、ずれが起きない。**
+
+`objects` の読み手は lookup 3 種のほかに `monomorphize.cpp:195` (generic の複製) /
+`deep_copy.h` / `json.h:211` (直列化) だけ。非定義の `=` でも `rewrite_ident_scope` が
+呼ばれるのは解決に効かない (`search` が `is_reference_or_unknown` を弾く) ので、
+**JSON に出す「このスコープに何が居るか」の一覧のため**と見える。LSP 向けの出力であって
+解決の入力ではないので、nast では別の口として扱える。
+
+### 導出でなく判断が要るもの
+
+型でない名前の **global 前方参照** (§4) を再現するかどうか。意図的であることは確認済みなので、
+再現しないなら仕様変更になる。
+
+## 8. 未確認
 
 無し。調査開始時に挙げた 3 件 (§4 の非対称 / `recurse_detect` / 型パラメータの push 先) は
 いずれも実装を読めば分かるもので、すべて本文に取り込んだ。
