@@ -46,6 +46,58 @@
             ]
         },
         {
+            "name": "InnerStruct",
+            "over": "BodyStatement",
+            "storage": "sparse",
+            "fields": [
+                {
+                    "name": "fields",
+                    "type": "vector<Node<Field>>"
+                },
+                {
+                    "name": "asserts",
+                    "type": "vector<Node<Assert>>"
+                }
+            ]
+        },
+        {
+            "name": "FormatState",
+            "over": "Format",
+            "storage": "sparse",
+            "fields": [
+                {
+                    "name": "encode_kind",
+                    "type": "FormatKind"
+                },
+                {
+                    "name": "decode_kind",
+                    "type": "FormatKind"
+                },
+                {
+                    "name": "encode_custom",
+                    "type": "Node<Function>"
+                },
+                {
+                    "name": "decode_custom",
+                    "type": "Node<Function>"
+                },
+                {
+                    "name": "fields",
+                    "type": "vector<Node<Field>>"
+                },
+                {
+                    "name": "functions",
+                    "type": "vector<Node<Function>>",
+                    "description": "Functions defined inside the format (without custom encode/decode functions)"
+                },
+                {
+                    "name": "asserts",
+                    "type": "vector<Node<Assert>>",
+                    "description": "Asserts defined inside the format"
+                }
+            ]
+        },
+        {
             "name": "DocComment",
             "over": "Statement",
             "storage": "sparse",
@@ -487,6 +539,17 @@
                     "name": "native"
                 }
             ]
+        },
+        {
+            "name": "FormatKind",
+            "enums": [
+                {
+                    "name": "as_is"
+                },
+                {
+                    "name": "custom"
+                }
+            ]
         }
     ],
     "nodes": [
@@ -844,12 +907,8 @@
             "name": "Body",
             "fields": [
                 {
-                    "name": "elements",
+                    "name": "statements",
                     "type": "vector<Node<Statement>>"
-                },
-                {
-                    "name": "struct_type",
-                    "type": "Node<StructType>"
                 }
             ]
         },
@@ -899,7 +958,8 @@
             "fields": [
                 {
                     "name": "is_explicit",
-                    "type": "bool"
+                    "type": "bool",
+                    "cosmetic": true
                 }
             ],
             "abstract": true
@@ -1195,10 +1255,6 @@
                 {
                     "name": "element_type",
                     "type": "Node<Type>"
-                },
-                {
-                    "name": "is_bytes",
-                    "type": "bool"
                 }
             ]
         },
@@ -1221,17 +1277,19 @@
             "derive": "Type",
             "fields": [
                 {
-                    "name": "fields",
-                    "type": "vector<Node<Statement>>"
-                },
-                {
                     "name": "base",
                     "type": "Node<Statement>",
                     "weak": true
-                },
+                }
+            ]
+        },
+        {
+            "name": "InlineStructType",
+            "derive": "Type",
+            "fields": [
                 {
-                    "name": "recursive",
-                    "type": "bool"
+                    "name": "inlined_format",
+                    "type": "Node<Format>"
                 }
             ]
         },
@@ -1241,29 +1299,8 @@
             "fields": [
                 {
                     "name": "base",
-                    "type": "Node<Expr>",
+                    "type": "Node<ConditionalExpr>",
                     "weak": true
-                },
-                {
-                    "name": "cond",
-                    "type": "Node<Expr>"
-                },
-                {
-                    "name": "conds",
-                    "type": "vector<Node<Expr>>"
-                },
-                {
-                    "name": "structs",
-                    "type": "vector<Node<StructType>>"
-                },
-                {
-                    "name": "union_fields",
-                    "type": "vector<Node<Field>>",
-                    "weak": true
-                },
-                {
-                    "name": "exhaustive",
-                    "type": "bool"
                 }
             ]
         },

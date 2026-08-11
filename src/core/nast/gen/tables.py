@@ -14,7 +14,7 @@ def emit_structs(w: Writer, schema: Schema) -> None:
     """
     for struct in schema.structs:
         w.write("struct ", struct["name"], " {\n")
-        emit_fields(w, schema, struct)
+        emit_fields(w, schema, struct, struct["name"])
         w.write("};\n")
 
 
