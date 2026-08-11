@@ -173,6 +173,33 @@ typing_assign(bin);
 `if` / `match` / `for` は**条件部にもスコープを持つ** (`if_->cond_scope` など)。
 `for x in ...` の `x` がループ全体に見えるのはこのため。本体のブロックはさらに内側になる。
 
+### 型パラメータはどこに入るか
+
+`format Foo[T]:` の `T` は `parse_ident_no_scope` で作られ (parse.cpp:1534)、
+その場ではどのスコープにも入らない。`type_param_idents` に集められて
+`parse_indent_block` へ渡り、**本体のスコープに、本体を解析する前に、最初の要素として**
+push される (parse.cpp:210-216)。
+
+```cpp
+auto c = state.new_indent(s, current_indent, block->scope, scope_owner);  // 本体スコープ
+if (ident) {
+    for (auto& i : *ident) {
+        i->scope = block->scope;
+        block->scope->push(i);
+        check_duplicated_def(i.get());
+    }
+}
+```
+
+したがって:
+
+- `T` は本体の全体で見える。宣言順の先頭にあるので、後方参照の制約に引っかからない
+- `T` は format の外からは見えない。本体スコープの中に居るため
+- 本体で `T` という名前を再宣言すると `check_duplicated_def` が拾う。
+  仮に通っても `objects` は逆順に見られるので後の宣言が勝つ
+- `is_type_ident` に `define_type_parameter` が入っているので、入れ子の format から
+  外へ上がるときの `only_type_allowed` を通り抜ける
+
 ## 6. 気づいた点
 
 - **`prev` が二役**。親スコープでもあり、同じ段の前の区間でもある。`branch_root` が
@@ -188,7 +215,5 @@ typing_assign(bin);
 
 ## 7. 未確認
 
-- 型パラメータ (`define_type_parameter`) が `is_type_ident` に入っているが、
-  スコープのどの段に push されるか
-
-§4 の非対称と `recurse_detect` は確認済みなのでここから外した。
+無し。調査開始時に挙げた 3 件 (§4 の非対称 / `recurse_detect` / 型パラメータの push 先) は
+いずれも実装を読めば分かるもので、すべて本文に取り込んだ。
