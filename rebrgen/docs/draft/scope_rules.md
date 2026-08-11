@@ -119,6 +119,32 @@ return current_global->lookup_forward(search);
 13 行目の `Data` が解決しないのは、`Data` が global の `objects` に居ないから (format Lookup の中に居る)
 であって、fallback が型限定だからではない。
 
+### 効いている非対称
+
+`lookup_backward` の同じ段の前方探索は型限定 (`next->lookup_forward(fn, true)`) だが、
+この fallback は型限定でない。結果として **型でない名前を前方参照できるのは global にあるときだけ**
+になる。`recurse_defs.bgn` を通した実測:
+
+```
+x ::= y          # 1 行目
+format X:
+    x ::= y      # 4 行目。ファイルのコメントは "global y"
+    y ::= u16()  # 5 行目
+    z ::= y      # 6 行目。"local y"
+y ::= z          # 8 行目
+```
+
+```
+line 1 col  7  y  usage=reference  base=27   8 行目の global の y。前方参照が通っている
+line 4 col 11  y  usage=reference  base=27   同じく global の y
+line 6 col 11  y  usage=reference  base=12   5 行目の local の y
+```
+
+4 行目が global に落ちるのは、その時点で local の `y` がまだ宣言されていないため。
+ファイル自身が `# global y` と書いているので、**外へ抜けて global に落ちる部分は意図されている**。
+1 行目のように **global の定数を前方参照できる**点についてはコメントが無く、
+fallback が型限定でないことの副作用として出ているのか、そう決めたのかは分からない。
+
 ## 5. スコープを作る構文
 
 | 呼び出し | 何 |
@@ -148,8 +174,8 @@ return current_global->lookup_forward(search);
 
 ## 7. 未確認
 
-- `lookup_backward` の `next` 探索が `only_type_allowed = true` 固定である一方、
-  global fallback が `false` である非対称が意図的かどうか
+- global の定数を前方参照できること (§4) が、そう決めたものか、
+  fallback を型限定にしなかった副作用か
 - `recurse_detect` (`typing.cpp:856`) がどの循環を止めているか
 - 型パラメータ (`define_type_parameter`) が `is_type_ident` に入っているが、
   スコープのどの段に push されるか
