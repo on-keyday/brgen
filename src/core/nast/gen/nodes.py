@@ -6,7 +6,7 @@ from .schema import Schema
 from .writer import Writer
 
 
-def emit_fields(w: Writer, schema: Schema, node: dict) -> None:
+def emit_fields(w: Writer, schema: Schema, node: dict, self_type: str = "") -> None:
     """フィールド宣言 + as_json + for_each_field。
 
     NodeData<T> だけでなく NodeHeader や素の値型でも同じものを出す。
@@ -46,10 +46,33 @@ def emit_fields(w: Writer, schema: Schema, node: dict) -> None:
             )
         w.write("    }\n")
 
+    # 2 つを同じ順で並べて回す版。比較 (compare.h) が要る。
+    # cosmetic は「論理的等価性に効かない」印で、weak と同じく schema 側の宣言。
+    if not self_type:
+        return
+    w.write("    constexpr void for_each_field(const ", self_type, "& o_, auto&& f_) const {\n")
+    for field in schema.all_fields(node):
+        weak = "true" if field.get("weak") else "false"
+        cosmetic = "true" if field.get("cosmetic") else "false"
+        w.write(
+            "        f_(",
+            json.dumps(field["name"]),
+            ",",
+            field["name"],
+            ",o_.",
+            field["name"],
+            ",",
+            weak,
+            ",",
+            cosmetic,
+            ");\n",
+        )
+    w.write("    }\n")
+
 
 def emit_node_header(w: Writer, schema: Schema) -> None:
     w.write("struct NodeHeader {\n")
-    emit_fields(w, schema, schema.header)
+    emit_fields(w, schema, schema.header, "NodeHeader")
     w.write("};\n")
 
 
@@ -225,7 +248,7 @@ def emit_node_data(w: Writer, schema: Schema) -> None:
             "struct NodeData<", node["name"], ">",
             (": NodeData<" + node["derive"] + ">" if "derive" in node else ""), " {\n",
         )
-        emit_fields(w, schema, node)
+        emit_fields(w, schema, node, "NodeData<" + node["name"] + ">")
         w.write("};\n")
 
 

@@ -5,6 +5,7 @@
 #include "nodes.h"
 #include "access.h"
 #include "traverse.h"
+#include "compare.h"
 #include "printer.h"
 #include "from_json.h"
 
@@ -330,6 +331,45 @@ int main(int argc, char** argv) {
                                      fixed_string<13>>);
         static_assert(head<fixed_string("binary_value.x")>() == fixed_string("binary_value"));
         check(true, "path segments keep the spelling the generated table uses");
+    }
+
+    // ---- ノードの比較 (compare.h) ------------------------------------------
+    // id の一致 / 木として同じ / 意味として同じ、の 3 段。
+    {
+        Arena ca;
+        auto mk = [&](std::size_t bits, bool exp, std::size_t line) {
+            auto t = ca.make<IntType>(brgen::lexer::Loc{.line = line});
+            t->is_explicit = exp;
+            t->bit_size = bits;
+            return t.id();
+        };
+        auto u8_written = mk(8, true, 1);
+        auto u8_derived = mk(8, false, 2);  // is_explicit と loc だけ違う
+        auto u16 = mk(16, true, 1);
+
+        check(identical(ca, u8_written, u8_written) && equivalent(ca, u8_written, u8_written),
+              "a node is both identical and equivalent to itself");
+        check(!identical(ca, u8_written, u8_derived) && equivalent(ca, u8_written, u8_derived),
+              "is_explicit and loc separate identical from equivalent");
+        check(!identical(ca, u8_written, u16) && !equivalent(ca, u8_written, u16),
+              "a field that carries meaning separates both");
+
+        // 部分木ごと比べる
+        auto f1 = ca.make<Field>();
+        auto f2 = ca.make<Field>();
+        auto n1 = ca.make<Ident>();
+        auto n2 = ca.make<Ident>();
+        n1->identifier = "v";
+        n2->identifier = "v";
+        f1->name = n1;
+        f1->type = u8_written;
+        f2->name = n2;
+        f2->type = u8_derived;
+        check(!identical(ca, f1.id(), f2.id()) && equivalent(ca, f1.id(), f2.id()),
+              "the comparison walks the whole subtree");
+        n2->identifier = "w";
+        check(!equivalent(ca, f1.id(), f2.id()),
+              "a difference anywhere in the subtree shows up");
     }
 
     // ---- side table -------------------------------------------------------
