@@ -321,11 +321,42 @@ UnionView { match: MatchId,
 調べる目的は「合成 Field が下流で**何の役割を果たしていたか**」を把握して、新設計が
 その役割を別の形で満たせるようにすることであり、影響範囲の大きさを理由に見送るためではない。
 
-具体的に確認すべきこと (§7-8):
+#### 調べた結果 (2026-08-11)
 
-- `union_fields` / `member_candidates` / `is_strict_common_type` の消費者と用途
-- typing / ebmgen / LSP が合成 Field を構文上の Field と区別しているか、していないか
-- 区別していないなら、それは「区別する必要がなかった」のか「区別できなかった」のか
+**区別している。ただし印ではなく型で。** 合成かどうかを示すフラグは存在せず、
+`StructUnionType` / `UnionType` が判別子そのものになっている。
+
+合成されるものは 2 つある:
+
+1. match / if ごとの**無名 Field** — 型が `StructUnionType`
+2. 名前ごとの**Field** — 型が `UnionType`。`union_fields` に入り、かつ
+   `add_to_struct` で構造体のメンバ列にも入る
+
+消費者は両方の経路で触っている:
+
+- 型から: `json2c/generate.h:113` と `json2cpp2/generate.h:247, 858` が
+  `StructUnionType::union_fields` を回す
+- メンバ列から: `json2cpp2/generate.h:567` が全フィールドを回しながら
+  `if (ast::as<ast::StructUnionType>(field->field_type)) { continue; }` で 1 を飛ばし、
+  `if (ast::as<ast::UnionType>(field->field_type))` で 2 を特別扱いする
+
+2 の特別扱いは識別子の**文字列手術**になっている (`generate.h:567-571`, `1022-1026`):
+
+```cpp
+if (ast::as<ast::UnionType>(field->field_type)) {
+    if (ident.starts_with("(*") && !ident.starts_with("(*this")) {
+        ident.erase(0, 2);  // remove '(*'
+        ident.pop_back();   // remove ')'
+    }
+```
+
+つまり合成 Field が構造体のメンバ列に居ることの代償を、各生成器が
+**飛ばす処理と直す処理**で払っている。side table へ移せばメンバ列に現れないので、
+この 2 つがどちらも要らなくなる。逆に、型から辿る経路 (`union_fields`) は
+side table への写像に置き換わるだけで役目が変わらない。
+
+**「区別する必要がなかった」のではなく、型で区別できたので印を足さずに済んでいた**、
+というのが実態に近い。
 
 ---
 

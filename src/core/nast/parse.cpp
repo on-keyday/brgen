@@ -319,22 +319,14 @@ namespace brgen::nast {
                 parse_a_line();
             }
 
-            // Record the body extent on the scope so language servers can do
-            // position->scope lookups. begin = first body indent, end = last
-            // body element end (or base end for empty bodies — shouldn't happen
-            // since indent blocks require at least one statement, but be safe).
-            /*
-            block->scope->loc.file = base.loc.file;
-            block->scope->loc.line = base.loc.line;
-            block->scope->loc.col = base.loc.col;
-            block->scope->loc.pos.begin = base.loc.pos.begin;
-            if (!block->elements.empty()) {
-                block->scope->loc.pos.end = block->elements.back().ref(a).loc().pos.end;
+            // ブロックの範囲を残す。始まりは Body 自身の loc (最初の indent)、
+            // 終わりがここ。language server が位置からスコープを引くのに要る
+            // (元は Scope::loc が持っていた。持ち主の loc は先頭トークンしか
+            //  指さないので、それだけでは範囲にならない)。
+            block->end_loc = base.loc;
+            if (!block->statements.empty()) {
+                block->end_loc = block->statements.back().ref(a).loc();
             }
-            else {
-                block->scope->loc.pos.end = base.loc.pos.end;
-            }
-            */
 
             return block;
         }
