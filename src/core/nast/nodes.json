@@ -931,6 +931,10 @@
                 {
                     "name": "statements",
                     "type": "vector<Node<Statement>>"
+                },
+                {
+                    "name": "end_loc",
+                    "type": "lexer::Loc"
                 }
             ]
         },
