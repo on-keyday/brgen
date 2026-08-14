@@ -182,8 +182,22 @@ namespace brgen::nast {
                 // weak は所有しない逆向き参照。降りると循環するので参照だけ出す。
                 if (it.weak) {
                     out += child_prefix + b + it.label + " -> ";
-                    out += it.id ? (std::string(to_string(it.type)) + " #" + std::to_string(it.id))
-                                 : std::string("(null)");
+                    if (it.id) {
+                        out += to_string(it.type);
+                        out += " #";
+                        out += std::to_string(it.id);
+                        // 参照先には降りないので、どこを指しているかは位置でしか分からない。
+                        // 木に現れないノード (side table 経由の合成ノードなど) では特に要る。
+                        if (auto* h = arena->header_at(it.id); h && h->loc.line) {
+                            out += " @";
+                            out += std::to_string(h->loc.line);
+                            out += ":";
+                            out += std::to_string(h->loc.col);
+                        }
+                    }
+                    else {
+                        out += "(null)";
+                    }
                     out += "\n";
                     continue;
                 }

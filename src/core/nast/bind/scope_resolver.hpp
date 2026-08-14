@@ -18,16 +18,14 @@
 // 木と文の順序とノード種から毎回組み直す。区間 (Scope::next) の連なりは
 // 宣言 1 つあたりの position 番号に畳んである。
 //
-// example/ 309 ファイルで src2json と突き合わせた結果 (2026-08-11): 一致 6218 /
-// 解決先が違う 62 / src2json だけ解決 47 / nast だけ解決 19。
+// example/ 309 ファイルで src2json と突き合わせた結果 (2026-08-11): 一致 6265 /
+// 解決先が違う 62 / src2json だけ解決 0 / nast だけ解決 19。
+// **src2json が解決して nast が解決しない参照は無い。**
 // 「解決先が違う」62 件は全部 for x in ... の x で、nast が RangeLoop 文を、
-// src2json が束縛の Ident を指す表現差。解決そのものは一致している (62/62 で行が一致)。
+// src2json が束縛の Ident を指す表現差 (62/62 で行が一致)。
 //
-// 分かっている穴 (解決規則ではなく、まだ無い機構が原因):
-//   - match / if の分岐で宣言したフィールドが、囲む format から見えない。
-//     元は union 導出が囲むスコープに合成フィールドを入れる (F0030)。
-//     例: example/coap.bgn の extended_option_delta
-//   - import した先の名前は見ない。ImportResolution 表を埋める側がまだ無い
+// 分岐で宣言された名前は binder が合成した Field (UnionFields 表) を通して見える。
+// import した先の名前はまだ見ない (ImportResolution 表を埋める側が無い)。
 
 namespace brgen::nast::bind {
 
@@ -71,20 +69,16 @@ namespace brgen::nast::bind {
         void declare(Env& env, Node<Ident> name, Node<Statement> node, bool is_type,
                      std::size_t position);
         void run_block(Env& env, Node<Body> body, std::size_t base);
+        void declare_inline_formats(Env& env, Node<Type> ty, std::size_t position);
         void resolve_name(Env& env, Node<Ident> name, std::size_t position);
         Node<Statement> lookup(const Env& env, std::string_view name, std::size_t position) const;
 
-        // 根が 7 つあるので (Module / Statement / Body / Arguments / Argument / Ident / Type)
-        // それぞれに口を出す。派生 -> 基底の暗黙変換で振り分く。
-        void walk(Env& env, Node<Statement> n, std::size_t position);
-        void walk(Env& env, Node<Type> n, std::size_t position);
-        void walk(Env& env, Node<Body> n, std::size_t position);
-        void walk(Env& env, Node<Arguments> n, std::size_t position);
-        void walk(Env& env, Node<Argument> n, std::size_t position);
-        void walk(Env& env, Node<Ident> n, std::size_t position);
-        void walk(Env& env, Node<Module> n, std::size_t position);
+        // 根 (derive を持たないノード) は複数あり増えもするので、根ごとに口を出さず
+        // 1 つのテンプレートで受ける。振り分けは as_any<T>() による実行時判定。
+        template <class T>
+        void walk(Env& env, Node<T> n, std::size_t position);
 
-        // 上のどれかへ振り分けつつ、子を一般に辿る。
+        // 子を一般に辿る。
         void walk_children(Env& env, auto n, std::size_t position);
     };
 
