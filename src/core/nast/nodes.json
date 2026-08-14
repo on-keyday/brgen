@@ -94,6 +94,14 @@
                     "name": "asserts",
                     "type": "vector<Node<Assert>>",
                     "description": "Asserts defined inside the format"
+                },
+                {
+                    "name": "nested_formats",
+                    "type": "vector<Node<Format>>"
+                },
+                {
+                    "name": "nested_enums",
+                    "type": "vector<Node<Enum>>"
                 }
             ]
         },

@@ -7,8 +7,11 @@
 //   nast_corpus --tree <file.bgn>      構文木を表示する
 //   nast_corpus --tree --show-null ... 埋まっていないフィールドも出す
 //   nast_corpus --tree --no-weak ...   weak を落として所有辺だけにする
+#include "core/common/error.h"
 #include "parse.h"
 #include "printer.h"
+#include "bind/binder.hpp"
+#include "bind/scope_resolver.hpp"
 
 #include <core/common/file.h>
 #include <print>
@@ -90,8 +93,9 @@ int main(int argc, char** argv) {
         }
     }
     if (paths.empty()) {
-        std::println(stderr, "usage: nast_corpus [--error-tolerant] [--comments] "
-                             "[--tree [--show-null] [--no-weak]] <file.bgn>...");
+        std::println(stderr,
+                     "usage: nast_corpus [--error-tolerant] [--comments] "
+                     "[--tree [--show-null] [--no-weak]] <file.bgn>...");
         return 2;
     }
 
@@ -100,16 +104,23 @@ int main(int argc, char** argv) {
         brgen::nast::Arena arena;
         brgen::nast::Node<brgen::nast::Module> root;
         auto r = run(path, arena, root, popt);
+        brgen::nast::SideTables tables;
+        brgen::LocationError err;
+        brgen::nast::bind::Binder binder{arena, err, tables};
+        binder.bind(root);
+        brgen::nast::bind::ScopeResolver resolver{arena, tables, err};
+        resolver.resolve(root);
         if (r.ok) {
             ok++;
             if (r.diagnostics) {
                 std::println("ok    {:<60} {:>5} nodes  ({} diagnostics)", path, r.nodes, r.diagnostics);
             }
             else {
-                std::println("ok    {:<60} {:>5} nodes", path, r.nodes);
+                std::println("ok    {:<60} {:>5} nodes  ({} resolved, {} unresolved)", path,
+                             r.nodes, resolver.resolved, resolver.unresolved);
             }
             if (show_tree) {
-                std::print("{}", brgen::nast::pretty_print(arena, root, opt));
+                std::print("{}", brgen::nast::pretty_print(arena, tables, root, opt));
             }
         }
         else {
@@ -118,5 +129,6 @@ int main(int argc, char** argv) {
         }
     }
     std::println("\n{} ok / {} error / {} total", ok, ng, ok + ng);
+
     return ng == 0 ? 0 : 1;
 }

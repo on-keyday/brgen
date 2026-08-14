@@ -23,6 +23,7 @@ futils の探索順:
 """
 
 import argparse
+import glob
 import json
 import os
 import shutil
@@ -37,6 +38,8 @@ NODES_H = os.path.join(SCRIPT_DIR, "nodes.h")
 TEST_CPP = os.path.join(SCRIPT_DIR, "test.cpp")
 # corpus はパーサ本体を要る。test.cpp はヘッダだけで足りる。
 PARSER_CPP = [os.path.join(SCRIPT_DIR, n) for n in ("parse.cpp", "stream.cpp")]
+# 束縛 / 名前解決。corpus から呼ぶ。
+BIND_CPP = sorted(glob.glob(os.path.join(SCRIPT_DIR, "bind", "*.cpp")))
 CORPUS_CPP = os.path.join(SCRIPT_DIR, "corpus.cpp")
 
 # 本体と同じく C++23 / clang を既定にする。無ければ順に探す。
@@ -126,10 +129,10 @@ def write_compile_commands(compile_flags):
     ビルドに使うフラグをそのまま書くので、実際のビルドと食い違わない。
     """
     entries = []
-    for name in sorted(os.listdir(SCRIPT_DIR)):
-        if not name.endswith(".cpp"):
-            continue
-        path = os.path.join(SCRIPT_DIR, name)
+    sources = [os.path.join(SCRIPT_DIR, n) for n in sorted(os.listdir(SCRIPT_DIR))
+               if n.endswith(".cpp")]
+    sources += BIND_CPP
+    for path in sources:
         entries.append({
             "directory": SCRIPT_DIR,
             "file": path,
@@ -215,7 +218,7 @@ def main():
         print("note: futils not found; skipping the corpus driver")
     else:
         corpus = os.path.join(BUILD_DIR, "nast_corpus" + suffix)
-        run(cmd + [CORPUS_CPP] + PARSER_CPP + ["-o", corpus] + link_args)
+        run(cmd + [CORPUS_CPP] + PARSER_CPP + BIND_CPP + ["-o", corpus] + link_args)
         print(f"built: {corpus}")
 
     if not args.no_run:

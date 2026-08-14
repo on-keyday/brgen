@@ -67,6 +67,34 @@ namespace brgen::nast {
         });
     }
 
+    template <class T, class F>
+    constexpr void traverse_recursive(Arena& a, Node<T> id, F&& fn) {
+        auto* h = a.header_at(id.id());
+        if (!h) {
+            return;
+        }
+        auto index = h->data_index;
+        visit_node_type(h->type, [&](auto tag) {
+            using U = typename decltype(tag)::type;
+            if (auto* d = a.template data_at<U>(index)) {
+                d->for_each_field([&](const char*, auto& v, bool weak) {
+                    if (weak) {
+                        return;
+                    }
+                    using M = std::decay_t<decltype(v)>;
+                    if constexpr (node_of<M>::is_node) {
+                        fn(fn, v);
+                    }
+                    else if constexpr (vector_of<M>::is_vector) {
+                        for (auto& e : v) {
+                            fn(fn, e);
+                        }
+                    }
+                });
+            }
+        });
+    }
+
     // 部分木を先行順で。fn が bool を返す形なら false で子を見ない。
     template <class T, class F>
     constexpr void visit_all(Arena& a, Node<T> id, F&& fn) {
