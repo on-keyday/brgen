@@ -122,6 +122,17 @@
             "storage": "flag"
         },
         {
+            "name": "UnionFields",
+            "over": "ConditionalExpr",
+            "storage": "sparse",
+            "fields": [
+                {
+                    "name": "fields",
+                    "type": "vector<Node<Field>>"
+                }
+            ]
+        },
+        {
             "name": "ImportResolution",
             "over": "Import",
             "storage": "sparse",
@@ -1327,6 +1338,25 @@
                     "name": "base",
                     "type": "Node<ConditionalExpr>",
                     "weak": true
+                },
+                {
+                    "name": "candidates",
+                    "type": "vector<Node<StructUnionCandidate>>"
+                }
+            ]
+        },
+        {
+            "name": "StructUnionCandidate",
+            "fields": [
+                {
+                    "name": "cond",
+                    "type": "Node<Expr>",
+                    "weak": true
+                },
+                {
+                    "name": "inner_struct",
+                    "type": "Node<BodyStatement>",
+                    "weak": true
                 }
             ]
         },
@@ -1456,7 +1486,6 @@
         },
         {
             "name": "UnionCandidate",
-            "derive": "Statement",
             "fields": [
                 {
                     "name": "cond",

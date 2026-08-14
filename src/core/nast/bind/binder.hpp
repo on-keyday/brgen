@@ -4,7 +4,10 @@
 #include "../access.h"
 #include "../traverse.h"
 #include "../stream.h"
+#include <map>
+#include <string>
 #include <unordered_map>
+#include <utility>
 
 namespace brgen::nast::bind {
     struct Binder {
@@ -60,19 +63,95 @@ namespace brgen::nast::bind {
                 asserts.push_back(asrt);
             }
             else if (auto c = stmt.as<ConditionalExpr>()) {
-                for (auto& block : c.ref(a)->blocks) {
+                auto& blocks = c.ref(a)->blocks;
+                auto loc = c.ref(a).loc();
+
+                // 分岐 i の条件。既定の分岐 (`.. =>` / `else`) は null になる。
+                auto cond_of = [&](std::size_t i) -> Node<Expr> {
+                    if (auto cs = blocks[i].as<ConditionalStatement>()) {
+                        return cs.ref(a)->condition;
+                    }
+                    return nullref;
+                };
+
+                // 分岐ごとに宣言されたフィールドを、分岐の順に集める。
+                std::vector<std::vector<Node<Field>>> per_branch(blocks.size());
+                for (std::size_t i = 0; i < blocks.size(); i++) {
                     InnerStruct inner;
-                    auto statements = block.field<"body.statements">(a);
+                    auto statements = blocks[i].field<"body.statements">(a);
                     for (auto& s : *statements) {
                         bind(s, inner.fields, functions, inner.asserts, enums, formats);
                     }
-                    tables.table<InnerStruct>().set(block, std::move(inner));
+                    per_branch[i] = inner.fields;
+                    tables.table<InnerStruct>().set(blocks[i], std::move(inner));
                 }
-                auto type = a.make<StructUnionType>(c.ref(a).loc());
+
+                auto type = a.make<StructUnionType>(loc);
                 type->base = c;
-                auto field = a.make<Field>(c.ref(a).loc());
+                for (std::size_t i = 0; i < blocks.size(); i++) {
+                    auto sc = a.make<StructUnionCandidate>(loc);
+                    sc->cond = cond_of(i);
+                    sc->inner_struct = blocks[i];
+                    type->candidates.push_back(sc);
+                }
+                auto field = a.make<Field>(loc);
                 field->type = type;
                 fields.push_back(field);
+
+                // 同じ名前が複数の分岐で宣言されうる。名前ごとに 1 つの Field を作り、
+                // 型を UnionType にして分岐との対応を candidates に持たせる。
+                // 参照の解決先を 1 つに定めるためのもので、これが無いと
+                // 「どの分岐の Field を指すか」に答えが無くなる。
+                std::vector<std::string> order;
+                std::map<std::string, std::vector<std::pair<std::size_t, Node<Field>>>> by_name;
+                for (std::size_t i = 0; i < per_branch.size(); i++) {
+                    for (auto& f : per_branch[i]) {
+                        auto n = f.field<"name.identifier">(a);
+                        if (!n || n->empty()) {
+                            continue;  // 無名フィールドは名前を持ち込まない
+                        }
+                        if (!by_name.contains(*n)) {
+                            order.push_back(*n);
+                        }
+                        by_name[*n].push_back({i, f});
+                    }
+                }
+
+                UnionFields synthesized;
+                for (auto& name : order) {
+                    auto& entries = by_name[name];
+                    auto union_type = a.make<UnionType>(loc);
+                    union_type->base_type = type;
+                    if (auto m = c.as<Match>()) {
+                        union_type->cond = m.ref(a)->condition;
+                    }
+                    // candidates は分岐と順序を揃える。名前が現れない分岐には
+                    // cond だけ持つ候補を入れる。これが無いと、条件が重なる形
+                    // (if x <= 3 / elif x <= 5) で後の分岐の値が前の分岐の入力にも
+                    // 返ってしまう。末尾の不在は利用側の最終 fallback が拾うので入れない。
+                    std::size_t cand_i = 0;
+                    for (auto& [branch, fld] : entries) {
+                        for (; cand_i < branch; cand_i++) {
+                            auto pad = a.make<UnionCandidate>(loc);
+                            pad->cond = cond_of(cand_i);
+                            union_type->candidates.push_back(pad);
+                        }
+                        auto cand = a.make<UnionCandidate>(fld.ref(a).loc());
+                        cand->cond = cond_of(branch);
+                        cand->field = fld;
+                        union_type->candidates.push_back(cand);
+                        cand_i++;
+                    }
+                    // 位置は最初に宣言された分岐に合わせる。match の行より、
+                    // その名前が最初に現れた場所のほうが定義位置として有用。
+                    auto decl_loc = entries.front().second.ref(a).loc();
+                    auto union_field = a.make<Field>(decl_loc);
+                    union_field->name = a.make<Ident>(decl_loc, name);
+                    union_field->type = union_type;
+                    fields.push_back(union_field);
+                    synthesized.fields.push_back(union_field);
+                }
+                tables.table<UnionFields>().set(c, std::move(synthesized));
             }
         }
 
