@@ -375,6 +375,43 @@ getter に写る。`(*x.name())` がその形で、素のメンバ名が要る�
 という順序になる。逆向きに「side table にすれば解決する」と読むと、2 行目まで
 解決するかのように見えてしまう。
 
+#### null padding が何のためだったか (parse.cpp:304-341)
+
+```cpp
+std::vector<std::shared_ptr<UnionCandidate>> null_cache;   // 304: 名前ごとのループの外
+auto get_null_cache = [&](size_t i) { ... cond = type->conds[i]; field は null ... };
+
+for (auto& [k, v] : m) {          // 316: 名前ごと
+    size_t cand_i = 0;
+    for (auto& c : v) {           // その名前が現れる分岐だけが入っている
+        while (c->cond.lock() != type->conds[cand_i]) {
+            union_type->candidates.push_back(get_null_cache(cand_i));   // 334
+            cand_i++;
+        }
+        union_type->candidates.push_back(c);
+        cand_i++;
+    }
+}
+```
+
+**目的は `candidates[i]` を `conds[i]` に添字で揃えること。** `m` は
+「名前 → その名前が宣言されている分岐の候補」なので疎で、詰めて入れると
+`candidates[1]` がどの分岐なのか分からなくなる。
+
+読むと 2 点出てくる:
+
+- **末尾には効いていない。** while は「次の実候補の cond に追いつくまで」なので、
+  最後の出現より後ろの分岐は入らない。`candidates.size() < conds.size()` になりえる。
+  利用側は「null 候補」と「範囲外」の**両方を不在として扱う**必要があり、不変条件は
+  「`i < candidates.size()` の範囲でのみ `candidates[i].cond == conds[i]`」という半端な形
+- **穴埋めノードは名前をまたいで共有される。** `null_cache` が名前ごとのループの外にあるので、
+  分岐 i のプレースホルダは 1 個。`extended_option_delta` の `candidates[2]` と
+  `extended_option_length` の `candidates[2]` が同じ `UnionCandidate` ノードになる。
+  所有者が一意でないノードが木に混ざる
+
+疎な写像 (`branch → field`) にすると、不在は「写像に無い」だけなので
+プレースホルダも共有も末尾の場合分けも要らなくなる。
+
 #### parser が合成 Ident / Field を scope に push することについて
 
 これは上の表に**入れない**。実害が観測されていないため。
