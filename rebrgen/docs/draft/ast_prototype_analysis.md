@@ -367,7 +367,7 @@ getter に写る。`(*x.name())` がその形で、素のメンバ名が要る�
 
 | 症状 | 原因 | 消すには |
 | --- | --- | --- |
-| `conds.size() == structs.size()` の不変条件、`get_null_cache` の null padding | 導出ビューが構文を**複製**している | 複製をやめる (branches を正本にする)。置き場所は関係ない |
+| `conds.size() == structs.size()` の不変条件 | 導出ビューが構文を**複製**している | 複製をやめる (branches を正本にする)。置き場所は関係ない |
 | 生成器の getter 化と `(*...)` の剥がし、メンバ列での場合分け | union という**機能そのもの** | 消えない |
 
 **解析結果を side table に置くこと (軸1) はこのどちらの直接の原因でもない。**
@@ -398,19 +398,45 @@ for (auto& [k, v] : m) {          // 316: 名前ごと
 「名前 → その名前が宣言されている分岐の候補」なので疎で、詰めて入れると
 `candidates[1]` がどの分岐なのか分からなくなる。
 
-読むと 2 点出てくる:
+#### null 候補は「不在」を出力するためのもの (作者証言 + generate.h:433-465)
 
-- **末尾には効いていない。** while は「次の実候補の cond に追いつくまで」なので、
-  最後の出現より後ろの分岐は入らない。`candidates.size() < conds.size()` になりえる。
-  利用側は「null 候補」と「範囲外」の**両方を不在として扱う**必要があり、不変条件は
-  「`i < candidates.size()` の範囲でのみ `candidates[i].cond == conds[i]`」という半端な形
-- **穴埋めノードは名前をまたいで共有される。** `null_cache` が名前ごとのループの外にあるので、
-  分岐 i のプレースホルダは 1 個。`extended_option_delta` の `candidates[2]` と
-  `extended_option_length` の `candidates[2]` が同じ `UnionCandidate` ノードになる。
-  所有者が一意でないノードが木に混ざる
+添字合わせは記帳のためではない。**条件が重なるときに壊れないため**である。
+`json2cpp2` の `write_getter` は candidates を順に回してこう出す:
 
-疎な写像 (`branch → field`) にすると、不在は「写像に無い」だけなので
-プレースホルダも共有も末尾の場合分けも要らなくなる。
+```cpp
+for (auto& c : union_ty->candidates) {
+    if (cond) {
+        w.writeln("if (", cond_s, "==", match_cond, ") {");
+        auto f = c->field.lock();
+        if (!f) { w.writeln("return ", null, ";"); }   // null 候補はここ
+        else    { make_access(f); }
+        w.writeln("}");
+    }
+    ...
+}
+if (!end_else) { w.writeln("return ", null, ";"); }
+```
+
+**null 候補は飛ばされず `return null;` を出す。** `if x <= 3` / `elif x <= 5` のように
+条件が重なる形で、分岐 0 に field が無い場合、穴埋めを省くと
+
+```cpp
+if (x <= 5) return B;     // x = 2 でも真になってしまう
+```
+
+となり、本来 field を持たない分岐 0 の入力が B を返す。穴埋めが出す
+`if (x <= 3) return null;` が**後続の重なる条件を塞ぐ**ためにある。
+
+末尾に穴埋めが無いのもこれで整合する。末尾の不在は最後の
+`if (!end_else) { return null; }` が拾うので要らない。
+
+`null_cache` が名前ごとのループの外にあるのは、プレースホルダが `cond` しか持たないため。
+分岐 i の穴は名前によらず同じものになるので 1 個を共有している。
+
+**したがって「疎な写像にすれば padding が消える」は成り立たない。** 疎な写像から同じ出力を
+得るには、利用側が `conds` を駆動にして全分岐を回り不在を合成する必要があり、それは
+padding が前もってやっていることと同じである。移せるのは「いつ合成するか」だけで、
+合成そのものは消えない。
 
 #### parser が合成 Ident / Field を scope に push することについて
 
