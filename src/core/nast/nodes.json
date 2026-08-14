@@ -655,6 +655,16 @@
             "fields": []
         },
         {
+            "name": "GenericFormat",
+            "derive": "NamedBodyStatement",
+            "fields": [
+                {
+                    "name": "type_parameters",
+                    "type": "vector<Node<TypeParameter>>"
+                }
+            ]
+        },
+        {
             "name": "Function",
             "derive": "NamedBodyStatement",
             "fields": [
@@ -760,8 +770,12 @@
         },
         {
             "name": "Metadata",
-            "derive": "NamedStatement",
+            "derive": "Statement",
             "fields": [
+                {
+                    "name": "name",
+                    "type": "string"
+                },
                 {
                     "name": "arguments",
                     "type": "Node<Arguments>"
@@ -1533,7 +1547,13 @@
         {
             "name": "TypeParameter",
             "derive": "NamedStatement",
-            "fields": []
+            "fields": [
+                {
+                    "name": "belong",
+                    "type": "Node<Statement>",
+                    "weak": true
+                }
+            ]
         },
         {
             "name": "FieldArgument",

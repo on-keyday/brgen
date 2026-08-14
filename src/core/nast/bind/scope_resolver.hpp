@@ -18,17 +18,15 @@
 // 木と文の順序とノード種から毎回組み直す。区間 (Scope::next) の連なりは
 // 宣言 1 つあたりの position 番号に畳んである。
 //
-// example/ 309 ファイルで src2json と突き合わせた結果 (2026-08-11): 一致 6200 /
-// 解決先が違う 62 / src2json だけ解決 65 / nast だけ解決 10。
+// example/ 309 ファイルで src2json と突き合わせた結果 (2026-08-11): 一致 6218 /
+// 解決先が違う 62 / src2json だけ解決 47 / nast だけ解決 19。
 // 「解決先が違う」62 件は全部 for x in ... の x で、nast が RangeLoop 文を、
-// src2json が束縛の Ident を指す表現差。解決そのものは一致している。
+// src2json が束縛の Ident を指す表現差。解決そのものは一致している (62/62 で行が一致)。
 //
-// 分かっている穴 (どちらも解決規則ではなく、まだ無い機構が原因):
+// 分かっている穴 (解決規則ではなく、まだ無い機構が原因):
 //   - match / if の分岐で宣言したフィールドが、囲む format から見えない。
 //     元は union 導出が囲むスコープに合成フィールドを入れる (F0030)。
 //     例: example/coap.bgn の extended_option_delta
-//   - 型パラメータが解決できない。nast の Format に type_parameters が無いため。
-//     例: example/avro.bgn の format Array[Item] の Item
 //   - import した先の名前は見ない。ImportResolution 表を埋める側がまだ無い
 
 namespace brgen::nast::bind {

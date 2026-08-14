@@ -7,29 +7,20 @@ namespace brgen::nast::bind {
 
     namespace {
 
-        // 名前を持ち込む文 = NamedStatement の派生。
-        //
-        // ただし Metadata だけは外す。あれの name は config.url のようなドット付きの
-        // 設定名であって束縛ではないので、スコープに入れると "config.url" という
-        // 名前が宣言されたことになってしまう。
-        // (Metadata が NamedStatement を派生していること自体、スキーマ側で
-        //  見直す余地がある。名前が Ident でなく文字列で足りるため)
-        bool declares_name(NodeType t) {
-            return is_derived<NamedStatement>(t) && t != NodeType::Metadata;
-        }
-
         // 前方参照でき、外側のスコープからも見える宣言。
         // 元の is_type_ident (scope.h:46) に当たるが、Ident::usage ではなく
         // 宣言している文の種類で判定する。usage は解析結果なので nast のノードには無い。
         bool is_type_decl(NodeType t) {
-            return t == NodeType::Format || t == NodeType::State ||
-                   t == NodeType::Enum || t == NodeType::TypeParameter;
+            return t == NodeType::Format || t == NodeType::GenericFormat ||
+                   t == NodeType::State || t == NodeType::Enum ||
+                   t == NodeType::TypeParameter;
         }
 
         // 本体が「型の壁」になる文。外を見るときに型だけへ絞られる。
         // 元は Scope::owner の種類で見ている (scope.h:75-83)。fn は壁ではない。
         bool is_type_barrier(NodeType t) {
-            return t == NodeType::Format || t == NodeType::State || t == NodeType::Enum;
+            return t == NodeType::Format || t == NodeType::GenericFormat ||
+                   t == NodeType::State || t == NodeType::Enum;
         }
 
     }  // namespace
@@ -47,9 +38,7 @@ namespace brgen::nast::bind {
                                 std::size_t base) {
         for (std::size_t i = 0; i < stmts.size(); i++) {
             auto s = stmts[i];
-            if (!declares_name(s.type())) {
-                continue;
-            }
+            // 名前を持ち込む文 = NamedStatement の派生。例外は無い。
             if (auto named = s.as_any<NamedStatement>()) {
                 declare(env, a.get<NamedStatement>(named)->name, s, is_type_decl(s.type()),
                         base + i + 1);
@@ -165,6 +154,13 @@ namespace brgen::nast::bind {
             Env inner{&env, position, is_type_barrier(n.type()), {}};
             // fn の引数は本体スコープの先頭に入る (parse.cpp:1686 が
             // parse_indent_block へ渡している。format の型パラメータも同じ扱い)。
+            // 型パラメータは本体スコープの先頭に入る (parse.cpp が
+            // parse_indent_block へ渡すのと同じ扱い)。
+            if (auto gen = n.as_any<GenericFormat>()) {
+                for (auto& tp : a.get<GenericFormat>(gen)->type_parameters) {
+                    declare(inner, a.get<TypeParameter>(tp)->name, tp, true, 0);
+                }
+            }
             if (auto fn = n.as_any<Function>()) {
                 auto* f = a.get<Function>(fn);
                 for (auto& p : f->parameters) {
@@ -215,10 +211,8 @@ namespace brgen::nast::bind {
             auto* d = a.get<Loop>(loop);
             Env inner{&env, position, false, {}};
             if (d->init) {
-                if (declares_name(d->init.type())) {
-                    if (auto named = d->init.as_any<NamedStatement>()) {
-                        declare(inner, a.get<NamedStatement>(named)->name, d->init, false, 0);
-                    }
+                if (auto named = d->init.as_any<NamedStatement>()) {
+                    declare(inner, a.get<NamedStatement>(named)->name, d->init, false, 0);
                 }
                 walk(inner, d->init, 1);
             }

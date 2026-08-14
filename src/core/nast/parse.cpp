@@ -1384,7 +1384,14 @@ namespace brgen::nast {
 
             if (auto format = s.consume_token("format")) {
                 auto fmt = parse_format(std::move(*format), true);
-                return a.make<InlineStructType>(fmt.ref(a).loc(), NodeData<Type>{.is_explicit = true}, std::move(fmt));
+                // インライン format は名前で実体化しないので型パラメータを取れない。
+                // スキーマ上も InlineStructType は Format しか持てない。
+                auto concrete = fmt.as<Format>();
+                if (!concrete) {
+                    s.report_error(fmt.ref(a).loc(), "inline format cannot take type parameters");
+                }
+                return a.make<InlineStructType>(concrete.ref(a).loc(), NodeData<Type>{.is_explicit = true},
+                                                std::move(concrete));
             }
 
             lexer::Token ident;
@@ -1676,14 +1683,16 @@ namespace brgen::nast {
         /*
             <format> ::= "format" <ident> <indent block>
         */
-        Node<Format> parse_format(lexer::Token&& token, bool allow_anonymous) {
-            auto fmt = a.make<Format>(token.loc);
+        // 型パラメータを持つものは GenericFormat、持たないものは Format を返す。
+        // 下流が Format だけを見れば具象だけが取れるように分けてある
+        // (元は Format::type_parameters が空かどうかで毎回問うていた)。
+        Node<NamedBodyStatement> parse_format(lexer::Token&& token, bool allow_anonymous) {
+            Node<Ident> format_name;
             s.skip_white();
             auto ident_parse = [&] {
-                fmt->name = parse_ident("format name expected");
-                // fmt->name.ref(a)->usage = IdentUsage::define_format;
-                // fmt->name.ref(a)->base = fmt;
-                // check_duplicated_def(fmt->name.ref(a).get());
+                format_name = parse_ident("format name expected");
+                // format_name.ref(a)->usage = IdentUsage::define_format;
+                // check_duplicated_def(format_name.ref(a).get());
             };
             if (allow_anonymous) {
                 if (!s.peek_token(":")) {
@@ -1695,6 +1704,7 @@ namespace brgen::nast {
             }
             // optional generic type parameter list: `format Foo[T, U]:`
             std::vector<Node<Ident>> type_param_idents;
+            std::vector<Node<TypeParameter>> type_params;
             s.skip_space();
             if (s.consume_token("[")) {
                 for (;;) {
@@ -1703,13 +1713,10 @@ namespace brgen::nast {
                         break;
                     }
                     auto name = parse_ident_no_scope("type parameter name expected");
-                    // name.ref(a)->usage = IdentUsage::define_type_parameter;
                     auto tp = a.make<TypeParameter>(name.ref(a).loc());
                     tp->name = name;
-                    // tp->belong = fmt;
-                    // name.ref(a)->base = tp;
                     type_param_idents.push_back(name);
-                    // fmt->type_parameters.push_back(std::move(tp));
+                    type_params.push_back(tp);
                     s.skip_white();
                     if (s.expect_token("]")) {
                         continue;
@@ -1718,9 +1725,24 @@ namespace brgen::nast {
                 }
                 s.skip_space();
             }
+            Node<NamedBodyStatement> fmt;
+            if (type_params.empty()) {
+                auto concrete = a.make<Format>(token.loc);
+                concrete->name = format_name;
+                fmt = concrete;
+            }
+            else {
+                auto generic = a.make<GenericFormat>(token.loc);
+                generic->name = format_name;
+                for (auto& tp : type_params) {
+                    tp.ref(a)->belong = generic;
+                }
+                generic->type_parameters = std::move(type_params);
+                fmt = generic;
+            }
             {
                 // auto m_scope = state.enter_member(fmt);
-                fmt->body = parse_indent_block(fmt, "to start `format` body", &type_param_idents);
+                fmt.ref(a)->body = parse_indent_block(fmt, "to start `format` body", &type_param_idents);
             }
             // because fmt->name->expr_type = fmt->body->struct_type
             // makes circular reference, so not use it
@@ -1942,7 +1964,7 @@ namespace brgen::nast {
                 auto name = extract_name(call.ref(a)->callee);
                 if (name.starts_with("config.")) {
                     auto meta = a.make<Metadata>(call.ref(a).loc());
-                    meta->name = a.make<Ident>(call.ref(a).loc(), name);
+                    meta->name = name;
                     meta->arguments = args;
                     return meta;
                 }
@@ -1967,7 +1989,7 @@ namespace brgen::nast {
                 auto args = a.make<Arguments>(bin->right.ref(a).loc());
                 args->arguments.push_back(arg);
                 auto meta = a.make<Metadata>(bin.loc());
-                meta->name = a.make<Ident>(bin.loc(), name);
+                meta->name = name;
                 meta->arguments = args;
                 return meta;
             }
