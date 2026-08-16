@@ -104,7 +104,7 @@ jobs:
           fi
           python script/unictest.py --print-stdout --target-runner "$RUNNER" "${opt_args[@]}" --parallel-limit 0 --output-json test_results.json || true
       - name: Upload shard result
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v8.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v8.0.0
         with:
           # option_set is part of the name so a runner's per-option-set shards
           # produce distinct artifacts; the merge job globs all of them. Empty
@@ -140,7 +140,7 @@ jobs:
             --results test_results/test_results.json \
             --out "$GITHUB_STEP_SUMMARY"
       - name: Upload test results
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v8.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v8.0.0
         with:
           name: unictest-results
           path: test_results/
