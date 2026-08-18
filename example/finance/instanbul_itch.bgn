@@ -1,0 +1,57 @@
+# TODO: add correct ITCH format 
+config.url = "https://www.onixs.biz/itch-protocol.html"
+config.url = "https://www.borsaistanbul.com/files/bistech-itch-protocol-specification.pdf"
+
+enum ITCHMessageType:
+    :u8
+    AddOrder = 'A'
+    Seconds = 'T'
+
+format ITCHMessage:
+    message_type: ITCHMessageType 
+
+format SecondsMessage:
+    timestamp :u64
+
+format IndividualMessageHeader:
+    timestamp_ns :u64
+
+format AddOrderBody:
+    header :IndividualMessageHeader
+    order_id :u32
+    transaction_id :u32 
+    order_block_id :u32
+    side :u8
+    quantity :u32
+    price :u64 
+    yield :u32 
+
+enum FinancialProductType:
+    :u8
+    Option = 1
+    Forward = 2
+    Future = 3
+    FRA = 4
+    Cash = 5
+    Payment = 6
+    ExchangeRate = 7
+    InterestRateSwap = 8
+    REPO = 9
+    SyntheticBoxLegReference = 10
+    StandardCombination = 11
+    Gurantee = 12
+    OTCGeneral = 13
+    EquityWarrant = 14
+    SecurityLending = 15
+    Certificate = 18
+
+format OrderBookDiscovery:
+    header :IndividualMessageHeader
+    order_book_id :u32
+    symbol :[32]u8
+    long_name :[32]u8
+    isin :[12]u8
+    financial_product_type :FinancialProductType
+    trading_currency :[3]u8
+    number_of_decimals_in_price :u16
+    

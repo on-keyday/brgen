@@ -154,16 +154,31 @@ namespace brgen {
             if (input_mode == interpret_mode) {
                 switch (input_mode) {
                     case UtfMode::utf8:
-                        assert(sizeof(buffer[1]) == 1);
-                        make_file_from_text<std::string>(f, std::forward<decltype(buffer)>(buffer));
+                        if constexpr (sizeof(buffer[1]) == 1) {
+                            make_file_from_text<std::string>(f, std::forward<decltype(buffer)>(buffer));
+                        }
+                        else {
+                            assert(false);
+                            __builtin_unreachable();
+                        }
                         break;
                     case UtfMode::utf16:
-                        assert(sizeof(buffer[1]) == 2);
-                        make_file_from_text<std::u16string>(f, std::forward<decltype(buffer)>(buffer));
+                        if constexpr (sizeof(buffer[1]) == 2) {
+                            make_file_from_text<std::u16string>(f, std::forward<decltype(buffer)>(buffer));
+                        }
+                        else {
+                            assert(false);
+                            __builtin_unreachable();
+                        }
                         break;
                     case UtfMode::utf32:
-                        assert(sizeof(buffer[1]) == 4);
-                        make_file_from_text<std::u32string>(f, std::forward<decltype(buffer)>(buffer));
+                        if constexpr (sizeof(buffer[1]) == 4) {
+                            make_file_from_text<std::u32string>(f, std::forward<decltype(buffer)>(buffer));
+                        }
+                        else {
+                            assert(false);
+                            __builtin_unreachable();
+                        }
                         break;
                     default:
                         assert(false);
@@ -172,47 +187,62 @@ namespace brgen {
                 return;
             }
             else if (input_mode == UtfMode::utf8) {
-                assert(sizeof(buffer[1]) == 1);
-                switch (interpret_mode) {
-                    case UtfMode::utf16:
-                        make_file_from_text<std::u16string>(f, futils::utf::U16View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
-                        break;
-                    case UtfMode::utf32:
-                        make_file_from_text<std::u32string>(f, futils::utf::U32View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
-                        break;
-                    default:
-                        assert(false);
-                        __builtin_unreachable();
+                if constexpr (sizeof(buffer[1]) != 1) {
+                    assert(false);
+                    __builtin_unreachable();
+                }
+                else {
+                    switch (interpret_mode) {
+                        case UtfMode::utf16:
+                            make_file_from_text<std::u16string>(f, futils::utf::U16View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
+                            break;
+                        case UtfMode::utf32:
+                            make_file_from_text<std::u32string>(f, futils::utf::U32View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
+                            break;
+                        default:
+                            assert(false);
+                            __builtin_unreachable();
+                    }
                 }
                 return;
             }
             else if (input_mode == UtfMode::utf16le || input_mode == UtfMode::utf16be) {
-                assert(sizeof(buffer[1]) == 2);
-                switch (interpret_mode) {
-                    case UtfMode::utf8:
-                        make_file_from_text<std::string>(f, futils::utf::U8View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
-                        break;
-                    case UtfMode::utf32:
-                        make_file_from_text<std::u32string>(f, futils::utf::U32View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
-                        break;
-                    default:
-                        assert(false);
-                        __builtin_unreachable();
+                if constexpr (sizeof(buffer[1]) != 2) {
+                    assert(false);
+                    __builtin_unreachable();
+                }
+                else {
+                    switch (interpret_mode) {
+                        case UtfMode::utf8:
+                            make_file_from_text<std::string>(f, futils::utf::U8View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
+                            break;
+                        case UtfMode::utf32:
+                            make_file_from_text<std::u32string>(f, futils::utf::U32View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
+                            break;
+                        default:
+                            assert(false);
+                            __builtin_unreachable();
+                    }
                 }
                 return;
             }
             else if (input_mode == UtfMode::utf32le || input_mode == UtfMode::utf32be) {
-                assert(sizeof(buffer[1]) == 4);
-                switch (interpret_mode) {
-                    case UtfMode::utf8:
-                        make_file_from_text<std::string>(f, futils::utf::U8View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
-                        break;
-                    case UtfMode::utf16:
-                        make_file_from_text<std::u16string>(f, futils::utf::U16View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
-                        break;
-                    default:
-                        assert(false);
-                        __builtin_unreachable();
+                if constexpr (sizeof(buffer[1]) != 4) {
+                    assert(false);
+                    __builtin_unreachable();
+                }
+                else {
+                    switch (interpret_mode) {
+                        case UtfMode::utf8:
+                            make_file_from_text<std::string>(f, futils::utf::U8View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
+                            break;
+                        case UtfMode::utf16:
+                            make_file_from_text<std::u16string>(f, futils::utf::U16View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
+                            break;
+                        default:
+                            assert(false);
+                            __builtin_unreachable();
+                    }
                 }
                 return;
             }
