@@ -86,6 +86,7 @@ enum FormatKind:
 enum NodeKind:
     :u32
     Module
+    BodyStatement
     Field
     Format
     GenericFormat
@@ -111,6 +112,7 @@ enum NodeKind:
     Parameter
     Body
     Arguments
+    Argument
     NamedArgument
     Ident
     IntType
@@ -169,10 +171,13 @@ format Node:
         NodeKind.Module:
             statements_len :u32
             statements :[statements_len]Ref
+        NodeKind.BodyStatement:
+            belong :Ref
+            body :Ref
         NodeKind.Field:
             name :Ref
             type :Ref
-            arguments :Ref
+            arguments_ref :Ref
         NodeKind.Format:
             name :Ref
             belong :Ref
@@ -212,15 +217,15 @@ format Node:
             container :Ref
         NodeKind.Assign:
             assignee :Ref
-            value :Ref
-            op :BinaryOp
+            value_ref :Ref
+            op_binary_op :BinaryOp
         NodeKind.VariableDefinition:
             name :Ref
-            value :Ref
-            op :BinaryOp
+            value_ref :Ref
+            op_binary_op :BinaryOp
         NodeKind.Metadata:
             name :Ref
-            arguments :Ref
+            arguments_ref :Ref
         NodeKind.SpecifyOrder:
             order :Ref
         NodeKind.Sizeof:
@@ -235,17 +240,17 @@ format Node:
             extra_arguments :Ref
         NodeKind.Binary:
             type :Ref
-            op :BinaryOp
+            op_binary_op :BinaryOp
             left :Ref
             right :Ref
         NodeKind.Unary:
             type :Ref
-            op :UnaryOp
+            op_unary_op :UnaryOp
             target :Ref
         NodeKind.Call:
             type :Ref
             callee :Ref
-            arguments :Ref
+            arguments_ref :Ref
         NodeKind.Reference:
             type :Ref
             name :Ref
@@ -268,11 +273,13 @@ format Node:
             statements :[statements_len]Ref
             end_loc :Loc
         NodeKind.Arguments:
-            arguments_len :u32
-            arguments :[arguments_len]Ref
+            arguments_list_len :u32
+            arguments_list :[arguments_list_len]Ref
             end_loc :Loc
+        NodeKind.Argument:
+            value_ref :Ref
         NodeKind.NamedArgument:
-            value :Ref
+            value_ref :Ref
             name :Ref
         NodeKind.Ident:
             identifier :Ref
@@ -283,21 +290,21 @@ format Node:
             endian :Endian
         NodeKind.IntLiteral:
             type :Ref
-            value :Ref
+            value_ref :Ref
         NodeKind.BoolLiteral:
             type :Ref
-            value :u8
+            value_u8 :u8
         NodeKind.StrLiteral:
             type :Ref
-            value :Ref
+            value_ref :Ref
             binary_value :Ref
         NodeKind.CharLiteral:
             type :Ref
-            value :Ref
+            value_ref :Ref
             code :u32
         NodeKind.RegexLiteral:
             type :Ref
-            value :Ref
+            value_ref :Ref
         NodeKind.SpecialLiteral:
             type :Ref
             kind :SpecialLiteralKind
@@ -320,7 +327,7 @@ format Node:
             type :Ref
             start :Ref
             end :Ref
-            op :BinaryOp
+            op_binary_op :BinaryOp
         NodeKind.BadExpr:
             type :Ref
             content :Ref
@@ -430,7 +437,7 @@ format Node:
         NodeKind.EnumMember:
             name :Ref
             raw_expr :Ref
-            value :Ref
+            value_ref :Ref
             str_literal :Ref
         NodeKind.State:
             name :Ref
@@ -441,8 +448,8 @@ format Node:
             belong :Ref
         NodeKind.FieldArgument:
             raw_arguments :Ref
-            arguments_len :u32
-            arguments :[arguments_len]Ref
+            arguments_list_len :u32
+            arguments_list :[arguments_list_len]Ref
             assigns_len :u32
             assigns :[assigns_len]Ref
             alignment :Ref
@@ -454,7 +461,7 @@ format Node:
         NodeKind.Cast:
             type :Ref
             base :Ref
-            arguments :Ref
+            arguments_ref :Ref
         NodeKind.OrCond:
             type :Ref
             base :Ref
