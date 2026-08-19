@@ -25,7 +25,9 @@
 // src2json が束縛の Ident を指す表現差 (62/62 で行が一致)。
 //
 // 分岐で宣言された名前は binder が合成した Field (UnionFields 表) を通して見える。
-// import した先の名前はまだ見ない (ImportResolution 表を埋める側が無い)。
+// import した先の名前はここでは見ない。ImportResolution は ImportResolver が
+// 埋めるが、それを引くのはメンバアクセス (dns.Type) の解決で、元の実装でも
+// 型解析側の仕事 (typing.cpp:1188)。この段は 1 つの Module の中しか見ない。
 
 namespace brgen::nast::bind {
 

@@ -11,9 +11,11 @@
 #include "parse.h"
 #include "printer.h"
 #include "bind/binder.hpp"
+#include "bind/import_resolver.hpp"
 #include "bind/scope_resolver.hpp"
 
 #include <core/common/file.h>
+#include <format>
 #include <print>
 #include <string>
 #include <vector>
@@ -27,9 +29,9 @@ namespace {
         std::size_t diagnostics = 0;
     };
 
-    Result run(const std::string& path, brgen::nast::Arena& arena, brgen::nast::Node<brgen::nast::Module>& root,
-               brgen::nast::ParseOption popt) {
-        brgen::FileSet files;
+    // files は import 解決が続けて使うので呼び出し側が持つ。
+    Result run(const std::string& path, brgen::FileSet& files, brgen::nast::Arena& arena,
+               brgen::nast::Node<brgen::nast::Module>& root, brgen::nast::ParseOption popt) {
         auto loaded = files.add_file(path);
         if (!loaded) {
             return {false, 0, "cannot open file"};
@@ -101,23 +103,33 @@ int main(int argc, char** argv) {
 
     std::size_t ok = 0, ng = 0;
     for (auto& path : paths) {
+        brgen::FileSet files;
         brgen::nast::Arena arena;
         brgen::nast::Node<brgen::nast::Module> root;
-        auto r = run(path, arena, root, popt);
+        auto r = run(path, files, arena, root, popt);
         brgen::nast::SideTables tables;
         brgen::LocationError err;
-        brgen::nast::bind::Binder binder{arena, err, tables};
-        binder.bind(root);
+        // import は束縛より先。読み込んだ Module も同じ扱いで回す。
+        brgen::nast::bind::ImportResolver importer{arena, tables, files, err, popt};
+        importer.resolve(root);
         brgen::nast::bind::ScopeResolver resolver{arena, tables, err};
-        resolver.resolve(root);
+        for (auto& mod : importer.modules) {
+            brgen::nast::bind::Binder binder{arena, err, tables};
+            binder.bind(mod);
+            resolver.resolve(mod);
+        }
         if (r.ok) {
             ok++;
             if (r.diagnostics) {
                 std::println("ok    {:<60} {:>5} nodes  ({} diagnostics)", path, r.nodes, r.diagnostics);
             }
             else {
-                std::println("ok    {:<60} {:>5} nodes  ({} resolved, {} unresolved)", path,
-                             r.nodes, resolver.resolved, resolver.unresolved);
+                std::println("ok    {:<60} {:>5} nodes  ({} resolved, {} unresolved{})",
+                             path, arena.node_count(), resolver.resolved, resolver.unresolved,
+                             importer.resolved || importer.failed
+                                 ? std::format(", {} imports, {} import errors",
+                                               importer.resolved, importer.failed)
+                                 : std::string());
             }
             if (show_tree) {
                 std::print("{}", brgen::nast::pretty_print(arena, tables, root, opt));

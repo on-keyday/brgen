@@ -13,6 +13,7 @@
 #include "nast_wire_conv.hpp"
 
 #include "bind/binder.hpp"
+#include "bind/import_resolver.hpp"
 #include "bind/scope_resolver.hpp"
 #include "parse.h"
 #include "traverse.h"
@@ -123,6 +124,7 @@ namespace {
 
     Loaded load(const std::string& path, Arena& arena, Node<Module>& root, SideTables& tables,
                 ParseOption popt) {
+        // import した先も同じアリーナに入るので、往復の対象に含まれる。
         brgen::FileSet files;
         auto loaded = files.add_file(path);
         if (!loaded) {
@@ -141,10 +143,14 @@ namespace {
             return {false, "parse error"};
         }
         root = *parsed;
-        bind::Binder binder{arena, err, tables};
-        binder.bind(root);
+        bind::ImportResolver importer{arena, tables, files, err, popt};
+        importer.resolve(root);
         bind::ScopeResolver resolver{arena, tables, err};
-        resolver.resolve(root);
+        for (auto& mod : importer.modules) {
+            bind::Binder binder{arena, err, tables};
+            binder.bind(mod);
+            resolver.resolve(mod);
+        }
         return {true, {}};
     }
 
