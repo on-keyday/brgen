@@ -7,7 +7,9 @@ EBM が extended_binary_module.bgn で自分を定義しているのと同じ形
 
   python src/core/nast/wiregen.py [-o <path>]
 
-既定の出力先は ignore/nast/nast_wire.bgn (git 管理外)。
+既定の出力先は src/core/nast/nast_wire.bgn。EBM が extended_binary_module.bgn と
+生成された .hpp を両方 commit しているのと同じで、.bgn と .hpp は追跡する。
+中間の .json だけ ignore/ に置く。
 
 対応:
   Node<X>          -> Ref                       (u32 の添字)
@@ -169,7 +171,8 @@ def generate(schema):
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--schema", default=os.path.join(REPO, "src", "core", "nast", "nodes.json"))
-    p.add_argument("-o", "--output", default=os.path.join(REPO, "ignore", "nast", "nast_wire.bgn"))
+    p.add_argument("-o", "--output",
+                   default=os.path.join(REPO, "src", "core", "nast", "nast_wire.bgn"))
     args = p.parse_args()
 
     schema = json.load(io.open(args.schema, encoding="utf-8"))
