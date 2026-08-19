@@ -148,7 +148,6 @@ enum NodeKind:
     MetaType
     OptionalType
     GenericType
-    ScopedStatement
     MatchBranch
     UnionCandidate
     Return
@@ -410,9 +409,6 @@ format Node:
             base_type :Ref
             type_arguments_len :u32
             type_arguments :[type_arguments_len]Ref
-        NodeKind.ScopedStatement:
-            statement :Ref
-            struct_type :Ref
         NodeKind.MatchBranch:
             belong :Ref
             cond :Ref

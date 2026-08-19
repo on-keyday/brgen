@@ -22,6 +22,37 @@
 
 namespace {
 
+    // 型が付いた式の割合。typing の段が育つにつれてここが動く。
+    // Expr.type は parse では一切埋まらないので、初期値は 0 / 全体。
+    struct TypeCoverage {
+        std::size_t exprs = 0;
+        std::size_t typed = 0;
+    };
+
+    TypeCoverage type_coverage(brgen::nast::Arena& arena) {
+        TypeCoverage c;
+        for (std::uint32_t id = 1; id <= arena.node_count(); id++) {
+            auto* h = arena.header_at(id);
+            if (!h) {
+                continue;
+            }
+            brgen::nast::visit_node_type(h->type, [&](auto tag) {
+                using T = typename decltype(tag)::type;
+                if constexpr (std::derived_from<T, brgen::nast::Expr>) {
+                    auto* d = arena.data_at<T>(h->data_index);
+                    if (!d) {
+                        return;
+                    }
+                    c.exprs++;
+                    if (d->type) {
+                        c.typed++;
+                    }
+                }
+            });
+        }
+        return c;
+    }
+
     struct Result {
         bool ok = false;
         std::size_t nodes = 0;
@@ -130,6 +161,8 @@ int main(int argc, char** argv) {
                                  ? std::format(", {} imports, {} import errors",
                                                importer.resolved, importer.failed)
                                  : std::string());
+                auto cov = type_coverage(arena);
+                std::println("      {:<60} {:>5}/{} exprs typed", "", cov.typed, cov.exprs);
             }
             if (show_tree) {
                 std::print("{}", brgen::nast::pretty_print(arena, tables, root, opt));

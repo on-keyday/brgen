@@ -1448,20 +1448,6 @@
             ]
         },
         {
-            "name": "ScopedStatement",
-            "derive": "Statement",
-            "fields": [
-                {
-                    "name": "statement",
-                    "type": "Node<Statement>"
-                },
-                {
-                    "name": "struct_type",
-                    "type": "Node<StructType>"
-                }
-            ]
-        },
-        {
             "name": "MatchBranch",
             "derive": "Statement",
             "fields": [
