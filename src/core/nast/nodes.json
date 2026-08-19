@@ -573,18 +573,19 @@
     ],
     "nodes": [
         {
+            "name": "Statement",
+            "fields": [],
+            "abstract": true
+        },
+        {
             "name": "Module",
+            "derive": "Statement",
             "fields": [
                 {
                     "name": "statements",
                     "type": "vector<Node<Statement>>"
                 }
             ]
-        },
-        {
-            "name": "Statement",
-            "fields": [],
-            "abstract": true
         },
         {
             "name": "NamedStatement",
