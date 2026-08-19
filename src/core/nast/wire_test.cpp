@@ -3,10 +3,17 @@
 // 往復テスト。nast の状態を brgen 自身でバイナリにできることの確認用で、
 // アリーナ本体とは独立している (nodes.h には依存しない)。
 //
+// nast_wire.bgn と nast_wire.hpp は生成物だが、EBM の
+// extended_binary_module.bgn / .hpp と同じく追跡する。作り直す手順:
+//
 //   python src/core/nast/wiregen.py
-//   ./tool/src2json ignore/nast/nast_wire.bgn > ignore/nast/nast_wire.json
-//   ./tool/json2cpp2 -f ignore/nast/nast_wire.json > ignore/nast/nast_wire.hpp
-//   clang++ -std=c++23 -I ignore/nast -I <futils>/src/include //       src/core/nast/wire_test.cpp -o ignore/nast/wire_test
+//   ./tool/src2json src/core/nast/nast_wire.bgn > ignore/nast/nast_wire.json
+//   ./tool/json2cpp2 -f ignore/nast/nast_wire.json > src/core/nast/nast_wire.hpp
+//
+// このテストの組み立て:
+//
+//   clang++ -std=c++23 -I src/core/nast -I <futils>/src/include \
+//       src/core/nast/wire_test.cpp -o ignore/nast/wire_test
 #include "nast_wire.hpp"
 #include <binary/writer.h>
 #include <binary/reader.h>
