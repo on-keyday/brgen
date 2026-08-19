@@ -21,7 +21,26 @@ class Schema:
 
         self._normalize_enum_layers()
         self._by_name = {n["name"]: n for n in self.nodes}
+        self._check_derive_order()
         self._derives = self._build_derives()
+
+    def _check_derive_order(self) -> None:
+        """派生元は派生先より前に書く。
+
+        nodes.h は nodes の順にそのまま出るので、後ろに書かれた親を継承すると
+        「expected class name」や NodeData<Parent> の未定義でコンパイルが落ちる。
+        json 側で気付けるように、生成前にここで見る。
+        """
+        seen = set()
+        for node in self.nodes:
+            parent = node.get("derive")
+            if parent is not None and parent not in seen:
+                where = "unknown" if parent not in self._by_name else "declared later"
+                raise ValueError(
+                    f"node {node['name']!r} derives {parent!r} but that is {where}; "
+                    "list the base before the nodes that derive it"
+                )
+            seen.add(node["name"])
 
     @classmethod
     def load(cls, path: str) -> "Schema":
