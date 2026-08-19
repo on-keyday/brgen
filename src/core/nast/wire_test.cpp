@@ -182,15 +182,14 @@ int main(int argc, char** argv) {
         // pool は m を encode し終えるまで生かす。中の文字列は非所有ビュー。
         wire_conv::StringPool pool;
         wire::NastModule m;
-        std::string why;
-        if (!wire_conv::to_wire(arena, tables, root, pool, m, &why)) {
+        if (auto e = wire_conv::to_wire(arena, tables, root, pool, m)) {
             ng++;
-            std::println("NG    {:<52} to_wire failed: {}", path, why);
+            std::println("NG    {:<52} {}", path, e.error<std::string>());
             continue;
         }
 
-        // 符号化器は --use-error 付きで生成してあるので、失敗すると
-        // "decode: Ref::id: read int failed" のようにフィールド名で返る。
+        // 変換器も符号化器 (--use-error) も futils::error::Error<> を返す。
+        // "to_wire: Format::name: set failed (node #10)" のように場所が出る。
         std::string buf;
         ::futils::binary::writer w{::futils::binary::resizable_buffer_writer<std::string>(), &buf};
         if (auto e = m.encode(w)) {
@@ -210,9 +209,9 @@ int main(int argc, char** argv) {
         Arena back;
         SideTables back_tables;
         Node<Module> back_root;
-        if (!wire_conv::from_wire(got, back, back_tables, back_root, &why)) {
+        if (auto e = wire_conv::from_wire(got, back, back_tables, back_root)) {
             ng++;
-            std::println("NG    {:<52} from_wire failed: {}", path, why);
+            std::println("NG    {:<52} {}", path, e.error<std::string>());
             continue;
         }
 
