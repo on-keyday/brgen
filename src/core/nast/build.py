@@ -34,6 +34,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "..", ".."))
 BUILD_DIR = os.path.join(SCRIPT_DIR, "build")
 NODEGEN = os.path.join(SCRIPT_DIR, "nodegen.py")
+WIREGEN = os.path.join(SCRIPT_DIR, "wiregen.py")
 NODES_H = os.path.join(SCRIPT_DIR, "nodes.h")
 TEST_CPP = os.path.join(SCRIPT_DIR, "test.cpp")
 # corpus はパーサ本体を要る。test.cpp はヘッダだけで足りる。
@@ -41,6 +42,8 @@ PARSER_CPP = [os.path.join(SCRIPT_DIR, n) for n in ("parse.cpp", "stream.cpp")]
 # 束縛 / 名前解決。corpus から呼ぶ。
 BIND_CPP = sorted(glob.glob(os.path.join(SCRIPT_DIR, "bind", "*.cpp")))
 CORPUS_CPP = os.path.join(SCRIPT_DIR, "corpus.cpp")
+# 線上表現の往復。生成物 (nast_wire.hpp / nast_wire_conv.hpp) を要る。
+WIRE_CPP = os.path.join(SCRIPT_DIR, "wire_test.cpp")
 
 # 本体と同じく C++23 / clang を既定にする。無ければ順に探す。
 DEFAULT_COMPILERS = ["clang++", "g++", "c++"]
@@ -132,6 +135,7 @@ def write_compile_commands(compile_flags):
     sources = [os.path.join(SCRIPT_DIR, n) for n in sorted(os.listdir(SCRIPT_DIR))
                if n.endswith(".cpp")]
     sources += BIND_CPP
+    sources.append(WIRE_CPP)
     for path in sources:
         entries.append({
             "directory": SCRIPT_DIR,
@@ -162,6 +166,9 @@ def main():
 
     if not args.no_generate:
         run([sys.executable, NODEGEN])
+        # nast_wire_conv.hpp は nodes.h と同じ扱い。同時に nast_wire.bgn も出るが、
+        # そちらは追跡しているので、ずれていれば git の差分として見える。
+        run([sys.executable, WIREGEN])
     if not os.path.exists(NODES_H):
         sys.exit(f"error: {NODES_H} not found (run without --no-generate)")
 
@@ -220,6 +227,14 @@ def main():
         corpus = os.path.join(BUILD_DIR, "nast_corpus" + suffix)
         run(cmd + [CORPUS_CPP] + PARSER_CPP + BIND_CPP + ["-o", corpus] + link_args)
         print(f"built: {corpus}")
+
+        # 生成物が揃っているときだけ。wiregen.py を回していないと出ない。
+        if os.path.exists(os.path.join(SCRIPT_DIR, "nast_wire_conv.hpp")):
+            wire = os.path.join(BUILD_DIR, "nast_wire_test" + suffix)
+            run(cmd + [WIRE_CPP] + PARSER_CPP + BIND_CPP + ["-o", wire] + link_args)
+            print(f"built: {wire}")
+        else:
+            print("note: nast_wire_conv.hpp not found; run wiregen.py to build the wire driver")
 
     if not args.no_run:
         run([exe])
