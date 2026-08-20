@@ -445,6 +445,7 @@ namespace brgen::nast::wire {
         struct union_struct_2{
             std::uint32_t statements_len = 0;
             std::vector<Ref> statements;
+            Ref struct_type;
         };
         struct union_struct_3{
             Ref belong;
@@ -459,6 +460,7 @@ namespace brgen::nast::wire {
             Ref name;
             Ref belong;
             Ref body;
+            Ref struct_type;
         };
         struct union_struct_6{
             Ref name;
@@ -784,6 +786,7 @@ namespace brgen::nast::wire {
             Ref name;
             Ref belong;
             Ref body;
+            Ref struct_type;
         };
         struct union_struct_73{
             Ref name;
@@ -1131,6 +1134,10 @@ namespace brgen::nast::wire {
         Ref* str_literal();
         bool str_literal(Ref&& v);
         bool str_literal(const Ref& v);
+        const Ref* struct_type() const;
+        Ref* struct_type();
+        bool struct_type(Ref&& v);
+        bool struct_type(const Ref& v);
         const Ref* sub_byte_begin() const;
         Ref* sub_byte_begin();
         bool sub_byte_begin(Ref&& v);
@@ -37334,6 +37341,690 @@ namespace brgen::nast::wire {
         }
         return false;
     }
+    inline const Ref* Node::struct_type() const {
+        if (NodeKind::Module==(*this).node_kind) {
+        if(!std::holds_alternative<union_struct_2>(union_variant_1)) {
+            return nullptr;
+        }
+        return std::addressof(std::get<1>((*this).union_variant_1).struct_type);
+        }
+        if (NodeKind::BodyStatement==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Field==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Format==(*this).node_kind) {
+        if(!std::holds_alternative<union_struct_5>(union_variant_1)) {
+            return nullptr;
+        }
+        return std::addressof(std::get<4>((*this).union_variant_1).struct_type);
+        }
+        if (NodeKind::GenericFormat==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Function==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::If==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Match==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Loop==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::RangeLoop==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Assign==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::VariableDefinition==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Metadata==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::SpecifyOrder==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Sizeof==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Available==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::ExplicitError==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Binary==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Unary==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Call==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Reference==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::MemberAccess==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::TypeLiteral==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::ConditionalStatement==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Parameter==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Body==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Arguments==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Argument==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::NamedArgument==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Ident==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::IntType==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::IntLiteral==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::BoolLiteral==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::StrLiteral==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::CharLiteral==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::RegexLiteral==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::SpecialLiteral==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Paren==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Index==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Cond==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Range==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::BadExpr==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Assert==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::FloatType==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::BoolType==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::VoidType==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::IdentType==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::ImportedType==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::IntLiteralType==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::StrLiteralType==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::RegexLiteralType==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::ArrayType==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::FunctionType==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::StructType==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::InlineStructType==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::StructUnionType==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::StructUnionCandidate==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::UnionType==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::RangeType==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::EnumType==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::MetaType==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::OptionalType==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::GenericType==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::MatchBranch==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::UnionCandidate==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Return==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Break==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Continue==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Enum==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::EnumMember==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::State==(*this).node_kind) {
+        if(!std::holds_alternative<union_struct_72>(union_variant_1)) {
+            return nullptr;
+        }
+        return std::addressof(std::get<71>((*this).union_variant_1).struct_type);
+        }
+        return nullptr;
+    }
+    inline Ref* Node::struct_type() {
+        return const_cast<Ref*>(std::as_const(*this).struct_type());
+    }
+    inline bool Node::struct_type(const Ref& v) {
+        if (NodeKind::Module==(*this).node_kind) {
+            if(!std::holds_alternative<union_struct_2>(union_variant_1)) {
+                union_variant_1 = union_struct_2();
+            }
+            std::get<1>((*this).union_variant_1).struct_type = v;
+            return true;
+        }
+        if (NodeKind::BodyStatement==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Field==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Format==(*this).node_kind) {
+            if(!std::holds_alternative<union_struct_5>(union_variant_1)) {
+                union_variant_1 = union_struct_5();
+            }
+            std::get<4>((*this).union_variant_1).struct_type = v;
+            return true;
+        }
+        if (NodeKind::GenericFormat==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Function==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::If==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Match==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Loop==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::RangeLoop==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Assign==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::VariableDefinition==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Metadata==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::SpecifyOrder==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Sizeof==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Available==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::ExplicitError==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Binary==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Unary==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Call==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Reference==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::MemberAccess==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::TypeLiteral==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::ConditionalStatement==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Parameter==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Body==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Arguments==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Argument==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::NamedArgument==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Ident==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::IntType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::IntLiteral==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::BoolLiteral==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::StrLiteral==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::CharLiteral==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::RegexLiteral==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::SpecialLiteral==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Paren==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Index==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Cond==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Range==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::BadExpr==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Assert==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::FloatType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::BoolType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::VoidType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::IdentType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::ImportedType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::IntLiteralType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::StrLiteralType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::RegexLiteralType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::ArrayType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::FunctionType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::StructType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::InlineStructType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::StructUnionType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::StructUnionCandidate==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::UnionType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::RangeType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::EnumType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::MetaType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::OptionalType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::GenericType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::MatchBranch==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::UnionCandidate==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Return==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Break==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Continue==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Enum==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::EnumMember==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::State==(*this).node_kind) {
+            if(!std::holds_alternative<union_struct_72>(union_variant_1)) {
+                union_variant_1 = union_struct_72();
+            }
+            std::get<71>((*this).union_variant_1).struct_type = v;
+            return true;
+        }
+        return false;
+    }
+    inline bool Node::struct_type(Ref&& v) {
+        if (NodeKind::Module==(*this).node_kind) {
+            if(!std::holds_alternative<union_struct_2>(union_variant_1)) {
+                union_variant_1 = union_struct_2();
+            }
+            std::get<1>((*this).union_variant_1).struct_type = std::move(v);
+            return true;
+        }
+        if (NodeKind::BodyStatement==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Field==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Format==(*this).node_kind) {
+            if(!std::holds_alternative<union_struct_5>(union_variant_1)) {
+                union_variant_1 = union_struct_5();
+            }
+            std::get<4>((*this).union_variant_1).struct_type = std::move(v);
+            return true;
+        }
+        if (NodeKind::GenericFormat==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Function==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::If==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Match==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Loop==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::RangeLoop==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Assign==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::VariableDefinition==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Metadata==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::SpecifyOrder==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Sizeof==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Available==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::ExplicitError==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Binary==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Unary==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Call==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Reference==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::MemberAccess==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::TypeLiteral==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::ConditionalStatement==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Parameter==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Body==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Arguments==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Argument==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::NamedArgument==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Ident==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::IntType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::IntLiteral==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::BoolLiteral==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::StrLiteral==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::CharLiteral==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::RegexLiteral==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::SpecialLiteral==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Paren==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Index==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Cond==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Range==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::BadExpr==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Assert==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::FloatType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::BoolType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::VoidType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::IdentType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::ImportedType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::IntLiteralType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::StrLiteralType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::RegexLiteralType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::ArrayType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::FunctionType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::StructType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::InlineStructType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::StructUnionType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::StructUnionCandidate==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::UnionType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::RangeType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::EnumType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::MetaType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::OptionalType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::GenericType==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::MatchBranch==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::UnionCandidate==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Return==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Break==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Continue==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Enum==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::EnumMember==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::State==(*this).node_kind) {
+            if(!std::holds_alternative<union_struct_72>(union_variant_1)) {
+                union_variant_1 = union_struct_72();
+            }
+            std::get<71>((*this).union_variant_1).struct_type = std::move(v);
+            return true;
+        }
+        return false;
+    }
     inline const Ref* Node::sub_byte_begin() const {
         if (NodeKind::Module==(*this).node_kind) {
         return nullptr;
@@ -44143,6 +44834,9 @@ namespace brgen::nast::wire {
                     return err;
                 }
             }
+            if (auto err = std::get<1>((*this).union_variant_1).struct_type.encode(w)) {
+                return err;
+            }
         }
         else if (NodeKind::BodyStatement==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_3>(union_variant_1)) {
@@ -44180,6 +44874,9 @@ namespace brgen::nast::wire {
                 return err;
             }
             if (auto err = std::get<4>((*this).union_variant_1).body.encode(w)) {
+                return err;
+            }
+            if (auto err = std::get<4>((*this).union_variant_1).struct_type.encode(w)) {
                 return err;
             }
         }
@@ -45170,6 +45867,9 @@ namespace brgen::nast::wire {
             if (auto err = std::get<71>((*this).union_variant_1).body.encode(w)) {
                 return err;
             }
+            if (auto err = std::get<71>((*this).union_variant_1).struct_type.encode(w)) {
+                return err;
+            }
         }
         else if (NodeKind::TypeParameter==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_73>(union_variant_1)) {
@@ -45309,6 +46009,9 @@ namespace brgen::nast::wire {
                 }
                 std::get<1>((*this).union_variant_1).statements.push_back(std::move(tmp_203_));
             }
+            if (auto err = std::get<1>((*this).union_variant_1).struct_type.decode(r)) {
+                return err;
+            }
         }
         else if (NodeKind::BodyStatement==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_3>(union_variant_1)) {
@@ -45346,6 +46049,9 @@ namespace brgen::nast::wire {
                 return err;
             }
             if (auto err = std::get<4>((*this).union_variant_1).body.decode(r)) {
+                return err;
+            }
+            if (auto err = std::get<4>((*this).union_variant_1).struct_type.decode(r)) {
                 return err;
             }
         }
@@ -46342,6 +47048,9 @@ namespace brgen::nast::wire {
                 return err;
             }
             if (auto err = std::get<71>((*this).union_variant_1).body.decode(r)) {
+                return err;
+            }
+            if (auto err = std::get<71>((*this).union_variant_1).struct_type.decode(r)) {
                 return err;
             }
         }

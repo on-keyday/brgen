@@ -218,7 +218,7 @@ namespace brgen::nast::bind {
             }
             for (auto& block : a.get<ConditionalExpr>(cond)->blocks) {
                 auto* b = a.get<BodyStatement>(block);
-                if (auto cs = block.as_any<ConditionalStatement>()) {
+                if (auto cs = block.template as_any<ConditionalStatement>()) {
                     walk(inner, a.get<ConditionalStatement>(cs)->condition, position);
                 }
                 Env body_env{&inner, position, false, {}};

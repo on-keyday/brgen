@@ -170,6 +170,7 @@ format Node:
         NodeKind.Module:
             statements_len :u32
             statements :[statements_len]Ref
+            struct_type :Ref
         NodeKind.BodyStatement:
             belong :Ref
             body :Ref
@@ -181,6 +182,7 @@ format Node:
             name :Ref
             belong :Ref
             body :Ref
+            struct_type :Ref
         NodeKind.GenericFormat:
             name :Ref
             belong :Ref
@@ -439,6 +441,7 @@ format Node:
             name :Ref
             belong :Ref
             body :Ref
+            struct_type :Ref
         NodeKind.TypeParameter:
             name :Ref
             belong :Ref

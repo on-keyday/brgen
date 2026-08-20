@@ -584,6 +584,10 @@
                 {
                     "name": "statements",
                     "type": "vector<Node<Statement>>"
+                },
+                {
+                    "name": "struct_type",
+                    "type": "Node<StructType>"
                 }
             ]
         },
@@ -610,6 +614,17 @@
                 {
                     "name": "body",
                     "type": "Node<Body>"
+                }
+            ],
+            "abstract": true
+        },
+        {
+            "name": "NamedStructTypedStatement",
+            "derive": "NamedBodyStatement",
+            "fields": [
+                {
+                    "name": "struct_type",
+                    "type": "Node<StructType>"
                 }
             ],
             "abstract": true
@@ -663,7 +678,7 @@
         },
         {
             "name": "Format",
-            "derive": "NamedBodyStatement",
+            "derive": "NamedStructTypedStatement",
             "fields": []
         },
         {
@@ -1561,7 +1576,7 @@
         },
         {
             "name": "State",
-            "derive": "NamedBodyStatement",
+            "derive": "NamedStructTypedStatement",
             "fields": []
         },
         {

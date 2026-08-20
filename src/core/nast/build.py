@@ -10,7 +10,12 @@ corpus.cpp (.bgn を食わせる driver) をコンパイルして、test のほ�
   python src/core/nast/build.py --syntax-only  # 生成 + 構文チェックのみ
   python src/core/nast/build.py --no-generate  # 既存の nodes.h でビルド
   python src/core/nast/build.py --no-corpus    # test.cpp だけ建てる
+  python src/core/nast/build.py --no-wire-hpp  # nast_wire.hpp を作り直さない
   python src/core/nast/build.py --compiler g++ --std c++23
+
+nast_wire.hpp は nodes.json から出た nast_wire.bgn を brgen 本体の
+src2json / json2cpp2 に通したもの。tool/ にビルド済みなら毎回作り直し、
+無ければ既存のものを残して note を出す (--no-wire-hpp で明示的に落とせる)。
 
 nodes.h 自体は futils に依存しないが、test.cpp は as_json の検証に
 futils::json::Stringer<> を使う。futils が見つからない場合はその項目だけ落として
@@ -44,6 +49,13 @@ BIND_CPP = sorted(glob.glob(os.path.join(SCRIPT_DIR, "bind", "*.cpp")))
 CORPUS_CPP = os.path.join(SCRIPT_DIR, "corpus.cpp")
 # 線上表現の往復。生成物 (nast_wire.hpp / nast_wire_conv.hpp) を要る。
 WIRE_CPP = os.path.join(SCRIPT_DIR, "wire_test.cpp")
+WIRE_BGN = os.path.join(SCRIPT_DIR, "nast_wire.bgn")
+WIRE_HPP = os.path.join(SCRIPT_DIR, "nast_wire.hpp")
+# 中間の JSON は追跡しない。
+WIRE_JSON = os.path.join(REPO_ROOT, "ignore", "nast", "nast_wire.json")
+# nast_wire.hpp を作る brgen 本体のツール。ビルド済みなら使う。
+SRC2JSON = os.path.join(REPO_ROOT, "tool", "src2json" + (".exe" if os.name == "nt" else ""))
+JSON2CPP2 = os.path.join(REPO_ROOT, "tool", "json2cpp2" + (".exe" if os.name == "nt" else ""))
 
 # 本体と同じく C++23 / clang を既定にする。無ければ順に探す。
 DEFAULT_COMPILERS = ["clang++", "g++", "c++"]
@@ -124,6 +136,37 @@ def run(cmd):
         sys.exit(result.returncode)
 
 
+def run_to_file(cmd, out_path):
+    """標準出力をファイルへ。src2json も json2cpp2 も結果を stdout に出す。"""
+    print("$", " ".join(cmd), ">", out_path, flush=True)
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    with open(out_path, "wb") as f:
+        result = subprocess.run(cmd, stdout=f)
+    if result.returncode != 0:
+        sys.exit(result.returncode)
+
+
+def regenerate_wire_hpp():
+    """nast_wire.bgn から nast_wire.hpp を作り直す。
+
+    futils と同じ規約で「あれば回す、無ければ note」。nodes.h と違って
+    brgen 本体のツールが要るので、nast だけを建てたい場合に必須にはしない。
+    ただし回さないと nodes.json との対応が黙って古くなる: ノードの増減なら
+    conv 側と型が合わなくなって落ちるが、順序だけ変わった場合は気付けない。
+
+    --use-error を付けるのは、失敗が
+    "decode: NastModule::strings_len: read int failed" のように
+    フィールド名で返るため。
+    """
+    missing = [p for p in (SRC2JSON, JSON2CPP2) if not os.path.exists(p)]
+    if missing:
+        print("note: " + ", ".join(os.path.basename(p) for p in missing) +
+              " not built; leaving nast_wire.hpp as is")
+        return
+    run_to_file([SRC2JSON, WIRE_BGN], WIRE_JSON)
+    run_to_file([JSON2CPP2, "-f", WIRE_JSON, "--use-error"], WIRE_HPP)
+
+
 def write_compile_commands(compile_flags):
     """clangd 用の compilation database を出す。
 
@@ -159,6 +202,8 @@ def main():
     parser.add_argument("--syntax-only", action="store_true", help="compile check only, do not link or run")
     parser.add_argument("--no-run", action="store_true", help="build but do not run the test")
     parser.add_argument("--no-corpus", action="store_true", help="do not build the corpus driver")
+    parser.add_argument("--no-wire-hpp", action="store_true",
+                        help="do not regenerate nast_wire.hpp with src2json/json2cpp2")
     parser.add_argument("--no-compile-commands", action="store_true",
                         help="do not write compile_commands.json")
     parser.add_argument("-O", "--optimize", default="0", help="optimization level passed as -O<level> (default: 0)")
@@ -169,6 +214,8 @@ def main():
         # nast_wire_conv.hpp は nodes.h と同じ扱い。同時に nast_wire.bgn も出るが、
         # そちらは追跡しているので、ずれていれば git の差分として見える。
         run([sys.executable, WIREGEN])
+        if not args.no_wire_hpp:
+            regenerate_wire_hpp()
     if not os.path.exists(NODES_H):
         sys.exit(f"error: {NODES_H} not found (run without --no-generate)")
 
