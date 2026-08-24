@@ -266,7 +266,19 @@ int main(int argc, char** argv) {
         // 決まる走査はこちら。weak は所有辺でないので渡さない。
         int children = 0;
         traverse(pa, f.id(), [&](auto) { children++; });
+        // name と body。struct_type は空なので渡ってこない。
         check(children == 2, "traverse gives the owning children one level down");
+
+        // 空のフィールドを渡さないこと。渡しても fn には Node しか届かず、
+        // どのフィールドが空かは分からないので飛ばす以外にできることが無い。
+        f->struct_type = st;
+        children = 0;
+        traverse(pa, f.id(), [&](auto) { children++; });
+        check(children == 3, "a field that has been filled in shows up as a child");
+        f->struct_type = nullref;
+        children = 0;
+        traverse(pa, f.id(), [&](auto) { children++; });
+        check(children == 2, "an empty field is not handed to the callback");
 
         std::vector<NodeType> seen;
         visit_all(pa, f.id(), [&](auto n) { seen.push_back(n.type()); });

@@ -11,6 +11,10 @@
 //   visit_all(a, fmt, [&](auto n) { return descend; }); // false を返すとそこで打ち切る
 //
 // weak は所有辺ではないので渡さない。辿ると belong や base で循環する。
+// 空 (null) のフィールドも渡さない。fn が受け取るのは Node だけで、どの
+// フィールドが空だったかは分からないので、渡しても飛ばす以外にできることが無い。
+// 埋まっていないフィールドを見たいなら名前が要るので、NodeData::for_each_field を
+// 直に使う (printer.h の show_null がそうしている)。
 // 名前でピンポイントに取るのは access.h の field<"..."> 側。あちらはパスが
 // コンパイル時に決まるので、深さが実行時に決まる走査はこちらでやる。
 
@@ -55,11 +59,15 @@ namespace brgen::nast {
                     }
                     using M = std::decay_t<decltype(v)>;
                     if constexpr (node_of<M>::is_node) {
-                        fn(v);
+                        if (v) {
+                            fn(v);
+                        }
                     }
                     else if constexpr (vector_of<M>::is_vector) {
                         for (auto& e : v) {
-                            fn(e);
+                            if (e) {
+                                fn(e);
+                            }
                         }
                     }
                 });
@@ -83,11 +91,15 @@ namespace brgen::nast {
                     }
                     using M = std::decay_t<decltype(v)>;
                     if constexpr (node_of<M>::is_node) {
-                        fn(fn, v);
+                        if (v) {
+                            fn(fn, v);
+                        }
                     }
                     else if constexpr (vector_of<M>::is_vector) {
                         for (auto& e : v) {
-                            fn(fn, e);
+                            if (e) {
+                                fn(fn, e);
+                            }
                         }
                     }
                 });
