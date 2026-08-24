@@ -133,7 +133,7 @@ namespace brgen::nast::bind {
         resolved++;
     }
 
-    void ScopeResolver::walk_children(Env& env, auto n, std::size_t position) {
+    void ScopeResolver::walk_children(Env& env, NodeAny n, std::size_t position) {
         traverse(a, n, [&](auto child) {
             walk(env, child, position);
         });
@@ -150,39 +150,38 @@ namespace brgen::nast::bind {
         }
     }
 
-    template <class T>
-    void ScopeResolver::walk(Env& env, Node<T> n, std::size_t position) {
+    void ScopeResolver::walk(Env& env, NodeAny n, std::size_t position) {
         if (!n) {
             return;
         }
 
         // 型の参照。IdentType にしか無いので先に見る。
-        if (auto id = n.template as_any<IdentType>()) {
+        if (auto id = n.as_any<IdentType>()) {
             resolve_name(env, a.get<IdentType>(id)->ident, position);
             walk_children(env, n, position);
             return;
         }
 
-        if (auto ref = n.template as_any<Reference>()) {
+        if (auto ref = n.as_any<Reference>()) {
             resolve_name(env, a.get<Reference>(ref)->name, position);
             walk_children(env, n, position);
             return;
         }
 
         // 本体がスコープになる文。
-        if (auto named_body = n.template as_any<NamedBodyStatement>()) {
+        if (auto named_body = n.as_any<NamedBodyStatement>()) {
             auto* d = a.get<NamedBodyStatement>(named_body);
             Env inner{&env, position, is_type_barrier(n.type()), {}};
             // fn の引数は本体スコープの先頭に入る (parse.cpp:1686 が
             // parse_indent_block へ渡している。format の型パラメータも同じ扱い)。
             // 型パラメータは本体スコープの先頭に入る (parse.cpp が
             // parse_indent_block へ渡すのと同じ扱い)。
-            if (auto gen = n.template as_any<GenericFormat>()) {
+            if (auto gen = n.as_any<GenericFormat>()) {
                 for (auto& tp : a.get<GenericFormat>(gen)->type_parameters) {
                     declare(inner, a.get<TypeParameter>(tp)->name, tp, true, 0);
                 }
             }
-            if (auto fn = n.template as_any<Function>()) {
+            if (auto fn = n.as_any<Function>()) {
                 auto* f = a.get<Function>(fn);
                 for (auto& p : f->parameters) {
                     declare(inner, a.get<Parameter>(p)->name, p, false, 0);
@@ -197,7 +196,7 @@ namespace brgen::nast::bind {
             return;
         }
 
-        if (auto enm = n.template as_any<Enum>()) {
+        if (auto enm = n.as_any<Enum>()) {
             auto* d = a.get<Enum>(enm);
             walk(env, d->base_type, position);  // 基底型は外側
             Env inner{&env, position, true, {}};
@@ -211,9 +210,9 @@ namespace brgen::nast::bind {
         }
 
         // if / match。条件は自分のスコープ、各分岐の本体はその内側。
-        if (auto cond = n.template as_any<ConditionalExpr>()) {
+        if (auto cond = n.as_any<ConditionalExpr>()) {
             Env inner{&env, position, false, {}};
-            if (auto m = n.template as_any<Match>()) {
+            if (auto m = n.as_any<Match>()) {
                 walk(inner, a.get<Match>(m)->condition, position);
             }
             for (auto& block : a.get<ConditionalExpr>(cond)->blocks) {
@@ -228,7 +227,7 @@ namespace brgen::nast::bind {
         }
 
         // for。init の宣言が cond / step / 本体から見える。
-        if (auto loop = n.template as_any<Loop>()) {
+        if (auto loop = n.as_any<Loop>()) {
             auto* d = a.get<Loop>(loop);
             Env inner{&env, position, false, {}};
             if (d->init) {
@@ -245,7 +244,7 @@ namespace brgen::nast::bind {
         }
 
         // for x in expr。x はループの中だけ、expr は外側で解決する。
-        if (auto rloop = n.template as_any<RangeLoop>()) {
+        if (auto rloop = n.as_any<RangeLoop>()) {
             auto* d = a.get<RangeLoop>(rloop);
             walk(env, d->container, position);
             Env inner{&env, position, false, {}};

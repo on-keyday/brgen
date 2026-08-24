@@ -75,13 +75,13 @@ namespace brgen::nast::bind {
         void resolve_name(Env& env, Node<Ident> name, std::size_t position);
         Node<Statement> lookup(const Env& env, std::string_view name, std::size_t position) const;
 
-        // 根 (derive を持たないノード) は複数あり増えもするので、根ごとに口を出さず
-        // 1 つのテンプレートで受ける。振り分けは as_any<T>() による実行時判定。
-        template <class T>
-        void walk(Env& env, Node<T> n, std::size_t position);
+        // 根 (derive を持たないノード) は複数あり増えもするので、根ごとに口を出さない。
+        // NodeAny で受けて as_any<T>() の実行時判定で振り分ける。テンプレートに
+        // すると traverse が渡すノード種の数だけ本体が複製される。
+        void walk(Env& env, NodeAny n, std::size_t position);
 
         // 子を一般に辿る。
-        void walk_children(Env& env, auto n, std::size_t position);
+        void walk_children(Env& env, NodeAny n, std::size_t position);
     };
 
 }  // namespace brgen::nast::bind

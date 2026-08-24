@@ -77,17 +77,27 @@ def emit_node_header(w: Writer, schema: Schema) -> None:
 
 
 def emit_node(w: Writer) -> None:
+    # T = void は「どのノードでもよい」。T は phantom で、実体は id と NodeType の
+    # 8 バイトなので消しても情報は落ちない。何が来るか実行時にしか決まらない側
+    # (走査など) が、ノード種の数だけテンプレートを増やさずに済む。
+    # 別名は NodeAny。具体型に戻すのは as_any<U>()。
     w.write("template <class T>\n")
     w.write("struct Node {\n")
     w.write("    friend struct Arena;\n")
     w.write("    template<class> friend struct Node;")
-    w.write("    constexpr Node() : id_{0}, type_{get_node_type<T>()} {}\n")
+    w.write("    static constexpr NodeType own_type() {\n")
+    w.write("        if constexpr (std::is_void_v<T>) { return NodeType{}; }\n")
+    w.write("        else { return get_node_type<T>(); }\n")
+    w.write("    }\n")
+    w.write("    constexpr Node() : id_{0}, type_{own_type()} {}\n")
     w.write("   private:\n")
     w.write("    std::uint32_t id_{};\n")
     w.write("    NodeType type_{};\n")
     w.write("    constexpr Node(std::uint32_t id,NodeType type) : id_{id},type_{type} {}\n")
     w.write("   public:\n")
-    w.write("    template<std::derived_from<T> U>  constexpr Node(Node<U> x) : id_{x.id_},type_{x.type_} {}\n")
+    # T が void ならどの Node からも受ける。そうでなければ従来どおり派生からのみ。
+    w.write("    template<class U> requires (std::is_void_v<T> || std::derived_from<U,T>)\n")
+    w.write("    constexpr Node(Node<U> x) : id_{x.id_},type_{x.type_} {}\n")
     w.write("    constexpr Node(nullref_t) : Node() {}\n")
     # 比較は id_ のみ。= default だと type_ も比べてしまい、既定構築した
     # Node<Format>{} と Node<Function>{} が (どちらも null なのに) 不一致になる。
@@ -128,6 +138,8 @@ def emit_node(w: Writer) -> None:
         " { return is_derived<U>(type_) ? Node<U>{id_,type_} : Node<U>{};  }\n"
     )
     w.write("};\n")
+    w.write("// 種類を問わないノード参照。どの Node<T> からも暗黙に作れる。\n")
+    w.write("using NodeAny = Node<void>;\n")
     w.write("template <class T>\n")
     w.write("struct NodeData;\n")
 

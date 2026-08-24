@@ -42,9 +42,14 @@ namespace brgen::nast {
         using type = U;
     };
 
-    // 子を 1 段。fn は Node<X> を受ける (X は schema に書かれた型)。
-    template <class T, class F>
-    constexpr void traverse(Arena& a, Node<T> id, F&& fn) {
+    // 子を 1 段。fn は NodeAny を受ける。具体型が要るなら as_any<U>() で降ろす。
+    //
+    // NodeAny で受けるのは、ノード種ごとにインスタンス化されるのを避けるため。
+    // 本体は id しか見ないので T に依存しておらず、消しても情報は落ちない。
+    // 型を消す前は scope_resolver.cpp の walk<T> が 30 種展開され、それぞれが
+    // visit_node_type で全ノード種に分岐していた。
+    template <class F>
+    constexpr void traverse(Arena& a, NodeAny id, F&& fn) {
         auto* h = a.header_at(id.id());
         if (!h) {
             return;
@@ -60,13 +65,13 @@ namespace brgen::nast {
                     using M = std::decay_t<decltype(v)>;
                     if constexpr (node_of<M>::is_node) {
                         if (v) {
-                            fn(v);
+                            fn(NodeAny(v));
                         }
                     }
                     else if constexpr (vector_of<M>::is_vector) {
                         for (auto& e : v) {
                             if (e) {
-                                fn(e);
+                                fn(NodeAny(e));
                             }
                         }
                     }
@@ -75,8 +80,8 @@ namespace brgen::nast {
         });
     }
 
-    template <class T, class F>
-    constexpr void traverse_recursive(Arena& a, Node<T> id, F&& fn) {
+    template <class F>
+    constexpr void traverse_recursive(Arena& a, NodeAny id, F&& fn) {
         auto* h = a.header_at(id.id());
         if (!h) {
             return;
@@ -92,13 +97,13 @@ namespace brgen::nast {
                     using M = std::decay_t<decltype(v)>;
                     if constexpr (node_of<M>::is_node) {
                         if (v) {
-                            fn(fn, v);
+                            fn(fn, NodeAny(v));
                         }
                     }
                     else if constexpr (vector_of<M>::is_vector) {
                         for (auto& e : v) {
                             if (e) {
-                                fn(fn, e);
+                                fn(fn, NodeAny(e));
                             }
                         }
                     }
@@ -108,8 +113,8 @@ namespace brgen::nast {
     }
 
     // 部分木を先行順で。fn が bool を返す形なら false で子を見ない。
-    template <class T, class F>
-    constexpr void visit_all(Arena& a, Node<T> id, F&& fn) {
+    template <class F>
+    constexpr void visit_all(Arena& a, NodeAny id, F&& fn) {
         if (!id) {
             return;
         }
