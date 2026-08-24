@@ -10,44 +10,49 @@
 #include "core/common/error.h"
 #include "parse.h"
 #include "printer.h"
+#include "traverse.h"
 #include "bind/binder.hpp"
 #include "bind/import_resolver.hpp"
+#include "bind/typer.hpp"
 #include "bind/scope_resolver.hpp"
 
 #include <core/common/file.h>
 #include <format>
 #include <print>
+#include <set>
 #include <string>
 #include <vector>
 
 namespace {
 
     // 型が付いた式の割合。typing の段が育つにつれてここが動く。
-    // Expr.type は parse では一切埋まらないので、初期値は 0 / 全体。
+    //
+    // 数えるのは木から辿れるものだけ。アリーナは解放しないので、パーサが
+    // 先読みして捨てた式もそのまま残っている (コーパス全体で式の 38%)。
+    // アリーナ全体を分母にすると、その分だけ薄まった数字になる。
     struct TypeCoverage {
         std::size_t exprs = 0;
         std::size_t typed = 0;
     };
 
-    TypeCoverage type_coverage(brgen::nast::Arena& arena) {
+    TypeCoverage type_coverage(brgen::nast::Arena& arena,
+                               const std::vector<brgen::nast::Node<brgen::nast::Module>>& modules) {
         TypeCoverage c;
-        for (std::uint32_t id = 1; id <= arena.node_count(); id++) {
-            auto* h = arena.header_at(id);
-            if (!h) {
-                continue;
-            }
-            brgen::nast::visit_node_type(h->type, [&](auto tag) {
-                using T = typename decltype(tag)::type;
-                if constexpr (std::derived_from<T, brgen::nast::Expr>) {
-                    auto* d = arena.data_at<T>(h->data_index);
-                    if (!d) {
-                        return;
-                    }
+        // 所有辺が 2 本入るノードがある (binder が作る StructUnionCandidate は
+        // 分岐ブロックを ConditionalExpr と共有する) ので、id で重複を落とす。
+        std::set<std::uint32_t> seen;
+        for (auto& mod : modules) {
+            brgen::nast::visit_all(arena, mod, [&](brgen::nast::NodeAny n) {
+                if (!seen.insert(n.id()).second) {
+                    return false;
+                }
+                if (auto e = n.as_any<brgen::nast::Expr>()) {
                     c.exprs++;
-                    if (d->type) {
+                    if (arena.get<brgen::nast::Expr>(e)->type) {
                         c.typed++;
                     }
                 }
+                return true;
             });
         }
         return c;
@@ -144,10 +149,15 @@ int main(int argc, char** argv) {
         brgen::nast::bind::ImportResolver importer{arena, tables, files, err, popt};
         importer.resolve(root);
         brgen::nast::bind::ScopeResolver resolver{arena, tables, err};
+        brgen::nast::bind::Typer typer{arena, tables, err};
         for (auto& mod : importer.modules) {
             brgen::nast::bind::Binder binder{arena, err, tables};
             binder.bind(mod);
             resolver.resolve(mod);
+        }
+        // 型付けは名前解決の後。Reference の型は解決先から取る。
+        for (auto& mod : importer.modules) {
+            typer.run(mod);
         }
         if (r.ok) {
             ok++;
@@ -161,7 +171,7 @@ int main(int argc, char** argv) {
                                  ? std::format(", {} imports, {} import errors",
                                                importer.resolved, importer.failed)
                                  : std::string());
-                auto cov = type_coverage(arena);
+                auto cov = type_coverage(arena, importer.modules);
                 std::println("      {:<60} {:>5}/{} exprs typed", "", cov.typed, cov.exprs);
             }
             if (show_tree) {
