@@ -116,7 +116,7 @@ namespace brgen::nast::bind {
                 }
             }
         }
-        return {};
+        return nullref;
     }
 
     void ScopeResolver::resolve_name(Env& env, Node<Ident> name, std::size_t position) {
