@@ -4,6 +4,7 @@
 
 #include <core/common/error.h>
 #include <set>
+#include <string_view>
 
 // 式に型を付ける。元の src/core/middle/typing.cpp (2076 行) に当たる段の一部。
 //
@@ -14,9 +15,14 @@
 //   Paren/Identity 中身の型
 //   Import        読み込んだ Module の struct_type
 //   IdentType     指している宣言の型を base に入れる
+//   MemberAccess  左辺の型からメンバを引く
 //
-// 入っていないもの: Binary / MemberAccess / Call / Cast / Index / If / Match /
-// Cond / Range / OrCond / IOOperation。演算子ごとの規則や共通型の計算が要る。
+// 入っていないもの: Binary / Call / Cast / Index / If / Match / Cond / Range /
+// OrCond / IOOperation。演算子ごとの規則や共通型の計算が要る。
+//
+// メンバの引き方は元の実装と違う。元は StructType がメンバ一覧 (fields) を
+// 持っていたが、nast の StructType は base だけで、一覧は binder が
+// FormatState / UnionFields 表に集めている。そこから引く。
 //
 // 型の付き具合は corpus driver が「typed/exprs」で出す。
 //
@@ -47,6 +53,11 @@ namespace brgen::nast::bind {
 
         Node<Type> type_of_expr(Node<Expr> e);
         Node<Type> type_of_decl(Node<Statement> decl);
+        // 型の包み (IdentType など) を剥がして StructType を取り出す。
+        Node<StructType> as_struct(Node<Type> t);
+        // struct の持ち主 (format / state / module) から名前でメンバを引く。
+        Node<Statement> lookup_member(Node<Statement> owner, std::string_view name);
+        Node<Type> type_of_member_access(Node<MemberAccess> m);
         Node<Type> struct_type_of(Node<Statement> owner);
         Node<Type> struct_type_of_module(Node<Module> mod);
         void resolve_ident_type(Node<IdentType> t);
