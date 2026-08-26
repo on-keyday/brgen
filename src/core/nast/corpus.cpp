@@ -18,6 +18,7 @@
 
 #include <core/common/file.h>
 #include <format>
+#include <chrono>
 #include <print>
 #include <set>
 #include <string>
@@ -105,6 +106,13 @@ namespace {
 
 int main(int argc, char** argv) {
     bool show_tree = false;
+    // 段ごとの所要時間を出す。src2json と比べるときに、木を組むところと
+    // 解析するところを分けて見るためのもの。
+    bool show_time = false;
+    // parse だけで止める。--time と組み合わせると解析分の差が取れる。
+    bool parse_only = false;
+    // 1 行も出さない。計測のとき出力に時間を取られないように。
+    bool quiet = false;
     brgen::nast::PrintOptions opt;
     brgen::nast::ParseOption popt;
     std::vector<std::string> paths;
@@ -126,42 +134,68 @@ int main(int argc, char** argv) {
         else if (a == "--comments") {
             popt.collect_comments = true;
         }
+        else if (a == "--time") {
+            show_time = true;
+        }
+        else if (a == "--parse-only") {
+            parse_only = true;
+        }
+        else if (a == "--quiet") {
+            quiet = true;
+        }
         else {
             paths.push_back(std::move(a));
         }
     }
     if (paths.empty()) {
         std::println(stderr,
-                     "usage: nast_corpus [--error-tolerant] [--comments] "
+                     "usage: nast_corpus [--error-tolerant] [--comments] [--quiet] "
+                     "[--time] [--parse-only] "
                      "[--tree [--show-null] [--no-weak]] <file.bgn>...");
         return 2;
     }
 
     std::size_t ok = 0, ng = 0;
+    using clock = std::chrono::steady_clock;
+    std::chrono::nanoseconds t_parse{}, t_import{}, t_bind{}, t_type{};
+    auto took = [](auto start) { return clock::now() - start; };
     for (auto& path : paths) {
         brgen::FileSet files;
         brgen::nast::Arena arena;
         brgen::nast::Node<brgen::nast::Module> root;
+        auto t0 = clock::now();
         auto r = run(path, files, arena, root, popt);
+        t_parse += took(t0);
         brgen::nast::SideTables tables;
         brgen::LocationError err;
         // import は束縛より先。読み込んだ Module も同じ扱いで回す。
         brgen::nast::bind::ImportResolver importer{arena, tables, files, err, popt};
-        importer.resolve(root);
         brgen::nast::bind::ScopeResolver resolver{arena, tables, err};
         brgen::nast::bind::Typer typer{arena, tables, err};
-        for (auto& mod : importer.modules) {
-            brgen::nast::bind::Binder binder{arena, err, tables};
-            binder.bind(mod);
-            resolver.resolve(mod);
-        }
-        // 型付けは名前解決の後。Reference の型は解決先から取る。
-        for (auto& mod : importer.modules) {
-            typer.run(mod);
+        if (!parse_only) {
+            auto t1 = clock::now();
+            importer.resolve(root);
+            t_import += took(t1);
+            auto t2 = clock::now();
+            for (auto& mod : importer.modules) {
+                brgen::nast::bind::Binder binder{arena, err, tables};
+                binder.bind(mod);
+                resolver.resolve(mod);
+            }
+            t_bind += took(t2);
+            // 型付けは名前解決の後。Reference の型は解決先から取る。
+            auto t3 = clock::now();
+            for (auto& mod : importer.modules) {
+                typer.run(mod);
+            }
+            t_type += took(t3);
         }
         if (r.ok) {
             ok++;
-            if (r.diagnostics) {
+            if (quiet) {
+                // 何も出さない
+            }
+            else if (r.diagnostics) {
                 std::println("ok    {:<60} {:>5} nodes  ({} diagnostics)", path, r.nodes, r.diagnostics);
             }
             else {
@@ -180,10 +214,25 @@ int main(int argc, char** argv) {
         }
         else {
             ng++;
-            std::println("ERROR {:<60} {}", path, r.message);
+            if (!quiet) {
+                std::println("ERROR {:<60} {}", path, r.message);
+            }
         }
     }
     std::println("\n{} ok / {} error / {} total", ok, ng, ok + ng);
+    if (show_time) {
+        auto ms = [](std::chrono::nanoseconds d) {
+            return std::chrono::duration<double, std::milli>(d).count();
+        };
+        auto total = t_parse + t_import + t_bind + t_type;
+        std::println("parse  {:8.1f} ms", ms(t_parse));
+        if (!parse_only) {
+            std::println("import {:8.1f} ms", ms(t_import));
+            std::println("bind   {:8.1f} ms  (binder + scope resolver)", ms(t_bind));
+            std::println("type   {:8.1f} ms", ms(t_type));
+        }
+        std::println("total  {:8.1f} ms", ms(total));
+    }
 
     return ng == 0 ? 0 : 1;
 }
