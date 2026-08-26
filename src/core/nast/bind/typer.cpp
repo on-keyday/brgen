@@ -24,7 +24,7 @@ namespace brgen::nast::bind {
     Node<Type> Typer::struct_type_of(Node<Statement> owner) {
         auto st = owner.as_any<NamedStructTypedStatement>();
         if (!st) {
-            return {};
+            return nullref;
         }
         auto* d = a.get<NamedStructTypedStatement>(st);
         if (!d->struct_type) {
@@ -37,7 +37,7 @@ namespace brgen::nast::bind {
     Node<Type> Typer::struct_type_of_module(Node<Module> mod) {
         auto* d = a.get<Module>(mod);
         if (!d) {
-            return {};
+            return nullref;
         }
         if (!d->struct_type) {
             d->struct_type = a.make<StructType>(a.header_at(mod.id())->loc);
@@ -49,7 +49,7 @@ namespace brgen::nast::bind {
     // 名前が指している宣言の型。Reference と IdentType の両方から使う。
     Node<Type> Typer::type_of_decl(Node<Statement> decl) {
         if (!decl) {
-            return {};
+            return nullref;
         }
         // format / state。型としての同一性はここで作る StructType が持つ。
         if (decl.as_any<NamedStructTypedStatement>()) {
@@ -78,14 +78,14 @@ namespace brgen::nast::bind {
         // EnumMember は所属する Enum への戻り参照を持たないので、ここからは
         // 型に辿り着けない。RangeLoop も束縛の型が container 側の要素型で、
         // どちらもこの段では出さない。
-        return {};
+        return nullref;
     }
 
     // 型の包みを剥がして StructType を取り出す。IdentType は宣言を指しているだけ
     // なので base に降りる。
     Node<StructType> Typer::as_struct(Node<Type> t) {
         if (!t) {
-            return {};
+            return nullref;
         }
         if (auto id = t.as_any<IdentType>()) {
             resolve_ident_type(id);
@@ -94,7 +94,7 @@ namespace brgen::nast::bind {
         if (auto st = t.as_any<StructType>()) {
             return st;
         }
-        return {};
+        return nullref;
     }
 
     // struct の持ち主から名前でメンバを引く。
@@ -110,7 +110,7 @@ namespace brgen::nast::bind {
                     return id->identifier;
                 }
             }
-            return {};
+            return std::string_view{};  // 名前を持たない文
         };
         if (auto fmt = owner.as_any<Format>()) {
             if (auto* st = tables.table<FormatState>().get(fmt)) {
@@ -134,7 +134,7 @@ namespace brgen::nast::bind {
                         return e;
                     }
                 }
-                return {};
+                return nullref;
             }
         }
         const std::vector<Node<Statement>>* statements = nullptr;
@@ -147,25 +147,25 @@ namespace brgen::nast::bind {
             }
         }
         if (!statements) {
-            return {};
+            return nullref;
         }
         for (auto& s : *statements) {
             if (named_name(s) == name) {
                 return s;
             }
         }
-        return {};
+        return nullref;
     }
 
     Node<Type> Typer::type_of_member_access(Node<MemberAccess> m) {
         auto* d = a.get<MemberAccess>(m);
         auto base_type = type_of_expr(d->base);
         if (!base_type) {
-            return {};
+            return nullref;
         }
         auto* member = a.get<Ident>(d->member);
         if (!member) {
-            return {};
+            return nullref;
         }
         auto loc = a.header_at(m.id())->loc;
 
@@ -173,7 +173,7 @@ namespace brgen::nast::bind {
         if (auto et = base_type.as_any<EnumType>()) {
             auto enum_ = a.get<EnumType>(et)->base;
             if (!enum_) {
-                return {};
+                return nullref;
             }
             for (auto& mem : a.get<Enum>(enum_)->members) {
                 if (a.get<Ident>(a.get<EnumMember>(mem)->name)->identifier == member->identifier) {
@@ -185,7 +185,7 @@ namespace brgen::nast::bind {
             if (member->identifier == "is_defined") {
                 return a.make<BoolType>(loc);
             }
-            return {};
+            return nullref;
         }
         // 配列の組み込みメンバ。要素数は使う側で決まるので幅は 64 固定。
         if (base_type.as_any<ArrayType>()) {
@@ -197,20 +197,20 @@ namespace brgen::nast::bind {
                 it->endian = Endian::unspec;
                 return t;
             }
-            return {};
+            return nullref;
         }
         auto st = as_struct(base_type);
         if (!st) {
             // UnionType (分岐で現れるフィールド) は共通型を出す段がまだ無い。
-            return {};
+            return nullref;
         }
         auto owner = a.get<StructType>(st)->base;
         if (!owner) {
-            return {};
+            return nullref;
         }
         auto found = lookup_member(owner, member->identifier);
         if (!found) {
-            return {};
+            return nullref;
         }
         // メンバの名前も解決先を持たせておく。参照と同じ引き方ができる。
         tables.table<Resolution>().set(d->member, Resolution{.target = found});
@@ -219,18 +219,18 @@ namespace brgen::nast::bind {
 
     Node<Type> Typer::type_of_expr(Node<Expr> e) {
         if (!e) {
-            return {};
+            return nullref;
         }
         auto* base = a.get<Expr>(e);
         if (!base) {
-            return {};
+            return nullref;
         }
         if (base->type) {
             return base->type;
         }
         // 相互参照で戻ってきたら諦める。x ::= y / y ::= x のような入力がある。
         if (!in_progress_.insert(e.id()).second) {
-            return {};
+            return nullref;
         }
         auto loc = a.header_at(e.id())->loc;
         Node<Type> result;
