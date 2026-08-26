@@ -3,7 +3,10 @@
 
 #include "../traverse.h"
 
+#include "../compare.h"
+
 #include <binary/log2i.h>
+#include <number/parse.h>
 
 namespace brgen::nast::bind {
 
@@ -217,6 +220,129 @@ namespace brgen::nast::bind {
         return type_of_decl(found);
     }
 
+    // 整数リテラルの型を、相手が整数型ならその幅に合わせる。
+    // 例: `x :u8` に対する `x == 3` の 3 は u8 として扱う。
+    // 元の int_type_fitting は型ノードを書き換えるが、こちらは結果を返すだけ。
+    // 書き換えると同じリテラル型を共有している他の式にも波及する。
+    Node<Type> Typer::fit_int(Node<Type> t, Node<Type> other) {
+        auto lit = t.as_any<IntLiteralType>();
+        if (!lit) {
+            return t;
+        }
+        if (auto it = other.as_any<IntType>()) {
+            return other;
+        }
+        // 相手もリテラルなら、値が収まる最小のバイト境界幅の符号なし整数にする。
+        auto* d = a.get<IntLiteralType>(lit);
+        std::size_t value = 0;
+        auto* raw = a.get<IntLiteral>(d->base);
+        if (!raw || !::futils::number::parse_integer(raw->value, value)) {
+            return t;
+        }
+        auto res = a.make<IntType>(a.header_at(t.id())->loc);
+        auto* rd = a.get<IntType>(res);
+        rd->bit_size = aligned_bit(::futils::binary::log2i(value));
+        rd->is_signed = false;
+        rd->endian = Endian::unspec;
+        return res;
+    }
+
+    Node<Type> Typer::common_type(Node<Type> l, Node<Type> r) {
+        if (!l || !r) {
+            return nullref;
+        }
+        l = fit_int(l, r);
+        r = fit_int(r, l);
+        if (equivalent(a, l, r)) {
+            return l;
+        }
+        auto li = l.as_any<IntType>();
+        auto ri = r.as_any<IntType>();
+        if (li && ri) {
+            auto* ld = a.get<IntType>(li);
+            auto* rd = a.get<IntType>(ri);
+            if (ld->bit_size == rd->bit_size) {
+                // 幅が同じなら符号なしのほうに寄せる。符号付きを混ぜると
+                // 表現できない値が出る。
+                if (ld->is_signed == rd->is_signed) {
+                    return l;
+                }
+                return ld->is_signed ? r : l;
+            }
+            return ld->bit_size > rd->bit_size ? l : r;
+        }
+        // UnionType の共通型を出す段はまだ無い。format の cast_fn 経由も同様。
+        return nullref;
+    }
+
+    Node<Type> Typer::type_of_binary(Node<Binary> b) {
+        auto* d = a.get<Binary>(b);
+        auto loc = a.header_at(b.id())->loc;
+        auto lty = type_of_expr(d->left);
+        auto rty = type_of_expr(d->right);
+        switch (d->op) {
+            // 代入。式としての型は左辺のもの。
+            case BinaryOp::assign:
+            case BinaryOp::add_assign:
+            case BinaryOp::sub_assign:
+            case BinaryOp::mul_assign:
+            case BinaryOp::div_assign:
+            case BinaryOp::mod_assign:
+            case BinaryOp::left_logical_shift_assign:
+            case BinaryOp::right_logical_shift_assign:
+            case BinaryOp::left_arithmetic_shift_assign:
+            case BinaryOp::right_arithmetic_shift_assign:
+            case BinaryOp::bit_and_assign:
+            case BinaryOp::bit_or_assign:
+            case BinaryOp::bit_xor_assign:
+                return lty;
+            // 比較。両辺が付いていることだけ確かめる。比較可能かの検査はまだ。
+            case BinaryOp::equal:
+            case BinaryOp::not_equal:
+            case BinaryOp::less:
+            case BinaryOp::less_or_eq:
+            case BinaryOp::grater:
+            case BinaryOp::grater_or_eq:
+                return (lty && rty) ? a.make<BoolType>(loc) : nullref;
+            case BinaryOp::logical_and:
+            case BinaryOp::logical_or:
+                if (lty.as_any<BoolType>() && rty.as_any<BoolType>()) {
+                    return a.make<BoolType>(loc);
+                }
+                return nullref;
+            case BinaryOp::add:
+            case BinaryOp::sub:
+            case BinaryOp::mul:
+            case BinaryOp::div:
+            case BinaryOp::mod:
+            case BinaryOp::left_logical_shift:
+            case BinaryOp::right_logical_shift:
+            case BinaryOp::left_arithmetic_shift:
+            case BinaryOp::right_arithmetic_shift:
+                return common_type(lty, rty);
+            // ビット演算は幅を揃えることを求める。揃っていなければ型を出さない。
+            case BinaryOp::bit_and:
+            case BinaryOp::bit_or:
+            case BinaryOp::bit_xor: {
+                if (!lty || !rty) {
+                    return nullref;
+                }
+                auto l = fit_int(lty, rty);
+                auto r = fit_int(rty, lty);
+                if (l.as_any<IntType>() && r.as_any<IntType>() && equivalent(a, l, r)) {
+                    return l;
+                }
+                return nullref;
+            }
+            case BinaryOp::comma:
+                return rty;
+            default:
+                // define_assign / const_assign / in_assign は文 (VariableDefinition /
+                // RangeLoop) になっていてここには来ない。範囲は Range ノード。
+                return nullref;
+        }
+    }
+
     Node<Type> Typer::type_of_expr(Node<Expr> e) {
         if (!e) {
             return nullref;
@@ -277,6 +403,13 @@ namespace brgen::nast::bind {
         }
         else if (auto id = e.as_any<Identity>()) {
             result = type_of_expr(a.get<Identity>(id)->expr);
+        }
+        else if (auto bin = e.as_any<Binary>()) {
+            result = type_of_binary(bin);
+        }
+        else if (auto un = e.as_any<Unary>()) {
+            // - も ! も型を変えない。
+            result = type_of_expr(a.get<Unary>(un)->target);
         }
         else if (auto ma = e.as_any<MemberAccess>()) {
             result = type_of_member_access(ma);
