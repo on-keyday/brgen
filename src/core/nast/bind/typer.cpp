@@ -81,6 +81,142 @@ namespace brgen::nast::bind {
         return {};
     }
 
+    // 型の包みを剥がして StructType を取り出す。IdentType は宣言を指しているだけ
+    // なので base に降りる。
+    Node<StructType> Typer::as_struct(Node<Type> t) {
+        if (!t) {
+            return {};
+        }
+        if (auto id = t.as_any<IdentType>()) {
+            resolve_ident_type(id);
+            return as_struct(a.get<IdentType>(id)->base);
+        }
+        if (auto st = t.as_any<StructType>()) {
+            return st;
+        }
+        return {};
+    }
+
+    // struct の持ち主から名前でメンバを引く。
+    //
+    // format は binder が FormatState に集めたものを見る。分岐の中で宣言された
+    // フィールドはそこで合成された union field になっていて、format 直下の
+    // 一覧に並んでいる。木を歩くと分岐の中に埋もれていて引けない。
+    // module (import 先) と state は表が無いので本体の文を順に見る。
+    Node<Statement> Typer::lookup_member(Node<Statement> owner, std::string_view name) {
+        auto named_name = [&](Node<Statement> s) -> std::string_view {
+            if (auto n = s.as_any<NamedStatement>()) {
+                if (auto* id = a.get<Ident>(a.get<NamedStatement>(n)->name)) {
+                    return id->identifier;
+                }
+            }
+            return {};
+        };
+        if (auto fmt = owner.as_any<Format>()) {
+            if (auto* st = tables.table<FormatState>().get(fmt)) {
+                for (auto& f : st->fields) {
+                    if (named_name(f) == name) {
+                        return f;
+                    }
+                }
+                for (auto& f : st->functions) {
+                    if (named_name(f) == name) {
+                        return f;
+                    }
+                }
+                for (auto& f : st->nested_formats) {
+                    if (named_name(f) == name) {
+                        return f;
+                    }
+                }
+                for (auto& e : st->nested_enums) {
+                    if (named_name(e) == name) {
+                        return e;
+                    }
+                }
+                return {};
+            }
+        }
+        const std::vector<Node<Statement>>* statements = nullptr;
+        if (auto mod = owner.as_any<Module>()) {
+            statements = &a.get<Module>(mod)->statements;
+        }
+        else if (auto body = owner.as_any<NamedBodyStatement>()) {
+            if (auto* b = a.get<Body>(a.get<NamedBodyStatement>(body)->body)) {
+                statements = &b->statements;
+            }
+        }
+        if (!statements) {
+            return {};
+        }
+        for (auto& s : *statements) {
+            if (named_name(s) == name) {
+                return s;
+            }
+        }
+        return {};
+    }
+
+    Node<Type> Typer::type_of_member_access(Node<MemberAccess> m) {
+        auto* d = a.get<MemberAccess>(m);
+        auto base_type = type_of_expr(d->base);
+        if (!base_type) {
+            return {};
+        }
+        auto* member = a.get<Ident>(d->member);
+        if (!member) {
+            return {};
+        }
+        auto loc = a.header_at(m.id())->loc;
+
+        // enum の値。Color.red は Enum の members から引く。
+        if (auto et = base_type.as_any<EnumType>()) {
+            auto enum_ = a.get<EnumType>(et)->base;
+            if (!enum_) {
+                return {};
+            }
+            for (auto& mem : a.get<Enum>(enum_)->members) {
+                if (a.get<Ident>(a.get<EnumMember>(mem)->name)->identifier == member->identifier) {
+                    tables.table<Resolution>().set(d->member, Resolution{.target = mem});
+                    return base_type;
+                }
+            }
+            // enum の組み込みメンバ。値が定義済みかを聞く。
+            if (member->identifier == "is_defined") {
+                return a.make<BoolType>(loc);
+            }
+            return {};
+        }
+        // 配列の組み込みメンバ。要素数は使う側で決まるので幅は 64 固定。
+        if (base_type.as_any<ArrayType>()) {
+            if (member->identifier == "length") {
+                auto t = a.make<IntType>(loc);
+                auto* it = a.get<IntType>(t);
+                it->bit_size = 64;
+                it->is_signed = false;
+                it->endian = Endian::unspec;
+                return t;
+            }
+            return {};
+        }
+        auto st = as_struct(base_type);
+        if (!st) {
+            // UnionType (分岐で現れるフィールド) は共通型を出す段がまだ無い。
+            return {};
+        }
+        auto owner = a.get<StructType>(st)->base;
+        if (!owner) {
+            return {};
+        }
+        auto found = lookup_member(owner, member->identifier);
+        if (!found) {
+            return {};
+        }
+        // メンバの名前も解決先を持たせておく。参照と同じ引き方ができる。
+        tables.table<Resolution>().set(d->member, Resolution{.target = found});
+        return type_of_decl(found);
+    }
+
     Node<Type> Typer::type_of_expr(Node<Expr> e) {
         if (!e) {
             return {};
@@ -141,6 +277,9 @@ namespace brgen::nast::bind {
         }
         else if (auto id = e.as_any<Identity>()) {
             result = type_of_expr(a.get<Identity>(id)->expr);
+        }
+        else if (auto ma = e.as_any<MemberAccess>()) {
+            result = type_of_member_access(ma);
         }
         else if (auto import_ = e.as_any<Import>()) {
             // 読み込んだ Module の struct 型。メンバアクセスの左辺になる。
