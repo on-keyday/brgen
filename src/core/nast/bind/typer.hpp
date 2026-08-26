@@ -16,9 +16,11 @@
 //   Import        読み込んだ Module の struct_type
 //   IdentType     指している宣言の型を base に入れる
 //   MemberAccess  左辺の型からメンバを引く
+//   Binary        演算子ごと。比較は bool、算術は共通型、代入は左辺の型
+//   Unary         中身の型 (- と ! はどちらも型を変えない)
 //
-// 入っていないもの: Binary / Call / Cast / Index / If / Match / Cond / Range /
-// OrCond / IOOperation。演算子ごとの規則や共通型の計算が要る。
+// 入っていないもの: Call / Cast / Index / If / Match / Cond / Range / OrCond /
+// IOOperation / SpecialLiteral。
 //
 // メンバの引き方は元の実装と違う。元は StructType がメンバ一覧 (fields) を
 // 持っていたが、nast の StructType は base だけで、一覧は binder が
@@ -58,6 +60,12 @@ namespace brgen::nast::bind {
         // struct の持ち主 (format / state / module) から名前でメンバを引く。
         Node<Statement> lookup_member(Node<Statement> owner, std::string_view name);
         Node<Type> type_of_member_access(Node<MemberAccess> m);
+        Node<Type> type_of_binary(Node<Binary> b);
+        // 整数リテラルの型を相手の整数型に合わせる。合わないときは何もしない。
+        // 元の int_type_fitting に当たるが、型ノードを書き換えずに結果を返す。
+        Node<Type> fit_int(Node<Type> t, Node<Type> other);
+        // 両方に使える型。整数どうしは幅と符号で決める。
+        Node<Type> common_type(Node<Type> l, Node<Type> r);
         Node<Type> struct_type_of(Node<Statement> owner);
         Node<Type> struct_type_of_module(Node<Module> mod);
         void resolve_ident_type(Node<IdentType> t);
