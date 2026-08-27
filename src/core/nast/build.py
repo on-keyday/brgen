@@ -11,6 +11,10 @@ corpus.cpp (.bgn を食わせる driver) をコンパイルして、test のほ�
   python src/core/nast/build.py --no-generate  # 既存の nodes.h でビルド
   python src/core/nast/build.py --no-corpus    # test.cpp だけ建てる
   python src/core/nast/build.py --no-wire-hpp  # nast_wire.hpp を作り直さない
+
+.o は build/obj/ に残して、ソースとヘッダの更新時刻で作り直すか決める。
+依存は clang の -MMD が出す .d を読む。コンパイルフラグが変わったら全部捨てる。
+parse.cpp などは corpus と wire_test の両方が使うので 1 度だけコンパイルする。
   python src/core/nast/build.py --compiler g++ --std c++23
 
 nast_wire.hpp は nodes.json から出た nast_wire.bgn を brgen 本体の
@@ -167,6 +171,104 @@ def regenerate_wire_hpp():
     run_to_file([JSON2CPP2, "-f", WIRE_JSON, "--use-error"], WIRE_HPP)
 
 
+OBJ_DIR = os.path.join(BUILD_DIR, "obj")
+# コンパイルフラグが変わったら全部作り直す。フラグは .o に写らないので、
+# 中身が古いままリンクされると気付けない。
+FLAGS_STAMP = os.path.join(OBJ_DIR, "flags.txt")
+
+
+def read_deps(dep_path):
+    """clang の -MMD が出す make 形式の依存リストを読む。
+
+    Windows のパスは `C:\\...` なので、最初のコロンで切ると
+    ドライブレターで切れる。目的ファイルは先頭の 1 語なので、それを落とす。
+    パス中の空白はバックスラッシュでエスケープされる。
+    """
+    if not os.path.exists(dep_path):
+        return None
+    with open(dep_path, encoding="utf-8", errors="replace") as f:
+        text = f.read()
+    # 行末のバックスラッシュは継続。改行ごと空白に潰す。
+    text = text.replace("\\\r\n", " ").replace("\\\n", " ")
+
+    out = []
+    token = ""
+    i = 0
+    while i < len(text):
+        c = text[i]
+        if c == "\\" and i + 1 < len(text) and text[i + 1] == " ":
+            token += " "
+            i += 2
+            continue
+        if c in " \t\r\n":
+            if token:
+                out.append(token)
+                token = ""
+            i += 1
+            continue
+        token += c
+        i += 1
+    if token:
+        out.append(token)
+    if not out:
+        return None
+    # 先頭は目的ファイル (末尾にコロンが付く)。コロンだけの語で離れることもある。
+    out = out[1:] if out[0].endswith(":") else [t for t in out[1:] if t != ":"]
+    return out
+
+
+def obj_is_fresh(obj, dep):
+    if not os.path.exists(obj):
+        return False
+    deps = read_deps(dep)
+    if deps is None:
+        return False
+    t = os.path.getmtime(obj)
+    for d in deps:
+        try:
+            if os.path.getmtime(d) > t:
+                return False
+        except OSError:
+            return False  # 消えたヘッダがあるなら作り直す
+    return True
+
+
+def compile_obj(cmd, src, quiet=False):
+    """1 つコンパイルして .o の道を返す。新しければ何もしない。
+
+    build.py はもともと毎回全部コンパイルし直していて、しかも parse.cpp などを
+    corpus と wire_test で 2 回コンパイルしていた。-O2 だと 1 回 300 秒近い。
+    """
+    os.makedirs(OBJ_DIR, exist_ok=True)
+    name = os.path.relpath(src, SCRIPT_DIR).replace(os.sep, "_").replace("/", "_")
+    obj = os.path.join(OBJ_DIR, name + ".o")
+    dep = obj + ".d"
+    if obj_is_fresh(obj, dep):
+        if not quiet:
+            print(f"up to date: {os.path.basename(src)}")
+        return obj
+    run(cmd + ["-c", src, "-o", obj, "-MMD", "-MF", dep])
+    return obj
+
+
+def flags_changed(cmd):
+    """フラグが前回と違えば .o を捨てる。"""
+    os.makedirs(OBJ_DIR, exist_ok=True)
+    text = " ".join(cmd)
+    old = None
+    if os.path.exists(FLAGS_STAMP):
+        with open(FLAGS_STAMP, encoding="utf-8") as f:
+            old = f.read()
+    if old == text:
+        return False
+    for name in os.listdir(OBJ_DIR):
+        if name.endswith(".o") or name.endswith(".d"):
+            os.remove(os.path.join(OBJ_DIR, name))
+    with open(FLAGS_STAMP, "w", encoding="utf-8") as f:
+        f.write(text)
+    return True
+
+
 def write_compile_commands(compile_flags):
     """clangd 用の compilation database を出す。
 
@@ -259,9 +361,12 @@ def main():
         return
 
     os.makedirs(BUILD_DIR, exist_ok=True)
+    if flags_changed(cmd):
+        print("note: compile flags changed; rebuilding everything")
     suffix = ".exe" if os.name == "nt" else ""
+
     exe = os.path.join(BUILD_DIR, "nast_test" + suffix)
-    run(cmd + [TEST_CPP, "-o", exe] + link_args)
+    run(cmd + [compile_obj(cmd, TEST_CPP), "-o", exe] + link_args)
     print(f"built: {exe}")
 
     # nodes.h と違って parse.cpp / corpus.cpp は core/common/file.h 経由で
@@ -271,14 +376,18 @@ def main():
     elif not futils_include:
         print("note: futils not found; skipping the corpus driver")
     else:
+        # parse.cpp / stream.cpp / bind/*.cpp は corpus と wire_test の両方が使う。
+        # 1 度だけコンパイルして共有する。
+        shared = [compile_obj(cmd, src) for src in PARSER_CPP + BIND_CPP]
+
         corpus = os.path.join(BUILD_DIR, "nast_corpus" + suffix)
-        run(cmd + [CORPUS_CPP] + PARSER_CPP + BIND_CPP + ["-o", corpus] + link_args)
+        run(cmd + [compile_obj(cmd, CORPUS_CPP)] + shared + ["-o", corpus] + link_args)
         print(f"built: {corpus}")
 
         # 生成物が揃っているときだけ。wiregen.py を回していないと出ない。
         if os.path.exists(os.path.join(SCRIPT_DIR, "nast_wire_conv.hpp")):
             wire = os.path.join(BUILD_DIR, "nast_wire_test" + suffix)
-            run(cmd + [WIRE_CPP] + PARSER_CPP + BIND_CPP + ["-o", wire] + link_args)
+            run(cmd + [compile_obj(cmd, WIRE_CPP)] + shared + ["-o", wire] + link_args)
             print(f"built: {wire}")
         else:
             print("note: nast_wire_conv.hpp not found; run wiregen.py to build the wire driver")
