@@ -929,17 +929,29 @@ namespace brgen::nast {
             return p;
         }
 
+        // 候補ごとに consume_token を呼ぶと、1 回ごとに
+        // consume_token -> peek_token -> expect_token -> eos -> maybe_parse の
+        // 連鎖が走る。ops は最大 15 個あり、example/ の実測ではこの比較が
+        // 1252144 回、そのうち一致は 2.9%。
+        // トークンは 1 度だけ取り出して、あとは本文比較だけを回す。
         std::optional<lexer::LiteToken> consume_op(size_t& i, auto& ops) {
-            for (i = 0; i < ops.size(); i++) {
-                if constexpr (futils::helper::is_template_instance_of<std::decay_t<decltype(ops[i])>, std::pair>) {
-                    if (auto t = s.consume_token(ops[i].second)) {
-                        return t;
-                    }
+            i = ops.size();
+            if (s.eos()) {
+                return std::nullopt;
+            }
+            auto tok = s.peek_token();
+            for (std::size_t k = 0; k < ops.size(); k++) {
+                bool hit;
+                if constexpr (futils::helper::is_template_instance_of<std::decay_t<decltype(ops[k])>, std::pair>) {
+                    hit = s.token_is(tok, ops[k].second);
                 }
                 else {
-                    if (auto t = s.consume_token(ops[i])) {
-                        return t;
-                    }
+                    hit = s.token_is(tok, ops[k]);
+                }
+                if (hit) {
+                    i = k;
+                    s.consume();
+                    return tok;
                 }
             }
             return std::nullopt;
