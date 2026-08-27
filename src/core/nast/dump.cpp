@@ -18,6 +18,7 @@
 #include "traverse.h"
 #include "bind/binder.hpp"
 #include "bind/evaluator.hpp"
+#include "bind/requires.hpp"
 #include "bind/import_resolver.hpp"
 #include "bind/typer.hpp"
 #include "bind/scope_resolver.hpp"
@@ -163,6 +164,8 @@ int main(int argc, char** argv) {
     for (auto& mod : importer.modules) {
         evaluator.run(mod);
     }
+    brgen::nast::bind::RequiresInference requires_{arena, tables, typer};
+    requires_.run(importer.modules);
     collect(err);
 
     futils::json::Stringer<> s;

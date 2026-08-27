@@ -120,7 +120,12 @@ function constLabel(v: nast.ConstantValue): string {
     if (v.kind === "boolean") {
         return v.boolean ? "true" : "false";
     }
-    return JSON.stringify(v.string);
+    // 文字列は base64 (binary_value のまま)。表示のときだけ復号する。
+    try {
+        return JSON.stringify(Buffer.from(v.string, "base64").toString("latin1"));
+    } catch {
+        return JSON.stringify(v.string);
+    }
 }
 
 function constSuffix(tables: nast.SideTables, e: nast.NodeId): string {
@@ -225,7 +230,32 @@ function declLine(a: nast.Arena, tables: nast.SideTables, ident: nast.NodeId, st
         label = null;
     }
     const head = label !== null ? `\`${label}\` — ${kind}` : kind;
-    return `${head} \`${name}\` (definition)${value}`;
+    return `${head} \`${name}\` (definition)${value}${requirementsLine(a, tables, stmt)}`;
+}
+
+// requires 推論 (Requirements 表) の中身。Format / Function の定義に添える。
+function requirementsLine(a: nast.Arena, tables: nast.SideTables, stmt: nast.NodeId): string {
+    const req = tables.get<nast.Requirements>("Requirements", stmt);
+    if (req === undefined) {
+        return "";
+    }
+    const parts: string[] = [];
+    const caps = (["peek", "backward", "remain", "offset"] as const).filter(c => req[c]);
+    if (caps.length > 0) {
+        parts.push(`input: ${caps.join(", ")}`);
+    }
+    const names = (ids: nast.NodeId[]) =>
+        ids.map(s => identText(a, a.data<nast.StateVariable>(s)!.name)).join(", ");
+    if (req.state_read.length > 0) {
+        parts.push(`reads: ${names(req.state_read)}`);
+    }
+    if (req.state_write.length > 0) {
+        parts.push(`writes: ${names(req.state_write)}`);
+    }
+    if (parts.length === 0) {
+        return "\n\nrequires: nothing";
+    }
+    return `\n\nrequires — ${parts.join("; ")}`;
 }
 
 // 位置を覆う一番小さいノードを、木から到達できるものの中から選ぶ。

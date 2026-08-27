@@ -13,6 +13,7 @@
 #include "traverse.h"
 #include "bind/binder.hpp"
 #include "bind/evaluator.hpp"
+#include "bind/requires.hpp"
 #include "bind/import_resolver.hpp"
 #include "bind/typer.hpp"
 #include "bind/scope_resolver.hpp"
@@ -190,6 +191,7 @@ int main(int argc, char** argv) {
         brgen::nast::bind::ScopeResolver resolver{arena, tables, err};
         brgen::nast::bind::Typer typer{arena, tables, err};
         brgen::nast::bind::Evaluator evaluator{arena, tables, err};
+        brgen::nast::bind::RequiresInference requires_{arena, tables, typer};
         if (!parse_only) {
             auto t1 = clock::now();
             importer.resolve(root);
@@ -210,6 +212,7 @@ int main(int argc, char** argv) {
             for (auto& mod : importer.modules) {
                 evaluator.run(mod);
             }
+            requires_.run(importer.modules);
             t_type += took(t3);
         }
         if (r.ok) {
