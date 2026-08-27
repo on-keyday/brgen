@@ -11,11 +11,11 @@ corpus.cpp (.bgn を食わせる driver) をコンパイルして、test のほ�
   python src/core/nast/build.py --no-generate  # 既存の nodes.h でビルド
   python src/core/nast/build.py --no-corpus    # test.cpp だけ建てる
   python src/core/nast/build.py --no-wire-hpp  # nast_wire.hpp を作り直さない
+  python src/core/nast/build.py --compiler g++ --std c++23
 
 .o は build/obj/ に残して、ソースとヘッダの更新時刻で作り直すか決める。
 依存は clang の -MMD が出す .d を読む。コンパイルフラグが変わったら全部捨てる。
 parse.cpp などは corpus と wire_test の両方が使うので 1 度だけコンパイルする。
-  python src/core/nast/build.py --compiler g++ --std c++23
 
 nast_wire.hpp は nodes.json から出た nast_wire.bgn を brgen 本体の
 src2json / json2cpp2 に通したもの。tool/ にビルド済みなら毎回作り直し、
