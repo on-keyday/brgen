@@ -18,8 +18,8 @@ namespace brgen::nast {
     struct Stream {
        private:
         std::list<lexer::LiteToken> tokens;
-        // 本文はここから切り出す。utf8 入力 / utf8 解釈のときだけ非空。
-        // 試作なので、空のときは扱わない。
+        // バッファがバイト列ならここが非空になり、本文はここから切り出せる
+        // (utf8 入力 / utf8 解釈)。空なら要素型が byte でないので File 経由。
         futils::view::rvec source_;
         using iterator = typename std::list<lexer::LiteToken>::iterator;
         iterator cur;
@@ -109,10 +109,25 @@ namespace brgen::nast {
         void backward();
         std::optional<lexer::LiteToken> prev_token();
 
-        // トークンの本文。バッファから切り出す。
-        std::string_view text(const lexer::LiteToken& t) const {
-            return std::string_view(reinterpret_cast<const char*>(source_.data()) + t.loc.pos.begin,
-                                    t.loc.pos.len());
+        // トークンの本文が ASCII 文字列と等しいか。確保をしない。
+        // バイト列ならその場で、そうでなければ要素型を知っている File で比べる。
+        bool token_is(const lexer::LiteToken& t, std::string_view ascii) const {
+            if (!source_.null()) {
+                return t.loc.pos.len() == ascii.size() &&
+                       std::string_view(reinterpret_cast<const char*>(source_.data()) + t.loc.pos.begin,
+                                        t.loc.pos.len()) == ascii;
+            }
+            return input->token_equal(t.loc.pos, ascii);
+        }
+
+        // トークンの本文。バイト列でなければ File が変換する。
+        // 本文を実際に要るのは、ノードに入れるトークンと診断だけ。
+        std::string text(const lexer::LiteToken& t) const {
+            if (!source_.null()) {
+                return std::string(reinterpret_cast<const char*>(source_.data()) + t.loc.pos.begin,
+                                   t.loc.pos.len());
+            }
+            return input->token_text(t.loc.pos);
         }
 
         void set_collect_comments(bool b);

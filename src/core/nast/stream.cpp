@@ -86,7 +86,7 @@ namespace brgen::nast {
         if (eos()) {
             return false;
         }
-        return text(*cur) == s;
+        return token_is(*cur, s);
     }
 
     std::optional<lexer::LiteToken> Stream::peek_token(std::string_view s) {
@@ -133,16 +133,16 @@ namespace brgen::nast {
         }
         else {
             appends(buf, "`", text(*cur), "`(kind: ", lexer::enum_array<lexer::Tag>[int(cur->tag)].second, ")");
-            if (text(*cur) == "]") {
+            if (token_is(*cur, "]")) {
                 appends(buf, ", did you forget opening bracket `[`?");
             }
-            else if (text(*cur) == ">") {
+            else if (token_is(*cur, ">")) {
                 appends(buf, ", did you forget opening angle bracket `<`?");
             }
-            else if (text(*cur) == ")") {
+            else if (token_is(*cur, ")")) {
                 appends(buf, ", did you forget opening parenthesis `(`?");
             }
-            else if (text(*cur) == "{" || text(*cur) == "}") {
+            else if (token_is(*cur, "{") || token_is(*cur, "}")) {
                 appends(buf, ", this language uses python-like blocks, so `{}` is not used.");
             }
         }
