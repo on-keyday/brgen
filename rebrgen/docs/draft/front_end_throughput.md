@@ -283,6 +283,34 @@ ident 31812 + int_literal 5648 + str 574 + char 185 + regex 4
 
 長さだけの 4 箇所も `loc.pos.len()` に置き換わる。
 
+#### 実体化しても source() が非空になるとは限らない
+
+`rvec` はバイト列のビューなので、`std::u16string` / `std::u32string` は
+変換できない (測定済み)。実体化先の要素型で決まる:
+
+```
+file::View                          (utf8/utf8)    byte      非空 (mmap のまま)
+U8View<EndianView<View,char16_t>>   (utf16le/utf8) byte      実体化で非空になる
+EndianView<View,char16_t>           (utf16/utf16)  char16_t  空のまま
+U16View<file::View>                 (utf8/utf16)   char16_t  空のまま
+U32View<EndianView<...>>            (utf16/utf32)  char32_t  空のまま
+EndianView<View,char32_t>           (utf32/utf32)  char32_t  空のまま
+```
+
+**`source()` が非空になるのは解釈モードが utf8 のときだけ。**
+LSP は `--interpret-mode utf16` なので、そこは本文をバイトのビューにできない。
+
+では実体化の意味は何かというと、**後戻りを安くすること**。
+`utf::View::operator[]` はカーソル走査で、`pos` が現在位置より前だと 1 要素ずつ
+巻き戻す。字句解析器は候補を落とすたびに `seq.rptr` を巻き戻すので
+(16 通りを順に試す構造)、その回数だけ walk が走る。実体化すれば O(1) の添字になる。
+
+**未測定。** utf16 解釈モードでの実測は取っていない。効くとすればまさに
+LSP が使っている経路なので、測る価値はある。
+
+案 A 自体は utf16 解釈でも残る。ビュー化はできないが、変換が全 143251 から
+AST に格納する 26.7% に減り、`Token` が 88 -> 48 バイトになる。
+
 #### 実体化しても位置は動かない
 
 `utf::View` (`unicode/utf/view.h`) の作りがそのまま根拠になる。
@@ -311,8 +339,9 @@ ident 31812 + int_literal 5648 + str 574 + char 185 + regex 4
 
 #### 手順
 
-1. `source()` が空になる 5 通りだけ、包んだ後の並びを 1 回実体化する。
-   utf8 入力 / utf8 解釈は mmap のまま (ゼロコピーを保つ)
+1. アダプタ経由の 5 通りを、アダプタを反復して 1 回実体化する。
+   utf8 入力 / utf8 解釈は mmap のまま (ゼロコピーを保つ)。
+   **これは `source()` を非空にするためではない** (下記)。後戻りを安くするため
 2. `Stream::expect_token(string_view)` をバッファとの直接比較にする。
    ここを先に変えないと、次の段で比較のたびに変換が走る
 3. `Token::token` を消し、本文は `loc.pos` + `source()` から引く関数にする。
