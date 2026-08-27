@@ -1575,6 +1575,11 @@
             "derive": "NamedStatement",
             "fields": [
                 {
+                    "name": "belong",
+                    "type": "Node<Enum>",
+                    "weak": true
+                },
+                {
                     "name": "raw_expr",
                     "type": "Node<Expr>"
                 },

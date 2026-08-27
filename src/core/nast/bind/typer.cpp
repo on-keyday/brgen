@@ -78,9 +78,15 @@ namespace brgen::nast::bind {
             }
             return ft;
         }
-        // EnumMember は所属する Enum への戻り参照を持たないので、ここからは
-        // 型に辿り着けない。RangeLoop も束縛の型が container 側の要素型で、
-        // どちらもこの段では出さない。
+        // enum 本体の中で他のメンバを裸の名前で参照した形。belong 経由で
+        // 所属する Enum の型を出す。
+        if (auto em = decl.as_any<EnumMember>()) {
+            if (auto enum_ = a.get<EnumMember>(em)->belong) {
+                return a.get<Enum>(enum_)->enum_type;
+            }
+            return nullref;
+        }
+        // RangeLoop は束縛の型が container 側の要素型で、この段では出さない。
         return nullref;
     }
 
