@@ -12,6 +12,7 @@
 #include "printer.h"
 #include "traverse.h"
 #include "bind/binder.hpp"
+#include "bind/evaluator.hpp"
 #include "bind/import_resolver.hpp"
 #include "bind/typer.hpp"
 #include "bind/scope_resolver.hpp"
@@ -188,6 +189,7 @@ int main(int argc, char** argv) {
         brgen::nast::bind::ImportResolver importer{arena, tables, files, err, popt};
         brgen::nast::bind::ScopeResolver resolver{arena, tables, err};
         brgen::nast::bind::Typer typer{arena, tables, err};
+        brgen::nast::bind::Evaluator evaluator{arena, tables, err};
         if (!parse_only) {
             auto t1 = clock::now();
             importer.resolve(root);
@@ -203,6 +205,10 @@ int main(int argc, char** argv) {
             auto t3 = clock::now();
             for (auto& mod : importer.modules) {
                 typer.run(mod);
+            }
+            // 定数畳み込みは型に依存しない (Resolution だけ使う) が、段としては最後。
+            for (auto& mod : importer.modules) {
+                evaluator.run(mod);
             }
             t_type += took(t3);
         }
@@ -222,7 +228,7 @@ int main(int argc, char** argv) {
                                                importer.resolved, importer.failed)
                                  : std::string());
                 auto cov = type_coverage(arena, importer.modules);
-                std::println("      {:<60} {:>5}/{} exprs typed", "", cov.typed, cov.exprs);
+                std::println("      {:<60} {:>5}/{} exprs typed, {} consts", "", cov.typed, cov.exprs, evaluator.evaluated);
             }
             if (show_tree) {
                 std::print("{}", brgen::nast::pretty_print(arena, tables, root, opt));

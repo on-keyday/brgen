@@ -83,6 +83,12 @@ enum FormatKind:
     as_is
     custom
 
+enum EvalKind:
+    :u8
+    integer
+    boolean
+    string
+
 enum NodeKind:
     :u32
     Module
@@ -308,7 +314,7 @@ format Node:
             value_ref :Ref
         NodeKind.SpecialLiteral:
             type :Ref
-            kind :SpecialLiteralKind
+            kind_special_literal_kind :SpecialLiteralKind
         NodeKind.Paren:
             type :Ref
             expr :Ref
@@ -367,7 +373,7 @@ format Node:
             element_type :Ref
         NodeKind.StreamType:
             is_explicit :u8
-            kind :SpecialLiteralKind
+            kind_special_literal_kind :SpecialLiteralKind
             length :Ref
         NodeKind.FunctionType:
             is_explicit :u8
@@ -548,6 +554,18 @@ format ImportResolutionTable:
     len :u32
     entries :[len]ImportResolutionEntry
 
+format ConstantValueEntry:
+    key :Ref
+    kind_eval_kind :EvalKind
+    integer :u32
+    is_negative :u8
+    boolean :u8
+    string :Ref
+
+format ConstantValueTable:
+    len :u32
+    entries :[len]ConstantValueEntry
+
 
 format NastModule:
     magic :"NAST"
@@ -564,3 +582,4 @@ format NastModule:
     is_mutated :IsMutatedTable
     union_fields :UnionFieldsTable
     import_resolution :ImportResolutionTable
+    constant_value :ConstantValueTable

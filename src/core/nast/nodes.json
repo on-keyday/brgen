@@ -142,6 +142,33 @@
                     "type": "Node<Module>"
                 }
             ]
+        },
+        {
+            "name": "ConstantValue",
+            "over": "Expr",
+            "storage": "sparse",
+            "fields": [
+                {
+                    "name": "kind",
+                    "type": "EvalKind"
+                },
+                {
+                    "name": "integer",
+                    "type": "size"
+                },
+                {
+                    "name": "is_negative",
+                    "type": "bool"
+                },
+                {
+                    "name": "boolean",
+                    "type": "bool"
+                },
+                {
+                    "name": "string",
+                    "type": "string"
+                }
+            ]
         }
     ],
     "header": {
@@ -567,6 +594,20 @@
                 },
                 {
                     "name": "custom"
+                }
+            ]
+        },
+        {
+            "name": "EvalKind",
+            "enums": [
+                {
+                    "name": "integer"
+                },
+                {
+                    "name": "boolean"
+                },
+                {
+                    "name": "string"
                 }
             ]
         }

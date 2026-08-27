@@ -112,6 +112,22 @@ function identText(a: nast.Arena, id: nast.NodeId): string {
     return a.data<nast.Ident>(id)?.identifier ?? "?";
 }
 
+// ConstantValue (Evaluator が畳んだ定数) の表示。
+function constLabel(v: nast.ConstantValue): string {
+    if (v.kind === "integer") {
+        return `${v.is_negative ? "-" : ""}${v.integer}`;
+    }
+    if (v.kind === "boolean") {
+        return v.boolean ? "true" : "false";
+    }
+    return JSON.stringify(v.string);
+}
+
+function constSuffix(tables: nast.SideTables, e: nast.NodeId): string {
+    const cv = tables.get<nast.ConstantValue>("ConstantValue", e);
+    return cv !== undefined ? ` = ${constLabel(cv)}` : "";
+}
+
 // 配列長などに現れる式の近似表示。リテラルと参照だけ実体を出す。
 function exprLabelShort(a: nast.Arena, e: nast.NodeId): string {
     if (nast.isNullId(e)) {
@@ -143,7 +159,7 @@ export interface NastHoverResult {
 //   VariableDefinition   右辺の式に付いた型。for x in c の束縛も同じノード
 //                        (op=in_assign) で、束縛自体の型は木に無いので
 //                        container の型を添えて出す
-function declLine(a: nast.Arena, ident: nast.NodeId, stmt: nast.NodeId): string | null {
+function declLine(a: nast.Arena, tables: nast.SideTables, ident: nast.NodeId, stmt: nast.NodeId): string | null {
     const kind = a.kind(stmt);
     const d = a.data<any>(stmt);
     if (kind === null || d === null) {
@@ -154,6 +170,7 @@ function declLine(a: nast.Arena, ident: nast.NodeId, stmt: nast.NodeId): string 
         return null;
     }
     const name = identText(a, ident);
+    let value = "";
     let label: string | null = null;
     if (kind === "Enum") {
         label = typeLabel(a, (d as nast.Enum).enum_type);
@@ -161,6 +178,7 @@ function declLine(a: nast.Arena, ident: nast.NodeId, stmt: nast.NodeId): string 
     else if (kind === "EnumMember") {
         const en = a.data<nast.Enum>((d as nast.EnumMember).belong);
         label = en !== null ? typeLabel(a, en.enum_type) : null;
+        value = constSuffix(tables, (d as nast.EnumMember).value);
     }
     else if (kind === "Function") {
         const fn = d as nast.Function;
@@ -180,6 +198,7 @@ function declLine(a: nast.Arena, ident: nast.NodeId, stmt: nast.NodeId): string 
                 : `for \`${name}\` (definition)`;
         }
         label = v !== null ? typeLabel(a, v.type) : null;
+        value = constSuffix(tables, vd.value);
     }
     else if (a.is(stmt, "NamedStructTypedStatement")) {
         const st = (d as nast.NamedStructTypedStatement).struct_type;
@@ -193,7 +212,7 @@ function declLine(a: nast.Arena, ident: nast.NodeId, stmt: nast.NodeId): string 
         label = null;
     }
     const head = label !== null ? `\`${label}\` — ${kind}` : kind;
-    return `${head} \`${name}\` (definition)`;
+    return `${head} \`${name}\` (definition)${value}`;
 }
 
 // 位置を覆う一番小さいノードを、木から到達できるものの中から選ぶ。
@@ -240,7 +259,7 @@ export function hoverAt(dump: nast.Dump, reach: Set<number>, pos: number): NastH
     if (bestExpr !== null && (bestType === null || wExpr <= wType)) {
         const kind = a.kind(bestExpr)!;
         const expr = a.data<nast.Expr>(bestExpr)!;
-        lines.push(`\`${typeLabel(a, expr.type)}\` — ${kind}`);
+        lines.push(`\`${typeLabel(a, expr.type)}\` — ${kind}${constSuffix(dump.tables, bestExpr)}`);
         rangeOf = bestExpr;
         exprLinePushed = true;
     }
@@ -267,7 +286,7 @@ export function hoverAt(dump: nast.Dump, reach: Set<number>, pos: number): NastH
                 if (!reach.has(nast.idIndex(id)) || !a.is(id, "Statement")) {
                     continue;
                 }
-                const line = declLine(a, bestIdent, id);
+                const line = declLine(a, dump.tables, bestIdent, id);
                 if (line !== null) {
                     // enum メンバの合成値のような、名前と同じ位置に置かれた式の
                     // 行は定義の表示とかぶるので落とす。
