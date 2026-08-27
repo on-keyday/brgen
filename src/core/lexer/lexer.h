@@ -310,6 +310,31 @@ format Varint:
         bool regex_mode = false;
     };
 
+    // 本文を切り出さない版。tag と loc だけ返す。
+    // 本文が要る側は loc.pos とバッファから取る。
+    template <class T>
+    std::optional<LiteToken> parse_one_no_text(futils::Sequencer<T>& seq, std::uint64_t file, Option opt) {
+        internal::Option option;
+        option.regex_mode = opt.regex_mode;
+        auto ctx = futils::comb2::LexContext<Tag, std::string>{};
+        if (auto res = internal::parse_one(seq, ctx, option); res != futils::comb2::Status::match) {
+            if (res == futils::comb2::Status::fatal || !seq.eos()) {
+                LiteToken tok;
+                tok.tag = Tag::error;
+                tok.loc.file = file;
+                tok.loc.pos = {seq.rptr, seq.rptr + 1};
+                return tok;
+            }
+            return std::nullopt;
+        }
+        LiteToken tok;
+        tok.tag = ctx.str_tag;
+        tok.loc.file = file;
+        tok.loc.pos = ctx.str_pos;
+        seq.rptr = ctx.str_pos.end;
+        return tok;
+    }
+
     template <class TokenBuf = std::string, class T>
     std::optional<Token> parse_one(futils::Sequencer<T>& seq, std::uint64_t file, Option opt) {
         internal::Option option;

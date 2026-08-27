@@ -26,6 +26,11 @@ namespace brgen {
             return lexer::parse_one<TokenBuf>(*static_cast<futils::Sequencer<T>*>(ptr), file, opt);
         }
 
+        template <class T>
+        static std::optional<lexer::LiteToken> do_parse_no_text(void* ptr, std::uint64_t file, lexer::Option opt) {
+            return lexer::parse_one_no_text(*static_cast<futils::Sequencer<T>*>(ptr), file, opt);
+        }
+
         template <class DumpBuf, class T>
         static std::pair<std::string, futils::code::SrcLoc> dump_source(void* ptr, lexer::Pos pos) {
             auto& seq = *static_cast<futils::Sequencer<T>*>(ptr);
@@ -47,6 +52,7 @@ namespace brgen {
         fs::path file_name;
         std::shared_ptr<void> ptr;
         std::optional<lexer::Token> (*parse_)(void* seq, std::uint64_t file, lexer::Option opt) = nullptr;
+        std::optional<lexer::LiteToken> (*parse_no_text_)(void* seq, std::uint64_t file, lexer::Option opt) = nullptr;
         std::pair<std::string, futils::code::SrcLoc> (*dump_)(void* seq, lexer::Pos pos) = nullptr;
 
         futils::view::rvec (*direct)(void* seq) = nullptr;
@@ -65,6 +71,7 @@ namespace brgen {
             using U = std::decay_t<T>;
             ptr = std::make_unique<futils::Sequencer<U>>(std::forward<T>(t));
             parse_ = do_parse<Buf, U>;
+            parse_no_text_ = do_parse_no_text<U>;
             dump_ = dump_source<Buf, U>;
             direct = direct_source<U>;
         }
@@ -86,6 +93,13 @@ namespace brgen {
         std::optional<lexer::Token> parse(lexer::Option option) {
             if (parse_) {
                 return parse_(ptr.get(), file, option);
+            }
+            return std::nullopt;
+        }
+
+        std::optional<lexer::LiteToken> parse_no_text(lexer::Option option) {
+            if (parse_no_text_) {
+                return parse_no_text_(ptr.get(), file, option);
             }
             return std::nullopt;
         }
