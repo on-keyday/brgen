@@ -4,14 +4,14 @@
 namespace brgen::nast {
     void Stream::maybe_parse() {
         if (cur == tokens.end()) {
-            auto token = input->parse(lex_option);
+            auto token = input->parse_no_text(lex_option);
             if (!token) {
                 return;
             }
             if (token->tag == lexer::Tag::error) {
                 token->loc.line = line;
                 token->loc.col = col;
-                error(token->loc, std::move(token->token)).report();
+                error(token->loc, "lexer error").report();
             }
             token->loc.line = line;
             token->loc.col = col;
@@ -46,7 +46,7 @@ namespace brgen::nast {
         tokens.erase(tokens.begin(), prev_skip_pos ? *prev_skip_pos : cur);
     }
 
-    std::list<lexer::Token> Stream::take() {
+    std::list<lexer::LiteToken> Stream::take() {
         auto copy = std::move(tokens);
         tokens.clear();
         cur = tokens.begin();
@@ -85,10 +85,10 @@ namespace brgen::nast {
         if (eos()) {
             return false;
         }
-        return cur->token == s;
+        return text(*cur) == s;
     }
 
-    std::optional<lexer::Token> Stream::peek_token(std::string_view s) {
+    std::optional<lexer::LiteToken> Stream::peek_token(std::string_view s) {
         if (!expect_token(s)) {
             return std::nullopt;
         }
@@ -96,7 +96,7 @@ namespace brgen::nast {
         return *cur;
     }
 
-    std::optional<lexer::Token> Stream::peek_token(lexer::Tag t) {
+    std::optional<lexer::LiteToken> Stream::peek_token(lexer::Tag t) {
         if (!expect_token(t)) {
             return std::nullopt;
         }
@@ -104,11 +104,11 @@ namespace brgen::nast {
         return *cur;
     }
 
-    lexer::Token Stream::peek_token() {
+    lexer::LiteToken Stream::peek_token() {
         return *cur;
     }
 
-    std::optional<lexer::Token> Stream::consume_token(std::string_view s) {
+    std::optional<lexer::LiteToken> Stream::consume_token(std::string_view s) {
         if (auto token = peek_token(s)) {
             consume();
             return token;
@@ -116,7 +116,7 @@ namespace brgen::nast {
         return std::nullopt;
     }
 
-    std::optional<lexer::Token> Stream::consume_token(lexer::Tag t) {
+    std::optional<lexer::LiteToken> Stream::consume_token(lexer::Tag t) {
         if (auto token = peek_token(t)) {
             consume();
             return token;
@@ -131,17 +131,17 @@ namespace brgen::nast {
             append(buf, "`<EOF>`");
         }
         else {
-            appends(buf, "`", cur->token, "`(kind: ", lexer::enum_array<lexer::Tag>[int(cur->tag)].second, ")");
-            if (cur->token == "]") {
+            appends(buf, "`", text(*cur), "`(kind: ", lexer::enum_array<lexer::Tag>[int(cur->tag)].second, ")");
+            if (text(*cur) == "]") {
                 appends(buf, ", did you forget opening bracket `[`?");
             }
-            else if (cur->token == ">") {
+            else if (text(*cur) == ">") {
                 appends(buf, ", did you forget opening angle bracket `<`?");
             }
-            else if (cur->token == ")") {
+            else if (text(*cur) == ")") {
                 appends(buf, ", did you forget opening parenthesis `(`?");
             }
-            else if (cur->token == "{" || cur->token == "}") {
+            else if (text(*cur) == "{" || text(*cur) == "}") {
                 appends(buf, ", this language uses python-like blocks, so `{}` is not used.");
             }
         }
@@ -164,7 +164,7 @@ namespace brgen::nast {
         return token_expect_error(s, "literally", hint);
     }
 
-    lexer::Token Stream::must_consume_token(std::string_view view, std::string_view hint) {
+    lexer::LiteToken Stream::must_consume_token(std::string_view view, std::string_view hint) {
         auto f = consume_token(view);
         if (!f) {
             token_error(view, hint).report();
@@ -172,7 +172,7 @@ namespace brgen::nast {
         return *f;
     }
 
-    lexer::Token Stream::must_consume_token(lexer::Tag tag, std::string_view hint) {
+    lexer::LiteToken Stream::must_consume_token(lexer::Tag tag, std::string_view hint) {
         auto f = consume_token(tag);
         if (!f) {
             token_error(tag, hint).report();
@@ -251,7 +251,7 @@ namespace brgen::nast {
         cur--;
     }
 
-    std::optional<lexer::Token> Stream::prev_token() {
+    std::optional<lexer::LiteToken> Stream::prev_token() {
         if (cur == tokens.begin()) {
             return std::nullopt;
         }

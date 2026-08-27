@@ -265,7 +265,7 @@ namespace brgen::nast {
             // block->struct_type.ref(a)->base = scope_owner;
 
             // Create a new context for the current indent level
-            auto current_indent = base.token.size();
+            auto current_indent = base.loc.pos.len();
             auto c = state.new_indent_no_scope(s, current_indent);
             // auto ss = state.enter_struct(block->struct_type);
 
@@ -312,7 +312,7 @@ namespace brgen::nast {
 
             // Parse and add subsequent elements with the same indent level
             while (auto indent = s.peek_token(lexer::Tag::indent)) {
-                if (indent->token.size() != current_indent) {
+                if (indent->loc.pos.len() != current_indent) {
                     break;
                 }
                 s.must_consume_token(lexer::Tag::indent, "to start a new line in indent block");
@@ -408,7 +408,7 @@ namespace brgen::nast {
             <match> ::= "match" <expr>? <match branch>*
             <match branch> ::= <expr> [":" <indent block> | "=>" <statement>]
         */
-        Node<Match> parse_match(lexer::Token&& token) {
+        Node<Match> parse_match(lexer::LiteToken&& token) {
             // Create a shared pointer for the Match
             auto match = a.make<Match>(token.loc);
 
@@ -494,7 +494,7 @@ namespace brgen::nast {
             auto base = s.must_consume_token(lexer::Tag::indent, "indent expected after `match`");
 
             // Create a new context for the current indent level
-            auto current_indent = base.token.size();
+            auto current_indent = base.loc.pos.len();
             // auto c = state.new_indent_no_scope(s, current_indent);
 
             // Parse and add the first element
@@ -503,7 +503,7 @@ namespace brgen::nast {
 
             // Parse and add subsequent elements with the same indent level
             while (auto indent = s.peek_token(lexer::Tag::indent)) {
-                if (indent->token.size() < current_indent) {
+                if (indent->loc.pos.len() < current_indent) {
                     break;
                 }
                 s.must_consume_token(lexer::Tag::indent, "to start a new line in match branch");
@@ -519,7 +519,7 @@ namespace brgen::nast {
         /*
             <if> ::= "if" <expr> <indent scope> ("elif" <expr> <block>)* ("else" <indent scope>)?
         */
-        Node<If> parse_if(lexer::Token&& token) {
+        Node<If> parse_if(lexer::LiteToken&& token) {
             s.skip_white();
             auto if_ = a.make<If>(token.loc);
 
@@ -561,7 +561,7 @@ namespace brgen::nast {
             auto detect_end = [&] {
                 if (cur_indent != 0) {
                     auto indent_token = s.peek_token(lexer::Tag::indent);
-                    if (!indent_token || indent_token->token.size() != cur_indent) {
+                    if (!indent_token || indent_token->loc.pos.len() != cur_indent) {
                         return true;  // 次のインデントが現在のインデントと異なれば終了
                     }
                 }
@@ -640,10 +640,10 @@ namespace brgen::nast {
                     // ident->usage = IdentUsage::bad_ident;
                     return ident;
                 }
-                return a.make<Ident>(f->loc, std::move(f->token));
+                return a.make<Ident>(f->loc, std::string(s.text(*f)));
             }
             auto token = s.must_consume_token(lexer::Tag::ident, hint);
-            return a.make<Ident>(token.loc, std::move(token.token));
+            return a.make<Ident>(token.loc, std::string(s.text(token)));
         }
 
         Node<Ident> parse_ident(std::string_view hint) {
@@ -654,7 +654,7 @@ namespace brgen::nast {
             return ident;
         }
 
-        Node<Paren> parse_paren(lexer::Token&& token) {
+        Node<Paren> parse_paren(lexer::LiteToken&& token) {
             auto paren = a.make<Paren>(token.loc);
             s.skip_white();
             paren->expr = parse_expr();
@@ -664,9 +664,9 @@ namespace brgen::nast {
             return paren;
         }
 
-        Node<StrLiteral> parse_str_literal(lexer::Token&& lit) {
+        Node<StrLiteral> parse_str_literal(lexer::LiteToken&& lit) {
             auto literal = a.make<StrLiteral>(lit.loc);
-            literal->value = std::move(lit.token);
+            literal->value = std::string(s.text(lit));
             auto c = unescape(literal->value);
             if (!c) {
                 s.report_error(lit.loc, "invalid string literal");
@@ -677,12 +677,12 @@ namespace brgen::nast {
             return literal;
         }
 
-        Node<RegexLiteral> parse_regex_literal(lexer::Token&& lit) {
-            auto literal = a.make<RegexLiteral>(lit.loc, NodeData<Literal>{}, std::move(lit.token));
+        Node<RegexLiteral> parse_regex_literal(lexer::LiteToken&& lit) {
+            auto literal = a.make<RegexLiteral>(lit.loc, NodeData<Literal>{}, std::string(s.text(lit)));
             return literal;
         }
 
-        Node<TypeLiteral> parse_type_literal(lexer::Token&& lit) {
+        Node<TypeLiteral> parse_type_literal(lexer::LiteToken&& lit) {
             s.skip_line();
             auto typ = parse_type();
             s.skip_line();
@@ -691,8 +691,8 @@ namespace brgen::nast {
             return literal;
         }
 
-        Node<CharLiteral> parse_char_literal(lexer::Token&& lit) {
-            auto literal = a.make<CharLiteral>(lit.loc, NodeData<Literal>{}, std::move(lit.token));
+        Node<CharLiteral> parse_char_literal(lexer::LiteToken&& lit) {
+            auto literal = a.make<CharLiteral>(lit.loc, NodeData<Literal>{}, std::string(s.text(lit)));
             auto c = unescape(literal->value);
             if (!c) {
                 s.report_error(lit.loc, "invalid char literal");
@@ -720,10 +720,10 @@ namespace brgen::nast {
         */
         Node<Expr> parse_prim(bool* line_skipped) {
             if (auto token = s.consume_token(lexer::Tag::int_literal)) {
-                return a.make<IntLiteral>(token->loc, NodeData<Literal>{}, std::move(token->token));
+                return a.make<IntLiteral>(token->loc, NodeData<Literal>{}, std::string(s.text(*token)));
             }
             if (auto b = s.consume_token(lexer::Tag::bool_literal)) {
-                return a.make<BoolLiteral>(b->loc, NodeData<Literal>{}, b->token == "true");
+                return a.make<BoolLiteral>(b->loc, NodeData<Literal>{}, s.text(*b) == "true");
             }
             if (auto t = s.consume_token(lexer::Tag::str_literal)) {
                 return parse_str_literal(std::move(*t));
@@ -762,9 +762,9 @@ namespace brgen::nast {
                 return parse_type_literal(std::move(*typ));
             }
             if (auto i = s.peek_token(lexer::Tag::ident)) {
-                auto i_desc = is_int_type(i->token);
-                auto f_desc = is_float_type(i->token);
-                if (i_desc || f_desc || i->token == "void" || i->token == "bool") {
+                auto i_desc = is_int_type(s.text(*i));
+                auto f_desc = is_float_type(s.text(*i));
+                if (i_desc || f_desc || s.text(*i) == "void" || s.text(*i) == "bool") {
                     Node<Type> type;
                     if (i_desc) {
                         type = a.make<IntType>(i->loc, NodeData<Type>{}, std::uint32_t(i_desc->bit_size), i_desc->is_signed, i_desc->endian);
@@ -772,10 +772,10 @@ namespace brgen::nast {
                     else if (f_desc) {
                         type = a.make<FloatType>(i->loc, NodeData<Type>{}, std::uint32_t(f_desc->bit_size), f_desc->endian);
                     }
-                    else if (i->token == "void") {
+                    else if (s.text(*i) == "void") {
                         type = a.make<VoidType>(i->loc);
                     }
-                    else if (i->token == "bool") {
+                    else if (s.text(*i) == "bool") {
                         type = a.make<BoolType>(i->loc);
                     }
                     else {
@@ -826,7 +826,7 @@ namespace brgen::nast {
             }
         }
 
-        Node<Call> parse_call(lexer::Token&& token, Node<Expr>& p) {
+        Node<Call> parse_call(lexer::LiteToken&& token, Node<Expr>& p) {
             auto call = a.make<Call>(p.ref(a).loc(), NodeData<Expr>{}, p);
             // 引数が無くても Arguments は作る。f() でも end_loc を持たせるためと、
             // 参照側が毎回 null 検査をしなくて済むようにするため。
@@ -843,7 +843,7 @@ namespace brgen::nast {
             return call;
         }
 
-        Node<Expr> parse_call_or_cast(lexer::Token&& token, Node<Expr>& p) {
+        Node<Expr> parse_call_or_cast(lexer::LiteToken&& token, Node<Expr>& p) {
             auto call = parse_call(std::move(token), p);
             if (auto typ = call.ref(a)->callee.as<TypeLiteral>().ref(a)) {
                 return a.make<Cast>(call.ref(a).loc(), NodeData<Expr>{}, call, call.ref(a)->arguments);
@@ -884,7 +884,7 @@ namespace brgen::nast {
             return call;
         }
 
-        Node<Index> parse_index(lexer::Token&& token, Node<Expr>& p) {
+        Node<Index> parse_index(lexer::LiteToken&& token, Node<Expr>& p) {
             auto call = a.make<Index>(token.loc, NodeData<Expr>{}, std::move(p));
             s.skip_white();
             call->index = parse_expr();
@@ -894,7 +894,7 @@ namespace brgen::nast {
             return call;
         }
 
-        Node<MemberAccess> parse_access(lexer::Token&& token, Node<Expr> p) {
+        Node<MemberAccess> parse_access(lexer::LiteToken&& token, Node<Expr> p) {
             s.skip_white();
             auto ident = parse_ident_no_scope("member ident expected after '.'");
             // ident.ref(a)->usage = IdentUsage::reference_member;
@@ -927,7 +927,7 @@ namespace brgen::nast {
             return p;
         }
 
-        std::optional<lexer::Token> consume_op(size_t& i, auto& ops) {
+        std::optional<lexer::LiteToken> consume_op(size_t& i, auto& ops) {
             for (i = 0; i < ops.size(); i++) {
                 if constexpr (futils::helper::is_template_instance_of<std::decay_t<decltype(ops[i])>, std::pair>) {
                     if (auto t = s.consume_token(ops[i].second)) {
@@ -1197,13 +1197,13 @@ namespace brgen::nast {
                         if (depth == bin_compare_layer) {
                             if (auto bin = expr.as<Binary>().ref(a); bin && is_compare_op(bin->op)) {
                                 // this is like `a == b == c` but this language not support it
-                                s.report_error(token->loc, "unexpected `", token->token, "`");
+                                s.report_error(token->loc, "unexpected `", s.text(*token), "`");
                             }
                         }
                         if (depth == bin_range_layer) {
                             if (auto bin = expr.as<Range>().ref(a); bin && is_range_op(bin->op)) {
                                 // this is like `a .. b .. c` but this language not support it
-                                s.report_error(token->loc, "unexpected `", token->token, "`");
+                                s.report_error(token->loc, "unexpected `", s.text(*token), "`");
                             }
                             s.skip_space();  // for safety, skip only space, not line
                             auto r = a.make<Range>(token->loc, NodeData<Expr>{}, std::move(expr), Node<Expr>{}, *from_string<BinaryOp>(bin_layers[depth][i]));
@@ -1239,7 +1239,7 @@ namespace brgen::nast {
         /*
             <loop> ::= "for" <expr>? (";" <expr>?)? (";" <expr>?)? <indent block>
         */
-        Node<Statement> parse_for(lexer::Token&& token) {
+        Node<Statement> parse_for(lexer::LiteToken&& token) {
             // auto cs = state.cond_scope(for_->cond_scope, for_);
             s.skip_white();
             constexpr auto hint = "to start `for` body";
@@ -1304,7 +1304,7 @@ namespace brgen::nast {
             <func type> ::= "fn" "(" (<type> ("," <type>)*)? ")" ("->" <type>)?
         */
         // fn (a :int,b :int) -> int
-        Node<FunctionType> parse_func_type(lexer::Token&& tok) {
+        Node<FunctionType> parse_func_type(lexer::LiteToken&& tok) {
             auto func_type = a.make<FunctionType>(tok.loc, NodeData<Type>{.is_explicit = true});
             s.skip_white();
             s.must_consume_token("(", "to open function type parameter list");
@@ -1386,37 +1386,30 @@ namespace brgen::nast {
                                                 std::move(concrete));
             }
 
-            lexer::Token ident;
-
             constexpr auto type_hint = "to specify type name, types are like `T`, `[]T`, `[x][10]T`, `fn(p :T,:U) -> T`, `\"magic_number\"`, `/regex/`, `imported.T`";
 
-            if (state.error_tolerant) {
-                auto f = s.consume_token(lexer::Tag::ident);
-                if (!f) {
-                    auto errs = s.token_error(lexer::Tag::ident, type_hint);
-                    state.errors.locations.insert(state.errors.locations.end(), errs.locations.begin(), errs.locations.end());
-                    ident = lexer::Token{
-                        .token = "$dummy",
-                        .loc = s.loc(),
-                    };
-                    s.recover_to_prev_skip();
-                }
-                else {
-                    ident = std::move(*f);
-                }
+            // 型名の Ident。error tolerant の復旧では入力に無い名前を立てる。
+            // 偽のトークンを作って後段に渡すのではなく、ここで Ident を作る。
+            // トークンは入力の一部を指すものなので、入力に無い文字列は持てない。
+            Ref<Ident> base;
+
+            if (state.error_tolerant && !s.expect_token(lexer::Tag::ident)) {
+                auto errs = s.token_error(lexer::Tag::ident, type_hint);
+                state.errors.locations.insert(state.errors.locations.end(), errs.locations.begin(), errs.locations.end());
+                base = a.make<Ident>(s.loc(), "$dummy");
+                s.recover_to_prev_skip();
             }
             else {
-                ident = s.must_consume_token(lexer::Tag::ident, type_hint);
+                auto ident = s.must_consume_token(lexer::Tag::ident, type_hint);
+                auto text = s.text(ident);
+                if (auto desc = is_int_type(text)) {
+                    return a.make<IntType>(ident.loc, NodeData<Type>{.is_explicit = true}, desc->bit_size, desc->is_signed, desc->endian);
+                }
+                if (auto desc = is_float_type(text)) {
+                    return a.make<FloatType>(ident.loc, NodeData<Type>{.is_explicit = true}, desc->bit_size, desc->endian);
+                }
+                base = a.make<Ident>(ident.loc, std::string(text));
             }
-
-            if (auto desc = is_int_type(ident.token)) {
-                return a.make<IntType>(ident.loc, NodeData<Type>{.is_explicit = true}, desc->bit_size, desc->is_signed, desc->endian);
-            }
-            if (auto desc = is_float_type(ident.token)) {
-                return a.make<FloatType>(ident.loc, NodeData<Type>{.is_explicit = true}, desc->bit_size, desc->endian);
-            }
-
-            auto base = a.make<Ident>(ident.loc, std::move(ident.token));
             // base->usage = IdentUsage::maybe_type;
             // base->scope = state.current_scope();
 
@@ -1431,7 +1424,7 @@ namespace brgen::nast {
                 type = imported_type;
             }
             else {
-                auto id = a.make<IdentType>(ident.loc, NodeData<WrapperType>{NodeData<Type>{.is_explicit = true}}, std::move(base));
+                auto id = a.make<IdentType>(base.loc(), NodeData<WrapperType>{NodeData<Type>{.is_explicit = true}}, std::move(base));
                 // id->import_ref = std::move(import_ref);
                 type = id;
             }
@@ -1473,7 +1466,7 @@ namespace brgen::nast {
         */
         // may returns expr if not field
         Node<Statement> parse_field(Node<Statement> may_ident) {
-            lexer::Token token;
+            lexer::LiteToken token;
             Node<Ident> ident;
             if (may_ident) {
                 if (may_ident.type() != NodeType::Reference) {
@@ -1621,7 +1614,7 @@ namespace brgen::nast {
             return member;
         }
 
-        void parse_enum_base_type(Node<Enum>& enum_, lexer::Token& base) {
+        void parse_enum_base_type(Node<Enum>& enum_, lexer::LiteToken& base) {
             s.skip_white();
             enum_.ref(a)->base_type = parse_type();
             // enum_.ref(a)->enum_type.ref(a)->bit_size = enum_.ref(a)->base_type.ref(a)->bit_size;
@@ -1629,7 +1622,7 @@ namespace brgen::nast {
             s.must_consume_token(lexer::Tag::line, "to separate enum base type");
             s.skip_line();
             auto indent = s.must_consume_token(lexer::Tag::indent, "to start enum member block");
-            if (indent.token.size() != base.token.size()) {
+            if (indent.loc.pos.len() != base.loc.pos.len()) {
                 s.report_error(indent.loc, "indent size must be same as enum base");
             }
         }
@@ -1638,7 +1631,7 @@ namespace brgen::nast {
             <enum> ::= "enum" <ident> ":\r\n" (":"<type>)? <enum member>+
             <enum member> ::= <indent> <ident> ("=" <expr>)?
          */
-        Node<Enum> parse_enum(lexer::Token&& token) {
+        Node<Enum> parse_enum(lexer::LiteToken&& token) {
             // set enum type
             auto enum_ = a.make<Enum>(token.loc);
             s.skip_white();
@@ -1652,7 +1645,7 @@ namespace brgen::nast {
 
             auto base = s.must_consume_token(lexer::Tag::indent, "to start enum member block");
             // auto m_scope = state.enter_member(enum_);
-            // auto s_scope = state.new_indent(s, base.token.size(), enum_->scope, enum_);
+            // auto s_scope = state.new_indent(s, base.loc.pos.len(), enum_->scope, enum_);
             Node<Enum> enum_id = enum_;
             if (auto tok = s.consume_token(":")) {
                 parse_enum_base_type(enum_id, base);
@@ -1662,7 +1655,7 @@ namespace brgen::nast {
             size_t offset = 0;
             parse_enum_member(enum_id, offset, prev_specified);
             while (auto indent = s.peek_token(lexer::Tag::indent)) {
-                if (indent->token.size() != base.token.size()) {
+                if (indent->loc.pos.len() != base.loc.pos.len()) {
                     break;
                 }
                 s.must_consume_token(lexer::Tag::indent, "to continue enum member block");
@@ -1678,7 +1671,7 @@ namespace brgen::nast {
         // 型パラメータを持つものは GenericFormat、持たないものは Format を返す。
         // 下流が Format だけを見れば具象だけが取れるように分けてある
         // (元は Format::type_parameters が空かどうかで毎回問うていた)。
-        Node<NamedBodyStatement> parse_format(lexer::Token&& token, bool allow_anonymous) {
+        Node<NamedBodyStatement> parse_format(lexer::LiteToken&& token, bool allow_anonymous) {
             Node<Ident> format_name;
             s.skip_white();
             auto ident_parse = [&] {
@@ -1786,7 +1779,7 @@ namespace brgen::nast {
         /*
             <state> ::= "state" <ident> <indent block>
         */
-        Node<State> parse_state(lexer::Token&& token) {
+        Node<State> parse_state(lexer::LiteToken&& token) {
             auto state_ = a.make<State>(token.loc);
             s.skip_white();
 
@@ -1808,7 +1801,7 @@ namespace brgen::nast {
         /*
             <fn> ::= "fn" <ident> "(" (<ident> : <type> ("," <ident > <type>)*)? ")" ("->" <type>)? <indent block>
         */
-        Node<Function> parse_fn(lexer::Token&& token) {
+        Node<Function> parse_fn(lexer::LiteToken&& token) {
             auto fn = a.make<Function>(token.loc);
             s.skip_white();
             fn->name = parse_ident("function name expected");
