@@ -66,7 +66,12 @@ namespace brgen::nast::bind {
             return a.get<NamedTypeStatement>(nt)->type;
         }
         if (auto vd = decl.as_any<VariableDefinition>()) {
-            return type_of_expr(a.get<VariableDefinition>(vd)->value);
+            auto* d = a.get<VariableDefinition>(vd);
+            if (d->op == BinaryOp::in_assign) {
+                // for x in c の束縛。型は container 側から決まる。
+                return iteration_type(type_of_expr(d->value));
+            }
+            return type_of_expr(d->value);
         }
         if (auto fn = decl.as_any<Function>()) {
             auto* d = a.get<Function>(fn);
@@ -85,10 +90,6 @@ namespace brgen::nast::bind {
                 return a.get<Enum>(enum_)->enum_type;
             }
             return nullref;
-        }
-        // for x in c の x。型は container 側から決まる。
-        if (auto rl = decl.as_any<RangeLoop>()) {
-            return iteration_type(type_of_expr(a.get<RangeLoop>(rl)->container));
         }
         return nullref;
     }

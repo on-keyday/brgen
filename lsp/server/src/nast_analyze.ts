@@ -140,17 +140,16 @@ export interface NastHoverResult {
 //   Format / State       参照されたときに作られる struct_type (無ければ種別のみ)
 //   Enum / EnumMember    enum_type
 //   Function             引数と戻り値から組んだ表示
-//   VariableDefinition   右辺の式に付いた型
-//   RangeLoop の束縛     木に型が置かれない (参照側の式にだけ付く) ので種別のみ
+//   VariableDefinition   右辺の式に付いた型。for x in c の束縛も同じノード
+//                        (op=in_assign) で、束縛自体の型は木に無いので
+//                        container の型を添えて出す
 function declLine(a: nast.Arena, ident: nast.NodeId, stmt: nast.NodeId): string | null {
     const kind = a.kind(stmt);
     const d = a.data<any>(stmt);
     if (kind === null || d === null) {
         return null;
     }
-    const declares =
-        (typeof d.name === "number" && d.name === ident) ||
-        (kind === "RangeLoop" && d.bind_variable === ident);
+    const declares = typeof d.name === "number" && d.name === ident;
     if (!declares) {
         return null;
     }
@@ -172,7 +171,14 @@ function declLine(a: nast.Arena, ident: nast.NodeId, stmt: nast.NodeId): string 
         label = `fn(${params})${ret}`;
     }
     else if (kind === "VariableDefinition") {
-        const v = a.data<nast.Expr>((d as nast.VariableDefinition).value);
+        const vd = d as nast.VariableDefinition;
+        const v = a.data<nast.Expr>(vd.value);
+        if (vd.op === "in_assign") {
+            const container = v !== null ? typeLabel(a, v.type) : null;
+            return container !== null
+                ? `for \`${name}\` in \`${container}\` (definition)`
+                : `for \`${name}\` (definition)`;
+        }
         label = v !== null ? typeLabel(a, v.type) : null;
     }
     else if (a.is(stmt, "NamedStructTypedStatement")) {

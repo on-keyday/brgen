@@ -21,8 +21,9 @@
 // example/ 309 ファイルで src2json と突き合わせた結果 (2026-08-11): 一致 6265 /
 // 解決先が違う 62 / src2json だけ解決 0 / nast だけ解決 19。
 // **src2json が解決して nast が解決しない参照は無い。**
-// 「解決先が違う」62 件は全部 for x in ... の x で、nast が RangeLoop 文を、
-// src2json が束縛の Ident を指す表現差 (62/62 で行が一致)。
+// 「解決先が違う」62 件は全部 for x in ... の x で、nast が束縛の
+// VariableDefinition (RangeLoop::binding) を、src2json が束縛の Ident を指す
+// 表現差 (62/62 で行が一致)。
 //
 // 分岐で宣言された名前は binder が合成した Field (UnionFields 表) を通して見える。
 // import した先の名前はここでは見ない。ImportResolution は ImportResolver が

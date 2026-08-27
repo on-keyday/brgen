@@ -754,12 +754,8 @@
             "derive": "BodyStatement",
             "fields": [
                 {
-                    "name": "bind_variable",
-                    "type": "Node<Ident>"
-                },
-                {
-                    "name": "container",
-                    "type": "Node<Expr>"
+                    "name": "binding",
+                    "type": "Node<VariableDefinition>"
                 }
             ]
         },
