@@ -723,7 +723,7 @@ namespace brgen::nast {
                 return a.make<IntLiteral>(token->loc, NodeData<Literal>{}, std::string(s.text(*token)));
             }
             if (auto b = s.consume_token(lexer::Tag::bool_literal)) {
-                return a.make<BoolLiteral>(b->loc, NodeData<Literal>{}, s.text(*b) == "true");
+                return a.make<BoolLiteral>(b->loc, NodeData<Literal>{}, s.token_is(*b, "true"));
             }
             if (auto t = s.consume_token(lexer::Tag::str_literal)) {
                 return parse_str_literal(std::move(*t));
@@ -762,9 +762,11 @@ namespace brgen::nast {
                 return parse_type_literal(std::move(*typ));
             }
             if (auto i = s.peek_token(lexer::Tag::ident)) {
-                auto i_desc = is_int_type(s.text(*i));
-                auto f_desc = is_float_type(s.text(*i));
-                if (i_desc || f_desc || s.text(*i) == "void" || s.text(*i) == "bool") {
+                // text() は確保するので 1 回だけ。等値だけなら token_is で足りる。
+                auto text = s.text(*i);
+                auto i_desc = is_int_type(text);
+                auto f_desc = is_float_type(text);
+                if (i_desc || f_desc || text == "void" || text == "bool") {
                     Node<Type> type;
                     if (i_desc) {
                         type = a.make<IntType>(i->loc, NodeData<Type>{}, std::uint32_t(i_desc->bit_size), i_desc->is_signed, i_desc->endian);
@@ -772,10 +774,10 @@ namespace brgen::nast {
                     else if (f_desc) {
                         type = a.make<FloatType>(i->loc, NodeData<Type>{}, std::uint32_t(f_desc->bit_size), f_desc->endian);
                     }
-                    else if (s.text(*i) == "void") {
+                    else if (text == "void") {
                         type = a.make<VoidType>(i->loc);
                     }
-                    else if (s.text(*i) == "bool") {
+                    else if (text == "bool") {
                         type = a.make<BoolType>(i->loc);
                     }
                     else {
