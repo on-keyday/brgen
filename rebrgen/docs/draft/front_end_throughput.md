@@ -202,6 +202,15 @@ EndianView<View, char32_t>              false   utf32 入力 / utf32 解釈
 オフセットを返せるようにするためのもの。物理オフセットに揃える方向で
 「単純化」すると壊れる。
 
+実際の LSP は `lsp/server/src/server.ts:163-164` で
+`--stdin --interpret-mode utf16` を付けて src2json を起動し、編集のたびに
+lexer 用と parser 用で 2 回叩く (`:202`, `:210`)。物理側は stdin の utf8 なので
+`U16View<...>` 経路で、`source()` は空、`Token::token` は毎トークン
+`utf::convert` を通っている。
+
+文書はリクエストごとに読み直されて捨てられるので、**実体化はリクエストを
+またいで償却されない**。得られるのは 1 回の解析の中の差だけ。
+
 エラー表示も同じバッファを見る (`dump_source` が `seq.rptr = pos.begin` して
 `write_src_loc` を呼び、読み終わったら戻す) ので、意味は一貫している。
 
