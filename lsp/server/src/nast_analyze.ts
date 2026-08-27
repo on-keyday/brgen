@@ -128,6 +128,19 @@ function constSuffix(tables: nast.SideTables, e: nast.NodeId): string {
     return cv !== undefined ? ` = ${constLabel(cv)}` : "";
 }
 
+// 式の種別に添える中身。Binary / Unary はどの演算かを記号で出す。
+function exprDetail(kind: nast.NodeKind, d: any): string {
+    if (kind === "Binary") {
+        const op = d.op as nast.BinaryOp;
+        return ` \`${nast.ENUM_DISPLAY.BinaryOp[op] ?? op}\``;
+    }
+    if (kind === "Unary") {
+        const op = d.op as nast.UnaryOp;
+        return ` \`${nast.ENUM_DISPLAY.UnaryOp[op] ?? op}\``;
+    }
+    return "";
+}
+
 // 配列長などに現れる式の近似表示。リテラルと参照だけ実体を出す。
 function exprLabelShort(a: nast.Arena, e: nast.NodeId): string {
     if (nast.isNullId(e)) {
@@ -225,7 +238,10 @@ export function hoverAt(dump: nast.Dump, reach: Set<number>, pos: number): NastH
     let bestIdent: nast.NodeId | null = null;
     let bestExpr: nast.NodeId | null = null;
     let bestType: nast.NodeId | null = null;
-    let wIdent = Infinity, wExpr = Infinity, wType = Infinity;
+    // assert (文の位置の真偽式) と error(...) は文で、式の行だけだと存在が
+    // 見えないので別枠で拾う。assert は loc が条件式と同じ。
+    let bestGuard: nast.NodeId | null = null;
+    let wIdent = Infinity, wExpr = Infinity, wType = Infinity, wGuard = Infinity;
     for (const id of a.ids()) {
         if (!reach.has(nast.idIndex(id))) {
             continue;
@@ -251,6 +267,10 @@ export function hoverAt(dump: nast.Dump, reach: Set<number>, pos: number): NastH
             bestType = id;
             wType = w;
         }
+        if ((h.type === "Assert" || h.type === "ExplicitError") && w <= wGuard) {
+            bestGuard = id;
+            wGuard = w;
+        }
     }
 
     const lines: string[] = [];
@@ -259,7 +279,7 @@ export function hoverAt(dump: nast.Dump, reach: Set<number>, pos: number): NastH
     if (bestExpr !== null && (bestType === null || wExpr <= wType)) {
         const kind = a.kind(bestExpr)!;
         const expr = a.data<nast.Expr>(bestExpr)!;
-        lines.push(`\`${typeLabel(a, expr.type)}\` — ${kind}${constSuffix(dump.tables, bestExpr)}`);
+        lines.push(`\`${typeLabel(a, expr.type)}\` — ${kind}${exprDetail(kind, expr)}${constSuffix(dump.tables, bestExpr)}`);
         rangeOf = bestExpr;
         exprLinePushed = true;
     }
@@ -299,6 +319,20 @@ export function hoverAt(dump: nast.Dump, reach: Set<number>, pos: number): NastH
                 }
             }
         }
+    }
+    if (bestGuard !== null) {
+        const gk = a.kind(bestGuard)!;
+        if (gk === "Assert") {
+            // 条件が定数に畳めているなら結果も見せる。常に false の assert は
+            // それ自体が発見。
+            const st = a.data<nast.Assert>(bestGuard)!;
+            lines.push(`Assert${constSuffix(dump.tables, st.expr)}`);
+        }
+        else {
+            const st = a.data<nast.ExplicitError>(bestGuard)!;
+            lines.push(`ExplicitError${constSuffix(dump.tables, st.message)}`);
+        }
+        rangeOf ??= bestGuard;
     }
     if (lines.length === 0 || rangeOf === null) {
         return null;
