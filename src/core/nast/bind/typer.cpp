@@ -102,9 +102,7 @@ namespace brgen::nast::bind {
     //   配列       要素型
     //
     // 反復を回すための counter 型や、開いた端の補完 (既定値 0 / 型の最大値) は
-    // lowering 側の話で、束縛に見える型には出てこない。範囲の基底は base_type を
-    // 使わず両端から取り直す。base_type には start 側の型 (リテラルのままのこと
-    // がある) しか入っていない。
+    // lowering 側の話で、束縛に見える型には出てこない。
     Node<Type> Typer::iteration_type(Node<Type> t) {
         if (!t) {
             return nullref;
@@ -129,17 +127,8 @@ namespace brgen::nast::bind {
             return u8t;
         }
         if (auto r = t.as_any<RangeType>()) {
-            auto* rd = a.get<RangeType>(r);
-            if (auto* re = a.get<Range>(rd->range)) {
-                auto st = type_of_expr(re->start);
-                auto en = type_of_expr(re->end);
-                if (st && en) {
-                    return common_type(st, en);
-                }
-                auto one = st ? st : en;
-                return one ? iteration_type(one) : nullref;
-            }
-            return iteration_type(rd->base_type);
+            // 基底は Range の型付けが両端から合成済み。リテラルなら上で幅に落ちる。
+            return iteration_type(a.get<RangeType>(r)->base_type);
         }
         if (auto arr = t.as_any<ArrayType>()) {
             return a.get<ArrayType>(arr)->element_type;
@@ -628,13 +617,24 @@ namespace brgen::nast::bind {
             }
         }
         else if (auto rng = e.as_any<Range>()) {
-            // 端が片方しか無い形 (`..x` / `x..`) もある。
+            // 端が片方しか無い形 (`..x` / `x..`) もある。基底は両端の合成。
+            // 片側だけリテラルなら他方の型に寄り、両方リテラルならリテラルの
+            // まま置く (幅に落とすのは使う側)。元実装の typing_range は
+            // int_type_fitting の後で揃わなければエラーにしたが、ここでは
+            // まだ締めず、基底なしにするだけ。
             auto* d = a.get<Range>(rng);
             auto st = type_of_expr(d->start);
             auto en = type_of_expr(d->end);
             auto t = a.make<RangeType>(loc);
             auto* rd = a.get<RangeType>(t);
-            rd->base_type = st ? st : en;
+            if (st && en) {
+                rd->base_type = (st.as_any<IntLiteralType>() && en.as_any<IntLiteralType>())
+                                    ? st
+                                    : common_type(st, en);
+            }
+            else {
+                rd->base_type = st ? st : en;
+            }
             rd->range = rng;
             result = t;
         }
