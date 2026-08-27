@@ -133,6 +133,63 @@ export interface NastHoverResult {
     end: number;
 }
 
+// 定義側の ident (フィールド名や format 名) の表示。参照と違って Resolution が
+// 無いので、覆っている最小の文が自分を name に持つときに宣言として出す。
+// 型は木に置かれているものだけを見せる (ここで型付けをやり直さない):
+//   Field / Parameter    宣言に書かれた型
+//   Format / State       参照されたときに作られる struct_type (無ければ種別のみ)
+//   Enum / EnumMember    enum_type
+//   Function             引数と戻り値から組んだ表示
+//   VariableDefinition   右辺の式に付いた型
+//   RangeLoop の束縛     木に型が置かれない (参照側の式にだけ付く) ので種別のみ
+function declLine(a: nast.Arena, ident: nast.NodeId, stmt: nast.NodeId): string | null {
+    const kind = a.kind(stmt);
+    const d = a.data<any>(stmt);
+    if (kind === null || d === null) {
+        return null;
+    }
+    const declares =
+        (typeof d.name === "number" && d.name === ident) ||
+        (kind === "RangeLoop" && d.bind_variable === ident);
+    if (!declares) {
+        return null;
+    }
+    const name = identText(a, ident);
+    let label: string | null = null;
+    if (kind === "Enum") {
+        label = typeLabel(a, (d as nast.Enum).enum_type);
+    }
+    else if (kind === "EnumMember") {
+        const en = a.data<nast.Enum>((d as nast.EnumMember).belong);
+        label = en !== null ? typeLabel(a, en.enum_type) : null;
+    }
+    else if (kind === "Function") {
+        const fn = d as nast.Function;
+        const params = fn.parameters
+            .map(p => typeLabel(a, a.data<nast.Parameter>(p)?.type ?? undefined))
+            .join(", ");
+        const ret = nast.isNullId(fn.return_type) ? "" : ` -> ${typeLabel(a, fn.return_type)}`;
+        label = `fn(${params})${ret}`;
+    }
+    else if (kind === "VariableDefinition") {
+        const v = a.data<nast.Expr>((d as nast.VariableDefinition).value);
+        label = v !== null ? typeLabel(a, v.type) : null;
+    }
+    else if (a.is(stmt, "NamedStructTypedStatement")) {
+        const st = (d as nast.NamedStructTypedStatement).struct_type;
+        label = nast.isNullId(st) ? null : typeLabel(a, st);
+    }
+    else if (a.is(stmt, "NamedTypeStatement")) {
+        label = typeLabel(a, (d as nast.NamedTypeStatement).type);
+    }
+    if (label === name) {
+        // format 名の型はその format 自身なので、二度言わない。
+        label = null;
+    }
+    const head = label !== null ? `\`${label}\` — ${kind}` : kind;
+    return `${head} \`${name}\` (definition)`;
+}
+
 // 位置を覆う一番小さいノードを、木から到達できるものの中から選ぶ。
 // アリーナ全体を見るとパーサが捨てた孤児 (型なし) に当たるので reach で絞る。
 export function hoverAt(dump: nast.Dump, reach: Set<number>, pos: number): NastHoverResult | null {
@@ -173,11 +230,13 @@ export function hoverAt(dump: nast.Dump, reach: Set<number>, pos: number): NastH
 
     const lines: string[] = [];
     let rangeOf: nast.NodeId | null = null;
+    let exprLinePushed = false;
     if (bestExpr !== null && (bestType === null || wExpr <= wType)) {
         const kind = a.kind(bestExpr)!;
         const expr = a.data<nast.Expr>(bestExpr)!;
         lines.push(`\`${typeLabel(a, expr.type)}\` — ${kind}`);
         rangeOf = bestExpr;
+        exprLinePushed = true;
     }
     else if (bestType !== null) {
         // 型の位置に書かれたもの (u8 や format 名) はその型自身を出す。
@@ -194,6 +253,26 @@ export function hoverAt(dump: nast.Dump, reach: Set<number>, pos: number): NastH
             }
             lines.push(`→ ${targetKind}${name}`);
             rangeOf ??= bestIdent;
+        }
+        else {
+            // 定義側。宣言文の loc は名前を覆わないことがある (format A: の
+            // loc は `format` まで) ので、覆いではなく name の一致で逆引きする。
+            for (const id of a.ids()) {
+                if (!reach.has(nast.idIndex(id)) || !a.is(id, "Statement")) {
+                    continue;
+                }
+                const line = declLine(a, bestIdent, id);
+                if (line !== null) {
+                    // enum メンバの合成値のような、名前と同じ位置に置かれた式の
+                    // 行は定義の表示とかぶるので落とす。
+                    if (exprLinePushed && wExpr >= wIdent) {
+                        lines.shift();
+                    }
+                    lines.push(line);
+                    rangeOf = bestIdent;
+                    break;
+                }
+            }
         }
     }
     if (lines.length === 0 || rangeOf === null) {
