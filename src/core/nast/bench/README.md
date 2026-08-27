@@ -40,3 +40,74 @@ for i in $(seq 1 8); do ./a.exe $FILES; ./b.exe $FILES; done
 
 到達点の数字と、どこに時間が行っているかは
 `rebrgen/docs/draft/front_end_throughput.md` にある。
+
+## 手法
+
+ここに置いていない使い捨てのプログラムで測ったものがある。作り方だけ残す。
+
+### 呼び出し回数を数える — ソースの複製に計数を入れる
+
+`stream.cpp` を `ignore/` へ複製し、グローバルなカウンタを足して、
+本体の代わりにその複製をリンクする。木を汚さずに回数が取れる。
+
+```sh
+cp src/core/nast/stream.cpp ignore/nast/stream_counted.cpp
+# 複製に std::size_t g_xxx = 0; を足し、数えたい関数で g_xxx++
+clang++ -std=c++23 -O2 -I src/core/nast -I src <driver>.cpp     src/core/nast/parse.cpp ignore/nast/stream_counted.cpp ... -o out.exe
+```
+
+これで出た数字の例: `expect_token(string_view)` が 1252144 回
+(1 トークンあたり 8.7 回)、うち一致 2.9%、`maybe_parse()` が 2880403 回。
+**複製は本体が変わると腐るので、計測 が済んだら捨てる。**
+
+### どの行が熱いか — clang の計装
+
+サンプリングプロファイラ (`wpr` / `xperf`) は**管理者権限が要って使えない**。
+代わりに行ごとの実行回数を取る。
+
+```sh
+clang++ -std=c++23 -O1 -fprofile-instr-generate -fcoverage-mapping ... -o prof.exe
+LLVM_PROFILE_FILE=p.profraw ./prof.exe <inputs>
+llvm-profdata merge -sparse p.profraw -o p.profdata
+llvm-cov show ./prof.exe -instr-profile=p.profdata <source.cpp>
+```
+
+これで `parse.cpp` の `consume_op` が突出していることが分かった。
+時間ではなく回数なので、そのままでは「重い」の証拠にならない。
+回数で当たりを付けて、時間は別に測る。
+
+### 別 TU 呼び出しが効いているか — 1 TU にまとめる
+
+`.cpp` を 1 つのファイルから `#include` して、インライン化される場合と
+比べる。`stream.cpp` + `parse.cpp` で 463.3 -> 429.7 ms (7%) だった。
+
+```cpp
+// ignore/nast/onetu.cpp
+#include "../../src/core/nast/stream.cpp"
+#include "../../src/core/nast/parse.cpp"
+```
+
+### 変えても同じものが出るか — 出力どうしを比べる
+
+字句解析器やパーサに手を入れるときは、**旧版を別の名前空間に複製して**
+同じ入力に両方を通し、トークン列やノード数を突き合わせる。
+
+```sh
+git show HEAD:src/core/lexer/lexer.h   | sed -e 's/namespace internal {/namespace internal_old {/'         -e 's/parse_one(/parse_one_old(/' > ignore/nast/lexer_old.h
+```
+
+これで punct の判定を変えたとき 143251 トークンが全一致することを確かめた。
+
+### 型の分類を確かめる — 推論しない
+
+`is_convertible_v` のようなものは、読んで判断せず print する 10 行の
+プログラムを書く。`file::View` は rvec に変換できるが `U8View<...>` は
+できない、といった分類はこれで確定させた。
+
+### 分母は到達可能なものに限る
+
+アリーナは解放しないので、パーサが先読みして捨てたノードも残る
+(式の 38%)。カバレッジを測るときは Module から `visit_all` で到達した
+ものだけを数える。**`unique_id` はアリーナ内でしか一意でないので、
+集合はファイルごとに作り直す。** 所有辺が 2 本入るノードもあるので
+id で重複も落とす。
