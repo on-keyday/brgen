@@ -321,8 +321,13 @@ namespace brgen::nast::bind {
         if (!l || !r) {
             return nullref;
         }
-        l = fit_int(l, r);
-        r = fit_int(r, l);
+        // fit は両方とも元の型に対して評価する。先に片方を代入すると、
+        // リテラル同士のとき後の fit が具体化済みの相手に吸われて、
+        // 常に左の値の幅になってしまう (0..300 が u8 になる)。
+        auto fl = fit_int(l, r);
+        auto fr = fit_int(r, l);
+        l = fl;
+        r = fr;
         if (equivalent(a, l, r)) {
             return l;
         }
@@ -617,24 +622,17 @@ namespace brgen::nast::bind {
             }
         }
         else if (auto rng = e.as_any<Range>()) {
-            // 端が片方しか無い形 (`..x` / `x..`) もある。基底は両端の合成。
-            // 片側だけリテラルなら他方の型に寄り、両方リテラルならリテラルの
-            // まま置く (幅に落とすのは使う側)。元実装の typing_range は
-            // int_type_fitting の後で揃わなければエラーにしたが、ここでは
-            // まだ締めず、基底なしにするだけ。
+            // 端が片方しか無い形 (`..x` / `x..`) もある。基底は両端の共通型。
+            // 元実装の int_type_fitting と同じで、片側リテラルは他方の型に、
+            // 両方リテラルは大きい方の値が収まる幅に寄る (0..300 は u16)。
+            // 元実装は揃わなければエラーにしたが、ここではまだ締めず、
+            // 基底なしにするだけ。
             auto* d = a.get<Range>(rng);
             auto st = type_of_expr(d->start);
             auto en = type_of_expr(d->end);
             auto t = a.make<RangeType>(loc);
             auto* rd = a.get<RangeType>(t);
-            if (st && en) {
-                rd->base_type = (st.as_any<IntLiteralType>() && en.as_any<IntLiteralType>())
-                                    ? st
-                                    : common_type(st, en);
-            }
-            else {
-                rd->base_type = st ? st : en;
-            }
+            rd->base_type = (st && en) ? common_type(st, en) : (st ? st : en);
             rd->range = rng;
             result = t;
         }
