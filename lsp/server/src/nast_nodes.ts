@@ -88,6 +88,77 @@ export type EvalKind =
     "boolean" |
     "string";
 
+export const ENUM_DISPLAY = {
+    BinaryOp: {
+        "mul": "*",
+        "div": "/",
+        "mod": "%",
+        "left_arithmetic_shift": "<<<",
+        "right_arithmetic_shift": ">>>",
+        "left_logical_shift": "<<",
+        "right_logical_shift": ">>",
+        "bit_and": "&",
+        "add": "+",
+        "sub": "-",
+        "bit_or": "|",
+        "bit_xor": "^",
+        "equal": "==",
+        "not_equal": "!=",
+        "less": "<",
+        "less_or_eq": "<=",
+        "grater": ">",
+        "grater_or_eq": ">=",
+        "logical_and": "&&",
+        "logical_or": "||",
+        "cond_op1": "?",
+        "cond_op2": ":",
+        "range_exclusive": "..",
+        "range_inclusive": "..=",
+        "assign": "=",
+        "define_assign": ":=",
+        "const_assign": "::=",
+        "add_assign": "+=",
+        "sub_assign": "-=",
+        "mul_assign": "*=",
+        "div_assign": "/=",
+        "mod_assign": "%=",
+        "left_logical_shift_assign": "<<=",
+        "right_logical_shift_assign": ">>=",
+        "left_arithmetic_shift_assign": "<<<=",
+        "right_arithmetic_shift_assign": ">>>=",
+        "bit_and_assign": "&=",
+        "bit_or_assign": "|=",
+        "bit_xor_assign": "^=",
+        "comma": ",",
+        "in_assign": "in",
+        "append_assign": "append",
+    },
+    UnaryOp: {
+        "not_": "!",
+        "minus_sign": "-",
+    },
+    SpecialLiteralKind: {
+        "input_": "input",
+        "output_": "output",
+        "config_": "config",
+    },
+    Endian: {
+        "unspec": "unspec",
+        "big": "big",
+        "little": "little",
+        "native": "native",
+    },
+    FormatKind: {
+        "as_is": "as_is",
+        "custom": "custom",
+    },
+    EvalKind: {
+        "integer": "integer",
+        "boolean": "boolean",
+        "string": "string",
+    },
+} as const;
+
 export type NodeKind =
     "Statement" |
     "Module" |

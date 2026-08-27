@@ -75,6 +75,19 @@ def _emit_enums(w: Writer, schema: Schema) -> None:
         w.write(";\n\n")
 
 
+def _emit_enum_display(w: Writer, schema: Schema) -> None:
+    """表示用の代表表記。alt_names があればその先頭 (演算子なら記号)。"""
+    import json as _json
+    w.write("export const ENUM_DISPLAY = {\n")
+    for enum in schema.enums:
+        w.write("    ", enum["name"], ": {\n")
+        for m in enum["enums"]:
+            w.write("        ", _json.dumps(m["name"]), ": ",
+                    _json.dumps(Schema.primary_name(m)), ",\n")
+        w.write("    },\n")
+    w.write("} as const;\n\n")
+
+
 def _emit_kinds(w: Writer, schema: Schema) -> None:
     names = [n["name"] for n in schema.nodes]
     w.write("export type NodeKind =\n    ")
@@ -343,6 +356,7 @@ def emit_ts(schema: Schema) -> str:
     w.write(PROLOGUE)
     _emit_prelude(w)
     _emit_enums(w, schema)
+    _emit_enum_display(w, schema)
     _emit_kinds(w, schema)
     _emit_nodes(w, schema)
     _emit_node_fields(w, schema)

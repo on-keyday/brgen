@@ -3,6 +3,7 @@
 
 #include "../traverse.h"
 
+#include <fnet/util/base64.h>
 #include <number/prefix.h>
 #include <optional>
 
@@ -223,8 +224,10 @@ namespace brgen::nast::bind {
         if (auto lit = e.as_any<StrLiteral>()) {
             ConstantValue v;
             v.kind = EvalKind::string;
-            // 引用符とエスケープを解いた中身のほう。
-            v.string = a.get<StrLiteral>(lit)->binary_value;
+            // binary_value は base64 (parse が詰める)。定数としては中身のバイト列。
+            if (!futils::base64::decode(a.get<StrLiteral>(lit)->binary_value, v.string)) {
+                return std::nullopt;
+            }
             return v;
         }
         if (auto p = e.as_any<Paren>()) {
