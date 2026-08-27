@@ -7,6 +7,7 @@
 
 #include <binary/log2i.h>
 #include <number/parse.h>
+#include <number/prefix.h>
 
 namespace brgen::nast::bind {
 
@@ -304,10 +305,11 @@ namespace brgen::nast::bind {
             return other;
         }
         // 相手もリテラルなら、値が収まる最小のバイト境界幅の符号なし整数にする。
+        // prefix_integer は 0x / 0b / 0o の前置も読む。
         auto* d = a.get<IntLiteralType>(lit);
         std::size_t value = 0;
         auto* raw = a.get<IntLiteral>(d->base);
-        if (!raw || !::futils::number::parse_integer(raw->value, value)) {
+        if (!raw || !::futils::number::prefix_integer(raw->value, value)) {
             return t;
         }
         auto res = a.make<IntType>(a.header_at(t.id())->loc);
