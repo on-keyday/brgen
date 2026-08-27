@@ -86,7 +86,65 @@ namespace brgen::nast::bind {
             }
             return nullref;
         }
-        // RangeLoop は束縛の型が container 側の要素型で、この段では出さない。
+        // for x in c の x。型は container 側から決まる。
+        if (auto rl = decl.as_any<RangeLoop>()) {
+            return iteration_type(type_of_expr(a.get<RangeLoop>(rl)->container));
+        }
+        return nullref;
+    }
+
+    // for x in c で x に見える型。区分は EBM の変換 (rebrgen の
+    // convert_loop_body: FOR_INT / FOR_RANGE / FOR_EACH) と揃えてある。
+    //
+    //   整数       その整数型 (リテラルは値が収まる幅の符号なし整数)
+    //   文字列     u8
+    //   範囲       両端の共通型。片端しか無ければその側から
+    //   配列       要素型
+    //
+    // 反復を回すための counter 型や、開いた端の補完 (既定値 0 / 型の最大値) は
+    // lowering 側の話で、束縛に見える型には出てこない。範囲の基底は base_type を
+    // 使わず両端から取り直す。base_type には start 側の型 (リテラルのままのこと
+    // がある) しか入っていない。
+    Node<Type> Typer::iteration_type(Node<Type> t) {
+        if (!t) {
+            return nullref;
+        }
+        if (auto id = t.as_any<IdentType>()) {
+            resolve_ident_type(id);
+            return iteration_type(a.get<IdentType>(id)->base);
+        }
+        if (t.as_any<IntLiteralType>()) {
+            // 相手なしの fit は、値が収まる最小のバイト境界幅に落ちる。
+            return fit_int(t, t);
+        }
+        if (t.as_any<IntType>()) {
+            return t;
+        }
+        if (t.as_any<StrLiteralType>()) {
+            auto u8t = a.make<IntType>(a.header_at(t.id())->loc);
+            auto* d = a.get<IntType>(u8t);
+            d->bit_size = 8;
+            d->is_signed = false;
+            d->endian = Endian::unspec;
+            return u8t;
+        }
+        if (auto r = t.as_any<RangeType>()) {
+            auto* rd = a.get<RangeType>(r);
+            if (auto* re = a.get<Range>(rd->range)) {
+                auto st = type_of_expr(re->start);
+                auto en = type_of_expr(re->end);
+                if (st && en) {
+                    return common_type(st, en);
+                }
+                auto one = st ? st : en;
+                return one ? iteration_type(one) : nullref;
+            }
+            return iteration_type(rd->base_type);
+        }
+        if (auto arr = t.as_any<ArrayType>()) {
+            return a.get<ArrayType>(arr)->element_type;
+        }
+        // それ以外は for in の対象として意味を決めていない。まだ締めない。
         return nullref;
     }
 
