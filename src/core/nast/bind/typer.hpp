@@ -18,9 +18,18 @@
 //   MemberAccess  左辺の型からメンバを引く
 //   Binary        演算子ごと。比較は bool、算術は共通型、代入は左辺の型
 //   Unary         中身の型 (- と ! はどちらも型を変えない)
+//   Index         base の配列型の要素型
+//   Range         RangeType。基底は start か end の型
+//   Cast          変換先の型
+//   Call          呼ぶ先の FunctionType の戻り値
+//   If/Match/Cond 分岐の型が揃えばその型、揃わなければ void
+//   Sizeof        u64
+//   Available     bool
 //
-// 入っていないもの: Call / Cast / Index / If / Match / Cond / Range / OrCond /
-// IOOperation / SpecialLiteral。
+// 入っていないもの: OrCond / IOOperation / SpecialLiteral。
+// SpecialLiteral (input / output / config) は元の実装でも typing では扱わず、
+// resolve_io_operation が別のノードに置き換える形になっている。nast には
+// その段がまだ無いので、型を付ける根拠が無い。
 //
 // メンバの引き方は元の実装と違う。元は StructType がメンバ一覧 (fields) を
 // 持っていたが、nast の StructType は base だけで、一覧は binder が
@@ -61,6 +70,9 @@ namespace brgen::nast::bind {
         Node<Statement> lookup_member(Node<Statement> owner, std::string_view name);
         Node<Type> type_of_member_access(Node<MemberAccess> m);
         Node<Type> type_of_binary(Node<Binary> b);
+        Node<Type> type_of_conditional(Node<ConditionalExpr> c);
+        // ブロックの値。最後の文が式ならその型。
+        Node<Type> block_value_type(Node<Body> body);
         // 整数リテラルの型を相手の整数型に合わせる。合わないときは何もしない。
         // 元の int_type_fitting に当たるが、型ノードを書き換えずに結果を返す。
         Node<Type> fit_int(Node<Type> t, Node<Type> other);
