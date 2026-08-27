@@ -48,6 +48,8 @@ NODES_H = os.path.join(SCRIPT_DIR, "nodes.h")
 TEST_CPP = os.path.join(SCRIPT_DIR, "test.cpp")
 # corpus はパーサ本体を要る。test.cpp はヘッダだけで足りる。
 PARSER_CPP = [os.path.join(SCRIPT_DIR, n) for n in ("parse.cpp", "stream.cpp")]
+# ノードの比較。実体を 1 つに閉じてあるので、使う側はリンクするだけ。
+COMPARE_CPP = os.path.join(SCRIPT_DIR, "compare.cpp")
 # 束縛 / 名前解決。corpus から呼ぶ。
 BIND_CPP = sorted(glob.glob(os.path.join(SCRIPT_DIR, "bind", "*.cpp")))
 CORPUS_CPP = os.path.join(SCRIPT_DIR, "corpus.cpp")
@@ -280,6 +282,7 @@ def write_compile_commands(compile_flags):
     sources = [os.path.join(SCRIPT_DIR, n) for n in sorted(os.listdir(SCRIPT_DIR))
                if n.endswith(".cpp")]
     sources += BIND_CPP
+    sources.append(COMPARE_CPP)
     sources.append(WIRE_CPP)
     for path in sources:
         entries.append({
@@ -366,7 +369,7 @@ def main():
     suffix = ".exe" if os.name == "nt" else ""
 
     exe = os.path.join(BUILD_DIR, "nast_test" + suffix)
-    run(cmd + [compile_obj(cmd, TEST_CPP), "-o", exe] + link_args)
+    run(cmd + [compile_obj(cmd, TEST_CPP), compile_obj(cmd, COMPARE_CPP), "-o", exe] + link_args)
     print(f"built: {exe}")
 
     # nodes.h と違って parse.cpp / corpus.cpp は core/common/file.h 経由で
@@ -378,7 +381,7 @@ def main():
     else:
         # parse.cpp / stream.cpp / bind/*.cpp は corpus と wire_test の両方が使う。
         # 1 度だけコンパイルして共有する。
-        shared = [compile_obj(cmd, src) for src in PARSER_CPP + BIND_CPP]
+        shared = [compile_obj(cmd, src) for src in PARSER_CPP + BIND_CPP + [COMPARE_CPP]]
 
         corpus = os.path.join(BUILD_DIR, "nast_corpus" + suffix)
         run(cmd + [compile_obj(cmd, CORPUS_CPP)] + shared + ["-o", corpus] + link_args)
