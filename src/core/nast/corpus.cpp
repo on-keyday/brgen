@@ -66,9 +66,20 @@ namespace {
         std::size_t diagnostics = 0;
     };
 
+    // run() の中は 3 つに割れる。「parse」と一括りにすると、実際には
+    // ファイルを読む時間と診断を整形する時間が混ざる。
+    struct ParseTimes {
+        std::chrono::nanoseconds read{};    // 開いて全部読む
+        std::chrono::nanoseconds parse{};   // 字句解析 (逐次) + 構文解析
+        std::chrono::nanoseconds report{};  // 診断を数える / 整形する
+    };
+
     // files は import 解決が続けて使うので呼び出し側が持つ。
     Result run(const std::string& path, brgen::FileSet& files, brgen::nast::Arena& arena,
-               brgen::nast::Node<brgen::nast::Module>& root, brgen::nast::ParseOption popt) {
+               brgen::nast::Node<brgen::nast::Module>& root, brgen::nast::ParseOption popt,
+               ParseTimes& times) {
+        using clock = std::chrono::steady_clock;
+        auto t_read = clock::now();
         auto loaded = files.add_file(path);
         if (!loaded) {
             return {false, 0, "cannot open file"};
@@ -77,11 +88,15 @@ namespace {
         if (!file) {
             return {false, 0, "cannot read file"};
         }
+        times.read += clock::now() - t_read;
         brgen::LocationError err;
         brgen::nast::Context ctx;
+        auto t_parse = clock::now();
         auto parsed = ctx.enter_stream(file, [&](brgen::nast::Stream& s) {
             return brgen::nast::parse(arena, s, &err, popt);
         });
+        times.parse += clock::now() - t_parse;
+        auto t_report = clock::now();
         if (!parsed) {
             std::string msg;
             brgen::to_source_error(files)(parsed.error()).for_each_error([&](std::string_view m, bool warn) {
@@ -89,6 +104,7 @@ namespace {
                     msg = m;
                 }
             });
+            times.report += clock::now() - t_report;
             return {false, arena.node_count(), msg.empty() ? "parse error" : msg};
         }
         root = *parsed;
@@ -99,6 +115,7 @@ namespace {
                 diagnostics++;
             }
         });
+        times.report += clock::now() - t_report;
         return {true, arena.node_count(), {}, diagnostics};
     }
 
@@ -157,15 +174,14 @@ int main(int argc, char** argv) {
 
     std::size_t ok = 0, ng = 0;
     using clock = std::chrono::steady_clock;
-    std::chrono::nanoseconds t_parse{}, t_import{}, t_bind{}, t_type{};
+    ParseTimes t_front;
+    std::chrono::nanoseconds t_import{}, t_bind{}, t_type{};
     auto took = [](auto start) { return clock::now() - start; };
     for (auto& path : paths) {
         brgen::FileSet files;
         brgen::nast::Arena arena;
         brgen::nast::Node<brgen::nast::Module> root;
-        auto t0 = clock::now();
-        auto r = run(path, files, arena, root, popt);
-        t_parse += took(t0);
+        auto r = run(path, files, arena, root, popt, t_front);
         brgen::nast::SideTables tables;
         brgen::LocationError err;
         // import は束縛より先。読み込んだ Module も同じ扱いで回す。
@@ -224,8 +240,10 @@ int main(int argc, char** argv) {
         auto ms = [](std::chrono::nanoseconds d) {
             return std::chrono::duration<double, std::milli>(d).count();
         };
-        auto total = t_parse + t_import + t_bind + t_type;
-        std::println("parse  {:8.1f} ms", ms(t_parse));
+        auto total = t_front.read + t_front.parse + t_front.report + t_import + t_bind + t_type;
+        std::println("read   {:8.1f} ms  (open and read the file)", ms(t_front.read));
+        std::println("parse  {:8.1f} ms  (lex + parse)", ms(t_front.parse));
+        std::println("report {:8.1f} ms  (count diagnostics)", ms(t_front.report));
         if (!parse_only) {
             std::println("import {:8.1f} ms", ms(t_import));
             std::println("bind   {:8.1f} ms  (binder + scope resolver)", ms(t_bind));
