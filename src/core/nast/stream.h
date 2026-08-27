@@ -17,8 +17,11 @@ namespace brgen::nast {
 
     struct Stream {
        private:
-        std::list<lexer::Token> tokens;
-        using iterator = typename std::list<lexer::Token>::iterator;
+        std::list<lexer::LiteToken> tokens;
+        // 本文はここから切り出す。utf8 入力 / utf8 解釈のときだけ非空。
+        // 試作なので、空のときは扱わない。
+        futils::view::rvec source_;
+        using iterator = typename std::list<lexer::LiteToken>::iterator;
         iterator cur;
         std::optional<iterator> last_skip;
         File* input;
@@ -40,7 +43,7 @@ namespace brgen::nast {
         // discard tokens before cur
         void shrink();
 
-        std::list<lexer::Token> take();
+        std::list<lexer::LiteToken> take();
 
         [[noreturn]] void report_error(auto&&... data) {
             error(last_loc(), "parser error: ", data...).report();
@@ -60,15 +63,15 @@ namespace brgen::nast {
         bool expect_token(lexer::Tag tag);
         bool expect_token(std::string_view s);
 
-        std::optional<lexer::Token> peek_token(std::string_view s);
+        std::optional<lexer::LiteToken> peek_token(std::string_view s);
 
-        std::optional<lexer::Token> peek_token(lexer::Tag t);
+        std::optional<lexer::LiteToken> peek_token(lexer::Tag t);
 
-        lexer::Token peek_token();
+        lexer::LiteToken peek_token();
 
-        std::optional<lexer::Token> consume_token(std::string_view s);
+        std::optional<lexer::LiteToken> consume_token(std::string_view s);
 
-        std::optional<lexer::Token> consume_token(lexer::Tag t);
+        std::optional<lexer::LiteToken> consume_token(lexer::Tag t);
 
        private:
         [[nodiscard]] LocationError token_expect_error(std::string_view expected, const char* kind, std::string_view hint);
@@ -78,9 +81,9 @@ namespace brgen::nast {
 
         [[nodiscard]] LocationError token_error(std::string_view s, std::string_view hint);
 
-        lexer::Token must_consume_token(std ::string_view view, std::string_view hint);
+        lexer::LiteToken must_consume_token(std ::string_view view, std::string_view hint);
 
-        lexer::Token must_consume_token(lexer::Tag tag, std::string_view hint);
+        lexer::LiteToken must_consume_token(lexer::Tag tag, std::string_view hint);
 
        private:
         void skip_tag(auto... t);
@@ -104,7 +107,13 @@ namespace brgen::nast {
         // Node<Comment> get_comments();
 
         void backward();
-        std::optional<lexer::Token> prev_token();
+        std::optional<lexer::LiteToken> prev_token();
+
+        // トークンの本文。バッファから切り出す。
+        std::string_view text(const lexer::LiteToken& t) const {
+            return std::string_view(reinterpret_cast<const char*>(source_.data()) + t.loc.pos.begin,
+                                    t.loc.pos.len());
+        }
 
         void set_collect_comments(bool b);
 
@@ -128,6 +137,8 @@ namespace brgen::nast {
        public:
         auto enter_stream(File* file, auto&& parser) {
             s.input = file;
+            // 本文はここから切り出す。試作なので utf8 入力 / utf8 解釈だけ。
+            s.source_ = file->source();
             return s.enter_stream(parser);
         }
     };
