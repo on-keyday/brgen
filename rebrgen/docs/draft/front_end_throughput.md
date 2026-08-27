@@ -71,50 +71,54 @@ std::string::operator[]   0.13 ns/byte
 同じ mmap で 200 倍速いので、Sequencer に `View` ではなくポインタか rvec を
 渡せばよい。
 
-## 案
+## 直したもの
 
-### 案 1: mmap の rvec を直接 Sequencer に渡す
+`file::View` が開いた時点で `mmap.read_view()` を 1 回受け取り、`operator[]` と
+`data()` はそれを引くだけにした (utils_backup `0a02b86f1`)。
 
-`View` は開いた時点で mmap を持っている。`mmap.read_view()` は `rvec` なので、
-それを Sequencer のバッファにすれば要素アクセスは生ポインタになる。
-`File::direct_source` が既に「rvec に変換できる型ならそのまま返す」形なので、
-その系統に乗る。
+原因はアセンブリで確定した。`MMap` は `struct futils_DLL_EXPORT MMap` と
+クラスごとエクスポートされているので、`read_view()` のような自明なメンバでも
+**インポートテーブル経由で DLL に入る実呼び出し**になる (`__imp_?read_view@MMap@...`)。
+しかも今つないでいるのは Debug ビルドの DLL。1 バイト読むたびにこれを払っていた。
 
-- 得: コピーなし。B2 と同じ速度になるはず (未測定)
-- 課題: `View` (と mmap) が Sequencer より長生きする必要がある。今の
-  `set_input` は `Sequencer<U>` だけを `shared_ptr<void>` に持つので、
-  View を同じ寿命で抱える口が要る
-- 課題: mmap に失敗したときの fallback 経路が別に要る
+`View` 側にはエクスポート指定が無く header-only なので、そちらで閉じられた。
 
-### 案 2: ファイルを std::string に読み込む
+```
+View::operator[]   25.37 ns/byte  ->  0.37 ns/byte
+生ポインタ          0.13 ns/byte     (参考、変化なし)
+```
 
-`get_input` で `View` の代わりに全体を読む。
+挙動が 1 つだけ変わる。mmap は在るが読み権限が無い場合、`read_view()` は空の
+rvec を返し、元の `operator[]` はそれを添字していた (null 参照)。今は
+未マップ時と同じ seek/read 経路へ落ちる。安全側。
 
-- 得: 実測済み (165.1 ms)。変更は数行
-- 損: ファイルサイズ分のメモリ。ただし `example/` 最大でも 100 KB 未満で、
-  そもそも AST が入力の数十倍になるので支配的にはならない
-- 損: mmap の利点 (遅延読み込み / ページキャッシュ共有) を捨てる
+## 直した後の数字
 
-### 案 3: View::operator[] を速くする
+```
+read       52.3 ms
+parse     653.7 ms   (lex + parse)
+report      0.4 ms
+import     42.0 ms
+bind       94.1 ms
+type       17.5 ms
+total     860.0 ms   (1374.3 ms から)
+```
 
-`open()` の時点で `read_view()` の結果を 1 回だけ持ち、`operator[]` は
-その `rvec` を引くだけにする。fallback (mmap 失敗時) はポインタが null の
-ときだけ通る形にする。
+字句解析の 3 通り比較も、`File::parse` が直接呼びと並んだ:
 
-- 得: futils を使う全員に効く。生ポインタと同じ 0.13 ns/byte になるはず
-- 得: brgen 側は 1 行も変えなくてよい
-- 課題: futils 側の変更。brgen の外
-- 課題: 上記のとおり 26 ns の内訳をまだ説明できていないので、この形にして
-  実際に消えるかは未確認
+```
+A  parse_one 直接        162.5 ms
+B  File::parse ループ    174.8 ms   +12
+C  Stream 経由           258.6 ms   +84
+```
+
+**残るのは Stream の +84 ms。** これが次の対象になる。
 
 ## 測っていないこと
 
-- 案 1 / 案 3 の実測。どちらも `View` の持ち方を変える必要があり、まだ書いていない
-- `View::operator[]` の 26 ns/byte の内訳。inline されていないのか、
-  権限チェックが重いのか、別の何かか
 - 構文解析 (A を引いた 358 ms) の内訳。先読みで捨てるノードが式の 38% を
   占めることは分かっているが、`make<T>` 自体は全体の 4% しかない
-- Stream の +117 ms の内訳。`std::list<Token>` のノード確保が有力だが未測定
+- Stream の +84 ms の内訳。`std::list<Token>` のノード確保が有力だが未測定
 
 ## 済んだもの
 
