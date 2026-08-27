@@ -315,6 +315,13 @@ format Varint:
     //
     // ただし Tag::error のトークンだけは別。そこでの本文は入力の一部ではなく
     // エラーメッセージ本体なので、loc.pos からは取れない。err に入れて返す。
+    //
+    // parse_one が本文を入力以外から入れるのは 3 か所:
+    //   ctx.errbuf              combinator が fatal を返した
+    //   "expect eof but not"    どの選択肢にも当たらず、末尾でもない
+    //   "invalid utf sequence"  TokenBuf への変換に失敗した
+    // 前 2 つはここでも同じように返す。3 つ目は変換をしないので起きない。
+    // 変換が要る経路 (utf16/utf32 解釈) をこの関数で扱うなら、そこも要る。
     template <class T>
     std::optional<LiteToken> parse_one_no_text(futils::Sequencer<T>& seq, std::uint64_t file, Option opt,
                                                std::string* err = nullptr) {
