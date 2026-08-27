@@ -94,6 +94,7 @@ enum NodeKind:
     Module
     BodyStatement
     Field
+    StateVariable
     Format
     GenericFormat
     Function
@@ -182,6 +183,10 @@ format Node:
             belong :Ref
             body :Ref
         NodeKind.Field:
+            name :Ref
+            type :Ref
+            arguments_ref :Ref
+        NodeKind.StateVariable:
             name :Ref
             type :Ref
             arguments_ref :Ref

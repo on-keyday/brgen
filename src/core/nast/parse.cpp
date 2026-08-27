@@ -195,7 +195,7 @@ namespace brgen::nast {
             */
             while (!s.eos()) {
                 //  collect_comments();
-                auto stmt = parse_statement();
+                auto stmt = parse_statement(nullptr, true);
                 /*
                 if (auto member = expr.as<NamedStatement>()) {
                     member->comment = std::move(comment);
@@ -1485,7 +1485,12 @@ namespace brgen::nast {
             <field type> ::= ":" <type> ("(" <expr> ")")?
         */
         // may returns expr if not field
-        Node<Statement> parse_field(Node<Statement> may_ident) {
+        // top_level のとき、field の形の文は StateVariable になる。トップレベルの
+        // field 宣言は線上に載る field ではなく、encode/decode に外から渡される
+        // 実行時文脈 (state variable) の宣言で、位置だけで決まるので parse で
+        // 分けられる。型を state / format 系に限る検査は解析段の仕事で、
+        // ここではしない。
+        Node<Statement> parse_field(Node<Statement> may_ident, bool top_level) {
             lexer::LiteToken token;
             Node<Ident> ident;
             if (may_ident) {
@@ -1504,62 +1509,68 @@ namespace brgen::nast {
                 token = s.must_consume_token(":", "to specify field type");
             }
 
-            auto field = a.make<Field>(ident ? ident.ref(a).loc() : token.loc);
-            // field->colon_loc = token.loc;
+            // Field と StateVariable は同じ形 (name / type / arguments)。
+            auto fill = [&](auto field) -> Node<Statement> {
+                // field->colon_loc = token.loc;
+                field->name = ident;
+                s.skip_space();
 
-            field->name = ident;
-            s.skip_space();
+                field->type = parse_type();
 
-            field->type = parse_type();
-
-            /*
-            if (field->name) {
-                field->name.ref(a)->expr_type = field->field_type;
-                field->name.ref(a)->base = field;
-                field->name.ref(a)->constant_level = ConstantLevel::variable;
-                if (!as_parameter) {  // as parameter, duplication check is delayed until all parameters are parsed, because of this case: `fn foo(x :int, x :int)`
-                    field->name.ref(a)->usage = IdentUsage::define_field;
-                    check_duplicated_def(field->name.ref(a).get());
+                /*
+                if (field->name) {
+                    field->name.ref(a)->expr_type = field->field_type;
+                    field->name.ref(a)->base = field;
+                    field->name.ref(a)->constant_level = ConstantLevel::variable;
+                    if (!as_parameter) {  // as parameter, duplication check is delayed until all parameters are parsed, because of this case: `fn foo(x :int, x :int)`
+                        field->name.ref(a)->usage = IdentUsage::define_field;
+                        check_duplicated_def(field->name.ref(a).get());
+                    }
                 }
-            }
-            */
-            /*
-            if (!as_parameter) {
-                field->belong = state.current_member();
-            }
-            */
+                */
+                /*
+                if (!as_parameter) {
+                    field->belong = state.current_member();
+                }
+                */
 
-            if (auto b = s.consume_token("(")) {
-                s.skip_white();
-
-                auto field_argument = a.make<Arguments>(b->loc);
-
-                if (!s.expect_token(")")) {
-                    auto raw = parse_expr();
-                    collect_args(raw, field_argument->arguments);
+                if (auto b = s.consume_token("(")) {
                     s.skip_white();
+
+                    auto field_argument = a.make<Arguments>(b->loc);
+
+                    if (!s.expect_token(")")) {
+                        auto raw = parse_expr();
+                        collect_args(raw, field_argument->arguments);
+                        s.skip_white();
+                    }
+
+                    auto e = s.must_consume_token(")", "to close field argument");
+                    field_argument->end_loc = e.loc;
+                    field->arguments = field_argument;
                 }
 
-                auto e = s.must_consume_token(")", "to close field argument");
-                field_argument->end_loc = e.loc;
-                field->arguments = field_argument;
-            }
+                /*
+                if (!as_parameter) {
+                    state.add_to_struct(field);
+                }
+                */
 
-            /*
-            if (!as_parameter) {
-                state.add_to_struct(field);
-            }
-            */
+                s.skip_space();
+                s.consume_token(lexer::Tag::comment);  // enforce parser to recognize comment after field definition
 
-            s.skip_space();
-            s.consume_token(lexer::Tag::comment);  // enforce parser to recognize comment after field definition
-
-            /*
-            if (auto comment = s.get_comments()) {
-                field->follow_comment = std::move(comment);
+                /*
+                if (auto comment = s.get_comments()) {
+                    field->follow_comment = std::move(comment);
+                }
+                */
+                return field;
+            };
+            auto loc = ident ? ident.ref(a).loc() : token.loc;
+            if (top_level) {
+                return fill(a.make<StateVariable>(loc));
             }
-            */
-            return field;
+            return fill(a.make<Field>(loc));
         }
 
         void set_enum_value(Node<EnumMember> member, size_t& offset, NodeData<EnumMember>*& prev_specified) {
@@ -2037,7 +2048,9 @@ namespace brgen::nast {
             <statement> ::= <for> | <if> | <format> | <fn> | <return> | <break> | <continue> | <expr or field>
             <expr or field> ::= <expr>? <field type>
         */
-        Node<Statement> parse_statement(bool* prev_skip_line = nullptr) {
+        // top_level はモジュール直下だけ真。field の形をした文が state variable に
+        // なるかどうかは位置で決まる。
+        Node<Statement> parse_statement(bool* prev_skip_line = nullptr, bool top_level = false) {
             auto set_skip = [&] {
                 if (prev_skip_line) {
                     *prev_skip_line = true;
@@ -2116,11 +2129,11 @@ namespace brgen::nast {
 
             Node<Statement> node;
             if (s.expect_token(":")) {
-                node = parse_field(nullref);
+                node = parse_field(nullref, top_level);
             }
             else {
                 auto expr = parse_expr_like_statement(prev_skip_line);
-                node = parse_field(expr);
+                node = parse_field(expr, top_level);
             }
 
             skip_last();
