@@ -17,6 +17,7 @@
 #include "parse.h"
 #include "traverse.h"
 #include "bind/binder.hpp"
+#include "bind/evaluator.hpp"
 #include "bind/import_resolver.hpp"
 #include "bind/typer.hpp"
 #include "bind/scope_resolver.hpp"
@@ -157,6 +158,10 @@ int main(int argc, char** argv) {
     }
     for (auto& mod : importer.modules) {
         typer.run(mod);
+    }
+    brgen::nast::bind::Evaluator evaluator{arena, tables, err};
+    for (auto& mod : importer.modules) {
+        evaluator.run(mod);
     }
     collect(err);
 

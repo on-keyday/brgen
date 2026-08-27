@@ -13,6 +13,7 @@
 #include "nast_wire_conv.hpp"
 
 #include "bind/binder.hpp"
+#include "bind/evaluator.hpp"
 #include "bind/import_resolver.hpp"
 #include "bind/scope_resolver.hpp"
 #include "parse.h"
@@ -150,6 +151,11 @@ namespace {
             bind::Binder binder{arena, err, tables};
             binder.bind(mod);
             resolver.resolve(mod);
+        }
+        // 定数表も往復に乗せる。
+        bind::Evaluator evaluator{arena, tables, err};
+        for (auto& mod : importer.modules) {
+            evaluator.run(mod);
         }
         return {true, {}};
     }

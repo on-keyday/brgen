@@ -83,6 +83,11 @@ export type FormatKind =
     "as_is" |
     "custom";
 
+export type EvalKind =
+    "integer" |
+    "boolean" |
+    "string";
+
 export type NodeKind =
     "Statement" |
     "Module" |
@@ -994,6 +999,14 @@ export interface ImportResolution {
     module: NodeId;
 }
 
+export interface ConstantValue {
+    kind: EvalKind;
+    integer: number;
+    is_negative: boolean;
+    boolean: boolean;
+    string: string;
+}
+
 export const SIDE_TABLES = {
     Resolution: { over: "Ident", storage: "dense" },
     InnerStruct: { over: "BodyStatement", storage: "sparse" },
@@ -1002,6 +1015,7 @@ export const SIDE_TABLES = {
     IsMutated: { over: "Field", storage: "flag" },
     UnionFields: { over: "ConditionalExpr", storage: "sparse" },
     ImportResolution: { over: "Import", storage: "sparse" },
+    ConstantValue: { over: "Expr", storage: "sparse" },
 } as const;
 
 export interface NodeHeader {
