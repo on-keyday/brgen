@@ -1272,8 +1272,14 @@ namespace brgen::nast {
                     s.skip_white();
                     auto range = parse_expr();
                     check_assignment(BinaryOp::in_assign, init.as<Expr>());
-                    range_loop->bind_variable = init.as<Reference>().ref(a)->name;
-                    range_loop->container = range;
+                    // 束縛は := と同じ VariableDefinition (op だけ in_assign)。
+                    // 宣言としての扱い (解決先・型の出し方) を共通にするため。
+                    auto name = init.as<Reference>().ref(a)->name;
+                    auto binding = a.make<VariableDefinition>(name.ref(a).loc());
+                    binding->name = name;
+                    binding->op = BinaryOp::in_assign;
+                    binding->value = range;
+                    range_loop->binding = binding;
                     s.skip_white();
                     range_loop->body = parse_indent_block(range_loop, hint);
                     return range_loop;

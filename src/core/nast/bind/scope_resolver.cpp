@@ -244,11 +244,13 @@ namespace brgen::nast::bind {
         }
 
         // for x in expr。x はループの中だけ、expr は外側で解決する。
+        // 解決先は束縛の VariableDefinition で、:= と同じ形。
         if (auto rloop = n.as_any<RangeLoop>()) {
             auto* d = a.get<RangeLoop>(rloop);
-            walk(env, d->container, position);
+            auto* binding = a.get<VariableDefinition>(d->binding);
+            walk(env, binding->value, position);
             Env inner{&env, position, false, {}};
-            declare(inner, d->bind_variable, rloop, false, 0);
+            declare(inner, binding->name, d->binding, false, 0);
             run_block(inner, d->body, 0);
             return;
         }

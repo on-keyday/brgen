@@ -215,8 +215,7 @@ format Node:
         NodeKind.RangeLoop:
             belong :Ref
             body :Ref
-            bind_variable :Ref
-            container :Ref
+            binding :Ref
         NodeKind.Assign:
             assignee :Ref
             value_ref :Ref

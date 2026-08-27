@@ -499,8 +499,7 @@ namespace brgen::nast::wire {
         struct union_struct_11{
             Ref belong;
             Ref body;
-            Ref bind_variable;
-            Ref container;
+            Ref binding;
         };
         struct union_struct_12{
             Ref assignee;
@@ -877,10 +876,10 @@ namespace brgen::nast::wire {
         Ref* binary_value();
         bool binary_value(Ref&& v);
         bool binary_value(const Ref& v);
-        const Ref* bind_variable() const;
-        Ref* bind_variable();
-        bool bind_variable(Ref&& v);
-        bool bind_variable(const Ref& v);
+        const Ref* binding() const;
+        Ref* binding();
+        bool binding(Ref&& v);
+        bool binding(const Ref& v);
         const std::uint32_t* bit_size() const;
         std::uint32_t* bit_size();
         bool bit_size(std::uint32_t&& v);
@@ -933,10 +932,6 @@ namespace brgen::nast::wire {
         std::uint32_t* conds_len();
         bool conds_len(std::uint32_t&& v);
         bool conds_len(const std::uint32_t& v);
-        const Ref* container() const;
-        Ref* container();
-        bool container(Ref&& v);
-        bool container(const Ref& v);
         const Ref* content() const;
         Ref* content();
         bool content(Ref&& v);
@@ -8639,7 +8634,7 @@ namespace brgen::nast::wire {
         }
         return false;
     }
-    inline const Ref* Node::bind_variable() const {
+    inline const Ref* Node::binding() const {
         if (NodeKind::Module==(*this).node_kind) {
         return nullptr;
         }
@@ -8671,14 +8666,14 @@ namespace brgen::nast::wire {
         if(!std::holds_alternative<union_struct_11>(union_variant_1)) {
             return nullptr;
         }
-        return std::addressof(std::get<10>((*this).union_variant_1).bind_variable);
+        return std::addressof(std::get<10>((*this).union_variant_1).binding);
         }
         return nullptr;
     }
-    inline Ref* Node::bind_variable() {
-        return const_cast<Ref*>(std::as_const(*this).bind_variable());
+    inline Ref* Node::binding() {
+        return const_cast<Ref*>(std::as_const(*this).binding());
     }
-    inline bool Node::bind_variable(const Ref& v) {
+    inline bool Node::binding(const Ref& v) {
         if (NodeKind::Module==(*this).node_kind) {
             return false;
         }
@@ -8710,12 +8705,12 @@ namespace brgen::nast::wire {
             if(!std::holds_alternative<union_struct_11>(union_variant_1)) {
                 union_variant_1 = union_struct_11();
             }
-            std::get<10>((*this).union_variant_1).bind_variable = v;
+            std::get<10>((*this).union_variant_1).binding = v;
             return true;
         }
         return false;
     }
-    inline bool Node::bind_variable(Ref&& v) {
+    inline bool Node::binding(Ref&& v) {
         if (NodeKind::Module==(*this).node_kind) {
             return false;
         }
@@ -8747,7 +8742,7 @@ namespace brgen::nast::wire {
             if(!std::holds_alternative<union_struct_11>(union_variant_1)) {
                 union_variant_1 = union_struct_11();
             }
-            std::get<10>((*this).union_variant_1).bind_variable = std::move(v);
+            std::get<10>((*this).union_variant_1).binding = std::move(v);
             return true;
         }
         return false;
@@ -14757,119 +14752,6 @@ namespace brgen::nast::wire {
                 union_variant_1 = union_struct_78();
             }
             std::get<77>((*this).union_variant_1).conds_len = std::move(v);
-            return true;
-        }
-        return false;
-    }
-    inline const Ref* Node::container() const {
-        if (NodeKind::Module==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::BodyStatement==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Field==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Format==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::GenericFormat==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Function==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::If==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Match==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Loop==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::RangeLoop==(*this).node_kind) {
-        if(!std::holds_alternative<union_struct_11>(union_variant_1)) {
-            return nullptr;
-        }
-        return std::addressof(std::get<10>((*this).union_variant_1).container);
-        }
-        return nullptr;
-    }
-    inline Ref* Node::container() {
-        return const_cast<Ref*>(std::as_const(*this).container());
-    }
-    inline bool Node::container(const Ref& v) {
-        if (NodeKind::Module==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BodyStatement==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Field==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Format==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::GenericFormat==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Function==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::If==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Match==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Loop==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RangeLoop==(*this).node_kind) {
-            if(!std::holds_alternative<union_struct_11>(union_variant_1)) {
-                union_variant_1 = union_struct_11();
-            }
-            std::get<10>((*this).union_variant_1).container = v;
-            return true;
-        }
-        return false;
-    }
-    inline bool Node::container(Ref&& v) {
-        if (NodeKind::Module==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BodyStatement==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Field==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Format==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::GenericFormat==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Function==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::If==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Match==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Loop==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RangeLoop==(*this).node_kind) {
-            if(!std::holds_alternative<union_struct_11>(union_variant_1)) {
-                union_variant_1 = union_struct_11();
-            }
-            std::get<10>((*this).union_variant_1).container = std::move(v);
             return true;
         }
         return false;
@@ -45635,10 +45517,7 @@ namespace brgen::nast::wire {
             if (auto err = std::get<10>((*this).union_variant_1).body.encode(w)) {
                 return err;
             }
-            if (auto err = std::get<10>((*this).union_variant_1).bind_variable.encode(w)) {
-                return err;
-            }
-            if (auto err = std::get<10>((*this).union_variant_1).container.encode(w)) {
+            if (auto err = std::get<10>((*this).union_variant_1).binding.encode(w)) {
                 return err;
             }
         }
@@ -46828,10 +46707,7 @@ namespace brgen::nast::wire {
             if (auto err = std::get<10>((*this).union_variant_1).body.decode(r)) {
                 return err;
             }
-            if (auto err = std::get<10>((*this).union_variant_1).bind_variable.decode(r)) {
-                return err;
-            }
-            if (auto err = std::get<10>((*this).union_variant_1).container.decode(r)) {
+            if (auto err = std::get<10>((*this).union_variant_1).binding.decode(r)) {
                 return err;
             }
         }

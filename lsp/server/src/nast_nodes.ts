@@ -522,8 +522,7 @@ export interface Loop extends BodyStatement {
 }
 
 export interface RangeLoop extends BodyStatement {
-    bind_variable: NodeId;
-    container: NodeId;
+    binding: NodeId;
 }
 
 export interface Assign extends Statement {
@@ -884,7 +883,7 @@ export const NODE_FIELDS: Readonly<Record<NodeKind, readonly NodeFieldMeta[]>> =
     If: [{ name: "type", weak: false, list: false }, { name: "blocks", weak: false, list: true }],
     Match: [{ name: "type", weak: false, list: false }, { name: "blocks", weak: false, list: true }, { name: "condition", weak: false, list: false }],
     Loop: [{ name: "belong", weak: true, list: false }, { name: "body", weak: false, list: false }, { name: "init", weak: false, list: false }, { name: "condition", weak: false, list: false }, { name: "step", weak: false, list: false }],
-    RangeLoop: [{ name: "belong", weak: true, list: false }, { name: "body", weak: false, list: false }, { name: "bind_variable", weak: false, list: false }, { name: "container", weak: false, list: false }],
+    RangeLoop: [{ name: "belong", weak: true, list: false }, { name: "body", weak: false, list: false }, { name: "binding", weak: false, list: false }],
     Assign: [{ name: "assignee", weak: false, list: false }, { name: "value", weak: false, list: false }],
     VariableDefinition: [{ name: "name", weak: false, list: false }, { name: "value", weak: false, list: false }],
     Metadata: [{ name: "arguments", weak: false, list: false }],
