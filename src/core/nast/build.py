@@ -53,6 +53,8 @@ COMPARE_CPP = os.path.join(SCRIPT_DIR, "compare.cpp")
 # 束縛 / 名前解決。corpus から呼ぶ。
 BIND_CPP = sorted(glob.glob(os.path.join(SCRIPT_DIR, "bind", "*.cpp")))
 CORPUS_CPP = os.path.join(SCRIPT_DIR, "corpus.cpp")
+# LSP 用のダンパ。解析結果を JSON で吐く。
+DUMP_CPP = os.path.join(SCRIPT_DIR, "dump.cpp")
 # 線上表現の往復。生成物 (nast_wire.hpp / nast_wire_conv.hpp) を要る。
 WIRE_CPP = os.path.join(SCRIPT_DIR, "wire_test.cpp")
 WIRE_BGN = os.path.join(SCRIPT_DIR, "nast_wire.bgn")
@@ -386,6 +388,10 @@ def main():
         corpus = os.path.join(BUILD_DIR, "nast_corpus" + suffix)
         run(cmd + [compile_obj(cmd, CORPUS_CPP)] + shared + ["-o", corpus] + link_args)
         print(f"built: {corpus}")
+
+        dumpexe = os.path.join(BUILD_DIR, "nast_dump" + suffix)
+        run(cmd + [compile_obj(cmd, DUMP_CPP)] + shared + ["-o", dumpexe] + link_args)
+        print(f"built: {dumpexe}")
 
         # 生成物が揃っているときだけ。wiregen.py を回していないと出ない。
         if os.path.exists(os.path.join(SCRIPT_DIR, "nast_wire_conv.hpp")):

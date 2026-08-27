@@ -32,10 +32,14 @@ from gen.nodes import (  # noqa: E402
     emit_ref,
 )
 from gen.tables import emit_side_tables, emit_structs  # noqa: E402
+from gen.ts import emit_ts  # noqa: E402
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_SCHEMA = os.path.join(SCRIPT_DIR, "nodes.json")
 DEFAULT_OUT = os.path.join(SCRIPT_DIR, "nodes.h")
+# LSP サーバーが nast_dump の JSON を読むための TS 側ライブラリ。
+# tsc の rootDir の都合でサーバーのソースの中に直接出す。
+DEFAULT_TS_OUT = os.path.join(SCRIPT_DIR, "..", "..", "..", "lsp", "server", "src", "nast_nodes.ts")
 
 # ast_enum.h / deep_copy.h と同じ体裁
 PROLOGUE = (
@@ -118,24 +122,31 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="generate nodes.h from nodes.json")
     ap.add_argument("--schema", default=DEFAULT_SCHEMA)
     ap.add_argument("-o", "--out", default=DEFAULT_OUT)
+    ap.add_argument("--ts-out", default=DEFAULT_TS_OUT,
+                    help="TS 側ライブラリの出力先。空文字で出さない")
     ap.add_argument("--check", action="store_true",
                     help="書き込まず、既存の出力と一致するかだけ見る (CI 向け)")
     args = ap.parse_args()
 
-    text = generate(Schema.load(args.schema))
+    schema = Schema.load(args.schema)
+    outputs = [(args.out, generate(schema))]
+    if args.ts_out:
+        outputs.append((os.path.normpath(args.ts_out), emit_ts(schema)))
 
     if args.check:
-        if not os.path.exists(args.out):
-            print(f"{args.out} does not exist", file=sys.stderr)
-            return 1
-        with open(args.out, encoding="utf-8") as f:
-            if f.read() == text:
-                return 0
-        print(f"{args.out} is out of date; run nodegen.py", file=sys.stderr)
-        return 1
+        for path, text in outputs:
+            if not os.path.exists(path):
+                print(f"{path} does not exist", file=sys.stderr)
+                return 1
+            with open(path, encoding="utf-8") as f:
+                if f.read() != text:
+                    print(f"{path} is out of date; run nodegen.py", file=sys.stderr)
+                    return 1
+        return 0
 
-    with open(args.out, "w", encoding="utf-8") as f:
-        f.write(text)
+    for path, text in outputs:
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(text)
     return 0
 
 
