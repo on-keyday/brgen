@@ -27,8 +27,9 @@ namespace brgen {
         }
 
         template <class T>
-        static std::optional<lexer::LiteToken> do_parse_no_text(void* ptr, std::uint64_t file, lexer::Option opt) {
-            return lexer::parse_one_no_text(*static_cast<futils::Sequencer<T>*>(ptr), file, opt);
+        static std::optional<lexer::LiteToken> do_parse_no_text(void* ptr, std::uint64_t file, lexer::Option opt,
+                                                                std::string* err) {
+            return lexer::parse_one_no_text(*static_cast<futils::Sequencer<T>*>(ptr), file, opt, err);
         }
 
         template <class DumpBuf, class T>
@@ -52,7 +53,8 @@ namespace brgen {
         fs::path file_name;
         std::shared_ptr<void> ptr;
         std::optional<lexer::Token> (*parse_)(void* seq, std::uint64_t file, lexer::Option opt) = nullptr;
-        std::optional<lexer::LiteToken> (*parse_no_text_)(void* seq, std::uint64_t file, lexer::Option opt) = nullptr;
+        std::optional<lexer::LiteToken> (*parse_no_text_)(void* seq, std::uint64_t file, lexer::Option opt,
+                                                          std::string* err) = nullptr;
         std::pair<std::string, futils::code::SrcLoc> (*dump_)(void* seq, lexer::Pos pos) = nullptr;
 
         futils::view::rvec (*direct)(void* seq) = nullptr;
@@ -97,9 +99,10 @@ namespace brgen {
             return std::nullopt;
         }
 
-        std::optional<lexer::LiteToken> parse_no_text(lexer::Option option) {
+        // err には Tag::error のときだけメッセージが入る。
+        std::optional<lexer::LiteToken> parse_no_text(lexer::Option option, std::string* err = nullptr) {
             if (parse_no_text_) {
-                return parse_no_text_(ptr.get(), file, option);
+                return parse_no_text_(ptr.get(), file, option, err);
             }
             return std::nullopt;
         }

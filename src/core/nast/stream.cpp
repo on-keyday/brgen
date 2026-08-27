@@ -4,14 +4,15 @@
 namespace brgen::nast {
     void Stream::maybe_parse() {
         if (cur == tokens.end()) {
-            auto token = input->parse_no_text(lex_option);
+            std::string lex_err;
+            auto token = input->parse_no_text(lex_option, &lex_err);
             if (!token) {
                 return;
             }
             if (token->tag == lexer::Tag::error) {
                 token->loc.line = line;
                 token->loc.col = col;
-                error(token->loc, "lexer error").report();
+                error(token->loc, std::move(lex_err)).report();
             }
             token->loc.line = line;
             token->loc.col = col;

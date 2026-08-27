@@ -312,17 +312,34 @@ format Varint:
 
     // 本文を切り出さない版。tag と loc だけ返す。
     // 本文が要る側は loc.pos とバッファから取る。
+    //
+    // ただし Tag::error のトークンだけは別。そこでの本文は入力の一部ではなく
+    // エラーメッセージ本体なので、loc.pos からは取れない。err に入れて返す。
     template <class T>
-    std::optional<LiteToken> parse_one_no_text(futils::Sequencer<T>& seq, std::uint64_t file, Option opt) {
+    std::optional<LiteToken> parse_one_no_text(futils::Sequencer<T>& seq, std::uint64_t file, Option opt,
+                                               std::string* err = nullptr) {
         internal::Option option;
         option.regex_mode = opt.regex_mode;
         auto ctx = futils::comb2::LexContext<Tag, std::string>{};
         if (auto res = internal::parse_one(seq, ctx, option); res != futils::comb2::Status::match) {
-            if (res == futils::comb2::Status::fatal || !seq.eos()) {
+            if (res == futils::comb2::Status::fatal) {
                 LiteToken tok;
                 tok.tag = Tag::error;
                 tok.loc.file = file;
                 tok.loc.pos = {seq.rptr, seq.rptr + 1};
+                if (err) {
+                    *err = std::move(ctx.errbuf);
+                }
+                return tok;
+            }
+            if (!seq.eos()) {
+                LiteToken tok;
+                tok.tag = Tag::error;
+                tok.loc.file = file;
+                tok.loc.pos = {seq.rptr, seq.rptr + 1};
+                if (err) {
+                    *err = "expect eof but not";
+                }
                 return tok;
             }
             return std::nullopt;
