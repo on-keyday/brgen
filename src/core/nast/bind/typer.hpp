@@ -77,6 +77,8 @@ namespace brgen::nast::bind {
 
         Node<Type> type_of_expr(Node<Expr> e);
         Node<Type> type_of_decl(Node<Statement> decl);
+        // for x in c で x に見える型。c の型から決まる。
+        Node<Type> iteration_type(Node<Type> container_type);
         // 型の包み (IdentType など) を剥がして StructType を取り出す。
         Node<StructType> as_struct(Node<Type> t);
         // struct の持ち主 (format / state / module) から名前でメンバを引く。
