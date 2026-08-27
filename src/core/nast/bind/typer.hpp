@@ -26,10 +26,23 @@
 //   Sizeof        u64
 //   Available     bool
 //
-// 入っていないもの: OrCond / IOOperation / SpecialLiteral。
-// SpecialLiteral (input / output / config) は元の実装でも typing では扱わず、
-// resolve_io_operation が別のノードに置き換える形になっている。nast には
-// その段がまだ無いので、型を付ける根拠が無い。
+//   SpecialLiteral input / output は StreamType。素のものは length 無し
+//                 (どの実体で呼ばれるかは format からは決まらない)。
+//                 input.subrange(len) の値は length に len を確立した StreamType。
+//                 get / peek は引数 0 の型リテラルが名指す型 (無ければ u8)、
+//                 offset / bit_offset / remain / scope_length は u64、
+//                 backward / put は void。type_of_stream_call を見よ。
+//
+// 入っていないもの:
+//   OrCond                   match の分岐条件を | でつないだ形
+//   SpecialLiteral の config  ストリームではなく自由なメタデータ名前空間
+//                            (config.url = "..") なので別扱いが要る
+//
+// input.endian など表に無いストリームのメンバは型なしのまま通す。能力要求の
+// 検査 (peek を使う format は先読み可能な入力を要求する、の類) も意図して
+// 入れていない。まず型として使い方を見てから締める。元実装の
+// resolve_io_operation + IOOperation 置き換えに当たる段は nast には作らず、
+// 型付けだけで済ませている。
 //
 // メンバの引き方は元の実装と違う。元は StructType がメンバ一覧 (fields) を
 // 持っていたが、nast の StructType は base だけで、一覧は binder が
@@ -69,6 +82,8 @@ namespace brgen::nast::bind {
         // struct の持ち主 (format / state / module) から名前でメンバを引く。
         Node<Statement> lookup_member(Node<Statement> owner, std::string_view name);
         Node<Type> type_of_member_access(Node<MemberAccess> m);
+        // input.get(u8) などストリームの組み込みメソッド。該当しなければ nullref。
+        Node<Type> type_of_stream_call(Node<Call> call);
         Node<Type> type_of_binary(Node<Binary> b);
         Node<Type> type_of_conditional(Node<ConditionalExpr> c);
         // ブロックの値。最後の文が式ならその型。

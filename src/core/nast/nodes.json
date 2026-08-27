@@ -1312,6 +1312,20 @@
             ]
         },
         {
+            "name": "StreamType",
+            "derive": "Type",
+            "fields": [
+                {
+                    "name": "kind",
+                    "type": "SpecialLiteralKind"
+                },
+                {
+                    "name": "length",
+                    "type": "Node<Expr>"
+                }
+            ]
+        },
+        {
             "name": "FunctionType",
             "derive": "Type",
             "fields": [
