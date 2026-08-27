@@ -149,6 +149,23 @@ namespace brgen::nast::bind {
             resolve_ident_type(id);
             return as_struct(a.get<IdentType>(id)->base);
         }
+        if (auto imp = t.as_any<ImportedType>()) {
+            // varint.Varint のような import 先の型。実体は import_ref の
+            // メンバアクセスを式として解決すると出てくる struct 型。
+            auto* d = a.get<ImportedType>(imp);
+            if (!d->base) {
+                d->base = type_of_expr(d->import_ref);
+            }
+            return as_struct(d->base);
+        }
+        if (auto w = t.as_any<WrapperType>()) {
+            // base を持つ包み全般。
+            return as_struct(a.get<WrapperType>(w)->base);
+        }
+        if (auto ist = t.as_any<InlineStructType>()) {
+            // 無名 format。持ち主の Format から struct 型を出して引く。
+            return as_struct(struct_type_of(a.get<InlineStructType>(ist)->inlined_format));
+        }
         if (auto st = t.as_any<StructType>()) {
             return st;
         }
@@ -217,6 +234,34 @@ namespace brgen::nast::bind {
 
     Node<Type> Typer::type_of_member_access(Node<MemberAccess> m) {
         auto* d = a.get<MemberAccess>(m);
+        auto loc_ = a.header_at(m.id())->loc;
+        // config.endian.big / config.bit_order.lsb の形。元実装は resolve_io_operation
+        // が丸ごと IOOperation (u8 定数) に置き換える (typing.cpp:1434)。nast は
+        // 置き換えず、値として使われる外側のノードに u8 を付ける。内側の
+        // config.endian と config リテラル自体は元実装に対応物が無いので付けない。
+        if (auto inner = d->base.as_any<MemberAccess>()) {
+            auto* di = a.get<MemberAccess>(inner);
+            if (auto sp = di->base.as_any<SpecialLiteral>();
+                sp && a.get<SpecialLiteral>(sp)->kind == SpecialLiteralKind::config_) {
+                auto* im = a.get<Ident>(di->member);
+                auto* om = a.get<Ident>(d->member);
+                if (im && om) {
+                    bool endian = im->identifier == "endian" &&
+                                  (om->identifier == "big" || om->identifier == "little" ||
+                                   om->identifier == "native");
+                    bool bit_order = im->identifier == "bit_order" &&
+                                     (om->identifier == "msb" || om->identifier == "lsb");
+                    if (endian || bit_order) {
+                        auto t = a.make<IntType>(loc_);
+                        auto* it = a.get<IntType>(t);
+                        it->bit_size = 8;
+                        it->is_signed = false;
+                        it->endian = Endian::unspec;
+                        return t;
+                    }
+                }
+            }
+        }
         auto base_type = type_of_expr(d->base);
         if (!base_type) {
             return nullref;
@@ -226,6 +271,17 @@ namespace brgen::nast::bind {
             return nullref;
         }
         auto loc = a.header_at(m.id())->loc;
+
+        // 名前の包み (IdentType) を剥がしてから種別を見る。enum を別名や
+        // フィールド型経由で参照した形 (x.is_defined など) がここで揃う。
+        while (auto id = base_type.as_any<IdentType>()) {
+            resolve_ident_type(id);
+            auto b = a.get<IdentType>(id)->base;
+            if (!b) {
+                break;
+            }
+            base_type = b;
+        }
 
         // enum の値。Color.red は Enum の members から引く。
         if (auto et = base_type.as_any<EnumType>()) {
@@ -274,9 +330,16 @@ namespace brgen::nast::bind {
             }
             return nullref;
         }
+        // 分岐で現れる同名フィールド (union) 越しのアクセスは共通型で引く。
+        // 元実装の typing_member_access の lookup_union と同じ。
+        if (auto u = base_type.as_any<UnionType>()) {
+            resolve_union_type(u);
+            if (auto ct = a.get<UnionType>(u)->common_type) {
+                base_type = ct;
+            }
+        }
         auto st = as_struct(base_type);
         if (!st) {
-            // UnionType (分岐で現れるフィールド) は共通型を出す段がまだ無い。
             return nullref;
         }
         auto owner = a.get<StructType>(st)->base;
@@ -349,8 +412,64 @@ namespace brgen::nast::bind {
             }
             return ld->bit_size > rd->bit_size ? l : r;
         }
-        // UnionType の共通型を出す段はまだ無い。format の cast_fn 経由も同様。
+        // 分岐の union は共通型に剥がして比べる。元実装の tool::common_type と同じ。
+        if (auto u = l.as_any<UnionType>()) {
+            resolve_union_type(u);
+            if (auto ct = a.get<UnionType>(u)->common_type) {
+                return common_type(ct, r);
+            }
+            return nullref;
+        }
+        if (auto u = r.as_any<UnionType>()) {
+            resolve_union_type(u);
+            if (auto ct = a.get<UnionType>(u)->common_type) {
+                return common_type(l, ct);
+            }
+            return nullref;
+        }
+        // format の cast_fn 経由はまだ無い。
         return nullref;
+    }
+
+    // 分岐ごとに宣言された同名 field の共通型。元実装の typing_union_type と同じで、
+    // 名前が現れない分岐の pad (field 無し) は飛ばし、入れ子の union は先に自分の
+    // 共通型に潰してから畳む。is_strict は全候補が同じ型ノードに畳めたかどうか。
+    void Typer::resolve_union_type(Node<UnionType> u) {
+        auto* d = a.get<UnionType>(u);
+        if (d->common_type) {
+            return;
+        }
+        bool is_strict = false;
+        Node<Type> common;
+        for (auto& c : d->candidates) {
+            auto f = a.get<UnionCandidate>(c)->field;
+            if (!f) {
+                continue;
+            }
+            auto ft = a.get<Field>(f)->type;
+            if (!common) {
+                if (auto nested = ft.as_any<UnionType>()) {
+                    resolve_union_type(nested);
+                    common = a.get<UnionType>(nested)->common_type;
+                    is_strict = a.get<UnionType>(nested)->is_strict_common_type;
+                }
+                else {
+                    common = ft;
+                    is_strict = true;
+                }
+            }
+            else {
+                auto before = common;
+                common = common_type(common, ft);
+                if (!common) {
+                    is_strict = false;
+                    break;
+                }
+                is_strict = is_strict && before == common;
+            }
+        }
+        d->common_type = common;
+        d->is_strict_common_type = is_strict;
     }
 
     Node<Type> Typer::type_of_binary(Node<Binary> b) {
@@ -359,8 +478,10 @@ namespace brgen::nast::bind {
         auto lty = type_of_expr(d->left);
         auto rty = type_of_expr(d->right);
         switch (d->op) {
-            // 代入。式としての型は左辺のもの。
+            // 代入は式としては void。元実装の typing_assign と同じで、
+            // 左辺が付かない代入 (input.endian = .. など) でも void は付く。
             case BinaryOp::assign:
+            case BinaryOp::append_assign:
             case BinaryOp::add_assign:
             case BinaryOp::sub_assign:
             case BinaryOp::mul_assign:
@@ -373,7 +494,7 @@ namespace brgen::nast::bind {
             case BinaryOp::bit_and_assign:
             case BinaryOp::bit_or_assign:
             case BinaryOp::bit_xor_assign:
-                return lty;
+                return a.make<VoidType>(loc);
             // 比較。両辺が付いていることだけ確かめる。比較可能かの検査はまだ。
             case BinaryOp::equal:
             case BinaryOp::not_equal:
@@ -456,9 +577,14 @@ namespace brgen::nast::bind {
                 common = t;
                 continue;
             }
-            if (!equivalent(a, common, t)) {
+            // 元実装の typing_if / typing_match と同じで、リテラルは相手に
+            // 寄せてから比べる (int_type_fitting -> equal_type)。
+            auto fc = fit_int(common, t);
+            auto ft = fit_int(t, common);
+            if (!equivalent(a, fc, ft)) {
                 return a.make<VoidType>(loc);
             }
+            common = fc;
         }
         return common ? common : a.make<VoidType>(loc);
     }
@@ -507,6 +633,16 @@ namespace brgen::nast::bind {
             }
             else if (auto lit = arg0.as_any<TypeLiteral>()) {
                 result = a.get<TypeLiteral>(lit)->literal;
+            }
+            else if (auto ref = arg0.as_any<Reference>()) {
+                // input.get(Lz4DataBlock) のように型を名前で渡す形。TypeLiteral に
+                // parse されるのは u8 などの組み込み型だけで、format / enum の名前は
+                // Reference で来る。解決先が型の宣言ならその型。
+                if (auto* r = tables.table<Resolution>().get(a.get<Reference>(ref)->name)) {
+                    if (r->target.as_any<NamedStructTypedStatement>() || r->target.as_any<Enum>()) {
+                        result = type_of_decl(r->target);
+                    }
+                }
             }
         }
         else if (kind == SpecialLiteralKind::input_ && member->identifier == "subrange") {
@@ -646,6 +782,12 @@ namespace brgen::nast::bind {
             if (auto lit = callee.as_any<TypeLiteral>()) {
                 result = a.get<TypeLiteral>(lit)->literal;
             }
+            // 内側の Call は元実装では cast の本体そのもの。同じ型を付ける。
+            if (result) {
+                if (auto* inner = a.get<Expr>(d->base); inner && !inner->type) {
+                    inner->type = result;
+                }
+            }
             if (auto* args = a.get<Arguments>(d->arguments)) {
                 for (auto& arg : args->arguments) {
                     type_of_expr(a.get<Argument>(arg)->value);
@@ -661,8 +803,14 @@ namespace brgen::nast::bind {
             }
             result = type_of_stream_call(call);
             if (!result) {
-                if (auto ft = type_of_expr(d->callee).as_any<FunctionType>()) {
+                auto ct = type_of_expr(d->callee);
+                if (auto ft = ct.as_any<FunctionType>()) {
                     result = a.get<FunctionType>(ft)->return_type;
+                }
+                else if (ct.as_any<EnumType>() || ct.as_any<StructType>()) {
+                    // Enum(x) / Format(..) の形。元実装は callee を型リテラルに
+                    // 直して Cast にする (call_to_cast)。型はその型自身。
+                    result = ct;
                 }
             }
         }
@@ -692,6 +840,43 @@ namespace brgen::nast::bind {
         }
         else if (auto ma = e.as_any<MemberAccess>()) {
             result = type_of_member_access(ma);
+        }
+        else if (auto oc = e.as_any<OrCond>()) {
+            // match の分岐条件を | でつないだ形。全条件の共通型で、範囲は基底の
+            // 型で比べる。元実装の typing_or_cond / OrCond_common_type に当たる。
+            auto* d = a.get<OrCond>(oc);
+            Node<Type> ty;
+            bool ok = true;
+            for (auto& c : d->conds) {
+                auto t = type_of_expr(c);
+                if (!t) {
+                    ok = false;
+                    continue;  // 型付け自体は全条件に回す
+                }
+                if (!ok || !ty) {
+                    ty = t;
+                    continue;
+                }
+                auto merged = common_type(ty, t);
+                if (!merged) {
+                    if (auto r = ty.as_any<RangeType>()) {
+                        merged = common_type(a.get<RangeType>(r)->base_type, t);
+                    }
+                }
+                if (!merged) {
+                    if (auto r = t.as_any<RangeType>()) {
+                        merged = common_type(ty, a.get<RangeType>(r)->base_type);
+                    }
+                }
+                if (!merged) {
+                    ok = false;
+                    continue;
+                }
+                ty = merged;
+            }
+            if (ok) {
+                result = ty;
+            }
         }
         else if (auto import_ = e.as_any<Import>()) {
             // 読み込んだ Module の struct 型。メンバアクセスの左辺になる。

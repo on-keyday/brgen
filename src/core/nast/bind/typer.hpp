@@ -15,14 +15,22 @@
 //   Paren/Identity 中身の型
 //   Import        読み込んだ Module の struct_type
 //   IdentType     指している宣言の型を base に入れる
-//   MemberAccess  左辺の型からメンバを引く
-//   Binary        演算子ごと。比較は bool、算術は共通型、代入は左辺の型
+//   MemberAccess  左辺の型からメンバを引く。IdentType / ImportedType の包みは
+//                 剥がし、union (分岐で現れる同名 field) は共通型で引く。
+//                 config.endian.big / config.bit_order.lsb は u8 (元実装の
+//                 resolve_io_operation の写し)
+//   Binary        演算子ごと。比較は bool、算術は共通型、代入は void
+//                 (元実装の typing_assign と同じ)
 //   Unary         中身の型 (- と ! はどちらも型を変えない)
 //   Index         base の配列型の要素型
-//   Range         RangeType。基底は start か end の型
-//   Cast          変換先の型
-//   Call          呼ぶ先の FunctionType の戻り値
-//   If/Match/Cond 分岐の型が揃えばその型、揃わなければ void
+//   Range         RangeType。基底は両端の共通型
+//   Cast          変換先の型。内側の Call にも同じ型を付ける
+//   Call          呼ぶ先の FunctionType の戻り値。callee が enum / format なら
+//                 cast (元実装の call_to_cast) としてその型
+//   If/Match/Cond 分岐の型をリテラル寄せしてから比べ、揃えばその型、
+//                 揃わなければ void (元実装の int_type_fitting -> equal_type)
+//   OrCond        全条件の共通型。範囲は基底で比べる (OrCond_common_type)
+//   UnionType     候補 field の共通型を要求時に埋める (typing_union_type)
 //   Sizeof        u64
 //   Available     bool
 //
@@ -34,9 +42,12 @@
 //                 backward / put は void。type_of_stream_call を見よ。
 //
 // 入っていないもの:
-//   OrCond                   match の分岐条件を | でつないだ形
-//   SpecialLiteral の config  ストリームではなく自由なメタデータ名前空間
-//                            (config.url = "..") なので別扱いが要る
+//   SpecialLiteral の config  自由なメタデータ名前空間 (config.url = "..")。
+//                            元実装では Metadata / IOOperation への置き換えで
+//                            ノード自体が消えるため、値として残る
+//                            config.endian.big の形 (u8) 以外は型を付けない
+//   generics (TypeParameter / GenericType のメンバ)。元実装の middle も未対応
+//                            の領域で、pre-monomorphize 構想の側で扱う
 //
 // input.endian など表に無いストリームのメンバは型なしのまま通す。能力要求の
 // 検査 (peek を使う format は先読み可能な入力を要求する、の類) も意図して
@@ -98,6 +109,9 @@ namespace brgen::nast::bind {
         Node<Type> struct_type_of(Node<Statement> owner);
         Node<Type> struct_type_of_module(Node<Module> mod);
         void resolve_ident_type(Node<IdentType> t);
+        // 分岐ごとに宣言された同名 field の共通型を UnionType に埋める。
+        // 元実装の typing_union_type に当たる。
+        void resolve_union_type(Node<UnionType> u);
     };
 
 }  // namespace brgen::nast::bind
