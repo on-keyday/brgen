@@ -169,15 +169,30 @@ consume と行桁の更新**。
 中身を返し、そうでなければ空を返す (`direct_source<T>` の `is_convertible_v`)。
 これがそのまま「本文をビューにしてよいか」の判定になる。
 
-- **非空** — `loc.pos` が生のバイト列の添字なので、`source().substr(pos)` が本文。
-  普通の utf8 ファイルはこちら。`example/tpm2.bgn` で `source()` は 20540 バイト
-  (ファイル全長) を返すことを確認した
-- **空** — `U8View` / `U16View` のような変換アダプタが挟まっている場合。
-  `loc.pos` は変換後の並びの添字で、その並びはメモリ上に存在しない。
-  ここは今どおり本文を作って持つしかない
+入力はまず `set_file_with_input_mode` (`file.h:253`) が物理形式に応じて
+`binary::EndianView` で包み、次に `set_input_with_mode` が解釈形式に応じて
+`utf::U8View` / `U16View` / `U32View` で包む。実際に組み上がる型で
+`is_convertible_v<T, rvec>` を見ると:
 
-つまり utf 変換が挟まる経路は「速い方を諦めて今のまま」で分離でき、
-判定はバッファ型から静的に決まる。
+```
+file::View                              true    utf8 入力 / utf8 解釈
+EndianView<View, char16_t>              false   utf16 入力 / utf16 解釈
+U8View<EndianView<View, char16_t>>      false   utf16le 入力 / utf8 解釈
+U16View<file::View>                     false   utf8 入力 / utf16 解釈
+U32View<EndianView<View, char16_t>>     false   utf16 入力 / utf32 解釈
+EndianView<View, char32_t>              false   utf32 入力 / utf32 解釈
+```
+
+- **true は utf8 入力 / utf8 解釈だけ。** `loc.pos` が生のバイト列の添字なので
+  `source().substr(pos)` が本文になる。`example/tpm2.bgn` で `source()` が
+  20540 バイト (ファイル全長) を返すことも確認した
+- **残り 5 通りは false。** `loc.pos` は包んだ後の並びの添字で、その並びは
+  メモリ上に存在しない。特に「物理 utf16le / 位置解釈 utf8」は
+  `U8View<EndianView<View, char16_t>>` という二重の包みになり、utf8 バイト列は
+  読むたびに作られる。ここは本文を持つしかない
+
+つまり変換が挟まる経路は「速い方を諦めて今のまま」で分離でき、判定はバッファ型
+から静的に決まる。分岐を新しく足す必要はない。
 
 #### 変更の規模
 
