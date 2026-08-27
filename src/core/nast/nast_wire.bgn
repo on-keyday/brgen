@@ -137,6 +137,7 @@ enum NodeKind:
     StrLiteralType
     RegexLiteralType
     ArrayType
+    StreamType
     FunctionType
     StructType
     InlineStructType
@@ -365,6 +366,10 @@ format Node:
             length :Ref
             end_loc :Loc
             element_type :Ref
+        NodeKind.StreamType:
+            is_explicit :u8
+            kind :SpecialLiteralKind
+            length :Ref
         NodeKind.FunctionType:
             is_explicit :u8
             return_type :Ref

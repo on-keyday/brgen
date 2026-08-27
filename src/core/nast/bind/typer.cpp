@@ -202,6 +202,23 @@ namespace brgen::nast::bind {
             }
             return nullref;
         }
+        // ストリームの組み込みメンバ。位置と残量は u64。呼び出し形 (get / peek /
+        // subrange / backward / put) の戻り値は引数で決まるので Call 側で付ける。
+        // 未知のメンバ (input.endian への代入など) はエラーにせず型なしのまま。
+        // 検査で締めるのは使い方が見えてからにする。
+        if (auto stream = base_type.as_any<StreamType>()) {
+            if (a.get<StreamType>(stream)->kind == SpecialLiteralKind::input_ &&
+                (member->identifier == "offset" || member->identifier == "bit_offset" ||
+                 member->identifier == "remain" || member->identifier == "scope_length")) {
+                auto t = a.make<IntType>(loc);
+                auto* it = a.get<IntType>(t);
+                it->bit_size = 64;
+                it->is_signed = false;
+                it->endian = Endian::unspec;
+                return t;
+            }
+            return nullref;
+        }
         auto st = as_struct(base_type);
         if (!st) {
             // UnionType (分岐で現れるフィールド) は共通型を出す段がまだ無い。
@@ -385,6 +402,79 @@ namespace brgen::nast::bind {
         return common ? common : a.make<VoidType>(loc);
     }
 
+    // ストリームの組み込みメソッドの呼び出し。該当しなければ型を出さず、
+    // 呼び出し側で普通の関数呼び出しとして扱われる。
+    //
+    //   input.get(T) / input.peek(T)   引数 0 の型リテラルが名指す型。引数なしは u8
+    //   input.subrange(len)            長さ len を確立した StreamType
+    //   input.backward(..) / output.put(..)   void
+    //
+    // 元実装は resolve_io_operation がノードを IOOperation に置き換えてから
+    // typing_io_operation (middle/typing.cpp:1381) が型を付けていた。nast は
+    // 置き換えず、この場で型だけ付ける。引数の個数・種類の検査はまだしない。
+    Node<Type> Typer::type_of_stream_call(Node<Call> call) {
+        auto* d = a.get<Call>(call);
+        auto ma = d->callee.as_any<MemberAccess>();
+        if (!ma) {
+            return nullref;
+        }
+        auto* mad = a.get<MemberAccess>(ma);
+        auto stream = type_of_expr(mad->base).as_any<StreamType>();
+        if (!stream) {
+            return nullref;
+        }
+        auto* member = a.get<Ident>(mad->member);
+        if (!member) {
+            return nullref;
+        }
+        auto kind = a.get<StreamType>(stream)->kind;
+        auto loc = a.header_at(call.id())->loc;
+        Node<Expr> arg0;
+        if (auto* args = a.get<Arguments>(d->arguments); args && !args->arguments.empty()) {
+            arg0 = a.get<Argument>(args->arguments.front())->value;
+        }
+        Node<Type> result;
+        if (kind == SpecialLiteralKind::input_ && (member->identifier == "get" || member->identifier == "peek")) {
+            if (!arg0) {
+                // 引数なしは u8。元実装の既定と同じ。
+                auto t = a.make<IntType>(loc);
+                auto* it = a.get<IntType>(t);
+                it->bit_size = 8;
+                it->is_signed = false;
+                it->endian = Endian::unspec;
+                result = t;
+            }
+            else if (auto lit = arg0.as_any<TypeLiteral>()) {
+                result = a.get<TypeLiteral>(lit)->literal;
+            }
+        }
+        else if (kind == SpecialLiteralKind::input_ && member->identifier == "subrange") {
+            if (arg0) {
+                // 長さの式は保持するだけで、型互換性の判定には使わない。
+                // [len]u8 の length と同じ扱い (codec 意味論と型意味論の分離)。
+                auto t = a.make<StreamType>(loc);
+                auto* st = a.get<StreamType>(t);
+                st->kind = kind;
+                st->length = arg0;
+                result = t;
+            }
+        }
+        else if ((kind == SpecialLiteralKind::input_ && member->identifier == "backward") ||
+                 (kind == SpecialLiteralKind::output_ && member->identifier == "put")) {
+            result = a.make<VoidType>(loc);
+        }
+        if (result) {
+            // callee (input.get というメンバアクセス自体) にも関数型を付けておく。
+            // 対応する宣言は無いので parameters は空のまま。
+            if (!a.get<Expr>(ma)->type) {
+                auto ft = a.make<FunctionType>(loc);
+                a.get<FunctionType>(ft)->return_type = result;
+                a.get<Expr>(ma)->type = ft;
+            }
+        }
+        return result;
+    }
+
     Node<Type> Typer::type_of_expr(Node<Expr> e) {
         if (!e) {
             return nullref;
@@ -433,6 +523,18 @@ namespace brgen::nast::bind {
         else if (e.as_any<TypeLiteral>()) {
             // 型そのものを値として書いたもの。u8 や format 名を式の位置に置いた形。
             result = a.make<MetaType>(loc);
+        }
+        else if (auto sp = e.as_any<SpecialLiteral>()) {
+            // input / output はストリーム。どの実体 (全入力 / 逐次 / ビット列 ...) で
+            // 呼ばれるかは format の側からは決まらないので、型にはプログラム自身が
+            // 確立した性質だけを載せる。素の input は length の無い StreamType。
+            // config はストリームではない (自由なメタデータ名前空間)。まだ型を付けない。
+            auto kind = a.get<SpecialLiteral>(sp)->kind;
+            if (kind == SpecialLiteralKind::input_ || kind == SpecialLiteralKind::output_) {
+                auto t = a.make<StreamType>(loc);
+                a.get<StreamType>(t)->kind = kind;
+                result = t;
+            }
         }
         else if (auto ref = e.as_any<Reference>()) {
             auto name = a.get<Reference>(ref)->name;
@@ -492,8 +594,11 @@ namespace brgen::nast::bind {
                     type_of_expr(a.get<Argument>(arg)->value);
                 }
             }
-            if (auto ft = type_of_expr(d->callee).as_any<FunctionType>()) {
-                result = a.get<FunctionType>(ft)->return_type;
+            result = type_of_stream_call(call);
+            if (!result) {
+                if (auto ft = type_of_expr(d->callee).as_any<FunctionType>()) {
+                    result = a.get<FunctionType>(ft)->return_type;
+                }
             }
         }
         else if (auto cond = e.as_any<ConditionalExpr>()) {
