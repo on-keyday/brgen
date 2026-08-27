@@ -30,6 +30,12 @@
           "default": "",
           "description": "Path to src2json"
         },
+        "brgen-lsp.nastDump": {
+          "scope": "resource",
+          "type": "string",
+          "default": "",
+          "description": "Path to nast_dump (src/core/nast). When set, hover also shows nast's typing"
+        },
         "brgen-lsp.trace.server": {
           "scope": "window",
           "type": "string",
