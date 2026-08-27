@@ -53,12 +53,14 @@ for i in $(seq 1 8); do ./a.exe $FILES; ./b.exe $FILES; done
 ```sh
 cp src/core/nast/stream.cpp ignore/nast/stream_counted.cpp
 # 複製に std::size_t g_xxx = 0; を足し、数えたい関数で g_xxx++
-clang++ -std=c++23 -O2 -I src/core/nast -I src <driver>.cpp     src/core/nast/parse.cpp ignore/nast/stream_counted.cpp ... -o out.exe
+clang++ -std=c++23 -O2 -I src/core/nast -I src \
+    <driver>.cpp src/core/nast/parse.cpp \
+    ignore/nast/stream_counted.cpp ... -o out.exe
 ```
 
 これで出た数字の例: `expect_token(string_view)` が 1252144 回
 (1 トークンあたり 8.7 回)、うち一致 2.9%、`maybe_parse()` が 2880403 回。
-**複製は本体が変わると腐るので、計測 が済んだら捨てる。**
+**複製は本体が変わると腐るので、計測が済んだら捨てる。**
 
 ### どの行が熱いか — clang の計装
 
@@ -93,7 +95,9 @@ llvm-cov show ./prof.exe -instr-profile=p.profdata <source.cpp>
 同じ入力に両方を通し、トークン列やノード数を突き合わせる。
 
 ```sh
-git show HEAD:src/core/lexer/lexer.h   | sed -e 's/namespace internal {/namespace internal_old {/'         -e 's/parse_one(/parse_one_old(/' > ignore/nast/lexer_old.h
+git show HEAD:src/core/lexer/lexer.h \
+  | sed -e 's/namespace internal {/namespace internal_old {/' \
+        -e 's/parse_one(/parse_one_old(/' > ignore/nast/lexer_old.h
 ```
 
 これで punct の判定を変えたとき 143251 トークンが全一致することを確かめた。
