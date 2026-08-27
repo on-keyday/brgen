@@ -81,12 +81,61 @@ def run_corpus_per_file(paths, extra):
                        stderr=subprocess.DEVNULL)
 
 
+BENCH_DIR = os.path.join(SCRIPT_DIR, "bench")
+BUILD_DIR = os.path.join(SCRIPT_DIR, "build")
+
+
+def build_tools():
+    """bench/ の計測プログラムを建てる。
+
+    build.py と同じ .o を使い回す。何を測るかは bench/README.md にある。
+    """
+    import glob
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("nast_build",
+                                                  os.path.join(SCRIPT_DIR, "build.py"))
+    nb = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(nb)
+
+    compiler = nb.find_compiler(None)
+    futils = nb.find_futils(None)
+    if not futils:
+        sys.exit("error: futils not found; the tools need it")
+    cmd = [compiler, "-std=c++23", "-O2",
+           "-I", SCRIPT_DIR, "-I", os.path.join(REPO_ROOT, "src"), "-I", futils]
+    link = []
+    lib = nb.find_futils_lib(futils)
+    if lib:
+        link.append(lib)
+        if os.name == "nt" and os.sep + "Debug" + os.sep in lib:
+            cmd += ["-fms-runtime-lib=dll_dbg"]
+
+    shared = [os.path.join(SCRIPT_DIR, n) for n in ("parse.cpp", "stream.cpp", "compare.cpp")]
+    shared += sorted(glob.glob(os.path.join(SCRIPT_DIR, "bind", "*.cpp")))
+    os.makedirs(BUILD_DIR, exist_ok=True)
+    objs = [nb.compile_obj(cmd, src, quiet=True) for src in shared]
+
+    suffix = ".exe" if os.name == "nt" else ""
+    for src in sorted(glob.glob(os.path.join(BENCH_DIR, "*.cpp"))):
+        name = "nast_" + os.path.splitext(os.path.basename(src))[0]
+        out = os.path.join(BUILD_DIR, name + suffix)
+        nb.run(cmd + [nb.compile_obj(cmd, src, quiet=True)] + objs + ["-o", out] + link)
+        print(f"built: {out}")
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--repeat", type=int, default=3)
     p.add_argument("--inputs", default=os.path.join(REPO_ROOT, "example"))
     p.add_argument("--no-build", action="store_true", help="do not rebuild at -O2")
+    p.add_argument("--tools", action="store_true",
+                   help="build the measurement programs in bench/ and stop")
     args = p.parse_args()
+
+    if args.tools:
+        build_tools()
+        return
 
     if not args.no_build:
         subprocess.run([sys.executable, os.path.join(SCRIPT_DIR, "build.py"),
