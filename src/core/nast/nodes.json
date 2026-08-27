@@ -144,6 +144,37 @@
             ]
         },
         {
+            "name": "Requirements",
+            "over": "Statement",
+            "storage": "sparse",
+            "fields": [
+                {
+                    "name": "peek",
+                    "type": "bool"
+                },
+                {
+                    "name": "backward",
+                    "type": "bool"
+                },
+                {
+                    "name": "remain",
+                    "type": "bool"
+                },
+                {
+                    "name": "offset",
+                    "type": "bool"
+                },
+                {
+                    "name": "state_read",
+                    "type": "vector<Node<StateVariable>>"
+                },
+                {
+                    "name": "state_write",
+                    "type": "vector<Node<StateVariable>>"
+                }
+            ]
+        },
+        {
             "name": "ConstantValue",
             "over": "Expr",
             "storage": "sparse",

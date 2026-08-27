@@ -1079,6 +1079,15 @@ export interface ImportResolution {
     module: NodeId;
 }
 
+export interface Requirements {
+    peek: boolean;
+    backward: boolean;
+    remain: boolean;
+    offset: boolean;
+    state_read: NodeId[];
+    state_write: NodeId[];
+}
+
 export interface ConstantValue {
     kind: EvalKind;
     integer: number;
@@ -1095,6 +1104,7 @@ export const SIDE_TABLES = {
     IsMutated: { over: "Field", storage: "flag" },
     UnionFields: { over: "ConditionalExpr", storage: "sparse" },
     ImportResolution: { over: "Import", storage: "sparse" },
+    Requirements: { over: "Statement", storage: "sparse" },
     ConstantValue: { over: "Expr", storage: "sparse" },
 } as const;
 

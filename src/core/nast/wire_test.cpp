@@ -14,6 +14,7 @@
 
 #include "bind/binder.hpp"
 #include "bind/evaluator.hpp"
+#include "bind/requires.hpp"
 #include "bind/import_resolver.hpp"
 #include "bind/scope_resolver.hpp"
 #include "parse.h"
@@ -152,11 +153,17 @@ namespace {
             binder.bind(mod);
             resolver.resolve(mod);
         }
-        // 定数表も往復に乗せる。
+        // 定数表と要求表も往復に乗せる。
         bind::Evaluator evaluator{arena, tables, err};
         for (auto& mod : importer.modules) {
             evaluator.run(mod);
         }
+        bind::Typer typer{arena, tables, err};
+        for (auto& mod : importer.modules) {
+            typer.run(mod);
+        }
+        bind::RequiresInference requires_{arena, tables, typer};
+        requires_.run(importer.modules);
         return {true, {}};
     }
 

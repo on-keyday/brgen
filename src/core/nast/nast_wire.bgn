@@ -559,6 +559,21 @@ format ImportResolutionTable:
     len :u32
     entries :[len]ImportResolutionEntry
 
+format RequirementsEntry:
+    key :Ref
+    peek :u8
+    backward :u8
+    remain :u8
+    offset :u8
+    state_read_len :u32
+    state_read :[state_read_len]Ref
+    state_write_len :u32
+    state_write :[state_write_len]Ref
+
+format RequirementsTable:
+    len :u32
+    entries :[len]RequirementsEntry
+
 format ConstantValueEntry:
     key :Ref
     kind_eval_kind :EvalKind
@@ -587,4 +602,5 @@ format NastModule:
     is_mutated :IsMutatedTable
     union_fields :UnionFieldsTable
     import_resolution :ImportResolutionTable
+    requirements :RequirementsTable
     constant_value :ConstantValueTable
