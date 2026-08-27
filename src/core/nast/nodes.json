@@ -718,6 +718,16 @@
             ]
         },
         {
+            "name": "StateVariable",
+            "derive": "NamedTypeStatement",
+            "fields": [
+                {
+                    "name": "arguments",
+                    "type": "Node<Arguments>"
+                }
+            ]
+        },
+        {
             "name": "Format",
             "derive": "NamedStructTypedStatement",
             "fields": []
