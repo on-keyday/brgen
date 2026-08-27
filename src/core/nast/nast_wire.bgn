@@ -439,6 +439,7 @@ format Node:
             enum_type :Ref
         NodeKind.EnumMember:
             name :Ref
+            belong :Ref
             raw_expr :Ref
             value_ref :Ref
             str_literal :Ref

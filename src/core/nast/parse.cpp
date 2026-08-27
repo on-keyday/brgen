@@ -1587,7 +1587,7 @@ namespace brgen::nast {
             // check_duplicated_def(ident.ref(a).get());
             auto member = a.make<EnumMember>(ident.ref(a).loc());
             member->name = ident;
-            // member->belong = enum_;
+            member->belong = enum_;
             // ident.ref(a)->base = member;
             s.skip_space();
             if (s.consume_token("=")) {

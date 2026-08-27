@@ -784,6 +784,7 @@ namespace brgen::nast::wire {
         };
         struct union_struct_72{
             Ref name;
+            Ref belong;
             Ref raw_expr;
             Ref value_ref;
             Ref str_literal;
@@ -7755,7 +7756,10 @@ namespace brgen::nast::wire {
         return nullptr;
         }
         if (NodeKind::EnumMember==(*this).node_kind) {
-        return nullptr;
+        if(!std::holds_alternative<union_struct_72>(union_variant_1)) {
+            return nullptr;
+        }
+        return std::addressof(std::get<71>((*this).union_variant_1).belong);
         }
         if (NodeKind::State==(*this).node_kind) {
         if(!std::holds_alternative<union_struct_73>(union_variant_1)) {
@@ -8018,7 +8022,11 @@ namespace brgen::nast::wire {
             return false;
         }
         if (NodeKind::EnumMember==(*this).node_kind) {
-            return false;
+            if(!std::holds_alternative<union_struct_72>(union_variant_1)) {
+                union_variant_1 = union_struct_72();
+            }
+            std::get<71>((*this).union_variant_1).belong = v;
+            return true;
         }
         if (NodeKind::State==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_73>(union_variant_1)) {
@@ -8280,7 +8288,11 @@ namespace brgen::nast::wire {
             return false;
         }
         if (NodeKind::EnumMember==(*this).node_kind) {
-            return false;
+            if(!std::holds_alternative<union_struct_72>(union_variant_1)) {
+                union_variant_1 = union_struct_72();
+            }
+            std::get<71>((*this).union_variant_1).belong = std::move(v);
+            return true;
         }
         if (NodeKind::State==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_73>(union_variant_1)) {
@@ -46474,6 +46486,9 @@ namespace brgen::nast::wire {
             if (auto err = std::get<71>((*this).union_variant_1).name.encode(w)) {
                 return err;
             }
+            if (auto err = std::get<71>((*this).union_variant_1).belong.encode(w)) {
+                return err;
+            }
             if (auto err = std::get<71>((*this).union_variant_1).raw_expr.encode(w)) {
                 return err;
             }
@@ -47671,6 +47686,9 @@ namespace brgen::nast::wire {
                 union_variant_1 = union_struct_72();
             }
             if (auto err = std::get<71>((*this).union_variant_1).name.decode(r)) {
+                return err;
+            }
+            if (auto err = std::get<71>((*this).union_variant_1).belong.decode(r)) {
                 return err;
             }
             if (auto err = std::get<71>((*this).union_variant_1).raw_expr.decode(r)) {
