@@ -343,6 +343,48 @@ namespace brgen::nast::bind {
         }
     }
 
+    // ブロックの値。最後の文が式ならその型で、そうでなければ無い。
+    Node<Type> Typer::block_value_type(Node<Body> body) {
+        auto* d = a.get<Body>(body);
+        if (!d || d->statements.empty()) {
+            return nullref;
+        }
+        auto last = d->statements.back().as_any<Expr>();
+        if (!last) {
+            return nullref;
+        }
+        return type_of_expr(last);
+    }
+
+    // if / match。分岐の値の型が揃えばその型、揃わなければ void。
+    // .bgn では大半が文なので void になる。
+    Node<Type> Typer::type_of_conditional(Node<ConditionalExpr> c) {
+        auto* d = a.get<ConditionalExpr>(c);
+        auto loc = a.header_at(c.id())->loc;
+        if (auto m = c.as_any<Match>()) {
+            type_of_expr(a.get<Match>(m)->condition);
+        }
+        Node<Type> common;
+        for (auto& block : d->blocks) {
+            auto* b = a.get<BodyStatement>(block);
+            if (auto cs = block.as_any<ConditionalStatement>()) {
+                type_of_expr(a.get<ConditionalStatement>(cs)->condition);
+            }
+            auto t = block_value_type(b->body);
+            if (!t) {
+                return a.make<VoidType>(loc);
+            }
+            if (!common) {
+                common = t;
+                continue;
+            }
+            if (!equivalent(a, common, t)) {
+                return a.make<VoidType>(loc);
+            }
+        }
+        return common ? common : a.make<VoidType>(loc);
+    }
+
     Node<Type> Typer::type_of_expr(Node<Expr> e) {
         if (!e) {
             return nullref;
@@ -410,6 +452,73 @@ namespace brgen::nast::bind {
         else if (auto un = e.as_any<Unary>()) {
             // - も ! も型を変えない。
             result = type_of_expr(a.get<Unary>(un)->target);
+        }
+        else if (auto idx = e.as_any<Index>()) {
+            // 配列の要素型。添字の型は結果に効かない。
+            auto* d = a.get<Index>(idx);
+            type_of_expr(d->index);
+            if (auto arr = type_of_expr(d->base).as_any<ArrayType>()) {
+                result = a.get<ArrayType>(arr)->element_type;
+            }
+        }
+        else if (auto rng = e.as_any<Range>()) {
+            // 端が片方しか無い形 (`..x` / `x..`) もある。
+            auto* d = a.get<Range>(rng);
+            auto st = type_of_expr(d->start);
+            auto en = type_of_expr(d->end);
+            auto t = a.make<RangeType>(loc);
+            auto* rd = a.get<RangeType>(t);
+            rd->base_type = st ? st : en;
+            rd->range = rng;
+            result = t;
+        }
+        else if (auto cast = e.as_any<Cast>()) {
+            // 変換先は呼ばれている型リテラル。
+            auto* d = a.get<Cast>(cast);
+            auto callee = a.get<Call>(d->base)->callee;
+            if (auto lit = callee.as_any<TypeLiteral>()) {
+                result = a.get<TypeLiteral>(lit)->literal;
+            }
+            if (auto* args = a.get<Arguments>(d->arguments)) {
+                for (auto& arg : args->arguments) {
+                    type_of_expr(a.get<Argument>(arg)->value);
+                }
+            }
+        }
+        else if (auto call = e.as_any<Call>()) {
+            auto* d = a.get<Call>(call);
+            if (auto* args = a.get<Arguments>(d->arguments)) {
+                for (auto& arg : args->arguments) {
+                    type_of_expr(a.get<Argument>(arg)->value);
+                }
+            }
+            if (auto ft = type_of_expr(d->callee).as_any<FunctionType>()) {
+                result = a.get<FunctionType>(ft)->return_type;
+            }
+        }
+        else if (auto cond = e.as_any<ConditionalExpr>()) {
+            result = type_of_conditional(cond);
+        }
+        else if (auto c = e.as_any<Cond>()) {
+            // 三項。両辺が揃えばその型。
+            auto* d = a.get<Cond>(c);
+            type_of_expr(d->cond);
+            auto t = type_of_expr(d->then);
+            auto f = type_of_expr(d->els);
+            result = common_type(t, f);
+        }
+        else if (auto sz = e.as_any<Sizeof>()) {
+            type_of_expr(a.get<Sizeof>(sz)->target);
+            auto t = a.make<IntType>(loc);
+            auto* d = a.get<IntType>(t);
+            d->bit_size = 64;
+            d->is_signed = false;
+            d->endian = Endian::unspec;
+            result = t;
+        }
+        else if (auto av = e.as_any<Available>()) {
+            type_of_expr(a.get<Available>(av)->target);
+            result = a.make<BoolType>(loc);
         }
         else if (auto ma = e.as_any<MemberAccess>()) {
             result = type_of_member_access(ma);
