@@ -1688,36 +1688,6 @@
             ]
         },
         {
-            "name": "FieldArgument",
-            "derive": "Statement",
-            "fields": [
-                {
-                    "name": "raw_arguments",
-                    "type": "Node<Expr>"
-                },
-                {
-                    "name": "arguments",
-                    "type": "vector<Node<Expr>>"
-                },
-                {
-                    "name": "assigns",
-                    "type": "vector<Node<Binary>>"
-                },
-                {
-                    "name": "alignment",
-                    "type": "Node<Expr>"
-                },
-                {
-                    "name": "sub_byte_length",
-                    "type": "Node<Expr>"
-                },
-                {
-                    "name": "sub_byte_begin",
-                    "type": "Node<Expr>"
-                }
-            ]
-        },
-        {
             "name": "Identity",
             "derive": "Expr",
             "fields": [
