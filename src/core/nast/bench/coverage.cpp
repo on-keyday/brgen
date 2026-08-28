@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
     std::map<std::string, std::size_t> ref_tgt, ref_tgt_typed;
     std::size_t total = 0, ref_unresolved = 0;
     std::size_t arena_nodes = 0, reachable_nodes = 0;
-    std::size_t reach_exprs = 0, orphan_exprs = 0;
+    std::size_t reach_exprs = 0, orphan_exprs = 0, designator_exprs = 0;
 
     for (int i = 1; i < argc; i++) {
         brgen::FileSet files;
@@ -64,6 +64,24 @@ int main(int argc, char** argv) {
         arena_nodes += a.node_count();
         reachable_nodes += reachable.size();
 
+        // NamedArgument の name (input.align = 32 の左辺など) は指示子であって
+        // 型を付ける対象ではないので、式のカバレッジの分母から外す。
+        std::set<std::uint32_t> designator;
+        for (std::uint32_t id = 1; id <= a.node_count(); id++) {
+            auto* h = a.header_at(id);
+            if (!h || h->type != NodeType::NamedArgument || !reachable.count(id)) {
+                continue;
+            }
+            auto* d = a.data_at<NamedArgument>(h->data_index);
+            if (!d || !d->name) {
+                continue;
+            }
+            visit_all(a, d->name, [&](NodeAny n) {
+                designator.insert(n.id());
+                return true;
+            });
+        }
+
         for (std::uint32_t id = 1; id <= a.node_count(); id++) {
             auto* h = a.header_at(id);
             if (!h) {
@@ -75,13 +93,15 @@ int main(int argc, char** argv) {
                 if constexpr (std::derived_from<T, Expr>) {
                     auto* d = a.data_at<T>(h->data_index);
                     total++;
-                    if (live) {
-                        reach_exprs++;
-                    }
-                    else {
+                    if (!live) {
                         orphan_exprs++;
                         return;  // 木に無いものは分布から外す
                     }
+                    if (designator.count(id)) {
+                        designator_exprs++;
+                        return;  // 指示子は型付けの対象外
+                    }
+                    reach_exprs++;
                     hist[to_string(h->type)]++;
                     if (d && d->type) {
                         typed_hist[to_string(h->type)]++;
@@ -115,8 +135,8 @@ int main(int argc, char** argv) {
     std::println("");
     std::println("arena {} nodes, reachable {} ({:.1f}%)", arena_nodes, reachable_nodes,
                  100.0 * reachable_nodes / arena_nodes);
-    std::println("exprs {} total, reachable {}, orphan {} ({:.1f}%)", total, reach_exprs,
-                 orphan_exprs, 100.0 * orphan_exprs / total);
+    std::println("exprs {} total, reachable {}, orphan {} ({:.1f}%), designator {} (型付け対象外)",
+                 total, reach_exprs, orphan_exprs, 100.0 * orphan_exprs / total, designator_exprs);
     std::println("typed {} / {} reachable exprs ({:.1f}%)", typed_total, reach_exprs,
                  100.0 * typed_total / reach_exprs);
     std::println("");

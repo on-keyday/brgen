@@ -41,6 +41,21 @@ namespace {
     TypeCoverage type_coverage(brgen::nast::Arena& arena,
                                const std::vector<brgen::nast::Node<brgen::nast::Module>>& modules) {
         TypeCoverage c;
+        // NamedArgument の name (input.align = 32 の左辺など) は指示子であって
+        // 型を付ける対象ではないので、分母に入れない。
+        std::set<std::uint32_t> designator;
+        for (auto& mod : modules) {
+            brgen::nast::visit_all(arena, mod, [&](brgen::nast::NodeAny n) {
+                if (auto na = n.as_any<brgen::nast::NamedArgument>()) {
+                    brgen::nast::visit_all(arena, arena.get<brgen::nast::NamedArgument>(na)->name,
+                                           [&](brgen::nast::NodeAny d) {
+                                               designator.insert(d.id());
+                                               return true;
+                                           });
+                }
+                return true;
+            });
+        }
         // 所有辺が 2 本入るノードがある (binder が作る StructUnionCandidate は
         // 分岐ブロックを ConditionalExpr と共有する) ので、id で重複を落とす。
         std::set<std::uint32_t> seen;
@@ -48,6 +63,9 @@ namespace {
             brgen::nast::visit_all(arena, mod, [&](brgen::nast::NodeAny n) {
                 if (!seen.insert(n.id()).second) {
                     return false;
+                }
+                if (designator.count(n.id())) {
+                    return true;
                 }
                 if (auto e = n.as_any<brgen::nast::Expr>()) {
                     c.exprs++;
