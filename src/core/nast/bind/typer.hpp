@@ -108,6 +108,10 @@ namespace brgen::nast::bind {
         Node<Type> common_type(Node<Type> l, Node<Type> r);
         Node<Type> struct_type_of(Node<Statement> owner);
         Node<Type> struct_type_of_module(Node<Module> mod);
+        // config が指す組み込み宣言 (enum endian / enum bit_order)。要求されたとき
+        // 一度だけ合成する。loc は file 0 (lexer::builtin) = ファイルに紐づかない。
+        Node<Module> builtin_module_;
+        Node<Module> builtin_module();
         void resolve_ident_type(Node<IdentType> t);
         // 分岐ごとに宣言された同名 field の共通型を UnionType に埋める。
         // 元実装の typing_union_type に当たる。
