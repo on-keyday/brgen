@@ -165,7 +165,6 @@ enum NodeKind:
     EnumMember
     State
     TypeParameter
-    FieldArgument
     Identity
     Cast
     OrCond
@@ -461,15 +460,6 @@ format Node:
         NodeKind.TypeParameter:
             name :Ref
             belong :Ref
-        NodeKind.FieldArgument:
-            raw_arguments :Ref
-            arguments_list_len :u32
-            arguments_list :[arguments_list_len]Ref
-            assigns_len :u32
-            assigns :[assigns_len]Ref
-            alignment :Ref
-            sub_byte_length :Ref
-            sub_byte_begin :Ref
         NodeKind.Identity:
             type :Ref
             expr :Ref

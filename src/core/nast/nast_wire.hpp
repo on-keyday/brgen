@@ -156,11 +156,10 @@ namespace brgen::nast::wire {
         EnumMember = 71,
         State = 72,
         TypeParameter = 73,
-        FieldArgument = 74,
-        Identity = 75,
-        Cast = 76,
-        OrCond = 77,
-        Import = 78,
+        Identity = 74,
+        Cast = 75,
+        OrCond = 76,
+        Import = 77,
     };
     struct Ref;
     struct Loc;
@@ -885,39 +884,25 @@ namespace brgen::nast::wire {
             Ref belong;
         };
         struct union_struct_76{
-            Ref raw_arguments;
-            std::uint32_t arguments_list_len = 0;
-            std::vector<Ref> arguments_list;
-            std::uint32_t assigns_len = 0;
-            std::vector<Ref> assigns;
-            Ref alignment;
-            Ref sub_byte_length;
-            Ref sub_byte_begin;
-        };
-        struct union_struct_77{
             Ref type;
             Ref expr;
         };
-        struct union_struct_78{
+        struct union_struct_77{
             Ref type;
             Ref base;
             Ref arguments_ref;
         };
-        struct union_struct_79{
+        struct union_struct_78{
             Ref type;
             Ref base;
             std::uint32_t conds_len = 0;
             std::vector<Ref> conds;
         };
-        struct union_struct_80{
+        struct union_struct_79{
             Ref type;
             Ref path;
         };
-        std::variant<std::monostate, union_struct_2, union_struct_3, union_struct_4, union_struct_5, union_struct_6, union_struct_7, union_struct_8, union_struct_9, union_struct_10, union_struct_11, union_struct_12, union_struct_13, union_struct_14, union_struct_15, union_struct_16, union_struct_17, union_struct_18, union_struct_19, union_struct_20, union_struct_21, union_struct_22, union_struct_23, union_struct_24, union_struct_25, union_struct_26, union_struct_27, union_struct_28, union_struct_29, union_struct_30, union_struct_31, union_struct_32, union_struct_33, union_struct_34, union_struct_35, union_struct_36, union_struct_37, union_struct_38, union_struct_39, union_struct_40, union_struct_41, union_struct_42, union_struct_43, union_struct_44, union_struct_45, union_struct_46, union_struct_47, union_struct_48, union_struct_49, union_struct_50, union_struct_51, union_struct_52, union_struct_53, union_struct_54, union_struct_55, union_struct_56, union_struct_57, union_struct_58, union_struct_59, union_struct_60, union_struct_61, union_struct_62, union_struct_63, union_struct_64, union_struct_65, union_struct_66, union_struct_67, union_struct_68, union_struct_69, union_struct_70, union_struct_71, union_struct_72, union_struct_73, union_struct_74, union_struct_75, union_struct_76, union_struct_77, union_struct_78, union_struct_79, union_struct_80> union_variant_1;
-        const Ref* alignment() const;
-        Ref* alignment();
-        bool alignment(Ref&& v);
-        bool alignment(const Ref& v);
+        std::variant<std::monostate, union_struct_2, union_struct_3, union_struct_4, union_struct_5, union_struct_6, union_struct_7, union_struct_8, union_struct_9, union_struct_10, union_struct_11, union_struct_12, union_struct_13, union_struct_14, union_struct_15, union_struct_16, union_struct_17, union_struct_18, union_struct_19, union_struct_20, union_struct_21, union_struct_22, union_struct_23, union_struct_24, union_struct_25, union_struct_26, union_struct_27, union_struct_28, union_struct_29, union_struct_30, union_struct_31, union_struct_32, union_struct_33, union_struct_34, union_struct_35, union_struct_36, union_struct_37, union_struct_38, union_struct_39, union_struct_40, union_struct_41, union_struct_42, union_struct_43, union_struct_44, union_struct_45, union_struct_46, union_struct_47, union_struct_48, union_struct_49, union_struct_50, union_struct_51, union_struct_52, union_struct_53, union_struct_54, union_struct_55, union_struct_56, union_struct_57, union_struct_58, union_struct_59, union_struct_60, union_struct_61, union_struct_62, union_struct_63, union_struct_64, union_struct_65, union_struct_66, union_struct_67, union_struct_68, union_struct_69, union_struct_70, union_struct_71, union_struct_72, union_struct_73, union_struct_74, union_struct_75, union_struct_76, union_struct_77, union_struct_78, union_struct_79> union_variant_1;
         const std::vector<Ref>* arguments_list() const;
         std::vector<Ref>* arguments_list();
         bool arguments_list(std::vector<Ref>&& v);
@@ -934,14 +919,6 @@ namespace brgen::nast::wire {
         Ref* assignee();
         bool assignee(Ref&& v);
         bool assignee(const Ref& v);
-        const std::vector<Ref>* assigns() const;
-        std::vector<Ref>* assigns();
-        bool assigns(std::vector<Ref>&& v);
-        bool assigns(const std::vector<Ref>& v);
-        const std::uint32_t* assigns_len() const;
-        std::uint32_t* assigns_len();
-        bool assigns_len(std::uint32_t&& v);
-        bool assigns_len(const std::uint32_t& v);
         const Ref* bad_expr() const;
         Ref* bad_expr();
         bool bad_expr(Ref&& v);
@@ -1174,10 +1151,6 @@ namespace brgen::nast::wire {
         Ref* range();
         bool range(Ref&& v);
         bool range(const Ref& v);
-        const Ref* raw_arguments() const;
-        Ref* raw_arguments();
-        bool raw_arguments(Ref&& v);
-        bool raw_arguments(const Ref& v);
         const Ref* raw_expr() const;
         Ref* raw_expr();
         bool raw_expr(Ref&& v);
@@ -1226,14 +1199,6 @@ namespace brgen::nast::wire {
         Ref* struct_type();
         bool struct_type(Ref&& v);
         bool struct_type(const Ref& v);
-        const Ref* sub_byte_begin() const;
-        Ref* sub_byte_begin();
-        bool sub_byte_begin(Ref&& v);
-        bool sub_byte_begin(const Ref& v);
-        const Ref* sub_byte_length() const;
-        Ref* sub_byte_length();
-        bool sub_byte_length(Ref&& v);
-        bool sub_byte_length(const Ref& v);
         const Loc* sym_loc() const;
         Loc* sym_loc();
         bool sym_loc(Loc&& v);
@@ -1315,704 +1280,6 @@ namespace brgen::nast::wire {
         ::futils::error::Error<> decode(::futils::binary::reader& r);
         static constexpr size_t fixed_header_size = 9;
     };
-    inline const Ref* Node::alignment() const {
-        if (NodeKind::Module==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::BodyStatement==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Field==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StateVariable==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Format==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::GenericFormat==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Function==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::If==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Match==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Loop==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::RangeLoop==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Assign==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::VariableDefinition==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Metadata==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::SpecifyOrder==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Sizeof==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Available==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::ExplicitError==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Binary==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Unary==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Call==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Reference==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::MemberAccess==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::TypeLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::ConditionalStatement==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Parameter==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Body==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Arguments==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Argument==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::NamedArgument==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Ident==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::IntType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::IntLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::BoolLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StrLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::CharLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::RegexLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::SpecialLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Paren==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Index==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Cond==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Range==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::BadExpr==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Assert==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::FloatType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::BoolType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::VoidType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::IdentType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::ImportedType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::IntLiteralType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StrLiteralType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::RegexLiteralType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::ArrayType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StreamType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::FunctionType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StructType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::InlineStructType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StructUnionType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StructUnionCandidate==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::UnionType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::RangeType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::EnumType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::MetaType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::OptionalType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::GenericType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::MatchBranch==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::UnionCandidate==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Return==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Break==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Continue==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Enum==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::EnumMember==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::State==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::TypeParameter==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-        if(!std::holds_alternative<union_struct_76>(union_variant_1)) {
-            return nullptr;
-        }
-        return std::addressof(std::get<75>((*this).union_variant_1).alignment);
-        }
-        return nullptr;
-    }
-    inline Ref* Node::alignment() {
-        return const_cast<Ref*>(std::as_const(*this).alignment());
-    }
-    inline bool Node::alignment(const Ref& v) {
-        if (NodeKind::Module==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BodyStatement==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Field==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StateVariable==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Format==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::GenericFormat==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Function==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::If==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Match==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Loop==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RangeLoop==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Assign==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::VariableDefinition==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Metadata==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::SpecifyOrder==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Sizeof==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Available==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ExplicitError==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Binary==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Unary==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Call==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Reference==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MemberAccess==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::TypeLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ConditionalStatement==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Parameter==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Body==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Arguments==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Argument==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::NamedArgument==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Ident==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BoolLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StrLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::CharLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RegexLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::SpecialLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Paren==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Index==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Cond==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Range==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BadExpr==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Assert==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FloatType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BoolType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::VoidType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IdentType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ImportedType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StrLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RegexLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ArrayType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StreamType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FunctionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::InlineStructType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructUnionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructUnionCandidate==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::UnionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RangeType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::EnumType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MetaType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::OptionalType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::GenericType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MatchBranch==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::UnionCandidate==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Return==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Break==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Continue==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Enum==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::EnumMember==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::State==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::TypeParameter==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-            if(!std::holds_alternative<union_struct_76>(union_variant_1)) {
-                union_variant_1 = union_struct_76();
-            }
-            std::get<75>((*this).union_variant_1).alignment = v;
-            return true;
-        }
-        return false;
-    }
-    inline bool Node::alignment(Ref&& v) {
-        if (NodeKind::Module==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BodyStatement==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Field==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StateVariable==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Format==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::GenericFormat==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Function==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::If==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Match==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Loop==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RangeLoop==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Assign==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::VariableDefinition==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Metadata==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::SpecifyOrder==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Sizeof==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Available==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ExplicitError==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Binary==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Unary==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Call==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Reference==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MemberAccess==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::TypeLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ConditionalStatement==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Parameter==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Body==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Arguments==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Argument==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::NamedArgument==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Ident==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BoolLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StrLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::CharLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RegexLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::SpecialLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Paren==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Index==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Cond==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Range==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BadExpr==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Assert==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FloatType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BoolType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::VoidType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IdentType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ImportedType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StrLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RegexLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ArrayType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StreamType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FunctionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::InlineStructType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructUnionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructUnionCandidate==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::UnionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RangeType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::EnumType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MetaType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::OptionalType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::GenericType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MatchBranch==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::UnionCandidate==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Return==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Break==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Continue==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Enum==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::EnumMember==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::State==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::TypeParameter==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-            if(!std::holds_alternative<union_struct_76>(union_variant_1)) {
-                union_variant_1 = union_struct_76();
-            }
-            std::get<75>((*this).union_variant_1).alignment = std::move(v);
-            return true;
-        }
-        return false;
-    }
     inline const std::vector<Ref>* Node::arguments_list() const {
         if (NodeKind::Module==(*this).node_kind) {
         return nullptr;
@@ -2100,150 +1367,6 @@ namespace brgen::nast::wire {
             return nullptr;
         }
         return std::addressof(std::get<28>((*this).union_variant_1).arguments_list);
-        }
-        if (NodeKind::Argument==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::NamedArgument==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Ident==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::IntType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::IntLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::BoolLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StrLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::CharLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::RegexLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::SpecialLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Paren==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Index==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Cond==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Range==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::BadExpr==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Assert==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::FloatType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::BoolType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::VoidType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::IdentType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::ImportedType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::IntLiteralType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StrLiteralType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::RegexLiteralType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::ArrayType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StreamType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::FunctionType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StructType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::InlineStructType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StructUnionType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StructUnionCandidate==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::UnionType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::RangeType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::EnumType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::MetaType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::OptionalType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::GenericType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::MatchBranch==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::UnionCandidate==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Return==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Break==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Continue==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Enum==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::EnumMember==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::State==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::TypeParameter==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-        if(!std::holds_alternative<union_struct_76>(union_variant_1)) {
-            return nullptr;
-        }
-        return std::addressof(std::get<75>((*this).union_variant_1).arguments_list);
         }
         return nullptr;
     }
@@ -2343,155 +1466,6 @@ namespace brgen::nast::wire {
             std::get<28>((*this).union_variant_1).arguments_list = v;
             return true;
         }
-        if (NodeKind::Argument==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::NamedArgument==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Ident==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BoolLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StrLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::CharLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RegexLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::SpecialLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Paren==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Index==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Cond==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Range==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BadExpr==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Assert==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FloatType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BoolType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::VoidType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IdentType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ImportedType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StrLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RegexLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ArrayType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StreamType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FunctionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::InlineStructType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructUnionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructUnionCandidate==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::UnionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RangeType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::EnumType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MetaType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::OptionalType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::GenericType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MatchBranch==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::UnionCandidate==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Return==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Break==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Continue==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Enum==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::EnumMember==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::State==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::TypeParameter==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-            if(!std::holds_alternative<union_struct_76>(union_variant_1)) {
-                union_variant_1 = union_struct_76();
-            }
-            if(v.size()> 0xffffffff) {
-                return false;
-            }
-            std::get<75>((*this).union_variant_1).arguments_list_len = v.size();
-            std::get<75>((*this).union_variant_1).arguments_list = v;
-            return true;
-        }
         return false;
     }
     inline bool Node::arguments_list(std::vector<Ref>&& v) {
@@ -2587,155 +1561,6 @@ namespace brgen::nast::wire {
             std::get<28>((*this).union_variant_1).arguments_list = std::move(v);
             return true;
         }
-        if (NodeKind::Argument==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::NamedArgument==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Ident==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BoolLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StrLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::CharLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RegexLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::SpecialLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Paren==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Index==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Cond==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Range==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BadExpr==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Assert==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FloatType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BoolType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::VoidType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IdentType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ImportedType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StrLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RegexLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ArrayType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StreamType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FunctionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::InlineStructType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructUnionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructUnionCandidate==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::UnionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RangeType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::EnumType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MetaType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::OptionalType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::GenericType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MatchBranch==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::UnionCandidate==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Return==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Break==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Continue==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Enum==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::EnumMember==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::State==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::TypeParameter==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-            if(!std::holds_alternative<union_struct_76>(union_variant_1)) {
-                union_variant_1 = union_struct_76();
-            }
-            if(v.size()> 0xffffffff) {
-                return false;
-            }
-            std::get<75>((*this).union_variant_1).arguments_list_len = v.size();
-            std::get<75>((*this).union_variant_1).arguments_list = std::move(v);
-            return true;
-        }
         return false;
     }
     inline const std::uint32_t* Node::arguments_list_len() const {
@@ -2825,150 +1650,6 @@ namespace brgen::nast::wire {
             return nullptr;
         }
         return std::addressof(std::get<28>((*this).union_variant_1).arguments_list_len);
-        }
-        if (NodeKind::Argument==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::NamedArgument==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Ident==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::IntType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::IntLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::BoolLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StrLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::CharLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::RegexLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::SpecialLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Paren==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Index==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Cond==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Range==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::BadExpr==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Assert==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::FloatType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::BoolType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::VoidType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::IdentType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::ImportedType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::IntLiteralType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StrLiteralType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::RegexLiteralType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::ArrayType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StreamType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::FunctionType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StructType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::InlineStructType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StructUnionType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StructUnionCandidate==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::UnionType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::RangeType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::EnumType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::MetaType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::OptionalType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::GenericType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::MatchBranch==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::UnionCandidate==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Return==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Break==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Continue==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Enum==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::EnumMember==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::State==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::TypeParameter==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-        if(!std::holds_alternative<union_struct_76>(union_variant_1)) {
-            return nullptr;
-        }
-        return std::addressof(std::get<75>((*this).union_variant_1).arguments_list_len);
         }
         return nullptr;
     }
@@ -3064,151 +1745,6 @@ namespace brgen::nast::wire {
             std::get<28>((*this).union_variant_1).arguments_list_len = v;
             return true;
         }
-        if (NodeKind::Argument==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::NamedArgument==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Ident==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BoolLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StrLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::CharLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RegexLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::SpecialLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Paren==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Index==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Cond==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Range==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BadExpr==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Assert==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FloatType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BoolType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::VoidType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IdentType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ImportedType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StrLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RegexLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ArrayType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StreamType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FunctionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::InlineStructType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructUnionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructUnionCandidate==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::UnionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RangeType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::EnumType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MetaType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::OptionalType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::GenericType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MatchBranch==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::UnionCandidate==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Return==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Break==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Continue==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Enum==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::EnumMember==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::State==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::TypeParameter==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-            if(!std::holds_alternative<union_struct_76>(union_variant_1)) {
-                union_variant_1 = union_struct_76();
-            }
-            std::get<75>((*this).union_variant_1).arguments_list_len = v;
-            return true;
-        }
         return false;
     }
     inline bool Node::arguments_list_len(std::uint32_t&& v) {
@@ -3298,151 +1834,6 @@ namespace brgen::nast::wire {
                 union_variant_1 = union_struct_29();
             }
             std::get<28>((*this).union_variant_1).arguments_list_len = std::move(v);
-            return true;
-        }
-        if (NodeKind::Argument==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::NamedArgument==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Ident==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BoolLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StrLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::CharLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RegexLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::SpecialLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Paren==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Index==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Cond==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Range==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BadExpr==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Assert==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FloatType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BoolType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::VoidType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IdentType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ImportedType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StrLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RegexLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ArrayType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StreamType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FunctionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::InlineStructType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructUnionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructUnionCandidate==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::UnionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RangeType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::EnumType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MetaType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::OptionalType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::GenericType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MatchBranch==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::UnionCandidate==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Return==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Break==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Continue==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Enum==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::EnumMember==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::State==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::TypeParameter==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-            if(!std::holds_alternative<union_struct_76>(union_variant_1)) {
-                union_variant_1 = union_struct_76();
-            }
-            std::get<75>((*this).union_variant_1).arguments_list_len = std::move(v);
             return true;
         }
         return false;
@@ -3682,17 +2073,14 @@ namespace brgen::nast::wire {
         if (NodeKind::TypeParameter==(*this).node_kind) {
         return nullptr;
         }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-        return nullptr;
-        }
         if (NodeKind::Identity==(*this).node_kind) {
         return nullptr;
         }
         if (NodeKind::Cast==(*this).node_kind) {
-        if(!std::holds_alternative<union_struct_78>(union_variant_1)) {
+        if(!std::holds_alternative<union_struct_77>(union_variant_1)) {
             return nullptr;
         }
-        return std::addressof(std::get<77>((*this).union_variant_1).arguments_ref);
+        return std::addressof(std::get<76>((*this).union_variant_1).arguments_ref);
         }
         return nullptr;
     }
@@ -3938,17 +2326,14 @@ namespace brgen::nast::wire {
         if (NodeKind::TypeParameter==(*this).node_kind) {
             return false;
         }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-            return false;
-        }
         if (NodeKind::Identity==(*this).node_kind) {
             return false;
         }
         if (NodeKind::Cast==(*this).node_kind) {
-            if(!std::holds_alternative<union_struct_78>(union_variant_1)) {
-                union_variant_1 = union_struct_78();
+            if(!std::holds_alternative<union_struct_77>(union_variant_1)) {
+                union_variant_1 = union_struct_77();
             }
-            std::get<77>((*this).union_variant_1).arguments_ref = v;
+            std::get<76>((*this).union_variant_1).arguments_ref = v;
             return true;
         }
         return false;
@@ -4192,17 +2577,14 @@ namespace brgen::nast::wire {
         if (NodeKind::TypeParameter==(*this).node_kind) {
             return false;
         }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-            return false;
-        }
         if (NodeKind::Identity==(*this).node_kind) {
             return false;
         }
         if (NodeKind::Cast==(*this).node_kind) {
-            if(!std::holds_alternative<union_struct_78>(union_variant_1)) {
-                union_variant_1 = union_struct_78();
+            if(!std::holds_alternative<union_struct_77>(union_variant_1)) {
+                union_variant_1 = union_struct_77();
             }
-            std::get<77>((*this).union_variant_1).arguments_ref = std::move(v);
+            std::get<76>((*this).union_variant_1).arguments_ref = std::move(v);
             return true;
         }
         return false;
@@ -4334,1410 +2716,6 @@ namespace brgen::nast::wire {
                 union_variant_1 = union_struct_13();
             }
             std::get<12>((*this).union_variant_1).assignee = std::move(v);
-            return true;
-        }
-        return false;
-    }
-    inline const std::vector<Ref>* Node::assigns() const {
-        if (NodeKind::Module==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::BodyStatement==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Field==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StateVariable==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Format==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::GenericFormat==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Function==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::If==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Match==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Loop==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::RangeLoop==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Assign==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::VariableDefinition==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Metadata==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::SpecifyOrder==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Sizeof==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Available==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::ExplicitError==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Binary==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Unary==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Call==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Reference==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::MemberAccess==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::TypeLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::ConditionalStatement==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Parameter==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Body==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Arguments==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Argument==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::NamedArgument==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Ident==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::IntType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::IntLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::BoolLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StrLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::CharLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::RegexLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::SpecialLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Paren==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Index==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Cond==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Range==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::BadExpr==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Assert==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::FloatType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::BoolType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::VoidType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::IdentType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::ImportedType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::IntLiteralType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StrLiteralType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::RegexLiteralType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::ArrayType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StreamType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::FunctionType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StructType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::InlineStructType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StructUnionType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StructUnionCandidate==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::UnionType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::RangeType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::EnumType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::MetaType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::OptionalType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::GenericType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::MatchBranch==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::UnionCandidate==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Return==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Break==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Continue==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Enum==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::EnumMember==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::State==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::TypeParameter==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-        if(!std::holds_alternative<union_struct_76>(union_variant_1)) {
-            return nullptr;
-        }
-        return std::addressof(std::get<75>((*this).union_variant_1).assigns);
-        }
-        return nullptr;
-    }
-    inline std::vector<Ref>* Node::assigns() {
-        return const_cast<std::vector<Ref>*>(std::as_const(*this).assigns());
-    }
-    inline bool Node::assigns(const std::vector<Ref>& v) {
-        if (NodeKind::Module==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BodyStatement==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Field==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StateVariable==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Format==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::GenericFormat==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Function==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::If==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Match==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Loop==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RangeLoop==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Assign==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::VariableDefinition==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Metadata==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::SpecifyOrder==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Sizeof==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Available==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ExplicitError==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Binary==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Unary==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Call==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Reference==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MemberAccess==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::TypeLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ConditionalStatement==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Parameter==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Body==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Arguments==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Argument==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::NamedArgument==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Ident==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BoolLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StrLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::CharLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RegexLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::SpecialLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Paren==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Index==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Cond==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Range==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BadExpr==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Assert==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FloatType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BoolType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::VoidType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IdentType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ImportedType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StrLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RegexLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ArrayType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StreamType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FunctionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::InlineStructType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructUnionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructUnionCandidate==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::UnionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RangeType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::EnumType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MetaType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::OptionalType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::GenericType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MatchBranch==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::UnionCandidate==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Return==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Break==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Continue==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Enum==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::EnumMember==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::State==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::TypeParameter==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-            if(!std::holds_alternative<union_struct_76>(union_variant_1)) {
-                union_variant_1 = union_struct_76();
-            }
-            if(v.size()> 0xffffffff) {
-                return false;
-            }
-            std::get<75>((*this).union_variant_1).assigns_len = v.size();
-            std::get<75>((*this).union_variant_1).assigns = v;
-            return true;
-        }
-        return false;
-    }
-    inline bool Node::assigns(std::vector<Ref>&& v) {
-        if (NodeKind::Module==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BodyStatement==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Field==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StateVariable==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Format==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::GenericFormat==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Function==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::If==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Match==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Loop==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RangeLoop==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Assign==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::VariableDefinition==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Metadata==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::SpecifyOrder==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Sizeof==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Available==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ExplicitError==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Binary==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Unary==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Call==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Reference==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MemberAccess==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::TypeLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ConditionalStatement==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Parameter==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Body==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Arguments==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Argument==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::NamedArgument==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Ident==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BoolLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StrLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::CharLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RegexLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::SpecialLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Paren==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Index==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Cond==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Range==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BadExpr==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Assert==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FloatType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BoolType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::VoidType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IdentType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ImportedType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StrLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RegexLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ArrayType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StreamType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FunctionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::InlineStructType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructUnionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructUnionCandidate==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::UnionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RangeType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::EnumType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MetaType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::OptionalType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::GenericType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MatchBranch==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::UnionCandidate==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Return==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Break==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Continue==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Enum==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::EnumMember==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::State==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::TypeParameter==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-            if(!std::holds_alternative<union_struct_76>(union_variant_1)) {
-                union_variant_1 = union_struct_76();
-            }
-            if(v.size()> 0xffffffff) {
-                return false;
-            }
-            std::get<75>((*this).union_variant_1).assigns_len = v.size();
-            std::get<75>((*this).union_variant_1).assigns = std::move(v);
-            return true;
-        }
-        return false;
-    }
-    inline const std::uint32_t* Node::assigns_len() const {
-        if (NodeKind::Module==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::BodyStatement==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Field==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StateVariable==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Format==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::GenericFormat==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Function==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::If==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Match==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Loop==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::RangeLoop==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Assign==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::VariableDefinition==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Metadata==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::SpecifyOrder==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Sizeof==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Available==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::ExplicitError==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Binary==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Unary==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Call==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Reference==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::MemberAccess==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::TypeLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::ConditionalStatement==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Parameter==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Body==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Arguments==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Argument==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::NamedArgument==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Ident==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::IntType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::IntLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::BoolLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StrLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::CharLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::RegexLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::SpecialLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Paren==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Index==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Cond==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Range==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::BadExpr==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Assert==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::FloatType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::BoolType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::VoidType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::IdentType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::ImportedType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::IntLiteralType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StrLiteralType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::RegexLiteralType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::ArrayType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StreamType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::FunctionType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StructType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::InlineStructType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StructUnionType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StructUnionCandidate==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::UnionType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::RangeType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::EnumType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::MetaType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::OptionalType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::GenericType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::MatchBranch==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::UnionCandidate==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Return==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Break==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Continue==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Enum==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::EnumMember==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::State==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::TypeParameter==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-        if(!std::holds_alternative<union_struct_76>(union_variant_1)) {
-            return nullptr;
-        }
-        return std::addressof(std::get<75>((*this).union_variant_1).assigns_len);
-        }
-        return nullptr;
-    }
-    inline std::uint32_t* Node::assigns_len() {
-        return const_cast<std::uint32_t*>(std::as_const(*this).assigns_len());
-    }
-    inline bool Node::assigns_len(const std::uint32_t& v) {
-        if (NodeKind::Module==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BodyStatement==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Field==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StateVariable==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Format==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::GenericFormat==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Function==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::If==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Match==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Loop==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RangeLoop==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Assign==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::VariableDefinition==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Metadata==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::SpecifyOrder==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Sizeof==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Available==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ExplicitError==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Binary==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Unary==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Call==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Reference==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MemberAccess==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::TypeLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ConditionalStatement==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Parameter==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Body==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Arguments==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Argument==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::NamedArgument==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Ident==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BoolLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StrLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::CharLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RegexLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::SpecialLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Paren==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Index==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Cond==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Range==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BadExpr==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Assert==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FloatType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BoolType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::VoidType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IdentType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ImportedType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StrLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RegexLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ArrayType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StreamType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FunctionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::InlineStructType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructUnionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructUnionCandidate==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::UnionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RangeType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::EnumType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MetaType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::OptionalType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::GenericType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MatchBranch==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::UnionCandidate==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Return==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Break==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Continue==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Enum==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::EnumMember==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::State==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::TypeParameter==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-            if(!std::holds_alternative<union_struct_76>(union_variant_1)) {
-                union_variant_1 = union_struct_76();
-            }
-            std::get<75>((*this).union_variant_1).assigns_len = v;
-            return true;
-        }
-        return false;
-    }
-    inline bool Node::assigns_len(std::uint32_t&& v) {
-        if (NodeKind::Module==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BodyStatement==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Field==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StateVariable==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Format==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::GenericFormat==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Function==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::If==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Match==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Loop==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RangeLoop==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Assign==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::VariableDefinition==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Metadata==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::SpecifyOrder==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Sizeof==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Available==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ExplicitError==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Binary==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Unary==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Call==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Reference==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MemberAccess==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::TypeLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ConditionalStatement==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Parameter==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Body==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Arguments==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Argument==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::NamedArgument==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Ident==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BoolLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StrLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::CharLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RegexLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::SpecialLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Paren==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Index==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Cond==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Range==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BadExpr==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Assert==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FloatType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BoolType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::VoidType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IdentType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ImportedType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StrLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RegexLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ArrayType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StreamType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FunctionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::InlineStructType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructUnionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructUnionCandidate==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::UnionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RangeType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::EnumType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MetaType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::OptionalType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::GenericType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MatchBranch==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::UnionCandidate==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Return==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Break==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Continue==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Enum==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::EnumMember==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::State==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::TypeParameter==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-            if(!std::holds_alternative<union_struct_76>(union_variant_1)) {
-                union_variant_1 = union_struct_76();
-            }
-            std::get<75>((*this).union_variant_1).assigns_len = std::move(v);
             return true;
         }
         return false;
@@ -6405,23 +3383,20 @@ namespace brgen::nast::wire {
         if (NodeKind::TypeParameter==(*this).node_kind) {
         return nullptr;
         }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-        return nullptr;
-        }
         if (NodeKind::Identity==(*this).node_kind) {
         return nullptr;
         }
         if (NodeKind::Cast==(*this).node_kind) {
+        if(!std::holds_alternative<union_struct_77>(union_variant_1)) {
+            return nullptr;
+        }
+        return std::addressof(std::get<76>((*this).union_variant_1).base);
+        }
+        if (NodeKind::OrCond==(*this).node_kind) {
         if(!std::holds_alternative<union_struct_78>(union_variant_1)) {
             return nullptr;
         }
         return std::addressof(std::get<77>((*this).union_variant_1).base);
-        }
-        if (NodeKind::OrCond==(*this).node_kind) {
-        if(!std::holds_alternative<union_struct_79>(union_variant_1)) {
-            return nullptr;
-        }
-        return std::addressof(std::get<78>((*this).union_variant_1).base);
         }
         return nullptr;
     }
@@ -6691,24 +3666,21 @@ namespace brgen::nast::wire {
         if (NodeKind::TypeParameter==(*this).node_kind) {
             return false;
         }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-            return false;
-        }
         if (NodeKind::Identity==(*this).node_kind) {
             return false;
         }
         if (NodeKind::Cast==(*this).node_kind) {
+            if(!std::holds_alternative<union_struct_77>(union_variant_1)) {
+                union_variant_1 = union_struct_77();
+            }
+            std::get<76>((*this).union_variant_1).base = v;
+            return true;
+        }
+        if (NodeKind::OrCond==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_78>(union_variant_1)) {
                 union_variant_1 = union_struct_78();
             }
             std::get<77>((*this).union_variant_1).base = v;
-            return true;
-        }
-        if (NodeKind::OrCond==(*this).node_kind) {
-            if(!std::holds_alternative<union_struct_79>(union_variant_1)) {
-                union_variant_1 = union_struct_79();
-            }
-            std::get<78>((*this).union_variant_1).base = v;
             return true;
         }
         return false;
@@ -6976,24 +3948,21 @@ namespace brgen::nast::wire {
         if (NodeKind::TypeParameter==(*this).node_kind) {
             return false;
         }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-            return false;
-        }
         if (NodeKind::Identity==(*this).node_kind) {
             return false;
         }
         if (NodeKind::Cast==(*this).node_kind) {
+            if(!std::holds_alternative<union_struct_77>(union_variant_1)) {
+                union_variant_1 = union_struct_77();
+            }
+            std::get<76>((*this).union_variant_1).base = std::move(v);
+            return true;
+        }
+        if (NodeKind::OrCond==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_78>(union_variant_1)) {
                 union_variant_1 = union_struct_78();
             }
             std::get<77>((*this).union_variant_1).base = std::move(v);
-            return true;
-        }
-        if (NodeKind::OrCond==(*this).node_kind) {
-            if(!std::holds_alternative<union_struct_79>(union_variant_1)) {
-                union_variant_1 = union_struct_79();
-            }
-            std::get<78>((*this).union_variant_1).base = std::move(v);
             return true;
         }
         return false;
@@ -13854,9 +10823,6 @@ namespace brgen::nast::wire {
         if (NodeKind::TypeParameter==(*this).node_kind) {
         return nullptr;
         }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-        return nullptr;
-        }
         if (NodeKind::Identity==(*this).node_kind) {
         return nullptr;
         }
@@ -13864,10 +10830,10 @@ namespace brgen::nast::wire {
         return nullptr;
         }
         if (NodeKind::OrCond==(*this).node_kind) {
-        if(!std::holds_alternative<union_struct_79>(union_variant_1)) {
+        if(!std::holds_alternative<union_struct_78>(union_variant_1)) {
             return nullptr;
         }
-        return std::addressof(std::get<78>((*this).union_variant_1).conds);
+        return std::addressof(std::get<77>((*this).union_variant_1).conds);
         }
         return nullptr;
     }
@@ -14097,9 +11063,6 @@ namespace brgen::nast::wire {
         if (NodeKind::TypeParameter==(*this).node_kind) {
             return false;
         }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-            return false;
-        }
         if (NodeKind::Identity==(*this).node_kind) {
             return false;
         }
@@ -14107,14 +11070,14 @@ namespace brgen::nast::wire {
             return false;
         }
         if (NodeKind::OrCond==(*this).node_kind) {
-            if(!std::holds_alternative<union_struct_79>(union_variant_1)) {
-                union_variant_1 = union_struct_79();
+            if(!std::holds_alternative<union_struct_78>(union_variant_1)) {
+                union_variant_1 = union_struct_78();
             }
             if(v.size()> 0xffffffff) {
                 return false;
             }
-            std::get<78>((*this).union_variant_1).conds_len = v.size();
-            std::get<78>((*this).union_variant_1).conds = v;
+            std::get<77>((*this).union_variant_1).conds_len = v.size();
+            std::get<77>((*this).union_variant_1).conds = v;
             return true;
         }
         return false;
@@ -14342,9 +11305,6 @@ namespace brgen::nast::wire {
         if (NodeKind::TypeParameter==(*this).node_kind) {
             return false;
         }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-            return false;
-        }
         if (NodeKind::Identity==(*this).node_kind) {
             return false;
         }
@@ -14352,14 +11312,14 @@ namespace brgen::nast::wire {
             return false;
         }
         if (NodeKind::OrCond==(*this).node_kind) {
-            if(!std::holds_alternative<union_struct_79>(union_variant_1)) {
-                union_variant_1 = union_struct_79();
+            if(!std::holds_alternative<union_struct_78>(union_variant_1)) {
+                union_variant_1 = union_struct_78();
             }
             if(v.size()> 0xffffffff) {
                 return false;
             }
-            std::get<78>((*this).union_variant_1).conds_len = v.size();
-            std::get<78>((*this).union_variant_1).conds = std::move(v);
+            std::get<77>((*this).union_variant_1).conds_len = v.size();
+            std::get<77>((*this).union_variant_1).conds = std::move(v);
             return true;
         }
         return false;
@@ -14587,9 +11547,6 @@ namespace brgen::nast::wire {
         if (NodeKind::TypeParameter==(*this).node_kind) {
         return nullptr;
         }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-        return nullptr;
-        }
         if (NodeKind::Identity==(*this).node_kind) {
         return nullptr;
         }
@@ -14597,10 +11554,10 @@ namespace brgen::nast::wire {
         return nullptr;
         }
         if (NodeKind::OrCond==(*this).node_kind) {
-        if(!std::holds_alternative<union_struct_79>(union_variant_1)) {
+        if(!std::holds_alternative<union_struct_78>(union_variant_1)) {
             return nullptr;
         }
-        return std::addressof(std::get<78>((*this).union_variant_1).conds_len);
+        return std::addressof(std::get<77>((*this).union_variant_1).conds_len);
         }
         return nullptr;
     }
@@ -14830,9 +11787,6 @@ namespace brgen::nast::wire {
         if (NodeKind::TypeParameter==(*this).node_kind) {
             return false;
         }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-            return false;
-        }
         if (NodeKind::Identity==(*this).node_kind) {
             return false;
         }
@@ -14840,10 +11794,10 @@ namespace brgen::nast::wire {
             return false;
         }
         if (NodeKind::OrCond==(*this).node_kind) {
-            if(!std::holds_alternative<union_struct_79>(union_variant_1)) {
-                union_variant_1 = union_struct_79();
+            if(!std::holds_alternative<union_struct_78>(union_variant_1)) {
+                union_variant_1 = union_struct_78();
             }
-            std::get<78>((*this).union_variant_1).conds_len = v;
+            std::get<77>((*this).union_variant_1).conds_len = v;
             return true;
         }
         return false;
@@ -15071,9 +12025,6 @@ namespace brgen::nast::wire {
         if (NodeKind::TypeParameter==(*this).node_kind) {
             return false;
         }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-            return false;
-        }
         if (NodeKind::Identity==(*this).node_kind) {
             return false;
         }
@@ -15081,10 +12032,10 @@ namespace brgen::nast::wire {
             return false;
         }
         if (NodeKind::OrCond==(*this).node_kind) {
-            if(!std::holds_alternative<union_struct_79>(union_variant_1)) {
-                union_variant_1 = union_struct_79();
+            if(!std::holds_alternative<union_struct_78>(union_variant_1)) {
+                union_variant_1 = union_struct_78();
             }
-            std::get<78>((*this).union_variant_1).conds_len = std::move(v);
+            std::get<77>((*this).union_variant_1).conds_len = std::move(v);
             return true;
         }
         return false;
@@ -19061,14 +16012,11 @@ namespace brgen::nast::wire {
         if (NodeKind::TypeParameter==(*this).node_kind) {
         return nullptr;
         }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-        return nullptr;
-        }
         if (NodeKind::Identity==(*this).node_kind) {
-        if(!std::holds_alternative<union_struct_77>(union_variant_1)) {
+        if(!std::holds_alternative<union_struct_76>(union_variant_1)) {
             return nullptr;
         }
-        return std::addressof(std::get<76>((*this).union_variant_1).expr);
+        return std::addressof(std::get<75>((*this).union_variant_1).expr);
         }
         return nullptr;
     }
@@ -19310,14 +16258,11 @@ namespace brgen::nast::wire {
         if (NodeKind::TypeParameter==(*this).node_kind) {
             return false;
         }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-            return false;
-        }
         if (NodeKind::Identity==(*this).node_kind) {
-            if(!std::holds_alternative<union_struct_77>(union_variant_1)) {
-                union_variant_1 = union_struct_77();
+            if(!std::holds_alternative<union_struct_76>(union_variant_1)) {
+                union_variant_1 = union_struct_76();
             }
-            std::get<76>((*this).union_variant_1).expr = v;
+            std::get<75>((*this).union_variant_1).expr = v;
             return true;
         }
         return false;
@@ -19557,14 +16502,11 @@ namespace brgen::nast::wire {
         if (NodeKind::TypeParameter==(*this).node_kind) {
             return false;
         }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-            return false;
-        }
         if (NodeKind::Identity==(*this).node_kind) {
-            if(!std::holds_alternative<union_struct_77>(union_variant_1)) {
-                union_variant_1 = union_struct_77();
+            if(!std::holds_alternative<union_struct_76>(union_variant_1)) {
+                union_variant_1 = union_struct_76();
             }
-            std::get<76>((*this).union_variant_1).expr = std::move(v);
+            std::get<75>((*this).union_variant_1).expr = std::move(v);
             return true;
         }
         return false;
@@ -32167,9 +29109,6 @@ namespace brgen::nast::wire {
         if (NodeKind::TypeParameter==(*this).node_kind) {
         return nullptr;
         }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-        return nullptr;
-        }
         if (NodeKind::Identity==(*this).node_kind) {
         return nullptr;
         }
@@ -32180,10 +29119,10 @@ namespace brgen::nast::wire {
         return nullptr;
         }
         if (NodeKind::Import==(*this).node_kind) {
-        if(!std::holds_alternative<union_struct_80>(union_variant_1)) {
+        if(!std::holds_alternative<union_struct_79>(union_variant_1)) {
             return nullptr;
         }
-        return std::addressof(std::get<79>((*this).union_variant_1).path);
+        return std::addressof(std::get<78>((*this).union_variant_1).path);
         }
         return nullptr;
     }
@@ -32413,9 +29352,6 @@ namespace brgen::nast::wire {
         if (NodeKind::TypeParameter==(*this).node_kind) {
             return false;
         }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-            return false;
-        }
         if (NodeKind::Identity==(*this).node_kind) {
             return false;
         }
@@ -32426,10 +29362,10 @@ namespace brgen::nast::wire {
             return false;
         }
         if (NodeKind::Import==(*this).node_kind) {
-            if(!std::holds_alternative<union_struct_80>(union_variant_1)) {
-                union_variant_1 = union_struct_80();
+            if(!std::holds_alternative<union_struct_79>(union_variant_1)) {
+                union_variant_1 = union_struct_79();
             }
-            std::get<79>((*this).union_variant_1).path = v;
+            std::get<78>((*this).union_variant_1).path = v;
             return true;
         }
         return false;
@@ -32657,9 +29593,6 @@ namespace brgen::nast::wire {
         if (NodeKind::TypeParameter==(*this).node_kind) {
             return false;
         }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-            return false;
-        }
         if (NodeKind::Identity==(*this).node_kind) {
             return false;
         }
@@ -32670,10 +29603,10 @@ namespace brgen::nast::wire {
             return false;
         }
         if (NodeKind::Import==(*this).node_kind) {
-            if(!std::holds_alternative<union_struct_80>(union_variant_1)) {
-                union_variant_1 = union_struct_80();
+            if(!std::holds_alternative<union_struct_79>(union_variant_1)) {
+                union_variant_1 = union_struct_79();
             }
-            std::get<79>((*this).union_variant_1).path = std::move(v);
+            std::get<78>((*this).union_variant_1).path = std::move(v);
             return true;
         }
         return false;
@@ -33246,704 +30179,6 @@ namespace brgen::nast::wire {
                 union_variant_1 = union_struct_62();
             }
             std::get<61>((*this).union_variant_1).range = std::move(v);
-            return true;
-        }
-        return false;
-    }
-    inline const Ref* Node::raw_arguments() const {
-        if (NodeKind::Module==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::BodyStatement==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Field==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StateVariable==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Format==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::GenericFormat==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Function==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::If==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Match==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Loop==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::RangeLoop==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Assign==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::VariableDefinition==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Metadata==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::SpecifyOrder==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Sizeof==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Available==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::ExplicitError==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Binary==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Unary==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Call==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Reference==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::MemberAccess==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::TypeLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::ConditionalStatement==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Parameter==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Body==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Arguments==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Argument==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::NamedArgument==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Ident==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::IntType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::IntLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::BoolLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StrLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::CharLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::RegexLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::SpecialLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Paren==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Index==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Cond==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Range==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::BadExpr==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Assert==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::FloatType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::BoolType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::VoidType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::IdentType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::ImportedType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::IntLiteralType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StrLiteralType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::RegexLiteralType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::ArrayType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StreamType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::FunctionType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StructType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::InlineStructType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StructUnionType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StructUnionCandidate==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::UnionType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::RangeType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::EnumType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::MetaType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::OptionalType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::GenericType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::MatchBranch==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::UnionCandidate==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Return==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Break==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Continue==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Enum==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::EnumMember==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::State==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::TypeParameter==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-        if(!std::holds_alternative<union_struct_76>(union_variant_1)) {
-            return nullptr;
-        }
-        return std::addressof(std::get<75>((*this).union_variant_1).raw_arguments);
-        }
-        return nullptr;
-    }
-    inline Ref* Node::raw_arguments() {
-        return const_cast<Ref*>(std::as_const(*this).raw_arguments());
-    }
-    inline bool Node::raw_arguments(const Ref& v) {
-        if (NodeKind::Module==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BodyStatement==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Field==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StateVariable==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Format==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::GenericFormat==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Function==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::If==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Match==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Loop==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RangeLoop==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Assign==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::VariableDefinition==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Metadata==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::SpecifyOrder==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Sizeof==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Available==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ExplicitError==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Binary==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Unary==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Call==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Reference==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MemberAccess==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::TypeLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ConditionalStatement==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Parameter==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Body==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Arguments==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Argument==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::NamedArgument==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Ident==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BoolLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StrLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::CharLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RegexLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::SpecialLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Paren==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Index==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Cond==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Range==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BadExpr==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Assert==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FloatType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BoolType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::VoidType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IdentType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ImportedType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StrLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RegexLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ArrayType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StreamType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FunctionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::InlineStructType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructUnionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructUnionCandidate==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::UnionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RangeType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::EnumType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MetaType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::OptionalType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::GenericType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MatchBranch==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::UnionCandidate==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Return==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Break==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Continue==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Enum==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::EnumMember==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::State==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::TypeParameter==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-            if(!std::holds_alternative<union_struct_76>(union_variant_1)) {
-                union_variant_1 = union_struct_76();
-            }
-            std::get<75>((*this).union_variant_1).raw_arguments = v;
-            return true;
-        }
-        return false;
-    }
-    inline bool Node::raw_arguments(Ref&& v) {
-        if (NodeKind::Module==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BodyStatement==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Field==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StateVariable==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Format==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::GenericFormat==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Function==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::If==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Match==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Loop==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RangeLoop==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Assign==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::VariableDefinition==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Metadata==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::SpecifyOrder==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Sizeof==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Available==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ExplicitError==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Binary==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Unary==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Call==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Reference==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MemberAccess==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::TypeLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ConditionalStatement==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Parameter==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Body==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Arguments==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Argument==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::NamedArgument==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Ident==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BoolLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StrLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::CharLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RegexLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::SpecialLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Paren==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Index==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Cond==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Range==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BadExpr==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Assert==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FloatType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BoolType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::VoidType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IdentType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ImportedType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StrLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RegexLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ArrayType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StreamType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FunctionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::InlineStructType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructUnionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructUnionCandidate==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::UnionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RangeType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::EnumType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MetaType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::OptionalType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::GenericType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MatchBranch==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::UnionCandidate==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Return==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Break==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Continue==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Enum==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::EnumMember==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::State==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::TypeParameter==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-            if(!std::holds_alternative<union_struct_76>(union_variant_1)) {
-                union_variant_1 = union_struct_76();
-            }
-            std::get<75>((*this).union_variant_1).raw_arguments = std::move(v);
             return true;
         }
         return false;
@@ -39274,1402 +35509,6 @@ namespace brgen::nast::wire {
         }
         return false;
     }
-    inline const Ref* Node::sub_byte_begin() const {
-        if (NodeKind::Module==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::BodyStatement==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Field==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StateVariable==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Format==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::GenericFormat==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Function==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::If==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Match==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Loop==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::RangeLoop==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Assign==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::VariableDefinition==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Metadata==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::SpecifyOrder==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Sizeof==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Available==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::ExplicitError==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Binary==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Unary==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Call==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Reference==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::MemberAccess==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::TypeLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::ConditionalStatement==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Parameter==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Body==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Arguments==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Argument==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::NamedArgument==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Ident==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::IntType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::IntLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::BoolLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StrLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::CharLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::RegexLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::SpecialLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Paren==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Index==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Cond==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Range==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::BadExpr==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Assert==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::FloatType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::BoolType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::VoidType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::IdentType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::ImportedType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::IntLiteralType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StrLiteralType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::RegexLiteralType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::ArrayType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StreamType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::FunctionType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StructType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::InlineStructType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StructUnionType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StructUnionCandidate==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::UnionType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::RangeType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::EnumType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::MetaType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::OptionalType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::GenericType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::MatchBranch==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::UnionCandidate==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Return==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Break==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Continue==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Enum==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::EnumMember==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::State==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::TypeParameter==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-        if(!std::holds_alternative<union_struct_76>(union_variant_1)) {
-            return nullptr;
-        }
-        return std::addressof(std::get<75>((*this).union_variant_1).sub_byte_begin);
-        }
-        return nullptr;
-    }
-    inline Ref* Node::sub_byte_begin() {
-        return const_cast<Ref*>(std::as_const(*this).sub_byte_begin());
-    }
-    inline bool Node::sub_byte_begin(const Ref& v) {
-        if (NodeKind::Module==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BodyStatement==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Field==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StateVariable==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Format==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::GenericFormat==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Function==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::If==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Match==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Loop==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RangeLoop==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Assign==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::VariableDefinition==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Metadata==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::SpecifyOrder==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Sizeof==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Available==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ExplicitError==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Binary==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Unary==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Call==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Reference==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MemberAccess==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::TypeLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ConditionalStatement==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Parameter==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Body==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Arguments==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Argument==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::NamedArgument==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Ident==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BoolLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StrLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::CharLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RegexLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::SpecialLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Paren==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Index==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Cond==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Range==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BadExpr==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Assert==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FloatType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BoolType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::VoidType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IdentType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ImportedType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StrLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RegexLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ArrayType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StreamType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FunctionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::InlineStructType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructUnionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructUnionCandidate==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::UnionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RangeType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::EnumType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MetaType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::OptionalType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::GenericType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MatchBranch==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::UnionCandidate==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Return==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Break==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Continue==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Enum==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::EnumMember==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::State==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::TypeParameter==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-            if(!std::holds_alternative<union_struct_76>(union_variant_1)) {
-                union_variant_1 = union_struct_76();
-            }
-            std::get<75>((*this).union_variant_1).sub_byte_begin = v;
-            return true;
-        }
-        return false;
-    }
-    inline bool Node::sub_byte_begin(Ref&& v) {
-        if (NodeKind::Module==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BodyStatement==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Field==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StateVariable==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Format==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::GenericFormat==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Function==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::If==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Match==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Loop==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RangeLoop==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Assign==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::VariableDefinition==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Metadata==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::SpecifyOrder==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Sizeof==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Available==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ExplicitError==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Binary==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Unary==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Call==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Reference==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MemberAccess==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::TypeLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ConditionalStatement==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Parameter==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Body==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Arguments==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Argument==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::NamedArgument==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Ident==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BoolLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StrLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::CharLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RegexLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::SpecialLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Paren==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Index==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Cond==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Range==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BadExpr==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Assert==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FloatType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BoolType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::VoidType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IdentType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ImportedType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StrLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RegexLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ArrayType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StreamType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FunctionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::InlineStructType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructUnionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructUnionCandidate==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::UnionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RangeType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::EnumType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MetaType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::OptionalType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::GenericType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MatchBranch==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::UnionCandidate==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Return==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Break==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Continue==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Enum==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::EnumMember==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::State==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::TypeParameter==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-            if(!std::holds_alternative<union_struct_76>(union_variant_1)) {
-                union_variant_1 = union_struct_76();
-            }
-            std::get<75>((*this).union_variant_1).sub_byte_begin = std::move(v);
-            return true;
-        }
-        return false;
-    }
-    inline const Ref* Node::sub_byte_length() const {
-        if (NodeKind::Module==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::BodyStatement==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Field==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StateVariable==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Format==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::GenericFormat==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Function==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::If==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Match==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Loop==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::RangeLoop==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Assign==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::VariableDefinition==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Metadata==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::SpecifyOrder==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Sizeof==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Available==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::ExplicitError==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Binary==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Unary==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Call==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Reference==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::MemberAccess==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::TypeLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::ConditionalStatement==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Parameter==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Body==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Arguments==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Argument==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::NamedArgument==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Ident==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::IntType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::IntLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::BoolLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StrLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::CharLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::RegexLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::SpecialLiteral==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Paren==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Index==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Cond==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Range==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::BadExpr==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Assert==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::FloatType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::BoolType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::VoidType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::IdentType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::ImportedType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::IntLiteralType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StrLiteralType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::RegexLiteralType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::ArrayType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StreamType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::FunctionType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StructType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::InlineStructType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StructUnionType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::StructUnionCandidate==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::UnionType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::RangeType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::EnumType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::MetaType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::OptionalType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::GenericType==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::MatchBranch==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::UnionCandidate==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Return==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Break==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Continue==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::Enum==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::EnumMember==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::State==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::TypeParameter==(*this).node_kind) {
-        return nullptr;
-        }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-        if(!std::holds_alternative<union_struct_76>(union_variant_1)) {
-            return nullptr;
-        }
-        return std::addressof(std::get<75>((*this).union_variant_1).sub_byte_length);
-        }
-        return nullptr;
-    }
-    inline Ref* Node::sub_byte_length() {
-        return const_cast<Ref*>(std::as_const(*this).sub_byte_length());
-    }
-    inline bool Node::sub_byte_length(const Ref& v) {
-        if (NodeKind::Module==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BodyStatement==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Field==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StateVariable==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Format==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::GenericFormat==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Function==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::If==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Match==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Loop==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RangeLoop==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Assign==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::VariableDefinition==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Metadata==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::SpecifyOrder==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Sizeof==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Available==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ExplicitError==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Binary==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Unary==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Call==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Reference==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MemberAccess==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::TypeLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ConditionalStatement==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Parameter==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Body==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Arguments==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Argument==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::NamedArgument==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Ident==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BoolLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StrLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::CharLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RegexLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::SpecialLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Paren==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Index==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Cond==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Range==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BadExpr==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Assert==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FloatType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BoolType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::VoidType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IdentType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ImportedType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StrLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RegexLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ArrayType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StreamType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FunctionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::InlineStructType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructUnionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructUnionCandidate==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::UnionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RangeType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::EnumType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MetaType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::OptionalType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::GenericType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MatchBranch==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::UnionCandidate==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Return==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Break==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Continue==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Enum==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::EnumMember==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::State==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::TypeParameter==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-            if(!std::holds_alternative<union_struct_76>(union_variant_1)) {
-                union_variant_1 = union_struct_76();
-            }
-            std::get<75>((*this).union_variant_1).sub_byte_length = v;
-            return true;
-        }
-        return false;
-    }
-    inline bool Node::sub_byte_length(Ref&& v) {
-        if (NodeKind::Module==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BodyStatement==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Field==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StateVariable==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Format==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::GenericFormat==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Function==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::If==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Match==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Loop==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RangeLoop==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Assign==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::VariableDefinition==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Metadata==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::SpecifyOrder==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Sizeof==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Available==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ExplicitError==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Binary==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Unary==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Call==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Reference==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MemberAccess==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::TypeLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ConditionalStatement==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Parameter==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Body==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Arguments==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Argument==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::NamedArgument==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Ident==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BoolLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StrLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::CharLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RegexLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::SpecialLiteral==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Paren==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Index==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Cond==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Range==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BadExpr==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Assert==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FloatType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::BoolType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::VoidType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IdentType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ImportedType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::IntLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StrLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RegexLiteralType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::ArrayType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StreamType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FunctionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::InlineStructType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructUnionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::StructUnionCandidate==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::UnionType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::RangeType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::EnumType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MetaType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::OptionalType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::GenericType==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::MatchBranch==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::UnionCandidate==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Return==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Break==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Continue==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::Enum==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::EnumMember==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::State==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::TypeParameter==(*this).node_kind) {
-            return false;
-        }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-            if(!std::holds_alternative<union_struct_76>(union_variant_1)) {
-                union_variant_1 = union_struct_76();
-            }
-            std::get<75>((*this).union_variant_1).sub_byte_length = std::move(v);
-            return true;
-        }
-        return false;
-    }
     inline const Loc* Node::sym_loc() const {
         if (NodeKind::Module==(*this).node_kind) {
         return nullptr;
@@ -42435,32 +37274,29 @@ namespace brgen::nast::wire {
         if (NodeKind::TypeParameter==(*this).node_kind) {
         return nullptr;
         }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-        return nullptr;
-        }
         if (NodeKind::Identity==(*this).node_kind) {
+        if(!std::holds_alternative<union_struct_76>(union_variant_1)) {
+            return nullptr;
+        }
+        return std::addressof(std::get<75>((*this).union_variant_1).type);
+        }
+        if (NodeKind::Cast==(*this).node_kind) {
         if(!std::holds_alternative<union_struct_77>(union_variant_1)) {
             return nullptr;
         }
         return std::addressof(std::get<76>((*this).union_variant_1).type);
         }
-        if (NodeKind::Cast==(*this).node_kind) {
+        if (NodeKind::OrCond==(*this).node_kind) {
         if(!std::holds_alternative<union_struct_78>(union_variant_1)) {
             return nullptr;
         }
         return std::addressof(std::get<77>((*this).union_variant_1).type);
         }
-        if (NodeKind::OrCond==(*this).node_kind) {
+        if (NodeKind::Import==(*this).node_kind) {
         if(!std::holds_alternative<union_struct_79>(union_variant_1)) {
             return nullptr;
         }
         return std::addressof(std::get<78>((*this).union_variant_1).type);
-        }
-        if (NodeKind::Import==(*this).node_kind) {
-        if(!std::holds_alternative<union_struct_80>(union_variant_1)) {
-            return nullptr;
-        }
-        return std::addressof(std::get<79>((*this).union_variant_1).type);
         }
         return nullptr;
     }
@@ -42786,35 +37622,32 @@ namespace brgen::nast::wire {
         if (NodeKind::TypeParameter==(*this).node_kind) {
             return false;
         }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-            return false;
-        }
         if (NodeKind::Identity==(*this).node_kind) {
+            if(!std::holds_alternative<union_struct_76>(union_variant_1)) {
+                union_variant_1 = union_struct_76();
+            }
+            std::get<75>((*this).union_variant_1).type = v;
+            return true;
+        }
+        if (NodeKind::Cast==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_77>(union_variant_1)) {
                 union_variant_1 = union_struct_77();
             }
             std::get<76>((*this).union_variant_1).type = v;
             return true;
         }
-        if (NodeKind::Cast==(*this).node_kind) {
+        if (NodeKind::OrCond==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_78>(union_variant_1)) {
                 union_variant_1 = union_struct_78();
             }
             std::get<77>((*this).union_variant_1).type = v;
             return true;
         }
-        if (NodeKind::OrCond==(*this).node_kind) {
+        if (NodeKind::Import==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_79>(union_variant_1)) {
                 union_variant_1 = union_struct_79();
             }
             std::get<78>((*this).union_variant_1).type = v;
-            return true;
-        }
-        if (NodeKind::Import==(*this).node_kind) {
-            if(!std::holds_alternative<union_struct_80>(union_variant_1)) {
-                union_variant_1 = union_struct_80();
-            }
-            std::get<79>((*this).union_variant_1).type = v;
             return true;
         }
         return false;
@@ -43138,35 +37971,32 @@ namespace brgen::nast::wire {
         if (NodeKind::TypeParameter==(*this).node_kind) {
             return false;
         }
-        if (NodeKind::FieldArgument==(*this).node_kind) {
-            return false;
-        }
         if (NodeKind::Identity==(*this).node_kind) {
+            if(!std::holds_alternative<union_struct_76>(union_variant_1)) {
+                union_variant_1 = union_struct_76();
+            }
+            std::get<75>((*this).union_variant_1).type = std::move(v);
+            return true;
+        }
+        if (NodeKind::Cast==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_77>(union_variant_1)) {
                 union_variant_1 = union_struct_77();
             }
             std::get<76>((*this).union_variant_1).type = std::move(v);
             return true;
         }
-        if (NodeKind::Cast==(*this).node_kind) {
+        if (NodeKind::OrCond==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_78>(union_variant_1)) {
                 union_variant_1 = union_struct_78();
             }
             std::get<77>((*this).union_variant_1).type = std::move(v);
             return true;
         }
-        if (NodeKind::OrCond==(*this).node_kind) {
+        if (NodeKind::Import==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_79>(union_variant_1)) {
                 union_variant_1 = union_struct_79();
             }
             std::get<78>((*this).union_variant_1).type = std::move(v);
-            return true;
-        }
-        if (NodeKind::Import==(*this).node_kind) {
-            if(!std::holds_alternative<union_struct_80>(union_variant_1)) {
-                union_variant_1 = union_struct_80();
-            }
-            std::get<79>((*this).union_variant_1).type = std::move(v);
             return true;
         }
         return false;
@@ -45697,9 +40527,9 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).len) ,true)) {
             return ::futils::error::Error<>("encode: StringEntry::len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_81_ = (*this).len;
-        if (tmp_81_!=(*this).data.size()) {
-            return ::futils::error::Error<>("encode: StringEntry::data: dynamic length is not compatible with its length; tmp_81_!=(*this).data.size()",::futils::error::Category::lib);
+        auto tmp_80_ = (*this).len;
+        if (tmp_80_!=(*this).data.size()) {
+            return ::futils::error::Error<>("encode: StringEntry::data: dynamic length is not compatible with its length; tmp_80_!=(*this).data.size()",::futils::error::Category::lib);
         }
         if (!w.write((*this).data)) {
             return ::futils::error::Error<>("encode: StringEntry::data: write array failed",::futils::error::Category::lib);
@@ -45710,8 +40540,8 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).len ,true)) {
             return ::futils::error::Error<>("decode: StringEntry::len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_82_ = (*this).len;
-        if (!r.read((*this).data, tmp_82_)) {
+        auto tmp_81_ = (*this).len;
+        if (!r.read((*this).data, tmp_81_)) {
             return ::futils::error::Error<>("decode: StringEntry::data: read byte array failed",::futils::error::Category::lib);
         }
         return ::futils::error::Error<>();
@@ -45738,12 +40568,12 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).len) ,true)) {
             return ::futils::error::Error<>("encode: ResolutionTable::len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_83_ = (*this).len;
-        if (tmp_83_!=(*this).entries.size()) {
-            return ::futils::error::Error<>("encode: ResolutionTable::entries: dynamic length is not compatible with its length; tmp_83_!=(*this).entries.size()",::futils::error::Category::lib);
+        auto tmp_82_ = (*this).len;
+        if (tmp_82_!=(*this).entries.size()) {
+            return ::futils::error::Error<>("encode: ResolutionTable::entries: dynamic length is not compatible with its length; tmp_82_!=(*this).entries.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_84_ : (*this).entries) {
-            if (auto err = tmp_84_.encode(w)) {
+        for (auto& tmp_83_ : (*this).entries) {
+            if (auto err = tmp_83_.encode(w)) {
                 return err;
             }
         }
@@ -45753,14 +40583,14 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).len ,true)) {
             return ::futils::error::Error<>("decode: ResolutionTable::len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_85_ = (*this).len;
+        auto tmp_84_ = (*this).len;
         (*this).entries.clear();
-        for (size_t  tmp_87_= 0; tmp_87_<tmp_85_; ++tmp_87_ ) {
-            ResolutionEntry tmp_86_;
-            if (auto err = tmp_86_.decode(r)) {
+        for (size_t  tmp_86_= 0; tmp_86_<tmp_84_; ++tmp_86_ ) {
+            ResolutionEntry tmp_85_;
+            if (auto err = tmp_85_.decode(r)) {
                 return err;
             }
-            (*this).entries.push_back(std::move(tmp_86_));
+            (*this).entries.push_back(std::move(tmp_85_));
         }
         return ::futils::error::Error<>();
     }
@@ -45771,24 +40601,24 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).fields_len) ,true)) {
             return ::futils::error::Error<>("encode: InnerStructEntry::fields_len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_88_ = (*this).fields_len;
-        if (tmp_88_!=(*this).fields.size()) {
-            return ::futils::error::Error<>("encode: InnerStructEntry::fields: dynamic length is not compatible with its length; tmp_88_!=(*this).fields.size()",::futils::error::Category::lib);
+        auto tmp_87_ = (*this).fields_len;
+        if (tmp_87_!=(*this).fields.size()) {
+            return ::futils::error::Error<>("encode: InnerStructEntry::fields: dynamic length is not compatible with its length; tmp_87_!=(*this).fields.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_89_ : (*this).fields) {
-            if (auto err = tmp_89_.encode(w)) {
+        for (auto& tmp_88_ : (*this).fields) {
+            if (auto err = tmp_88_.encode(w)) {
                 return err;
             }
         }
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).asserts_len) ,true)) {
             return ::futils::error::Error<>("encode: InnerStructEntry::asserts_len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_90_ = (*this).asserts_len;
-        if (tmp_90_!=(*this).asserts.size()) {
-            return ::futils::error::Error<>("encode: InnerStructEntry::asserts: dynamic length is not compatible with its length; tmp_90_!=(*this).asserts.size()",::futils::error::Category::lib);
+        auto tmp_89_ = (*this).asserts_len;
+        if (tmp_89_!=(*this).asserts.size()) {
+            return ::futils::error::Error<>("encode: InnerStructEntry::asserts: dynamic length is not compatible with its length; tmp_89_!=(*this).asserts.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_91_ : (*this).asserts) {
-            if (auto err = tmp_91_.encode(w)) {
+        for (auto& tmp_90_ : (*this).asserts) {
+            if (auto err = tmp_90_.encode(w)) {
                 return err;
             }
         }
@@ -45801,26 +40631,26 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).fields_len ,true)) {
             return ::futils::error::Error<>("decode: InnerStructEntry::fields_len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_92_ = (*this).fields_len;
+        auto tmp_91_ = (*this).fields_len;
         (*this).fields.clear();
-        for (size_t  tmp_94_= 0; tmp_94_<tmp_92_; ++tmp_94_ ) {
-            Ref tmp_93_;
-            if (auto err = tmp_93_.decode(r)) {
+        for (size_t  tmp_93_= 0; tmp_93_<tmp_91_; ++tmp_93_ ) {
+            Ref tmp_92_;
+            if (auto err = tmp_92_.decode(r)) {
                 return err;
             }
-            (*this).fields.push_back(std::move(tmp_93_));
+            (*this).fields.push_back(std::move(tmp_92_));
         }
         if (!::futils::binary::read_num(r,(*this).asserts_len ,true)) {
             return ::futils::error::Error<>("decode: InnerStructEntry::asserts_len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_95_ = (*this).asserts_len;
+        auto tmp_94_ = (*this).asserts_len;
         (*this).asserts.clear();
-        for (size_t  tmp_97_= 0; tmp_97_<tmp_95_; ++tmp_97_ ) {
-            Ref tmp_96_;
-            if (auto err = tmp_96_.decode(r)) {
+        for (size_t  tmp_96_= 0; tmp_96_<tmp_94_; ++tmp_96_ ) {
+            Ref tmp_95_;
+            if (auto err = tmp_95_.decode(r)) {
                 return err;
             }
-            (*this).asserts.push_back(std::move(tmp_96_));
+            (*this).asserts.push_back(std::move(tmp_95_));
         }
         return ::futils::error::Error<>();
     }
@@ -45828,12 +40658,12 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).len) ,true)) {
             return ::futils::error::Error<>("encode: InnerStructTable::len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_98_ = (*this).len;
-        if (tmp_98_!=(*this).entries.size()) {
-            return ::futils::error::Error<>("encode: InnerStructTable::entries: dynamic length is not compatible with its length; tmp_98_!=(*this).entries.size()",::futils::error::Category::lib);
+        auto tmp_97_ = (*this).len;
+        if (tmp_97_!=(*this).entries.size()) {
+            return ::futils::error::Error<>("encode: InnerStructTable::entries: dynamic length is not compatible with its length; tmp_97_!=(*this).entries.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_99_ : (*this).entries) {
-            if (auto err = tmp_99_.encode(w)) {
+        for (auto& tmp_98_ : (*this).entries) {
+            if (auto err = tmp_98_.encode(w)) {
                 return err;
             }
         }
@@ -45843,14 +40673,14 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).len ,true)) {
             return ::futils::error::Error<>("decode: InnerStructTable::len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_100_ = (*this).len;
+        auto tmp_99_ = (*this).len;
         (*this).entries.clear();
-        for (size_t  tmp_102_= 0; tmp_102_<tmp_100_; ++tmp_102_ ) {
-            InnerStructEntry tmp_101_;
-            if (auto err = tmp_101_.decode(r)) {
+        for (size_t  tmp_101_= 0; tmp_101_<tmp_99_; ++tmp_101_ ) {
+            InnerStructEntry tmp_100_;
+            if (auto err = tmp_100_.decode(r)) {
                 return err;
             }
-            (*this).entries.push_back(std::move(tmp_101_));
+            (*this).entries.push_back(std::move(tmp_100_));
         }
         return ::futils::error::Error<>();
     }
@@ -45858,12 +40688,12 @@ namespace brgen::nast::wire {
         if (auto err = (*this).key.encode(w)) {
             return err;
         }
-        auto tmp_103_ = static_cast<std::uint8_t>((*this).encode_kind);
-        if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_103_) ,true)) {
+        auto tmp_102_ = static_cast<std::uint8_t>((*this).encode_kind);
+        if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_102_) ,true)) {
             return ::futils::error::Error<>("encode: FormatStateEntry::encode_kind: write std::uint8_t failed",::futils::error::Category::lib);
         }
-        auto tmp_104_ = static_cast<std::uint8_t>((*this).decode_kind);
-        if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_104_) ,true)) {
+        auto tmp_103_ = static_cast<std::uint8_t>((*this).decode_kind);
+        if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_103_) ,true)) {
             return ::futils::error::Error<>("encode: FormatStateEntry::decode_kind: write std::uint8_t failed",::futils::error::Category::lib);
         }
         if (auto err = (*this).encode_custom.encode(w)) {
@@ -45875,60 +40705,60 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).fields_len) ,true)) {
             return ::futils::error::Error<>("encode: FormatStateEntry::fields_len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_105_ = (*this).fields_len;
-        if (tmp_105_!=(*this).fields.size()) {
-            return ::futils::error::Error<>("encode: FormatStateEntry::fields: dynamic length is not compatible with its length; tmp_105_!=(*this).fields.size()",::futils::error::Category::lib);
+        auto tmp_104_ = (*this).fields_len;
+        if (tmp_104_!=(*this).fields.size()) {
+            return ::futils::error::Error<>("encode: FormatStateEntry::fields: dynamic length is not compatible with its length; tmp_104_!=(*this).fields.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_106_ : (*this).fields) {
-            if (auto err = tmp_106_.encode(w)) {
+        for (auto& tmp_105_ : (*this).fields) {
+            if (auto err = tmp_105_.encode(w)) {
                 return err;
             }
         }
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).functions_len) ,true)) {
             return ::futils::error::Error<>("encode: FormatStateEntry::functions_len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_107_ = (*this).functions_len;
-        if (tmp_107_!=(*this).functions.size()) {
-            return ::futils::error::Error<>("encode: FormatStateEntry::functions: dynamic length is not compatible with its length; tmp_107_!=(*this).functions.size()",::futils::error::Category::lib);
+        auto tmp_106_ = (*this).functions_len;
+        if (tmp_106_!=(*this).functions.size()) {
+            return ::futils::error::Error<>("encode: FormatStateEntry::functions: dynamic length is not compatible with its length; tmp_106_!=(*this).functions.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_108_ : (*this).functions) {
-            if (auto err = tmp_108_.encode(w)) {
+        for (auto& tmp_107_ : (*this).functions) {
+            if (auto err = tmp_107_.encode(w)) {
                 return err;
             }
         }
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).asserts_len) ,true)) {
             return ::futils::error::Error<>("encode: FormatStateEntry::asserts_len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_109_ = (*this).asserts_len;
-        if (tmp_109_!=(*this).asserts.size()) {
-            return ::futils::error::Error<>("encode: FormatStateEntry::asserts: dynamic length is not compatible with its length; tmp_109_!=(*this).asserts.size()",::futils::error::Category::lib);
+        auto tmp_108_ = (*this).asserts_len;
+        if (tmp_108_!=(*this).asserts.size()) {
+            return ::futils::error::Error<>("encode: FormatStateEntry::asserts: dynamic length is not compatible with its length; tmp_108_!=(*this).asserts.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_110_ : (*this).asserts) {
-            if (auto err = tmp_110_.encode(w)) {
+        for (auto& tmp_109_ : (*this).asserts) {
+            if (auto err = tmp_109_.encode(w)) {
                 return err;
             }
         }
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).nested_formats_len) ,true)) {
             return ::futils::error::Error<>("encode: FormatStateEntry::nested_formats_len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_111_ = (*this).nested_formats_len;
-        if (tmp_111_!=(*this).nested_formats.size()) {
-            return ::futils::error::Error<>("encode: FormatStateEntry::nested_formats: dynamic length is not compatible with its length; tmp_111_!=(*this).nested_formats.size()",::futils::error::Category::lib);
+        auto tmp_110_ = (*this).nested_formats_len;
+        if (tmp_110_!=(*this).nested_formats.size()) {
+            return ::futils::error::Error<>("encode: FormatStateEntry::nested_formats: dynamic length is not compatible with its length; tmp_110_!=(*this).nested_formats.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_112_ : (*this).nested_formats) {
-            if (auto err = tmp_112_.encode(w)) {
+        for (auto& tmp_111_ : (*this).nested_formats) {
+            if (auto err = tmp_111_.encode(w)) {
                 return err;
             }
         }
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).nested_enums_len) ,true)) {
             return ::futils::error::Error<>("encode: FormatStateEntry::nested_enums_len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_113_ = (*this).nested_enums_len;
-        if (tmp_113_!=(*this).nested_enums.size()) {
-            return ::futils::error::Error<>("encode: FormatStateEntry::nested_enums: dynamic length is not compatible with its length; tmp_113_!=(*this).nested_enums.size()",::futils::error::Category::lib);
+        auto tmp_112_ = (*this).nested_enums_len;
+        if (tmp_112_!=(*this).nested_enums.size()) {
+            return ::futils::error::Error<>("encode: FormatStateEntry::nested_enums: dynamic length is not compatible with its length; tmp_112_!=(*this).nested_enums.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_114_ : (*this).nested_enums) {
-            if (auto err = tmp_114_.encode(w)) {
+        for (auto& tmp_113_ : (*this).nested_enums) {
+            if (auto err = tmp_113_.encode(w)) {
                 return err;
             }
         }
@@ -45938,16 +40768,16 @@ namespace brgen::nast::wire {
         if (auto err = (*this).key.decode(r)) {
             return err;
         }
-        std::uint8_t tmp_115_ = 0;
-        if (!::futils::binary::read_num(r,tmp_115_ ,true)) {
+        std::uint8_t tmp_114_ = 0;
+        if (!::futils::binary::read_num(r,tmp_114_ ,true)) {
             return ::futils::error::Error<>("decode: FormatStateEntry::encode_kind: read int failed",::futils::error::Category::lib);
         }
-        (*this).encode_kind = static_cast<FormatKind>(tmp_115_);
-        std::uint8_t tmp_116_ = 0;
-        if (!::futils::binary::read_num(r,tmp_116_ ,true)) {
+        (*this).encode_kind = static_cast<FormatKind>(tmp_114_);
+        std::uint8_t tmp_115_ = 0;
+        if (!::futils::binary::read_num(r,tmp_115_ ,true)) {
             return ::futils::error::Error<>("decode: FormatStateEntry::decode_kind: read int failed",::futils::error::Category::lib);
         }
-        (*this).decode_kind = static_cast<FormatKind>(tmp_116_);
+        (*this).decode_kind = static_cast<FormatKind>(tmp_115_);
         if (auto err = (*this).encode_custom.decode(r)) {
             return err;
         }
@@ -45957,62 +40787,62 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).fields_len ,true)) {
             return ::futils::error::Error<>("decode: FormatStateEntry::fields_len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_117_ = (*this).fields_len;
+        auto tmp_116_ = (*this).fields_len;
         (*this).fields.clear();
-        for (size_t  tmp_119_= 0; tmp_119_<tmp_117_; ++tmp_119_ ) {
-            Ref tmp_118_;
-            if (auto err = tmp_118_.decode(r)) {
+        for (size_t  tmp_118_= 0; tmp_118_<tmp_116_; ++tmp_118_ ) {
+            Ref tmp_117_;
+            if (auto err = tmp_117_.decode(r)) {
                 return err;
             }
-            (*this).fields.push_back(std::move(tmp_118_));
+            (*this).fields.push_back(std::move(tmp_117_));
         }
         if (!::futils::binary::read_num(r,(*this).functions_len ,true)) {
             return ::futils::error::Error<>("decode: FormatStateEntry::functions_len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_120_ = (*this).functions_len;
+        auto tmp_119_ = (*this).functions_len;
         (*this).functions.clear();
-        for (size_t  tmp_122_= 0; tmp_122_<tmp_120_; ++tmp_122_ ) {
-            Ref tmp_121_;
-            if (auto err = tmp_121_.decode(r)) {
+        for (size_t  tmp_121_= 0; tmp_121_<tmp_119_; ++tmp_121_ ) {
+            Ref tmp_120_;
+            if (auto err = tmp_120_.decode(r)) {
                 return err;
             }
-            (*this).functions.push_back(std::move(tmp_121_));
+            (*this).functions.push_back(std::move(tmp_120_));
         }
         if (!::futils::binary::read_num(r,(*this).asserts_len ,true)) {
             return ::futils::error::Error<>("decode: FormatStateEntry::asserts_len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_123_ = (*this).asserts_len;
+        auto tmp_122_ = (*this).asserts_len;
         (*this).asserts.clear();
-        for (size_t  tmp_125_= 0; tmp_125_<tmp_123_; ++tmp_125_ ) {
-            Ref tmp_124_;
-            if (auto err = tmp_124_.decode(r)) {
+        for (size_t  tmp_124_= 0; tmp_124_<tmp_122_; ++tmp_124_ ) {
+            Ref tmp_123_;
+            if (auto err = tmp_123_.decode(r)) {
                 return err;
             }
-            (*this).asserts.push_back(std::move(tmp_124_));
+            (*this).asserts.push_back(std::move(tmp_123_));
         }
         if (!::futils::binary::read_num(r,(*this).nested_formats_len ,true)) {
             return ::futils::error::Error<>("decode: FormatStateEntry::nested_formats_len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_126_ = (*this).nested_formats_len;
+        auto tmp_125_ = (*this).nested_formats_len;
         (*this).nested_formats.clear();
-        for (size_t  tmp_128_= 0; tmp_128_<tmp_126_; ++tmp_128_ ) {
-            Ref tmp_127_;
-            if (auto err = tmp_127_.decode(r)) {
+        for (size_t  tmp_127_= 0; tmp_127_<tmp_125_; ++tmp_127_ ) {
+            Ref tmp_126_;
+            if (auto err = tmp_126_.decode(r)) {
                 return err;
             }
-            (*this).nested_formats.push_back(std::move(tmp_127_));
+            (*this).nested_formats.push_back(std::move(tmp_126_));
         }
         if (!::futils::binary::read_num(r,(*this).nested_enums_len ,true)) {
             return ::futils::error::Error<>("decode: FormatStateEntry::nested_enums_len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_129_ = (*this).nested_enums_len;
+        auto tmp_128_ = (*this).nested_enums_len;
         (*this).nested_enums.clear();
-        for (size_t  tmp_131_= 0; tmp_131_<tmp_129_; ++tmp_131_ ) {
-            Ref tmp_130_;
-            if (auto err = tmp_130_.decode(r)) {
+        for (size_t  tmp_130_= 0; tmp_130_<tmp_128_; ++tmp_130_ ) {
+            Ref tmp_129_;
+            if (auto err = tmp_129_.decode(r)) {
                 return err;
             }
-            (*this).nested_enums.push_back(std::move(tmp_130_));
+            (*this).nested_enums.push_back(std::move(tmp_129_));
         }
         return ::futils::error::Error<>();
     }
@@ -46020,12 +40850,12 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).len) ,true)) {
             return ::futils::error::Error<>("encode: FormatStateTable::len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_132_ = (*this).len;
-        if (tmp_132_!=(*this).entries.size()) {
-            return ::futils::error::Error<>("encode: FormatStateTable::entries: dynamic length is not compatible with its length; tmp_132_!=(*this).entries.size()",::futils::error::Category::lib);
+        auto tmp_131_ = (*this).len;
+        if (tmp_131_!=(*this).entries.size()) {
+            return ::futils::error::Error<>("encode: FormatStateTable::entries: dynamic length is not compatible with its length; tmp_131_!=(*this).entries.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_133_ : (*this).entries) {
-            if (auto err = tmp_133_.encode(w)) {
+        for (auto& tmp_132_ : (*this).entries) {
+            if (auto err = tmp_132_.encode(w)) {
                 return err;
             }
         }
@@ -46035,14 +40865,14 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).len ,true)) {
             return ::futils::error::Error<>("decode: FormatStateTable::len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_134_ = (*this).len;
+        auto tmp_133_ = (*this).len;
         (*this).entries.clear();
-        for (size_t  tmp_136_= 0; tmp_136_<tmp_134_; ++tmp_136_ ) {
-            FormatStateEntry tmp_135_;
-            if (auto err = tmp_135_.decode(r)) {
+        for (size_t  tmp_135_= 0; tmp_135_<tmp_133_; ++tmp_135_ ) {
+            FormatStateEntry tmp_134_;
+            if (auto err = tmp_134_.decode(r)) {
                 return err;
             }
-            (*this).entries.push_back(std::move(tmp_135_));
+            (*this).entries.push_back(std::move(tmp_134_));
         }
         return ::futils::error::Error<>();
     }
@@ -46068,12 +40898,12 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).len) ,true)) {
             return ::futils::error::Error<>("encode: DocCommentTable::len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_137_ = (*this).len;
-        if (tmp_137_!=(*this).entries.size()) {
-            return ::futils::error::Error<>("encode: DocCommentTable::entries: dynamic length is not compatible with its length; tmp_137_!=(*this).entries.size()",::futils::error::Category::lib);
+        auto tmp_136_ = (*this).len;
+        if (tmp_136_!=(*this).entries.size()) {
+            return ::futils::error::Error<>("encode: DocCommentTable::entries: dynamic length is not compatible with its length; tmp_136_!=(*this).entries.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_138_ : (*this).entries) {
-            if (auto err = tmp_138_.encode(w)) {
+        for (auto& tmp_137_ : (*this).entries) {
+            if (auto err = tmp_137_.encode(w)) {
                 return err;
             }
         }
@@ -46083,14 +40913,14 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).len ,true)) {
             return ::futils::error::Error<>("decode: DocCommentTable::len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_139_ = (*this).len;
+        auto tmp_138_ = (*this).len;
         (*this).entries.clear();
-        for (size_t  tmp_141_= 0; tmp_141_<tmp_139_; ++tmp_141_ ) {
-            DocCommentEntry tmp_140_;
-            if (auto err = tmp_140_.decode(r)) {
+        for (size_t  tmp_140_= 0; tmp_140_<tmp_138_; ++tmp_140_ ) {
+            DocCommentEntry tmp_139_;
+            if (auto err = tmp_139_.decode(r)) {
                 return err;
             }
-            (*this).entries.push_back(std::move(tmp_140_));
+            (*this).entries.push_back(std::move(tmp_139_));
         }
         return ::futils::error::Error<>();
     }
@@ -46110,12 +40940,12 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).len) ,true)) {
             return ::futils::error::Error<>("encode: IsMutatedTable::len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_142_ = (*this).len;
-        if (tmp_142_!=(*this).entries.size()) {
-            return ::futils::error::Error<>("encode: IsMutatedTable::entries: dynamic length is not compatible with its length; tmp_142_!=(*this).entries.size()",::futils::error::Category::lib);
+        auto tmp_141_ = (*this).len;
+        if (tmp_141_!=(*this).entries.size()) {
+            return ::futils::error::Error<>("encode: IsMutatedTable::entries: dynamic length is not compatible with its length; tmp_141_!=(*this).entries.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_143_ : (*this).entries) {
-            if (auto err = tmp_143_.encode(w)) {
+        for (auto& tmp_142_ : (*this).entries) {
+            if (auto err = tmp_142_.encode(w)) {
                 return err;
             }
         }
@@ -46125,14 +40955,14 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).len ,true)) {
             return ::futils::error::Error<>("decode: IsMutatedTable::len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_144_ = (*this).len;
+        auto tmp_143_ = (*this).len;
         (*this).entries.clear();
-        for (size_t  tmp_146_= 0; tmp_146_<tmp_144_; ++tmp_146_ ) {
-            IsMutatedEntry tmp_145_;
-            if (auto err = tmp_145_.decode(r)) {
+        for (size_t  tmp_145_= 0; tmp_145_<tmp_143_; ++tmp_145_ ) {
+            IsMutatedEntry tmp_144_;
+            if (auto err = tmp_144_.decode(r)) {
                 return err;
             }
-            (*this).entries.push_back(std::move(tmp_145_));
+            (*this).entries.push_back(std::move(tmp_144_));
         }
         return ::futils::error::Error<>();
     }
@@ -46143,12 +40973,12 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).fields_len) ,true)) {
             return ::futils::error::Error<>("encode: UnionFieldsEntry::fields_len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_147_ = (*this).fields_len;
-        if (tmp_147_!=(*this).fields.size()) {
-            return ::futils::error::Error<>("encode: UnionFieldsEntry::fields: dynamic length is not compatible with its length; tmp_147_!=(*this).fields.size()",::futils::error::Category::lib);
+        auto tmp_146_ = (*this).fields_len;
+        if (tmp_146_!=(*this).fields.size()) {
+            return ::futils::error::Error<>("encode: UnionFieldsEntry::fields: dynamic length is not compatible with its length; tmp_146_!=(*this).fields.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_148_ : (*this).fields) {
-            if (auto err = tmp_148_.encode(w)) {
+        for (auto& tmp_147_ : (*this).fields) {
+            if (auto err = tmp_147_.encode(w)) {
                 return err;
             }
         }
@@ -46161,14 +40991,14 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).fields_len ,true)) {
             return ::futils::error::Error<>("decode: UnionFieldsEntry::fields_len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_149_ = (*this).fields_len;
+        auto tmp_148_ = (*this).fields_len;
         (*this).fields.clear();
-        for (size_t  tmp_151_= 0; tmp_151_<tmp_149_; ++tmp_151_ ) {
-            Ref tmp_150_;
-            if (auto err = tmp_150_.decode(r)) {
+        for (size_t  tmp_150_= 0; tmp_150_<tmp_148_; ++tmp_150_ ) {
+            Ref tmp_149_;
+            if (auto err = tmp_149_.decode(r)) {
                 return err;
             }
-            (*this).fields.push_back(std::move(tmp_150_));
+            (*this).fields.push_back(std::move(tmp_149_));
         }
         return ::futils::error::Error<>();
     }
@@ -46176,12 +41006,12 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).len) ,true)) {
             return ::futils::error::Error<>("encode: UnionFieldsTable::len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_152_ = (*this).len;
-        if (tmp_152_!=(*this).entries.size()) {
-            return ::futils::error::Error<>("encode: UnionFieldsTable::entries: dynamic length is not compatible with its length; tmp_152_!=(*this).entries.size()",::futils::error::Category::lib);
+        auto tmp_151_ = (*this).len;
+        if (tmp_151_!=(*this).entries.size()) {
+            return ::futils::error::Error<>("encode: UnionFieldsTable::entries: dynamic length is not compatible with its length; tmp_151_!=(*this).entries.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_153_ : (*this).entries) {
-            if (auto err = tmp_153_.encode(w)) {
+        for (auto& tmp_152_ : (*this).entries) {
+            if (auto err = tmp_152_.encode(w)) {
                 return err;
             }
         }
@@ -46191,14 +41021,14 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).len ,true)) {
             return ::futils::error::Error<>("decode: UnionFieldsTable::len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_154_ = (*this).len;
+        auto tmp_153_ = (*this).len;
         (*this).entries.clear();
-        for (size_t  tmp_156_= 0; tmp_156_<tmp_154_; ++tmp_156_ ) {
-            UnionFieldsEntry tmp_155_;
-            if (auto err = tmp_155_.decode(r)) {
+        for (size_t  tmp_155_= 0; tmp_155_<tmp_153_; ++tmp_155_ ) {
+            UnionFieldsEntry tmp_154_;
+            if (auto err = tmp_154_.decode(r)) {
                 return err;
             }
-            (*this).entries.push_back(std::move(tmp_155_));
+            (*this).entries.push_back(std::move(tmp_154_));
         }
         return ::futils::error::Error<>();
     }
@@ -46224,12 +41054,12 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).len) ,true)) {
             return ::futils::error::Error<>("encode: ImportResolutionTable::len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_157_ = (*this).len;
-        if (tmp_157_!=(*this).entries.size()) {
-            return ::futils::error::Error<>("encode: ImportResolutionTable::entries: dynamic length is not compatible with its length; tmp_157_!=(*this).entries.size()",::futils::error::Category::lib);
+        auto tmp_156_ = (*this).len;
+        if (tmp_156_!=(*this).entries.size()) {
+            return ::futils::error::Error<>("encode: ImportResolutionTable::entries: dynamic length is not compatible with its length; tmp_156_!=(*this).entries.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_158_ : (*this).entries) {
-            if (auto err = tmp_158_.encode(w)) {
+        for (auto& tmp_157_ : (*this).entries) {
+            if (auto err = tmp_157_.encode(w)) {
                 return err;
             }
         }
@@ -46239,14 +41069,14 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).len ,true)) {
             return ::futils::error::Error<>("decode: ImportResolutionTable::len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_159_ = (*this).len;
+        auto tmp_158_ = (*this).len;
         (*this).entries.clear();
-        for (size_t  tmp_161_= 0; tmp_161_<tmp_159_; ++tmp_161_ ) {
-            ImportResolutionEntry tmp_160_;
-            if (auto err = tmp_160_.decode(r)) {
+        for (size_t  tmp_160_= 0; tmp_160_<tmp_158_; ++tmp_160_ ) {
+            ImportResolutionEntry tmp_159_;
+            if (auto err = tmp_159_.decode(r)) {
                 return err;
             }
-            (*this).entries.push_back(std::move(tmp_160_));
+            (*this).entries.push_back(std::move(tmp_159_));
         }
         return ::futils::error::Error<>();
     }
@@ -46269,24 +41099,24 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).state_read_len) ,true)) {
             return ::futils::error::Error<>("encode: RequirementsEntry::state_read_len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_162_ = (*this).state_read_len;
-        if (tmp_162_!=(*this).state_read.size()) {
-            return ::futils::error::Error<>("encode: RequirementsEntry::state_read: dynamic length is not compatible with its length; tmp_162_!=(*this).state_read.size()",::futils::error::Category::lib);
+        auto tmp_161_ = (*this).state_read_len;
+        if (tmp_161_!=(*this).state_read.size()) {
+            return ::futils::error::Error<>("encode: RequirementsEntry::state_read: dynamic length is not compatible with its length; tmp_161_!=(*this).state_read.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_163_ : (*this).state_read) {
-            if (auto err = tmp_163_.encode(w)) {
+        for (auto& tmp_162_ : (*this).state_read) {
+            if (auto err = tmp_162_.encode(w)) {
                 return err;
             }
         }
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).state_write_len) ,true)) {
             return ::futils::error::Error<>("encode: RequirementsEntry::state_write_len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_164_ = (*this).state_write_len;
-        if (tmp_164_!=(*this).state_write.size()) {
-            return ::futils::error::Error<>("encode: RequirementsEntry::state_write: dynamic length is not compatible with its length; tmp_164_!=(*this).state_write.size()",::futils::error::Category::lib);
+        auto tmp_163_ = (*this).state_write_len;
+        if (tmp_163_!=(*this).state_write.size()) {
+            return ::futils::error::Error<>("encode: RequirementsEntry::state_write: dynamic length is not compatible with its length; tmp_163_!=(*this).state_write.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_165_ : (*this).state_write) {
-            if (auto err = tmp_165_.encode(w)) {
+        for (auto& tmp_164_ : (*this).state_write) {
+            if (auto err = tmp_164_.encode(w)) {
                 return err;
             }
         }
@@ -46311,26 +41141,26 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).state_read_len ,true)) {
             return ::futils::error::Error<>("decode: RequirementsEntry::state_read_len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_166_ = (*this).state_read_len;
+        auto tmp_165_ = (*this).state_read_len;
         (*this).state_read.clear();
-        for (size_t  tmp_168_= 0; tmp_168_<tmp_166_; ++tmp_168_ ) {
-            Ref tmp_167_;
-            if (auto err = tmp_167_.decode(r)) {
+        for (size_t  tmp_167_= 0; tmp_167_<tmp_165_; ++tmp_167_ ) {
+            Ref tmp_166_;
+            if (auto err = tmp_166_.decode(r)) {
                 return err;
             }
-            (*this).state_read.push_back(std::move(tmp_167_));
+            (*this).state_read.push_back(std::move(tmp_166_));
         }
         if (!::futils::binary::read_num(r,(*this).state_write_len ,true)) {
             return ::futils::error::Error<>("decode: RequirementsEntry::state_write_len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_169_ = (*this).state_write_len;
+        auto tmp_168_ = (*this).state_write_len;
         (*this).state_write.clear();
-        for (size_t  tmp_171_= 0; tmp_171_<tmp_169_; ++tmp_171_ ) {
-            Ref tmp_170_;
-            if (auto err = tmp_170_.decode(r)) {
+        for (size_t  tmp_170_= 0; tmp_170_<tmp_168_; ++tmp_170_ ) {
+            Ref tmp_169_;
+            if (auto err = tmp_169_.decode(r)) {
                 return err;
             }
-            (*this).state_write.push_back(std::move(tmp_170_));
+            (*this).state_write.push_back(std::move(tmp_169_));
         }
         return ::futils::error::Error<>();
     }
@@ -46338,12 +41168,12 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).len) ,true)) {
             return ::futils::error::Error<>("encode: RequirementsTable::len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_172_ = (*this).len;
-        if (tmp_172_!=(*this).entries.size()) {
-            return ::futils::error::Error<>("encode: RequirementsTable::entries: dynamic length is not compatible with its length; tmp_172_!=(*this).entries.size()",::futils::error::Category::lib);
+        auto tmp_171_ = (*this).len;
+        if (tmp_171_!=(*this).entries.size()) {
+            return ::futils::error::Error<>("encode: RequirementsTable::entries: dynamic length is not compatible with its length; tmp_171_!=(*this).entries.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_173_ : (*this).entries) {
-            if (auto err = tmp_173_.encode(w)) {
+        for (auto& tmp_172_ : (*this).entries) {
+            if (auto err = tmp_172_.encode(w)) {
                 return err;
             }
         }
@@ -46353,14 +41183,14 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).len ,true)) {
             return ::futils::error::Error<>("decode: RequirementsTable::len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_174_ = (*this).len;
+        auto tmp_173_ = (*this).len;
         (*this).entries.clear();
-        for (size_t  tmp_176_= 0; tmp_176_<tmp_174_; ++tmp_176_ ) {
-            RequirementsEntry tmp_175_;
-            if (auto err = tmp_175_.decode(r)) {
+        for (size_t  tmp_175_= 0; tmp_175_<tmp_173_; ++tmp_175_ ) {
+            RequirementsEntry tmp_174_;
+            if (auto err = tmp_174_.decode(r)) {
                 return err;
             }
-            (*this).entries.push_back(std::move(tmp_175_));
+            (*this).entries.push_back(std::move(tmp_174_));
         }
         return ::futils::error::Error<>();
     }
@@ -46368,8 +41198,8 @@ namespace brgen::nast::wire {
         if (auto err = (*this).key.encode(w)) {
             return err;
         }
-        auto tmp_177_ = static_cast<std::uint8_t>((*this).kind_eval_kind);
-        if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_177_) ,true)) {
+        auto tmp_176_ = static_cast<std::uint8_t>((*this).kind_eval_kind);
+        if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_176_) ,true)) {
             return ::futils::error::Error<>("encode: ConstantValueEntry::kind_eval_kind: write std::uint8_t failed",::futils::error::Category::lib);
         }
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).integer) ,true)) {
@@ -46390,11 +41220,11 @@ namespace brgen::nast::wire {
         if (auto err = (*this).key.decode(r)) {
             return err;
         }
-        std::uint8_t tmp_178_ = 0;
-        if (!::futils::binary::read_num(r,tmp_178_ ,true)) {
+        std::uint8_t tmp_177_ = 0;
+        if (!::futils::binary::read_num(r,tmp_177_ ,true)) {
             return ::futils::error::Error<>("decode: ConstantValueEntry::kind_eval_kind: read int failed",::futils::error::Category::lib);
         }
-        (*this).kind_eval_kind = static_cast<EvalKind>(tmp_178_);
+        (*this).kind_eval_kind = static_cast<EvalKind>(tmp_177_);
         if (!::futils::binary::read_num(r,(*this).integer ,true)) {
             return ::futils::error::Error<>("decode: ConstantValueEntry::integer: read int failed",::futils::error::Category::lib);
         }
@@ -46413,12 +41243,12 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).len) ,true)) {
             return ::futils::error::Error<>("encode: ConstantValueTable::len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_179_ = (*this).len;
-        if (tmp_179_!=(*this).entries.size()) {
-            return ::futils::error::Error<>("encode: ConstantValueTable::entries: dynamic length is not compatible with its length; tmp_179_!=(*this).entries.size()",::futils::error::Category::lib);
+        auto tmp_178_ = (*this).len;
+        if (tmp_178_!=(*this).entries.size()) {
+            return ::futils::error::Error<>("encode: ConstantValueTable::entries: dynamic length is not compatible with its length; tmp_178_!=(*this).entries.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_180_ : (*this).entries) {
-            if (auto err = tmp_180_.encode(w)) {
+        for (auto& tmp_179_ : (*this).entries) {
+            if (auto err = tmp_179_.encode(w)) {
                 return err;
             }
         }
@@ -46428,20 +41258,20 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).len ,true)) {
             return ::futils::error::Error<>("decode: ConstantValueTable::len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_181_ = (*this).len;
+        auto tmp_180_ = (*this).len;
         (*this).entries.clear();
-        for (size_t  tmp_183_= 0; tmp_183_<tmp_181_; ++tmp_183_ ) {
-            ConstantValueEntry tmp_182_;
-            if (auto err = tmp_182_.decode(r)) {
+        for (size_t  tmp_182_= 0; tmp_182_<tmp_180_; ++tmp_182_ ) {
+            ConstantValueEntry tmp_181_;
+            if (auto err = tmp_181_.decode(r)) {
                 return err;
             }
-            (*this).entries.push_back(std::move(tmp_182_));
+            (*this).entries.push_back(std::move(tmp_181_));
         }
         return ::futils::error::Error<>();
     }
     inline ::futils::error::Error<> Node::encode(::futils::binary::writer& w) const {
-        auto tmp_184_ = static_cast<std::uint32_t>((*this).node_kind);
-        if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(tmp_184_) ,true)) {
+        auto tmp_183_ = static_cast<std::uint32_t>((*this).node_kind);
+        if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(tmp_183_) ,true)) {
             return ::futils::error::Error<>("encode: Node::node_kind: write std::uint32_t failed",::futils::error::Category::lib);
         }
         if (auto err = (*this).loc.encode(w)) {
@@ -46454,12 +41284,12 @@ namespace brgen::nast::wire {
             if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(std::get<1>((*this).union_variant_1).statements_len) ,true)) {
                 return ::futils::error::Error<>("encode: Node::statements_len: write std::uint32_t failed",::futils::error::Category::lib);
             }
-            auto tmp_185_ = std::get<1>((*this).union_variant_1).statements_len;
-            if (tmp_185_!=std::get<1>((*this).union_variant_1).statements.size()) {
-                return ::futils::error::Error<>("encode: Node::statements: dynamic length is not compatible with its length; tmp_185_!=std::get<1>((*this).union_variant_1).statements.size()",::futils::error::Category::lib);
+            auto tmp_184_ = std::get<1>((*this).union_variant_1).statements_len;
+            if (tmp_184_!=std::get<1>((*this).union_variant_1).statements.size()) {
+                return ::futils::error::Error<>("encode: Node::statements: dynamic length is not compatible with its length; tmp_184_!=std::get<1>((*this).union_variant_1).statements.size()",::futils::error::Category::lib);
             }
-            for (auto& tmp_186_ : std::get<1>((*this).union_variant_1).statements) {
-                if (auto err = tmp_186_.encode(w)) {
+            for (auto& tmp_185_ : std::get<1>((*this).union_variant_1).statements) {
+                if (auto err = tmp_185_.encode(w)) {
                     return err;
                 }
             }
@@ -46539,12 +41369,12 @@ namespace brgen::nast::wire {
             if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(std::get<6>((*this).union_variant_1).type_parameters_len) ,true)) {
                 return ::futils::error::Error<>("encode: Node::type_parameters_len: write std::uint32_t failed",::futils::error::Category::lib);
             }
-            auto tmp_187_ = std::get<6>((*this).union_variant_1).type_parameters_len;
-            if (tmp_187_!=std::get<6>((*this).union_variant_1).type_parameters.size()) {
-                return ::futils::error::Error<>("encode: Node::type_parameters: dynamic length is not compatible with its length; tmp_187_!=std::get<6>((*this).union_variant_1).type_parameters.size()",::futils::error::Category::lib);
+            auto tmp_186_ = std::get<6>((*this).union_variant_1).type_parameters_len;
+            if (tmp_186_!=std::get<6>((*this).union_variant_1).type_parameters.size()) {
+                return ::futils::error::Error<>("encode: Node::type_parameters: dynamic length is not compatible with its length; tmp_186_!=std::get<6>((*this).union_variant_1).type_parameters.size()",::futils::error::Category::lib);
             }
-            for (auto& tmp_188_ : std::get<6>((*this).union_variant_1).type_parameters) {
-                if (auto err = tmp_188_.encode(w)) {
+            for (auto& tmp_187_ : std::get<6>((*this).union_variant_1).type_parameters) {
+                if (auto err = tmp_187_.encode(w)) {
                     return err;
                 }
             }
@@ -46565,12 +41395,12 @@ namespace brgen::nast::wire {
             if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(std::get<7>((*this).union_variant_1).parameters_len) ,true)) {
                 return ::futils::error::Error<>("encode: Node::parameters_len: write std::uint32_t failed",::futils::error::Category::lib);
             }
-            auto tmp_189_ = std::get<7>((*this).union_variant_1).parameters_len;
-            if (tmp_189_!=std::get<7>((*this).union_variant_1).parameters.size()) {
-                return ::futils::error::Error<>("encode: Node::parameters: dynamic length is not compatible with its length; tmp_189_!=std::get<7>((*this).union_variant_1).parameters.size()",::futils::error::Category::lib);
+            auto tmp_188_ = std::get<7>((*this).union_variant_1).parameters_len;
+            if (tmp_188_!=std::get<7>((*this).union_variant_1).parameters.size()) {
+                return ::futils::error::Error<>("encode: Node::parameters: dynamic length is not compatible with its length; tmp_188_!=std::get<7>((*this).union_variant_1).parameters.size()",::futils::error::Category::lib);
             }
-            for (auto& tmp_190_ : std::get<7>((*this).union_variant_1).parameters) {
-                if (auto err = tmp_190_.encode(w)) {
+            for (auto& tmp_189_ : std::get<7>((*this).union_variant_1).parameters) {
+                if (auto err = tmp_189_.encode(w)) {
                     return err;
                 }
             }
@@ -46588,12 +41418,12 @@ namespace brgen::nast::wire {
             if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(std::get<8>((*this).union_variant_1).blocks_len) ,true)) {
                 return ::futils::error::Error<>("encode: Node::blocks_len: write std::uint32_t failed",::futils::error::Category::lib);
             }
-            auto tmp_191_ = std::get<8>((*this).union_variant_1).blocks_len;
-            if (tmp_191_!=std::get<8>((*this).union_variant_1).blocks.size()) {
-                return ::futils::error::Error<>("encode: Node::blocks: dynamic length is not compatible with its length; tmp_191_!=std::get<8>((*this).union_variant_1).blocks.size()",::futils::error::Category::lib);
+            auto tmp_190_ = std::get<8>((*this).union_variant_1).blocks_len;
+            if (tmp_190_!=std::get<8>((*this).union_variant_1).blocks.size()) {
+                return ::futils::error::Error<>("encode: Node::blocks: dynamic length is not compatible with its length; tmp_190_!=std::get<8>((*this).union_variant_1).blocks.size()",::futils::error::Category::lib);
             }
-            for (auto& tmp_192_ : std::get<8>((*this).union_variant_1).blocks) {
-                if (auto err = tmp_192_.encode(w)) {
+            for (auto& tmp_191_ : std::get<8>((*this).union_variant_1).blocks) {
+                if (auto err = tmp_191_.encode(w)) {
                     return err;
                 }
             }
@@ -46608,12 +41438,12 @@ namespace brgen::nast::wire {
             if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(std::get<9>((*this).union_variant_1).blocks_len) ,true)) {
                 return ::futils::error::Error<>("encode: Node::blocks_len: write std::uint32_t failed",::futils::error::Category::lib);
             }
-            auto tmp_193_ = std::get<9>((*this).union_variant_1).blocks_len;
-            if (tmp_193_!=std::get<9>((*this).union_variant_1).blocks.size()) {
-                return ::futils::error::Error<>("encode: Node::blocks: dynamic length is not compatible with its length; tmp_193_!=std::get<9>((*this).union_variant_1).blocks.size()",::futils::error::Category::lib);
+            auto tmp_192_ = std::get<9>((*this).union_variant_1).blocks_len;
+            if (tmp_192_!=std::get<9>((*this).union_variant_1).blocks.size()) {
+                return ::futils::error::Error<>("encode: Node::blocks: dynamic length is not compatible with its length; tmp_192_!=std::get<9>((*this).union_variant_1).blocks.size()",::futils::error::Category::lib);
             }
-            for (auto& tmp_194_ : std::get<9>((*this).union_variant_1).blocks) {
-                if (auto err = tmp_194_.encode(w)) {
+            for (auto& tmp_193_ : std::get<9>((*this).union_variant_1).blocks) {
+                if (auto err = tmp_193_.encode(w)) {
                     return err;
                 }
             }
@@ -46665,8 +41495,8 @@ namespace brgen::nast::wire {
             if (auto err = std::get<12>((*this).union_variant_1).value_ref.encode(w)) {
                 return err;
             }
-            auto tmp_195_ = static_cast<std::uint8_t>(std::get<12>((*this).union_variant_1).op_binary_op);
-            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_195_) ,true)) {
+            auto tmp_194_ = static_cast<std::uint8_t>(std::get<12>((*this).union_variant_1).op_binary_op);
+            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_194_) ,true)) {
                 return ::futils::error::Error<>("encode: Node::op_binary_op: write std::uint8_t failed",::futils::error::Category::lib);
             }
         }
@@ -46680,8 +41510,8 @@ namespace brgen::nast::wire {
             if (auto err = std::get<13>((*this).union_variant_1).value_ref.encode(w)) {
                 return err;
             }
-            auto tmp_196_ = static_cast<std::uint8_t>(std::get<13>((*this).union_variant_1).op_binary_op);
-            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_196_) ,true)) {
+            auto tmp_195_ = static_cast<std::uint8_t>(std::get<13>((*this).union_variant_1).op_binary_op);
+            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_195_) ,true)) {
                 return ::futils::error::Error<>("encode: Node::op_binary_op: write std::uint8_t failed",::futils::error::Category::lib);
             }
         }
@@ -46747,8 +41577,8 @@ namespace brgen::nast::wire {
             if (auto err = std::get<19>((*this).union_variant_1).type.encode(w)) {
                 return err;
             }
-            auto tmp_197_ = static_cast<std::uint8_t>(std::get<19>((*this).union_variant_1).op_binary_op);
-            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_197_) ,true)) {
+            auto tmp_196_ = static_cast<std::uint8_t>(std::get<19>((*this).union_variant_1).op_binary_op);
+            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_196_) ,true)) {
                 return ::futils::error::Error<>("encode: Node::op_binary_op: write std::uint8_t failed",::futils::error::Category::lib);
             }
             if (auto err = std::get<19>((*this).union_variant_1).left.encode(w)) {
@@ -46765,8 +41595,8 @@ namespace brgen::nast::wire {
             if (auto err = std::get<20>((*this).union_variant_1).type.encode(w)) {
                 return err;
             }
-            auto tmp_198_ = static_cast<std::uint8_t>(std::get<20>((*this).union_variant_1).op_unary_op);
-            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_198_) ,true)) {
+            auto tmp_197_ = static_cast<std::uint8_t>(std::get<20>((*this).union_variant_1).op_unary_op);
+            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_197_) ,true)) {
                 return ::futils::error::Error<>("encode: Node::op_unary_op: write std::uint8_t failed",::futils::error::Category::lib);
             }
             if (auto err = std::get<20>((*this).union_variant_1).target.encode(w)) {
@@ -46855,12 +41685,12 @@ namespace brgen::nast::wire {
             if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(std::get<27>((*this).union_variant_1).statements_len) ,true)) {
                 return ::futils::error::Error<>("encode: Node::statements_len: write std::uint32_t failed",::futils::error::Category::lib);
             }
-            auto tmp_199_ = std::get<27>((*this).union_variant_1).statements_len;
-            if (tmp_199_!=std::get<27>((*this).union_variant_1).statements.size()) {
-                return ::futils::error::Error<>("encode: Node::statements: dynamic length is not compatible with its length; tmp_199_!=std::get<27>((*this).union_variant_1).statements.size()",::futils::error::Category::lib);
+            auto tmp_198_ = std::get<27>((*this).union_variant_1).statements_len;
+            if (tmp_198_!=std::get<27>((*this).union_variant_1).statements.size()) {
+                return ::futils::error::Error<>("encode: Node::statements: dynamic length is not compatible with its length; tmp_198_!=std::get<27>((*this).union_variant_1).statements.size()",::futils::error::Category::lib);
             }
-            for (auto& tmp_200_ : std::get<27>((*this).union_variant_1).statements) {
-                if (auto err = tmp_200_.encode(w)) {
+            for (auto& tmp_199_ : std::get<27>((*this).union_variant_1).statements) {
+                if (auto err = tmp_199_.encode(w)) {
                     return err;
                 }
             }
@@ -46875,12 +41705,12 @@ namespace brgen::nast::wire {
             if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(std::get<28>((*this).union_variant_1).arguments_list_len) ,true)) {
                 return ::futils::error::Error<>("encode: Node::arguments_list_len: write std::uint32_t failed",::futils::error::Category::lib);
             }
-            auto tmp_201_ = std::get<28>((*this).union_variant_1).arguments_list_len;
-            if (tmp_201_!=std::get<28>((*this).union_variant_1).arguments_list.size()) {
-                return ::futils::error::Error<>("encode: Node::arguments_list: dynamic length is not compatible with its length; tmp_201_!=std::get<28>((*this).union_variant_1).arguments_list.size()",::futils::error::Category::lib);
+            auto tmp_200_ = std::get<28>((*this).union_variant_1).arguments_list_len;
+            if (tmp_200_!=std::get<28>((*this).union_variant_1).arguments_list.size()) {
+                return ::futils::error::Error<>("encode: Node::arguments_list: dynamic length is not compatible with its length; tmp_200_!=std::get<28>((*this).union_variant_1).arguments_list.size()",::futils::error::Category::lib);
             }
-            for (auto& tmp_202_ : std::get<28>((*this).union_variant_1).arguments_list) {
-                if (auto err = tmp_202_.encode(w)) {
+            for (auto& tmp_201_ : std::get<28>((*this).union_variant_1).arguments_list) {
+                if (auto err = tmp_201_.encode(w)) {
                     return err;
                 }
             }
@@ -46928,8 +41758,8 @@ namespace brgen::nast::wire {
             if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(std::get<32>((*this).union_variant_1).is_signed) ,true)) {
                 return ::futils::error::Error<>("encode: Node::is_signed: write std::uint8_t failed",::futils::error::Category::lib);
             }
-            auto tmp_203_ = static_cast<std::uint8_t>(std::get<32>((*this).union_variant_1).endian);
-            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_203_) ,true)) {
+            auto tmp_202_ = static_cast<std::uint8_t>(std::get<32>((*this).union_variant_1).endian);
+            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_202_) ,true)) {
                 return ::futils::error::Error<>("encode: Node::endian: write std::uint8_t failed",::futils::error::Category::lib);
             }
         }
@@ -47001,8 +41831,8 @@ namespace brgen::nast::wire {
             if (auto err = std::get<38>((*this).union_variant_1).type.encode(w)) {
                 return err;
             }
-            auto tmp_204_ = static_cast<std::uint8_t>(std::get<38>((*this).union_variant_1).kind_special_literal_kind);
-            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_204_) ,true)) {
+            auto tmp_203_ = static_cast<std::uint8_t>(std::get<38>((*this).union_variant_1).kind_special_literal_kind);
+            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_203_) ,true)) {
                 return ::futils::error::Error<>("encode: Node::kind_special_literal_kind: write std::uint8_t failed",::futils::error::Category::lib);
             }
         }
@@ -47070,8 +41900,8 @@ namespace brgen::nast::wire {
             if (auto err = std::get<42>((*this).union_variant_1).end.encode(w)) {
                 return err;
             }
-            auto tmp_205_ = static_cast<std::uint8_t>(std::get<42>((*this).union_variant_1).op_binary_op);
-            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_205_) ,true)) {
+            auto tmp_204_ = static_cast<std::uint8_t>(std::get<42>((*this).union_variant_1).op_binary_op);
+            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_204_) ,true)) {
                 return ::futils::error::Error<>("encode: Node::op_binary_op: write std::uint8_t failed",::futils::error::Category::lib);
             }
         }
@@ -47107,8 +41937,8 @@ namespace brgen::nast::wire {
             if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(std::get<45>((*this).union_variant_1).bit_size) ,true)) {
                 return ::futils::error::Error<>("encode: Node::bit_size: write std::uint32_t failed",::futils::error::Category::lib);
             }
-            auto tmp_206_ = static_cast<std::uint8_t>(std::get<45>((*this).union_variant_1).endian);
-            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_206_) ,true)) {
+            auto tmp_205_ = static_cast<std::uint8_t>(std::get<45>((*this).union_variant_1).endian);
+            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_205_) ,true)) {
                 return ::futils::error::Error<>("encode: Node::endian: write std::uint8_t failed",::futils::error::Category::lib);
             }
         }
@@ -47213,8 +42043,8 @@ namespace brgen::nast::wire {
             if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(std::get<54>((*this).union_variant_1).is_explicit) ,true)) {
                 return ::futils::error::Error<>("encode: Node::is_explicit: write std::uint8_t failed",::futils::error::Category::lib);
             }
-            auto tmp_207_ = static_cast<std::uint8_t>(std::get<54>((*this).union_variant_1).kind_special_literal_kind);
-            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_207_) ,true)) {
+            auto tmp_206_ = static_cast<std::uint8_t>(std::get<54>((*this).union_variant_1).kind_special_literal_kind);
+            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_206_) ,true)) {
                 return ::futils::error::Error<>("encode: Node::kind_special_literal_kind: write std::uint8_t failed",::futils::error::Category::lib);
             }
             if (auto err = std::get<54>((*this).union_variant_1).length.encode(w)) {
@@ -47234,12 +42064,12 @@ namespace brgen::nast::wire {
             if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(std::get<55>((*this).union_variant_1).parameters_len) ,true)) {
                 return ::futils::error::Error<>("encode: Node::parameters_len: write std::uint32_t failed",::futils::error::Category::lib);
             }
-            auto tmp_208_ = std::get<55>((*this).union_variant_1).parameters_len;
-            if (tmp_208_!=std::get<55>((*this).union_variant_1).parameters.size()) {
-                return ::futils::error::Error<>("encode: Node::parameters: dynamic length is not compatible with its length; tmp_208_!=std::get<55>((*this).union_variant_1).parameters.size()",::futils::error::Category::lib);
+            auto tmp_207_ = std::get<55>((*this).union_variant_1).parameters_len;
+            if (tmp_207_!=std::get<55>((*this).union_variant_1).parameters.size()) {
+                return ::futils::error::Error<>("encode: Node::parameters: dynamic length is not compatible with its length; tmp_207_!=std::get<55>((*this).union_variant_1).parameters.size()",::futils::error::Category::lib);
             }
-            for (auto& tmp_209_ : std::get<55>((*this).union_variant_1).parameters) {
-                if (auto err = tmp_209_.encode(w)) {
+            for (auto& tmp_208_ : std::get<55>((*this).union_variant_1).parameters) {
+                if (auto err = tmp_208_.encode(w)) {
                     return err;
                 }
             }
@@ -47279,12 +42109,12 @@ namespace brgen::nast::wire {
             if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(std::get<58>((*this).union_variant_1).candidates_len) ,true)) {
                 return ::futils::error::Error<>("encode: Node::candidates_len: write std::uint32_t failed",::futils::error::Category::lib);
             }
-            auto tmp_210_ = std::get<58>((*this).union_variant_1).candidates_len;
-            if (tmp_210_!=std::get<58>((*this).union_variant_1).candidates.size()) {
-                return ::futils::error::Error<>("encode: Node::candidates: dynamic length is not compatible with its length; tmp_210_!=std::get<58>((*this).union_variant_1).candidates.size()",::futils::error::Category::lib);
+            auto tmp_209_ = std::get<58>((*this).union_variant_1).candidates_len;
+            if (tmp_209_!=std::get<58>((*this).union_variant_1).candidates.size()) {
+                return ::futils::error::Error<>("encode: Node::candidates: dynamic length is not compatible with its length; tmp_209_!=std::get<58>((*this).union_variant_1).candidates.size()",::futils::error::Category::lib);
             }
-            for (auto& tmp_211_ : std::get<58>((*this).union_variant_1).candidates) {
-                if (auto err = tmp_211_.encode(w)) {
+            for (auto& tmp_210_ : std::get<58>((*this).union_variant_1).candidates) {
+                if (auto err = tmp_210_.encode(w)) {
                     return err;
                 }
             }
@@ -47313,12 +42143,12 @@ namespace brgen::nast::wire {
             if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(std::get<60>((*this).union_variant_1).candidates_len) ,true)) {
                 return ::futils::error::Error<>("encode: Node::candidates_len: write std::uint32_t failed",::futils::error::Category::lib);
             }
-            auto tmp_212_ = std::get<60>((*this).union_variant_1).candidates_len;
-            if (tmp_212_!=std::get<60>((*this).union_variant_1).candidates.size()) {
-                return ::futils::error::Error<>("encode: Node::candidates: dynamic length is not compatible with its length; tmp_212_!=std::get<60>((*this).union_variant_1).candidates.size()",::futils::error::Category::lib);
+            auto tmp_211_ = std::get<60>((*this).union_variant_1).candidates_len;
+            if (tmp_211_!=std::get<60>((*this).union_variant_1).candidates.size()) {
+                return ::futils::error::Error<>("encode: Node::candidates: dynamic length is not compatible with its length; tmp_211_!=std::get<60>((*this).union_variant_1).candidates.size()",::futils::error::Category::lib);
             }
-            for (auto& tmp_213_ : std::get<60>((*this).union_variant_1).candidates) {
-                if (auto err = tmp_213_.encode(w)) {
+            for (auto& tmp_212_ : std::get<60>((*this).union_variant_1).candidates) {
+                if (auto err = tmp_212_.encode(w)) {
                     return err;
                 }
             }
@@ -47334,12 +42164,12 @@ namespace brgen::nast::wire {
             if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(std::get<60>((*this).union_variant_1).member_candidates_len) ,true)) {
                 return ::futils::error::Error<>("encode: Node::member_candidates_len: write std::uint32_t failed",::futils::error::Category::lib);
             }
-            auto tmp_214_ = std::get<60>((*this).union_variant_1).member_candidates_len;
-            if (tmp_214_!=std::get<60>((*this).union_variant_1).member_candidates.size()) {
-                return ::futils::error::Error<>("encode: Node::member_candidates: dynamic length is not compatible with its length; tmp_214_!=std::get<60>((*this).union_variant_1).member_candidates.size()",::futils::error::Category::lib);
+            auto tmp_213_ = std::get<60>((*this).union_variant_1).member_candidates_len;
+            if (tmp_213_!=std::get<60>((*this).union_variant_1).member_candidates.size()) {
+                return ::futils::error::Error<>("encode: Node::member_candidates: dynamic length is not compatible with its length; tmp_213_!=std::get<60>((*this).union_variant_1).member_candidates.size()",::futils::error::Category::lib);
             }
-            for (auto& tmp_215_ : std::get<60>((*this).union_variant_1).member_candidates) {
-                if (auto err = tmp_215_.encode(w)) {
+            for (auto& tmp_214_ : std::get<60>((*this).union_variant_1).member_candidates) {
+                if (auto err = tmp_214_.encode(w)) {
                     return err;
                 }
             }
@@ -47401,12 +42231,12 @@ namespace brgen::nast::wire {
             if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(std::get<65>((*this).union_variant_1).type_arguments_len) ,true)) {
                 return ::futils::error::Error<>("encode: Node::type_arguments_len: write std::uint32_t failed",::futils::error::Category::lib);
             }
-            auto tmp_216_ = std::get<65>((*this).union_variant_1).type_arguments_len;
-            if (tmp_216_!=std::get<65>((*this).union_variant_1).type_arguments.size()) {
-                return ::futils::error::Error<>("encode: Node::type_arguments: dynamic length is not compatible with its length; tmp_216_!=std::get<65>((*this).union_variant_1).type_arguments.size()",::futils::error::Category::lib);
+            auto tmp_215_ = std::get<65>((*this).union_variant_1).type_arguments_len;
+            if (tmp_215_!=std::get<65>((*this).union_variant_1).type_arguments.size()) {
+                return ::futils::error::Error<>("encode: Node::type_arguments: dynamic length is not compatible with its length; tmp_215_!=std::get<65>((*this).union_variant_1).type_arguments.size()",::futils::error::Category::lib);
             }
-            for (auto& tmp_217_ : std::get<65>((*this).union_variant_1).type_arguments) {
-                if (auto err = tmp_217_.encode(w)) {
+            for (auto& tmp_216_ : std::get<65>((*this).union_variant_1).type_arguments) {
+                if (auto err = tmp_216_.encode(w)) {
                     return err;
                 }
             }
@@ -47479,12 +42309,12 @@ namespace brgen::nast::wire {
             if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(std::get<71>((*this).union_variant_1).members_len) ,true)) {
                 return ::futils::error::Error<>("encode: Node::members_len: write std::uint32_t failed",::futils::error::Category::lib);
             }
-            auto tmp_218_ = std::get<71>((*this).union_variant_1).members_len;
-            if (tmp_218_!=std::get<71>((*this).union_variant_1).members.size()) {
-                return ::futils::error::Error<>("encode: Node::members: dynamic length is not compatible with its length; tmp_218_!=std::get<71>((*this).union_variant_1).members.size()",::futils::error::Category::lib);
+            auto tmp_217_ = std::get<71>((*this).union_variant_1).members_len;
+            if (tmp_217_!=std::get<71>((*this).union_variant_1).members.size()) {
+                return ::futils::error::Error<>("encode: Node::members: dynamic length is not compatible with its length; tmp_217_!=std::get<71>((*this).union_variant_1).members.size()",::futils::error::Category::lib);
             }
-            for (auto& tmp_219_ : std::get<71>((*this).union_variant_1).members) {
-                if (auto err = tmp_219_.encode(w)) {
+            for (auto& tmp_218_ : std::get<71>((*this).union_variant_1).members) {
+                if (auto err = tmp_218_.encode(w)) {
                     return err;
                 }
             }
@@ -47540,59 +42370,32 @@ namespace brgen::nast::wire {
                 return err;
             }
         }
-        else if (NodeKind::FieldArgument==(*this).node_kind) {
+        else if (NodeKind::Identity==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_76>(union_variant_1)) {
                 return ::futils::error::Error<>("encode: Node: union_variant_1 variant alternative union_struct_76 is not set",::futils::error::Category::lib);
             }
-            if (auto err = std::get<75>((*this).union_variant_1).raw_arguments.encode(w)) {
+            if (auto err = std::get<75>((*this).union_variant_1).type.encode(w)) {
                 return err;
             }
-            if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(std::get<75>((*this).union_variant_1).arguments_list_len) ,true)) {
-                return ::futils::error::Error<>("encode: Node::arguments_list_len: write std::uint32_t failed",::futils::error::Category::lib);
-            }
-            auto tmp_220_ = std::get<75>((*this).union_variant_1).arguments_list_len;
-            if (tmp_220_!=std::get<75>((*this).union_variant_1).arguments_list.size()) {
-                return ::futils::error::Error<>("encode: Node::arguments_list: dynamic length is not compatible with its length; tmp_220_!=std::get<75>((*this).union_variant_1).arguments_list.size()",::futils::error::Category::lib);
-            }
-            for (auto& tmp_221_ : std::get<75>((*this).union_variant_1).arguments_list) {
-                if (auto err = tmp_221_.encode(w)) {
-                    return err;
-                }
-            }
-            if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(std::get<75>((*this).union_variant_1).assigns_len) ,true)) {
-                return ::futils::error::Error<>("encode: Node::assigns_len: write std::uint32_t failed",::futils::error::Category::lib);
-            }
-            auto tmp_222_ = std::get<75>((*this).union_variant_1).assigns_len;
-            if (tmp_222_!=std::get<75>((*this).union_variant_1).assigns.size()) {
-                return ::futils::error::Error<>("encode: Node::assigns: dynamic length is not compatible with its length; tmp_222_!=std::get<75>((*this).union_variant_1).assigns.size()",::futils::error::Category::lib);
-            }
-            for (auto& tmp_223_ : std::get<75>((*this).union_variant_1).assigns) {
-                if (auto err = tmp_223_.encode(w)) {
-                    return err;
-                }
-            }
-            if (auto err = std::get<75>((*this).union_variant_1).alignment.encode(w)) {
-                return err;
-            }
-            if (auto err = std::get<75>((*this).union_variant_1).sub_byte_length.encode(w)) {
-                return err;
-            }
-            if (auto err = std::get<75>((*this).union_variant_1).sub_byte_begin.encode(w)) {
+            if (auto err = std::get<75>((*this).union_variant_1).expr.encode(w)) {
                 return err;
             }
         }
-        else if (NodeKind::Identity==(*this).node_kind) {
+        else if (NodeKind::Cast==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_77>(union_variant_1)) {
                 return ::futils::error::Error<>("encode: Node: union_variant_1 variant alternative union_struct_77 is not set",::futils::error::Category::lib);
             }
             if (auto err = std::get<76>((*this).union_variant_1).type.encode(w)) {
                 return err;
             }
-            if (auto err = std::get<76>((*this).union_variant_1).expr.encode(w)) {
+            if (auto err = std::get<76>((*this).union_variant_1).base.encode(w)) {
+                return err;
+            }
+            if (auto err = std::get<76>((*this).union_variant_1).arguments_ref.encode(w)) {
                 return err;
             }
         }
-        else if (NodeKind::Cast==(*this).node_kind) {
+        else if (NodeKind::OrCond==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_78>(union_variant_1)) {
                 return ::futils::error::Error<>("encode: Node: union_variant_1 variant alternative union_struct_78 is not set",::futils::error::Category::lib);
             }
@@ -47602,52 +42405,38 @@ namespace brgen::nast::wire {
             if (auto err = std::get<77>((*this).union_variant_1).base.encode(w)) {
                 return err;
             }
-            if (auto err = std::get<77>((*this).union_variant_1).arguments_ref.encode(w)) {
-                return err;
+            if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(std::get<77>((*this).union_variant_1).conds_len) ,true)) {
+                return ::futils::error::Error<>("encode: Node::conds_len: write std::uint32_t failed",::futils::error::Category::lib);
+            }
+            auto tmp_219_ = std::get<77>((*this).union_variant_1).conds_len;
+            if (tmp_219_!=std::get<77>((*this).union_variant_1).conds.size()) {
+                return ::futils::error::Error<>("encode: Node::conds: dynamic length is not compatible with its length; tmp_219_!=std::get<77>((*this).union_variant_1).conds.size()",::futils::error::Category::lib);
+            }
+            for (auto& tmp_220_ : std::get<77>((*this).union_variant_1).conds) {
+                if (auto err = tmp_220_.encode(w)) {
+                    return err;
+                }
             }
         }
-        else if (NodeKind::OrCond==(*this).node_kind) {
+        else if (NodeKind::Import==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_79>(union_variant_1)) {
                 return ::futils::error::Error<>("encode: Node: union_variant_1 variant alternative union_struct_79 is not set",::futils::error::Category::lib);
             }
             if (auto err = std::get<78>((*this).union_variant_1).type.encode(w)) {
                 return err;
             }
-            if (auto err = std::get<78>((*this).union_variant_1).base.encode(w)) {
-                return err;
-            }
-            if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(std::get<78>((*this).union_variant_1).conds_len) ,true)) {
-                return ::futils::error::Error<>("encode: Node::conds_len: write std::uint32_t failed",::futils::error::Category::lib);
-            }
-            auto tmp_224_ = std::get<78>((*this).union_variant_1).conds_len;
-            if (tmp_224_!=std::get<78>((*this).union_variant_1).conds.size()) {
-                return ::futils::error::Error<>("encode: Node::conds: dynamic length is not compatible with its length; tmp_224_!=std::get<78>((*this).union_variant_1).conds.size()",::futils::error::Category::lib);
-            }
-            for (auto& tmp_225_ : std::get<78>((*this).union_variant_1).conds) {
-                if (auto err = tmp_225_.encode(w)) {
-                    return err;
-                }
-            }
-        }
-        else if (NodeKind::Import==(*this).node_kind) {
-            if(!std::holds_alternative<union_struct_80>(union_variant_1)) {
-                return ::futils::error::Error<>("encode: Node: union_variant_1 variant alternative union_struct_80 is not set",::futils::error::Category::lib);
-            }
-            if (auto err = std::get<79>((*this).union_variant_1).type.encode(w)) {
-                return err;
-            }
-            if (auto err = std::get<79>((*this).union_variant_1).path.encode(w)) {
+            if (auto err = std::get<78>((*this).union_variant_1).path.encode(w)) {
                 return err;
             }
         }
         return ::futils::error::Error<>();
     }
     inline ::futils::error::Error<> Node::decode(::futils::binary::reader& r) {
-        std::uint32_t tmp_226_ = 0;
-        if (!::futils::binary::read_num(r,tmp_226_ ,true)) {
+        std::uint32_t tmp_221_ = 0;
+        if (!::futils::binary::read_num(r,tmp_221_ ,true)) {
             return ::futils::error::Error<>("decode: Node::node_kind: read int failed",::futils::error::Category::lib);
         }
-        (*this).node_kind = static_cast<NodeKind>(tmp_226_);
+        (*this).node_kind = static_cast<NodeKind>(tmp_221_);
         if (auto err = (*this).loc.decode(r)) {
             return err;
         }
@@ -47658,14 +42447,14 @@ namespace brgen::nast::wire {
             if (!::futils::binary::read_num(r,std::get<1>((*this).union_variant_1).statements_len ,true)) {
                 return ::futils::error::Error<>("decode: Node::statements_len: read int failed",::futils::error::Category::lib);
             }
-            auto tmp_227_ = std::get<1>((*this).union_variant_1).statements_len;
+            auto tmp_222_ = std::get<1>((*this).union_variant_1).statements_len;
             std::get<1>((*this).union_variant_1).statements.clear();
-            for (size_t  tmp_229_= 0; tmp_229_<tmp_227_; ++tmp_229_ ) {
-                Ref tmp_228_;
-                if (auto err = tmp_228_.decode(r)) {
+            for (size_t  tmp_224_= 0; tmp_224_<tmp_222_; ++tmp_224_ ) {
+                Ref tmp_223_;
+                if (auto err = tmp_223_.decode(r)) {
                     return err;
                 }
-                std::get<1>((*this).union_variant_1).statements.push_back(std::move(tmp_228_));
+                std::get<1>((*this).union_variant_1).statements.push_back(std::move(tmp_223_));
             }
             if (auto err = std::get<1>((*this).union_variant_1).struct_type.decode(r)) {
                 return err;
@@ -47743,14 +42532,14 @@ namespace brgen::nast::wire {
             if (!::futils::binary::read_num(r,std::get<6>((*this).union_variant_1).type_parameters_len ,true)) {
                 return ::futils::error::Error<>("decode: Node::type_parameters_len: read int failed",::futils::error::Category::lib);
             }
-            auto tmp_230_ = std::get<6>((*this).union_variant_1).type_parameters_len;
+            auto tmp_225_ = std::get<6>((*this).union_variant_1).type_parameters_len;
             std::get<6>((*this).union_variant_1).type_parameters.clear();
-            for (size_t  tmp_232_= 0; tmp_232_<tmp_230_; ++tmp_232_ ) {
-                Ref tmp_231_;
-                if (auto err = tmp_231_.decode(r)) {
+            for (size_t  tmp_227_= 0; tmp_227_<tmp_225_; ++tmp_227_ ) {
+                Ref tmp_226_;
+                if (auto err = tmp_226_.decode(r)) {
                     return err;
                 }
-                std::get<6>((*this).union_variant_1).type_parameters.push_back(std::move(tmp_231_));
+                std::get<6>((*this).union_variant_1).type_parameters.push_back(std::move(tmp_226_));
             }
         }
         else if (NodeKind::Function==(*this).node_kind) {
@@ -47769,14 +42558,14 @@ namespace brgen::nast::wire {
             if (!::futils::binary::read_num(r,std::get<7>((*this).union_variant_1).parameters_len ,true)) {
                 return ::futils::error::Error<>("decode: Node::parameters_len: read int failed",::futils::error::Category::lib);
             }
-            auto tmp_233_ = std::get<7>((*this).union_variant_1).parameters_len;
+            auto tmp_228_ = std::get<7>((*this).union_variant_1).parameters_len;
             std::get<7>((*this).union_variant_1).parameters.clear();
-            for (size_t  tmp_235_= 0; tmp_235_<tmp_233_; ++tmp_235_ ) {
-                Ref tmp_234_;
-                if (auto err = tmp_234_.decode(r)) {
+            for (size_t  tmp_230_= 0; tmp_230_<tmp_228_; ++tmp_230_ ) {
+                Ref tmp_229_;
+                if (auto err = tmp_229_.decode(r)) {
                     return err;
                 }
-                std::get<7>((*this).union_variant_1).parameters.push_back(std::move(tmp_234_));
+                std::get<7>((*this).union_variant_1).parameters.push_back(std::move(tmp_229_));
             }
             if (auto err = std::get<7>((*this).union_variant_1).return_type.decode(r)) {
                 return err;
@@ -47792,14 +42581,14 @@ namespace brgen::nast::wire {
             if (!::futils::binary::read_num(r,std::get<8>((*this).union_variant_1).blocks_len ,true)) {
                 return ::futils::error::Error<>("decode: Node::blocks_len: read int failed",::futils::error::Category::lib);
             }
-            auto tmp_236_ = std::get<8>((*this).union_variant_1).blocks_len;
+            auto tmp_231_ = std::get<8>((*this).union_variant_1).blocks_len;
             std::get<8>((*this).union_variant_1).blocks.clear();
-            for (size_t  tmp_238_= 0; tmp_238_<tmp_236_; ++tmp_238_ ) {
-                Ref tmp_237_;
-                if (auto err = tmp_237_.decode(r)) {
+            for (size_t  tmp_233_= 0; tmp_233_<tmp_231_; ++tmp_233_ ) {
+                Ref tmp_232_;
+                if (auto err = tmp_232_.decode(r)) {
                     return err;
                 }
-                std::get<8>((*this).union_variant_1).blocks.push_back(std::move(tmp_237_));
+                std::get<8>((*this).union_variant_1).blocks.push_back(std::move(tmp_232_));
             }
         }
         else if (NodeKind::Match==(*this).node_kind) {
@@ -47812,14 +42601,14 @@ namespace brgen::nast::wire {
             if (!::futils::binary::read_num(r,std::get<9>((*this).union_variant_1).blocks_len ,true)) {
                 return ::futils::error::Error<>("decode: Node::blocks_len: read int failed",::futils::error::Category::lib);
             }
-            auto tmp_239_ = std::get<9>((*this).union_variant_1).blocks_len;
+            auto tmp_234_ = std::get<9>((*this).union_variant_1).blocks_len;
             std::get<9>((*this).union_variant_1).blocks.clear();
-            for (size_t  tmp_241_= 0; tmp_241_<tmp_239_; ++tmp_241_ ) {
-                Ref tmp_240_;
-                if (auto err = tmp_240_.decode(r)) {
+            for (size_t  tmp_236_= 0; tmp_236_<tmp_234_; ++tmp_236_ ) {
+                Ref tmp_235_;
+                if (auto err = tmp_235_.decode(r)) {
                     return err;
                 }
-                std::get<9>((*this).union_variant_1).blocks.push_back(std::move(tmp_240_));
+                std::get<9>((*this).union_variant_1).blocks.push_back(std::move(tmp_235_));
             }
             if (auto err = std::get<9>((*this).union_variant_1).condition.decode(r)) {
                 return err;
@@ -47869,11 +42658,11 @@ namespace brgen::nast::wire {
             if (auto err = std::get<12>((*this).union_variant_1).value_ref.decode(r)) {
                 return err;
             }
-            std::uint8_t tmp_242_ = 0;
-            if (!::futils::binary::read_num(r,tmp_242_ ,true)) {
+            std::uint8_t tmp_237_ = 0;
+            if (!::futils::binary::read_num(r,tmp_237_ ,true)) {
                 return ::futils::error::Error<>("decode: Node::op_binary_op: read int failed",::futils::error::Category::lib);
             }
-            std::get<12>((*this).union_variant_1).op_binary_op = static_cast<BinaryOp>(tmp_242_);
+            std::get<12>((*this).union_variant_1).op_binary_op = static_cast<BinaryOp>(tmp_237_);
         }
         else if (NodeKind::VariableDefinition==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_14>(union_variant_1)) {
@@ -47885,11 +42674,11 @@ namespace brgen::nast::wire {
             if (auto err = std::get<13>((*this).union_variant_1).value_ref.decode(r)) {
                 return err;
             }
-            std::uint8_t tmp_243_ = 0;
-            if (!::futils::binary::read_num(r,tmp_243_ ,true)) {
+            std::uint8_t tmp_238_ = 0;
+            if (!::futils::binary::read_num(r,tmp_238_ ,true)) {
                 return ::futils::error::Error<>("decode: Node::op_binary_op: read int failed",::futils::error::Category::lib);
             }
-            std::get<13>((*this).union_variant_1).op_binary_op = static_cast<BinaryOp>(tmp_243_);
+            std::get<13>((*this).union_variant_1).op_binary_op = static_cast<BinaryOp>(tmp_238_);
         }
         else if (NodeKind::Metadata==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_15>(union_variant_1)) {
@@ -47953,11 +42742,11 @@ namespace brgen::nast::wire {
             if (auto err = std::get<19>((*this).union_variant_1).type.decode(r)) {
                 return err;
             }
-            std::uint8_t tmp_244_ = 0;
-            if (!::futils::binary::read_num(r,tmp_244_ ,true)) {
+            std::uint8_t tmp_239_ = 0;
+            if (!::futils::binary::read_num(r,tmp_239_ ,true)) {
                 return ::futils::error::Error<>("decode: Node::op_binary_op: read int failed",::futils::error::Category::lib);
             }
-            std::get<19>((*this).union_variant_1).op_binary_op = static_cast<BinaryOp>(tmp_244_);
+            std::get<19>((*this).union_variant_1).op_binary_op = static_cast<BinaryOp>(tmp_239_);
             if (auto err = std::get<19>((*this).union_variant_1).left.decode(r)) {
                 return err;
             }
@@ -47972,11 +42761,11 @@ namespace brgen::nast::wire {
             if (auto err = std::get<20>((*this).union_variant_1).type.decode(r)) {
                 return err;
             }
-            std::uint8_t tmp_245_ = 0;
-            if (!::futils::binary::read_num(r,tmp_245_ ,true)) {
+            std::uint8_t tmp_240_ = 0;
+            if (!::futils::binary::read_num(r,tmp_240_ ,true)) {
                 return ::futils::error::Error<>("decode: Node::op_unary_op: read int failed",::futils::error::Category::lib);
             }
-            std::get<20>((*this).union_variant_1).op_unary_op = static_cast<UnaryOp>(tmp_245_);
+            std::get<20>((*this).union_variant_1).op_unary_op = static_cast<UnaryOp>(tmp_240_);
             if (auto err = std::get<20>((*this).union_variant_1).target.decode(r)) {
                 return err;
             }
@@ -48063,14 +42852,14 @@ namespace brgen::nast::wire {
             if (!::futils::binary::read_num(r,std::get<27>((*this).union_variant_1).statements_len ,true)) {
                 return ::futils::error::Error<>("decode: Node::statements_len: read int failed",::futils::error::Category::lib);
             }
-            auto tmp_246_ = std::get<27>((*this).union_variant_1).statements_len;
+            auto tmp_241_ = std::get<27>((*this).union_variant_1).statements_len;
             std::get<27>((*this).union_variant_1).statements.clear();
-            for (size_t  tmp_248_= 0; tmp_248_<tmp_246_; ++tmp_248_ ) {
-                Ref tmp_247_;
-                if (auto err = tmp_247_.decode(r)) {
+            for (size_t  tmp_243_= 0; tmp_243_<tmp_241_; ++tmp_243_ ) {
+                Ref tmp_242_;
+                if (auto err = tmp_242_.decode(r)) {
                     return err;
                 }
-                std::get<27>((*this).union_variant_1).statements.push_back(std::move(tmp_247_));
+                std::get<27>((*this).union_variant_1).statements.push_back(std::move(tmp_242_));
             }
             if (auto err = std::get<27>((*this).union_variant_1).end_loc.decode(r)) {
                 return err;
@@ -48083,14 +42872,14 @@ namespace brgen::nast::wire {
             if (!::futils::binary::read_num(r,std::get<28>((*this).union_variant_1).arguments_list_len ,true)) {
                 return ::futils::error::Error<>("decode: Node::arguments_list_len: read int failed",::futils::error::Category::lib);
             }
-            auto tmp_249_ = std::get<28>((*this).union_variant_1).arguments_list_len;
+            auto tmp_244_ = std::get<28>((*this).union_variant_1).arguments_list_len;
             std::get<28>((*this).union_variant_1).arguments_list.clear();
-            for (size_t  tmp_251_= 0; tmp_251_<tmp_249_; ++tmp_251_ ) {
-                Ref tmp_250_;
-                if (auto err = tmp_250_.decode(r)) {
+            for (size_t  tmp_246_= 0; tmp_246_<tmp_244_; ++tmp_246_ ) {
+                Ref tmp_245_;
+                if (auto err = tmp_245_.decode(r)) {
                     return err;
                 }
-                std::get<28>((*this).union_variant_1).arguments_list.push_back(std::move(tmp_250_));
+                std::get<28>((*this).union_variant_1).arguments_list.push_back(std::move(tmp_245_));
             }
             if (auto err = std::get<28>((*this).union_variant_1).end_loc.decode(r)) {
                 return err;
@@ -48136,11 +42925,11 @@ namespace brgen::nast::wire {
             if (!::futils::binary::read_num(r,std::get<32>((*this).union_variant_1).is_signed ,true)) {
                 return ::futils::error::Error<>("decode: Node::is_signed: read int failed",::futils::error::Category::lib);
             }
-            std::uint8_t tmp_252_ = 0;
-            if (!::futils::binary::read_num(r,tmp_252_ ,true)) {
+            std::uint8_t tmp_247_ = 0;
+            if (!::futils::binary::read_num(r,tmp_247_ ,true)) {
                 return ::futils::error::Error<>("decode: Node::endian: read int failed",::futils::error::Category::lib);
             }
-            std::get<32>((*this).union_variant_1).endian = static_cast<Endian>(tmp_252_);
+            std::get<32>((*this).union_variant_1).endian = static_cast<Endian>(tmp_247_);
         }
         else if (NodeKind::IntLiteral==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_34>(union_variant_1)) {
@@ -48210,11 +42999,11 @@ namespace brgen::nast::wire {
             if (auto err = std::get<38>((*this).union_variant_1).type.decode(r)) {
                 return err;
             }
-            std::uint8_t tmp_253_ = 0;
-            if (!::futils::binary::read_num(r,tmp_253_ ,true)) {
+            std::uint8_t tmp_248_ = 0;
+            if (!::futils::binary::read_num(r,tmp_248_ ,true)) {
                 return ::futils::error::Error<>("decode: Node::kind_special_literal_kind: read int failed",::futils::error::Category::lib);
             }
-            std::get<38>((*this).union_variant_1).kind_special_literal_kind = static_cast<SpecialLiteralKind>(tmp_253_);
+            std::get<38>((*this).union_variant_1).kind_special_literal_kind = static_cast<SpecialLiteralKind>(tmp_248_);
         }
         else if (NodeKind::Paren==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_40>(union_variant_1)) {
@@ -48280,11 +43069,11 @@ namespace brgen::nast::wire {
             if (auto err = std::get<42>((*this).union_variant_1).end.decode(r)) {
                 return err;
             }
-            std::uint8_t tmp_254_ = 0;
-            if (!::futils::binary::read_num(r,tmp_254_ ,true)) {
+            std::uint8_t tmp_249_ = 0;
+            if (!::futils::binary::read_num(r,tmp_249_ ,true)) {
                 return ::futils::error::Error<>("decode: Node::op_binary_op: read int failed",::futils::error::Category::lib);
             }
-            std::get<42>((*this).union_variant_1).op_binary_op = static_cast<BinaryOp>(tmp_254_);
+            std::get<42>((*this).union_variant_1).op_binary_op = static_cast<BinaryOp>(tmp_249_);
         }
         else if (NodeKind::BadExpr==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_44>(union_variant_1)) {
@@ -48318,11 +43107,11 @@ namespace brgen::nast::wire {
             if (!::futils::binary::read_num(r,std::get<45>((*this).union_variant_1).bit_size ,true)) {
                 return ::futils::error::Error<>("decode: Node::bit_size: read int failed",::futils::error::Category::lib);
             }
-            std::uint8_t tmp_255_ = 0;
-            if (!::futils::binary::read_num(r,tmp_255_ ,true)) {
+            std::uint8_t tmp_250_ = 0;
+            if (!::futils::binary::read_num(r,tmp_250_ ,true)) {
                 return ::futils::error::Error<>("decode: Node::endian: read int failed",::futils::error::Category::lib);
             }
-            std::get<45>((*this).union_variant_1).endian = static_cast<Endian>(tmp_255_);
+            std::get<45>((*this).union_variant_1).endian = static_cast<Endian>(tmp_250_);
         }
         else if (NodeKind::BoolType==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_47>(union_variant_1)) {
@@ -48425,11 +43214,11 @@ namespace brgen::nast::wire {
             if (!::futils::binary::read_num(r,std::get<54>((*this).union_variant_1).is_explicit ,true)) {
                 return ::futils::error::Error<>("decode: Node::is_explicit: read int failed",::futils::error::Category::lib);
             }
-            std::uint8_t tmp_256_ = 0;
-            if (!::futils::binary::read_num(r,tmp_256_ ,true)) {
+            std::uint8_t tmp_251_ = 0;
+            if (!::futils::binary::read_num(r,tmp_251_ ,true)) {
                 return ::futils::error::Error<>("decode: Node::kind_special_literal_kind: read int failed",::futils::error::Category::lib);
             }
-            std::get<54>((*this).union_variant_1).kind_special_literal_kind = static_cast<SpecialLiteralKind>(tmp_256_);
+            std::get<54>((*this).union_variant_1).kind_special_literal_kind = static_cast<SpecialLiteralKind>(tmp_251_);
             if (auto err = std::get<54>((*this).union_variant_1).length.decode(r)) {
                 return err;
             }
@@ -48447,14 +43236,14 @@ namespace brgen::nast::wire {
             if (!::futils::binary::read_num(r,std::get<55>((*this).union_variant_1).parameters_len ,true)) {
                 return ::futils::error::Error<>("decode: Node::parameters_len: read int failed",::futils::error::Category::lib);
             }
-            auto tmp_257_ = std::get<55>((*this).union_variant_1).parameters_len;
+            auto tmp_252_ = std::get<55>((*this).union_variant_1).parameters_len;
             std::get<55>((*this).union_variant_1).parameters.clear();
-            for (size_t  tmp_259_= 0; tmp_259_<tmp_257_; ++tmp_259_ ) {
-                Ref tmp_258_;
-                if (auto err = tmp_258_.decode(r)) {
+            for (size_t  tmp_254_= 0; tmp_254_<tmp_252_; ++tmp_254_ ) {
+                Ref tmp_253_;
+                if (auto err = tmp_253_.decode(r)) {
                     return err;
                 }
-                std::get<55>((*this).union_variant_1).parameters.push_back(std::move(tmp_258_));
+                std::get<55>((*this).union_variant_1).parameters.push_back(std::move(tmp_253_));
             }
         }
         else if (NodeKind::StructType==(*this).node_kind) {
@@ -48492,14 +43281,14 @@ namespace brgen::nast::wire {
             if (!::futils::binary::read_num(r,std::get<58>((*this).union_variant_1).candidates_len ,true)) {
                 return ::futils::error::Error<>("decode: Node::candidates_len: read int failed",::futils::error::Category::lib);
             }
-            auto tmp_260_ = std::get<58>((*this).union_variant_1).candidates_len;
+            auto tmp_255_ = std::get<58>((*this).union_variant_1).candidates_len;
             std::get<58>((*this).union_variant_1).candidates.clear();
-            for (size_t  tmp_262_= 0; tmp_262_<tmp_260_; ++tmp_262_ ) {
-                Ref tmp_261_;
-                if (auto err = tmp_261_.decode(r)) {
+            for (size_t  tmp_257_= 0; tmp_257_<tmp_255_; ++tmp_257_ ) {
+                Ref tmp_256_;
+                if (auto err = tmp_256_.decode(r)) {
                     return err;
                 }
-                std::get<58>((*this).union_variant_1).candidates.push_back(std::move(tmp_261_));
+                std::get<58>((*this).union_variant_1).candidates.push_back(std::move(tmp_256_));
             }
         }
         else if (NodeKind::StructUnionCandidate==(*this).node_kind) {
@@ -48526,14 +43315,14 @@ namespace brgen::nast::wire {
             if (!::futils::binary::read_num(r,std::get<60>((*this).union_variant_1).candidates_len ,true)) {
                 return ::futils::error::Error<>("decode: Node::candidates_len: read int failed",::futils::error::Category::lib);
             }
-            auto tmp_263_ = std::get<60>((*this).union_variant_1).candidates_len;
+            auto tmp_258_ = std::get<60>((*this).union_variant_1).candidates_len;
             std::get<60>((*this).union_variant_1).candidates.clear();
-            for (size_t  tmp_265_= 0; tmp_265_<tmp_263_; ++tmp_265_ ) {
-                Ref tmp_264_;
-                if (auto err = tmp_264_.decode(r)) {
+            for (size_t  tmp_260_= 0; tmp_260_<tmp_258_; ++tmp_260_ ) {
+                Ref tmp_259_;
+                if (auto err = tmp_259_.decode(r)) {
                     return err;
                 }
-                std::get<60>((*this).union_variant_1).candidates.push_back(std::move(tmp_264_));
+                std::get<60>((*this).union_variant_1).candidates.push_back(std::move(tmp_259_));
             }
             if (auto err = std::get<60>((*this).union_variant_1).base_type.decode(r)) {
                 return err;
@@ -48547,14 +43336,14 @@ namespace brgen::nast::wire {
             if (!::futils::binary::read_num(r,std::get<60>((*this).union_variant_1).member_candidates_len ,true)) {
                 return ::futils::error::Error<>("decode: Node::member_candidates_len: read int failed",::futils::error::Category::lib);
             }
-            auto tmp_266_ = std::get<60>((*this).union_variant_1).member_candidates_len;
+            auto tmp_261_ = std::get<60>((*this).union_variant_1).member_candidates_len;
             std::get<60>((*this).union_variant_1).member_candidates.clear();
-            for (size_t  tmp_268_= 0; tmp_268_<tmp_266_; ++tmp_268_ ) {
-                Ref tmp_267_;
-                if (auto err = tmp_267_.decode(r)) {
+            for (size_t  tmp_263_= 0; tmp_263_<tmp_261_; ++tmp_263_ ) {
+                Ref tmp_262_;
+                if (auto err = tmp_262_.decode(r)) {
                     return err;
                 }
-                std::get<60>((*this).union_variant_1).member_candidates.push_back(std::move(tmp_267_));
+                std::get<60>((*this).union_variant_1).member_candidates.push_back(std::move(tmp_262_));
             }
         }
         else if (NodeKind::RangeType==(*this).node_kind) {
@@ -48614,14 +43403,14 @@ namespace brgen::nast::wire {
             if (!::futils::binary::read_num(r,std::get<65>((*this).union_variant_1).type_arguments_len ,true)) {
                 return ::futils::error::Error<>("decode: Node::type_arguments_len: read int failed",::futils::error::Category::lib);
             }
-            auto tmp_269_ = std::get<65>((*this).union_variant_1).type_arguments_len;
+            auto tmp_264_ = std::get<65>((*this).union_variant_1).type_arguments_len;
             std::get<65>((*this).union_variant_1).type_arguments.clear();
-            for (size_t  tmp_271_= 0; tmp_271_<tmp_269_; ++tmp_271_ ) {
-                Ref tmp_270_;
-                if (auto err = tmp_270_.decode(r)) {
+            for (size_t  tmp_266_= 0; tmp_266_<tmp_264_; ++tmp_266_ ) {
+                Ref tmp_265_;
+                if (auto err = tmp_265_.decode(r)) {
                     return err;
                 }
-                std::get<65>((*this).union_variant_1).type_arguments.push_back(std::move(tmp_270_));
+                std::get<65>((*this).union_variant_1).type_arguments.push_back(std::move(tmp_265_));
             }
         }
         else if (NodeKind::MatchBranch==(*this).node_kind) {
@@ -48692,14 +43481,14 @@ namespace brgen::nast::wire {
             if (!::futils::binary::read_num(r,std::get<71>((*this).union_variant_1).members_len ,true)) {
                 return ::futils::error::Error<>("decode: Node::members_len: read int failed",::futils::error::Category::lib);
             }
-            auto tmp_272_ = std::get<71>((*this).union_variant_1).members_len;
+            auto tmp_267_ = std::get<71>((*this).union_variant_1).members_len;
             std::get<71>((*this).union_variant_1).members.clear();
-            for (size_t  tmp_274_= 0; tmp_274_<tmp_272_; ++tmp_274_ ) {
-                Ref tmp_273_;
-                if (auto err = tmp_273_.decode(r)) {
+            for (size_t  tmp_269_= 0; tmp_269_<tmp_267_; ++tmp_269_ ) {
+                Ref tmp_268_;
+                if (auto err = tmp_268_.decode(r)) {
                     return err;
                 }
-                std::get<71>((*this).union_variant_1).members.push_back(std::move(tmp_273_));
+                std::get<71>((*this).union_variant_1).members.push_back(std::move(tmp_268_));
             }
             if (auto err = std::get<71>((*this).union_variant_1).enum_type.decode(r)) {
                 return err;
@@ -48753,59 +43542,32 @@ namespace brgen::nast::wire {
                 return err;
             }
         }
-        else if (NodeKind::FieldArgument==(*this).node_kind) {
+        else if (NodeKind::Identity==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_76>(union_variant_1)) {
                 union_variant_1 = union_struct_76();
             }
-            if (auto err = std::get<75>((*this).union_variant_1).raw_arguments.decode(r)) {
+            if (auto err = std::get<75>((*this).union_variant_1).type.decode(r)) {
                 return err;
             }
-            if (!::futils::binary::read_num(r,std::get<75>((*this).union_variant_1).arguments_list_len ,true)) {
-                return ::futils::error::Error<>("decode: Node::arguments_list_len: read int failed",::futils::error::Category::lib);
-            }
-            auto tmp_275_ = std::get<75>((*this).union_variant_1).arguments_list_len;
-            std::get<75>((*this).union_variant_1).arguments_list.clear();
-            for (size_t  tmp_277_= 0; tmp_277_<tmp_275_; ++tmp_277_ ) {
-                Ref tmp_276_;
-                if (auto err = tmp_276_.decode(r)) {
-                    return err;
-                }
-                std::get<75>((*this).union_variant_1).arguments_list.push_back(std::move(tmp_276_));
-            }
-            if (!::futils::binary::read_num(r,std::get<75>((*this).union_variant_1).assigns_len ,true)) {
-                return ::futils::error::Error<>("decode: Node::assigns_len: read int failed",::futils::error::Category::lib);
-            }
-            auto tmp_278_ = std::get<75>((*this).union_variant_1).assigns_len;
-            std::get<75>((*this).union_variant_1).assigns.clear();
-            for (size_t  tmp_280_= 0; tmp_280_<tmp_278_; ++tmp_280_ ) {
-                Ref tmp_279_;
-                if (auto err = tmp_279_.decode(r)) {
-                    return err;
-                }
-                std::get<75>((*this).union_variant_1).assigns.push_back(std::move(tmp_279_));
-            }
-            if (auto err = std::get<75>((*this).union_variant_1).alignment.decode(r)) {
-                return err;
-            }
-            if (auto err = std::get<75>((*this).union_variant_1).sub_byte_length.decode(r)) {
-                return err;
-            }
-            if (auto err = std::get<75>((*this).union_variant_1).sub_byte_begin.decode(r)) {
+            if (auto err = std::get<75>((*this).union_variant_1).expr.decode(r)) {
                 return err;
             }
         }
-        else if (NodeKind::Identity==(*this).node_kind) {
+        else if (NodeKind::Cast==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_77>(union_variant_1)) {
                 union_variant_1 = union_struct_77();
             }
             if (auto err = std::get<76>((*this).union_variant_1).type.decode(r)) {
                 return err;
             }
-            if (auto err = std::get<76>((*this).union_variant_1).expr.decode(r)) {
+            if (auto err = std::get<76>((*this).union_variant_1).base.decode(r)) {
+                return err;
+            }
+            if (auto err = std::get<76>((*this).union_variant_1).arguments_ref.decode(r)) {
                 return err;
             }
         }
-        else if (NodeKind::Cast==(*this).node_kind) {
+        else if (NodeKind::OrCond==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_78>(union_variant_1)) {
                 union_variant_1 = union_struct_78();
             }
@@ -48815,41 +43577,27 @@ namespace brgen::nast::wire {
             if (auto err = std::get<77>((*this).union_variant_1).base.decode(r)) {
                 return err;
             }
-            if (auto err = std::get<77>((*this).union_variant_1).arguments_ref.decode(r)) {
-                return err;
+            if (!::futils::binary::read_num(r,std::get<77>((*this).union_variant_1).conds_len ,true)) {
+                return ::futils::error::Error<>("decode: Node::conds_len: read int failed",::futils::error::Category::lib);
+            }
+            auto tmp_270_ = std::get<77>((*this).union_variant_1).conds_len;
+            std::get<77>((*this).union_variant_1).conds.clear();
+            for (size_t  tmp_272_= 0; tmp_272_<tmp_270_; ++tmp_272_ ) {
+                Ref tmp_271_;
+                if (auto err = tmp_271_.decode(r)) {
+                    return err;
+                }
+                std::get<77>((*this).union_variant_1).conds.push_back(std::move(tmp_271_));
             }
         }
-        else if (NodeKind::OrCond==(*this).node_kind) {
+        else if (NodeKind::Import==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_79>(union_variant_1)) {
                 union_variant_1 = union_struct_79();
             }
             if (auto err = std::get<78>((*this).union_variant_1).type.decode(r)) {
                 return err;
             }
-            if (auto err = std::get<78>((*this).union_variant_1).base.decode(r)) {
-                return err;
-            }
-            if (!::futils::binary::read_num(r,std::get<78>((*this).union_variant_1).conds_len ,true)) {
-                return ::futils::error::Error<>("decode: Node::conds_len: read int failed",::futils::error::Category::lib);
-            }
-            auto tmp_281_ = std::get<78>((*this).union_variant_1).conds_len;
-            std::get<78>((*this).union_variant_1).conds.clear();
-            for (size_t  tmp_283_= 0; tmp_283_<tmp_281_; ++tmp_283_ ) {
-                Ref tmp_282_;
-                if (auto err = tmp_282_.decode(r)) {
-                    return err;
-                }
-                std::get<78>((*this).union_variant_1).conds.push_back(std::move(tmp_282_));
-            }
-        }
-        else if (NodeKind::Import==(*this).node_kind) {
-            if(!std::holds_alternative<union_struct_80>(union_variant_1)) {
-                union_variant_1 = union_struct_80();
-            }
-            if (auto err = std::get<79>((*this).union_variant_1).type.decode(r)) {
-                return err;
-            }
-            if (auto err = std::get<79>((*this).union_variant_1).path.decode(r)) {
+            if (auto err = std::get<78>((*this).union_variant_1).path.decode(r)) {
                 return err;
             }
         }
@@ -48865,24 +43613,24 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).strings_len) ,true)) {
             return ::futils::error::Error<>("encode: NastModule::strings_len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_284_ = (*this).strings_len;
-        if (tmp_284_!=(*this).strings.size()) {
-            return ::futils::error::Error<>("encode: NastModule::strings: dynamic length is not compatible with its length; tmp_284_!=(*this).strings.size()",::futils::error::Category::lib);
+        auto tmp_273_ = (*this).strings_len;
+        if (tmp_273_!=(*this).strings.size()) {
+            return ::futils::error::Error<>("encode: NastModule::strings: dynamic length is not compatible with its length; tmp_273_!=(*this).strings.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_285_ : (*this).strings) {
-            if (auto err = tmp_285_.encode(w)) {
+        for (auto& tmp_274_ : (*this).strings) {
+            if (auto err = tmp_274_.encode(w)) {
                 return err;
             }
         }
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).nodes_len) ,true)) {
             return ::futils::error::Error<>("encode: NastModule::nodes_len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_286_ = (*this).nodes_len;
-        if (tmp_286_!=(*this).nodes.size()) {
-            return ::futils::error::Error<>("encode: NastModule::nodes: dynamic length is not compatible with its length; tmp_286_!=(*this).nodes.size()",::futils::error::Category::lib);
+        auto tmp_275_ = (*this).nodes_len;
+        if (tmp_275_!=(*this).nodes.size()) {
+            return ::futils::error::Error<>("encode: NastModule::nodes: dynamic length is not compatible with its length; tmp_275_!=(*this).nodes.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_287_ : (*this).nodes) {
-            if (auto err = tmp_287_.encode(w)) {
+        for (auto& tmp_276_ : (*this).nodes) {
+            if (auto err = tmp_276_.encode(w)) {
                 return err;
             }
         }
@@ -48919,11 +43667,11 @@ namespace brgen::nast::wire {
         return ::futils::error::Error<>();
     }
     inline ::futils::error::Error<> NastModule::decode(::futils::binary::reader& r) {
-        ::futils::view::rvec tmp_288_ = {};
-        if (!r.read_direct(tmp_288_, 4)) {
+        ::futils::view::rvec tmp_277_ = {};
+        if (!r.read_direct(tmp_277_, 4)) {
             return ::futils::error::Error<>("decode: NastModule::magic: read string failed",::futils::error::Category::lib);
         }
-        if (tmp_288_ != ::futils::view::rvec("NAST",4)) {
+        if (tmp_277_ != ::futils::view::rvec("NAST",4)) {
             return ::futils::error::Error<>("decode: NastModule::magic: read string failed; not match to \"NAST\"",::futils::error::Category::lib);
         }
         if (!::futils::binary::read_num(r,(*this).version ,true)) {
@@ -48932,26 +43680,26 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).strings_len ,true)) {
             return ::futils::error::Error<>("decode: NastModule::strings_len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_289_ = (*this).strings_len;
+        auto tmp_278_ = (*this).strings_len;
         (*this).strings.clear();
-        for (size_t  tmp_291_= 0; tmp_291_<tmp_289_; ++tmp_291_ ) {
-            StringEntry tmp_290_;
-            if (auto err = tmp_290_.decode(r)) {
+        for (size_t  tmp_280_= 0; tmp_280_<tmp_278_; ++tmp_280_ ) {
+            StringEntry tmp_279_;
+            if (auto err = tmp_279_.decode(r)) {
                 return err;
             }
-            (*this).strings.push_back(std::move(tmp_290_));
+            (*this).strings.push_back(std::move(tmp_279_));
         }
         if (!::futils::binary::read_num(r,(*this).nodes_len ,true)) {
             return ::futils::error::Error<>("decode: NastModule::nodes_len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_292_ = (*this).nodes_len;
+        auto tmp_281_ = (*this).nodes_len;
         (*this).nodes.clear();
-        for (size_t  tmp_294_= 0; tmp_294_<tmp_292_; ++tmp_294_ ) {
-            Node tmp_293_;
-            if (auto err = tmp_293_.decode(r)) {
+        for (size_t  tmp_283_= 0; tmp_283_<tmp_281_; ++tmp_283_ ) {
+            Node tmp_282_;
+            if (auto err = tmp_282_.decode(r)) {
                 return err;
             }
-            (*this).nodes.push_back(std::move(tmp_293_));
+            (*this).nodes.push_back(std::move(tmp_282_));
         }
         if (auto err = (*this).root.decode(r)) {
             return err;

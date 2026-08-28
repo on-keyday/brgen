@@ -244,7 +244,6 @@ export type NodeKind =
     "EnumMember" |
     "State" |
     "TypeParameter" |
-    "FieldArgument" |
     "Identity" |
     "Cast" |
     "OrCond" |
@@ -335,7 +334,6 @@ export const NODE_KINDS: readonly NodeKind[] = [
     "EnumMember",
     "State",
     "TypeParameter",
-    "FieldArgument",
     "Identity",
     "Cast",
     "OrCond",
@@ -427,11 +425,10 @@ export const NODE_VALUE: Readonly<Record<NodeKind, number>> = {
     EnumMember: 331779,
     State: 335895,
     TypeParameter: 339971,
-    FieldArgument: 344065,
-    Identity: 348193,
-    Cast: 352289,
-    OrCond: 356385,
-    Import: 360481,
+    Identity: 344097,
+    Cast: 348193,
+    OrCond: 352289,
+    Import: 356385,
 };
 
 export function makeId(kind: NodeKind, index: number): NodeId {
@@ -523,7 +520,6 @@ export const ANCESTORS: Readonly<Record<NodeKind, readonly NodeKind[]>> = {
     EnumMember: ["NamedStatement", "Statement"],
     State: ["NamedStructTypedStatement", "NamedBodyStatement", "NamedStatement", "Statement"],
     TypeParameter: ["NamedStatement", "Statement"],
-    FieldArgument: ["Statement"],
     Identity: ["Expr", "Statement"],
     Cast: ["Expr", "Statement"],
     OrCond: ["Expr", "Statement"],
@@ -917,15 +913,6 @@ export interface TypeParameter extends NamedStatement {
     belong: NodeId;
 }
 
-export interface FieldArgument extends Statement {
-    raw_arguments: NodeId;
-    arguments: NodeId[];
-    assigns: NodeId[];
-    alignment: NodeId;
-    sub_byte_length: NodeId;
-    sub_byte_begin: NodeId;
-}
-
 export interface Identity extends Expr {
     expr: NodeId;
 }
@@ -1035,7 +1022,6 @@ export const NODE_FIELDS: Readonly<Record<NodeKind, readonly NodeFieldMeta[]>> =
     EnumMember: [{ name: "name", weak: false, list: false }, { name: "belong", weak: true, list: false }, { name: "raw_expr", weak: false, list: false }, { name: "value", weak: false, list: false }, { name: "str_literal", weak: false, list: false }],
     State: [{ name: "name", weak: false, list: false }, { name: "belong", weak: true, list: false }, { name: "body", weak: false, list: false }, { name: "struct_type", weak: false, list: false }],
     TypeParameter: [{ name: "name", weak: false, list: false }, { name: "belong", weak: true, list: false }],
-    FieldArgument: [{ name: "raw_arguments", weak: false, list: false }, { name: "arguments", weak: false, list: true }, { name: "assigns", weak: false, list: true }, { name: "alignment", weak: false, list: false }, { name: "sub_byte_length", weak: false, list: false }, { name: "sub_byte_begin", weak: false, list: false }],
     Identity: [{ name: "type", weak: false, list: false }, { name: "expr", weak: false, list: false }],
     Cast: [{ name: "type", weak: false, list: false }, { name: "base", weak: false, list: false }, { name: "arguments", weak: false, list: false }],
     OrCond: [{ name: "type", weak: false, list: false }, { name: "base", weak: false, list: false }, { name: "conds", weak: false, list: true }],
