@@ -187,8 +187,8 @@ namespace brgen::nast::bind {
             }
             return std::string_view{};  // 名前を持たない文
         };
-        if (auto fmt = owner.as_any<Format>()) {
-            if (auto* st = tables.table<FormatState>().get(fmt)) {
+        if (auto bound = owner.as_any<NamedBodyStatement>()) {
+            if (auto* st = tables.table<FormatState>().get(bound)) {
                 for (auto& f : st->fields) {
                     if (named_name(f) == name) {
                         return f;
@@ -230,6 +230,62 @@ namespace brgen::nast::bind {
             }
         }
         return nullref;
+    }
+
+    // メンバの型に現れる型パラメータを、その GenericType の型引数で置き換える。
+    // 置き換えが要らなければ元のノードを返す。要る場合も置き換えの起きる包み
+    // (ArrayType / GenericType) だけ新しく作り、中の式や具象型は共有する。
+    // 元の generic format の宣言は書き換えない。
+    Node<Type> Typer::substitute_type_params(Node<Type> t, const std::map<std::uint32_t, Node<Type>>& env) {
+        if (!t) {
+            return t;
+        }
+        if (auto id = t.as_any<IdentType>()) {
+            if (auto* r = tables.table<Resolution>().get(a.get<IdentType>(id)->ident)) {
+                if (auto tp = r->target.as_any<TypeParameter>()) {
+                    if (auto hit = env.find(tp.id()); hit != env.end()) {
+                        return hit->second;
+                    }
+                }
+            }
+            return t;
+        }
+        if (auto arr = t.as_any<ArrayType>()) {
+            auto elem = substitute_type_params(a.get<ArrayType>(arr)->element_type, env);
+            if (elem == a.get<ArrayType>(arr)->element_type) {
+                return t;
+            }
+            // 長さの式は共有する。長さは codec 意味論の情報で、型意味論では
+            // 要素型だけが効く ([len]u8 の二重ビューと同じ扱い)。
+            auto length = a.get<ArrayType>(arr)->length;
+            auto end_loc = a.get<ArrayType>(arr)->end_loc;
+            auto res = a.make<ArrayType>(a.header_at(t.id())->loc);
+            auto* rd = a.get<ArrayType>(res);
+            rd->length = length;
+            rd->end_loc = end_loc;
+            rd->element_type = elem;
+            return res;
+        }
+        if (auto gt = t.as_any<GenericType>()) {
+            // Bar の a :Foo[T] のような入れ子。引数側だけ置き換える。
+            bool changed = false;
+            std::vector<Node<Type>> args;
+            for (auto& arg : a.get<GenericType>(gt)->type_arguments) {
+                auto s = substitute_type_params(arg, env);
+                changed = changed || s != arg;
+                args.push_back(s);
+            }
+            if (!changed) {
+                return t;
+            }
+            auto base = a.get<GenericType>(gt)->base_type;
+            auto res = a.make<GenericType>(a.header_at(t.id())->loc);
+            auto* rd = a.get<GenericType>(res);
+            rd->base_type = base;
+            rd->type_arguments = std::move(args);
+            return res;
+        }
+        return t;
     }
 
     Node<Type> Typer::type_of_member_access(Node<MemberAccess> m) {
@@ -309,6 +365,38 @@ namespace brgen::nast::bind {
             if (auto ct = a.get<UnionType>(u)->common_type) {
                 base_type = ct;
             }
+        }
+        // generic format のメンバ。Foo[Plain] の x :T は Plain として見える。
+        // 実体化 (monomorphize) の段は作らず、メンバを引くこの場で型引数を
+        // 代入する。stream の型付けと同じ「置き換えの段を作らない」方針。
+        if (auto gt = base_type.as_any<GenericType>()) {
+            auto* gd = a.get<GenericType>(gt);
+            auto base_ident = gd->base_type.as_any<IdentType>();
+            if (!base_ident) {
+                return nullref;
+            }
+            auto* r = tables.table<Resolution>().get(a.get<IdentType>(base_ident)->ident);
+            if (!r) {
+                return nullref;
+            }
+            auto gf = r->target.as_any<GenericFormat>();
+            if (!gf) {
+                return nullref;
+            }
+            auto* gfd = a.get<GenericFormat>(gf);
+            if (gfd->type_parameters.size() != gd->type_arguments.size()) {
+                return nullref;  // 引数の数が合わない。検査で締めるのはまだ
+            }
+            std::map<std::uint32_t, Node<Type>> env;
+            for (std::size_t i = 0; i < gfd->type_parameters.size(); i++) {
+                env[gfd->type_parameters[i].id()] = gd->type_arguments[i];
+            }
+            auto found = lookup_member(gf, member->identifier);
+            if (!found) {
+                return nullref;
+            }
+            tables.table<Resolution>().set(d->member, Resolution{.target = found});
+            return substitute_type_params(type_of_decl(found), env);
         }
         auto st = as_struct(base_type);
         if (!st) {
@@ -731,7 +819,15 @@ namespace brgen::nast::bind {
         else if (auto ref = e.as_any<Reference>()) {
             auto name = a.get<Reference>(ref)->name;
             if (auto* r = tables.table<Resolution>().get(name)) {
-                result = type_of_decl(r->target);
+                if (r->target.as_any<TypeParameter>()) {
+                    // sizeof(T) など、型パラメータを式の位置に置いた形。指すのは
+                    // 型そのもの (元実装は ident_to_type_literal で TypeLiteral に
+                    // 書き換えて MetaType を付ける。nast は書き換えず型だけ揃える)。
+                    result = a.make<MetaType>(loc);
+                }
+                else {
+                    result = type_of_decl(r->target);
+                }
             }
         }
         else if (auto paren = e.as_any<Paren>()) {

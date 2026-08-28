@@ -3,6 +3,7 @@
 #include "../nodes.h"
 
 #include <core/common/error.h>
+#include <map>
 #include <set>
 #include <string_view>
 
@@ -17,8 +18,9 @@
 //   IdentType     指している宣言の型を base に入れる
 //   MemberAccess  左辺の型からメンバを引く。IdentType / ImportedType の包みは
 //                 剥がし、union (分岐で現れる同名 field) は共通型で引く。
-//                 config.endian.big / config.bit_order.lsb は u8 (元実装の
-//                 resolve_io_operation の写し)
+//                 config は組み込みモジュール (builtin_module) の enum を
+//                 普通のメンバアクセスとして引く。generic (Foo[Plain]) は
+//                 メンバの型に型引数を代入して返す (substitute_type_params)
 //   Binary        演算子ごと。比較は bool、算術は共通型、代入は void
 //                 (元実装の typing_assign と同じ)
 //   Unary         中身の型 (- と ! はどちらも型を変えない)
@@ -42,12 +44,11 @@
 //                 backward / put は void。type_of_stream_call を見よ。
 //
 // 入っていないもの:
-//   SpecialLiteral の config  自由なメタデータ名前空間 (config.url = "..")。
-//                            元実装では Metadata / IOOperation への置き換えで
-//                            ノード自体が消えるため、値として残る
-//                            config.endian.big の形 (u8) 以外は型を付けない
-//   generics (TypeParameter / GenericType のメンバ)。元実装の middle も未対応
-//                            の領域で、pre-monomorphize 構想の側で扱う
+//   自由メタデータ (config.url = "..")  宣言の無い名前なので解決されず型なしの
+//                            まま。元実装では文位置の形が Metadata ノードに
+//                            なって消える。式位置の読みはどちらにも受け皿が無い
+//   generic の実体化 (monomorphize)。型付けはメンバ参照の場での代入で済ませて
+//                            おり、具象 format を作る段は codegen 側の話
 //
 // input.endian など表に無いストリームのメンバは型なしのまま通す。能力要求の
 // 検査 (peek を使う format は先読み可能な入力を要求する、の類) も意図して
@@ -95,6 +96,10 @@ namespace brgen::nast::bind {
         // struct の持ち主 (format / state / module) から名前でメンバを引く。
         Node<Statement> lookup_member(Node<Statement> owner, std::string_view name);
         Node<Type> type_of_member_access(Node<MemberAccess> m);
+        // Foo[Plain] のメンバの型に現れる型パラメータを型引数で置き換える。
+        // 置き換えが要らなければ元のノードをそのまま返す。env のキーは
+        // TypeParameter ノードの id。
+        Node<Type> substitute_type_params(Node<Type> t, const std::map<std::uint32_t, Node<Type>>& env);
         // input.get(u8) などストリームの組み込みメソッド。該当しなければ nullref。
         Node<Type> type_of_stream_call(Node<Call> call);
         Node<Type> type_of_binary(Node<Binary> b);

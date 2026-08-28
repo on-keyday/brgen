@@ -1085,7 +1085,7 @@ export interface ConstantValue {
 export const SIDE_TABLES = {
     Resolution: { over: "Ident", storage: "dense" },
     InnerStruct: { over: "BodyStatement", storage: "sparse" },
-    FormatState: { over: "Format", storage: "sparse" },
+    FormatState: { over: "NamedBodyStatement", storage: "sparse" },
     DocComment: { over: "Statement", storage: "sparse" },
     IsMutated: { over: "Field", storage: "flag" },
     UnionFields: { over: "ConditionalExpr", storage: "sparse" },

@@ -18,7 +18,12 @@ namespace brgen::nast::bind {
         void bind(Node<Module> mod) {
             visit_all(a, mod, [&]<class T>(Node<T> n) {
                 if (auto bound = n.template as_any<Format>()) {
-                    bind(bound);
+                    bind_body(bound);
+                }
+                else if (auto generic = n.template as_any<GenericFormat>()) {
+                    // generic format の body も同じ表に集める。typer が
+                    // Foo[Plain] のメンバをここから引く。
+                    bind_body(generic);
                 }
             });
         }
@@ -155,7 +160,7 @@ namespace brgen::nast::bind {
             }
         }
 
-        void bind(Node<Format> n) {
+        void bind_body(Node<NamedBodyStatement> n) {
             FormatState state;
             state.encode_kind = FormatKind::as_is;
             state.decode_kind = FormatKind::as_is;

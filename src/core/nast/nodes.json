@@ -62,7 +62,7 @@
         },
         {
             "name": "FormatState",
-            "over": "Format",
+            "over": "NamedBodyStatement",
             "storage": "sparse",
             "fields": [
                 {
