@@ -234,34 +234,6 @@ namespace brgen::nast::bind {
 
     Node<Type> Typer::type_of_member_access(Node<MemberAccess> m) {
         auto* d = a.get<MemberAccess>(m);
-        auto loc_ = a.header_at(m.id())->loc;
-        // config.endian.big / config.bit_order.lsb の形。元実装は resolve_io_operation
-        // が丸ごと IOOperation (u8 定数) に置き換える (typing.cpp:1434)。nast は
-        // 置き換えず、値として使われる外側のノードに u8 を付ける。内側の
-        // config.endian と config リテラル自体は元実装に対応物が無いので付けない。
-        if (auto inner = d->base.as_any<MemberAccess>()) {
-            auto* di = a.get<MemberAccess>(inner);
-            if (auto sp = di->base.as_any<SpecialLiteral>();
-                sp && a.get<SpecialLiteral>(sp)->kind == SpecialLiteralKind::config_) {
-                auto* im = a.get<Ident>(di->member);
-                auto* om = a.get<Ident>(d->member);
-                if (im && om) {
-                    bool endian = im->identifier == "endian" &&
-                                  (om->identifier == "big" || om->identifier == "little" ||
-                                   om->identifier == "native");
-                    bool bit_order = im->identifier == "bit_order" &&
-                                     (om->identifier == "msb" || om->identifier == "lsb");
-                    if (endian || bit_order) {
-                        auto t = a.make<IntType>(loc_);
-                        auto* it = a.get<IntType>(t);
-                        it->bit_size = 8;
-                        it->is_signed = false;
-                        it->endian = Endian::unspec;
-                        return t;
-                    }
-                }
-            }
-        }
         auto base_type = type_of_expr(d->base);
         if (!base_type) {
             return nullref;
@@ -725,12 +697,18 @@ namespace brgen::nast::bind {
             // input / output はストリーム。どの実体 (全入力 / 逐次 / ビット列 ...) で
             // 呼ばれるかは format の側からは決まらないので、型にはプログラム自身が
             // 確立した性質だけを載せる。素の input は length の無い StreamType。
-            // config はストリームではない (自由なメタデータ名前空間)。まだ型を付けない。
             auto kind = a.get<SpecialLiteral>(sp)->kind;
             if (kind == SpecialLiteralKind::input_ || kind == SpecialLiteralKind::output_) {
                 auto t = a.make<StreamType>(loc);
                 a.get<StreamType>(t)->kind = kind;
                 result = t;
+            }
+            else if (kind == SpecialLiteralKind::config_) {
+                // config は組み込み宣言のモジュール。config.endian.big は
+                // Color.red と同じ enum メンバアクセスとして流れる。
+                // config.url のような自由メタデータは宣言に無い名前なので
+                // 解決されず型なしのまま (従来どおり別扱い)。
+                result = struct_type_of_module(builtin_module());
             }
         }
         else if (auto ref = e.as_any<Reference>()) {
@@ -890,6 +868,39 @@ namespace brgen::nast::bind {
             a.get<Expr>(e)->type = result;
         }
         return result;
+    }
+
+    // config が指す組み込みの宣言木。enum メンバの値は元実装の Evaluator が
+    // IOOperation に与える整数と同じ (eval.h:402): big=0 little=1 native=2 /
+    // msb=0 lsb=1。ここで合成しておくと、メンバアクセスの解決も定数畳み込みも
+    // ユーザー定義の enum と同じ経路で流れる。
+    Node<Module> Typer::builtin_module() {
+        if (builtin_module_) {
+            return builtin_module_;
+        }
+        lexer::Loc loc{};  // file = lexer::builtin (0)
+        auto make_enum = [&](std::string_view name, std::initializer_list<std::string_view> members) {
+            auto en = a.make<Enum>(loc);
+            en->name = a.make<Ident>(loc, std::string(name));
+            auto et = a.make<EnumType>(loc);
+            a.get<EnumType>(et)->base = en;
+            en->enum_type = et;
+            std::size_t value = 0;
+            for (auto& m : members) {
+                auto mem = a.make<EnumMember>(loc);
+                mem->name = a.make<Ident>(loc, std::string(m));
+                mem->belong = en;
+                mem->value = a.make<IntLiteral>(loc, NodeData<Literal>{}, brgen::nums(value));
+                en->members.push_back(mem);
+                value++;
+            }
+            return en;
+        };
+        auto mod = a.make<Module>(loc);
+        mod->statements.push_back(make_enum("endian", {"big", "little", "native"}));
+        mod->statements.push_back(make_enum("bit_order", {"msb", "lsb"}));
+        builtin_module_ = mod;
+        return builtin_module_;
     }
 
     // 型の位置に書かれた名前。指している宣言の型を base に入れる。
