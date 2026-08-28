@@ -72,5 +72,5 @@ format ChunkedBody:
         for:
             c := input.get(Chunk)
             chunks[chunks.length] = c
-            if parseHexSize(<ChunkSize>(c).size.hex_ascii) == 0:
+            if parseHexSize(<Chunk>(c).size.hex_ascii) == 0:
                 break
