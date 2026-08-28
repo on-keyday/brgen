@@ -369,6 +369,23 @@ namespace brgen::nast::bind {
         if (equivalent(a, l, r)) {
             return l;
         }
+        // 範囲どうしは基底の型だけで比べる。上下限は型の同一性に関与しない
+        // (元実装 equal_type の RangeType 分岐)。equivalent は weak の range
+        // 逆参照を id で比べるため、ここで受けないと別の範囲式から作られた
+        // 範囲型どうしが常に不一致になる (match の 0xE1..=0xEC, 0xEE..=0xEF)。
+        if (auto lr = l.as_any<RangeType>()) {
+            if (auto rr = r.as_any<RangeType>()) {
+                auto lb = a.get<RangeType>(lr)->base_type;
+                auto rb = a.get<RangeType>(rr)->base_type;
+                if (!lb && !rb) {
+                    return l;
+                }
+                if (equivalent(a, fit_int(lb, rb), fit_int(rb, lb))) {
+                    return l;
+                }
+                return nullref;
+            }
+        }
         auto li = l.as_any<IntType>();
         auto ri = r.as_any<IntType>();
         if (li && ri) {
