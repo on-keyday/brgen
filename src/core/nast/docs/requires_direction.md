@@ -3,8 +3,15 @@
 draft。2026-08-29 の議論の記録。requires 推論 (`bind/requires.{hpp,cpp}`) を
 encode / decode 方向別に分けようとすると、as_is format の encode が入力条件式を
 どう解釈するかという言語意味論の未決に突き当たる。その論点と、付随して決まる
-union 判別子の規則をまとめる。**「as_is の入力能力は decode 専属」の宣言は
-まだしていない**。実装はこの文書の決定を待つ。
+union 判別子の規則をまとめる。
+
+**段階 1 は実装済み** (2026-08-29)。Requirements 表は decode / encode の
+2 組を持ち、辺の種類ごとの取り込み規則は `requires.cpp` の EdgeKind に
+そのまま写した。コーパス測定: 能力持ち owner 20 は分離前と同一 (取りこぼし
+なし)、**encode 側に入力能力を要求する format は 0**、state の方向が割れた
+format が 4 (ebml ×2 = custom encode fn だけが VarintConfig を読む /
+yara ×2)。段階 2 (encode 時の入力条件式の意味論と出力能力語彙) と
+判別子分類は未着手のまま。
 
 ## 現状
 

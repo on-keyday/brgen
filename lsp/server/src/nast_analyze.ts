@@ -234,28 +234,43 @@ function declLine(a: nast.Arena, tables: nast.SideTables, ident: nast.NodeId, st
 }
 
 // requires 推論 (Requirements 表) の中身。Format / Function の定義に添える。
+// decode / encode の 2 組を持つ。同じなら方向を出さずに 1 行で言う。
 function requirementsLine(a: nast.Arena, tables: nast.SideTables, stmt: nast.NodeId): string {
     const req = tables.get<nast.Requirements>("Requirements", stmt);
     if (req === undefined) {
         return "";
     }
-    const parts: string[] = [];
-    const caps = (["peek", "backward", "remain", "offset"] as const).filter(c => req[c]);
-    if (caps.length > 0) {
-        parts.push(`input: ${caps.join(", ")}`);
-    }
     const names = (ids: nast.NodeId[]) =>
         ids.map(s => identText(a, a.data<nast.StateVariable>(s)!.name)).join(", ");
-    if (req.state_read.length > 0) {
-        parts.push(`reads: ${names(req.state_read)}`);
-    }
-    if (req.state_write.length > 0) {
-        parts.push(`writes: ${names(req.state_write)}`);
-    }
-    if (parts.length === 0) {
+    const side = (prefix: "decode" | "encode"): string[] => {
+        const parts: string[] = [];
+        const caps = (["peek", "backward", "remain", "offset"] as const)
+            .filter(c => req[`${prefix}_${c}`]);
+        if (caps.length > 0) {
+            parts.push(`input: ${caps.join(", ")}`);
+        }
+        const reads = req[`${prefix}_state_read`];
+        const writes = req[`${prefix}_state_write`];
+        if (reads.length > 0) {
+            parts.push(`reads: ${names(reads)}`);
+        }
+        if (writes.length > 0) {
+            parts.push(`writes: ${names(writes)}`);
+        }
+        return parts;
+    };
+    const dec = side("decode");
+    const enc = side("encode");
+    if (dec.length === 0 && enc.length === 0) {
         return "\n\nrequires: nothing";
     }
-    return `\n\nrequires — ${parts.join("; ")}`;
+    if (dec.join(";") === enc.join(";")) {
+        return `\n\nrequires — ${dec.join("; ")}`;
+    }
+    const lines: string[] = [];
+    lines.push(`decode: ${dec.length > 0 ? dec.join("; ") : "nothing"}`);
+    lines.push(`encode: ${enc.length > 0 ? enc.join("; ") : "nothing"}`);
+    return `\n\nrequires — ${lines.join(" / ")}`;
 }
 
 // 位置を覆う一番小さいノードを、木から到達できるものの中から選ぶ。

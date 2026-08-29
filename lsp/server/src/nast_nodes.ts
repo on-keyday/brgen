@@ -1066,12 +1066,18 @@ export interface ImportResolution {
 }
 
 export interface Requirements {
-    peek: boolean;
-    backward: boolean;
-    remain: boolean;
-    offset: boolean;
-    state_read: NodeId[];
-    state_write: NodeId[];
+    decode_peek: boolean;
+    decode_backward: boolean;
+    decode_remain: boolean;
+    decode_offset: boolean;
+    decode_state_read: NodeId[];
+    decode_state_write: NodeId[];
+    encode_peek: boolean;
+    encode_backward: boolean;
+    encode_remain: boolean;
+    encode_offset: boolean;
+    encode_state_read: NodeId[];
+    encode_state_write: NodeId[];
 }
 
 export interface ConstantValue {
