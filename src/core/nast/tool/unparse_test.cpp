@@ -37,7 +37,7 @@ namespace {
     // 由来の対応表 (spans) が本当に出力を指しているか。行と桁が範囲内で、
     // 始まりが終わりを越えていないことを見る。インデントは to_string が
     // 後から足すので、桁はインデント前の値と比べる。
-    bool spans_are_sane(const brgen::nast::UnparseResult& r, std::string& why) {
+    bool spans_are_sane(const brgen::nast::CodeOutput& r, std::string& why) {
         std::vector<std::size_t> width;  // 各行のインデント前の長さ
         {
             std::size_t cur = 0;

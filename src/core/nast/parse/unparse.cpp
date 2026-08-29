@@ -18,20 +18,10 @@ namespace brgen::nast {
             return "?";
         }
 
-        // 出力の土台。行とインデントを Writer が構造として持つので、桁を数える
-        // 必要がない。どの断片がどのノードから出たかも記録できる (with_loc)。
-        using Writer = futils::code::LocWriter<std::string, std::vector, NodeAny>;
-
-        // インデント 1 段の幅。to_string に渡す文字列と、spans の桁を実際の
-        // 出力に合わせる計算 (adjust_with_indent) で同じ値を使う。
-        constexpr std::size_t indent_width = 4;
-        constexpr auto indent_text = "    ";
-
         struct Unparser {
             Arena& a;
-            Writer w;
-            // ブロックの深さ。indent_scope の defer を積んで管理する。
-            std::vector<decltype(std::declval<Writer&>().indent_scope())> indents;
+            CodeWriter w;
+            IndentStack indents{w};
 
             // 行を終える。次の write は新しい行に載り、インデントは Writer が
             // 現在の深さから決める。
@@ -40,11 +30,11 @@ namespace brgen::nast {
             }
 
             void enter() {
-                indents.push_back(w.indent_scope());
+                indents.enter();
             }
 
             void leave() {
-                indents.pop_back();
+                indents.leave();
             }
 
             // 名前が無いときは、消えるより目印が残るほうがよい (未実装や
@@ -777,27 +767,13 @@ namespace brgen::nast {
     std::string unparse(Arena& a, Node<Module> mod) {
         Unparser u{a};
         run(u, mod);
-        return u.w.to_string(indent_text);
+        return u.w.to_string(IndentStyle{}.text.c_str());
     }
 
-    UnparseResult unparse_with_spans(Arena& a, Node<Module> mod) {
+    CodeOutput unparse_with_spans(Arena& a, Node<Module> mod) {
         Unparser u{a};
         run(u, mod);
-        UnparseResult result;
-        result.text = u.w.to_string(indent_text);
-        // Writer が持つ桁はインデントを展開する前のもの。to_string が足した分を
-        // 加えて、result.text の上でそのまま切り出せる位置にする。
-        for (auto& loc : u.w.locs_data()) {
-            auto adjusted = u.w.adjust_with_indent(indent_width, loc);
-            result.spans.push_back(UnparseSpan{
-                .node = adjusted.loc,
-                .begin_line = adjusted.start.line,
-                .begin_col = adjusted.start.pos,
-                .end_line = adjusted.end.line,
-                .end_col = adjusted.end.pos,
-            });
-        }
-        return result;
+        return finish(u.w);
     }
 
 }  // namespace brgen::nast

@@ -37,6 +37,15 @@ brgen 本体の `src2json` / `json2cpp2` を要るので、建っていなけれ
 
 ソースを足したら `CMakeLists.txt` にも足す (glob は使っていない)。
 
+既定は **4 並列・デバッグ情報なし**。全コアで回すとこのマシンは熱で
+周波数が落ちる。デバッグ情報は 1 本 50MB 前後の pdb を作り、そのリンクに
+20 秒近くかかる (ライブラリを 1 つ触ると全ツールがリンクし直される)。
+
+```sh
+cmake --build src/core/nast/build/cmake -j 8      # 並列数を上げる
+cmake -S ... -B ... -DNAST_DEBUG_INFO=ON          # デバッガに乗せる
+```
+
 計測は `bench.py`。src2json と並べて測るドライバで、ビルドは CMake の
 Release ツリー (`build/release`) に委ねる — 最適化の差がそのまま乗るので、
 ctest が使う Debug ツリーとは分けてある。

@@ -22,6 +22,40 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_BUILD_TYPE Debug CACHE STRING "" FORCE)
 endif()
 
+# 並列数を絞る。既定 (全コア) だとこのマシンは熱で周波数が落ち、画面も
+# 固まる。上げたいときは -DNAST_BUILD_PARALLEL=<n> か、
+# cmake --build ... -j <n> で明示する。
+set(NAST_BUILD_PARALLEL "4" CACHE STRING "parallel compile jobs")
+if(NAST_BUILD_PARALLEL)
+    set_property(GLOBAL PROPERTY JOB_POOLS nast_compile=${NAST_BUILD_PARALLEL})
+    set(CMAKE_JOB_POOL_COMPILE nast_compile)
+    set(CMAKE_JOB_POOL_LINK nast_compile)
+endif()
+
+# デバッグ情報は既定で出さない。Debug の既定 (-g -gcodeview) だと
+# 実行ファイル 1 本につき 45-60MB の pdb を作り、そのリンクだけで 20 秒近く
+# かかる。ライブラリを 1 つ触ると全ツールがリンクし直されるので、
+# 書いて測る回転がそのぶん止まる。デバッガに乗せたいときだけ
+# -DNAST_DEBUG_INFO=ON。
+option(NAST_DEBUG_INFO "emit debug info (large pdb, slow link)" OFF)
+if(NOT NAST_DEBUG_INFO)
+    # Windows の clang 向けに CMake が入れる -g -gcodeview を、構成ごとの
+    # フラグ変数から抜く。後ろに -g0 を足すやり方でも消えるが、コマンドに
+    # 矛盾したフラグが並ぶので取り除くほうにする。
+    foreach(cfg DEBUG RELWITHDEBINFO RELEASE MINSIZEREL)
+        set(_v "CMAKE_CXX_FLAGS_${cfg}")
+        if(DEFINED ${_v})
+            string(REGEX REPLACE "(^| )-g(codeview)?( |$)" " " ${_v} "${${_v}}")
+            string(REGEX REPLACE "(^| )/(Zi|ZI|Z7)( |$)" " " ${_v} "${${_v}}")
+            string(STRIP "${${_v}}" ${_v})
+        endif()
+    endforeach()
+    # Windows では -g -gcodeview がフラグ変数ではなく
+    # CMAKE_MSVC_DEBUG_INFORMATION_FORMAT (既定 = Embedded/ProgramDatabase)
+    # から来る。空にすると出なくなる。
+    set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "")
+endif()
+
 set(NAST_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 get_filename_component(REPO_ROOT "${NAST_DIR}/../../.." ABSOLUTE)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
