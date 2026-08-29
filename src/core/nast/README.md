@@ -20,16 +20,37 @@
 
 ## 建てる
 
+CMake + Ninja。brgen 本体の CMake からは独立していて、ここだけを configure
+できる (本体は C++20、nast は C++23)。
+
+```sh
+cmake -S src/core/nast -B src/core/nast/build/cmake -G Ninja
+cmake --build src/core/nast/build/cmake
+ctest --test-dir src/core/nast/build/cmake --output-on-failure
+```
+
+実行ファイルは `build/cmake/bin/` に出る。生成 (`node/nodes.h` /
+`wire/nast_wire.*` / lsp の `nast_nodes.ts`) はビルドの依存として走るので、
+`node/nodes.json` を直せば次のビルドで追随する。`wire/nast_wire.hpp` だけは
+brgen 本体の `src2json` / `json2cpp2` を要るので、建っていなければ既存の
+ものを残す。
+
+ソースを足したら `CMakeLists.txt` にも足す (glob は使っていない)。
+
+`build.py` / `bench.py` も残してある。CMake を通さず 1 ファイルだけ試すとき
+や、コンパイルフラグを直に触りたいときに使う。
+
 ```sh
 python src/core/nast/build.py          # 生成 + ビルド + 単体テスト
 python src/core/nast/bench.py --tools  # 計測プログラム
 ```
 
-`build/` に実行ファイルが出る。`.bgn` を引数に取るものが多い。
+ツールは `.bgn` を引数に取るものが多い。
 
 ```sh
-./src/core/nast/build/nast_corpus $(find example -name "*.bgn")        # parse と解析
-./src/core/nast/build/nast_wire_test $(find example -name "*.bgn")     # 線上の往復
-./src/core/nast/build/nast_unparse_test $(find example -name "*.bgn")  # .bgn の往復
-./src/core/nast/build/nast_coverage $(find example -name "*.bgn")      # 型の付き具合
+B=src/core/nast/build/cmake/bin
+$B/nast_corpus $(find example -name "*.bgn")        # parse と解析
+$B/nast_wire_test $(find example -name "*.bgn")     # 線上の往復
+$B/nast_unparse_test $(find example -name "*.bgn")  # .bgn の往復
+$B/nast_coverage $(find example -name "*.bgn")      # 型の付き具合
 ```
