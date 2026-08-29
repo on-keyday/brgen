@@ -33,12 +33,12 @@ from gen.nodes import (  # noqa: E402
 )
 from gen.tables import emit_side_tables, emit_structs  # noqa: E402
 from gen.ts import emit_ts  # noqa: E402
-from gen.backend import emit_backend
+from gen.backend import emit_backend_knobs
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_SCHEMA = os.path.join(SCRIPT_DIR, "node", "nodes.json")
 DEFAULT_OUT = os.path.join(SCRIPT_DIR, "node", "nodes.h")
-DEFAULT_BACKEND_OUT = os.path.join(SCRIPT_DIR,"backend","context.hpp")
+DEFAULT_BACKEND_OUT = os.path.join(SCRIPT_DIR,"backend","knobs.hpp")
 # LSP サーバーが nast_dump の JSON を読むための TS 側ライブラリ。
 # tsc の rootDir の都合でサーバーのソースの中に直接出す。
 DEFAULT_TS_OUT = os.path.join(SCRIPT_DIR, "..", "..", "..", "lsp", "server", "src", "nast_nodes.ts")
@@ -136,7 +136,7 @@ def main() -> int:
     if args.ts_out:
         outputs.append((os.path.normpath(args.ts_out), emit_ts(schema)))
     if args.backend_out:
-        outputs.append((os.path.normpath(args.backend_out),emit_backend(schema)))
+        outputs.append((os.path.normpath(args.backend_out),emit_backend_knobs(schema)))
 
     if args.check:
         for path, text in outputs:
