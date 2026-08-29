@@ -17,6 +17,9 @@ namespace brgen::nast {
 
         template <class M>
         bool compare_field(Arena& a, const M& lv, const M& rv, bool weak, CompareMode mode) {
+            if (weak && mode == CompareMode::structural) {
+                return true;  // 再導出できる辺。parse ごとに id が変わるので見ない
+            }
             if constexpr (node_of<M>::is_node) {
                 if (weak) {
                     return lv.id() == rv.id();
@@ -76,7 +79,7 @@ namespace brgen::nast {
                         return;
                     }
                     using M = std::decay_t<decltype(lv)>;
-                    if (mode == CompareMode::equivalent && (cosmetic || is_loc<M>::value)) {
+                    if (mode != CompareMode::identical && (cosmetic || is_loc<M>::value)) {
                         return;
                     }
                     eq = compare_field(a, lv, rv, weak, mode);

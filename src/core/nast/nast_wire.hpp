@@ -668,6 +668,7 @@ namespace brgen::nast::wire {
             Ref arguments_ref;
         };
         struct union_struct_16{
+            Ref name;
             Ref order;
         };
         struct union_struct_17{
@@ -26318,7 +26319,10 @@ namespace brgen::nast::wire {
         return std::addressof(std::get<14>((*this).union_variant_1).name);
         }
         if (NodeKind::SpecifyOrder==(*this).node_kind) {
-        return nullptr;
+        if(!std::holds_alternative<union_struct_16>(union_variant_1)) {
+            return nullptr;
+        }
+        return std::addressof(std::get<15>((*this).union_variant_1).name);
         }
         if (NodeKind::Sizeof==(*this).node_kind) {
         return nullptr;
@@ -26595,7 +26599,11 @@ namespace brgen::nast::wire {
             return true;
         }
         if (NodeKind::SpecifyOrder==(*this).node_kind) {
-            return false;
+            if(!std::holds_alternative<union_struct_16>(union_variant_1)) {
+                union_variant_1 = union_struct_16();
+            }
+            std::get<15>((*this).union_variant_1).name = v;
+            return true;
         }
         if (NodeKind::Sizeof==(*this).node_kind) {
             return false;
@@ -26876,7 +26884,11 @@ namespace brgen::nast::wire {
             return true;
         }
         if (NodeKind::SpecifyOrder==(*this).node_kind) {
-            return false;
+            if(!std::holds_alternative<union_struct_16>(union_variant_1)) {
+                union_variant_1 = union_struct_16();
+            }
+            std::get<15>((*this).union_variant_1).name = std::move(v);
+            return true;
         }
         if (NodeKind::Sizeof==(*this).node_kind) {
             return false;
@@ -41760,6 +41772,9 @@ namespace brgen::nast::wire {
             if(!std::holds_alternative<union_struct_16>(union_variant_1)) {
                 return ::futils::error::Error<>("encode: Node: union_variant_1 variant alternative union_struct_16 is not set",::futils::error::Category::lib);
             }
+            if (auto err = std::get<15>((*this).union_variant_1).name.encode(w)) {
+                return err;
+            }
             if (auto err = std::get<15>((*this).union_variant_1).order.encode(w)) {
                 return err;
             }
@@ -42924,6 +42939,9 @@ namespace brgen::nast::wire {
         else if (NodeKind::SpecifyOrder==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_16>(union_variant_1)) {
                 union_variant_1 = union_struct_16();
+            }
+            if (auto err = std::get<15>((*this).union_variant_1).name.decode(r)) {
+                return err;
             }
             if (auto err = std::get<15>((*this).union_variant_1).order.decode(r)) {
                 return err;

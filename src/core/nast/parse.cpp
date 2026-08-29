@@ -1996,6 +1996,9 @@ namespace brgen::nast {
             }
             if (is_order_name(name)) {
                 auto order = a.make<SpecifyOrder>(bin.loc());
+                // どの指定か (input.endian / input.bit_order / ...) を落とすと
+                // 逆変換 (unparse) できなくなるので名前ごと持つ。
+                order->name = std::move(name);
                 order->order = bin->right;
                 return order;
             }

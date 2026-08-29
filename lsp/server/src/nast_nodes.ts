@@ -622,6 +622,7 @@ export interface Metadata extends Statement {
 }
 
 export interface SpecifyOrder extends Statement {
+    name: string;
     order: NodeId;
 }
 
