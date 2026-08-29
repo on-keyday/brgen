@@ -149,27 +149,51 @@
             "storage": "sparse",
             "fields": [
                 {
-                    "name": "peek",
+                    "name": "decode_peek",
                     "type": "bool"
                 },
                 {
-                    "name": "backward",
+                    "name": "decode_backward",
                     "type": "bool"
                 },
                 {
-                    "name": "remain",
+                    "name": "decode_remain",
                     "type": "bool"
                 },
                 {
-                    "name": "offset",
+                    "name": "decode_offset",
                     "type": "bool"
                 },
                 {
-                    "name": "state_read",
+                    "name": "decode_state_read",
                     "type": "vector<Node<StateVariable>>"
                 },
                 {
-                    "name": "state_write",
+                    "name": "decode_state_write",
+                    "type": "vector<Node<StateVariable>>"
+                },
+                {
+                    "name": "encode_peek",
+                    "type": "bool"
+                },
+                {
+                    "name": "encode_backward",
+                    "type": "bool"
+                },
+                {
+                    "name": "encode_remain",
+                    "type": "bool"
+                },
+                {
+                    "name": "encode_offset",
+                    "type": "bool"
+                },
+                {
+                    "name": "encode_state_read",
+                    "type": "vector<Node<StateVariable>>"
+                },
+                {
+                    "name": "encode_state_write",
                     "type": "vector<Node<StateVariable>>"
                 }
             ]

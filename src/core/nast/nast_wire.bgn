@@ -551,14 +551,22 @@ format ImportResolutionTable:
 
 format RequirementsEntry:
     key :Ref
-    peek :u8
-    backward :u8
-    remain :u8
-    offset :u8
-    state_read_len :u32
-    state_read :[state_read_len]Ref
-    state_write_len :u32
-    state_write :[state_write_len]Ref
+    decode_peek :u8
+    decode_backward :u8
+    decode_remain :u8
+    decode_offset :u8
+    decode_state_read_len :u32
+    decode_state_read :[decode_state_read_len]Ref
+    decode_state_write_len :u32
+    decode_state_write :[decode_state_write_len]Ref
+    encode_peek :u8
+    encode_backward :u8
+    encode_remain :u8
+    encode_offset :u8
+    encode_state_read_len :u32
+    encode_state_read :[encode_state_read_len]Ref
+    encode_state_write_len :u32
+    encode_state_write :[encode_state_write_len]Ref
 
 format RequirementsTable:
     len :u32
