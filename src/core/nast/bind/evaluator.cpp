@@ -73,7 +73,7 @@ namespace brgen::nast::bind {
 
     std::optional<ConstantValue> Evaluator::value_of_decl(Node<Statement> decl) {
         if (auto vd = decl.as_any<VariableDefinition>()) {
-            auto* d = a.get<VariableDefinition>(vd);
+            auto d = vd.ref(a);
             // := は後から代入され得るので ::= だけ。in_assign もここには来ない
             // (来ても value は container で、束縛の値ではない)。
             if (d->op == BinaryOp::const_assign) {
@@ -82,13 +82,13 @@ namespace brgen::nast::bind {
             return std::nullopt;
         }
         if (auto em = decl.as_any<EnumMember>()) {
-            return value_of(a.get<EnumMember>(em)->value);
+            return value_of(em.ref(a)->value);
         }
         return std::nullopt;
     }
 
     std::optional<ConstantValue> Evaluator::compute_binary(Node<Binary> bin) {
-        auto* d = a.get<Binary>(bin);
+        auto d = bin.ref(a);
         auto l = value_of(d->left);
         auto r = value_of(d->right);
         if (!l || !r) {
@@ -203,7 +203,7 @@ namespace brgen::nast::bind {
     std::optional<ConstantValue> Evaluator::compute(Node<Expr> e) {
         if (auto lit = e.as_any<IntLiteral>()) {
             std::uint64_t value = 0;
-            if (!futils::number::prefix_integer(a.get<IntLiteral>(lit)->value, value)) {
+            if (!futils::number::prefix_integer(lit.ref(a)->value, value)) {
                 return std::nullopt;
             }
             ConstantValue v;
@@ -212,12 +212,12 @@ namespace brgen::nast::bind {
             return v;
         }
         if (auto lit = e.as_any<BoolLiteral>()) {
-            return make_bool(a.get<BoolLiteral>(lit)->value);
+            return make_bool(lit.ref(a)->value);
         }
         if (auto lit = e.as_any<CharLiteral>()) {
             ConstantValue v;
             v.kind = EvalKind::integer;
-            v.integer = a.get<CharLiteral>(lit)->code;
+            v.integer = lit.ref(a)->code;
             return v;
         }
         if (auto lit = e.as_any<StrLiteral>()) {
@@ -226,17 +226,17 @@ namespace brgen::nast::bind {
             // binary_value (base64) のまま持つ。復号すると生の制御バイトが
             // 混ざり、as_json の出力が JSON として壊れる (実測)。比較は base64
             // 同士で一貫し、人間向けの復号は表示側の仕事。
-            v.string = a.get<StrLiteral>(lit)->binary_value;
+            v.string = lit.ref(a)->binary_value;
             return v;
         }
         if (auto p = e.as_any<Paren>()) {
-            return value_of(a.get<Paren>(p)->expr);
+            return value_of(p.ref(a)->expr);
         }
         if (auto id = e.as_any<Identity>()) {
-            return value_of(a.get<Identity>(id)->expr);
+            return value_of(id.ref(a)->expr);
         }
         if (auto un = e.as_any<Unary>()) {
-            auto* d = a.get<Unary>(un);
+            auto d = un.ref(a);
             if (d->op == UnaryOp::minus_sign) {
                 auto x = as_int(value_of(d->target));
                 return x.ok ? make_int(-x.v) : std::nullopt;
@@ -245,7 +245,7 @@ namespace brgen::nast::bind {
             return b ? std::optional(make_bool(!*b)) : std::nullopt;
         }
         if (auto cnd = e.as_any<Cond>()) {
-            auto* d = a.get<Cond>(cnd);
+            auto d = cnd.ref(a);
             auto c = as_bool(value_of(d->cond));
             if (!c) {
                 return std::nullopt;
@@ -253,13 +253,13 @@ namespace brgen::nast::bind {
             return value_of(*c ? d->then : d->els);
         }
         if (auto ref = e.as_any<Reference>()) {
-            if (auto* r = tables.table<Resolution>().get(a.get<Reference>(ref)->name)) {
+            if (auto* r = tables.table<Resolution>().get(ref.ref(a)->name)) {
                 return value_of_decl(r->target);
             }
             return std::nullopt;
         }
         if (auto ma = e.as_any<MemberAccess>()) {
-            if (auto* r = tables.table<Resolution>().get(a.get<MemberAccess>(ma)->member)) {
+            if (auto* r = tables.table<Resolution>().get(ma.ref(a)->member)) {
                 return value_of_decl(r->target);
             }
             return std::nullopt;

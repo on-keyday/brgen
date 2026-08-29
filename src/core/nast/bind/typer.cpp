@@ -30,22 +30,22 @@ namespace brgen::nast::bind {
         if (!st) {
             return nullref;
         }
-        auto* d = a.get<NamedStructTypedStatement>(st);
+        auto d = st.ref(a);
         if (!d->struct_type) {
             d->struct_type = a.make<StructType>(a.header_at(owner.id())->loc);
-            a.get<StructType>(d->struct_type)->base = owner;
+            d->struct_type.ref(a)->base = owner;
         }
         return d->struct_type;
     }
 
     Node<Type> Typer::struct_type_of_module(Node<Module> mod) {
-        auto* d = a.get<Module>(mod);
+        auto d = mod.ref(a);
         if (!d) {
             return nullref;
         }
         if (!d->struct_type) {
             d->struct_type = a.make<StructType>(a.header_at(mod.id())->loc);
-            a.get<StructType>(d->struct_type)->base = mod;
+            d->struct_type.ref(a)->base = mod;
         }
         return d->struct_type;
     }
@@ -60,14 +60,14 @@ namespace brgen::nast::bind {
             return struct_type_of(decl);
         }
         if (auto en = decl.as_any<Enum>()) {
-            return a.get<Enum>(en)->enum_type;
+            return en.ref(a)->enum_type;
         }
         // field / parameter は宣言に書かれた型がそのまま。
         if (auto nt = decl.as_any<NamedTypeStatement>()) {
-            return a.get<NamedTypeStatement>(nt)->type;
+            return nt.ref(a)->type;
         }
         if (auto vd = decl.as_any<VariableDefinition>()) {
-            auto* d = a.get<VariableDefinition>(vd);
+            auto d = vd.ref(a);
             if (d->op == BinaryOp::in_assign) {
                 // for x in c の束縛。型は container 側から決まる。
                 return iteration_type(type_of_expr(d->value));
@@ -75,20 +75,20 @@ namespace brgen::nast::bind {
             return type_of_expr(d->value);
         }
         if (auto fn = decl.as_any<Function>()) {
-            auto* d = a.get<Function>(fn);
+            auto d = fn.ref(a);
             auto ft = a.make<FunctionType>(a.header_at(decl.id())->loc);
-            auto* ftd = a.get<FunctionType>(ft);
+            auto ftd = ft;
             ftd->return_type = d->return_type;
             for (auto& p : d->parameters) {
-                ftd->parameters.push_back(a.get<Parameter>(p)->type);
+                ftd->parameters.push_back(p.ref(a)->type);
             }
             return ft;
         }
         // enum 本体の中で他のメンバを裸の名前で参照した形。belong 経由で
         // 所属する Enum の型を出す。
         if (auto em = decl.as_any<EnumMember>()) {
-            if (auto enum_ = a.get<EnumMember>(em)->belong) {
-                return a.get<Enum>(enum_)->enum_type;
+            if (auto enum_ = em.ref(a)->belong) {
+                return enum_.ref(a)->enum_type;
             }
             return nullref;
         }
@@ -111,7 +111,7 @@ namespace brgen::nast::bind {
         }
         if (auto id = t.as_any<IdentType>()) {
             resolve_ident_type(id);
-            return iteration_type(a.get<IdentType>(id)->base);
+            return iteration_type(id.ref(a)->base);
         }
         if (t.as_any<IntLiteralType>()) {
             // 相手なしの fit は、値が収まる最小のバイト境界幅に落ちる。
@@ -122,7 +122,7 @@ namespace brgen::nast::bind {
         }
         if (t.as_any<StrLiteralType>()) {
             auto u8t = a.make<IntType>(a.header_at(t.id())->loc);
-            auto* d = a.get<IntType>(u8t);
+            auto d = u8t;
             d->bit_size = 8;
             d->is_signed = false;
             d->endian = Endian::unspec;
@@ -130,10 +130,10 @@ namespace brgen::nast::bind {
         }
         if (auto r = t.as_any<RangeType>()) {
             // 基底は Range の型付けが両端から合成済み。リテラルなら上で幅に落ちる。
-            return iteration_type(a.get<RangeType>(r)->base_type);
+            return iteration_type(r.ref(a)->base_type);
         }
         if (auto arr = t.as_any<ArrayType>()) {
-            return a.get<ArrayType>(arr)->element_type;
+            return arr.ref(a)->element_type;
         }
         // それ以外は for in の対象として意味を決めていない。まだ締めない。
         return nullref;
@@ -152,13 +152,13 @@ namespace brgen::nast::bind {
         }
         if (auto la = l.as_any<ArrayType>()) {
             if (auto ra = r.as_any<ArrayType>()) {
-                if (!same_type(a.get<ArrayType>(la)->element_type, a.get<ArrayType>(ra)->element_type)) {
+                if (!same_type(la.ref(a)->element_type, ra.ref(a)->element_type)) {
                     return false;
                 }
                 // 長さは畳んだ定数で比べる。どちらも定数でなければ動的配列
                 // どうしで等しい。片方だけ定数なら別の型 (元実装と同じ)。
-                auto* lc = tables.table<ConstantValue>().get(a.get<ArrayType>(la)->length);
-                auto* rc = tables.table<ConstantValue>().get(a.get<ArrayType>(ra)->length);
+                auto* lc = tables.table<ConstantValue>().get(la.ref(a)->length);
+                auto* rc = tables.table<ConstantValue>().get(ra.ref(a)->length);
                 if (lc && rc) {
                     return lc->kind == EvalKind::integer && rc->kind == EvalKind::integer &&
                            lc->integer == rc->integer && lc->is_negative == rc->is_negative;
@@ -169,8 +169,8 @@ namespace brgen::nast::bind {
         }
         if (auto lr = l.as_any<RangeType>()) {
             if (auto rr = r.as_any<RangeType>()) {
-                auto lb = a.get<RangeType>(lr)->base_type;
-                auto rb = a.get<RangeType>(rr)->base_type;
+                auto lb = lr.ref(a)->base_type;
+                auto rb = rr.ref(a)->base_type;
                 if (!lb && !rb) {
                     return true;
                 }
@@ -182,8 +182,8 @@ namespace brgen::nast::bind {
         // 別の出現をいつも別物にする。同じ magic ("\x00\x15") は同じ型。
         if (auto ls = l.as_any<StrLiteralType>()) {
             if (auto rs = r.as_any<StrLiteralType>()) {
-                auto* lv = a.get<StrLiteral>(a.get<StrLiteralType>(ls)->base);
-                auto* rv = a.get<StrLiteral>(a.get<StrLiteralType>(rs)->base);
+                auto lv = ls.ref(a)->base.ref(a);
+                auto rv = rs.ref(a)->base.ref(a);
                 return lv && rv && lv->value == rv->value;
             }
             return false;
@@ -199,12 +199,12 @@ namespace brgen::nast::bind {
         }
         if (auto id = t.as_any<IdentType>()) {
             resolve_ident_type(id);
-            return as_struct(a.get<IdentType>(id)->base);
+            return as_struct(id.ref(a)->base);
         }
         if (auto imp = t.as_any<ImportedType>()) {
             // varint.Varint のような import 先の型。実体は import_ref の
             // メンバアクセスを式として解決すると出てくる struct 型。
-            auto* d = a.get<ImportedType>(imp);
+            auto d = imp.ref(a);
             if (!d->base) {
                 d->base = type_of_expr(d->import_ref);
             }
@@ -212,11 +212,11 @@ namespace brgen::nast::bind {
         }
         if (auto w = t.as_any<WrapperType>()) {
             // base を持つ包み全般。
-            return as_struct(a.get<WrapperType>(w)->base);
+            return as_struct(w.ref(a)->base);
         }
         if (auto ist = t.as_any<InlineStructType>()) {
             // 無名 format。持ち主の Format から struct 型を出して引く。
-            return as_struct(struct_type_of(a.get<InlineStructType>(ist)->inlined_format));
+            return as_struct(struct_type_of(ist.ref(a)->inlined_format));
         }
         if (auto st = t.as_any<StructType>()) {
             return st;
@@ -233,7 +233,7 @@ namespace brgen::nast::bind {
     Node<Statement> Typer::lookup_member(Node<Statement> owner, std::string_view name) {
         auto named_name = [&](Node<Statement> s) -> std::string_view {
             if (auto n = s.as_any<NamedStatement>()) {
-                if (auto* id = a.get<Ident>(a.get<NamedStatement>(n)->name)) {
+                if (auto id = n.ref(a)->name.ref(a)) {
                     return id->identifier;
                 }
             }
@@ -266,10 +266,10 @@ namespace brgen::nast::bind {
         }
         const std::vector<Node<Statement>>* statements = nullptr;
         if (auto mod = owner.as_any<Module>()) {
-            statements = &a.get<Module>(mod)->statements;
+            statements = &mod.ref(a)->statements;
         }
         else if (auto body = owner.as_any<NamedBodyStatement>()) {
-            if (auto* b = a.get<Body>(a.get<NamedBodyStatement>(body)->body)) {
+            if (auto b = body.ref(a)->body.ref(a)) {
                 statements = &b->statements;
             }
         }
@@ -293,7 +293,7 @@ namespace brgen::nast::bind {
             return t;
         }
         if (auto id = t.as_any<IdentType>()) {
-            if (auto* r = tables.table<Resolution>().get(a.get<IdentType>(id)->ident)) {
+            if (auto* r = tables.table<Resolution>().get(id.ref(a)->ident)) {
                 if (auto tp = r->target.as_any<TypeParameter>()) {
                     if (auto hit = env.find(tp.id()); hit != env.end()) {
                         return hit->second;
@@ -303,16 +303,16 @@ namespace brgen::nast::bind {
             return t;
         }
         if (auto arr = t.as_any<ArrayType>()) {
-            auto elem = substitute_type_params(a.get<ArrayType>(arr)->element_type, env);
-            if (elem == a.get<ArrayType>(arr)->element_type) {
+            auto elem = substitute_type_params(arr.ref(a)->element_type, env);
+            if (elem == arr.ref(a)->element_type) {
                 return t;
             }
             // 長さの式は共有する。長さは codec 意味論の情報で、型意味論では
             // 要素型だけが効く ([len]u8 の二重ビューと同じ扱い)。
-            auto length = a.get<ArrayType>(arr)->length;
-            auto end_loc = a.get<ArrayType>(arr)->end_loc;
+            auto length = arr.ref(a)->length;
+            auto end_loc = arr.ref(a)->end_loc;
             auto res = a.make<ArrayType>(a.header_at(t.id())->loc);
-            auto* rd = a.get<ArrayType>(res);
+            auto rd = res;
             rd->length = length;
             rd->end_loc = end_loc;
             rd->element_type = elem;
@@ -322,7 +322,7 @@ namespace brgen::nast::bind {
             // Bar の a :Foo[T] のような入れ子。引数側だけ置き換える。
             bool changed = false;
             std::vector<Node<Type>> args;
-            for (auto& arg : a.get<GenericType>(gt)->type_arguments) {
+            for (auto& arg : gt.ref(a)->type_arguments) {
                 auto s = substitute_type_params(arg, env);
                 changed = changed || s != arg;
                 args.push_back(s);
@@ -330,9 +330,9 @@ namespace brgen::nast::bind {
             if (!changed) {
                 return t;
             }
-            auto base = a.get<GenericType>(gt)->base_type;
+            auto base = gt.ref(a)->base_type;
             auto res = a.make<GenericType>(a.header_at(t.id())->loc);
-            auto* rd = a.get<GenericType>(res);
+            auto rd = res;
             rd->base_type = base;
             rd->type_arguments = std::move(args);
             return res;
@@ -341,12 +341,12 @@ namespace brgen::nast::bind {
     }
 
     Node<Type> Typer::type_of_member_access(Node<MemberAccess> m) {
-        auto* d = a.get<MemberAccess>(m);
+        auto d = m.ref(a);
         auto base_type = type_of_expr(d->base);
         if (!base_type) {
             return nullref;
         }
-        auto* member = a.get<Ident>(d->member);
+        auto member = d->member.ref(a);
         if (!member) {
             return nullref;
         }
@@ -356,7 +356,7 @@ namespace brgen::nast::bind {
         // フィールド型経由で参照した形 (x.is_defined など) がここで揃う。
         while (auto id = base_type.as_any<IdentType>()) {
             resolve_ident_type(id);
-            auto b = a.get<IdentType>(id)->base;
+            auto b = id.ref(a)->base;
             if (!b) {
                 break;
             }
@@ -365,12 +365,12 @@ namespace brgen::nast::bind {
 
         // enum の値。Color.red は Enum の members から引く。
         if (auto et = base_type.as_any<EnumType>()) {
-            auto enum_ = a.get<EnumType>(et)->base;
+            auto enum_ = et.ref(a)->base;
             if (!enum_) {
                 return nullref;
             }
-            for (auto& mem : a.get<Enum>(enum_)->members) {
-                if (a.get<Ident>(a.get<EnumMember>(mem)->name)->identifier == member->identifier) {
+            for (auto& mem : enum_.ref(a)->members) {
+                if (mem.ref(a)->name.ref(a)->identifier == member->identifier) {
                     tables.table<Resolution>().set(d->member, Resolution{.target = mem});
                     return base_type;
                 }
@@ -385,7 +385,7 @@ namespace brgen::nast::bind {
         if (base_type.as_any<ArrayType>()) {
             if (member->identifier == "length") {
                 auto t = a.make<IntType>(loc);
-                auto* it = a.get<IntType>(t);
+                auto it = t;
                 it->bit_size = 64;
                 it->is_signed = false;
                 it->endian = Endian::unspec;
@@ -398,11 +398,11 @@ namespace brgen::nast::bind {
         // 未知のメンバ (input.endian への代入など) はエラーにせず型なしのまま。
         // 検査で締めるのは使い方が見えてからにする。
         if (auto stream = base_type.as_any<StreamType>()) {
-            if (a.get<StreamType>(stream)->kind == SpecialLiteralKind::input_ &&
+            if (stream.ref(a)->kind == SpecialLiteralKind::input_ &&
                 (member->identifier == "offset" || member->identifier == "bit_offset" ||
                  member->identifier == "remain" || member->identifier == "scope_length")) {
                 auto t = a.make<IntType>(loc);
-                auto* it = a.get<IntType>(t);
+                auto it = t;
                 it->bit_size = 64;
                 it->is_signed = false;
                 it->endian = Endian::unspec;
@@ -414,7 +414,7 @@ namespace brgen::nast::bind {
         // 元実装の typing_member_access の lookup_union と同じ。
         if (auto u = base_type.as_any<UnionType>()) {
             resolve_union_type(u);
-            if (auto ct = a.get<UnionType>(u)->common_type) {
+            if (auto ct = u.ref(a)->common_type) {
                 base_type = ct;
             }
         }
@@ -422,12 +422,12 @@ namespace brgen::nast::bind {
         // 実体化 (monomorphize) の段は作らず、メンバを引くこの場で型引数を
         // 代入する。stream の型付けと同じ「置き換えの段を作らない」方針。
         if (auto gt = base_type.as_any<GenericType>()) {
-            auto* gd = a.get<GenericType>(gt);
+            auto gd = gt.ref(a);
             auto base_ident = gd->base_type.as_any<IdentType>();
             if (!base_ident) {
                 return nullref;
             }
-            auto* r = tables.table<Resolution>().get(a.get<IdentType>(base_ident)->ident);
+            auto* r = tables.table<Resolution>().get(base_ident.ref(a)->ident);
             if (!r) {
                 return nullref;
             }
@@ -435,7 +435,7 @@ namespace brgen::nast::bind {
             if (!gf) {
                 return nullref;
             }
-            auto* gfd = a.get<GenericFormat>(gf);
+            auto gfd = gf.ref(a);
             if (gfd->type_parameters.size() != gd->type_arguments.size()) {
                 return nullref;  // 引数の数が合わない。検査で締めるのはまだ
             }
@@ -454,7 +454,7 @@ namespace brgen::nast::bind {
         if (!st) {
             return nullref;
         }
-        auto owner = a.get<StructType>(st)->base;
+        auto owner = st.ref(a)->base;
         if (!owner) {
             return nullref;
         }
@@ -481,14 +481,14 @@ namespace brgen::nast::bind {
         }
         // 相手もリテラルなら、値が収まる最小のバイト境界幅の符号なし整数にする。
         // prefix_integer は 0x / 0b / 0o の前置も読む。
-        auto* d = a.get<IntLiteralType>(lit);
+        auto d = lit.ref(a);
         std::size_t value = 0;
-        auto* raw = a.get<IntLiteral>(d->base);
+        auto raw = d->base.ref(a);
         if (!raw || !::futils::number::prefix_integer(raw->value, value)) {
             return t;
         }
         auto res = a.make<IntType>(a.header_at(t.id())->loc);
-        auto* rd = a.get<IntType>(res);
+        auto rd = res;
         rd->bit_size = aligned_bit(::futils::binary::log2i(value));
         rd->is_signed = false;
         rd->endian = Endian::unspec;
@@ -515,8 +515,8 @@ namespace brgen::nast::bind {
         // 範囲型どうしが常に不一致になる (match の 0xE1..=0xEC, 0xEE..=0xEF)。
         if (auto lr = l.as_any<RangeType>()) {
             if (auto rr = r.as_any<RangeType>()) {
-                auto lb = a.get<RangeType>(lr)->base_type;
-                auto rb = a.get<RangeType>(rr)->base_type;
+                auto lb = lr.ref(a)->base_type;
+                auto rb = rr.ref(a)->base_type;
                 if (!lb && !rb) {
                     return l;
                 }
@@ -533,10 +533,10 @@ namespace brgen::nast::bind {
                 if (same_type(l, r)) {
                     return l;
                 }
-                auto elem = a.get<ArrayType>(la)->element_type;
-                if (same_type(elem, a.get<ArrayType>(ra)->element_type)) {
+                auto elem = la.ref(a)->element_type;
+                if (same_type(elem, ra.ref(a)->element_type)) {
                     auto res = a.make<ArrayType>(a.header_at(l.id())->loc);
-                    a.get<ArrayType>(res)->element_type = elem;
+                    res->element_type = elem;
                     return res;
                 }
                 return nullref;
@@ -545,8 +545,8 @@ namespace brgen::nast::bind {
         auto li = l.as_any<IntType>();
         auto ri = r.as_any<IntType>();
         if (li && ri) {
-            auto* ld = a.get<IntType>(li);
-            auto* rd = a.get<IntType>(ri);
+            auto ld = li.ref(a);
+            auto rd = ri.ref(a);
             if (ld->bit_size == rd->bit_size) {
                 // 幅が同じなら符号なしのほうに寄せる。符号付きを混ぜると
                 // 表現できない値が出る。
@@ -560,14 +560,14 @@ namespace brgen::nast::bind {
         // 分岐の union は共通型に剥がして比べる。元実装の tool::common_type と同じ。
         if (auto u = l.as_any<UnionType>()) {
             resolve_union_type(u);
-            if (auto ct = a.get<UnionType>(u)->common_type) {
+            if (auto ct = u.ref(a)->common_type) {
                 return common_type(ct, r);
             }
             return nullref;
         }
         if (auto u = r.as_any<UnionType>()) {
             resolve_union_type(u);
-            if (auto ct = a.get<UnionType>(u)->common_type) {
+            if (auto ct = u.ref(a)->common_type) {
                 return common_type(l, ct);
             }
             return nullref;
@@ -580,23 +580,23 @@ namespace brgen::nast::bind {
     // 名前が現れない分岐の pad (field 無し) は飛ばし、入れ子の union は先に自分の
     // 共通型に潰してから畳む。is_strict は全候補が同じ型ノードに畳めたかどうか。
     void Typer::resolve_union_type(Node<UnionType> u) {
-        auto* d = a.get<UnionType>(u);
+        auto d = u.ref(a);
         if (d->common_type) {
             return;
         }
         bool is_strict = false;
         Node<Type> common;
         for (auto& c : d->candidates) {
-            auto f = a.get<UnionCandidate>(c)->field;
+            auto f = c.ref(a)->field;
             if (!f) {
                 continue;
             }
-            auto ft = a.get<Field>(f)->type;
+            auto ft = f.ref(a)->type;
             if (!common) {
                 if (auto nested = ft.as_any<UnionType>()) {
                     resolve_union_type(nested);
-                    common = a.get<UnionType>(nested)->common_type;
-                    is_strict = a.get<UnionType>(nested)->is_strict_common_type;
+                    common = nested.ref(a)->common_type;
+                    is_strict = nested.ref(a)->is_strict_common_type;
                 }
                 else {
                     common = ft;
@@ -618,7 +618,7 @@ namespace brgen::nast::bind {
     }
 
     Node<Type> Typer::type_of_binary(Node<Binary> b) {
-        auto* d = a.get<Binary>(b);
+        auto d = b.ref(a);
         auto loc = a.header_at(b.id())->loc;
         auto lty = type_of_expr(d->left);
         auto rty = type_of_expr(d->right);
@@ -689,7 +689,7 @@ namespace brgen::nast::bind {
 
     // ブロックの値。最後の文が式ならその型で、そうでなければ無い。
     Node<Type> Typer::block_value_type(Node<Body> body) {
-        auto* d = a.get<Body>(body);
+        auto d = body.ref(a);
         if (!d || d->statements.empty()) {
             return nullref;
         }
@@ -703,16 +703,16 @@ namespace brgen::nast::bind {
     // if / match。分岐の値の型が揃えばその型、揃わなければ void。
     // .bgn では大半が文なので void になる。
     Node<Type> Typer::type_of_conditional(Node<ConditionalExpr> c) {
-        auto* d = a.get<ConditionalExpr>(c);
+        auto d = c.ref(a);
         auto loc = a.header_at(c.id())->loc;
         if (auto m = c.as_any<Match>()) {
-            type_of_expr(a.get<Match>(m)->condition);
+            type_of_expr(m.ref(a)->condition);
         }
         Node<Type> common;
         for (auto& block : d->blocks) {
-            auto* b = a.get<BodyStatement>(block);
+            auto b = block.ref(a);
             if (auto cs = block.as_any<ConditionalStatement>()) {
-                type_of_expr(a.get<ConditionalStatement>(cs)->condition);
+                type_of_expr(cs.ref(a)->condition);
             }
             auto t = block_value_type(b->body);
             if (!t) {
@@ -745,45 +745,45 @@ namespace brgen::nast::bind {
     // typing_io_operation (middle/typing.cpp:1381) が型を付けていた。nast は
     // 置き換えず、この場で型だけ付ける。引数の個数・種類の検査はまだしない。
     Node<Type> Typer::type_of_stream_call(Node<Call> call) {
-        auto* d = a.get<Call>(call);
+        auto d = call.ref(a);
         auto ma = d->callee.as_any<MemberAccess>();
         if (!ma) {
             return nullref;
         }
-        auto* mad = a.get<MemberAccess>(ma);
+        auto mad = ma.ref(a);
         auto stream = type_of_expr(mad->base).as_any<StreamType>();
         if (!stream) {
             return nullref;
         }
-        auto* member = a.get<Ident>(mad->member);
+        auto member = mad->member.ref(a);
         if (!member) {
             return nullref;
         }
-        auto kind = a.get<StreamType>(stream)->kind;
+        auto kind = stream.ref(a)->kind;
         auto loc = a.header_at(call.id())->loc;
         Node<Expr> arg0;
-        if (auto* args = a.get<Arguments>(d->arguments); args && !args->arguments.empty()) {
-            arg0 = a.get<Argument>(args->arguments.front())->value;
+        if (auto args = d->arguments.ref(a); args && !args->arguments.empty()) {
+            arg0 = args->arguments.front().ref(a)->value;
         }
         Node<Type> result;
         if (kind == SpecialLiteralKind::input_ && (member->identifier == "get" || member->identifier == "peek")) {
             if (!arg0) {
                 // 引数なしは u8。元実装の既定と同じ。
                 auto t = a.make<IntType>(loc);
-                auto* it = a.get<IntType>(t);
+                auto it = t;
                 it->bit_size = 8;
                 it->is_signed = false;
                 it->endian = Endian::unspec;
                 result = t;
             }
             else if (auto lit = arg0.as_any<TypeLiteral>()) {
-                result = a.get<TypeLiteral>(lit)->literal;
+                result = lit.ref(a)->literal;
             }
             else if (auto ref = arg0.as_any<Reference>()) {
                 // input.get(Lz4DataBlock) のように型を名前で渡す形。TypeLiteral に
                 // parse されるのは u8 などの組み込み型だけで、format / enum の名前は
                 // Reference で来る。解決先が型の宣言ならその型。
-                if (auto* r = tables.table<Resolution>().get(a.get<Reference>(ref)->name)) {
+                if (auto* r = tables.table<Resolution>().get(ref.ref(a)->name)) {
                     if (r->target.as_any<NamedStructTypedStatement>() || r->target.as_any<Enum>()) {
                         result = type_of_decl(r->target);
                     }
@@ -795,7 +795,7 @@ namespace brgen::nast::bind {
                 // 長さの式は保持するだけで、型互換性の判定には使わない。
                 // [len]u8 の length と同じ扱い (codec 意味論と型意味論の分離)。
                 auto t = a.make<StreamType>(loc);
-                auto* st = a.get<StreamType>(t);
+                auto st = t;
                 st->kind = kind;
                 st->length = arg0;
                 result = t;
@@ -808,10 +808,10 @@ namespace brgen::nast::bind {
         if (result) {
             // callee (input.get というメンバアクセス自体) にも関数型を付けておく。
             // 対応する宣言は無いので parameters は空のまま。
-            if (!a.get<Expr>(ma)->type) {
+            if (!ma.ref(a)->type) {
                 auto ft = a.make<FunctionType>(loc);
-                a.get<FunctionType>(ft)->return_type = result;
-                a.get<Expr>(ma)->type = ft;
+                ft->return_type = result;
+                ma.ref(a)->type = ft;
             }
         }
         return result;
@@ -821,7 +821,7 @@ namespace brgen::nast::bind {
         if (!e) {
             return nullref;
         }
-        auto* base = a.get<Expr>(e);
+        auto base = e.ref(a);
         if (!base) {
             return nullref;
         }
@@ -837,17 +837,17 @@ namespace brgen::nast::bind {
 
         if (auto lit = e.as_any<IntLiteral>()) {
             auto t = a.make<IntLiteralType>(loc);
-            a.get<IntLiteralType>(t)->base = lit;
+            t->base = lit;
             result = t;
         }
         else if (auto lit = e.as_any<StrLiteral>()) {
             auto t = a.make<StrLiteralType>(loc);
-            a.get<StrLiteralType>(t)->base = lit;
+            t->base = lit;
             result = t;
         }
         else if (auto lit = e.as_any<RegexLiteral>()) {
             auto t = a.make<RegexLiteralType>(loc);
-            a.get<RegexLiteralType>(t)->base = lit;
+            t->base = lit;
             result = t;
         }
         else if (e.as_any<BoolLiteral>()) {
@@ -856,8 +856,8 @@ namespace brgen::nast::bind {
         else if (auto ch = e.as_any<CharLiteral>()) {
             // 符号なしで、符号点が収まる最小のバイト境界幅。
             auto t = a.make<IntType>(loc);
-            auto* d = a.get<IntType>(t);
-            d->bit_size = aligned_bit(::futils::binary::log2i(a.get<CharLiteral>(ch)->code));
+            auto d = t;
+            d->bit_size = aligned_bit(::futils::binary::log2i(ch.ref(a)->code));
             d->is_signed = false;
             d->endian = Endian::unspec;
             result = t;
@@ -870,10 +870,10 @@ namespace brgen::nast::bind {
             // input / output はストリーム。どの実体 (全入力 / 逐次 / ビット列 ...) で
             // 呼ばれるかは format の側からは決まらないので、型にはプログラム自身が
             // 確立した性質だけを載せる。素の input は length の無い StreamType。
-            auto kind = a.get<SpecialLiteral>(sp)->kind;
+            auto kind = sp.ref(a)->kind;
             if (kind == SpecialLiteralKind::input_ || kind == SpecialLiteralKind::output_) {
                 auto t = a.make<StreamType>(loc);
-                a.get<StreamType>(t)->kind = kind;
+                t->kind = kind;
                 result = t;
             }
             else if (kind == SpecialLiteralKind::config_) {
@@ -885,7 +885,7 @@ namespace brgen::nast::bind {
             }
         }
         else if (auto ref = e.as_any<Reference>()) {
-            auto name = a.get<Reference>(ref)->name;
+            auto name = ref.ref(a)->name;
             if (auto* r = tables.table<Resolution>().get(name)) {
                 if (r->target.as_any<TypeParameter>()) {
                     // sizeof(T) など、型パラメータを式の位置に置いた形。指すのは
@@ -899,24 +899,24 @@ namespace brgen::nast::bind {
             }
         }
         else if (auto paren = e.as_any<Paren>()) {
-            result = type_of_expr(a.get<Paren>(paren)->expr);
+            result = type_of_expr(paren.ref(a)->expr);
         }
         else if (auto id = e.as_any<Identity>()) {
-            result = type_of_expr(a.get<Identity>(id)->expr);
+            result = type_of_expr(id.ref(a)->expr);
         }
         else if (auto bin = e.as_any<Binary>()) {
             result = type_of_binary(bin);
         }
         else if (auto un = e.as_any<Unary>()) {
             // - も ! も型を変えない。
-            result = type_of_expr(a.get<Unary>(un)->target);
+            result = type_of_expr(un.ref(a)->target);
         }
         else if (auto idx = e.as_any<Index>()) {
             // 配列の要素型。添字の型は結果に効かない。
-            auto* d = a.get<Index>(idx);
+            auto d = idx.ref(a);
             type_of_expr(d->index);
             if (auto arr = type_of_expr(d->base).as_any<ArrayType>()) {
-                result = a.get<ArrayType>(arr)->element_type;
+                result = arr.ref(a)->element_type;
             }
         }
         else if (auto rng = e.as_any<Range>()) {
@@ -925,46 +925,46 @@ namespace brgen::nast::bind {
             // 両方リテラルは大きい方の値が収まる幅に寄る (0..300 は u16)。
             // 元実装は揃わなければエラーにしたが、ここではまだ締めず、
             // 基底なしにするだけ。
-            auto* d = a.get<Range>(rng);
+            auto d = rng.ref(a);
             auto st = type_of_expr(d->start);
             auto en = type_of_expr(d->end);
             auto t = a.make<RangeType>(loc);
-            auto* rd = a.get<RangeType>(t);
+            auto rd = t;
             rd->base_type = (st && en) ? common_type(st, en) : (st ? st : en);
             rd->range = rng;
             result = t;
         }
         else if (auto cast = e.as_any<Cast>()) {
             // 変換先は呼ばれている型リテラル。
-            auto* d = a.get<Cast>(cast);
-            auto callee = a.get<Call>(d->base)->callee;
+            auto d = cast.ref(a);
+            auto callee = d->base.ref(a)->callee;
             if (auto lit = callee.as_any<TypeLiteral>()) {
-                result = a.get<TypeLiteral>(lit)->literal;
+                result = lit.ref(a)->literal;
             }
             // 内側の Call は元実装では cast の本体そのもの。同じ型を付ける。
             if (result) {
-                if (auto* inner = a.get<Expr>(d->base); inner && !inner->type) {
+                if (auto inner = d->base.ref(a); inner && !inner->type) {
                     inner->type = result;
                 }
             }
-            if (auto* args = a.get<Arguments>(d->arguments)) {
+            if (auto args = d->arguments.ref(a)) {
                 for (auto& arg : args->arguments) {
-                    type_of_expr(a.get<Argument>(arg)->value);
+                    type_of_expr(arg.ref(a)->value);
                 }
             }
         }
         else if (auto call = e.as_any<Call>()) {
-            auto* d = a.get<Call>(call);
-            if (auto* args = a.get<Arguments>(d->arguments)) {
+            auto d = call.ref(a);
+            if (auto args = d->arguments.ref(a)) {
                 for (auto& arg : args->arguments) {
-                    type_of_expr(a.get<Argument>(arg)->value);
+                    type_of_expr(arg.ref(a)->value);
                 }
             }
             result = type_of_stream_call(call);
             if (!result) {
                 auto ct = type_of_expr(d->callee);
                 if (auto ft = ct.as_any<FunctionType>()) {
-                    result = a.get<FunctionType>(ft)->return_type;
+                    result = ft.ref(a)->return_type;
                 }
                 else if (ct.as_any<EnumType>() || ct.as_any<StructType>()) {
                     // Enum(x) / Format(..) の形。元実装は callee を型リテラルに
@@ -978,23 +978,23 @@ namespace brgen::nast::bind {
         }
         else if (auto c = e.as_any<Cond>()) {
             // 三項。両辺が揃えばその型。
-            auto* d = a.get<Cond>(c);
+            auto d = c.ref(a);
             type_of_expr(d->cond);
             auto t = type_of_expr(d->then);
             auto f = type_of_expr(d->els);
             result = common_type(t, f);
         }
         else if (auto sz = e.as_any<Sizeof>()) {
-            type_of_expr(a.get<Sizeof>(sz)->target);
+            type_of_expr(sz.ref(a)->target);
             auto t = a.make<IntType>(loc);
-            auto* d = a.get<IntType>(t);
+            auto d = t;
             d->bit_size = 64;
             d->is_signed = false;
             d->endian = Endian::unspec;
             result = t;
         }
         else if (auto av = e.as_any<Available>()) {
-            type_of_expr(a.get<Available>(av)->target);
+            type_of_expr(av.ref(a)->target);
             result = a.make<BoolType>(loc);
         }
         else if (auto ma = e.as_any<MemberAccess>()) {
@@ -1003,7 +1003,7 @@ namespace brgen::nast::bind {
         else if (auto oc = e.as_any<OrCond>()) {
             // match の分岐条件を | でつないだ形。全条件の共通型で、範囲は基底の
             // 型で比べる。元実装の typing_or_cond / OrCond_common_type に当たる。
-            auto* d = a.get<OrCond>(oc);
+            auto d = oc.ref(a);
             Node<Type> ty;
             bool ok = true;
             for (auto& c : d->conds) {
@@ -1019,12 +1019,12 @@ namespace brgen::nast::bind {
                 auto merged = common_type(ty, t);
                 if (!merged) {
                     if (auto r = ty.as_any<RangeType>()) {
-                        merged = common_type(a.get<RangeType>(r)->base_type, t);
+                        merged = common_type(r.ref(a)->base_type, t);
                     }
                 }
                 if (!merged) {
                     if (auto r = t.as_any<RangeType>()) {
-                        merged = common_type(ty, a.get<RangeType>(r)->base_type);
+                        merged = common_type(ty, r.ref(a)->base_type);
                     }
                 }
                 if (!merged) {
@@ -1046,7 +1046,7 @@ namespace brgen::nast::bind {
 
         in_progress_.erase(e.id());
         if (result) {
-            a.get<Expr>(e)->type = result;
+            e.ref(a)->type = result;
         }
         return result;
     }
@@ -1064,7 +1064,7 @@ namespace brgen::nast::bind {
             auto en = a.make<Enum>(loc);
             en->name = a.make<Ident>(loc, std::string(name));
             auto et = a.make<EnumType>(loc);
-            a.get<EnumType>(et)->base = en;
+            et->base = en;
             en->enum_type = et;
             std::size_t value = 0;
             for (auto& m : members) {
@@ -1086,7 +1086,7 @@ namespace brgen::nast::bind {
 
     // 型の位置に書かれた名前。指している宣言の型を base に入れる。
     void Typer::resolve_ident_type(Node<IdentType> t) {
-        auto* d = a.get<IdentType>(t);
+        auto d = t.ref(a);
         if (!d || d->base) {
             return;
         }
