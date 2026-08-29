@@ -1082,6 +1082,11 @@ export interface ConstantValue {
     string: string;
 }
 
+export interface UnionLayout {
+    member_types: NodeId[];
+    cluster_types: NodeId[];
+}
+
 export const SIDE_TABLES = {
     Resolution: { over: "Ident", storage: "dense" },
     InnerStruct: { over: "BodyStatement", storage: "sparse" },
@@ -1092,6 +1097,7 @@ export const SIDE_TABLES = {
     ImportResolution: { over: "Import", storage: "sparse" },
     Requirements: { over: "Statement", storage: "sparse" },
     ConstantValue: { over: "Expr", storage: "sparse" },
+    UnionLayout: { over: "UnionType", storage: "sparse" },
 } as const;
 
 export interface NodeHeader {

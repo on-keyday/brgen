@@ -576,6 +576,17 @@ format ConstantValueTable:
     len :u32
     entries :[len]ConstantValueEntry
 
+format UnionLayoutEntry:
+    key :Ref
+    member_types_len :u32
+    member_types :[member_types_len]Ref
+    cluster_types_len :u32
+    cluster_types :[cluster_types_len]Ref
+
+format UnionLayoutTable:
+    len :u32
+    entries :[len]UnionLayoutEntry
+
 
 format NastModule:
     magic :"NAST"
@@ -594,3 +605,4 @@ format NastModule:
     import_resolution :ImportResolutionTable
     requirements :RequirementsTable
     constant_value :ConstantValueTable
+    union_layout :UnionLayoutTable

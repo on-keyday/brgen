@@ -14,6 +14,7 @@
 #include "bind/binder.hpp"
 #include "bind/evaluator.hpp"
 #include "bind/requires.hpp"
+#include "bind/union_layout.hpp"
 #include "bind/import_resolver.hpp"
 #include "bind/typer.hpp"
 #include "bind/scope_resolver.hpp"
@@ -210,6 +211,7 @@ int main(int argc, char** argv) {
         brgen::nast::bind::Typer typer{arena, tables, err};
         brgen::nast::bind::Evaluator evaluator{arena, tables, err};
         brgen::nast::bind::RequiresInference requires_{arena, tables, typer};
+        brgen::nast::bind::UnionLayoutAnalysis union_layout{arena, tables, typer, err};
         if (!parse_only) {
             auto t1 = clock::now();
             importer.resolve(root);
@@ -231,6 +233,7 @@ int main(int argc, char** argv) {
                 evaluator.run(mod);
             }
             requires_.run(importer.modules);
+            union_layout.run();
             t_type += took(t3);
         }
         if (r.ok) {
