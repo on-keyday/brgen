@@ -1,10 +1,10 @@
 // fn ごとに、本体に直接 assert/error があるか、他の fn を呼んでいるかを数える。
 // 伝播を入れると何件増えるかの見当をつける。
-#include "bind/binder.hpp"
-#include "bind/import_resolver.hpp"
-#include "bind/scope_resolver.hpp"
-#include "parse.h"
-#include "traverse.h"
+#include "../bind/binder.hpp"
+#include "../bind/import_resolver.hpp"
+#include "../bind/scope_resolver.hpp"
+#include "../parse/parse.h"
+#include "../node/traverse.h"
 #include <core/common/file.h>
 #include <map>
 #include <print>

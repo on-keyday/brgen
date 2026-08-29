@@ -111,7 +111,8 @@ def build_tools():
         if os.name == "nt" and os.sep + "Debug" + os.sep in lib:
             cmd += ["-fms-runtime-lib=dll_dbg"]
 
-    shared = [os.path.join(SCRIPT_DIR, n) for n in ("parse.cpp", "stream.cpp", "compare.cpp")]
+    shared = [os.path.join(SCRIPT_DIR, *n) for n in
+              (("parse", "parse.cpp"), ("parse", "stream.cpp"), ("node", "compare.cpp"))]
     shared += sorted(glob.glob(os.path.join(SCRIPT_DIR, "bind", "*.cpp")))
     os.makedirs(BUILD_DIR, exist_ok=True)
     objs = [nb.compile_obj(cmd, src, quiet=True) for src in shared]

@@ -8,7 +8,7 @@
 #include <code/src_location.h>
 #include <map>
 #include <string_view>
-#include "nodes.h"
+#include "../node/nodes.h"
 #include "../common/file.h"
 #include "core/common/error.h"
 #include "core/lexer/lexer_enum.h"

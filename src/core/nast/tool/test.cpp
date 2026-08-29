@@ -2,12 +2,12 @@
 // nast の単体スモークテスト。build.py から呼ばれる。
 // 生成された nodes.h が「コンパイルできる」だけでなく、
 // 型変換・ダウンキャスト・シリアライズが意図どおり動くところまで見る。
-#include "nodes.h"
-#include "access.h"
-#include "traverse.h"
-#include "compare.h"
-#include "printer.h"
-#include "from_json.h"
+#include "../node/nodes.h"
+#include "../node/access.h"
+#include "../node/traverse.h"
+#include "../node/compare.h"
+#include "../node/printer.h"
+#include "../node/from_json.h"
 
 #include <algorithm>
 #include <print>

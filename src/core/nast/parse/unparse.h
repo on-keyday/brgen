@@ -1,6 +1,6 @@
 /*license*/
 #pragma once
-#include "nodes.h"
+#include "../node/nodes.h"
 
 #include <code/loc_writer.h>
 #include <string>

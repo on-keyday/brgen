@@ -1,8 +1,8 @@
 /*license*/
 #include "import_resolver.hpp"
 
-#include "../stream.h"
-#include "../traverse.h"
+#include "../parse/stream.h"
+#include "../node/traverse.h"
 
 namespace brgen::nast::bind {
 

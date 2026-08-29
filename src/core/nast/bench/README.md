@@ -51,10 +51,10 @@ for i in $(seq 1 8); do ./a.exe $FILES; ./b.exe $FILES; done
 本体の代わりにその複製をリンクする。木を汚さずに回数が取れる。
 
 ```sh
-cp src/core/nast/stream.cpp ignore/nast/stream_counted.cpp
+cp src/core/nast/parse/stream.cpp ignore/nast/stream_counted.cpp
 # 複製に std::size_t g_xxx = 0; を足し、数えたい関数で g_xxx++
 clang++ -std=c++23 -O2 -I src/core/nast -I src \
-    <driver>.cpp src/core/nast/parse.cpp \
+    <driver>.cpp src/core/nast/parse/parse.cpp \
     ignore/nast/stream_counted.cpp ... -o out.exe
 ```
 
@@ -85,8 +85,8 @@ llvm-cov show ./prof.exe -instr-profile=p.profdata <source.cpp>
 
 ```cpp
 // ignore/nast/onetu.cpp
-#include "../../src/core/nast/stream.cpp"
-#include "../../src/core/nast/parse.cpp"
+#include "../../src/core/nast/parse/stream.cpp"
+#include "../../src/core/nast/parse/parse.cpp"
 ```
 
 ### 変えても同じものが出るか — 出力どうしを比べる

@@ -1,6 +1,6 @@
 /*license*/
 #pragma once
-#include "../nodes.h"
+#include "../node/nodes.h"
 #include "typer.hpp"
 
 #include <core/common/error.h>

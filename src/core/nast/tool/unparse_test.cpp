@@ -8,9 +8,9 @@
 // 比較は所有木の形 (structural)。weak と位置と cosmetic は見ない。
 // 失敗したファイルの unparse 結果は ignore/nast/unparse/ に書き出す。
 #include "core/common/error.h"
-#include "parse.h"
-#include "unparse.h"
-#include "compare.h"
+#include "../parse/parse.h"
+#include "../parse/unparse.h"
+#include "../node/compare.h"
 
 #include <core/common/file.h>
 #include <filesystem>

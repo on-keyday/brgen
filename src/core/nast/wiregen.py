@@ -322,7 +322,8 @@ def generate_conv(schema):
     w("// アリーナの id i+1 になる。戻すときも同じ順で make を呼べば id が一致する。")
     w("// つまりノード表は歯抜けにできない。アリーナが密なので今は制約にならない。")
     w("#pragma once")
-    w('#include "nodes.h"')
+    # conv は wire/ に出る。ノード定義は隣の node/ にある。
+    w('#include "../node/nodes.h"')
     w('#include "nast_wire.hpp"')
     w("")
     w("#include <error/error.h>")
@@ -624,9 +625,9 @@ def generate_conv(schema):
 def main():
     here = os.path.join(REPO, "src", "core", "nast")
     p = argparse.ArgumentParser()
-    p.add_argument("--schema", default=os.path.join(here, "nodes.json"))
-    p.add_argument("-o", "--output", default=os.path.join(here, "nast_wire.bgn"))
-    p.add_argument("--conv", default=os.path.join(here, "nast_wire_conv.hpp"))
+    p.add_argument("--schema", default=os.path.join(here, "node", "nodes.json"))
+    p.add_argument("-o", "--output", default=os.path.join(here, "wire", "nast_wire.bgn"))
+    p.add_argument("--conv", default=os.path.join(here, "wire", "nast_wire_conv.hpp"))
     args = p.parse_args()
 
     schema = json.load(io.open(args.schema, encoding="utf-8"))
