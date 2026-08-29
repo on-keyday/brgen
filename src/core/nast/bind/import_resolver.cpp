@@ -37,7 +37,7 @@ namespace brgen::nast::bind {
     }
 
     void ImportResolver::handle(Node<Import> import_) {
-        auto* d = a.get<Import>(import_);
+        auto d = import_.ref(a);
         auto* h = a.header_at(import_.id());
         if (!d || !h) {
             return;

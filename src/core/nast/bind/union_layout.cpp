@@ -28,12 +28,12 @@ namespace brgen::nast::bind {
             // 辿るのと同じ扱い。
             std::vector<Node<Type>> member_types;
             std::vector<Node<Type>> queue;
-            for (auto& c : a.get<UnionType>(u)->candidates) {
-                auto f = a.get<UnionCandidate>(c)->field;
+            for (auto& c : u.ref(a)->candidates) {
+                auto f = c.ref(a)->field;
                 if (!f) {
                     continue;  // 名前が現れない分岐の pad
                 }
-                queue.push_back(a.get<Field>(f)->type);
+                queue.push_back(f.ref(a)->type);
             }
             for (std::size_t qi = 0; qi < queue.size(); qi++) {
                 auto t = queue[qi];
@@ -41,9 +41,9 @@ namespace brgen::nast::bind {
                     continue;  // 型の無い field (error-tolerant な入力)
                 }
                 if (auto nested = t.as_any<UnionType>()) {
-                    for (auto& nc : a.get<UnionType>(nested)->candidates) {
-                        if (auto nf = a.get<UnionCandidate>(nc)->field) {
-                            queue.push_back(a.get<Field>(nf)->type);
+                    for (auto& nc : nested.ref(a)->candidates) {
+                        if (auto nf = nc.ref(a)->field) {
+                            queue.push_back(nf.ref(a)->type);
                         }
                     }
                     continue;

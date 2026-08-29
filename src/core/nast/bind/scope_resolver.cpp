@@ -27,7 +27,7 @@ namespace brgen::nast::bind {
 
     void ScopeResolver::declare(Env& env, Node<Ident> name, Node<Statement> node, bool is_type,
                                 std::size_t position) {
-        auto* d = a.get<Ident>(name);
+        auto d = name.ref(a);
         if (!d || d->identifier.empty()) {
             return;  // 無名フィールド (:" " など) は名前を持ち込まない
         }
@@ -40,10 +40,10 @@ namespace brgen::nast::bind {
             auto s = stmts[i];
             // 名前を持ち込む文 = NamedStatement の派生。例外は無い。
             if (auto named = s.as_any<NamedStatement>()) {
-                declare(env, a.get<NamedStatement>(named)->name, s, is_type_decl(s.type()),
+                declare(env, named.ref(a)->name, s, is_type_decl(s.type()),
                         base + i + 1);
                 if (auto typed = s.as_any<NamedTypeStatement>()) {
-                    declare_inline_formats(env, a.get<NamedTypeStatement>(typed)->type,
+                    declare_inline_formats(env, typed.ref(a)->type,
                                            base + i + 1);
                 }
                 continue;
@@ -54,7 +54,7 @@ namespace brgen::nast::bind {
             if (auto cond = s.as_any<ConditionalExpr>()) {
                 if (auto* uf = tables.table<UnionFields>().get(cond)) {
                     for (auto& f : uf->fields) {
-                        declare(env, a.get<Field>(f)->name, f, false, base + i + 1);
+                        declare(env, f.ref(a)->name, f, false, base + i + 1);
                     }
                 }
             }
@@ -69,22 +69,22 @@ namespace brgen::nast::bind {
             return;
         }
         if (auto inl = ty.as_any<InlineStructType>()) {
-            auto fmt = a.get<InlineStructType>(inl)->inlined_format;
+            auto fmt = inl.ref(a)->inlined_format;
             if (fmt) {
-                declare(env, a.get<Format>(fmt)->name, fmt, true, position);
+                declare(env, fmt.ref(a)->name, fmt, true, position);
             }
             return;
         }
         if (auto arr = ty.as_any<ArrayType>()) {
-            declare_inline_formats(env, a.get<ArrayType>(arr)->element_type, position);
+            declare_inline_formats(env, arr.ref(a)->element_type, position);
             return;
         }
         if (auto opt = ty.as_any<OptionalType>()) {
-            declare_inline_formats(env, a.get<OptionalType>(opt)->base_type, position);
+            declare_inline_formats(env, opt.ref(a)->base_type, position);
             return;
         }
         if (auto wrap = ty.as_any<WrapperType>()) {
-            declare_inline_formats(env, a.get<WrapperType>(wrap)->base, position);
+            declare_inline_formats(env, wrap.ref(a)->base, position);
         }
     }
 
@@ -120,7 +120,7 @@ namespace brgen::nast::bind {
     }
 
     void ScopeResolver::resolve_name(Env& env, Node<Ident> name, std::size_t position) {
-        auto* d = a.get<Ident>(name);
+        auto d = name.ref(a);
         if (!d || d->identifier.empty()) {
             return;
         }
@@ -140,7 +140,7 @@ namespace brgen::nast::bind {
     }
 
     void ScopeResolver::run_block(Env& env, Node<Body> body, std::size_t base) {
-        auto* d = a.get<Body>(body);
+        auto d = body.ref(a);
         if (!d) {
             return;
         }
@@ -157,38 +157,38 @@ namespace brgen::nast::bind {
 
         // 型の参照。IdentType にしか無いので先に見る。
         if (auto id = n.as_any<IdentType>()) {
-            resolve_name(env, a.get<IdentType>(id)->ident, position);
+            resolve_name(env, id.ref(a)->ident, position);
             walk_children(env, n, position);
             return;
         }
 
         if (auto ref = n.as_any<Reference>()) {
-            resolve_name(env, a.get<Reference>(ref)->name, position);
+            resolve_name(env, ref.ref(a)->name, position);
             walk_children(env, n, position);
             return;
         }
 
         // 本体がスコープになる文。
         if (auto named_body = n.as_any<NamedBodyStatement>()) {
-            auto* d = a.get<NamedBodyStatement>(named_body);
+            auto d = named_body.ref(a);
             Env inner{&env, position, is_type_barrier(n.type()), {}};
             // fn の引数は本体スコープの先頭に入る (parse.cpp:1686 が
             // parse_indent_block へ渡している。format の型パラメータも同じ扱い)。
             // 型パラメータは本体スコープの先頭に入る (parse.cpp が
             // parse_indent_block へ渡すのと同じ扱い)。
             if (auto gen = n.as_any<GenericFormat>()) {
-                for (auto& tp : a.get<GenericFormat>(gen)->type_parameters) {
-                    declare(inner, a.get<TypeParameter>(tp)->name, tp, true, 0);
+                for (auto& tp : gen.ref(a)->type_parameters) {
+                    declare(inner, tp.ref(a)->name, tp, true, 0);
                 }
             }
             if (auto fn = n.as_any<Function>()) {
-                auto* f = a.get<Function>(fn);
+                auto f = fn.ref(a);
                 for (auto& p : f->parameters) {
-                    declare(inner, a.get<Parameter>(p)->name, p, false, 0);
+                    declare(inner, p.ref(a)->name, p, false, 0);
                 }
                 // 引数の型と戻り値の型は外側で解決する
                 for (auto& p : f->parameters) {
-                    walk(env, a.get<Parameter>(p)->type, position);
+                    walk(env, p.ref(a)->type, position);
                 }
                 walk(env, f->return_type, position);
             }
@@ -197,11 +197,11 @@ namespace brgen::nast::bind {
         }
 
         if (auto enm = n.as_any<Enum>()) {
-            auto* d = a.get<Enum>(enm);
+            auto d = enm.ref(a);
             walk(env, d->base_type, position);  // 基底型は外側
             Env inner{&env, position, true, {}};
             for (std::size_t i = 0; i < d->members.size(); i++) {
-                declare(inner, a.get<EnumMember>(d->members[i])->name, d->members[i], false, i + 1);
+                declare(inner, d->members[i].ref(a)->name, d->members[i], false, i + 1);
             }
             for (std::size_t i = 0; i < d->members.size(); i++) {
                 walk_children(inner, d->members[i], i + 1);
@@ -213,12 +213,12 @@ namespace brgen::nast::bind {
         if (auto cond = n.as_any<ConditionalExpr>()) {
             Env inner{&env, position, false, {}};
             if (auto m = n.as_any<Match>()) {
-                walk(inner, a.get<Match>(m)->condition, position);
+                walk(inner, m.ref(a)->condition, position);
             }
-            for (auto& block : a.get<ConditionalExpr>(cond)->blocks) {
-                auto* b = a.get<BodyStatement>(block);
+            for (auto& block : cond.ref(a)->blocks) {
+                auto b = block.ref(a);
                 if (auto cs = block.template as_any<ConditionalStatement>()) {
-                    walk(inner, a.get<ConditionalStatement>(cs)->condition, position);
+                    walk(inner, cs.ref(a)->condition, position);
                 }
                 Env body_env{&inner, position, false, {}};
                 run_block(body_env, b->body, 0);
@@ -228,11 +228,11 @@ namespace brgen::nast::bind {
 
         // for。init の宣言が cond / step / 本体から見える。
         if (auto loop = n.as_any<Loop>()) {
-            auto* d = a.get<Loop>(loop);
+            auto d = loop.ref(a);
             Env inner{&env, position, false, {}};
             if (d->init) {
                 if (auto named = d->init.template as_any<NamedStatement>()) {
-                    declare(inner, a.get<NamedStatement>(named)->name, d->init, false, 0);
+                    declare(inner, named.ref(a)->name, d->init, false, 0);
                 }
                 walk(inner, d->init, 1);
             }
@@ -246,8 +246,8 @@ namespace brgen::nast::bind {
         // for x in expr。x はループの中だけ、expr は外側で解決する。
         // 解決先は束縛の VariableDefinition で、:= と同じ形。
         if (auto rloop = n.as_any<RangeLoop>()) {
-            auto* d = a.get<RangeLoop>(rloop);
-            auto* binding = a.get<VariableDefinition>(d->binding);
+            auto d = rloop.ref(a);
+            auto binding = d->binding.ref(a);
             walk(env, binding->value, position);
             Env inner{&env, position, false, {}};
             declare(inner, binding->name, d->binding, false, 0);
@@ -259,7 +259,7 @@ namespace brgen::nast::bind {
     }
 
     void ScopeResolver::resolve(Node<Module> mod) {
-        auto* d = a.get<Module>(mod);
+        auto d = mod.ref(a);
         if (!d) {
             return;
         }

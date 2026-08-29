@@ -111,21 +111,21 @@ namespace brgen::nast::bind {
             Node<Ident> lhs_root_name(Node<Expr> e) {
                 for (;;) {
                     if (auto ma = e.as_any<MemberAccess>()) {
-                        e = a.get<MemberAccess>(ma)->base;
+                        e = ma.ref(a)->base;
                         continue;
                     }
                     if (auto idx = e.as_any<Index>()) {
-                        e = a.get<Index>(idx)->base;
+                        e = idx.ref(a)->base;
                         continue;
                     }
                     if (auto p = e.as_any<Paren>()) {
-                        e = a.get<Paren>(p)->expr;
+                        e = p.ref(a)->expr;
                         continue;
                     }
                     break;
                 }
                 if (auto ref = e.as_any<Reference>()) {
-                    return a.get<Reference>(ref)->name;
+                    return ref.ref(a)->name;
                 }
                 return nullref;
             }
@@ -134,7 +134,7 @@ namespace brgen::nast::bind {
             Node<Format> format_of_type(Node<Type> t) {
                 for (;;) {
                     if (auto arr = t.as_any<ArrayType>()) {
-                        t = a.get<ArrayType>(arr)->element_type;
+                        t = arr.ref(a)->element_type;
                         continue;
                     }
                     break;
@@ -143,7 +143,7 @@ namespace brgen::nast::bind {
                 if (!st) {
                     return nullref;
                 }
-                return a.get<StructType>(st)->base.as_any<Format>();
+                return st.ref(a)->base.as_any<Format>();
             }
 
             void note_state_write(Node<StateVariable> sv) {
@@ -172,7 +172,7 @@ namespace brgen::nast::bind {
             // input = input.subrange(len) の形で長さを確立したストリームを渡して
             // いるか。渡していれば呼び先の remain はここで満たされる。
             bool rebinds_input_with_length(Node<Arguments> args) {
-                auto* d = a.get<Arguments>(args);
+                auto d = args.ref(a);
                 if (!d) {
                     return false;
                 }
@@ -181,13 +181,13 @@ namespace brgen::nast::bind {
                     if (!na) {
                         continue;
                     }
-                    auto* nd = a.get<NamedArgument>(na);
+                    auto nd = na.ref(a);
                     auto sp = nd->name.as_any<SpecialLiteral>();
-                    if (!sp || a.get<SpecialLiteral>(sp)->kind != SpecialLiteralKind::input_) {
+                    if (!sp || sp.ref(a)->kind != SpecialLiteralKind::input_) {
                         continue;
                     }
                     if (auto stream = typer.type_of_expr(nd->value).as_any<StreamType>()) {
-                        if (a.get<StreamType>(stream)->length) {
+                        if (stream.ref(a)->length) {
                             return true;
                         }
                     }
@@ -196,12 +196,12 @@ namespace brgen::nast::bind {
             }
 
             void member_access(Node<MemberAccess> ma) {
-                auto* d = a.get<MemberAccess>(ma);
+                auto d = ma.ref(a);
                 auto stream = typer.type_of_expr(d->base).as_any<StreamType>();
-                if (!stream || a.get<StreamType>(stream)->kind != SpecialLiteralKind::input_) {
+                if (!stream || stream.ref(a)->kind != SpecialLiteralKind::input_) {
                     return;
                 }
-                auto* member = a.get<Ident>(d->member);
+                auto member = d->member.ref(a);
                 if (!member) {
                     return;
                 }
@@ -217,7 +217,7 @@ namespace brgen::nast::bind {
                 else if (name == "remain" || name == "scope_length") {
                     // 長さを確立したストリーム (subrange の値) 相手ならその場で
                     // 満たされている。要求は外に出ない。
-                    if (!a.get<StreamType>(stream)->length) {
+                    if (!stream.ref(a)->length) {
                         out.dec.remain = true;
                     }
                 }
@@ -227,16 +227,16 @@ namespace brgen::nast::bind {
             }
 
             void call(Node<Call> c) {
-                auto* d = a.get<Call>(c);
+                auto d = c.ref(a);
                 // input.get(Format) / input.peek(Format): その format の復号が
                 // この場のストリームで走る。dec 側だけへ取り込む。
                 if (auto ma = d->callee.as_any<MemberAccess>()) {
-                    auto* md = a.get<MemberAccess>(ma);
+                    auto md = ma.ref(a);
                     if (typer.type_of_expr(md->base).as_any<StreamType>()) {
-                        if (auto* args = a.get<Arguments>(d->arguments); args && !args->arguments.empty()) {
-                            auto v = a.get<Argument>(args->arguments.front())->value;
+                        if (auto args = d->arguments.ref(a); args && !args->arguments.empty()) {
+                            auto v = args->arguments.front().ref(a)->value;
                             if (auto ref = v.as_any<Reference>()) {
-                                if (auto* r = tables.table<Resolution>().get(a.get<Reference>(ref)->name)) {
+                                if (auto* r = tables.table<Resolution>().get(ref.ref(a)->name)) {
                                     if (auto fmt = r->target.as_any<Format>()) {
                                         out.edges.push_back({fmt.id(), EdgeKind::inline_read, false});
                                     }
@@ -249,10 +249,10 @@ namespace brgen::nast::bind {
                 // fn 呼び出し。解決先の関数の要求を取り込む。
                 Node<Ident> callee_name;
                 if (auto ref = d->callee.as_any<Reference>()) {
-                    callee_name = a.get<Reference>(ref)->name;
+                    callee_name = ref.ref(a)->name;
                 }
                 else if (auto ma = d->callee.as_any<MemberAccess>()) {
-                    callee_name = a.get<MemberAccess>(ma)->member;
+                    callee_name = ma.ref(a)->member;
                 }
                 if (callee_name) {
                     if (auto* r = tables.table<Resolution>().get(callee_name)) {
@@ -275,16 +275,16 @@ namespace brgen::nast::bind {
                     // 代入は文の位置では Assign 文、式の位置では Binary。どちらも
                     // 左辺の根が state 変数なら書き込み。
                     if (auto as = n.as_any<Assign>()) {
-                        note_write(a.get<Assign>(as)->assignee);
+                        note_write(as.ref(a)->assignee);
                     }
                     else if (auto bin = n.as_any<Binary>()) {
-                        auto* d = a.get<Binary>(bin);
+                        auto d = bin.ref(a);
                         if (is_assign_op(d->op)) {
                             note_write(d->left);
                         }
                     }
                     else if (auto ref = n.as_any<Reference>()) {
-                        auto name = a.get<Reference>(ref)->name;
+                        auto name = ref.ref(a)->name;
                         if (!assign_lhs_refs.contains(name.id())) {
                             if (auto sv = state_target(name)) {
                                 note_state_read(sv);
@@ -298,7 +298,7 @@ namespace brgen::nast::bind {
                         call(c);
                     }
                     else if (auto f = n.as_any<Field>()) {
-                        auto* d = a.get<Field>(f);
+                        auto d = f.ref(a);
                         if (auto fmt = format_of_type(d->type)) {
                             out.edges.push_back({fmt.id(), EdgeKind::field, rebinds_input_with_length(d->arguments)});
                         }

@@ -48,7 +48,7 @@ namespace {
         for (auto& mod : modules) {
             brgen::nast::visit_all(arena, mod, [&](brgen::nast::NodeAny n) {
                 if (auto na = n.as_any<brgen::nast::NamedArgument>()) {
-                    brgen::nast::visit_all(arena, arena.get<brgen::nast::NamedArgument>(na)->name,
+                    brgen::nast::visit_all(arena, na.ref(arena)->name,
                                            [&](brgen::nast::NodeAny d) {
                                                designator.insert(d.id());
                                                return true;
@@ -70,7 +70,7 @@ namespace {
                 }
                 if (auto e = n.as_any<brgen::nast::Expr>()) {
                     c.exprs++;
-                    if (arena.get<brgen::nast::Expr>(e)->type) {
+                    if (e.ref(arena)->type) {
                         c.typed++;
                     }
                 }
