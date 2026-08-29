@@ -1,10 +1,8 @@
 /*license*/
 #pragma once
-#include "../node/nodes.h"
+#include "../node/code_writer.h"
 
-#include <code/loc_writer.h>
 #include <string>
-#include <vector>
 
 // parse が組んだ木から .bgn を書き戻す (逆変換)。
 //
@@ -27,30 +25,15 @@
 // これができるのは解析結果が side table にあり、木が原文の形のままだから。
 // 落ちる情報が見つかったらノードに持たせて塞ぐ (SpecifyOrder の name が実例)。
 //
-// 書き出しは futils の LocWriter に載せる。行とインデントを構造として持つので
-// 桁を数えなくて済み、それぞれの断片が **どのノードから出たか** を一緒に記録
-// できる。この対応表 (UnparseResult::spans) が source map の下地になる。
-// rebrgen の ebmcodegen が同じ Writer を使っている (docs/lessons_from_ebmcodegen.md)。
+// 書き出しは node/code_writer.h の CodeWriter に載せる。行とインデントを
+// 構造として持つので桁を数えなくて済み、それぞれの断片が **どのノードから
+// 出たか** も記録できる。同じ Writer をバックエンド側でも使う。
 
 namespace brgen::nast {
 
-    // 出力の断片と、それを出したノードの対応。行は 1 起点、桁は 0 起点で、
-    // どちらもインデントを展開する前の値。
-    struct UnparseSpan {
-        NodeAny node;
-        std::size_t begin_line = 0;
-        std::size_t begin_col = 0;
-        std::size_t end_line = 0;
-        std::size_t end_col = 0;
-    };
-
-    struct UnparseResult {
-        std::string text;
-        std::vector<UnparseSpan> spans;
-    };
-
-    // 木を .bgn に戻す。由来の対応表も要るなら unparse_with_spans を使う。
+    // 木を .bgn に戻す。由来の対応表 (CodeOutput::spans) も要るなら
+    // unparse_with_spans を使う。型は node/code_writer.h にある。
     std::string unparse(Arena& a, Node<Module> mod);
-    UnparseResult unparse_with_spans(Arena& a, Node<Module> mod);
+    CodeOutput unparse_with_spans(Arena& a, Node<Module> mod);
 
 }  // namespace brgen::nast
