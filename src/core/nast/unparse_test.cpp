@@ -32,6 +32,48 @@ namespace {
 
 }  // namespace
 
+namespace {
+
+    // 由来の対応表 (spans) が本当に出力を指しているか。行と桁が範囲内で、
+    // 始まりが終わりを越えていないことを見る。インデントは to_string が
+    // 後から足すので、桁はインデント前の値と比べる。
+    bool spans_are_sane(const brgen::nast::UnparseResult& r, std::string& why) {
+        std::vector<std::size_t> width;  // 各行のインデント前の長さ
+        {
+            std::size_t cur = 0;
+            for (char c : r.text) {
+                if (c == '\n') {
+                    width.push_back(cur);
+                    cur = 0;
+                }
+                else {
+                    cur++;
+                }
+            }
+            width.push_back(cur);
+        }
+        for (auto& s : r.spans) {
+            if (s.begin_line == 0 || s.end_line == 0) {
+                why = "line number is 0-based somewhere";
+                return false;
+            }
+            if (s.begin_line > s.end_line ||
+                (s.begin_line == s.end_line && s.begin_col > s.end_col)) {
+                why = "span starts after it ends";
+                return false;
+            }
+            // to_string はインデントを足すので、行の長さはここで見る幅より
+            // 長くなる。桁がインデント前の幅を越えていたら記録がずれている。
+            if (s.end_line - 1 < width.size() && s.end_col > width[s.end_line - 1]) {
+                why = "column runs past the end of its line";
+                return false;
+            }
+        }
+        return true;
+    }
+
+}  // namespace
+
 int main(int argc, char** argv) {
     bool emit = false;
     std::vector<std::string> paths;
@@ -73,7 +115,8 @@ int main(int argc, char** argv) {
             skipped++;
             continue;
         }
-        auto text = brgen::nast::unparse(arena, *parsed);
+        auto full = brgen::nast::unparse_with_spans(arena, *parsed);
+        auto text = full.text;
         if (emit) {
             std::print("{}", text);
             continue;
@@ -107,6 +150,13 @@ int main(int argc, char** argv) {
         }
         if (!brgen::nast::structural(arena, *parsed, *reparsed)) {
             std::println("MISMATCH {}", path);
+            save_failed(path, text);
+            mismatch++;
+            continue;
+        }
+        std::string why;
+        if (!spans_are_sane(full, why)) {
+            std::println("SPAN-BROKEN {} ({})", path, why);
             save_failed(path, text);
             mismatch++;
             continue;

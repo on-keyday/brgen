@@ -16,16 +16,33 @@ namespace brgen::nast {
             return "?";
         }
 
+        // 出力の土台。行とインデントを Writer が構造として持つので、桁を数える
+        // 必要がない。どの断片がどのノードから出たかも記録できる (with_loc)。
+        using Writer = futils::code::LocWriter<std::string, std::vector, NodeAny>;
+
+        // インデント 1 段の幅。to_string に渡す文字列と、spans の桁を実際の
+        // 出力に合わせる計算 (adjust_with_indent) で同じ値を使う。
+        constexpr std::size_t indent_width = 4;
+        constexpr auto indent_text = "    ";
+
         struct Unparser {
             Arena& a;
-            std::string out;
-            int depth = 0;
+            Writer w;
+            // ブロックの深さ。indent_scope の defer を積んで管理する。
+            std::vector<decltype(std::declval<Writer&>().indent_scope())> indents;
 
+            // 行を終える。次の write は新しい行に載り、インデントは Writer が
+            // 現在の深さから決める。
             void nl() {
-                out += "\n";
-                for (int i = 0; i < depth; i++) {
-                    out += "    ";
-                }
+                w.line();
+            }
+
+            void enter() {
+                indents.push_back(w.indent_scope());
+            }
+
+            void leave() {
+                indents.pop_back();
             }
 
             std::string_view ident_text(Node<Ident> id) {
@@ -43,12 +60,12 @@ namespace brgen::nast {
                 bool first = true;
                 for (auto& arg : d->arguments) {
                     if (!first) {
-                        out += ", ";
+                        w.write(", ");
                     }
                     first = false;
                     if (auto na = arg.as_any<NamedArgument>()) {
                         expr(na.ref(a)->name);
-                        out += " = ";
+                        w.write(" = ");
                     }
                     expr(arg.ref(a)->value);
                 }
@@ -65,68 +82,77 @@ namespace brgen::nast {
                     type(t);
                     return;
                 }
-                out += "<";
+                w.write("<");
                 type(t);
-                out += ">";
+                w.write(">");
             }
 
             void escape_into(std::string_view s) {
+                std::string escaped;
                 for (char c : s) {
                     if (c == '\\' || c == '"') {
-                        out += '\\';
+                        escaped += '\\';
                     }
-                    out += c;
+                    escaped += c;
                 }
+                w.write(escaped);
             }
 
+            // 式と文の入口では、書いた範囲をそのノードに紐づけておく。
+            // 入れ子は内側ほど狭い範囲として重なって記録される。
             void expr(Node<Expr> e) {
                 if (!e) {
-                    out += "/*missing*/";
+                    w.write("/*missing*/");
                     return;
                 }
+                auto scope = w.with_loc_scope(e);
+                expr_body(e);
+            }
+
+            void expr_body(Node<Expr> e) {
                 switch (e.type()) {
                     case NodeType::IntLiteral:
-                        out += e.as<IntLiteral>().ref(a)->value;
+                        w.write(e.as<IntLiteral>().ref(a)->value);
                         return;
                     case NodeType::BoolLiteral:
-                        out += e.as<BoolLiteral>().ref(a)->value ? "true" : "false";
+                        w.write(e.as<BoolLiteral>().ref(a)->value ? "true" : "false");
                         return;
                     case NodeType::StrLiteral:
-                        out += e.as<StrLiteral>().ref(a)->value;
+                        w.write(e.as<StrLiteral>().ref(a)->value);
                         return;
                     case NodeType::CharLiteral:
-                        out += e.as<CharLiteral>().ref(a)->value;
+                        w.write(e.as<CharLiteral>().ref(a)->value);
                         return;
                     case NodeType::RegexLiteral:
-                        out += e.as<RegexLiteral>().ref(a)->value;
+                        w.write(e.as<RegexLiteral>().ref(a)->value);
                         return;
                     case NodeType::SpecialLiteral:
-                        out += to_string(e.as<SpecialLiteral>().ref(a)->kind, true);
+                        w.write(to_string(e.as<SpecialLiteral>().ref(a)->kind, true));
                         return;
                     case NodeType::Reference:
-                        out += ident_text(e.as<Reference>().ref(a)->name);
+                        w.write(ident_text(e.as<Reference>().ref(a)->name));
                         return;
                     case NodeType::MemberAccess: {
                         auto d = e.as<MemberAccess>().ref(a);
                         expr(d->base);
-                        out += ".";
-                        out += ident_text(d->member);
+                        w.write(".");
+                        w.write(ident_text(d->member));
                         return;
                     }
                     case NodeType::Index: {
                         auto d = e.as<Index>().ref(a);
                         expr(d->base);
-                        out += "[";
+                        w.write("[");
                         expr(d->index);
-                        out += "]";
+                        w.write("]");
                         return;
                     }
                     case NodeType::Call: {
                         auto d = e.as<Call>().ref(a);
                         expr(d->callee);
-                        out += "(";
+                        w.write("(");
                         arguments(d->arguments);
-                        out += ")";
+                        w.write(")");
                         return;
                     }
                     case NodeType::Cast: {
@@ -138,29 +164,29 @@ namespace brgen::nast {
                         else {
                             expr(call->callee);
                         }
-                        out += "(";
+                        w.write("(");
                         arguments(d->arguments);
-                        out += ")";
+                        w.write(")");
                         return;
                     }
                     case NodeType::TypeLiteral:
                         type_literal(e.as<TypeLiteral>());
                         return;
                     case NodeType::Paren: {
-                        out += "(";
-                        auto before = out.size();
+                        w.write("(");
+                        auto before = w.line_count();
                         expr(e.as<Paren>().ref(a)->expr);
                         // 中身が if 式などでブロックを開いていたら、閉じ括弧は
                         // 次の行に置かないと再 parse できない。
-                        if (out.find('\n', before) != std::string::npos) {
+                        if (w.line_count() != before) {
                             nl();
                         }
-                        out += ")";
+                        w.write(")");
                         return;
                     }
                     case NodeType::Unary: {
                         auto d = e.as<Unary>().ref(a);
-                        out += spell(d->op);
+                        w.write(spell(d->op));
                         expr(d->target);
                         return;
                     }
@@ -168,29 +194,29 @@ namespace brgen::nast {
                         auto d = e.as<Binary>().ref(a);
                         expr(d->left);
                         if (d->op == BinaryOp::comma) {
-                            out += ", ";
+                            w.write(", ");
                         }
                         else {
-                            out += " ";
-                            out += spell(d->op);
-                            out += " ";
+                            w.write(" ");
+                            w.write(spell(d->op));
+                            w.write(" ");
                         }
                         expr(d->right);
                         return;
                     }
                     case NodeType::Range: {
                         auto d = e.as<Range>().ref(a);
-                        auto before = out.size();
+                        auto before = w.line_count();
                         if (d->start) {
                             expr(d->start);
                         }
                         // start が match / if でブロックを開いていたら演算子は
                         // 次の行へ。parse は文末の改行を読み飛ばした後の範囲
                         // 演算子を式の続きとして拾う (tree_test.bgn の `..=`)。
-                        if (out.find('\n', before) != std::string::npos) {
+                        if (w.line_count() != before) {
                             nl();
                         }
-                        out += spell(d->op);
+                        w.write(spell(d->op));
                         if (d->end) {
                             expr(d->end);
                         }
@@ -199,21 +225,21 @@ namespace brgen::nast {
                     case NodeType::Cond: {
                         auto d = e.as<Cond>().ref(a);
                         expr(d->cond);
-                        out += " ? ";
+                        w.write(" ? ");
                         expr(d->then);
-                        out += " : ";
+                        w.write(" : ");
                         expr(d->els);
                         return;
                     }
                     case NodeType::Available:
-                        out += "available(";
+                        w.write("available(");
                         expr(e.as<Available>().ref(a)->target);
-                        out += ")";
+                        w.write(")");
                         return;
                     case NodeType::Sizeof:
-                        out += "sizeof(";
+                        w.write("sizeof(");
                         expr(e.as<Sizeof>().ref(a)->target);
-                        out += ")";
+                        w.write(")");
                         return;
                     case NodeType::OrCond:
                         // base が元のカンマ連結。conds は同じ葉を共有している。
@@ -223,9 +249,9 @@ namespace brgen::nast {
                         expr(e.as<Identity>().ref(a)->expr);
                         return;
                     case NodeType::Import:
-                        out += "config.import(\"";
+                        w.write("config.import(\"");
                         escape_into(e.as<Import>().ref(a)->path);
-                        out += "\")";
+                        w.write("\")");
                         return;
                     case NodeType::If:
                         if_statement(e.as<If>());
@@ -234,9 +260,9 @@ namespace brgen::nast {
                         match_statement(e.as<Match>());
                         return;
                     default:
-                        out += "/*unprintable ";
-                        out += to_string(e.type());
-                        out += "*/";
+                        w.write("/*unprintable ");
+                        w.write(to_string(e.type()));
+                        w.write("*/");
                         return;
                 }
             }
@@ -245,81 +271,81 @@ namespace brgen::nast {
 
             void type(Node<Type> t) {
                 if (!t) {
-                    out += "/*missing type*/";
+                    w.write("/*missing type*/");
                     return;
                 }
                 switch (t.type()) {
                     case NodeType::IntType: {
                         auto d = t.as<IntType>().ref(a);
-                        out += d->is_signed ? "i" : "u";
+                        w.write(d->is_signed ? "i" : "u");
                         if (d->endian == Endian::big) {
-                            out += "b";
+                            w.write("b");
                         }
                         else if (d->endian == Endian::little) {
-                            out += "l";
+                            w.write("l");
                         }
-                        out += std::to_string(d->bit_size);
+                        w.write(std::to_string(d->bit_size));
                         return;
                     }
                     case NodeType::FloatType: {
                         auto d = t.as<FloatType>().ref(a);
-                        out += "f";
+                        w.write("f");
                         if (d->endian == Endian::big) {
-                            out += "b";
+                            w.write("b");
                         }
                         else if (d->endian == Endian::little) {
-                            out += "l";
+                            w.write("l");
                         }
-                        out += std::to_string(d->bit_size);
+                        w.write(std::to_string(d->bit_size));
                         return;
                     }
                     case NodeType::BoolType:
-                        out += "bool";
+                        w.write("bool");
                         return;
                     case NodeType::VoidType:
-                        out += "void";
+                        w.write("void");
                         return;
                     case NodeType::IdentType:
-                        out += ident_text(t.as<IdentType>().ref(a)->ident);
+                        w.write(ident_text(t.as<IdentType>().ref(a)->ident));
                         return;
                     case NodeType::ImportedType:
                         expr(t.as<ImportedType>().ref(a)->import_ref);
                         return;
                     case NodeType::ArrayType: {
                         auto d = t.as<ArrayType>().ref(a);
-                        out += "[";
+                        w.write("[");
                         if (d->length) {
                             expr(d->length);
                         }
-                        out += "]";
+                        w.write("]");
                         type(d->element_type);
                         return;
                     }
                     case NodeType::StrLiteralType: {
                         auto lit = t.as<StrLiteralType>().ref(a)->base.ref(a);
-                        out += lit ? lit->value : "/*missing literal*/";
+                        w.write(lit ? lit->value : "/*missing literal*/");
                         return;
                     }
                     case NodeType::RegexLiteralType: {
                         auto lit = t.as<RegexLiteralType>().ref(a)->base.ref(a);
-                        out += lit ? lit->value : "/*missing literal*/";
+                        w.write(lit ? lit->value : "/*missing literal*/");
                         return;
                     }
                     case NodeType::FunctionType: {
                         auto d = t.as<FunctionType>().ref(a);
-                        out += "fn (";
+                        w.write("fn (");
                         bool first = true;
                         for (auto& p : d->parameters) {
                             if (!first) {
-                                out += ", ";
+                                w.write(", ");
                             }
                             first = false;
-                            out += ":";
+                            w.write(":");
                             type(p);
                         }
-                        out += ")";
+                        w.write(")");
                         if (d->return_type) {
-                            out += " -> ";
+                            w.write(" -> ");
                             type(d->return_type);
                         }
                         return;
@@ -327,33 +353,33 @@ namespace brgen::nast {
                     case NodeType::GenericType: {
                         auto d = t.as<GenericType>().ref(a);
                         type(d->base_type);
-                        out += "[";
+                        w.write("[");
                         bool first = true;
                         for (auto& arg : d->type_arguments) {
                             if (!first) {
-                                out += ", ";
+                                w.write(", ");
                             }
                             first = false;
                             type(arg);
                         }
-                        out += "]";
+                        w.write("]");
                         return;
                     }
                     case NodeType::InlineStructType: {
                         auto fmt = t.as<InlineStructType>().ref(a)->inlined_format;
-                        out += "format";
+                        w.write("format");
                         if (auto name = fmt.ref(a)->name) {
-                            out += " ";
-                            out += ident_text(name);
+                            w.write(" ");
+                            w.write(ident_text(name));
                         }
-                        out += ":";
+                        w.write(":");
                         body(fmt.ref(a)->body);
                         return;
                     }
                     default:
-                        out += "/*unprintable type ";
-                        out += to_string(t.type());
-                        out += "*/";
+                        w.write("/*unprintable type ");
+                        w.write(to_string(t.type()));
+                        w.write("*/");
                         return;
                 }
             }
@@ -361,7 +387,7 @@ namespace brgen::nast {
             // ---- 文 ------------------------------------------------------
 
             void body(Node<Body> b) {
-                depth++;
+                enter();
                 auto d = b.ref(a);
                 if (d) {
                     for (auto& s : d->statements) {
@@ -369,7 +395,7 @@ namespace brgen::nast {
                         statement(s);
                     }
                 }
-                depth--;
+                leave();
             }
 
             // match の `=> 文` に置けるか。ブロックを開く文はだめ。
@@ -407,18 +433,18 @@ namespace brgen::nast {
                 for (auto& block : d->blocks) {
                     if (auto cs = block.as_any<ConditionalStatement>()) {
                         if (first) {
-                            out += "if ";
+                            w.write("if ");
                         }
                         else {
                             nl();
-                            out += "elif ";
+                            w.write("elif ");
                         }
                         expr(cs.ref(a)->condition);
-                        out += ":";
+                        w.write(":");
                     }
                     else {
                         nl();
-                        out += "else:";
+                        w.write("else:");
                     }
                     first = false;
                     body(block.ref(a)->body);
@@ -427,13 +453,13 @@ namespace brgen::nast {
 
             void match_statement(Node<Match> n) {
                 auto d = n.ref(a);
-                out += "match";
+                w.write("match");
                 if (d->condition) {
-                    out += " ";
+                    w.write(" ");
                     expr(d->condition);
                 }
-                out += ":";
-                depth++;
+                w.write(":");
+                enter();
                 for (auto& block : d->blocks) {
                     nl();
                     auto cs = block.as<ConditionalStatement>().ref(a);
@@ -442,22 +468,22 @@ namespace brgen::nast {
                     // `=> 文` と 1 文だけのブロックは同じ木。1 行に置ける文なら
                     // `=>` で書く。
                     if (b && b->statements.size() == 1 && fits_on_a_line(b->statements[0])) {
-                        out += " => ";
+                        w.write(" => ");
                         statement(b->statements[0]);
                     }
                     else {
-                        out += ":";
+                        w.write(":");
                         body(cs->body);
                     }
                 }
-                depth--;
+                leave();
             }
 
             void loop_statement(Node<Loop> n) {
                 auto d = n.ref(a);
-                out += "for";
+                w.write("for");
                 if (!d->init && !d->condition && !d->step) {
-                    out += ":";
+                    w.write(":");
                 }
                 else {
                     // `for cond:` は init に条件そのもの (真偽演算子なら Assert 包み)
@@ -471,7 +497,7 @@ namespace brgen::nast {
                             cond_only = asrt.ref(a)->expr == d->condition;
                         }
                     }
-                    out += " ";
+                    w.write(" ");
                     if (cond_only) {
                         expr(d->condition);
                     }
@@ -479,128 +505,133 @@ namespace brgen::nast {
                         if (d->init) {
                             statement(d->init);
                         }
-                        out += ";";
+                        w.write(";");
                         if (d->condition) {
-                            out += " ";
+                            w.write(" ");
                             expr(d->condition);
                         }
                         if (d->step) {
-                            out += "; ";
+                            w.write("; ");
                             statement(d->step);
                         }
                     }
-                    out += ":";
+                    w.write(":");
                 }
                 body(d->body);
             }
 
             void enum_statement(Node<Enum> n) {
                 auto d = n.ref(a);
-                out += "enum ";
-                out += ident_text(d->name);
-                out += ":";
-                depth++;
+                w.write("enum ");
+                w.write(ident_text(d->name));
+                w.write(":");
+                enter();
                 if (d->base_type) {
                     nl();
-                    out += ":";
+                    w.write(":");
                     type(d->base_type);
                 }
                 for (auto& m : d->members) {
                     nl();
                     auto md = m.ref(a);
-                    out += ident_text(md->name);
+                    w.write(ident_text(md->name));
                     // 値は書かれなかったものも parse が合成する。書かれたもの
                     // (raw_expr) だけを書き、合成分は再 parse に作り直させる。
                     if (md->raw_expr) {
-                        out += " = ";
+                        w.write(" = ");
                         expr(md->raw_expr);
                     }
                 }
-                depth--;
+                leave();
             }
 
             void fn_statement(Node<Function> n) {
                 auto d = n.ref(a);
-                out += "fn ";
-                out += ident_text(d->name);
-                out += "(";
+                w.write("fn ");
+                w.write(ident_text(d->name));
+                w.write("(");
                 bool first = true;
                 for (auto& p : d->parameters) {
                     if (!first) {
-                        out += ", ";
+                        w.write(", ");
                     }
                     first = false;
                     auto pd = p.ref(a);
                     if (pd->name) {
-                        out += ident_text(pd->name);
-                        out += " ";
+                        w.write(ident_text(pd->name));
+                        w.write(" ");
                     }
-                    out += ":";
+                    w.write(":");
                     type(pd->type);
                 }
-                out += ")";
+                w.write(")");
                 // 書かれなかった戻り値は parse が VoidType を合成する。合成分は
                 // is_explicit が立たないのでそこで見分ける。
                 if (d->return_type &&
                     !(d->return_type.as_any<VoidType>() && !d->return_type.ref(a)->is_explicit)) {
-                    out += " -> ";
+                    w.write(" -> ");
                     type(d->return_type);
                 }
-                out += ":";
+                w.write(":");
                 body(d->body);
             }
 
             void field_statement(Node<NamedTypeStatement> n, Node<Arguments> args) {
                 auto d = n.ref(a);
                 if (d->name) {
-                    out += ident_text(d->name);
-                    out += " ";
+                    w.write(ident_text(d->name));
+                    w.write(" ");
                 }
-                out += ":";
+                w.write(":");
                 type(d->type);
                 if (args) {
-                    out += "(";
+                    w.write("(");
                     arguments(args);
-                    out += ")";
+                    w.write(")");
                 }
             }
 
             void statement(Node<Statement> s) {
                 if (!s) {
-                    out += "/*missing statement*/";
+                    w.write("/*missing statement*/");
                     return;
                 }
+                auto scope = w.with_loc_scope(s);
+                statement_body(s);
+            }
+
+            void statement_body(Node<Statement> s) {
                 switch (s.type()) {
                     case NodeType::Format: {
                         auto d = s.as<Format>().ref(a);
-                        out += "format ";
-                        out += ident_text(d->name);
-                        out += ":";
+                        w.write("format ");
+                        w.write(ident_text(d->name));
+                        w.write(":");
                         body(d->body);
                         return;
                     }
                     case NodeType::GenericFormat: {
                         auto d = s.as<GenericFormat>().ref(a);
-                        out += "format ";
-                        out += ident_text(d->name);
-                        out += "[";
+                        w.write("format ");
+                        w.write(ident_text(d->name));
+                        w.write("[");
                         bool first = true;
                         for (auto& tp : d->type_parameters) {
                             if (!first) {
-                                out += ", ";
+                                w.write(", ");
                             }
                             first = false;
-                            out += ident_text(tp.ref(a)->name);
+                            w.write(ident_text(tp.ref(a)->name));
                         }
-                        out += "]:";
+                        w.write("]:");
                         body(d->body);
                         return;
                     }
                     case NodeType::State: {
                         auto d = s.as<State>().ref(a);
-                        out += "state ";
-                        out += ident_text(d->name);
-                        out += ":";
+                        w.write("state ");
+                        w.write(ident_text(d->name));
+                        w.write(":");
                         body(d->body);
                         return;
                     }
@@ -628,28 +659,28 @@ namespace brgen::nast {
                     case NodeType::RangeLoop: {
                         auto d = s.as<RangeLoop>().ref(a);
                         auto bind = d->binding.ref(a);
-                        out += "for ";
-                        out += ident_text(bind->name);
-                        out += " in ";
+                        w.write("for ");
+                        w.write(ident_text(bind->name));
+                        w.write(" in ");
                         expr(bind->value);
-                        out += ":";
+                        w.write(":");
                         body(d->body);
                         return;
                     }
                     case NodeType::Return: {
                         auto d = s.as<Return>().ref(a);
-                        out += "return";
+                        w.write("return");
                         if (d->expr) {
-                            out += " ";
+                            w.write(" ");
                             expr(d->expr);
                         }
                         return;
                     }
                     case NodeType::Break:
-                        out += "break";
+                        w.write("break");
                         return;
                     case NodeType::Continue:
-                        out += "continue";
+                        w.write("continue");
                         return;
                     case NodeType::Assert:
                         // 真偽演算子の文は parse が Assert に包む。式だけ書けば
@@ -659,49 +690,49 @@ namespace brgen::nast {
                     case NodeType::Assign: {
                         auto d = s.as<Assign>().ref(a);
                         expr(d->assignee);
-                        out += " ";
-                        out += spell(d->op);
-                        out += " ";
+                        w.write(" ");
+                        w.write(spell(d->op));
+                        w.write(" ");
                         expr(d->value);
                         return;
                     }
                     case NodeType::VariableDefinition: {
                         auto d = s.as<VariableDefinition>().ref(a);
-                        out += ident_text(d->name);
-                        out += " ";
-                        out += spell(d->op);
-                        out += " ";
+                        w.write(ident_text(d->name));
+                        w.write(" ");
+                        w.write(spell(d->op));
+                        w.write(" ");
                         expr(d->value);
                         return;
                     }
                     case NodeType::Metadata: {
                         auto d = s.as<Metadata>().ref(a);
-                        out += d->name;
+                        w.write(d->name);
                         auto args = d->arguments.ref(a);
                         // 代入形と 1 引数の呼び出し形は同じ木。代入形で書く。
                         if (args && args->arguments.size() == 1) {
-                            out += " = ";
+                            w.write(" = ");
                             expr(args->arguments[0].ref(a)->value);
                         }
                         else {
-                            out += "(";
+                            w.write("(");
                             arguments(d->arguments);
-                            out += ")";
+                            w.write(")");
                         }
                         return;
                     }
                     case NodeType::SpecifyOrder: {
                         auto d = s.as<SpecifyOrder>().ref(a);
-                        out += d->name;
-                        out += " = ";
+                        w.write(d->name);
+                        w.write(" = ");
                         expr(d->order);
                         return;
                     }
                     case NodeType::ExplicitError: {
                         // extra_arguments は message も含む元の引数列そのもの。
-                        out += "error(";
+                        w.write("error(");
                         arguments(s.as<ExplicitError>().ref(a)->extra_arguments);
-                        out += ")";
+                        w.write(")");
                         return;
                     }
                     default:
@@ -709,9 +740,9 @@ namespace brgen::nast {
                             expr(e);
                             return;
                         }
-                        out += "/*unprintable statement ";
-                        out += to_string(s.type());
-                        out += "*/";
+                        w.write("/*unprintable statement ");
+                        w.write(to_string(s.type()));
+                        w.write("*/");
                         return;
                 }
             }
@@ -719,10 +750,13 @@ namespace brgen::nast {
 
     }  // namespace
 
-    std::string unparse(Arena& a, Node<Module> mod) {
-        Unparser u{a};
-        auto d = mod.ref(a);
-        if (d) {
+    namespace {
+
+        void run(Unparser& u, Node<Module> mod) {
+            auto d = mod.ref(u.a);
+            if (!d) {
+                return;
+            }
             bool first = true;
             for (auto& s : d->statements) {
                 if (!first) {
@@ -731,9 +765,35 @@ namespace brgen::nast {
                 first = false;
                 u.statement(s);
             }
+            u.nl();  // 末尾の改行
         }
-        u.out += "\n";
-        return u.out;
+
+    }  // namespace
+
+    std::string unparse(Arena& a, Node<Module> mod) {
+        Unparser u{a};
+        run(u, mod);
+        return u.w.to_string(indent_text);
+    }
+
+    UnparseResult unparse_with_spans(Arena& a, Node<Module> mod) {
+        Unparser u{a};
+        run(u, mod);
+        UnparseResult result;
+        result.text = u.w.to_string(indent_text);
+        // Writer が持つ桁はインデントを展開する前のもの。to_string が足した分を
+        // 加えて、result.text の上でそのまま切り出せる位置にする。
+        for (auto& loc : u.w.locs_data()) {
+            auto adjusted = u.w.adjust_with_indent(indent_width, loc);
+            result.spans.push_back(UnparseSpan{
+                .node = adjusted.loc,
+                .begin_line = adjusted.start.line,
+                .begin_col = adjusted.start.pos,
+                .end_line = adjusted.end.line,
+                .end_col = adjusted.end.pos,
+            });
+        }
+        return result;
     }
 
 }  // namespace brgen::nast
