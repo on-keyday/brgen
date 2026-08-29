@@ -57,6 +57,9 @@ CORPUS_CPP = os.path.join(SCRIPT_DIR, "corpus.cpp")
 DUMP_CPP = os.path.join(SCRIPT_DIR, "dump.cpp")
 # 線上表現の往復。生成物 (nast_wire.hpp / nast_wire_conv.hpp) を要る。
 WIRE_CPP = os.path.join(SCRIPT_DIR, "wire_test.cpp")
+# 逆変換 (.bgn へ書き戻す) と、その往復検証。
+UNPARSE_CPP = os.path.join(SCRIPT_DIR, "unparse.cpp")
+UNPARSE_TEST_CPP = os.path.join(SCRIPT_DIR, "unparse_test.cpp")
 WIRE_BGN = os.path.join(SCRIPT_DIR, "nast_wire.bgn")
 WIRE_HPP = os.path.join(SCRIPT_DIR, "nast_wire.hpp")
 # 中間の JSON は追跡しない。
@@ -392,6 +395,10 @@ def main():
         dumpexe = os.path.join(BUILD_DIR, "nast_dump" + suffix)
         run(cmd + [compile_obj(cmd, DUMP_CPP)] + shared + ["-o", dumpexe] + link_args)
         print(f"built: {dumpexe}")
+
+        unparse = os.path.join(BUILD_DIR, "nast_unparse_test" + suffix)
+        run(cmd + [compile_obj(cmd, UNPARSE_TEST_CPP), compile_obj(cmd, UNPARSE_CPP)] + shared + ["-o", unparse] + link_args)
+        print(f"built: {unparse}")
 
         # 生成物が揃っているときだけ。wiregen.py を回していないと出ない。
         if os.path.exists(os.path.join(SCRIPT_DIR, "nast_wire_conv.hpp")):

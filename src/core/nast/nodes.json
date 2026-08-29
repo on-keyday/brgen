@@ -931,6 +931,10 @@
             "derive": "Statement",
             "fields": [
                 {
+                    "name": "name",
+                    "type": "string"
+                },
+                {
                     "name": "order",
                     "type": "Node<Expr>"
                 }

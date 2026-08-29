@@ -238,6 +238,7 @@ format Node:
             name :Ref
             arguments_ref :Ref
         NodeKind.SpecifyOrder:
+            name :Ref
             order :Ref
         NodeKind.Sizeof:
             type :Ref

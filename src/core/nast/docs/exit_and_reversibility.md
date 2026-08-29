@@ -28,6 +28,31 @@ nast_wire (arena + side tables の無損失直列化、wiregen が nodes.json �
   無くても「どの解析結果がどの原文から来たか」は常に id で辿れる
   (source map の土台になる)
 
+## .bgn への逆変換 (実装済み 2026-08-30)
+
+`unparse.{h,cpp}` が木から .bgn を書き戻し、`nast_unparse_test` が
+parse → unparse → 再 parse → **structural 比較** → もう一度 unparse して
+テキスト不動点、まで見る。`example/` 311 ファイル (構文エラー入りの 3 を除く
+全部) で **311 ok / 0 mismatch / 0 unstable**。
+
+- structural は compare.h に足した 3 つ目のモード。equivalent からさらに
+  weak を丸ごと飛ばす (別々に parse した木では weak の id が一致しない)
+- コメント・空行・桁は残らない。インデントは 4 空白に正規化。目標は
+  原文の再現ではなく **再 parse で同じ形の木になること**
+- parse が形を畳んで原文が一意に戻らないところは、再 parse で同じ木に
+  なる側へ寄せて書く: Metadata の代入形 / `<u8>(x)` と `u8(x)` の
+  is_explicit による書き分け / match 分岐の `=>` と 1 文ブロック /
+  enum メンバの値は raw_expr があるときだけ
+
+**逆変換が炙り出した情報落ちが 1 件**: SpecifyOrder が「どの指定か」
+(input.endian / input.bit_order / ...) を捨てていた。ノードに name を
+持たせて塞いだ。これは「落ちる情報が見つかったらノードに持たせて塞ぐ」の
+実例そのもの。
+
+書き出しの際に要った改行の調整が 2 つ: 括弧の中身がブロックを開く
+(`(if ...: ... else: ...)`) ときの閉じ括弧と、範囲式の start がブロックを
+開くときの演算子。どちらも parse が文末の改行を跨いで式を続けるため。
+
 ## 復元しやすさを保つ規則
 
 lowering が本格化して合成ノードが増えても保つもの:
