@@ -15,6 +15,6 @@ for_each_field と visit_node_type さえ出ていれば、その上の走査
 """
 
 from .schema import Schema
-from .writer import Writer
+from .writer import Writer, write_if_changed
 
-__all__ = ["Schema", "Writer"]
+__all__ = ["Schema", "Writer", "write_if_changed"]

@@ -1,6 +1,24 @@
-"""生成テキストの受け皿。"""
+"""生成テキストの受け皿と、書き出し。"""
 
 import io
+import os
+
+
+def write_if_changed(path: str, text: str) -> bool:
+    """中身が変わったときだけ書く。書いたら True。
+
+    無条件に書くと mtime が動き、ビルドはそれを見て後続を全部やり直す。
+    nodes.h は全 TU が読むので、内容が同じでも 20 ファイル再コンパイルに
+    なっていた。生成器を回すこと自体は速いので、比較して黙るほうがよい。
+    """
+    if os.path.exists(path):
+        with open(path, encoding="utf-8", newline="") as f:
+            if f.read() == text:
+                return False
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
+        f.write(text)
+    return True
 
 
 class Writer:

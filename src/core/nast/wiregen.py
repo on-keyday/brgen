@@ -36,6 +36,11 @@ import argparse
 import io
 import json
 import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from gen import write_if_changed  # noqa: E402
 
 REPO = os.path.dirname(os.path.abspath(__file__))
 for _ in range(3):
@@ -632,15 +637,16 @@ def main():
 
     schema = json.load(io.open(args.schema, encoding="utf-8"))
 
+    # 中身が変わったときだけ書く。無条件に書くと mtime が動き、
+    # nast_wire_conv.hpp を読む側が毎回コンパイルし直しになる。
     lines = generate_bgn(schema)
-    os.makedirs(os.path.dirname(args.output), exist_ok=True)
-    io.open(args.output, "w", encoding="utf-8", newline="\n").write("\n".join(lines))
-    print("{}: {} lines, {} node kinds".format(
-        args.output, len(lines), len(concrete_nodes(schema))))
+    if write_if_changed(args.output, "\n".join(lines)):
+        print("{}: {} lines, {} node kinds".format(
+            args.output, len(lines), len(concrete_nodes(schema))))
 
     conv = generate_conv(schema)
-    io.open(args.conv, "w", encoding="utf-8", newline="\n").write("\n".join(conv))
-    print("{}: {} lines".format(args.conv, len(conv)))
+    if write_if_changed(args.conv, "\n".join(conv)):
+        print("{}: {} lines".format(args.conv, len(conv)))
 
 
 if __name__ == "__main__":
