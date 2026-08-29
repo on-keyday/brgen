@@ -1,9 +1,9 @@
 /*license*/
 #pragma once
-#include "../nodes.h"
-#include "../access.h"
-#include "../traverse.h"
-#include "../stream.h"
+#include "../node/nodes.h"
+#include "../node/access.h"
+#include "../node/traverse.h"
+#include "../parse/stream.h"
 #include <map>
 #include <string>
 #include <unordered_map>

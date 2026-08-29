@@ -44,24 +44,24 @@ REPO_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "..", ".."))
 BUILD_DIR = os.path.join(SCRIPT_DIR, "build")
 NODEGEN = os.path.join(SCRIPT_DIR, "nodegen.py")
 WIREGEN = os.path.join(SCRIPT_DIR, "wiregen.py")
-NODES_H = os.path.join(SCRIPT_DIR, "nodes.h")
-TEST_CPP = os.path.join(SCRIPT_DIR, "test.cpp")
+NODES_H = os.path.join(SCRIPT_DIR, "node", "nodes.h")
+TEST_CPP = os.path.join(SCRIPT_DIR, "tool", "test.cpp")
 # corpus はパーサ本体を要る。test.cpp はヘッダだけで足りる。
-PARSER_CPP = [os.path.join(SCRIPT_DIR, n) for n in ("parse.cpp", "stream.cpp")]
+PARSER_CPP = [os.path.join(SCRIPT_DIR, "parse", n) for n in ("parse.cpp", "stream.cpp")]
 # ノードの比較。実体を 1 つに閉じてあるので、使う側はリンクするだけ。
-COMPARE_CPP = os.path.join(SCRIPT_DIR, "compare.cpp")
+COMPARE_CPP = os.path.join(SCRIPT_DIR, "node", "compare.cpp")
 # 束縛 / 名前解決。corpus から呼ぶ。
 BIND_CPP = sorted(glob.glob(os.path.join(SCRIPT_DIR, "bind", "*.cpp")))
-CORPUS_CPP = os.path.join(SCRIPT_DIR, "corpus.cpp")
+CORPUS_CPP = os.path.join(SCRIPT_DIR, "tool", "corpus.cpp")
 # LSP 用のダンパ。解析結果を JSON で吐く。
-DUMP_CPP = os.path.join(SCRIPT_DIR, "dump.cpp")
+DUMP_CPP = os.path.join(SCRIPT_DIR, "tool", "dump.cpp")
 # 線上表現の往復。生成物 (nast_wire.hpp / nast_wire_conv.hpp) を要る。
-WIRE_CPP = os.path.join(SCRIPT_DIR, "wire_test.cpp")
+WIRE_CPP = os.path.join(SCRIPT_DIR, "tool", "wire_test.cpp")
 # 逆変換 (.bgn へ書き戻す) と、その往復検証。
-UNPARSE_CPP = os.path.join(SCRIPT_DIR, "unparse.cpp")
-UNPARSE_TEST_CPP = os.path.join(SCRIPT_DIR, "unparse_test.cpp")
-WIRE_BGN = os.path.join(SCRIPT_DIR, "nast_wire.bgn")
-WIRE_HPP = os.path.join(SCRIPT_DIR, "nast_wire.hpp")
+UNPARSE_CPP = os.path.join(SCRIPT_DIR, "parse", "unparse.cpp")
+UNPARSE_TEST_CPP = os.path.join(SCRIPT_DIR, "tool", "unparse_test.cpp")
+WIRE_BGN = os.path.join(SCRIPT_DIR, "wire", "nast_wire.bgn")
+WIRE_HPP = os.path.join(SCRIPT_DIR, "wire", "nast_wire.hpp")
 # 中間の JSON は追跡しない。
 WIRE_JSON = os.path.join(REPO_ROOT, "ignore", "nast", "nast_wire.json")
 # nast_wire.hpp を作る brgen 本体のツール。ビルド済みなら使う。
@@ -401,7 +401,7 @@ def main():
         print(f"built: {unparse}")
 
         # 生成物が揃っているときだけ。wiregen.py を回していないと出ない。
-        if os.path.exists(os.path.join(SCRIPT_DIR, "nast_wire_conv.hpp")):
+        if os.path.exists(os.path.join(SCRIPT_DIR, "wire", "nast_wire_conv.hpp")):
             wire = os.path.join(BUILD_DIR, "nast_wire_test" + suffix)
             run(cmd + [compile_obj(cmd, WIRE_CPP)] + shared + ["-o", wire] + link_args)
             print(f"built: {wire}")

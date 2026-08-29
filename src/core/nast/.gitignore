@@ -1,6 +1,6 @@
-nodes.h
+node/nodes.h
 # wiregen.py が nodes.json から出す。nodes.h と同じで build.py が作る。
 # 隣の nast_wire.bgn / nast_wire.hpp は src2json / json2cpp2 を要るので追跡する。
-nast_wire_conv.hpp
+wire/nast_wire_conv.hpp
 build/
 compile_commands.json

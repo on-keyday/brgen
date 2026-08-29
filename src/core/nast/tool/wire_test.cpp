@@ -10,16 +10,16 @@
 //
 // nast_wire.hpp は wiregen.py -> src2json -> json2cpp2 で作った生成物。
 // 作り直す手順は wiregen.py の docstring を見ること。
-#include "nast_wire_conv.hpp"
+#include "../wire/nast_wire_conv.hpp"
 
-#include "bind/binder.hpp"
-#include "bind/evaluator.hpp"
-#include "bind/requires.hpp"
-#include "bind/union_layout.hpp"
-#include "bind/import_resolver.hpp"
-#include "bind/scope_resolver.hpp"
-#include "parse.h"
-#include "traverse.h"
+#include "../bind/binder.hpp"
+#include "../bind/evaluator.hpp"
+#include "../bind/requires.hpp"
+#include "../bind/union_layout.hpp"
+#include "../bind/import_resolver.hpp"
+#include "../bind/scope_resolver.hpp"
+#include "../parse/parse.h"
+#include "../node/traverse.h"
 
 #include <binary/reader.h>
 #include <format>

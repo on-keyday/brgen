@@ -30,7 +30,7 @@ nast_wire (arena + side tables の無損失直列化、wiregen が nodes.json �
 
 ## .bgn への逆変換 (実装済み 2026-08-30)
 
-`unparse.{h,cpp}` が木から .bgn を書き戻し、`nast_unparse_test` が
+`parse/unparse.{h,cpp}` が木から .bgn を書き戻し、`nast_unparse_test` が
 parse → unparse → 再 parse → **structural 比較** → もう一度 unparse して
 テキスト不動点、まで見る。`example/` 311 ファイル (構文エラー入りの 3 を除く
 全部) で **311 ok / 0 mismatch / 0 unstable**。

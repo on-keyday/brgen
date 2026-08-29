@@ -8,16 +8,16 @@
 //   nast_corpus --tree --show-null ... 埋まっていないフィールドも出す
 //   nast_corpus --tree --no-weak ...   weak を落として所有辺だけにする
 #include "core/common/error.h"
-#include "parse.h"
-#include "printer.h"
-#include "traverse.h"
-#include "bind/binder.hpp"
-#include "bind/evaluator.hpp"
-#include "bind/requires.hpp"
-#include "bind/union_layout.hpp"
-#include "bind/import_resolver.hpp"
-#include "bind/typer.hpp"
-#include "bind/scope_resolver.hpp"
+#include "../parse/parse.h"
+#include "../node/printer.h"
+#include "../node/traverse.h"
+#include "../bind/binder.hpp"
+#include "../bind/evaluator.hpp"
+#include "../bind/requires.hpp"
+#include "../bind/union_layout.hpp"
+#include "../bind/import_resolver.hpp"
+#include "../bind/typer.hpp"
+#include "../bind/scope_resolver.hpp"
 
 #include <core/common/file.h>
 #include <format>

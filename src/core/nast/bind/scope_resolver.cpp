@@ -1,7 +1,7 @@
 /*license*/
 #include "scope_resolver.hpp"
 
-#include "../traverse.h"
+#include "../node/traverse.h"
 
 namespace brgen::nast::bind {
 

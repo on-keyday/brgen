@@ -1,9 +1,9 @@
 /*license*/
 #include "typer.hpp"
 
-#include "../traverse.h"
+#include "../node/traverse.h"
 
-#include "../compare.h"
+#include "../node/compare.h"
 
 #include <binary/log2i.h>
 #include <number/parse.h>

@@ -1,11 +1,11 @@
 // 式の種類ごとの数と型の付き具合、および木から到達できないノードの数。
 // ファイルごとにアリーナが別なので、集合は必ずファイル単位で作り直す。
-#include "bind/binder.hpp"
-#include "bind/import_resolver.hpp"
-#include "bind/scope_resolver.hpp"
-#include "bind/typer.hpp"
-#include "parse.h"
-#include "traverse.h"
+#include "../bind/binder.hpp"
+#include "../bind/import_resolver.hpp"
+#include "../bind/scope_resolver.hpp"
+#include "../bind/typer.hpp"
+#include "../parse/parse.h"
+#include "../node/traverse.h"
 #include <core/common/file.h>
 #include <algorithm>
 #include <map>

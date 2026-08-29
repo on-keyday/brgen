@@ -2,7 +2,7 @@
 //   A: parse_one を直接 (std::string 上の Sequencer)
 //   B: File::parse を直接ループ (実際の buffer 型 + 関数ポインタ経由)
 //   C: Stream 経由 (トークンを list に積み、行桁を数え、shrink する)
-#include "stream.h"
+#include "../parse/stream.h"
 #include <core/common/file.h>
 #include <core/lexer/lexer.h>
 #include <chrono>

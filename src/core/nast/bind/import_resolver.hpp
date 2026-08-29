@@ -1,7 +1,7 @@
 /*license*/
 #pragma once
-#include "../nodes.h"
-#include "../parse.h"
+#include "../node/nodes.h"
+#include "../parse/parse.h"
 
 #include <core/common/error.h>
 #include <core/common/file.h>

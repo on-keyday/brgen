@@ -1,12 +1,12 @@
 /*license*/
 #include "core/lexer/token.h"
-#include "nodes.h"
-#include "access.h"
+#include "../node/nodes.h"
+#include "../node/access.h"
 #include "stream.h"
 // #include "strutil/append.h"
 #include "parse.h"
 #include <fnet/util/base64.h>
-#include "builtin.h"
+#include "../node/builtin.h"
 
 namespace brgen::nast {
 

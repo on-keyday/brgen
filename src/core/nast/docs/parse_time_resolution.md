@@ -112,7 +112,7 @@ parse に入れると **1 箇所の分岐順**になるので、暗黙の実行�
 
 ## nast 側に足りないノード
 
-`src/core/nast/nodes.json` は 78 ノード。上記の書き換えが作るノードのうち、
+`src/core/nast/node/nodes.json` は 78 ノード。上記の書き換えが作るノードのうち、
 
 - **ある**: `Assert`
 - **無い**: `IOOperation` / `SpecifyOrder` / `Metadata` / `ExplicitError` / `Available` / `SizeOf`
