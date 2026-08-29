@@ -23,6 +23,19 @@
 CMake + Ninja。brgen 本体の CMake からは独立していて、ここだけを configure
 できる (本体は C++20、nast は C++23)。
 
+`build.py` はその wrapper で、configure を毎回書かなくて済むようにするもの。
+コンパイルの仕方は持たない (それは `CMakeLists.txt` にある)。
+
+```sh
+python src/core/nast/build.py                 # 建てて単体テスト
+python src/core/nast/build.py --test          # ctest を全部
+python src/core/nast/build.py -t nast_corpus  # ターゲット指定
+python src/core/nast/build.py --release       # 最適化 (build/release)
+python src/core/nast/build.py --clean         # 建て直し
+```
+
+直に呼んでもよい。
+
 ```sh
 cmake -S src/core/nast -B src/core/nast/build/cmake -G Ninja
 cmake --build src/core/nast/build/cmake

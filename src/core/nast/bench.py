@@ -85,15 +85,11 @@ def run_corpus_per_file(paths, extra):
 
 
 def cmake_build(targets=()):
-    """CMake の Release ツリーを建てる。無ければ configure から。
+    """Release ツリーを建てる。build.py に任せる (configure も向こう持ち)。
 
-    計測は -O2 で測る。ビルドの仕方を 2 つ持つと片方が腐るので、
-    ここではコンパイルの指定を持たず CMake に任せる。
+    計測は -O2 で測るので、ctest が使う Debug ツリーとは別に持つ。
     """
-    if not os.path.exists(os.path.join(BUILD_DIR, "CMakeCache.txt")):
-        subprocess.run(["cmake", "-S", SCRIPT_DIR, "-B", BUILD_DIR, "-G", "Ninja",
-                        "-DCMAKE_BUILD_TYPE=Release"], check=True)
-    cmd = ["cmake", "--build", BUILD_DIR]
+    cmd = [sys.executable, os.path.join(SCRIPT_DIR, "build.py"), "--release", "--no-run"]
     for t in targets:
         cmd += ["--target", t]
     subprocess.run(cmd, check=True)
