@@ -10,7 +10,7 @@
         "<vector>",
         "<string>",
         "<type_traits>",
-        "\"../lexer/token.h\"",
+        "\"../../lexer/token.h\"",
         "<utility>",
         "\"pool.h\""
     ],
