@@ -1,10 +1,11 @@
 # nast の計測プログラム
 
-`python src/core/nast/bench.py --tools` で建つ。出力は `build/` に入る。
+`python src/core/nast/bench.py --tools` で建つ (CMake の Release ツリー)。
+出力は `build/release/bin/` に入る。
 `example/` の `.bgn` を引数に取る。
 
 ```
-./src/core/nast/build/nast_coverage $(find example -name "*.bgn")
+./src/core/nast/build/release/bin/nast_coverage $(find example -name "*.bgn")
 ```
 
 ## 何を測るか

@@ -53,21 +53,23 @@ if(NOT FUTILS_DIR)
 endif()
 message(STATUS "nast: futils at ${FUTILS_DIR}")
 
-# ライブラリ本体。built/<mode>/<type>/lib に置かれる。
+# ライブラリ本体は built/<mode>/<type>/lib にある。mode は futils 側の
+# FUTILS_BUILD_MODE で、shared 以外 (freestanding-static / kernel / gcc /
+# wasm-em) はそれぞれ別用途の成果物なので混ぜない。ここは shared だけを見る。
+# 別の場所を使いたいときは -DFUTILS_LIB=<path> で直に渡す。
+set(FUTILS_BUILD_TYPE "Debug" CACHE STRING "futils build type to link against")
 find_library(FUTILS_LIB
     NAMES futils libfutils
-    PATHS
-        "${FUTILS_DIR}/built/shared/Debug/lib"
-        "${FUTILS_DIR}/built/shared/Release/lib"
-        "${FUTILS_DIR}/built/freestanding-static/Debug/lib"
-        "${FUTILS_DIR}/built/freestanding-static/Release/lib"
+    PATHS "${FUTILS_DIR}/built/shared/${FUTILS_BUILD_TYPE}/lib"
     NO_DEFAULT_PATH REQUIRED)
+message(STATUS "nast: futils lib ${FUTILS_LIB}")
 
 add_library(futils_imported INTERFACE)
 target_include_directories(futils_imported INTERFACE "${FUTILS_DIR}/src/include")
 target_link_libraries(futils_imported INTERFACE "${FUTILS_LIB}")
 if(MSVC OR (WIN32 AND CMAKE_CXX_COMPILER_ID MATCHES "Clang"))
-    # futils は dll_dbg で建っている。合わせないとリンクが割れる。
+    # shared の futils は dll のデバッグ実行時と組んである。合わせないと
+    # 実行時ライブラリが二重になってリンクが割れる。
     target_compile_options(futils_imported INTERFACE "-fms-runtime-lib=dll_dbg")
 endif()
 

@@ -26,8 +26,8 @@
 なので出るのは「今の実装どうしの実測」であって、同じ仕事をした場合の比較では
 ない。段ごとの内訳 (--time) のほうが、どこに時間が行っているかを見るには使える。
 
-既定ではベンチ用に -O2 で建て直す。build.py の既定は -O0 なので、そのまま
-測ると最適化の差が全部乗ってしまう。
+既定では CMake の Release ツリー (build/release) を建てて測る。
+ctest などが使う Debug ツリーとは別に持つ — 最適化の差がそのまま乗るため。
 """
 
 import argparse
@@ -38,9 +38,12 @@ import time
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "..", ".."))
-BUILD_DIR = os.path.join(SCRIPT_DIR, "build")
+# 計測は最適化して測る。CMake の Release ツリーを使う
+# (ctest 等が使う Debug ツリーとは別に持つ)。
+BUILD_DIR = os.path.join(SCRIPT_DIR, "build", "release")
+BIN_DIR = os.path.join(BUILD_DIR, "bin")
 EXE = ".exe" if os.name == "nt" else ""
-CORPUS = os.path.join(BUILD_DIR, "nast_corpus" + EXE)
+CORPUS = os.path.join(BIN_DIR, "nast_corpus" + EXE)
 SRC2JSON = os.path.join(REPO_ROOT, "tool", "src2json" + EXE)
 
 
@@ -81,48 +84,19 @@ def run_corpus_per_file(paths, extra):
                        stderr=subprocess.DEVNULL)
 
 
-BENCH_DIR = os.path.join(SCRIPT_DIR, "bench")
-BUILD_DIR = os.path.join(SCRIPT_DIR, "build")
+def cmake_build(targets=()):
+    """CMake の Release ツリーを建てる。無ければ configure から。
 
-
-def build_tools():
-    """bench/ の計測プログラムを建てる。
-
-    build.py と同じ .o を使い回す。何を測るかは bench/README.md にある。
+    計測は -O2 で測る。ビルドの仕方を 2 つ持つと片方が腐るので、
+    ここではコンパイルの指定を持たず CMake に任せる。
     """
-    import glob
-    import importlib.util
-
-    spec = importlib.util.spec_from_file_location("nast_build",
-                                                  os.path.join(SCRIPT_DIR, "build.py"))
-    nb = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(nb)
-
-    compiler = nb.find_compiler(None)
-    futils = nb.find_futils(None)
-    if not futils:
-        sys.exit("error: futils not found; the tools need it")
-    cmd = [compiler, "-std=c++23", "-O2",
-           "-I", SCRIPT_DIR, "-I", os.path.join(REPO_ROOT, "src"), "-I", futils]
-    link = []
-    lib = nb.find_futils_lib(futils)
-    if lib:
-        link.append(lib)
-        if os.name == "nt" and os.sep + "Debug" + os.sep in lib:
-            cmd += ["-fms-runtime-lib=dll_dbg"]
-
-    shared = [os.path.join(SCRIPT_DIR, *n) for n in
-              (("parse", "parse.cpp"), ("parse", "stream.cpp"), ("node", "compare.cpp"))]
-    shared += sorted(glob.glob(os.path.join(SCRIPT_DIR, "bind", "*.cpp")))
-    os.makedirs(BUILD_DIR, exist_ok=True)
-    objs = [nb.compile_obj(cmd, src, quiet=True) for src in shared]
-
-    suffix = ".exe" if os.name == "nt" else ""
-    for src in sorted(glob.glob(os.path.join(BENCH_DIR, "*.cpp"))):
-        name = "nast_" + os.path.splitext(os.path.basename(src))[0]
-        out = os.path.join(BUILD_DIR, name + suffix)
-        nb.run(cmd + [nb.compile_obj(cmd, src, quiet=True)] + objs + ["-o", out] + link)
-        print(f"built: {out}")
+    if not os.path.exists(os.path.join(BUILD_DIR, "CMakeCache.txt")):
+        subprocess.run(["cmake", "-S", SCRIPT_DIR, "-B", BUILD_DIR, "-G", "Ninja",
+                        "-DCMAKE_BUILD_TYPE=Release"], check=True)
+    cmd = ["cmake", "--build", BUILD_DIR]
+    for t in targets:
+        cmd += ["--target", t]
+    subprocess.run(cmd, check=True)
 
 
 def main():
@@ -131,16 +105,15 @@ def main():
     p.add_argument("--inputs", default=os.path.join(REPO_ROOT, "example"))
     p.add_argument("--no-build", action="store_true", help="do not rebuild at -O2")
     p.add_argument("--tools", action="store_true",
-                   help="build the measurement programs in bench/ and stop")
+                   help="build everything at -O2 (including bench/) and stop")
     args = p.parse_args()
 
     if args.tools:
-        build_tools()
+        cmake_build()
         return
 
     if not args.no_build:
-        subprocess.run([sys.executable, os.path.join(SCRIPT_DIR, "build.py"),
-                        "-O", "2", "--no-run", "--no-wire-hpp"], check=True)
+        cmake_build(["nast_corpus"])
 
     paths = collect(args.inputs)
     if not paths:

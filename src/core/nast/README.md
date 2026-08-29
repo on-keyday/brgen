@@ -37,12 +37,13 @@ brgen 本体の `src2json` / `json2cpp2` を要るので、建っていなけれ
 
 ソースを足したら `CMakeLists.txt` にも足す (glob は使っていない)。
 
-`build.py` / `bench.py` も残してある。CMake を通さず 1 ファイルだけ試すとき
-や、コンパイルフラグを直に触りたいときに使う。
+計測は `bench.py`。src2json と並べて測るドライバで、ビルドは CMake の
+Release ツリー (`build/release`) に委ねる — 最適化の差がそのまま乗るので、
+ctest が使う Debug ツリーとは分けてある。
 
 ```sh
-python src/core/nast/build.py          # 生成 + ビルド + 単体テスト
-python src/core/nast/bench.py --tools  # 計測プログラム
+python src/core/nast/bench.py          # 建てて測る
+python src/core/nast/bench.py --tools  # -O2 で建てるだけ
 ```
 
 ツールは `.bgn` を引数に取るものが多い。
