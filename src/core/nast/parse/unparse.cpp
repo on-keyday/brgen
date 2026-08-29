@@ -1,6 +1,8 @@
 /*license*/
 #include "unparse.h"
 
+#include "../node/util.h"
+
 namespace brgen::nast {
 
     namespace {
@@ -45,9 +47,11 @@ namespace brgen::nast {
                 indents.pop_back();
             }
 
+            // 名前が無いときは、消えるより目印が残るほうがよい (未実装や
+            // 壊れた入力を出力から見つけられる)。
             std::string_view ident_text(Node<Ident> id) {
-                auto d = id.ref(a);
-                return d ? std::string_view(d->identifier) : std::string_view("$missing");
+                auto text = nast::ident_text(a, id);
+                return text.empty() ? std::string_view("$missing") : text;
             }
 
             // ---- 式 ------------------------------------------------------

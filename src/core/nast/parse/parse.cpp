@@ -2,6 +2,7 @@
 #include "core/lexer/token.h"
 #include "../node/nodes.h"
 #include "../node/access.h"
+#include "../node/util.h"
 #include "stream.h"
 // #include "strutil/append.h"
 #include "parse.h"
@@ -983,24 +984,6 @@ namespace brgen::nast {
             return target;
         }
 
-        bool is_finally_ident(const Node<Expr>& expr, Node<Reference>* ident) {
-            if (expr.type() == NodeType::Reference) {
-                if (ident) {
-                    *ident = expr.as<Reference>();
-                }
-                return true;
-            }
-            if (expr.type() == NodeType::Index) {
-                return is_finally_ident(expr.as<Index>().ref(a)->base, ident);
-            }
-            if (expr.type() == NodeType::MemberAccess) {
-                return is_finally_ident(expr.as<MemberAccess>().ref(a)->base, ident);
-            }
-            if (expr.type() == NodeType::SpecialLiteral) {
-                return true;
-            }
-            return false;
-        }
 
         /*
         void check_duplicated_def(Ident* ident) {
@@ -1052,7 +1035,7 @@ namespace brgen::nast {
             }
             else {  // otherwise, assign
                 Node<Reference> ident;
-                if (!is_finally_ident(left, &ident)) {
+                if (!is_assignable(a, left, &ident)) {
                     if (state.error_tolerant) {
                         (void)state.errors.error(left.ref(a).loc(), "left of `=` must be ident, member access, indexed or input/output/config");
                         return;
