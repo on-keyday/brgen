@@ -1,6 +1,8 @@
 /*license*/
 #include "typer.hpp"
 
+#include "../node/util.h"
+
 #include "../node/traverse.h"
 
 #include "../node/compare.h"
@@ -231,14 +233,7 @@ namespace brgen::nast::bind {
     // 一覧に並んでいる。木を歩くと分岐の中に埋もれていて引けない。
     // module (import 先) と state は表が無いので本体の文を順に見る。
     Node<Statement> Typer::lookup_member(Node<Statement> owner, std::string_view name) {
-        auto named_name = [&](Node<Statement> s) -> std::string_view {
-            if (auto n = s.as_any<NamedStatement>()) {
-                if (auto id = n.ref(a)->name.ref(a)) {
-                    return id->identifier;
-                }
-            }
-            return std::string_view{};  // 名前を持たない文
-        };
+        auto named_name = [&](Node<Statement> s) { return name_of(a, s); };
         if (auto bound = owner.as_any<NamedBodyStatement>()) {
             if (auto* st = tables.table<FormatState>().get(bound)) {
                 for (auto& f : st->fields) {

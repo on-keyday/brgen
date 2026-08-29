@@ -1,6 +1,8 @@
 /*license*/
 #include "requires.hpp"
 
+#include "../node/util.h"
+
 #include "../node/traverse.h"
 
 #include <algorithm>
@@ -107,24 +109,9 @@ namespace brgen::nast::bind {
                 return nullref;
             }
 
-            // 代入の左辺 (sstate.isA = .. / arr[i] = ..) の根の参照を剥がす。
+            // 代入の左辺 (sstate.isA = .. / arr[i] = ..) の根の名前。
             Node<Ident> lhs_root_name(Node<Expr> e) {
-                for (;;) {
-                    if (auto ma = e.as_any<MemberAccess>()) {
-                        e = ma.ref(a)->base;
-                        continue;
-                    }
-                    if (auto idx = e.as_any<Index>()) {
-                        e = idx.ref(a)->base;
-                        continue;
-                    }
-                    if (auto p = e.as_any<Paren>()) {
-                        e = p.ref(a)->expr;
-                        continue;
-                    }
-                    break;
-                }
-                if (auto ref = e.as_any<Reference>()) {
+                if (auto ref = assign_root(a, e).as_any<Reference>()) {
                     return ref.ref(a)->name;
                 }
                 return nullref;
@@ -132,14 +119,7 @@ namespace brgen::nast::bind {
 
             // field の型の先にいる format。配列と包みを剥がして struct の持ち主を見る。
             Node<Format> format_of_type(Node<Type> t) {
-                for (;;) {
-                    if (auto arr = t.as_any<ArrayType>()) {
-                        t = arr.ref(a)->element_type;
-                        continue;
-                    }
-                    break;
-                }
-                auto st = typer.as_struct(t);
+                auto st = typer.as_struct(strip_arrays(a, t));
                 if (!st) {
                     return nullref;
                 }
