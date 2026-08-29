@@ -139,6 +139,58 @@ namespace brgen::nast::bind {
         return nullref;
     }
 
+    // 型として同じか。equivalent は全フィールドの構造比較なので、式を抱える型で
+    // 過剰に厳しくなる: ArrayType の length は別の式なら別ノードだし、その型
+    // (RangeType) は weak の range 逆参照を id で比べる。元実装の equal_type は
+    // 型ごとに「何が意味か」を選んでいた。その差分だけここで埋める。
+    bool Typer::same_type(Node<Type> l, Node<Type> r) {
+        if (!l || !r) {
+            return false;
+        }
+        if (equivalent(a, l, r)) {
+            return true;
+        }
+        if (auto la = l.as_any<ArrayType>()) {
+            if (auto ra = r.as_any<ArrayType>()) {
+                if (!same_type(a.get<ArrayType>(la)->element_type, a.get<ArrayType>(ra)->element_type)) {
+                    return false;
+                }
+                // 長さは畳んだ定数で比べる。どちらも定数でなければ動的配列
+                // どうしで等しい。片方だけ定数なら別の型 (元実装と同じ)。
+                auto* lc = tables.table<ConstantValue>().get(a.get<ArrayType>(la)->length);
+                auto* rc = tables.table<ConstantValue>().get(a.get<ArrayType>(ra)->length);
+                if (lc && rc) {
+                    return lc->kind == EvalKind::integer && rc->kind == EvalKind::integer &&
+                           lc->integer == rc->integer && lc->is_negative == rc->is_negative;
+                }
+                return !lc && !rc;
+            }
+            return false;
+        }
+        if (auto lr = l.as_any<RangeType>()) {
+            if (auto rr = r.as_any<RangeType>()) {
+                auto lb = a.get<RangeType>(lr)->base_type;
+                auto rb = a.get<RangeType>(rr)->base_type;
+                if (!lb && !rb) {
+                    return true;
+                }
+                return lb && rb && same_type(lb, rb);
+            }
+            return false;
+        }
+        // 文字列リテラル型は値で比べる。base は weak なので equivalent は
+        // 別の出現をいつも別物にする。同じ magic ("\x00\x15") は同じ型。
+        if (auto ls = l.as_any<StrLiteralType>()) {
+            if (auto rs = r.as_any<StrLiteralType>()) {
+                auto* lv = a.get<StrLiteral>(a.get<StrLiteralType>(ls)->base);
+                auto* rv = a.get<StrLiteral>(a.get<StrLiteralType>(rs)->base);
+                return lv && rv && lv->value == rv->value;
+            }
+            return false;
+        }
+        return false;
+    }
+
     // 型の包みを剥がして StructType を取り出す。IdentType は宣言を指しているだけ
     // なので base に降りる。
     Node<StructType> Typer::as_struct(Node<Type> t) {
@@ -470,6 +522,22 @@ namespace brgen::nast::bind {
                 }
                 if (equivalent(a, fit_int(lb, rb), fit_int(rb, lb))) {
                     return l;
+                }
+                return nullref;
+            }
+        }
+        // 配列。長さまで同じならそのまま、要素が同じなら長さを外して動的配列に
+        // 畳む (元実装 tool::common_type の ArrayType 分岐と同じ)。
+        if (auto la = l.as_any<ArrayType>()) {
+            if (auto ra = r.as_any<ArrayType>()) {
+                if (same_type(l, r)) {
+                    return l;
+                }
+                auto elem = a.get<ArrayType>(la)->element_type;
+                if (same_type(elem, a.get<ArrayType>(ra)->element_type)) {
+                    auto res = a.make<ArrayType>(a.header_at(l.id())->loc);
+                    a.get<ArrayType>(res)->element_type = elem;
+                    return res;
                 }
                 return nullref;
             }

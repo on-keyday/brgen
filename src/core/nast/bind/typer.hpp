@@ -93,6 +93,11 @@ namespace brgen::nast::bind {
         Node<Type> type_of_decl(Node<Statement> decl);
         // for x in c で x に見える型。c の型から決まる。
         Node<Type> iteration_type(Node<Type> container_type);
+        // 型として同じか。equivalent (構造比較) では足りないところを埋める:
+        // 配列は要素が同じで、長さは定数値どうしなら値で、どちらも定数でなければ
+        // 動的配列として等しい (元実装 equal_type の ArrayType 規則)。
+        // 範囲は基底だけで比べる。
+        bool same_type(Node<Type> l, Node<Type> r);
         // 型の包み (IdentType など) を剥がして StructType を取り出す。
         Node<StructType> as_struct(Node<Type> t);
         // struct の持ち主 (format / state / module) から名前でメンバを引く。

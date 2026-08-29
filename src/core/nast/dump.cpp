@@ -19,6 +19,7 @@
 #include "bind/binder.hpp"
 #include "bind/evaluator.hpp"
 #include "bind/requires.hpp"
+#include "bind/union_layout.hpp"
 #include "bind/import_resolver.hpp"
 #include "bind/typer.hpp"
 #include "bind/scope_resolver.hpp"
@@ -166,6 +167,8 @@ int main(int argc, char** argv) {
     }
     brgen::nast::bind::RequiresInference requires_{arena, tables, typer};
     requires_.run(importer.modules);
+    brgen::nast::bind::UnionLayoutAnalysis union_layout{arena, tables, typer, err};
+    union_layout.run();
     collect(err);
 
     futils::json::Stringer<> s;

@@ -15,6 +15,7 @@
 #include "bind/binder.hpp"
 #include "bind/evaluator.hpp"
 #include "bind/requires.hpp"
+#include "bind/union_layout.hpp"
 #include "bind/import_resolver.hpp"
 #include "bind/scope_resolver.hpp"
 #include "parse.h"
@@ -164,6 +165,8 @@ namespace {
         }
         bind::RequiresInference requires_{arena, tables, typer};
         requires_.run(importer.modules);
+        bind::UnionLayoutAnalysis union_layout{arena, tables, typer, err};
+        union_layout.run();
         return {true, {}};
     }
 

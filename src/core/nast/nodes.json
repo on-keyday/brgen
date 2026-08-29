@@ -200,6 +200,21 @@
                     "type": "string"
                 }
             ]
+        },
+        {
+            "name": "UnionLayout",
+            "over": "UnionType",
+            "storage": "sparse",
+            "fields": [
+                {
+                    "name": "member_types",
+                    "type": "vector<Node<Type>>"
+                },
+                {
+                    "name": "cluster_types",
+                    "type": "vector<Node<Type>>"
+                }
+            ]
         }
     ],
     "header": {
