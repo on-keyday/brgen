@@ -39,7 +39,7 @@ for i in $(seq 1 8); do ./a.exe $FILES; ./b.exe $FILES; done
 時間を全く動かさなかった例がある (連鎖のほうが代金だった)。
 
 到達点の数字と、どこに時間が行っているかは
-`rebrgen/docs/draft/front_end_throughput.md` にある。
+`src/core/nast/docs/front_end_throughput.md` にある。
 
 ## 手法
 
