@@ -9,7 +9,7 @@
 
 // 名前を解決して Resolution 表に書く。
 //
-// 規則は rebrgen/docs/draft/scope_rules.md にまとめたものを再現する:
+// 規則は src/core/nast/docs/scope_rules.md にまとめたものを再現する:
 //   - format / state / enum は前方参照でき、外側のスコープからも見える
 //   - field / 変数 / 定数 / fn は後方参照のみで、format / state / enum の境界を越えると見えない
 //   - どちらでも見つからなければ global を前方も含めて舐める
