@@ -173,6 +173,7 @@ add_library(nast_core STATIC
     "parse/unparse.cpp"
     "node/compare.cpp"
     "lowering/conditional.cpp"
+    "lowering/int_bytes.cpp"
     "lowering/match_to_if.cpp"
     "lowering/predicate.cpp"
     "bind/evaluator.cpp"

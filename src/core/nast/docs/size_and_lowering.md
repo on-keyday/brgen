@@ -145,6 +145,52 @@ typer と unparse に各 1 分岐。
 - **既定の分岐は 2 通りの形で来る**。`else` は条件なしの `BodyStatement`、
   match の `..` は両端が空の `Range`。判定は `node/util.h` の `is_default_cond`
 
+### IO の lowering (2026-08-31 開始)
+
+nast には **IO の操作を表すノードが 1 つも無い** (89 ノード中 IO らしいのは
+`StreamType` という型だけ)。「この field をここで読む」は暗黙で、
+`FormatState.fields` の並びがそのまま読む順になっている = as_is モデル。
+だから ebmgen の IO 系の段は移植ではなく、まず語彙を作る話になる。
+
+前提のうち 2 つは揃った: 幅 (TypeSize) と要求 (Requirements)。
+
+最初に入れたのは `int_bytes` (EBM の INT_TO_BYTE_ARRAY / ARRAY_TO_INT):
+
+```
+--- b :u16
+decode: b = (u16(buf[o]) << 8) | u16(buf[o + 1])
+encode:
+  buf[o] = u8((b >> 8))
+  buf[o + 1] = u8(b)
+
+--- d :i16
+decode: d = <i16>(((u16(buf[o]) << 8) | u16(buf[o + 1])))
+encode:
+  buf[o] = u8((u16(d) >> 8))
+  buf[o + 1] = u8(u16(d))
+```
+
+符号つきは符号なしで合成してから落とす (そのまま OR すると上位バイトの符号
+拡張が混ざる)。encode 側も右シフトを算術にしないため符号なしへ通す。
+
+**これは他の規則と違い side table に載せない。** 出力が呼ぶ側の用意した
+バッファ名に依存するので、由来のノードだけではキーにならない。由来ごとに
+1 つ決まる変換 (conditional / match / range) は表に載せ、これは材料を受け取って
+組み立てる道具、という線引き。
+
+ADR 0045 (backend が要る IO ランタイムはバイト列 read/write だけ) が正しければ、
+**新しく要る原始ノードは「バイト列を読む/書く」1 対だけ**で、シフト合成も境界
+検査もループも既存ノードで書ける — というのが今の見立て。int_bytes はその
+一番内側を、新ノード無しで組めることの確認でもある。
+
+**見つかった穴: endian が伝播していない。** `input.endian = config.endian.little`
+の後の `e :u16` も big のまま出る。typer は `input.endian` への代入を型なしで
+素通しするだけで、`IntType::endian` を埋める段が無い。言語の既定が big なので
+「未指定 = big」は正しいが、**スコープを記録する解析が無い**。int_bytes は
+`IntType::endian` を正しく見ているので、埋める側を足せば直る。
+これは memory の未完リスト (サイズ/ビット幅、sub_byte、**endian スコープ**、
+monomorphize) にあったもので、幅の次はこれになる。
+
 ## 5. EBM との差 (訂正を含む)
 
 「置く側が違う」と書きかけたが誤り。EBM も emit 時にホイストしている:
