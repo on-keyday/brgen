@@ -12,12 +12,7 @@
 // 作り直す手順は wiregen.py の docstring を見ること。
 #include "../wire/nast_wire_conv.hpp"
 
-#include "../bind/binder.hpp"
-#include "../bind/evaluator.hpp"
-#include "../bind/requires.hpp"
-#include "../bind/union_layout.hpp"
-#include "../bind/import_resolver.hpp"
-#include "../bind/scope_resolver.hpp"
+#include "../bind/pipeline.h"
 #include "../parse/parse.h"
 #include "../node/traverse.h"
 
@@ -120,56 +115,6 @@ namespace {
         return out;
     }
 
-    struct Loaded {
-        bool ok = false;
-        std::string message;
-    };
-
-    Loaded load(const std::string& path, Arena& arena, Node<Module>& root, SideTables& tables,
-                ParseOption popt) {
-        // import した先も同じアリーナに入るので、往復の対象に含まれる。
-        brgen::FileSet files;
-        auto loaded = files.add_file(path);
-        if (!loaded) {
-            return {false, "cannot open file"};
-        }
-        auto* file = files.get_input(*loaded);
-        if (!file) {
-            return {false, "cannot read file"};
-        }
-        brgen::LocationError err;
-        Context ctx;
-        auto parsed = ctx.enter_stream(file, [&](Stream& s) {
-            return parse(arena, s, &err, popt);
-        });
-        if (!parsed) {
-            return {false, "parse error"};
-        }
-        root = *parsed;
-        bind::ImportResolver importer{arena, tables, files, err, popt};
-        importer.resolve(root);
-        bind::ScopeResolver resolver{arena, tables, err};
-        for (auto& mod : importer.modules) {
-            bind::Binder binder{arena, err, tables};
-            binder.bind(mod);
-            resolver.resolve(mod);
-        }
-        // 定数表と要求表も往復に乗せる。
-        bind::Evaluator evaluator{arena, tables, err};
-        for (auto& mod : importer.modules) {
-            evaluator.run(mod);
-        }
-        bind::Typer typer{arena, tables, err};
-        for (auto& mod : importer.modules) {
-            typer.run(mod);
-        }
-        bind::RequiresInference requires_{arena, tables, typer};
-        requires_.run(importer.modules);
-        bind::UnionLayoutAnalysis union_layout{arena, tables, typer, err};
-        union_layout.run();
-        return {true, {}};
-    }
-
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -191,15 +136,17 @@ int main(int argc, char** argv) {
 
     std::size_t ok = 0, ng = 0, skipped = 0;
     for (auto& path : paths) {
-        Arena arena;
-        SideTables tables;
-        Node<Module> root;
-        auto l = load(path, arena, root, tables, popt);
-        if (!l.ok) {
+        // import した先も同じアリーナに入るので、往復の対象に含まれる。
+        // 定数表・要求表・重ね合わせも全部乗せるので、段は最後まで回す。
+        Program program;
+        if (auto r = analyze(program, path, {.parse = popt}); r != AnalyzeResult::ok) {
             skipped++;
-            std::println("skip  {:<52} {}", path, l.message);
+            std::println("skip  {:<52} {}", path, describe(r));
             continue;
         }
+        auto& arena = program.arena;
+        auto& tables = program.tables;
+        auto& root = program.root;
 
         // pool は m を encode し終えるまで生かす。中の文字列は非所有ビュー。
         wire_conv::StringPool pool;
