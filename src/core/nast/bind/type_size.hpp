@@ -4,6 +4,8 @@
 
 #include <core/common/error.h>
 #include <optional>
+#include <utility>
+#include <vector>
 #include <unordered_set>
 
 // 型のビット幅。TypeSize 表 (over Type) に置く。
@@ -54,6 +56,7 @@ namespace brgen::nast::bind {
         // ものにもう一度入ったら unknown で切る。
         std::unordered_set<std::uint32_t> in_progress;
 
+        bool counts_in_layout(Node<Field> f);
         TypeSize field_size(Node<Field> f, lexer::Loc loc);
         Node<Expr> size_of_value(Node<Field> f, lexer::Loc loc);
         TypeSize format_size(Node<Format> fmt);
@@ -70,6 +73,8 @@ namespace brgen::nast::bind {
         Node<Expr> wrap(Node<Expr> e, lexer::Loc loc);
         Node<Expr> bin(BinaryOp op, Node<Expr> l, Node<Expr> r, lexer::Loc loc);
         Node<Expr> as_expr(TypeSize s, lexer::Loc loc);
+        template <class Cands>
+        Node<Expr> branch_expr(const Cands& candidates, lexer::Loc loc, auto&& width_of);
     };
 
 }  // namespace brgen::nast::bind

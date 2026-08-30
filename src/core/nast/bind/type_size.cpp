@@ -42,7 +42,7 @@ namespace brgen::nast::bind {
     // ノードで括弧を出すので、包まないと `8 * (len - 8)` が
     // `8 * len - 8` と綴られて読み手が誤る (木は正しいが綴りが嘘になる)。
     Node<Expr> SizeAnalysis::wrap(Node<Expr> e, lexer::Loc loc) {
-        if (!e || !e.as_any<Binary>()) {
+        if (!e || (!e.as_any<Binary>() && !e.as_any<Cond>())) {
             return e;
         }
         auto p = a.make<Paren>(loc);
@@ -136,6 +136,15 @@ namespace brgen::nast::bind {
         return sz;
     }
 
+    // 並びに数える field か。binder は分岐に対して 2 種類の field を作る:
+    // 分岐そのものを表す 1 つ (StructUnionType) と、分岐をまたぐ同名の
+    // field ごとに 1 つ (UnionType)。後者は「その名前がどの宣言を指すか」を
+    // 一意にするための人工物で、並びとしては前者に含まれている。両方足すと
+    // 二重に数える。
+    bool SizeAnalysis::counts_in_layout(Node<Field> f) {
+        return !f.ref(a)->type.as_any<UnionType>();
+    }
+
     // field 1 つぶんの幅。型だけで書けなければ値の名前で呼ぶ。
     TypeSize SizeAnalysis::field_size(Node<Field> f, lexer::Loc loc) {
         auto s = size_of(f.ref(a)->type);
@@ -143,6 +152,51 @@ namespace brgen::nast::bind {
             s.bits_expr = size_of_value(f, loc);
         }
         return s;
+    }
+
+    // 分岐で幅が揃わないとき、幅は「どの分岐を通ったか」で決まる。それは
+    // 条件式そのものなので、三項で書ける:
+    //
+    //   cond1 ? w1 : (cond2 ? w2 : w_default)
+    //
+    // 条件は候補が持っているものをそのまま指す (複製すると中の名前が
+    // Resolution 表に載らず解決先を失う)。既定の分岐が無ければ最後は 0 =
+    // どれも通らなかった経路。
+    //
+    // この式が評価できるのは、条件が見ている field が既に読めている文脈に
+    // 限られる。decode の途中では成り立つが、encode 時の条件式の意味論は
+    // まだ決まっていない (docs/requires_direction.md の段階 2)。式として
+    // 持っておくこと自体は、その決着とは独立に意味がある。
+    template <class Cands>
+    Node<Expr> SizeAnalysis::branch_expr(const Cands& candidates, lexer::Loc loc,
+                                         auto&& width_of) {
+        Node<Expr> els = lit(0, loc);
+        bool have_default = false;
+        // 後ろから積む。既定の分岐 (cond なし) は else の位置に入る。
+        std::vector<std::pair<Node<Expr>, Node<Expr>>> arms;
+        for (auto& c : candidates) {
+            auto cd = c.ref(a);
+            auto w = width_of(cd);
+            if (!w) {
+                return nullref;  // 1 つでも書けなければ全体も書けない
+            }
+            if (!cd->cond) {
+                els = w;
+                have_default = true;
+                continue;
+            }
+            arms.push_back({cd->cond, w});
+        }
+        (void)have_default;
+        for (auto it = arms.rbegin(); it != arms.rend(); ++it) {
+            auto n = a.make<Cond>(loc);
+            n->cond = wrap(it->first, loc);
+            n->then = wrap(it->second, loc);
+            n->els = wrap(els, loc);
+            n->type = bits_type(loc);
+            els = n;
+        }
+        return els;
     }
 
     TypeSize SizeAnalysis::put(Node<Type> t, TypeSize s) {
@@ -285,8 +339,14 @@ namespace brgen::nast::bind {
                     has_default = true;  // `else` / `..` があるので必ずどれかを通る
                 }
                 auto merged = merge_branch(acc, inner_size(cd->inner_struct));
-                if (merged.kind != SizeKind::fixed) {
-                    return put(t, merged);
+                if (merged.kind == SizeKind::unknown) {
+                    return put(t, unknown());
+                }
+                if (merged.kind == SizeKind::dynamic) {
+                    // 揃わない (か、分岐の中が実行時)。条件で場合分けして書く。
+                    return put(t, dynamic(branch_expr(r->candidates, loc, [&](auto cd) {
+                        return as_expr(inner_size(cd->inner_struct), loc);
+                    })));
                 }
                 acc = merged;
             }
@@ -297,7 +357,9 @@ namespace brgen::nast::bind {
                 // 既定の分岐が無い = どれも通らない経路がある。そのとき幅は 0 に
                 // なるので、分岐側と揃わない限り固定ではない。Match の値による
                 // 網羅は見ていない (見るなら列挙の全値を覆うかの判定が要る)。
-                return put(t, dynamic());
+                return put(t, dynamic(branch_expr(r->candidates, loc, [&](auto cd) {
+                    return as_expr(inner_size(cd->inner_struct), loc);
+                })));
             }
             return put(t, *acc);
         }
@@ -309,11 +371,19 @@ namespace brgen::nast::bind {
             for (auto& c : r->candidates) {
                 auto f = c.ref(a)->field;
                 if (!f) {
-                    return put(t, dynamic());  // その分岐には現れない
+                    // その分岐には現れない = 0 ビット。場合分けで書く。
+                    return put(t, dynamic(branch_expr(r->candidates, loc, [&](auto cd) {
+                        return cd->field ? as_expr(size_of(cd->field.ref(a)->type), loc) : lit(0, loc);
+                    })));
                 }
                 auto merged = merge_branch(acc, size_of(f.ref(a)->type));
-                if (merged.kind != SizeKind::fixed) {
-                    return put(t, merged);
+                if (merged.kind == SizeKind::unknown) {
+                    return put(t, unknown());
+                }
+                if (merged.kind == SizeKind::dynamic) {
+                    return put(t, dynamic(branch_expr(r->candidates, loc, [&](auto cd) {
+                        return cd->field ? as_expr(size_of(cd->field.ref(a)->type), loc) : lit(0, loc);
+                    })));
                 }
                 acc = merged;
             }
@@ -337,6 +407,9 @@ namespace brgen::nast::bind {
         auto loc = a.header_at(fmt.id())->loc;
         auto total = fixed(0);
         for (auto& f : state->fields) {
+            if (!counts_in_layout(f)) {
+                continue;
+            }
             total = add(total, field_size(f, loc), loc);
         }
         return total;
@@ -355,6 +428,9 @@ namespace brgen::nast::bind {
         auto loc = a.header_at(block.id())->loc;
         auto total = fixed(0);
         for (auto& f : inner->fields) {
+            if (!counts_in_layout(f)) {
+                continue;
+            }
             total = add(total, field_size(f, loc), loc);
         }
         return total;
