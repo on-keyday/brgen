@@ -328,4 +328,17 @@ nast に無い部品: **`WriterManager` に当たるもの**。`node/code_writer
 (binder が分岐に 2 種類の field を作る) — は**全部 unparse で `.bgn` として
 印字して見つかった**。木を読んで論じるより、綴りに戻して眺めるほうが速い。
 
-`nast_size_probe` / `nast_lower_probe` (`bench/`) がその用途の道具。
+`nast_probe` (`bench/probe.cpp`) がその用途の道具。入り口は 1 つで、見たいものを
+最初の引数で選ぶ。ファイルが 1 つなら明細、2 つ以上なら集計。
+
+```sh
+B=src/core/nast/build/fast/bin
+$B/nast_probe size   src/core/nast/testdata/nested_size.bgn
+$B/nast_probe endian example/bpf.bgn
+$B/nast_probe lower  src/core/nast/testdata/match_patterns.bgn
+$B/nast_probe size   example/*.bgn        # 集計
+```
+
+確認用の `.bgn` は `src/core/nast/testdata/` にある。目で見るために書いたもの
+だが、見た後は wire / unparse の往復に乗せて守る側に置いてある
+(CMakeLists の `NAST_CORPUS` が example/ と一緒に拾う)。
