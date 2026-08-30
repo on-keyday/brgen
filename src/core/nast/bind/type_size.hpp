@@ -73,8 +73,11 @@ namespace brgen::nast::bind {
         Node<Expr> wrap(Node<Expr> e, lexer::Loc loc);
         Node<Expr> bin(BinaryOp op, Node<Expr> l, Node<Expr> r, lexer::Loc loc);
         Node<Expr> as_expr(TypeSize s, lexer::Loc loc);
+        Node<Expr> match_subject(Node<ConditionalExpr> base);
+        Node<Expr> branch_cond(Node<Expr> subject, Node<Expr> pattern, lexer::Loc loc);
         template <class Cands>
-        Node<Expr> branch_expr(const Cands& candidates, lexer::Loc loc, auto&& width_of);
+        Node<Expr> branch_expr(const Cands& candidates, Node<Expr> subject, lexer::Loc loc,
+                               auto&& width_of);
     };
 
 }  // namespace brgen::nast::bind

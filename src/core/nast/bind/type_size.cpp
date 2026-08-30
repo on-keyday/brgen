@@ -1,5 +1,6 @@
 /*license*/
 #include "type_size.hpp"
+#include "../lowering/predicate.hpp"
 #include "../node/util.h"
 
 #include <fnet/util/base64.h>
@@ -167,8 +168,17 @@ namespace brgen::nast::bind {
     // 限られる。decode の途中では成り立つが、encode 時の条件式の意味論は
     // まだ決まっていない (docs/requires_direction.md の段階 2)。式として
     // 持っておくこと自体は、その決着とは独立に意味がある。
+    // 分岐の条件を式にする。match の分岐は「パターン」であって比較ではない
+    // (parse.cpp は `kind == 1` を作らず 1 をそのまま条件に置く) ので、比較を
+    // 実体化する。範囲パターンの展開も含めて lowering/predicate に置いてある
+    // — 幅の式に使うのも、文に落とすのも、要る述語は同じもの。
+    Node<Expr> SizeAnalysis::branch_cond(Node<Expr> subject, Node<Expr> pattern, lexer::Loc loc) {
+        lowering::Context lc{a, tables};
+        return lowering::branch_predicate(lc, subject, pattern);
+    }
+
     template <class Cands>
-    Node<Expr> SizeAnalysis::branch_expr(const Cands& candidates, lexer::Loc loc,
+    Node<Expr> SizeAnalysis::branch_expr(const Cands& candidates, Node<Expr> subject, lexer::Loc loc,
                                          auto&& width_of) {
         Node<Expr> els = lit(0, loc);
         bool have_default = false;
@@ -180,12 +190,12 @@ namespace brgen::nast::bind {
             if (!w) {
                 return nullref;  // 1 つでも書けなければ全体も書けない
             }
-            if (!cd->cond) {
+            if (is_default_cond(a, cd->cond)) {
                 els = w;
                 have_default = true;
                 continue;
             }
-            arms.push_back({cd->cond, w});
+            arms.push_back({branch_cond(subject, cd->cond, loc), w});
         }
         (void)have_default;
         for (auto it = arms.rbegin(); it != arms.rend(); ++it) {
@@ -197,6 +207,14 @@ namespace brgen::nast::bind {
             els = n;
         }
         return els;
+    }
+
+    // 分岐の主語。match なら比較の左辺、if なら無い (条件がそのまま述語)。
+    Node<Expr> SizeAnalysis::match_subject(Node<ConditionalExpr> base) {
+        if (auto m = base.as_any<Match>()) {
+            return m.ref(a)->condition;
+        }
+        return nullref;
     }
 
     TypeSize SizeAnalysis::put(Node<Type> t, TypeSize s) {
@@ -335,7 +353,7 @@ namespace brgen::nast::bind {
             bool has_default = false;
             for (auto& c : r->candidates) {
                 auto cd = c.ref(a);
-                if (!cd->cond) {
+                if (is_default_cond(a, cd->cond)) {
                     has_default = true;  // `else` / `..` があるので必ずどれかを通る
                 }
                 auto merged = merge_branch(acc, inner_size(cd->inner_struct));
@@ -344,9 +362,10 @@ namespace brgen::nast::bind {
                 }
                 if (merged.kind == SizeKind::dynamic) {
                     // 揃わない (か、分岐の中が実行時)。条件で場合分けして書く。
-                    return put(t, dynamic(branch_expr(r->candidates, loc, [&](auto cd) {
-                        return as_expr(inner_size(cd->inner_struct), loc);
-                    })));
+                    return put(t, dynamic(branch_expr(r->candidates, match_subject(r->base), loc,
+                                                      [&](auto cd) {
+                                                          return as_expr(inner_size(cd->inner_struct), loc);
+                                                      })));
                 }
                 acc = merged;
             }
@@ -357,9 +376,10 @@ namespace brgen::nast::bind {
                 // 既定の分岐が無い = どれも通らない経路がある。そのとき幅は 0 に
                 // なるので、分岐側と揃わない限り固定ではない。Match の値による
                 // 網羅は見ていない (見るなら列挙の全値を覆うかの判定が要る)。
-                return put(t, dynamic(branch_expr(r->candidates, loc, [&](auto cd) {
-                    return as_expr(inner_size(cd->inner_struct), loc);
-                })));
+                return put(t, dynamic(branch_expr(r->candidates, match_subject(r->base), loc,
+                                                  [&](auto cd) {
+                                                      return as_expr(inner_size(cd->inner_struct), loc);
+                                                  })));
             }
             return put(t, *acc);
         }
@@ -372,7 +392,7 @@ namespace brgen::nast::bind {
                 auto f = c.ref(a)->field;
                 if (!f) {
                     // その分岐には現れない = 0 ビット。場合分けで書く。
-                    return put(t, dynamic(branch_expr(r->candidates, loc, [&](auto cd) {
+                    return put(t, dynamic(branch_expr(r->candidates, r->cond, loc, [&](auto cd) {
                         return cd->field ? as_expr(size_of(cd->field.ref(a)->type), loc) : lit(0, loc);
                     })));
                 }
@@ -381,7 +401,7 @@ namespace brgen::nast::bind {
                     return put(t, unknown());
                 }
                 if (merged.kind == SizeKind::dynamic) {
-                    return put(t, dynamic(branch_expr(r->candidates, loc, [&](auto cd) {
+                    return put(t, dynamic(branch_expr(r->candidates, r->cond, loc, [&](auto cd) {
                         return cd->field ? as_expr(size_of(cd->field.ref(a)->type), loc) : lit(0, loc);
                     })));
                 }

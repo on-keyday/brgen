@@ -64,6 +64,34 @@ namespace brgen::nast {
         return t;
     }
 
+    // 括弧を剥がす。綴りの都合で付いているだけなので、式の中身で分岐する
+    // 側は剥がしてから見る。
+    inline Node<Expr> strip_paren(Arena& a, Node<Expr> e) {
+        while (auto p = e.as_any<Paren>()) {
+            auto inner = p.ref(a)->expr;
+            if (!inner) {
+                break;
+            }
+            e = inner;
+        }
+        return e;
+    }
+
+    // 分岐の条件が「既定」を表しているか。if/elif の else は条件なしの
+    // BodyStatement で来るが、match の `..` は両端が空の Range で来る
+    // (parse.cpp は match の全分岐を条件付きの ConditionalStatement にする)。
+    // 表し方が 2 通りあるので、判定を 1 か所にまとめる。
+    inline bool is_default_cond(Arena& a, Node<Expr> cond) {
+        if (!cond) {
+            return true;
+        }
+        if (auto r = cond.as_any<Range>()) {
+            auto d = r.ref(a);
+            return !d->start && !d->end;
+        }
+        return false;
+    }
+
     // 代入の左辺の根まで降りる。`sstate.isA` や `arr[i].x` から `sstate` /
     // `arr` を、`input.endian` から `input` を出す。メンバアクセスと添字だけを
     // 辿る (括弧は parse が代入の左辺として弾くので通らない)。

@@ -606,6 +606,33 @@ format UnionLayoutTable:
     len :u32
     entries :[len]UnionLayoutEntry
 
+format LoweredRangeCompareEntry:
+    key :Ref
+    expr :Ref
+
+format LoweredRangeCompareTable:
+    len :u32
+    entries :[len]LoweredRangeCompareEntry
+
+format LoweredMatchEntry:
+    key :Ref
+    branch :Ref
+
+format LoweredMatchTable:
+    len :u32
+    entries :[len]LoweredMatchEntry
+
+format LoweredCondEntry:
+    key :Ref
+    temp_name :Ref
+    type :Ref
+    branch :Ref
+    value_ref :Ref
+
+format LoweredCondTable:
+    len :u32
+    entries :[len]LoweredCondEntry
+
 format TypeSizeEntry:
     key :Ref
     kind_size_kind :SizeKind
@@ -635,4 +662,7 @@ format NastModule:
     requirements :RequirementsTable
     constant_value :ConstantValueTable
     union_layout :UnionLayoutTable
+    lowered_range_compare :LoweredRangeCompareTable
+    lowered_match :LoweredMatchTable
+    lowered_cond :LoweredCondTable
     type_size :TypeSizeTable

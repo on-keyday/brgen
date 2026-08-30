@@ -172,6 +172,9 @@ add_library(nast_core STATIC
     "parse/stream.cpp"
     "parse/unparse.cpp"
     "node/compare.cpp"
+    "lowering/conditional.cpp"
+    "lowering/match_to_if.cpp"
+    "lowering/predicate.cpp"
     "bind/evaluator.cpp"
     "bind/import_resolver.cpp"
     "bind/pipeline.cpp"
@@ -204,7 +207,7 @@ add_executable(nast2go "backends/go/main.cpp")
 target_link_libraries(nast2go PRIVATE nast_core)
 
 # ---- 計測 ----------------------------------------------------------------
-foreach(b coverage fn_fallible lex_split parse_split size_probe token_cost)
+foreach(b coverage fn_fallible lex_split lower_probe parse_split size_probe token_cost)
     add_executable(nast_${b} "bench/${b}.cpp")
     target_link_libraries(nast_${b} PRIVATE nast_core)
 endforeach()
