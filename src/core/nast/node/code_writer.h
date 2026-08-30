@@ -2,7 +2,7 @@
 #pragma once
 #include "nodes.h"
 
-#include <core/common/error.h>
+#include "error.h"
 #include <code/loc_writer.h>
 #include <cstddef>
 #include <concepts>
@@ -204,13 +204,13 @@ namespace brgen::nast {
     // 1 つでも失敗したらそこで止めてその失敗を返す。`bool first` のループを
     // 手で書くとこの中断を忘れるので、失敗しうるときはこちらを使う。
     template <class C, class F>
-    brgen::result<CodeWriter> try_code_join(auto&& joint, C&& container, F&& fn) {
+    expected<CodeWriter> try_code_join(auto&& joint, C&& container, F&& fn) {
         CodeWriter w;
         bool first = true;
         for (auto&& elem : container) {
             auto part = fn(elem);
             if (!part) {
-                return brgen::unexpect(part.error());
+                return brgen::nast::unexpect(part.error());
             }
             if (!first) {
                 w.write(joint);

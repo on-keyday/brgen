@@ -3,11 +3,20 @@
 #include "../node/nodes.h"
 #include "invoke.hpp"
 #include "lang.hpp"
+#include "../node/error.h"
 
 namespace brgen::nast::backend {
     template <class R>
     struct BaseContext;
+
+    enum class UnhandledMode : std::uint8_t {
+        error,
+        dummy,
+        ignore,
+    };
+
     struct CommonConfig {
+        UnhandledMode unhandled_mode = UnhandledMode::dummy;
     };
 
     template <class R, class Node>
@@ -27,7 +36,7 @@ namespace brgen::nast::backend {
         CommonConfig c;
         LanguageConfig l;
 
-        result<R> visit(NodeAny n) {
+        expected<R> visit(NodeAny n) {
             return Invoker<BaseContext<R>>::template invoke_impl<R>(n);
         }
 
@@ -36,24 +45,40 @@ namespace brgen::nast::backend {
             l.set_language(lc);
             return Context<R, L>{.b = *this, .l = lc};
         }
+
+        Arena& arena() {
+            return a;
+        }
+
+        CommonConfig& config() {
+            return c;
+        }
     };
     template <class R, class L>
     struct Context {
         BaseContext<R>& b;
         L& l;
 
-        result<R> visit(NodeAny n) {
+        expected<R> visit(NodeAny n) {
             return b.visit(n);
         }
         Arena& arena() {
-            return b.a;
+            return b.arena();
+        }
+
+        CommonConfig& config() {
+            return b.config();
+        }
+
+        L& lang_config() {
+            return l;
         }
     };
 
-#define MAYBE(x, v)                                         \
-    auto x##_nast_maybe = (v);                              \
-    if (!x##_nast_maybe) {                                  \
-        return unexpect(std::move(x##_nast_maybe.error())); \
-    }                                                       \
+#define MAYBE(x, v)                                                      \
+    auto x##_nast_maybe = (v);                                           \
+    if (!x##_nast_maybe) {                                               \
+        return brgen::nast::unexpect(std::move(x##_nast_maybe.error())); \
+    }                                                                    \
     auto x = std::move(*x##_nast_maybe);
 }  // namespace brgen::nast::backend

@@ -11,782 +11,782 @@
 namespace brgen::nast::backend {
     template <class R = CodeWriter>
     struct Knobs {
-        std::function<result<R>(BaseContext<R>&, Node<Module>)> custom_Module;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<Module>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<Module>)> custom_Module;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Module>> F>
         void bind_Module(Context<R,T>&,F&& f) {
-            custom_Module = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Module> n) -> result<R> {
+            custom_Module = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Module> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<BodyStatement>)> custom_BodyStatement;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<BodyStatement>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<BodyStatement>)> custom_BodyStatement;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<BodyStatement>> F>
         void bind_BodyStatement(Context<R,T>&,F&& f) {
-            custom_BodyStatement = [f = std::forward<F>(f)](BaseContext<R>& c,Node<BodyStatement> n) -> result<R> {
+            custom_BodyStatement = [f = std::forward<F>(f)](BaseContext<R>& c,Node<BodyStatement> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<Field>)> custom_Field;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<Field>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<Field>)> custom_Field;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Field>> F>
         void bind_Field(Context<R,T>&,F&& f) {
-            custom_Field = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Field> n) -> result<R> {
+            custom_Field = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Field> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<StateVariable>)> custom_StateVariable;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<StateVariable>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<StateVariable>)> custom_StateVariable;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<StateVariable>> F>
         void bind_StateVariable(Context<R,T>&,F&& f) {
-            custom_StateVariable = [f = std::forward<F>(f)](BaseContext<R>& c,Node<StateVariable> n) -> result<R> {
+            custom_StateVariable = [f = std::forward<F>(f)](BaseContext<R>& c,Node<StateVariable> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<Format>)> custom_Format;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<Format>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<Format>)> custom_Format;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Format>> F>
         void bind_Format(Context<R,T>&,F&& f) {
-            custom_Format = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Format> n) -> result<R> {
+            custom_Format = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Format> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<GenericFormat>)> custom_GenericFormat;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<GenericFormat>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<GenericFormat>)> custom_GenericFormat;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<GenericFormat>> F>
         void bind_GenericFormat(Context<R,T>&,F&& f) {
-            custom_GenericFormat = [f = std::forward<F>(f)](BaseContext<R>& c,Node<GenericFormat> n) -> result<R> {
+            custom_GenericFormat = [f = std::forward<F>(f)](BaseContext<R>& c,Node<GenericFormat> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<Function>)> custom_Function;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<Function>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<Function>)> custom_Function;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Function>> F>
         void bind_Function(Context<R,T>&,F&& f) {
-            custom_Function = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Function> n) -> result<R> {
+            custom_Function = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Function> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<If>)> custom_If;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<If>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<If>)> custom_If;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<If>> F>
         void bind_If(Context<R,T>&,F&& f) {
-            custom_If = [f = std::forward<F>(f)](BaseContext<R>& c,Node<If> n) -> result<R> {
+            custom_If = [f = std::forward<F>(f)](BaseContext<R>& c,Node<If> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<Match>)> custom_Match;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<Match>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<Match>)> custom_Match;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Match>> F>
         void bind_Match(Context<R,T>&,F&& f) {
-            custom_Match = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Match> n) -> result<R> {
+            custom_Match = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Match> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<Loop>)> custom_Loop;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<Loop>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<Loop>)> custom_Loop;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Loop>> F>
         void bind_Loop(Context<R,T>&,F&& f) {
-            custom_Loop = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Loop> n) -> result<R> {
+            custom_Loop = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Loop> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<RangeLoop>)> custom_RangeLoop;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<RangeLoop>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<RangeLoop>)> custom_RangeLoop;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<RangeLoop>> F>
         void bind_RangeLoop(Context<R,T>&,F&& f) {
-            custom_RangeLoop = [f = std::forward<F>(f)](BaseContext<R>& c,Node<RangeLoop> n) -> result<R> {
+            custom_RangeLoop = [f = std::forward<F>(f)](BaseContext<R>& c,Node<RangeLoop> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<Assign>)> custom_Assign;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<Assign>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<Assign>)> custom_Assign;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Assign>> F>
         void bind_Assign(Context<R,T>&,F&& f) {
-            custom_Assign = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Assign> n) -> result<R> {
+            custom_Assign = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Assign> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<VariableDefinition>)> custom_VariableDefinition;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<VariableDefinition>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<VariableDefinition>)> custom_VariableDefinition;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<VariableDefinition>> F>
         void bind_VariableDefinition(Context<R,T>&,F&& f) {
-            custom_VariableDefinition = [f = std::forward<F>(f)](BaseContext<R>& c,Node<VariableDefinition> n) -> result<R> {
+            custom_VariableDefinition = [f = std::forward<F>(f)](BaseContext<R>& c,Node<VariableDefinition> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<Metadata>)> custom_Metadata;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<Metadata>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<Metadata>)> custom_Metadata;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Metadata>> F>
         void bind_Metadata(Context<R,T>&,F&& f) {
-            custom_Metadata = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Metadata> n) -> result<R> {
+            custom_Metadata = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Metadata> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<SpecifyOrder>)> custom_SpecifyOrder;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<SpecifyOrder>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<SpecifyOrder>)> custom_SpecifyOrder;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<SpecifyOrder>> F>
         void bind_SpecifyOrder(Context<R,T>&,F&& f) {
-            custom_SpecifyOrder = [f = std::forward<F>(f)](BaseContext<R>& c,Node<SpecifyOrder> n) -> result<R> {
+            custom_SpecifyOrder = [f = std::forward<F>(f)](BaseContext<R>& c,Node<SpecifyOrder> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<Sizeof>)> custom_Sizeof;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<Sizeof>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<Sizeof>)> custom_Sizeof;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Sizeof>> F>
         void bind_Sizeof(Context<R,T>&,F&& f) {
-            custom_Sizeof = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Sizeof> n) -> result<R> {
+            custom_Sizeof = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Sizeof> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<Available>)> custom_Available;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<Available>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<Available>)> custom_Available;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Available>> F>
         void bind_Available(Context<R,T>&,F&& f) {
-            custom_Available = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Available> n) -> result<R> {
+            custom_Available = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Available> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<ExplicitError>)> custom_ExplicitError;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<ExplicitError>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<ExplicitError>)> custom_ExplicitError;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<ExplicitError>> F>
         void bind_ExplicitError(Context<R,T>&,F&& f) {
-            custom_ExplicitError = [f = std::forward<F>(f)](BaseContext<R>& c,Node<ExplicitError> n) -> result<R> {
+            custom_ExplicitError = [f = std::forward<F>(f)](BaseContext<R>& c,Node<ExplicitError> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<Binary>)> custom_Binary;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<Binary>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<Binary>)> custom_Binary;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Binary>> F>
         void bind_Binary(Context<R,T>&,F&& f) {
-            custom_Binary = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Binary> n) -> result<R> {
+            custom_Binary = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Binary> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<Unary>)> custom_Unary;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<Unary>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<Unary>)> custom_Unary;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Unary>> F>
         void bind_Unary(Context<R,T>&,F&& f) {
-            custom_Unary = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Unary> n) -> result<R> {
+            custom_Unary = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Unary> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<Call>)> custom_Call;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<Call>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<Call>)> custom_Call;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Call>> F>
         void bind_Call(Context<R,T>&,F&& f) {
-            custom_Call = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Call> n) -> result<R> {
+            custom_Call = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Call> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<Reference>)> custom_Reference;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<Reference>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<Reference>)> custom_Reference;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Reference>> F>
         void bind_Reference(Context<R,T>&,F&& f) {
-            custom_Reference = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Reference> n) -> result<R> {
+            custom_Reference = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Reference> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<MemberAccess>)> custom_MemberAccess;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<MemberAccess>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<MemberAccess>)> custom_MemberAccess;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<MemberAccess>> F>
         void bind_MemberAccess(Context<R,T>&,F&& f) {
-            custom_MemberAccess = [f = std::forward<F>(f)](BaseContext<R>& c,Node<MemberAccess> n) -> result<R> {
+            custom_MemberAccess = [f = std::forward<F>(f)](BaseContext<R>& c,Node<MemberAccess> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<TypeLiteral>)> custom_TypeLiteral;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<TypeLiteral>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<TypeLiteral>)> custom_TypeLiteral;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<TypeLiteral>> F>
         void bind_TypeLiteral(Context<R,T>&,F&& f) {
-            custom_TypeLiteral = [f = std::forward<F>(f)](BaseContext<R>& c,Node<TypeLiteral> n) -> result<R> {
+            custom_TypeLiteral = [f = std::forward<F>(f)](BaseContext<R>& c,Node<TypeLiteral> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<ConditionalStatement>)> custom_ConditionalStatement;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<ConditionalStatement>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<ConditionalStatement>)> custom_ConditionalStatement;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<ConditionalStatement>> F>
         void bind_ConditionalStatement(Context<R,T>&,F&& f) {
-            custom_ConditionalStatement = [f = std::forward<F>(f)](BaseContext<R>& c,Node<ConditionalStatement> n) -> result<R> {
+            custom_ConditionalStatement = [f = std::forward<F>(f)](BaseContext<R>& c,Node<ConditionalStatement> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<Parameter>)> custom_Parameter;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<Parameter>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<Parameter>)> custom_Parameter;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Parameter>> F>
         void bind_Parameter(Context<R,T>&,F&& f) {
-            custom_Parameter = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Parameter> n) -> result<R> {
+            custom_Parameter = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Parameter> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<Body>)> custom_Body;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<Body>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<Body>)> custom_Body;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Body>> F>
         void bind_Body(Context<R,T>&,F&& f) {
-            custom_Body = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Body> n) -> result<R> {
+            custom_Body = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Body> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<Arguments>)> custom_Arguments;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<Arguments>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<Arguments>)> custom_Arguments;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Arguments>> F>
         void bind_Arguments(Context<R,T>&,F&& f) {
-            custom_Arguments = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Arguments> n) -> result<R> {
+            custom_Arguments = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Arguments> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<Argument>)> custom_Argument;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<Argument>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<Argument>)> custom_Argument;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Argument>> F>
         void bind_Argument(Context<R,T>&,F&& f) {
-            custom_Argument = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Argument> n) -> result<R> {
+            custom_Argument = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Argument> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<NamedArgument>)> custom_NamedArgument;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<NamedArgument>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<NamedArgument>)> custom_NamedArgument;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<NamedArgument>> F>
         void bind_NamedArgument(Context<R,T>&,F&& f) {
-            custom_NamedArgument = [f = std::forward<F>(f)](BaseContext<R>& c,Node<NamedArgument> n) -> result<R> {
+            custom_NamedArgument = [f = std::forward<F>(f)](BaseContext<R>& c,Node<NamedArgument> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<Ident>)> custom_Ident;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<Ident>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<Ident>)> custom_Ident;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Ident>> F>
         void bind_Ident(Context<R,T>&,F&& f) {
-            custom_Ident = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Ident> n) -> result<R> {
+            custom_Ident = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Ident> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<IntType>)> custom_IntType;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<IntType>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<IntType>)> custom_IntType;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<IntType>> F>
         void bind_IntType(Context<R,T>&,F&& f) {
-            custom_IntType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<IntType> n) -> result<R> {
+            custom_IntType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<IntType> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<IntLiteral>)> custom_IntLiteral;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<IntLiteral>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<IntLiteral>)> custom_IntLiteral;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<IntLiteral>> F>
         void bind_IntLiteral(Context<R,T>&,F&& f) {
-            custom_IntLiteral = [f = std::forward<F>(f)](BaseContext<R>& c,Node<IntLiteral> n) -> result<R> {
+            custom_IntLiteral = [f = std::forward<F>(f)](BaseContext<R>& c,Node<IntLiteral> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<BoolLiteral>)> custom_BoolLiteral;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<BoolLiteral>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<BoolLiteral>)> custom_BoolLiteral;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<BoolLiteral>> F>
         void bind_BoolLiteral(Context<R,T>&,F&& f) {
-            custom_BoolLiteral = [f = std::forward<F>(f)](BaseContext<R>& c,Node<BoolLiteral> n) -> result<R> {
+            custom_BoolLiteral = [f = std::forward<F>(f)](BaseContext<R>& c,Node<BoolLiteral> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<StrLiteral>)> custom_StrLiteral;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<StrLiteral>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<StrLiteral>)> custom_StrLiteral;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<StrLiteral>> F>
         void bind_StrLiteral(Context<R,T>&,F&& f) {
-            custom_StrLiteral = [f = std::forward<F>(f)](BaseContext<R>& c,Node<StrLiteral> n) -> result<R> {
+            custom_StrLiteral = [f = std::forward<F>(f)](BaseContext<R>& c,Node<StrLiteral> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<CharLiteral>)> custom_CharLiteral;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<CharLiteral>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<CharLiteral>)> custom_CharLiteral;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<CharLiteral>> F>
         void bind_CharLiteral(Context<R,T>&,F&& f) {
-            custom_CharLiteral = [f = std::forward<F>(f)](BaseContext<R>& c,Node<CharLiteral> n) -> result<R> {
+            custom_CharLiteral = [f = std::forward<F>(f)](BaseContext<R>& c,Node<CharLiteral> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<RegexLiteral>)> custom_RegexLiteral;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<RegexLiteral>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<RegexLiteral>)> custom_RegexLiteral;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<RegexLiteral>> F>
         void bind_RegexLiteral(Context<R,T>&,F&& f) {
-            custom_RegexLiteral = [f = std::forward<F>(f)](BaseContext<R>& c,Node<RegexLiteral> n) -> result<R> {
+            custom_RegexLiteral = [f = std::forward<F>(f)](BaseContext<R>& c,Node<RegexLiteral> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<SpecialLiteral>)> custom_SpecialLiteral;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<SpecialLiteral>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<SpecialLiteral>)> custom_SpecialLiteral;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<SpecialLiteral>> F>
         void bind_SpecialLiteral(Context<R,T>&,F&& f) {
-            custom_SpecialLiteral = [f = std::forward<F>(f)](BaseContext<R>& c,Node<SpecialLiteral> n) -> result<R> {
+            custom_SpecialLiteral = [f = std::forward<F>(f)](BaseContext<R>& c,Node<SpecialLiteral> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<Paren>)> custom_Paren;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<Paren>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<Paren>)> custom_Paren;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Paren>> F>
         void bind_Paren(Context<R,T>&,F&& f) {
-            custom_Paren = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Paren> n) -> result<R> {
+            custom_Paren = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Paren> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<Index>)> custom_Index;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<Index>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<Index>)> custom_Index;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Index>> F>
         void bind_Index(Context<R,T>&,F&& f) {
-            custom_Index = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Index> n) -> result<R> {
+            custom_Index = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Index> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<Cond>)> custom_Cond;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<Cond>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<Cond>)> custom_Cond;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Cond>> F>
         void bind_Cond(Context<R,T>&,F&& f) {
-            custom_Cond = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Cond> n) -> result<R> {
+            custom_Cond = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Cond> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<Range>)> custom_Range;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<Range>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<Range>)> custom_Range;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Range>> F>
         void bind_Range(Context<R,T>&,F&& f) {
-            custom_Range = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Range> n) -> result<R> {
+            custom_Range = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Range> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<BadExpr>)> custom_BadExpr;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<BadExpr>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<BadExpr>)> custom_BadExpr;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<BadExpr>> F>
         void bind_BadExpr(Context<R,T>&,F&& f) {
-            custom_BadExpr = [f = std::forward<F>(f)](BaseContext<R>& c,Node<BadExpr> n) -> result<R> {
+            custom_BadExpr = [f = std::forward<F>(f)](BaseContext<R>& c,Node<BadExpr> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<Assert>)> custom_Assert;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<Assert>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<Assert>)> custom_Assert;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Assert>> F>
         void bind_Assert(Context<R,T>&,F&& f) {
-            custom_Assert = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Assert> n) -> result<R> {
+            custom_Assert = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Assert> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<FloatType>)> custom_FloatType;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<FloatType>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<FloatType>)> custom_FloatType;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<FloatType>> F>
         void bind_FloatType(Context<R,T>&,F&& f) {
-            custom_FloatType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<FloatType> n) -> result<R> {
+            custom_FloatType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<FloatType> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<BoolType>)> custom_BoolType;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<BoolType>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<BoolType>)> custom_BoolType;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<BoolType>> F>
         void bind_BoolType(Context<R,T>&,F&& f) {
-            custom_BoolType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<BoolType> n) -> result<R> {
+            custom_BoolType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<BoolType> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<VoidType>)> custom_VoidType;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<VoidType>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<VoidType>)> custom_VoidType;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<VoidType>> F>
         void bind_VoidType(Context<R,T>&,F&& f) {
-            custom_VoidType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<VoidType> n) -> result<R> {
+            custom_VoidType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<VoidType> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<IdentType>)> custom_IdentType;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<IdentType>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<IdentType>)> custom_IdentType;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<IdentType>> F>
         void bind_IdentType(Context<R,T>&,F&& f) {
-            custom_IdentType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<IdentType> n) -> result<R> {
+            custom_IdentType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<IdentType> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<ImportedType>)> custom_ImportedType;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<ImportedType>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<ImportedType>)> custom_ImportedType;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<ImportedType>> F>
         void bind_ImportedType(Context<R,T>&,F&& f) {
-            custom_ImportedType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<ImportedType> n) -> result<R> {
+            custom_ImportedType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<ImportedType> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<IntLiteralType>)> custom_IntLiteralType;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<IntLiteralType>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<IntLiteralType>)> custom_IntLiteralType;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<IntLiteralType>> F>
         void bind_IntLiteralType(Context<R,T>&,F&& f) {
-            custom_IntLiteralType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<IntLiteralType> n) -> result<R> {
+            custom_IntLiteralType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<IntLiteralType> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<StrLiteralType>)> custom_StrLiteralType;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<StrLiteralType>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<StrLiteralType>)> custom_StrLiteralType;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<StrLiteralType>> F>
         void bind_StrLiteralType(Context<R,T>&,F&& f) {
-            custom_StrLiteralType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<StrLiteralType> n) -> result<R> {
+            custom_StrLiteralType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<StrLiteralType> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<RegexLiteralType>)> custom_RegexLiteralType;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<RegexLiteralType>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<RegexLiteralType>)> custom_RegexLiteralType;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<RegexLiteralType>> F>
         void bind_RegexLiteralType(Context<R,T>&,F&& f) {
-            custom_RegexLiteralType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<RegexLiteralType> n) -> result<R> {
+            custom_RegexLiteralType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<RegexLiteralType> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<ArrayType>)> custom_ArrayType;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<ArrayType>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<ArrayType>)> custom_ArrayType;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<ArrayType>> F>
         void bind_ArrayType(Context<R,T>&,F&& f) {
-            custom_ArrayType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<ArrayType> n) -> result<R> {
+            custom_ArrayType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<ArrayType> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<StreamType>)> custom_StreamType;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<StreamType>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<StreamType>)> custom_StreamType;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<StreamType>> F>
         void bind_StreamType(Context<R,T>&,F&& f) {
-            custom_StreamType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<StreamType> n) -> result<R> {
+            custom_StreamType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<StreamType> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<FunctionType>)> custom_FunctionType;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<FunctionType>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<FunctionType>)> custom_FunctionType;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<FunctionType>> F>
         void bind_FunctionType(Context<R,T>&,F&& f) {
-            custom_FunctionType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<FunctionType> n) -> result<R> {
+            custom_FunctionType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<FunctionType> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<StructType>)> custom_StructType;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<StructType>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<StructType>)> custom_StructType;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<StructType>> F>
         void bind_StructType(Context<R,T>&,F&& f) {
-            custom_StructType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<StructType> n) -> result<R> {
+            custom_StructType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<StructType> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<InlineStructType>)> custom_InlineStructType;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<InlineStructType>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<InlineStructType>)> custom_InlineStructType;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<InlineStructType>> F>
         void bind_InlineStructType(Context<R,T>&,F&& f) {
-            custom_InlineStructType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<InlineStructType> n) -> result<R> {
+            custom_InlineStructType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<InlineStructType> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<StructUnionType>)> custom_StructUnionType;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<StructUnionType>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<StructUnionType>)> custom_StructUnionType;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<StructUnionType>> F>
         void bind_StructUnionType(Context<R,T>&,F&& f) {
-            custom_StructUnionType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<StructUnionType> n) -> result<R> {
+            custom_StructUnionType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<StructUnionType> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<StructUnionCandidate>)> custom_StructUnionCandidate;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<StructUnionCandidate>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<StructUnionCandidate>)> custom_StructUnionCandidate;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<StructUnionCandidate>> F>
         void bind_StructUnionCandidate(Context<R,T>&,F&& f) {
-            custom_StructUnionCandidate = [f = std::forward<F>(f)](BaseContext<R>& c,Node<StructUnionCandidate> n) -> result<R> {
+            custom_StructUnionCandidate = [f = std::forward<F>(f)](BaseContext<R>& c,Node<StructUnionCandidate> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<UnionType>)> custom_UnionType;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<UnionType>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<UnionType>)> custom_UnionType;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<UnionType>> F>
         void bind_UnionType(Context<R,T>&,F&& f) {
-            custom_UnionType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<UnionType> n) -> result<R> {
+            custom_UnionType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<UnionType> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<RangeType>)> custom_RangeType;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<RangeType>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<RangeType>)> custom_RangeType;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<RangeType>> F>
         void bind_RangeType(Context<R,T>&,F&& f) {
-            custom_RangeType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<RangeType> n) -> result<R> {
+            custom_RangeType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<RangeType> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<EnumType>)> custom_EnumType;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<EnumType>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<EnumType>)> custom_EnumType;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<EnumType>> F>
         void bind_EnumType(Context<R,T>&,F&& f) {
-            custom_EnumType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<EnumType> n) -> result<R> {
+            custom_EnumType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<EnumType> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<MetaType>)> custom_MetaType;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<MetaType>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<MetaType>)> custom_MetaType;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<MetaType>> F>
         void bind_MetaType(Context<R,T>&,F&& f) {
-            custom_MetaType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<MetaType> n) -> result<R> {
+            custom_MetaType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<MetaType> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<OptionalType>)> custom_OptionalType;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<OptionalType>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<OptionalType>)> custom_OptionalType;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<OptionalType>> F>
         void bind_OptionalType(Context<R,T>&,F&& f) {
-            custom_OptionalType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<OptionalType> n) -> result<R> {
+            custom_OptionalType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<OptionalType> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<GenericType>)> custom_GenericType;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<GenericType>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<GenericType>)> custom_GenericType;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<GenericType>> F>
         void bind_GenericType(Context<R,T>&,F&& f) {
-            custom_GenericType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<GenericType> n) -> result<R> {
+            custom_GenericType = [f = std::forward<F>(f)](BaseContext<R>& c,Node<GenericType> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<MatchBranch>)> custom_MatchBranch;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<MatchBranch>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<MatchBranch>)> custom_MatchBranch;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<MatchBranch>> F>
         void bind_MatchBranch(Context<R,T>&,F&& f) {
-            custom_MatchBranch = [f = std::forward<F>(f)](BaseContext<R>& c,Node<MatchBranch> n) -> result<R> {
+            custom_MatchBranch = [f = std::forward<F>(f)](BaseContext<R>& c,Node<MatchBranch> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<UnionCandidate>)> custom_UnionCandidate;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<UnionCandidate>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<UnionCandidate>)> custom_UnionCandidate;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<UnionCandidate>> F>
         void bind_UnionCandidate(Context<R,T>&,F&& f) {
-            custom_UnionCandidate = [f = std::forward<F>(f)](BaseContext<R>& c,Node<UnionCandidate> n) -> result<R> {
+            custom_UnionCandidate = [f = std::forward<F>(f)](BaseContext<R>& c,Node<UnionCandidate> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<Return>)> custom_Return;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<Return>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<Return>)> custom_Return;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Return>> F>
         void bind_Return(Context<R,T>&,F&& f) {
-            custom_Return = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Return> n) -> result<R> {
+            custom_Return = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Return> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<Break>)> custom_Break;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<Break>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<Break>)> custom_Break;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Break>> F>
         void bind_Break(Context<R,T>&,F&& f) {
-            custom_Break = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Break> n) -> result<R> {
+            custom_Break = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Break> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<Continue>)> custom_Continue;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<Continue>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<Continue>)> custom_Continue;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Continue>> F>
         void bind_Continue(Context<R,T>&,F&& f) {
-            custom_Continue = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Continue> n) -> result<R> {
+            custom_Continue = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Continue> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<Enum>)> custom_Enum;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<Enum>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<Enum>)> custom_Enum;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Enum>> F>
         void bind_Enum(Context<R,T>&,F&& f) {
-            custom_Enum = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Enum> n) -> result<R> {
+            custom_Enum = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Enum> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<EnumMember>)> custom_EnumMember;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<EnumMember>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<EnumMember>)> custom_EnumMember;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<EnumMember>> F>
         void bind_EnumMember(Context<R,T>&,F&& f) {
-            custom_EnumMember = [f = std::forward<F>(f)](BaseContext<R>& c,Node<EnumMember> n) -> result<R> {
+            custom_EnumMember = [f = std::forward<F>(f)](BaseContext<R>& c,Node<EnumMember> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<State>)> custom_State;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<State>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<State>)> custom_State;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<State>> F>
         void bind_State(Context<R,T>&,F&& f) {
-            custom_State = [f = std::forward<F>(f)](BaseContext<R>& c,Node<State> n) -> result<R> {
+            custom_State = [f = std::forward<F>(f)](BaseContext<R>& c,Node<State> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<TypeParameter>)> custom_TypeParameter;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<TypeParameter>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<TypeParameter>)> custom_TypeParameter;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<TypeParameter>> F>
         void bind_TypeParameter(Context<R,T>&,F&& f) {
-            custom_TypeParameter = [f = std::forward<F>(f)](BaseContext<R>& c,Node<TypeParameter> n) -> result<R> {
+            custom_TypeParameter = [f = std::forward<F>(f)](BaseContext<R>& c,Node<TypeParameter> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<Identity>)> custom_Identity;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<Identity>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<Identity>)> custom_Identity;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Identity>> F>
         void bind_Identity(Context<R,T>&,F&& f) {
-            custom_Identity = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Identity> n) -> result<R> {
+            custom_Identity = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Identity> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<Cast>)> custom_Cast;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<Cast>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<Cast>)> custom_Cast;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Cast>> F>
         void bind_Cast(Context<R,T>&,F&& f) {
-            custom_Cast = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Cast> n) -> result<R> {
+            custom_Cast = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Cast> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<OrCond>)> custom_OrCond;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<OrCond>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<OrCond>)> custom_OrCond;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<OrCond>> F>
         void bind_OrCond(Context<R,T>&,F&& f) {
-            custom_OrCond = [f = std::forward<F>(f)](BaseContext<R>& c,Node<OrCond> n) -> result<R> {
+            custom_OrCond = [f = std::forward<F>(f)](BaseContext<R>& c,Node<OrCond> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
         }
-        std::function<result<R>(BaseContext<R>&, Node<Import>)> custom_Import;
-        template <class T,invocable_r<result<R>,Context<R,T>&,Node<Import>> F>
+        std::function<expected<R>(BaseContext<R>&, Node<Import>)> custom_Import;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Import>> F>
         void bind_Import(Context<R,T>&,F&& f) {
-            custom_Import = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Import> n) -> result<R> {
+            custom_Import = [f = std::forward<F>(f)](BaseContext<R>& c,Node<Import> n) -> expected<R> {
                    auto l = c.l.template as<T>();
-                   if (!l) { return unexpect_loc_error(n.ref(c.a).loc(),"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
                    Context<R,T> new_c{c,*l};
                    return f(new_c,n);
             };
