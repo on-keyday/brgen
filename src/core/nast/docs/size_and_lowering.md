@@ -215,7 +215,7 @@ for i40 := 0; i40 < count; i40 = i40 + 1:
 | StructType | 1310 | 16.7% | 入れ子 format。呼び出しの語彙が無い |
 | IntType | 1090 | 13.9% | バイト境界に乗らない幅 (u1/u2/u4 等)。畳み込み待ち |
 | UnionType | 769 | 9.8% | 分岐の field |
-| ArrayType | 483 | 6.2% | 要素が可変幅 / 末尾まで |
+| ArrayType | 503 | 6.4% | 要素が可変幅 / 末尾まで |
 | EnumType | 50 | 0.6% | 下地の型が書かれていない enum |
 | StrLiteralType | 47 | 0.6% | magic |
 | その他 | 13 | 0.2% | bool / 関数型 / generic / inline struct |
