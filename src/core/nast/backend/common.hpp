@@ -45,6 +45,9 @@ namespace brgen::nast::backend {
         result<R> visit(NodeAny n) {
             return b.visit(n);
         }
+        Arena& arena() {
+            return b.a;
+        }
     };
 
 #define MAYBE(x, v)                                         \
