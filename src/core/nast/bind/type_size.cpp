@@ -271,7 +271,7 @@ namespace brgen::nast::bind {
                 // 変数も一緒に要る)。掛け算で誤魔化さず、式なしで返す。
                 return put(t, dynamic());
             }
-            if (auto n = const_uint(tables, r->length)) {
+            if (auto n = const_uint(a, tables, r->length)) {
                 return put(t, fixed(elem.bits * *n));
             }
             // 要素が固定幅なので、全体は `要素の幅 * 長さ` で書ける。長さの式は

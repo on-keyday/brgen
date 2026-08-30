@@ -16,25 +16,7 @@ namespace brgen::nast::lowering {
         // 展開したほうが位置の計算が消えて読みやすいから。
         Node<Body> repeat(Context& c, Builder b, Node<Expr> count, auto&& one) {
             auto body = b.a.make<Body>(b.loc);
-            auto n = const_uint(c.tables, count);
-            if (!n) {
-                // 畳んだ値が無くても綴りが数ならそのまま並べる。
-                if (auto lit_node = count.as_any<IntLiteral>()) {
-                    auto& text = lit_node.ref(b.a)->value;
-                    std::uint64_t acc = 0;
-                    bool ok = !text.empty();
-                    for (auto ch : text) {
-                        if (ch < '0' || ch > '9') {
-                            ok = false;
-                            break;
-                        }
-                        acc = acc * 10 + std::uint64_t(ch - '0');
-                    }
-                    if (ok) {
-                        n = acc;
-                    }
-                }
-            }
+            auto n = const_uint(b.a, c.tables, count);
             if (n) {
                 for (std::uint64_t i = 0; i < *n; i++) {
                     body->statements.push_back(one(b.lit(i)));
