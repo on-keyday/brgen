@@ -41,6 +41,10 @@
     {
       // nast の他のツールを引数つきで debug したいとき用。
       // 起動時にどれを走らせるか聞かれる。こちらもビルドはしない。
+      //
+      // build/debug にはそのとき建てたものしか無い。選ぶ前に、そのツールを
+      // 名指しで建てておくこと:
+      //   python src/core/nast/build.py --debug-info -t <tool> --no-run
       "name": "Debug nast tool (pick)",
       "type": "cppvsdbg",
       "request": "launch",
@@ -221,7 +225,8 @@
   ],
   "inputs": [
     {
-      // build/debug/bin にあるもの。増えたらここに足す。
+      // 建てたものだけが build/debug/bin にある。ここに並んでいても、
+      // -t <tool> で建てていなければ「ファイルが無い」で失敗する。
       "id": "nastTool",
       "type": "pickString",
       "description": "which nast tool to debug",
