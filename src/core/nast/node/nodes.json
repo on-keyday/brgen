@@ -241,6 +241,54 @@
             ]
         },
         {
+            "name": "LoweredRangeCompare",
+            "over": "Binary",
+            "storage": "sparse",
+            "fields": [
+                {
+                    "name": "expr",
+                    "type": "Node<Expr>"
+                }
+            ],
+            "description": "Range membership comparison expanded into ordinary comparisons. Produced on demand by lowering/"
+        },
+        {
+            "name": "LoweredMatch",
+            "over": "Match",
+            "storage": "sparse",
+            "fields": [
+                {
+                    "name": "branch",
+                    "type": "Node<If>"
+                }
+            ],
+            "description": "If-chain form of a match, for targets without one. Produced on demand by lowering/"
+        },
+        {
+            "name": "LoweredCond",
+            "over": "Cond",
+            "storage": "sparse",
+            "fields": [
+                {
+                    "name": "temp_name",
+                    "type": "Node<Ident>"
+                },
+                {
+                    "name": "type",
+                    "type": "Node<Type>"
+                },
+                {
+                    "name": "branch",
+                    "type": "Node<If>"
+                },
+                {
+                    "name": "value",
+                    "type": "Node<Reference>"
+                }
+            ],
+            "description": "Statement form of a conditional expression, for targets without one. Produced on demand by lowering/"
+        },
+        {
             "name": "TypeSize",
             "over": "Type",
             "storage": "sparse",
