@@ -9,28 +9,30 @@
 // `t.Len` のように受け手を付けないといけないが、「ここに要る」という印が
 // 木のどこにも無い。
 //
-// EBM は変換の時点で `MEMBER_ACCESS{base: SELF}` に実体化して、綴りだけを
-// 言語側に残している。ここも同じ形にする — 受け手が要ることは共通で、
-// どう綴るかは言語ごと (`MEMBER_ACCESS` は共通化不適と測定済みのグループ)。
+// **付けるのは綴る側。lowering は付けない。** 原文から来た式は書き換えられ
+// ないので (複製すると中の名前が Resolution 表に載っていない別ノードになり
+// 解決先を失う)、lowering が作る参照にだけ受け手を付けると、1 つの式の中で
+// 同じ意味のものが 2 つの形になる。読む側が両方を扱う羽目になるので、
+// **形は 1 つに揃えて裸の参照にし、受け手は綴る側が 1 つの規則で足す**:
+// 参照の解決先が Field なら前置する、以上。
 //
-// **原文の式は書き換えない。** 複製すると中の名前が Resolution 表に載って
-// いない別ノードになり、解決先を失う。原文から来た式については
-// `receiver_field` で「その参照は受け手が要るか」を答えるだけにして、
-// 実際に前置するのは綴る側。lowering が新しく作る参照 (`field_access`) には
-// 最初から受け手を付ける。
+// EBM は変換の時点で `MEMBER_ACCESS{base: SELF}` に実体化している。あちらは
+// 変換が式を作り直す立場なので揃えられる。こちらは原木を残す立場なので、
+// 揃える先が逆になる。綴りが言語ごとなのは同じ (`MEMBER_ACCESS` は共通化
+// 不適と測定済みのグループ)。
 
 namespace brgen::nast::lowering {
 
-    // その field を指す式。`self.<名前>` の形で、名前の解決先も表に入れる。
-    // lowering が field を指したいときはこれを使う。
-    //
-    // owner は受け手の型を付けるためだけのもの。field は持ち主を指していない
-    // (FormatState が format -> fields の向きに持つ) ので呼ぶ側が渡す。
-    // 渡さなくても綴りは出る。
-    Node<Expr> field_access(Context& c, Node<Field> f, Node<Format> owner = nullref);
+    // その field を指す式。解決先も表に入れる。**受け手は付けない** —
+    // 原文の参照と同じ形にするため。
+    Node<Expr> field_ref(Context& c, Node<Field> f);
 
     // その参照が指しているのが field なら、その field。受け手が要るかどうかの
-    // 判定に使う。原文の式を辿って綴る側が呼ぶ。
+    // 判定に使う。綴る側が呼ぶ。
     Node<Field> receiver_field(Context& c, Node<Reference> ref);
+
+    // 受け手そのもの。綴る側がノードとして扱いたいときに使う。
+    // owner を渡すとその struct 型が付く。
+    Node<Expr> self_ref(Context& c, Node<Format> owner, lexer::Loc loc);
 
 }  // namespace brgen::nast::lowering
