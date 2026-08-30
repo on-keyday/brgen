@@ -246,7 +246,40 @@ dynamic 81。
 - `dynamic`: 実行時の値。代入の位置で 1 度だけ評価した変数を読んで選ぶ
 
 構造はどちらも「両方の順で組んだものと選択子を渡し、選ぶのは相手」で同じ。
-その規則はまだ無い。
+`combine_int_either` / `split_int_either` がその形:
+
+```
+--- offset :u16          (input.endian = config.endian.native の下)
+decode: offset = isLittle ? ((u16(buf[o + 1]) << 8) | u16(buf[o]))
+                          : ((u16(buf[o]) << 8) | u16(buf[o + 1]))
+encode:
+if isLittle:
+    buf[o] = u8(offset)
+    buf[o + 1] = u8((offset >> 8))
+else:
+    buf[o] = u8((offset >> 8))
+    buf[o + 1] = u8(offset)
+```
+
+**選択子はここで作れないので呼ぶ側が渡す。** EBM も同じ切り分けで、
+`add_endian_specific` (converter.cpp:208) が native と dynamic を 1 つの経路に
+まとめ、`IS_LITTLE_ENDIAN` の中身を言語側へ委ねている:
+
+```cpp
+const auto is_native_or_dynamic = endian.endian() == native || endian.endian() == dynamic;
+if (is_native_or_dynamic) { ... EBM_IF_STATEMENT(res, is_little_ref, then, else); }
+```
+
+区別は `endian_expr` が空かどうかに押し込まれている (native なら空)。
+消費側は空なら knob の文字列、そうでなければ変数比較:
+
+```
+rust    cfg!(target_endian = "little")
+c/cpp   (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
+python  sys.byteorder == 'little'
+java    (java.nio.ByteOrder.nativeOrder() == java.nio.ByteOrder.LITTLE_ENDIAN)
+llvm    ""                                  ← 空 = 未対応の目印に落ちる
+```
 
 当初 `native` を big として組んでいた (`effective != Endian::little` の判定)。
 コーパスに 97 field ある。

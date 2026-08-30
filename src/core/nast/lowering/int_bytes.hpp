@@ -51,4 +51,28 @@ namespace brgen::nast::lowering {
     Node<Body> split_int(Context& c, Node<Expr> bytes, Node<Expr> offset, Node<Expr> value,
                          Node<Type> type, Endian order = Endian::unspec);
 
+    // 順が決まらないとき用。両方の形を組んで選択子で選ぶ。
+    //
+    //   combine: is_little ? <little で組んだ式> : <big で組んだ式>
+    //   split:   if is_little: <little の代入> else: <big の代入>
+    //
+    // **選択子は呼ぶ側が作る。** ここで作れないものだからこの形になっている:
+    //
+    //   native   ターゲットのコンパイル時の判定。書き方は言語ごとに違う
+    //            (rust `cfg!(target_endian = "little")` / C
+    //            `(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)` / python
+    //            `sys.byteorder == 'little'`)
+    //   dynamic  代入の位置で 1 度だけ評価した変数との比較。どの値が little かは
+    //            保持の仕方で決まる
+    //
+    // EBM も同じ形で、`add_endian_specific` が両方の枝を作り、`IS_LITTLE_ENDIAN`
+    // の中身 (native なら knob の文字列、dynamic なら変数比較) を言語側に委ねて
+    // いる。native と dynamic を 1 つの経路にまとめられるのは、違いが選択子の
+    // 中身だけだから。
+    Node<Expr> combine_int_either(Context& c, Node<Expr> bytes, Node<Expr> offset, Node<Type> type,
+                                  Node<Expr> is_little);
+
+    Node<Body> split_int_either(Context& c, Node<Expr> bytes, Node<Expr> offset, Node<Expr> value,
+                                Node<Type> type, Node<Expr> is_little);
+
 }  // namespace brgen::nast::lowering
