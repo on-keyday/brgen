@@ -235,6 +235,11 @@ namespace brgen::nast {
                         expr(e.as<Sizeof>().ref(a)->target);
                         w.write(")");
                         return;
+                    case NodeType::BitSizeof:
+                        w.write("bit_sizeof(");
+                        expr(e.as<BitSizeof>().ref(a)->target);
+                        w.write(")");
+                        return;
                     case NodeType::OrCond:
                         // base が元のカンマ連結。conds は同じ葉を共有している。
                         expr(e.as<OrCond>().ref(a)->base);

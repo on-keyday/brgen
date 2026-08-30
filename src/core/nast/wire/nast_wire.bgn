@@ -113,6 +113,7 @@ enum NodeKind:
     Metadata
     SpecifyOrder
     Sizeof
+    BitSizeof
     Available
     ExplicitError
     Binary
@@ -247,6 +248,9 @@ format Node:
             name :Ref
             order :Ref
         NodeKind.Sizeof:
+            type :Ref
+            target :Ref
+        NodeKind.BitSizeof:
             type :Ref
             target :Ref
         NodeKind.Available:

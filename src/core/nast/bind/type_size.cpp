@@ -106,17 +106,16 @@ namespace brgen::nast::bind {
         return s;
     }
 
-    // 型だけでは書けない幅を、値の名前で呼ぶ。`sizeof(items) * 8`。
+    // 型だけでは書けない幅を、値の名前で呼ぶ。`bit_sizeof(items)`。
     //
     // 要素ごとに幅が違う配列や、分岐で幅が揃わない field がこれに当たる。
-    // 型からは決まらないが値からは決まるので、値を指して sizeof に渡す。
-    // 展開 (要素を走って足す) は lowering の仕事で、EBM が
-    // "dynamic sizeof is not supported yet" と断っているのがまさにその段。
-    // available(x) と同じ形 — 値に対する述語で、意味は式評価器ではなく
-    // lowering 側にある。
+    // 型からは決まらないが値からは決まるので、値を指して渡す。展開 (要素を
+    // 走って足す) は lowering の仕事で、EBM が "dynamic sizeof is not
+    // supported yet" と断っているのがまさにその段。available(x) と同じ形 —
+    // 値に対する述語で、意味は式評価器ではなく lowering 側にある。
     //
-    // sizeof はバイト単位なので 8 倍する。裏を返すと、この項はその field の
-    // 幅がバイトの整数倍であることを前提にしている。
+    // ビット単位のほうを使うのは、幅がバイトの整数倍とは限らないため
+    // (sizeof はバイト単位なので、ビット境界を跨ぐ field を表せない)。
     Node<Expr> SizeAnalysis::size_of_value(Node<Field> f, lexer::Loc loc) {
         auto name = f.ref(a)->name;
         auto text = ident_text(a, name);
@@ -131,10 +130,10 @@ namespace brgen::nast::bind {
         auto ref = a.make<Reference>(loc);
         ref->name = id;
         ref->type = f.ref(a)->type;
-        auto sz = a.make<Sizeof>(loc);
+        auto sz = a.make<BitSizeof>(loc);
         sz->target = ref;
         sz->type = bits_type(loc);
-        return bin(BinaryOp::mul, sz, lit(8, loc), loc);
+        return sz;
     }
 
     // field 1 つぶんの幅。型だけで書けなければ値の名前で呼ぶ。
@@ -175,18 +174,18 @@ namespace brgen::nast::bind {
         auto loc = a.header_at(t.id())->loc;
 
         // 型パラメータ。実体は instantiation ごとに変わるが、幅は
-        // sizeof(<T>) で書ける。これがあるので monomorphize の前でも
-        // 「T が何ビットか」を運べる (単位はバイトなので 8 倍する)。
+        // bit_sizeof(<T>) で書ける。これがあるので monomorphize の前でも
+        // 「T が何ビットか」を運べる。
         if (auto id = t.as_any<IdentType>()) {
             if (auto* r = tables.table<Resolution>().get(id.ref(a)->ident)) {
                 if (r->target.as_any<TypeParameter>()) {
                     auto tl = a.make<TypeLiteral>(loc);
                     tl->literal = t;
                     tl->type = a.make<MetaType>(loc);
-                    auto sz = a.make<Sizeof>(loc);
+                    auto sz = a.make<BitSizeof>(loc);
                     sz->target = tl;
                     sz->type = bits_type(loc);
-                    return put(t, dynamic(bin(BinaryOp::mul, sz, lit(8, loc), loc)));
+                    return put(t, dynamic(sz));
                 }
             }
         }

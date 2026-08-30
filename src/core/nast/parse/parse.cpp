@@ -867,10 +867,10 @@ namespace brgen::nast {
                 import_->path = std::move(*path);
                 return import_;
             }
-            // available(x) / sizeof(x) は名前の文字列一致だけで決まる。
-            // 同名の fn を定義しても奪われないのは元の実装と同じ。
+            // available(x) / sizeof(x) / bit_sizeof(x) は名前の文字列一致だけで
+            // 決まる。同名の fn を定義しても奪われないのは元の実装と同じ。
             auto name = callee_name(call.ref(a)->callee);
-            if (name == "available" || name == "sizeof") {
+            if (name == "available" || name == "sizeof" || name == "bit_sizeof") {
                 auto target = first_argument(call.ref(a)->arguments);
                 if (!target) {
                     s.report_error(call.ref(a).loc(), name, "() requires at least one argument");
@@ -879,6 +879,13 @@ namespace brgen::nast {
                     auto avail = a.make<Available>(call.ref(a).loc());
                     avail->target = target;
                     return avail;
+                }
+                if (name == "bit_sizeof") {
+                    // sizeof はバイト単位。ビット境界を跨ぐ field はそれでは
+                    // 表せないので、ビット単位のほうを別に持つ。
+                    auto bits = a.make<BitSizeof>(call.ref(a).loc());
+                    bits->target = target;
+                    return bits;
                 }
                 auto size = a.make<Sizeof>(call.ref(a).loc());
                 size->target = target;

@@ -986,6 +986,17 @@
             ]
         },
         {
+            "name": "BitSizeof",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "target",
+                    "type": "Node<Expr>"
+                }
+            ],
+            "description": "Width of the operand in bits. sizeof is byte valued and cannot describe a field that is not a whole number of bytes"
+        },
+        {
             "name": "Available",
             "derive": "Expr",
             "fields": [
