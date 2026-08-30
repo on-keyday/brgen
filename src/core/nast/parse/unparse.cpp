@@ -746,7 +746,7 @@ namespace brgen::nast {
 
     namespace {
 
-        void run(Unparser& u, Node<Module> mod) {
+        void run_module(Unparser& u, Node<Module> mod) {
             auto d = mod.ref(u.a);
             if (!d) {
                 return;
@@ -762,17 +762,54 @@ namespace brgen::nast {
             u.nl();  // 末尾の改行
         }
 
+        // どのノードから始めるかを、種類を見て振り分ける。Module は文の並びで
+        // 末尾に改行が要るが、それ以外は 1 つ書くだけ。Expr は Statement でも
+        // あるので先に見る (式の位置での書き方が要るため)。
+        void run_any(Unparser& u, NodeAny n) {
+            if (!n) {
+                return;
+            }
+            if (auto mod = n.as_any<Module>()) {
+                run_module(u, mod);
+                return;
+            }
+            if (auto e = n.as_any<Expr>()) {
+                u.expr(e);
+                return;
+            }
+            if (auto s = n.as_any<Statement>()) {
+                u.statement(s);
+                return;
+            }
+            if (auto t = n.as_any<Type>()) {
+                u.type(t);
+                return;
+            }
+            if (auto id = n.as_any<Ident>()) {
+                u.w.write(u.ident_text(id));
+                return;
+            }
+        }
+
     }  // namespace
 
     std::string unparse(Arena& a, Node<Module> mod) {
-        Unparser u{a};
-        run(u, mod);
-        return u.w.to_string(IndentStyle{}.text.c_str());
+        return unparse_node(a, mod);
     }
 
     CodeOutput unparse_with_spans(Arena& a, Node<Module> mod) {
+        return unparse_node_with_spans(a, mod);
+    }
+
+    std::string unparse_node(Arena& a, NodeAny n) {
         Unparser u{a};
-        run(u, mod);
+        run_any(u, n);
+        return u.w.to_string(IndentStyle{}.text.c_str());
+    }
+
+    CodeOutput unparse_node_with_spans(Arena& a, NodeAny n) {
+        Unparser u{a};
+        run_any(u, n);
         return finish(u.w);
     }
 
