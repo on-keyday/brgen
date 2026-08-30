@@ -47,11 +47,27 @@ int main(int argc, char** argv) {
                     target->type = ty;
                     // 実際の順は input.endian のスコープで決まる。
                     auto order = Endian::unspec;
-                    if (auto* fe = p.tables.table<FieldEndian>().get(f); fe && !fe->dynamic) {
+                    auto* fe = p.tables.table<FieldEndian>().get(f);
+                    if (fe && !fe->dynamic) {
                         order = fe->endian;
                     }
-                    auto combined = lowering::combine_int(c, buf, off, ty, order);
-                    auto split = lowering::split_int(c, buf, off, target, ty, order);
+                    // 順が決まらない (native / 実行時) なら両方の形を出す。
+                    // 選択子は呼ぶ側の仕事なので、ここでは `isLittle` を仮置き。
+                    bool undecided = fe && (fe->dynamic || fe->endian == Endian::native);
+                    Node<Expr> combined;
+                    Node<Body> split;
+                    if (undecided) {
+                        auto sel = a.make<Reference>(a.header_at(id)->loc);
+                        sel->name = a.make<Ident>(a.header_at(id)->loc);
+                        sel->name.ref(a)->identifier = "isLittle";
+                        sel->type = a.make<BoolType>(a.header_at(id)->loc);
+                        combined = lowering::combine_int_either(c, buf, off, ty, sel);
+                        split = lowering::split_int_either(c, buf, off, target, ty, sel);
+                    }
+                    else {
+                        combined = lowering::combine_int(c, buf, off, ty, order);
+                        split = lowering::split_int(c, buf, off, target, ty, order);
+                    }
                     if (combined) {
                         std::println("--- {} :{}", name_of(a, f), unparse_node(a, ty));
                         std::println("decode: {} = {}", name_of(a, f), unparse_node(a, combined));

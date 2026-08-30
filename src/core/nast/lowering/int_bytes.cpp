@@ -5,8 +5,7 @@
 
 namespace brgen::nast::lowering {
 
-    namespace {
-        struct Build {
+    struct Build {
             Context& c;
 
             Node<Type> int_type(std::size_t bits, bool is_signed, lexer::Loc loc) {
@@ -74,13 +73,14 @@ namespace brgen::nast::lowering {
                               : offset;
                 }
                 auto n = c.a.make<Index>(loc);
-                n->base = bytes;
-                n->index = index;
-                n->type = int_type(8, false, loc);
-                return n;
-            }
-        };
+            n->base = bytes;
+            n->index = index;
+            n->type = int_type(8, false, loc);
+            return n;
+        }
+    };
 
+    namespace {
         // 何バイトか。バイト境界に乗らない幅はここでは扱わない
         // (ビット単位の読み書きは畳み込みの段の話)。
         std::optional<std::size_t> byte_width(Arena& a, Node<Type> type, Ref<IntType>& out) {
@@ -172,6 +172,56 @@ namespace brgen::nast::lowering {
             assign->op = BinaryOp::assign;
             body->statements.push_back(assign);
         }
+        return body;
+    }
+
+    Node<Expr> combine_int_either(Context& c, Node<Expr> bytes, Node<Expr> offset, Node<Type> type,
+                                  Node<Expr> is_little) {
+        auto& a = c.a;
+        if (!is_little) {
+            return nullref;
+        }
+        auto little = combine_int(c, bytes, offset, type, Endian::little);
+        auto big = combine_int(c, bytes, offset, type, Endian::big);
+        if (!little || !big) {
+            return nullref;
+        }
+        auto loc = type.ref(a).loc();
+        Build b{c};
+        auto n = a.make<Cond>(loc);
+        n->cond = b.paren(is_little, loc);
+        n->then = b.paren(little, loc);
+        n->els = b.paren(big, loc);
+        n->type = type;
+        return n;
+    }
+
+    Node<Body> split_int_either(Context& c, Node<Expr> bytes, Node<Expr> offset, Node<Expr> value,
+                                Node<Type> type, Node<Expr> is_little) {
+        auto& a = c.a;
+        if (!is_little) {
+            return nullref;
+        }
+        auto little = split_int(c, bytes, offset, value, type, Endian::little);
+        auto big = split_int(c, bytes, offset, value, type, Endian::big);
+        if (!little || !big) {
+            return nullref;
+        }
+        auto loc = type.ref(a).loc();
+
+        auto then_branch = a.make<ConditionalStatement>(loc);
+        then_branch->condition = is_little;
+        then_branch->body = little;
+        // 既定の分岐は条件なしの BodyStatement (parse.cpp の else と同じ形)。
+        auto else_branch = a.make<BodyStatement>(loc);
+        else_branch->body = big;
+
+        auto if_ = a.make<If>(loc);
+        if_->blocks.push_back(then_branch);
+        if_->blocks.push_back(else_branch);
+
+        auto body = a.make<Body>(loc);
+        body->statements.push_back(if_);
         return body;
     }
 
