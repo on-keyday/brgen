@@ -32,8 +32,20 @@
 namespace brgen::nast {
 
     // 木を .bgn に戻す。由来の対応表 (CodeOutput::spans) も要るなら
-    // unparse_with_spans を使う。型は node/code_writer.h にある。
+    // *_with_spans を使う。型は node/code_writer.h にある。
     std::string unparse(Arena& a, Node<Module> mod);
     CodeOutput unparse_with_spans(Arena& a, Node<Module> mod);
+
+    // 木の一部だけを書く。Module でなくてよく、文 / 式 / 型 / 名前のどれでも
+    // その位置での書き方で出る (式は式として、型は型として)。
+    //
+    // 診断や hover に式 1 つを見せる、生成コードのコメントに元の宣言を添える、
+    // 差分を取るのに部分木だけ文字列にする、といった用途向け。全体を書いて
+    // から切り出すのではなく、そのノードから始める。
+    //
+    // 出るのはそのノード単体で、インデントは 0 から始まる。周りの文脈
+    // (何段目のブロックにいたか) は持たない。
+    std::string unparse_node(Arena& a, NodeAny n);
+    CodeOutput unparse_node_with_spans(Arena& a, NodeAny n);
 
 }  // namespace brgen::nast
