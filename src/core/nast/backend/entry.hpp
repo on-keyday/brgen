@@ -82,6 +82,34 @@ namespace brgen::nast::backend {
     template <class T>
     concept HasExtraFlags = requires(T& t, futils::cmdline::option::Context& c) { t.bind(c); };
 
+    // 戻り値の型。既定は CodeWriter だが、LangConfig が result_type を宣言
+    // すればそれで木を辿る。核 (Knobs / DefaultHandler / BaseContext) は元から
+    // R で書いてあり、既定の実装も ON_CODEGEN() で「文字列を組む型のときだけ
+    // 書く」形になっているので、CodeWriter を決め打ちしていたのは入口だけ
+    // だった。
+    //
+    // 文字列を経由せずに組み上げたいもの (別の IR を作る、構造のまま吐く) は
+    // これで書ける。条件が 2 つ:
+    //   - R は既定構築できること (--unhandled ignore が空の R を返す)
+    //   - --unhandled dummy は error と同じ挙動になる。目印を出力に混ぜる
+    //     やり方が文字列にしか無いため。埋まっていない場所を見たいときは
+    //     error で位置を出す。
+    template <class T>
+    concept HasResultType = requires { typename T::result_type; };
+
+    template <class T>
+    struct lang_result {
+        using type = CodeWriter;
+    };
+
+    template <HasResultType T>
+    struct lang_result<T> {
+        using type = typename T::result_type;
+    };
+
+    template <class T>
+    using lang_result_t = typename lang_result<T>::type;
+
     // LangConfig にあるものだけ拾う。テンプレートの中に置かないと、
     // if constexpr で切った側も実体化されてしまう。
     template <class Lang>
@@ -133,6 +161,41 @@ namespace brgen::nast::backend {
             return str.out();
         }
 
+        template <class T>
+        inline constexpr bool always_false = false;
+
+        // 字下げ。桁の数え方も変わるので text と width は必ず一緒に決める
+        // (IndentStyle::tab() / spaces(n) を使う)。
+        template <class Lang>
+        IndentStyle indent_style_of(Lang& lang) {
+            if constexpr (requires { lang.indent_style(); }) {
+                return lang.indent_style();
+            }
+            else {
+                return IndentStyle{};
+            }
+        }
+
+        // 組み上がったものを出力の中身にする。CodeWriter (と to_writer() を
+        // 持つもの) はここで整形できるが、それ以外は「何を出力とするか」を
+        // R を決めた側しか知らないので LangConfig::finish に投げる。
+        template <class Lang, class R>
+        expected<std::string> finish_output(Lang& lang, R&& r) {
+            if constexpr (requires { lang.finish(std::forward<R>(r)); }) {
+                return lang.finish(std::forward<R>(r));
+            }
+            else if constexpr (std::is_same_v<std::decay_t<R>, CodeWriter>) {
+                return r.to_string(indent_style_of(lang).text.c_str());
+            }
+            else if constexpr (has_to_writer<std::decay_t<R>>) {
+                return r.to_writer().to_string(indent_style_of(lang).text.c_str());
+            }
+            else {
+                static_assert(always_false<Lang>,
+                              "result_type is not text; give LangConfig a finish(result_type&&)");
+            }
+        }
+
         inline std::optional<UnhandledMode> parse_unhandled(std::string_view s) {
             if (s == "dummy") {
                 return UnhandledMode::dummy;
@@ -181,11 +244,16 @@ namespace brgen::nast::backend {
 // 任意で置けるもの:
 //   static constexpr auto file_extension = ".go";  出力の既定の拡張子
 //   void bind(futils::cmdline::option::Context&)   言語ごとの追加フラグ
-// どちらも --show-flags の出力に反映される。
+//                                                  (どちらも --show-flags に出る)
+//   using result_type = X;                         木を辿るときの戻り値 (既定 CodeWriter)
+//   std::string finish(X&&)                        X から出力を作る (X が文字列でないとき必須)
+//   IndentStyle indent_style()                     字下げ (既定 4 空白, IndentStyle::tab() など)
 #define NAST_BACKEND_ENTRY(LangConfig)                                                                              \
+    using nast_result_t = ::brgen::nast::backend::lang_result_t<LangConfig>;                                        \
+                                                                                                                    \
     static ::brgen::nast::expected<void> nast_backend_setup(                                                        \
-        ::brgen::nast::backend::Context<::brgen::nast::CodeWriter, LangConfig>& ctx,                                \
-        ::brgen::nast::backend::Knobs<::brgen::nast::CodeWriter>& knobs,                                            \
+        ::brgen::nast::backend::Context<nast_result_t, LangConfig>& ctx,                                            \
+        ::brgen::nast::backend::Knobs<nast_result_t>& knobs,                                                        \
         ::brgen::nast::backend::EntryFlags& flags);                                                                 \
                                                                                                                     \
     static int nast_backend_main(int argc, char** argv) {                                                           \
@@ -234,8 +302,8 @@ namespace brgen::nast::backend {
                         << (why.empty() ? describe(r) : why.c_str()) << '\n';                                       \
                     return 1;                                                                                       \
                 }                                                                                                   \
-                Knobs<CodeWriter> knobs;                                                                            \
-                BaseContext<CodeWriter> base{.a = program.arena, .n = knobs};                                       \
+                Knobs<nast_result_t> knobs;                                                                         \
+                BaseContext<nast_result_t> base{.a = program.arena, .n = knobs};                                    \
                 base.config().unhandled_mode = *mode;                                                               \
                 auto ctx = base.to_context(lang);                                                                   \
                 if (auto ok = nast_backend_setup(ctx, knobs, flags); !ok) {                                         \
@@ -247,8 +315,12 @@ namespace brgen::nast::backend {
                     nast_entry::report(program.arena, program.files, written.error());                              \
                     return 1;                                                                                       \
                 }                                                                                                   \
-                return nast_entry::write_out(flags.output,                                                          \
-                                             written->to_string(IndentStyle{}.text.c_str()));                       \
+                auto text = nast_entry::finish_output(lang, std::move(*written));                                   \
+                if (!text) {                                                                                        \
+                    nast_entry::report(program.arena, program.files, text.error());                                 \
+                    return 1;                                                                                       \
+                }                                                                                                   \
+                return nast_entry::write_out(flags.output, *text);                                                  \
             });                                                                                                     \
     }                                                                                                               \
                                                                                                                     \
@@ -258,6 +330,6 @@ namespace brgen::nast::backend {
     }                                                                                                               \
                                                                                                                     \
     static ::brgen::nast::expected<void> nast_backend_setup(                                                        \
-        ::brgen::nast::backend::Context<::brgen::nast::CodeWriter, LangConfig>& ctx,                                \
-        ::brgen::nast::backend::Knobs<::brgen::nast::CodeWriter>& knobs,                                            \
+        ::brgen::nast::backend::Context<nast_result_t, LangConfig>& ctx,                                            \
+        ::brgen::nast::backend::Knobs<nast_result_t>& knobs,                                                        \
         ::brgen::nast::backend::EntryFlags& flags)
