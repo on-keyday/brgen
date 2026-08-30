@@ -215,11 +215,25 @@ if(NAST_CORPUS)
 endif()
 
 # Windows では futils が dll なので、実行できるように隣へ置く。
+# Windows では futils が dll なので、実行できるように隣へ置く。
+#
+# どのツールを建てても要るものなので、nast_core に紐づける。以前は
+# nast_test の POST_BUILD にしていたが、それだと `-t nast_backend` だけを
+# 建てたツリーに dll が来ず、起動が 0xC0000135 (DLL not found) で落ちた。
 if(WIN32)
     get_filename_component(_futils_lib_dir "${FUTILS_LIB}" DIRECTORY)
-    add_custom_command(TARGET nast_test POST_BUILD
+    add_custom_target(nast_runtime_dll ALL
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
                 "${_futils_lib_dir}/libfutils.dll"
-                "$<TARGET_FILE_DIR:nast_test>/libfutils.dll"
+                "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/libfutils.dll"
+        COMMENT "copying libfutils.dll next to the tools"
         VERBATIM)
+    # どのツールも起動に要るので、実行ファイル全部から依存させる。
+    foreach(t nast_test nast_corpus nast_dump nast_unparse_test nast_wire_test nast_backend
+              nast_coverage nast_fn_fallible nast_lex_split nast_parse_split nast_token_cost)
+        if(TARGET ${t})
+            add_dependencies(${t} nast_runtime_dll)
+        endif()
+    endforeach()
 endif()
