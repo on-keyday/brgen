@@ -10,43 +10,101 @@ namespace brgen::nast::bind {
         constexpr TypeSize fixed(std::uint64_t bits) {
             return TypeSize{.kind = SizeKind::fixed, .bits = bits};
         }
-        constexpr TypeSize dynamic() {
-            return TypeSize{.kind = SizeKind::dynamic};
+        constexpr TypeSize dynamic(Node<Expr> e = nullref) {
+            return TypeSize{.kind = SizeKind::dynamic, .bits_expr = e};
         }
         constexpr TypeSize unknown() {
             return TypeSize{.kind = SizeKind::unknown};
         }
+    }  // namespace
 
-        // 幅を足す。片方でも決まらなければ全体も決まらない。dynamic は
-        // 「実行時に決まる」で unknown より情報があるので、混ざったら弱い
-        // ほう (unknown) に落とす。
-        TypeSize add(TypeSize l, TypeSize r) {
-            if (l.kind == SizeKind::unknown || r.kind == SizeKind::unknown) {
-                return unknown();
-            }
-            if (l.kind == SizeKind::dynamic || r.kind == SizeKind::dynamic) {
-                return dynamic();
-            }
+    // 合成した式に付ける型。幅はビット数なので符号なし 64bit。1 つ作って
+    // 使い回す (型が同じなら同じノードでよい。equivalent は形で比べる)。
+    Node<Type> SizeAnalysis::bits_type(lexer::Loc loc) {
+        if (!bits_type_) {
+            auto t = a.make<IntType>(loc);
+            t->bit_size = 64;
+            t->is_signed = false;
+            t->endian = Endian::unspec;
+            bits_type_ = t;
+        }
+        return bits_type_;
+    }
+
+    Node<Expr> SizeAnalysis::lit(std::uint64_t v, lexer::Loc loc) {
+        auto n = a.make<IntLiteral>(loc);
+        n->value = std::to_string(v);
+        n->type = bits_type(loc);
+        return n;
+    }
+
+    // 二項の中身が二項なら括弧で包む。unparse は優先順位を見ずに Paren
+    // ノードで括弧を出すので、包まないと `8 * (len - 8)` が
+    // `8 * len - 8` と綴られて読み手が誤る (木は正しいが綴りが嘘になる)。
+    Node<Expr> SizeAnalysis::wrap(Node<Expr> e, lexer::Loc loc) {
+        if (!e || !e.as_any<Binary>()) {
+            return e;
+        }
+        auto p = a.make<Paren>(loc);
+        p->expr = e;
+        p->type = bits_type(loc);
+        return p;
+    }
+
+    Node<Expr> SizeAnalysis::bin(BinaryOp op, Node<Expr> l, Node<Expr> r, lexer::Loc loc) {
+        if (!l || !r) {
+            return nullref;  // 片方が書けなければ全体も書けない
+        }
+        auto n = a.make<Binary>(loc);
+        n->op = op;
+        n->left = wrap(l, loc);
+        n->right = wrap(r, loc);
+        n->type = bits_type(loc);
+        return n;
+    }
+
+    // その幅を式にする。fixed はリテラル、dynamic は持っている式。
+    Node<Expr> SizeAnalysis::as_expr(TypeSize s, lexer::Loc loc) {
+        if (s.kind == SizeKind::fixed) {
+            return lit(s.bits, loc);
+        }
+        if (s.kind == SizeKind::dynamic) {
+            return s.bits_expr;  // 書けなかったものは null のまま伝わる
+        }
+        return nullref;
+    }
+
+    // 幅を足す。片方でも決まらなければ全体も決まらない。dynamic は
+    // 「実行時に決まる」で unknown より情報があるので、混ざったら弱いほう
+    // (unknown) に落とす。
+    TypeSize SizeAnalysis::add(TypeSize l, TypeSize r, lexer::Loc loc) {
+        if (l.kind == SizeKind::unknown || r.kind == SizeKind::unknown) {
+            return unknown();
+        }
+        if (l.kind == SizeKind::fixed && r.kind == SizeKind::fixed) {
             return fixed(l.bits + r.bits);
         }
+        return dynamic(bin(BinaryOp::add, as_expr(l, loc), as_expr(r, loc), loc));
+    }
 
-        // 分岐の幅を畳む。全部 fixed で同じ値ならその値、それ以外は実行時。
-        TypeSize merge_branch(std::optional<TypeSize> acc, TypeSize s) {
-            if (s.kind == SizeKind::unknown) {
-                return unknown();
-            }
-            if (s.kind == SizeKind::dynamic) {
-                return dynamic();
-            }
-            if (!acc) {
-                return s;
-            }
-            if (acc->kind != SizeKind::fixed || acc->bits != s.bits) {
-                return dynamic();
-            }
+    // 分岐の幅を畳む。全部 fixed で同じ値ならその値。揃わないときは
+    // 「どの分岐を通ったか」に依るので、式には書けない (条件式を合成すれば
+    // 書けるが、それは分岐の条件を評価できる文脈でしか意味を持たない)。
+    TypeSize SizeAnalysis::merge_branch(std::optional<TypeSize> acc, TypeSize s) {
+        if (s.kind == SizeKind::unknown) {
+            return unknown();
+        }
+        if (s.kind == SizeKind::dynamic) {
+            return dynamic();
+        }
+        if (!acc) {
             return s;
         }
-    }  // namespace
+        if (acc->kind != SizeKind::fixed || acc->bits != s.bits) {
+            return dynamic();
+        }
+        return s;
+    }
 
     TypeSize SizeAnalysis::put(Node<Type> t, TypeSize s) {
         tables.table<TypeSize>().set(t, s);
@@ -73,6 +131,25 @@ namespace brgen::nast::bind {
                 s.erase(id);
             }
         } pop{in_progress, t.id()};
+
+        auto loc = a.header_at(t.id())->loc;
+
+        // 型パラメータ。実体は instantiation ごとに変わるが、幅は
+        // sizeof(<T>) で書ける。これがあるので monomorphize の前でも
+        // 「T が何ビットか」を運べる (単位はバイトなので 8 倍する)。
+        if (auto id = t.as_any<IdentType>()) {
+            if (auto* r = tables.table<Resolution>().get(id.ref(a)->ident)) {
+                if (r->target.as_any<TypeParameter>()) {
+                    auto tl = a.make<TypeLiteral>(loc);
+                    tl->literal = t;
+                    tl->type = a.make<MetaType>(loc);
+                    auto sz = a.make<Sizeof>(loc);
+                    sz->target = tl;
+                    sz->type = bits_type(loc);
+                    return put(t, dynamic(bin(BinaryOp::mul, sz, lit(8, loc), loc)));
+                }
+            }
+        }
 
         // 名前の包みは実体に降りる。書かれ方は幅に効かない。
         auto stripped = strip_wrappers(a, t);
@@ -114,15 +191,32 @@ namespace brgen::nast::bind {
                 // 末尾まで。入力が尽きるまでなので幅の話にならない。
                 return put(t, unknown());
             }
+            if (r->length.as_any<Range>()) {
+                // `[..]` は範囲ノードで来る。長さの式ではなく「入力が尽きる
+                // まで」なので、掛け算の相手にしてはいけない。
+                return put(t, unknown());
+            }
             auto elem = size_of(r->element_type);
+            if (elem.kind == SizeKind::unknown) {
+                return put(t, unknown());
+            }
+            if (elem.kind != SizeKind::fixed) {
+                // 要素ごとに幅が違う配列。全体は「要素の幅の和」であって
+                // `要素の幅 * 個数` ではない。和を書くには要素を走る畳み込みが
+                // 要るが、式の語彙に無い (書けたとしても、要素の幅の式は
+                // `elem.len` のように「どの要素か」に依存するので、束縛する
+                // 変数も一緒に要る)。掛け算で誤魔化さず、式なしで返す。
+                return put(t, dynamic());
+            }
             if (auto* v = tables.table<ConstantValue>().get(r->length);
                 v && v->kind == EvalKind::integer && !v->is_negative) {
-                if (elem.kind != SizeKind::fixed) {
-                    return put(t, elem.kind == SizeKind::unknown ? unknown() : dynamic());
-                }
                 return put(t, fixed(elem.bits * v->integer));
             }
-            return put(t, dynamic());
+            // 要素が固定幅なので、全体は `要素の幅 * 長さ` で書ける。長さの式は
+            // 元の木のノードをそのまま指す (複製すると中の名前が Resolution 表に
+            // 載っていない別ノードになり、解決先を辿れなくなる)。同じノードを
+            // 2 か所から指す形になるが、この式は木からは辿れず表からしか来ない。
+            return put(t, dynamic(bin(BinaryOp::mul, lit(elem.bits, loc), r->length, loc)));
         }
         if (auto st = t.as_any<StructType>()) {
             if (auto fmt = st.ref(a)->base.as_any<Format>()) {
@@ -151,8 +245,7 @@ namespace brgen::nast::bind {
                 if (!cd->cond) {
                     has_default = true;  // `else` / `..` があるので必ずどれかを通る
                 }
-                auto s = inner_size(cd->inner_struct);
-                auto merged = merge_branch(acc, s);
+                auto merged = merge_branch(acc, inner_size(cd->inner_struct));
                 if (merged.kind != SizeKind::fixed) {
                     return put(t, merged);
                 }
@@ -202,9 +295,10 @@ namespace brgen::nast::bind {
         if (!state) {
             return unknown();
         }
+        auto loc = a.header_at(fmt.id())->loc;
         auto total = fixed(0);
         for (auto& f : state->fields) {
-            total = add(total, size_of(f.ref(a)->type));
+            total = add(total, size_of(f.ref(a)->type), loc);
         }
         return total;
     }
@@ -219,15 +313,18 @@ namespace brgen::nast::bind {
         if (!inner) {
             return unknown();
         }
+        auto loc = a.header_at(block.id())->loc;
         auto total = fixed(0);
         for (auto& f : inner->fields) {
-            total = add(total, size_of(f.ref(a)->type));
+            total = add(total, size_of(f.ref(a)->type), loc);
         }
         return total;
     }
 
     void SizeAnalysis::run() {
-        for (std::uint32_t id = 1; id <= a.node_count(); id++) {
+        // 合成した式もアリーナに積まれるので、走査の範囲は先に固定する。
+        auto last = a.node_count();
+        for (std::uint32_t id = 1; id <= last; id++) {
             auto* h = a.header_at(id);
             if (!h) {
                 continue;

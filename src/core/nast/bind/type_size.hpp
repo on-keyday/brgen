@@ -3,13 +3,18 @@
 #include "../node/nodes.h"
 
 #include <core/common/error.h>
+#include <optional>
 #include <unordered_set>
 
 // 型のビット幅。TypeSize 表 (over Type) に置く。
 //
 //   kind = fixed    ビット数が定数。bits が有効
-//   kind = dynamic  実行時に決まる (長さが式の配列、条件付きの field を含む
-//                   format、幅の揃わない union)
+//   kind = dynamic  実行時に決まる。bits_expr に幅の式が入る (書けたとき)。
+//                   長さが式の配列は `要素幅 * 長さ` に、和は `+` になる。
+//                   型パラメータは sizeof(<T>) * 8 — instantiation 前でも
+//                   幅を運べるので、monomorphize を待たずに扱える。
+//                   分岐で幅が揃わない場合は書けないので null になる
+//                   (「どの分岐を通ったか」は式では表せない)
 //   kind = unknown  決まらない (末尾までの配列、循環、型の付かない入力)
 //
 // これは lowering の前段。ビットフィールドの畳み込み (どの隣接 field が同じ
@@ -52,6 +57,17 @@ namespace brgen::nast::bind {
         TypeSize format_size(Node<Format> fmt);
         TypeSize inner_size(Node<BodyStatement> block);
         TypeSize put(Node<Type> t, TypeSize s);
+        TypeSize add(TypeSize l, TypeSize r, lexer::Loc loc);
+        TypeSize merge_branch(std::optional<TypeSize> acc, TypeSize s);
+
+        // 幅の式を組み立てるための道具。合成したノードはアリーナに積まれるが
+        // 木からは辿れず、TypeSize 表からだけ来る。
+        Node<Type> bits_type_;
+        Node<Type> bits_type(lexer::Loc loc);
+        Node<Expr> lit(std::uint64_t v, lexer::Loc loc);
+        Node<Expr> wrap(Node<Expr> e, lexer::Loc loc);
+        Node<Expr> bin(BinaryOp op, Node<Expr> l, Node<Expr> r, lexer::Loc loc);
+        Node<Expr> as_expr(TypeSize s, lexer::Loc loc);
     };
 
 }  // namespace brgen::nast::bind
