@@ -23,7 +23,7 @@ namespace brgen::nast::lowering {
                 }
                 return body;
             }
-            auto index_name = std::format("b{}", count.id());
+            auto index_name = derived_name("b", count);
             auto index = b.ref(index_name, b.int_type(64));
             auto inner = b.body(one(index));
             body->statements.push_back(b.count_loop(index_name, count, inner));

@@ -5,6 +5,7 @@
 #include <number/prefix.h>
 
 #include <optional>
+#include <string>
 #include <string_view>
 
 // 木を歩くときの小物。段をまたいで使うものだけをここに置く。
@@ -44,6 +45,21 @@ namespace brgen::nast {
     template <class T>
     void each_node(Arena& a, auto&& fn) {
         each_node<T>(a, a.node_count(), fn);
+    }
+
+    // 合成した変数の名前。由来のノードから決まる。
+    //
+    // **名付けを引く仕組みは要らない。** 由来が決まれば名前も決まるので、
+    // 後から「その変数は何という名前だったか」を知りたい側は同じ関数を呼べば
+    // よい (EBM は ctx.identifier(ref) という登録簿でこれをやっている)。
+    // 同じ木の中で id は一意なので衝突もしない。
+    //
+    //   tmp<id>     三項の文形式が使う一時変数 (lowering/conditional)
+    //   endian<id>  実行時に決まるバイト順を入れる変数 (lowering/endian_variable)
+    //   i<id>       配列を回す添字 (lowering/field_io)
+    //   b<id>       バイトを並べる添字 (lowering/stream_io)
+    inline std::string derived_name(std::string_view prefix, NodeAny origin) {
+        return std::string(prefix) + std::to_string(origin.id());
     }
 
     // 名前を持つ文の綴り。持たない文 (無名 field / 分岐が合成した Field など)

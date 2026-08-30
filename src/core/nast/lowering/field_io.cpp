@@ -41,7 +41,7 @@ namespace brgen::nast::lowering {
             }
 
             // 添字。名前は由来のノード番号から作る。
-            auto index_name = std::format("i{}", arr.id());
+            auto index_name = derived_name("i", arr);
             auto index = b.ref(index_name, b.int_type(64));
 
             // 要素の位置は offset + i * 幅。

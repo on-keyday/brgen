@@ -1,5 +1,6 @@
 /*license*/
 #include "conditional.hpp"
+#include "../node/util.h"
 
 #include <format>
 
@@ -57,7 +58,7 @@ namespace brgen::nast::lowering {
 
         // 名前は由来のノード番号から。同じ木の中で衝突しない。
         auto temp_name = a.make<Ident>(loc);
-        temp_name->identifier = std::format("tmp{}", cond.id());
+        temp_name->identifier = derived_name("tmp", cond);
 
         auto then_branch = make_branch(c, loc, d->cond, temp_name, d->then);
         auto else_branch = make_branch(c, loc, nullref, temp_name, d->els);
