@@ -15,10 +15,6 @@ namespace brgen::nast::backend {
         ignore,
     };
 
-    struct CommonConfig {
-        UnhandledMode unhandled_mode = UnhandledMode::dummy;
-    };
-
     template <class R, class Node>
     struct DefaultHandler;
     template <class R>
@@ -27,6 +23,18 @@ namespace brgen::nast::backend {
     struct Knobs;
     template <class R, class L>
     struct Context;
+
+    struct CommonConfig {
+        UnhandledMode unhandled_mode = UnhandledMode::dummy;
+
+       private:
+        template <class R>
+        friend struct BaseContext;
+        template <class C>
+        friend struct Invoker;
+        bool inner_default = false;
+    };
+
     template <class R>
     struct BaseContext : Invoker<BaseContext<R>> {
         using result_type = R;
@@ -37,7 +45,14 @@ namespace brgen::nast::backend {
         LanguageConfig l;
 
         expected<R> visit(NodeAny n) {
-            return Invoker<BaseContext<R>>::template invoke_impl<R>(n);
+            return Invoker<BaseContext<R>>::template invoke_custom<R>(n);
+        }
+
+        expected<R> visit_default(NodeAny n) {
+            if (c.inner_default) {
+                return unexpect_loc_error(n, "DO NOT invoke visit_default from default hook");
+            }
+            return Invoker<BaseContext<R>>::template invoke_default<R>(n);
         }
 
         template <class L>
@@ -62,6 +77,12 @@ namespace brgen::nast::backend {
         expected<R> visit(NodeAny n) {
             return b.visit(n);
         }
+
+        // must be called from hook, not from default itself
+        expected<R> visit_default(NodeAny n) {
+            return b.visit_default(n);
+        }
+
         Arena& arena() {
             return b.arena();
         }
