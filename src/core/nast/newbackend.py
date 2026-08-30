@@ -48,6 +48,14 @@ struct {config} {{
     // void bind(futils::cmdline::option::Context& ctx) {{
     //     ctx.VarString<true>(&package, "package", "package name", "NAME");
     // }}
+
+    // 字下げを変えるなら (Go のようにタブなら IndentStyle::tab())。
+    // IndentStyle indent_style() {{ return IndentStyle::tab(); }}
+
+    // 文字列ではなく自前の構造を組み上げたいときは戻り値の型を変える。
+    // その場合 finish で出力の中身にする。
+    // using result_type = MyTree;
+    // std::string finish(MyTree&& t) {{ ... }}
 }};
 
 NAST_BACKEND_ENTRY({config}) {{
