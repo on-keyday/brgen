@@ -20,6 +20,12 @@ namespace brgen::nast::backend {
         // Set from --unhandled. dummy leaves a marker in the output, error stops at the node, ignore drops it
         UnhandledMode unhandled_mode = UnhandledMode::dummy;
 
+        // Self のハンドラのつまみ。
+        struct SelfKnobs {
+            // How the target names the value being coded: self in Rust and Python, this in Java, the receiver name in Go, (*this) in C++. Empty falls through to the unhandled marker
+            std::string spelling = {};
+        } Self;
+
         // IsLittleEndian のハンドラのつまみ。
         struct IsLittleEndianKnobs {
             // How the target spells 'the platform is little endian': cfg!(target_endian = "little") in Rust, (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__) in C, sys.byteorder == 'little' in Python. Left empty, the node falls through to the unhandled marker rather than guessing
@@ -27,6 +33,12 @@ namespace brgen::nast::backend {
             // What a stored byte order is compared against to mean little endian. Used only when order is set
             std::string little_endian_value = {};
         } IsLittleEndian;
+
+        // MemberAccess のハンドラのつまみ。
+        struct MemberAccessKnobs {
+            // What goes between a value and its member. A dot nearly everywhere; -> in C
+            std::string separator = ".";
+        } MemberAccess;
 
        private:
         template <class R>
