@@ -332,12 +332,15 @@ nast に無い部品: **`WriterManager` に当たるもの**。`node/code_writer
 最初の引数で選ぶ。ファイルが 1 つなら明細、2 つ以上なら集計。
 
 ```sh
-B=src/core/nast/build/fast/bin
-$B/nast_probe size   src/core/nast/testdata/nested_size.bgn
-$B/nast_probe endian example/bpf.bgn
-$B/nast_probe lower  src/core/nast/testdata/match_patterns.bgn
-$B/nast_probe size   example/*.bgn        # 集計
+python src/core/nast/build.py -r probe size   src/core/nast/testdata/nested_size.bgn
+python src/core/nast/build.py -r probe endian example/bpf.bgn
+python src/core/nast/build.py -r probe lower  src/core/nast/testdata/match_patterns.bgn
+python src/core/nast/build.py -r probe size   example/*.bgn      # 集計
 ```
+
+`-r <名前>` は `nast_<名前>` を建ててから走らせて、以降の引数をそのまま渡す。
+ビルドツリーの場所を知らずに済ませるためのもので、他の道具にも使える
+(`-r corpus --tree <f>.bgn` / `-r dump <f>.bgn`)。
 
 確認用の `.bgn` は `src/core/nast/testdata/` にある。目で見るために書いたもの
 だが、見た後は wire / unparse の往復に乗せて守る側に置いてある
