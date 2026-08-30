@@ -196,6 +196,9 @@ foreach(tool corpus dump unparse_test wire_test backend)
     target_link_libraries(nast_${tool} PRIVATE nast_core)
 endforeach()
 
+# ---- バックエンド ----
+# newbackend.py が足す。ここに並んだものが nast2<lang> として建つ。
+
 # ---- 計測 ----------------------------------------------------------------
 foreach(b coverage fn_fallible lex_split parse_split token_cost)
     add_executable(nast_${b} "bench/${b}.cpp")
