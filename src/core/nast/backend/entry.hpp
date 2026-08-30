@@ -18,9 +18,11 @@
 #include <core/common/file.h>
 #include <cmdline/template/help_option.h>
 #include <cmdline/template/parse_and_err.h>
+#include <json/stringer.h>
 #include <wrap/argv.h>
 #include <wrap/cout.h>
 #include <fstream>
+#include <functional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -56,18 +58,84 @@ namespace brgen::nast::backend {
 
         const char* program_name = "";
         const char* lang_name = "";
+        // 出力ファイルの既定の拡張子。LangConfig が file_extension を持っていれば入口が入れる。
         std::string_view file_extension;
+
+        // 言語ごとの追加フラグ。LangConfig が bind(ctx) を持っていれば入口が挿す。
+        // ここで登録したものは --show-flags にもそのまま出る。
+        std::function<void(futils::cmdline::option::Context&)> extra_bind;
 
         void bind(futils::cmdline::option::Context& ctx) {
             bind_help(ctx);
-            ctx.VarString<true>(&input, "i,input", "input file (.bgn)", "FILE");
-            ctx.VarString<true>(&output, "o,output", "output file (default: stdout)", "FILE");
+            // 長いほうを先に書く。--show-flags の name はここの先頭が出るので、
+            // 消費側 (ツール) が読むのは "input" であってほしい。
+            ctx.VarString<true>(&input, "input,i", "input file (.bgn)", "FILE");
+            ctx.VarString<true>(&output, "output,o", "output file (default: stdout; use - for stdout)", "FILE");
             ctx.VarString<true>(&unhandled, "unhandled", "what to do with an unhandled node: dummy, error, ignore", "MODE");
-            ctx.VarBool(&show_flags, "show-flags", "print what this backend is (for tooling)");
+            ctx.VarBool(&show_flags, "show-flags", "print what this backend is, in JSON (for tooling)");
+            if (extra_bind) {
+                extra_bind(ctx);
+            }
         }
     };
 
+    // LangConfig の任意の要素。requires をマクロに直接書くと、型が具体的で
+    // 依存名にならないぶん「無い」が false ではなく即エラーになるので、
+    // ここでテンプレートを 1 枚挟む。
+    template <class T>
+    concept HasFileExtension = requires { T::file_extension; };
+
+    template <class T>
+    concept HasExtraFlags = requires(T& t, futils::cmdline::option::Context& c) { t.bind(c); };
+
+    // LangConfig にあるものだけ拾う。テンプレートの中に置かないと、
+    // if constexpr で切った側も実体化されてしまう。
+    template <class Lang>
+    void apply_lang_options(EntryFlags& flags, Lang& lang) {
+        if constexpr (HasFileExtension<Lang>) {
+            flags.file_extension = Lang::file_extension;
+        }
+        if constexpr (HasExtraFlags<Lang>) {
+            flags.extra_bind = [&lang](futils::cmdline::option::Context& c) { lang.bind(c); };
+        }
+    }
+
     namespace internal {
+
+        // --show-flags の出力。手で書くと足したフラグと食い違うので、cmdline の
+        // Context に登録されているものをそのまま並べる。バックエンドが自分の
+        // フラグを足せば、何もしなくてもここに出る。
+        //
+        // rebrgen の ebmcodegen::flag_description_json に当たる。あちらにある
+        // ui_lang_name / lsp_name / webworker_name / web_filtered は web 生成器
+        // (ebmwebgen.py) の都合なので、対応する消費側ができるまでは置かない。
+        inline auto flag_description_json(futils::cmdline::option::Context& ctx,
+                                          const char* lang_name,
+                                          std::string_view file_extension) {
+            std::vector<std::string_view> exts;
+            if (!file_extension.empty()) {
+                exts.push_back(file_extension);
+            }
+            futils::json::Stringer<> str;
+            str.set_indent("  ");
+            auto root = str.object();
+            root("lang_name", lang_name);
+            root("file_extensions", exts);
+            root("flags", [&](auto& s) {
+                auto arr = s.array();
+                for (auto& opt : ctx.options()) {
+                    arr([&](auto& s) {
+                        auto obj = s.object();
+                        obj("name", opt->mainname);
+                        obj("help", opt->help);
+                        obj("argdesc", opt->argdesc);
+                        obj("type", opt->type);
+                    });
+                }
+            });
+            root.close();
+            return str.out();
+        }
 
         inline std::optional<UnhandledMode> parse_unhandled(std::string_view s) {
             if (s == "dummy") {
@@ -143,7 +211,7 @@ namespace brgen::nast::backend {
             bind::UnionLayoutAnalysis layout{out.arena, out.tables, typer, out.err};
             layout.run();
 
-            out.modules = importer.modules;
+            out.modules = std::move(importer.modules);
             return true;
         }
 
@@ -178,76 +246,84 @@ namespace brgen::nast::backend {
 //
 // LangConfig は `static constexpr auto lang_name` を持つ型。バックエンドが
 // 状態を持ちたければそこに書く (Context::lang_config() で取れる)。
-#define NAST_BACKEND_ENTRY(LangConfig)                                                            \
-    static ::brgen::nast::expected<void> nast_backend_setup(                                      \
-        ::brgen::nast::backend::Context<::brgen::nast::CodeWriter, LangConfig>& ctx,              \
-        ::brgen::nast::backend::Knobs<::brgen::nast::CodeWriter>& knobs,                          \
-        ::brgen::nast::backend::EntryFlags& flags);                                               \
-                                                                                                  \
-    static int nast_backend_main(int argc, char** argv) {                                         \
-        using namespace brgen::nast;                                                              \
-        using namespace brgen::nast::backend;                                                     \
-        EntryFlags flags;                                                                         \
-        flags.program_name = argv[0];                                                             \
-        flags.lang_name = LangConfig::lang_name;                                                  \
-        return futils::cmdline::templ::parse_or_err<std::string>(                                 \
-            argc, argv, flags,                                                                    \
-            [&](auto&& str, bool err) {                                                           \
-                if (err) {                                                                        \
-                    futils::wrap::cerr_wrap() << flags.program_name << ": " << str;               \
-                }                                                                                 \
-                else {                                                                            \
-                    futils::wrap::cout_wrap() << str;                                             \
-                }                                                                                 \
-            },                                                                                    \
-            [&](EntryFlags& flags, futils::cmdline::option::Context&) {                           \
-                if (flags.show_flags) {                                                           \
-                    futils::wrap::cout_wrap()                                                     \
-                        << "{\"lang\":\"" << flags.lang_name << "\"}\n";                          \
-                    return 0;                                                                     \
-                }                                                                                 \
-                auto mode = ::brgen::nast::backend::internal::parse_unhandled(flags.unhandled);                           \
-                if (!mode) {                                                                      \
-                    futils::wrap::cerr_wrap()                                                     \
-                        << flags.program_name << ": unknown --unhandled: " << flags.unhandled     \
-                        << " (want dummy, error or ignore)\n";                                    \
-                    return 1;                                                                     \
-                }                                                                                 \
-                if (flags.input.empty()) {                                                        \
-                    futils::wrap::cerr_wrap() << flags.program_name << ": no input (-i FILE)\n";  \
-                    return 1;                                                                     \
-                }                                                                                 \
-                ::brgen::nast::backend::internal::Analyzed an;                                                            \
-                std::string why;                                                                  \
-                if (!::brgen::nast::backend::internal::analyze(an, flags.input, why)) {                                   \
-                    futils::wrap::cerr_wrap() << flags.program_name << ": " << why << '\n';       \
-                    return 1;                                                                     \
-                }                                                                                 \
-                Knobs<CodeWriter> knobs;                                                          \
-                BaseContext<CodeWriter> base{.a = an.arena, .n = knobs};                          \
-                base.config().unhandled_mode = *mode;                                             \
-                LangConfig lang;                                                                  \
-                auto ctx = base.to_context(lang);                                                 \
-                if (auto ok = nast_backend_setup(ctx, knobs, flags); !ok) {                       \
-                    ::brgen::nast::backend::internal::report(an.arena, an.files, ok.error());                         \
-                    return 1;                                                                     \
-                }                                                                                 \
-                auto written = base.visit(an.root);                                               \
-                if (!written) {                                                                   \
-                    ::brgen::nast::backend::internal::report(an.arena, an.files, written.error());                    \
-                    return 1;                                                                     \
-                }                                                                                 \
-                return ::brgen::nast::backend::internal::write_out(flags.output,                                          \
-                                           written->to_string(IndentStyle{}.text.c_str()));       \
-            });                                                                                   \
-    }                                                                                             \
-                                                                                                  \
-    int main(int argc, char** argv) {                                                             \
-        futils::wrap::U8Arg _(argc, argv);                                                        \
-        return nast_backend_main(argc, argv);                                                     \
-    }                                                                                             \
-                                                                                                  \
-    static ::brgen::nast::expected<void> nast_backend_setup(                                      \
-        ::brgen::nast::backend::Context<::brgen::nast::CodeWriter, LangConfig>& ctx,              \
-        ::brgen::nast::backend::Knobs<::brgen::nast::CodeWriter>& knobs,                          \
+//
+// 任意で置けるもの:
+//   static constexpr auto file_extension = ".go";  出力の既定の拡張子
+//   void bind(futils::cmdline::option::Context&)   言語ごとの追加フラグ
+// どちらも --show-flags の出力に反映される。
+#define NAST_BACKEND_ENTRY(LangConfig)                                                                              \
+    static ::brgen::nast::expected<void> nast_backend_setup(                                                        \
+        ::brgen::nast::backend::Context<::brgen::nast::CodeWriter, LangConfig>& ctx,                                \
+        ::brgen::nast::backend::Knobs<::brgen::nast::CodeWriter>& knobs,                                            \
+        ::brgen::nast::backend::EntryFlags& flags);                                                                 \
+                                                                                                                    \
+    static int nast_backend_main(int argc, char** argv) {                                                           \
+        using namespace brgen::nast;                                                                                \
+        using namespace brgen::nast::backend;                                                                       \
+        LangConfig lang;                                                                                            \
+        EntryFlags flags;                                                                                           \
+        flags.program_name = argv[0];                                                                               \
+        flags.lang_name = LangConfig::lang_name;                                                                    \
+        ::brgen::nast::backend::apply_lang_options(flags, lang);                                                    \
+        return futils::cmdline::templ::parse_or_err<std::string>(                                                   \
+            argc, argv, flags,                                                                                      \
+            [&](auto&& str, bool err) {                                                                             \
+                if (err) {                                                                                          \
+                    futils::wrap::cerr_wrap() << flags.program_name << ": " << str;                                 \
+                }                                                                                                   \
+                else {                                                                                              \
+                    futils::wrap::cout_wrap() << str;                                                               \
+                }                                                                                                   \
+            },                                                                                                      \
+            [&](EntryFlags& flags, futils::cmdline::option::Context& opt_ctx) {                                     \
+                if (flags.show_flags) {                                                                             \
+                    futils::wrap::cout_wrap()                                                                       \
+                        << ::brgen::nast::backend::internal::flag_description_json(                                 \
+                               opt_ctx, flags.lang_name, flags.file_extension)                                      \
+                        << '\n';                                                                                    \
+                    return 0;                                                                                       \
+                }                                                                                                   \
+                auto mode = ::brgen::nast::backend::internal::parse_unhandled(flags.unhandled);                     \
+                if (!mode) {                                                                                        \
+                    futils::wrap::cerr_wrap()                                                                       \
+                        << flags.program_name << ": unknown --unhandled: " << flags.unhandled                       \
+                        << " (want dummy, error or ignore)\n";                                                      \
+                    return 1;                                                                                       \
+                }                                                                                                   \
+                if (flags.input.empty()) {                                                                          \
+                    futils::wrap::cerr_wrap() << flags.program_name << ": no input (-i FILE)\n";                    \
+                    return 1;                                                                                       \
+                }                                                                                                   \
+                ::brgen::nast::backend::internal::Analyzed an;                                                      \
+                std::string why;                                                                                    \
+                if (!::brgen::nast::backend::internal::analyze(an, flags.input, why)) {                             \
+                    futils::wrap::cerr_wrap() << flags.program_name << ": " << why << '\n';                         \
+                    return 1;                                                                                       \
+                }                                                                                                   \
+                Knobs<CodeWriter> knobs;                                                                            \
+                BaseContext<CodeWriter> base{.a = an.arena, .n = knobs};                                            \
+                base.config().unhandled_mode = *mode;                                                               \
+                auto ctx = base.to_context(lang);                                                                   \
+                if (auto ok = nast_backend_setup(ctx, knobs, flags); !ok) {                                         \
+                    ::brgen::nast::backend::internal::report(an.arena, an.files, ok.error());                       \
+                    return 1;                                                                                       \
+                }                                                                                                   \
+                auto written = base.visit(an.root);                                                                 \
+                if (!written) {                                                                                     \
+                    ::brgen::nast::backend::internal::report(an.arena, an.files, written.error());                  \
+                    return 1;                                                                                       \
+                }                                                                                                   \
+                return ::brgen::nast::backend::internal::write_out(flags.output,                                    \
+                                                                   written->to_string(IndentStyle{}.text.c_str())); \
+            });                                                                                                     \
+    }                                                                                                               \
+                                                                                                                    \
+    int main(int argc, char** argv) {                                                                               \
+        futils::wrap::U8Arg _(argc, argv);                                                                          \
+        return nast_backend_main(argc, argv);                                                                       \
+    }                                                                                                               \
+                                                                                                                    \
+    static ::brgen::nast::expected<void> nast_backend_setup(                                                        \
+        ::brgen::nast::backend::Context<::brgen::nast::CodeWriter, LangConfig>& ctx,                                \
+        ::brgen::nast::backend::Knobs<::brgen::nast::CodeWriter>& knobs,                                            \
         ::brgen::nast::backend::EntryFlags& flags)

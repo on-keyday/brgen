@@ -41,7 +41,13 @@ using namespace brgen::nast::backend;
 
 struct {config} {{
     static constexpr auto lang_name = "{lang}";
+    static constexpr auto file_extension = "{ext}";
     // 言語ごとの状態はここに置く (ctx.lang_config() で取れる)。
+
+    // 言語ごとの追加フラグが要るならここで登録する。--show-flags にも出る。
+    // void bind(futils::cmdline::option::Context& ctx) {{
+    //     ctx.VarString<true>(&package, "package", "package name", "NAME");
+    // }}
 }};
 
 NAST_BACKEND_ENTRY({config}) {{
