@@ -224,6 +224,45 @@ for i40 := 0; i40 < count; i40 = i40 + 1:
 ノードは typer が合成するものなので、今まで印字の対象にならなかった。
 lowering がこれらへの cast を組むので、宣言の名前で綴るようにした。
 
+### 入出力からバイトを出し入れする (2026-08-31)
+
+`lowering/stream_io`。**言語が既に持っている語彙をそのまま使う**:
+
+```
+--- scalar :u16
+fill:
+buf[0] = input.get()
+buf[1] = input.get()
+drain:
+output.put(buf[0])
+output.put(buf[1])
+
+--- varying :[count]u16          個数が式なら回す形になる
+fill:
+for b837 := 0; b837 < count * 2; b837 = b837 + 1:
+    buf[b837] = input.get()
+```
+
+`input.get()` / `output.put(x)` は手書きの `fn decode` / `fn encode` が使って
+いるもので、コーパスに 74 箇所ある (asn1 / avro など)。typer の
+`type_of_stream_call` が扱っていて、`input.get()` は引数なしなら u8、型リテラルを
+渡せばその型。ADR 0045 の言う「backend が用意すべき read/write プリミティブ」に
+当たるものが、**言語側にも名前を持っている**ので新しいノードは要らなかった。
+
+**文にして並べるのが要点。** `(u16(input.get()) << 8) | u16(input.get())` の
+ように式へ直接置くと評価順の保証が言語ごとに違い、上位と下位が入れ替わりうる。
+ebm2go の生成物が一時配列に読んでから合成しているのも同じ理由:
+
+```go
+tmp1154 := [2]uint8{}
+io.ReadFull(tmp50, tmp1154[:])
+s.World = (uint16(tmp1154[0]) << 8) | (uint16(tmp1154[1]) << 0)
+```
+
+だから `stream_io` (バイトを並べる) と `int_bytes` (並んだバイトから値を組む)
+を分けてある。合成して初めて「読む」形になる。位置は `input.get()` 自身が
+進むのでこちらでは数えない。一時配列の宣言は組まない (呼ぶ側の領分)。
+
 ### endian のスコープ (2026-08-31)
 
 `bind/endian_scope.{hpp,cpp}`、段は `Stage::endian` (evaluate と size の間)。

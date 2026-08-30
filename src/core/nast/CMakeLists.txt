@@ -177,6 +177,7 @@ add_library(nast_core STATIC
     "lowering/int_bytes.cpp"
     "lowering/match_to_if.cpp"
     "lowering/predicate.cpp"
+    "lowering/stream_io.cpp"
     "bind/endian_scope.cpp"
     "bind/evaluator.cpp"
     "bind/import_resolver.cpp"
