@@ -67,9 +67,9 @@ namespace brgen::nast::bind {
             current.dynamic = nullref;
             return true;
         }
-        // 静的に決まらない = 実行時。式をそのまま持つ。
+        // 静的に決まらない = 実行時。代入そのものを指す (式ではない)。
         current.endian = Endian::unspec;
-        current.dynamic = d->order;
+        current.dynamic = order;
         return true;
     }
 

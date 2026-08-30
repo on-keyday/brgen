@@ -251,8 +251,8 @@
                 },
                 {
                     "name": "dynamic",
-                    "type": "Node<Expr>",
-                    "description": "Set when the byte order is decided at run time. The expression yields config.endian.*"
+                    "type": "Node<SpecifyOrder>",
+                    "description": "Set when the byte order is decided at run time. Points at the assignment, not its expression: the expression is evaluated once there and every field reads that one value"
                 }
             ],
             "description": "Byte order in effect where this field is read or written"
