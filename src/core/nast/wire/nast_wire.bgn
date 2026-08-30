@@ -83,6 +83,12 @@ enum FormatKind:
     as_is
     custom
 
+enum SizeKind:
+    :u8
+    unknown
+    fixed
+    dynamic
+
 enum EvalKind:
     :u8
     integer
@@ -596,6 +602,15 @@ format UnionLayoutTable:
     len :u32
     entries :[len]UnionLayoutEntry
 
+format TypeSizeEntry:
+    key :Ref
+    kind_size_kind :SizeKind
+    bits :u32
+
+format TypeSizeTable:
+    len :u32
+    entries :[len]TypeSizeEntry
+
 
 format NastModule:
     magic :"NAST"
@@ -615,3 +630,4 @@ format NastModule:
     requirements :RequirementsTable
     constant_value :ConstantValueTable
     union_layout :UnionLayoutTable
+    type_size :TypeSizeTable

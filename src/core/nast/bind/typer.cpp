@@ -1097,6 +1097,7 @@ namespace brgen::nast::bind {
         // その場で解決先へ降りるので、順番には依存しない。
         std::vector<Node<Expr>> exprs;
         std::vector<Node<IdentType>> ident_types;
+        std::vector<Node<NamedStructTypedStatement>> struct_typed;
         visit_all(a, mod, [&](NodeAny n) {
             if (auto e = n.as_any<Expr>()) {
                 exprs.push_back(e);
@@ -1104,8 +1105,18 @@ namespace brgen::nast::bind {
             else if (auto it = n.as_any<IdentType>()) {
                 ident_types.push_back(it);
             }
+            else if (auto st = n.as_any<NamedStructTypedStatement>()) {
+                struct_typed.push_back(st);
+            }
             return true;
         });
+        // format / state には必ず StructType を付ける。以前は型として参照
+        // されたときだけ作っていたので、どこからも参照されない format
+        // (トップレベルの入口など) だけ型が無い状態になっていた。型付けは
+        // 宣言の性質で、他所から使われたかどうかで変わるものではない。
+        for (auto& st : struct_typed) {
+            struct_type_of(st);
+        }
         // 型の名前を先に潰しておく。Reference の解決先が format のとき、
         // その StructType がここで作られていると参照が同じノードを指す。
         for (auto& it : ident_types) {

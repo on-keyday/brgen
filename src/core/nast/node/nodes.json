@@ -239,6 +239,22 @@
                     "type": "vector<Node<Type>>"
                 }
             ]
+        },
+        {
+            "name": "TypeSize",
+            "over": "Type",
+            "storage": "sparse",
+            "fields": [
+                {
+                    "name": "kind",
+                    "type": "SizeKind"
+                },
+                {
+                    "name": "bits",
+                    "type": "size",
+                    "description": "Number of bits. Valid only when kind is fixed"
+                }
+            ]
         }
     ],
     "header": {
@@ -664,6 +680,20 @@
                 },
                 {
                     "name": "custom"
+                }
+            ]
+        },
+        {
+            "name": "SizeKind",
+            "enums": [
+                {
+                    "name": "unknown"
+                },
+                {
+                    "name": "fixed"
+                },
+                {
+                    "name": "dynamic"
                 }
             ]
         },

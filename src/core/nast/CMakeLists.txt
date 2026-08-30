@@ -177,6 +177,7 @@ add_library(nast_core STATIC
     "bind/pipeline.cpp"
     "bind/requires.cpp"
     "bind/scope_resolver.cpp"
+    "bind/type_size.cpp"
     "bind/typer.cpp"
     "bind/union_layout.cpp"
 )
@@ -203,7 +204,7 @@ add_executable(nast2go "backends/go/main.cpp")
 target_link_libraries(nast2go PRIVATE nast_core)
 
 # ---- 計測 ----------------------------------------------------------------
-foreach(b coverage fn_fallible lex_split parse_split token_cost)
+foreach(b coverage fn_fallible lex_split parse_split size_probe token_cost)
     add_executable(nast_${b} "bench/${b}.cpp")
     target_link_libraries(nast_${b} PRIVATE nast_core)
 endforeach()

@@ -6,6 +6,7 @@
 #include "import_resolver.hpp"
 #include "requires.hpp"
 #include "scope_resolver.hpp"
+#include "type_size.hpp"
 #include "typer.hpp"
 #include "union_layout.hpp"
 
@@ -128,6 +129,15 @@ namespace brgen::nast {
         }
         p.stats.constants = evaluator.evaluated;
         done(opt, Stage::evaluate);
+
+        if (!wants(opt, Stage::size)) {
+            return AnalyzeResult::ok;
+        }
+        // 幅は型の性質なので、型付けと畳み込みが済んでいれば決まる。
+        bind::SizeAnalysis sizes{p.arena, p.tables, p.err};
+        sizes.run();
+        p.stats.sized_types = sizes.analyzed;
+        done(opt, Stage::size);
 
         if (!wants(opt, Stage::require)) {
             return AnalyzeResult::ok;

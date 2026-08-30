@@ -220,6 +220,9 @@ namespace {
     template <class C>
     expected<CodeWriter> encode_field(C& c, std::string_view target, Node<Type> t);
 
+    // 生成した一時変数の名前が被らないようにするだけの連番。
+    std::size_t n_counter = 0;
+
     template <class C>
     expected<CodeWriter> decode_field(C& c, std::string_view target, Node<Type> t) {
         auto& a = c.arena();
@@ -263,11 +266,22 @@ namespace {
             }
             else {
                 MAYBE(len, emit_expr(c, r->length));
-                count = std::format("int({})", len);
-                // 長さが実行時なら Go の型は [] なので、先に確保する。
                 MAYBE(elem, type_name(c, r->element_type));
-                w.writeln(std::format("{} = make([]{}, {})", target, elem, count));
-                count = std::format("len({})", target);
+                // 長さは入力から来る。そのまま make に渡すと、負なら panic、
+                // 大きければ入力が持っていない量を確保する。ebm2go が
+                // --trust-input-len / --safe-len-limit を持っているのと同じ話で、
+                // ここは入力に対して確かめてから確保する。
+                auto n_var = std::format("n{}", n_counter++);
+                c.lang_config().uses_io = true;
+                w.writeln(std::format("{} := int({})", n_var, len));
+                w.writeln(std::format("if {} < 0 || len(data)-o < {} {{", n_var, n_var));
+                {
+                    auto s = w.indent_scope();
+                    w.writeln("return o, io.ErrUnexpectedEOF");
+                }
+                w.writeln("}");
+                w.writeln(std::format("{} = make([]{}, {})", target, elem, n_var));
+                count = n_var;
             }
             w.writeln(std::format("for i := 0; i < {}; i++ {{", count));
             {
