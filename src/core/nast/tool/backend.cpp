@@ -9,8 +9,9 @@ struct LanguageConfig {
 
 int main() {
     brgen::nast::Arena a;
+    brgen::nast::SideTables tables;
     brgen::nast::backend::Knobs knobs;
-    brgen::nast::backend::BaseContext<brgen::nast::CodeWriter> bc{.a = a, .n = knobs};
+    brgen::nast::backend::BaseContext<brgen::nast::CodeWriter> bc{.a = a, .t = tables, .n = knobs};
     using Context = brgen::nast::backend::Context<brgen::nast::CodeWriter, LanguageConfig>;
     LanguageConfig l;
     auto conf = bc.to_context(l);

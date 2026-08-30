@@ -30,6 +30,7 @@ namespace brgen::nast {
         bind,      // 束縛 + スコープ解決
         type,      // 型付け
         evaluate,  // 定数畳み込み
+        size,      // 型のビット幅
         require,   // 入出力要求の推論
         layout,    // union の重ね合わせ
     };
@@ -50,6 +51,7 @@ namespace brgen::nast {
         std::size_t names_resolved = 0;
         std::size_t names_unresolved = 0;
         std::size_t constants = 0;
+        std::size_t sized_types = 0;
     };
 
     // 前段の成果物一式。ノードは arena の添字でしかないので、これが生きて
