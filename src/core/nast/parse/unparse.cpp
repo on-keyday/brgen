@@ -235,6 +235,11 @@ namespace brgen::nast {
                         expr(e.as<Sizeof>().ref(a)->target);
                         w.write(")");
                         return;
+                    case NodeType::Self:
+                        // 綴りは .bgn の構文には無い。合成した木を印字した
+                        // ときだけ出る。実際の綴りはバックエンドが決める。
+                        w.write("self");
+                        return;
                     case NodeType::BitCast: {
                         // 綴りは .bgn の構文には無い。合成した木を印字した
                         // ときだけ出る (is_little_endian と同じ)。行き先は

@@ -113,6 +113,7 @@ enum NodeKind:
     Metadata
     SpecifyOrder
     Sizeof
+    Self
     BitCast
     IsLittleEndian
     BitSizeof
@@ -252,6 +253,8 @@ format Node:
         NodeKind.Sizeof:
             type :Ref
             target :Ref
+        NodeKind.Self:
+            type :Ref
         NodeKind.BitCast:
             type :Ref
             target :Ref

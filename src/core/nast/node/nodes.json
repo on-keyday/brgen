@@ -1091,6 +1091,12 @@
             ]
         },
         {
+            "name": "Self",
+            "derive": "Expr",
+            "fields": [],
+            "description": "The value being encoded or decoded. Field references in the source carry no receiver, so lowering puts one in; how it is spelled (this, self, a receiver name, or nothing) is the backend's"
+        },
+        {
             "name": "BitCast",
             "derive": "Expr",
             "fields": [

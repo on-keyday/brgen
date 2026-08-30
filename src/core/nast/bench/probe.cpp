@@ -12,6 +12,7 @@
 #include "../lowering/int_bytes.hpp"
 #include "../lowering/match_to_if.hpp"
 #include "../lowering/predicate.hpp"
+#include "../lowering/self_ref.hpp"
 #include "../lowering/stream_io.hpp"
 #include "../node/build.h"
 #include "../node/util.h"
@@ -108,9 +109,9 @@ namespace {
         Builder b{a, loc};
         auto buf = b.ref("buf");
         auto off = b.ref("o");
-        auto target = a.make<Reference>(loc);
-        target->name = f.ref(a)->name;
-        target->type = ty;
+        // field は受け手越しに指す。原文の木には受け手が無いので、
+        // lowering が付ける (lowering/self_ref)。
+        auto target = lowering::field_access(c, f);
 
         // 入力からバイトを並べるところ。int_bytes とは別の規則で、合成して
         // 初めて「読む」形になる。ここでは幅が固定の整数だけ見せる。
@@ -184,9 +185,9 @@ namespace {
         Builder b{a, loc};
         auto buf = b.ref("buf");
         auto off = b.ref("o");
-        auto target = a.make<Reference>(loc);
-        target->name = f.ref(a)->name;
-        target->type = ty;
+        // field は受け手越しに指す。原文の木には受け手が無いので、
+        // lowering が付ける (lowering/self_ref)。
+        auto target = lowering::field_access(c, f);
         if (lowering::lower_field_decode(c, f, target, buf, off)) {
             hist["field: 組めた"]++;
             return;

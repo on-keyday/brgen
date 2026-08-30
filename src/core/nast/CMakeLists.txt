@@ -180,6 +180,7 @@ add_library(nast_core STATIC
     "lowering/lowering.cpp"
     "lowering/match_to_if.cpp"
     "lowering/predicate.cpp"
+    "lowering/self_ref.cpp"
     "lowering/stream_io.cpp"
     "bind/endian_scope.cpp"
     "bind/evaluator.cpp"
