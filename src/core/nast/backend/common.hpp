@@ -39,6 +39,10 @@ namespace brgen::nast::backend {
     struct BaseContext : Invoker<BaseContext<R>> {
         using result_type = R;
         Arena& a;
+        // 解析の結果はここにある。木だけ見ても分からないもの (Reference の
+        // 解決先、畳み込んだ定数、union の重ね合わせ、入出力の要求) は
+        // 全部 side table 側なので、バックエンドからも読めないと困る。
+        SideTables& t;
         Knobs<R>& n;
         DefaultBehavior<R> d;
         CommonConfig c;
@@ -65,6 +69,10 @@ namespace brgen::nast::backend {
             return a;
         }
 
+        SideTables& tables() {
+            return t;
+        }
+
         CommonConfig& config() {
             return c;
         }
@@ -85,6 +93,10 @@ namespace brgen::nast::backend {
 
         Arena& arena() {
             return b.arena();
+        }
+
+        SideTables& tables() {
+            return b.tables();
         }
 
         CommonConfig& config() {

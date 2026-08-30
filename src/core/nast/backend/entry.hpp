@@ -2,6 +2,7 @@
 #pragma once
 #include "../node/code_writer.h"
 #include "../node/error.h"
+#include "../node/util.h"
 #include "../parse/parse.h"
 #include "common.hpp"
 #include "defaults.hpp"
@@ -303,7 +304,7 @@ namespace brgen::nast::backend {
                     return 1;                                                                                       \
                 }                                                                                                   \
                 Knobs<nast_result_t> knobs;                                                                         \
-                BaseContext<nast_result_t> base{.a = program.arena, .n = knobs};                                    \
+                BaseContext<nast_result_t> base{.a = program.arena, .t = program.tables, .n = knobs};               \
                 base.config().unhandled_mode = *mode;                                                               \
                 auto ctx = base.to_context(lang);                                                                   \
                 if (auto ok = nast_backend_setup(ctx, knobs, flags); !ok) {                                         \
