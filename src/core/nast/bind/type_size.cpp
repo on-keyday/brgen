@@ -82,10 +82,10 @@ namespace brgen::nast::bind {
         // 参照は新しく作る。宣言側の Ident を使い回すと「宣言」と「使用」が
         // 同じノードになってしまう。解決先は分かっているので表に入れる。
         Builder b{a, loc};
-        // field は受け手越しに指す。原文の木には受け手が無く、生成コードでは
-        // 要るので、合成する側が付ける (lowering/self_ref)。
+        // field を指す参照。受け手は付けない — 原文の参照と同じ形にして、
+        // 前置は綴る側の 1 規則に寄せる (lowering/self_ref)。
         lowering::Context lc{a, tables};
-        auto ref = lowering::field_access(lc, f);
+        auto ref = lowering::field_ref(lc, f);
         if (!ref) {
             return nullref;
         }

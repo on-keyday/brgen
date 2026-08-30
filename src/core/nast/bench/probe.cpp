@@ -109,9 +109,8 @@ namespace {
         Builder b{a, loc};
         auto buf = b.ref("buf");
         auto off = b.ref("o");
-        // field は受け手越しに指す。原文の木には受け手が無いので、
-        // lowering が付ける (lowering/self_ref)。
-        auto target = lowering::field_access(c, f);
+        // field を指す参照。受け手は付かない — 綴る側が足す。
+        auto target = lowering::field_ref(c, f);
 
         // 入力からバイトを並べるところ。int_bytes とは別の規則で、合成して
         // 初めて「読む」形になる。ここでは幅が固定の整数だけ見せる。
@@ -185,9 +184,8 @@ namespace {
         Builder b{a, loc};
         auto buf = b.ref("buf");
         auto off = b.ref("o");
-        // field は受け手越しに指す。原文の木には受け手が無いので、
-        // lowering が付ける (lowering/self_ref)。
-        auto target = lowering::field_access(c, f);
+        // field を指す参照。受け手は付かない — 綴る側が足す。
+        auto target = lowering::field_ref(c, f);
         if (lowering::lower_field_decode(c, f, target, buf, off)) {
             hist["field: 組めた"]++;
             return;
