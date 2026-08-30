@@ -12,11 +12,12 @@ def write_if_changed(path: str, text: str) -> bool:
     なっていた。生成器を回すこと自体は速いので、比較して黙るほうがよい。
     """
     if os.path.exists(path):
-        with open(path, encoding="utf-8", newline="") as f:
+        with open(path, encoding="utf-8") as f:
             if f.read() == text:
+                print("skipped: ",path)
                 return False
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    with open(path, "w", encoding="utf-8", newline="\n") as f:
+    with open(path, "w", encoding="utf-8") as f:
         f.write(text)
     return True
 

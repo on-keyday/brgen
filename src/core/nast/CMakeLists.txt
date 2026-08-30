@@ -182,7 +182,7 @@ target_link_libraries(nast_test PRIVATE futils_imported)
 target_compile_definitions(nast_test PRIVATE NAST_TEST_WITH_JSON NAST_TEST_WITH_JSON_PARSE)
 add_dependencies(nast_test nast_generate)
 
-foreach(tool corpus dump unparse_test wire_test)
+foreach(tool corpus dump unparse_test wire_test backend)
     add_executable(nast_${tool} "tool/${tool}.cpp")
     target_link_libraries(nast_${tool} PRIVATE nast_core)
 endforeach()

@@ -1,3 +1,5 @@
+/*license*/
+#pragma once
 #include <concepts>
 
 namespace brgen::nast::backend {

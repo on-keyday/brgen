@@ -1,10 +1,13 @@
 /*license*/
 #pragma once
+#include <format>
+#include <source_location>
 #include <string>
 #include "../lexer/token.h"
 #include <code/src_location.h>
 #include "../common/util.h"
 #include "expected.h"
+#include "helper/expected.h"
 #include <vector>
 #include <algorithm>
 
@@ -89,6 +92,7 @@ namespace brgen {
     };
 
     struct LocationError {
+        std::source_location src;
         std::vector<LocationEntry> locations;
         [[noreturn]] void report() {
             throw *this;
@@ -126,5 +130,12 @@ namespace brgen {
 
     template <class T>
     using result = expected<T, LocationError>;
+
+    template <class... Args>
+    either::unexpected<LocationError> unexpect_loc_error_impl(lexer::Loc loc, std::source_location src, std::format_string<Args...> fmt, Args&&... args) {
+        return unexpect(LocationError{.src = src}.error(loc, std::format(fmt, std::forward<Args>(args)...)));
+    }
+
+#define unexpect_loc_error(loc, fmt, ...) unexpect_loc_error_impl(loc, std::source_location::current(), fmt __VA_OPT__(, ) __VA_ARGS__)
 
 }  // namespace brgen
