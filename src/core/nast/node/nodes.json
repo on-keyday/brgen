@@ -1094,7 +1094,15 @@
             "name": "Self",
             "derive": "Expr",
             "fields": [],
-            "description": "The value being encoded or decoded. Field references in the source carry no receiver, so lowering puts one in; how it is spelled (this, self, a receiver name, or nothing) is the backend's"
+            "knobs": [
+                {
+                    "name": "spelling",
+                    "type": "std::string",
+                    "default": "{}",
+                    "description": "How the target names the value being coded: self in Rust and Python, this in Java, the receiver name in Go, (*this) in C++. Empty falls through to the unhandled marker"
+                }
+            ],
+            "description": "The value being encoded or decoded. Source field references carry no receiver; the side doing the spelling adds one"
         },
         {
             "name": "BitCast",
@@ -1240,6 +1248,14 @@
                 {
                     "name": "member",
                     "type": "Node<Ident>"
+                }
+            ],
+            "knobs": [
+                {
+                    "name": "separator",
+                    "type": "std::string",
+                    "default": "\".\"",
+                    "description": "What goes between a value and its member. A dot nearly everywhere; -> in C"
                 }
             ]
         },

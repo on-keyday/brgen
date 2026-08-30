@@ -517,8 +517,22 @@ EBM は `ctx.identifier(ref)` という登録簿でこれをやっているが�
 
 読む側が両方を扱う羽目になるので、形は 1 つに揃えて裸の参照にし、受け手は
 綴る側が 1 つの規則で足す — **参照の解決先が `Field` なら前置する**、以上。
-判定は `lowering/self_ref` の `receiver_field`。受け手そのものを
-ノードとして扱いたいときのために `Self` と `self_ref` も置いてある。
+判定は `lowering/self_ref` の `receiver_field`。
+
+**受け手を使うのが普通なので、フックではなく knob で吸収する。** 既定の
+`Reference` ハンドラが `receiver_field` を引いて、field なら
+`Self.spelling` + `MemberAccess.separator` を前置する。綴りが違うだけの言語は
+2 つの文字列を申告すれば済む:
+
+```cpp
+ctx.config().Self.spelling = "t";          //  t.scalar
+ctx.config().MemberAccess.separator = ".";
+
+ctx.config().Self.spelling = "self";       //  self->scalar
+ctx.config().MemberAccess.separator = "->";
+```
+
+`Self.spelling` が空なら黙って名前だけ出さず、未対応の目印に落ちる。
 
 EBM は変換の時点で `MEMBER_ACCESS{base: SELF}` に実体化している。あちらは
 変換が式を作り直す立場なので揃えられるが、こちらは原木を残す立場なので
