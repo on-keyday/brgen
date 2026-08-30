@@ -1051,6 +1051,19 @@
             ]
         },
         {
+            "name": "IsLittleEndian",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "order",
+                    "type": "Node<SpecifyOrder>",
+                    "weak": true,
+                    "description": "The assignment whose value decides the order at run time. Null means the order is the target platform's, which only the target's compiler knows"
+                }
+            ],
+            "description": "Whether the byte order in effect is little endian. Synthesized by lowering; the spelling is the backend's (cfg!(target_endian) and the like)"
+        },
+        {
             "name": "BitSizeof",
             "derive": "Expr",
             "fields": [

@@ -113,6 +113,7 @@ enum NodeKind:
     Metadata
     SpecifyOrder
     Sizeof
+    IsLittleEndian
     BitSizeof
     Available
     ExplicitError
@@ -250,6 +251,9 @@ format Node:
         NodeKind.Sizeof:
             type :Ref
             target :Ref
+        NodeKind.IsLittleEndian:
+            type :Ref
+            order :Ref
         NodeKind.BitSizeof:
             type :Ref
             target :Ref

@@ -137,25 +137,16 @@ namespace {
 
         auto* fe = p.tables.table<FieldEndian>().get(f);
         auto order = fe && !fe->dynamic ? fe->endian : Endian::unspec;
-        // 順が決まらない (native / 実行時) なら両方の形を出す。
-        //
-        // 選択子はここでは作れないので名前を置くだけにしている。実際に何を
-        // 渡せるかは決まっていない: 実行時なら「代入の位置で 1 度評価した
-        // 変数との比較」で nast の式として書けるが、**native の選択子は
-        // ターゲット言語のテキスト** (cfg!(target_endian = "little") など) で、
-        // nast の式にならない。EBM はノード (IS_LITTLE_ENDIAN) を残して綴りを
-        // emit まで遅らせることでこれを成立させている。ここで普通の変数名を
-        // 置くと動いているように見えてしまうので、埋める場所だと分かる名前に
-        // してある。
+        // 順が決まらない (native / 実行時) なら両方の形を出す。判定は
+        // IsLittleEndian ノードとして置かれ、綴りはバックエンドが埋める。
         bool undecided = fe && (fe->dynamic || fe->endian == Endian::native);
 
         Node<Expr> combined;
         Node<Body> split;
         if (undecided) {
-            auto sel = named_ref(a, loc, "SELECTOR_TO_BE_FILLED_BY_BACKEND",
-                                 a.make<BoolType>(loc));
-            combined = lowering::combine_int_either(c, buf, off, ty, sel);
-            split = lowering::split_int_either(c, buf, off, target, ty, sel);
+            auto dyn = fe->dynamic;  // null なら native
+            combined = lowering::combine_int_either(c, buf, off, ty, dyn);
+            split = lowering::split_int_either(c, buf, off, target, ty, dyn);
         }
         else {
             combined = lowering::combine_int(c, buf, off, ty, order);

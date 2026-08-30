@@ -235,6 +235,19 @@ namespace brgen::nast {
                         expr(e.as<Sizeof>().ref(a)->target);
                         w.write(")");
                         return;
+                    case NodeType::IsLittleEndian: {
+                        // 綴りはバックエンドが決めるもので、.bgn の構文には
+                        // 無い。ここに出るのは合成した木を印字したときだけ
+                        // (木からは辿れず表からしか来ない)。再パースできない
+                        // 唯一の綴りなのはそのため。
+                        auto d = e.as<IsLittleEndian>().ref(a);
+                        w.write("is_little_endian(");
+                        if (d->order) {
+                            expr(d->order.ref(a)->order);
+                        }
+                        w.write(")");
+                        return;
+                    }
                     case NodeType::BitSizeof:
                         w.write("bit_sizeof(");
                         expr(e.as<BitSizeof>().ref(a)->target);

@@ -261,16 +261,29 @@ else:
     buf[o + 1] = u8(offset)
 ```
 
-**選択子はここで作れないので呼ぶ側が渡す。ただし native については、渡せる
-ものが今のところ無い。** 実行時の順なら選択子は「代入の位置で 1 度評価した
-変数との比較」で nast の式として書けるが、native の選択子は
-`cfg!(target_endian = "little")` のような**ターゲット言語のテキスト**で、
-nast の式にならない。EBM が成立しているのは、`IS_LITTLE_ENDIAN` という
-ノードを残したまま綴りを emit まで遅らせているため。nast で埋めるなら
-(a) 同じ目印ノードを持つ、(b) 規則は両方の形を返すだけにして if / 三項の
-組み立てをバックエンドに任せる、のどちらか。未決。
+判定は `IsLittleEndian` ノードとして置く。**綴りはバックエンドが決める。**
+式に落とせないからノードにしてある: 実行時の順なら「代入の位置で材料化した
+変数との比較」だが、native の判定は `cfg!(target_endian = "little")` のような
+**ターゲット言語のテキスト**で、nast の式にならない。ノードのまま渡して綴りを
+emit まで遅らせる。
 
-**選択子はここで作れないので呼ぶ側が渡す。** EBM も同じ切り分けで、
+```
+--- a :u16                          (input.endian = config.endian.native)
+decode: a = is_little_endian() ? <little> : <big>
+
+--- c :u32                          (input.endian = order.is_big ? .. : ..)
+decode: c = is_little_endian(order.is_big ? config.endian.big : config.endian.little) ? <little> : <big>
+```
+
+区別は `order` が空かどうかに置いた (空 = native)。EBM の `IS_LITTLE_ENDIAN`
+と同じ場所で、`endian_expr` が空かどうかで分けている。ノードが持つのは式では
+なく**代入**なので、バックエンドは代入の位置で材料化した値を読む
+(式を field ごとに焼き直さない)。
+
+`is_little_endian(...)` は unparse が印字する唯一の**再パースできない綴り**。
+.bgn の構文には無く、合成した木を印字したときだけ出る (木からは辿れない)。
+
+EBM も同じ切り分けで、
 `add_endian_specific` (converter.cpp:208) が native と dynamic を 1 つの経路に
 まとめ、`IS_LITTLE_ENDIAN` の中身を言語側へ委ねている:
 

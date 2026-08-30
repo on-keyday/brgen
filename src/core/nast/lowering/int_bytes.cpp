@@ -175,10 +175,20 @@ namespace brgen::nast::lowering {
         return body;
     }
 
+    namespace {
+        // 判定そのもの。中身の綴りはバックエンドが埋める。
+        Node<Expr> is_little_endian(Context& c, Node<SpecifyOrder> dynamic_order, lexer::Loc loc) {
+            auto n = c.a.make<IsLittleEndian>(loc);
+            n->order = dynamic_order;
+            n->type = c.a.make<BoolType>(loc);
+            return n;
+        }
+    }  // namespace
+
     Node<Expr> combine_int_either(Context& c, Node<Expr> bytes, Node<Expr> offset, Node<Type> type,
-                                  Node<Expr> is_little) {
+                                  Node<SpecifyOrder> dynamic_order) {
         auto& a = c.a;
-        if (!is_little) {
+        if (!type) {
             return nullref;
         }
         auto little = combine_int(c, bytes, offset, type, Endian::little);
@@ -189,7 +199,7 @@ namespace brgen::nast::lowering {
         auto loc = type.ref(a).loc();
         Build b{c};
         auto n = a.make<Cond>(loc);
-        n->cond = b.paren(is_little, loc);
+        n->cond = is_little_endian(c, dynamic_order, loc);
         n->then = b.paren(little, loc);
         n->els = b.paren(big, loc);
         n->type = type;
@@ -197,9 +207,9 @@ namespace brgen::nast::lowering {
     }
 
     Node<Body> split_int_either(Context& c, Node<Expr> bytes, Node<Expr> offset, Node<Expr> value,
-                                Node<Type> type, Node<Expr> is_little) {
+                                Node<Type> type, Node<SpecifyOrder> dynamic_order) {
         auto& a = c.a;
-        if (!is_little) {
+        if (!type) {
             return nullref;
         }
         auto little = split_int(c, bytes, offset, value, type, Endian::little);
@@ -210,7 +220,7 @@ namespace brgen::nast::lowering {
         auto loc = type.ref(a).loc();
 
         auto then_branch = a.make<ConditionalStatement>(loc);
-        then_branch->condition = is_little;
+        then_branch->condition = is_little_endian(c, dynamic_order, loc);
         then_branch->body = little;
         // 既定の分岐は条件なしの BodyStatement (parse.cpp の else と同じ形)。
         auto else_branch = a.make<BodyStatement>(loc);
