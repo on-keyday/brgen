@@ -813,4 +813,10 @@ namespace brgen::nast {
         return finish(u.w);
     }
 
+    CodeWriter unparse_writer(Arena& a, NodeAny n) {
+        Unparser u{a};
+        run_any(u, n);
+        return std::move(u.w);
+    }
+
 }  // namespace brgen::nast
