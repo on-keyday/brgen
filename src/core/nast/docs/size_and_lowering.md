@@ -237,8 +237,19 @@ ENDIAN_VARIABLE という文に落としているのも同じ理由。
 dynamic 81。
 
 `int_bytes` はバイト順を引数で受け取る (渡さなければ型に綴られたもの)。
-**動的 endian はまだ降ろせない** — 両方の順を出して選ばせる形が要る
-(EBM の `add_endian_specific` / `IS_LITTLE_ENDIAN` に当たるもの)。
+**組めるのは big と little だけで、他は null を返す。** 決まらない場合が
+2 つあり、EBM の `IS_LITTLE_ENDIAN` はその両方を兼ねている:
+
+- `native`: ターゲット上の静的な値。生成器には決められないが、ターゲットの
+  コンパイラには決められる (rust `cfg!(target_endian)` / C++
+  `std::endian::native` / C `#if BYTE_ORDER`)
+- `dynamic`: 実行時の値。代入の位置で 1 度だけ評価した変数を読んで選ぶ
+
+構造はどちらも「両方の順で組んだものと選択子を渡し、選ぶのは相手」で同じ。
+その規則はまだ無い。
+
+当初 `native` を big として組んでいた (`effective != Endian::little` の判定)。
+コーパスに 97 field ある。
 
 ## 5. EBM との差 (訂正を含む)
 

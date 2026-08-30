@@ -207,7 +207,7 @@ endforeach()
 # newbackend.py が足す。ここに並んだものが nast2<lang> として建つ。
 
 # ---- 計測 ----------------------------------------------------------------
-foreach(b coverage endian_probe fn_fallible lex_split lower_probe parse_split size_probe token_cost)
+foreach(b coverage endian_fmt endian_probe fn_fallible lex_split lower_probe parse_split size_probe token_cost)
     add_executable(nast_${b} "bench/${b}.cpp")
     target_link_libraries(nast_${b} PRIVATE nast_core)
 endforeach()

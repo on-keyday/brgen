@@ -113,9 +113,10 @@ namespace brgen::nast::lowering {
         // 合成は符号なしで行う。符号つきの型はそのまま OR すると上位バイトの
         // 符号拡張が混ざるので、組み終えてから落とす。
         auto raw = b.int_type(info->bit_size, false, loc);
-        // 呼ぶ側が渡した順が優先。無ければ型に綴られたもの、それも無ければ
-        // big (言語の既定)。
         auto effective = order != Endian::unspec ? order : info->endian;
+        if (effective == Endian::native) {
+            return nullref;  // ここでは決まらない。下の注記を見ること。
+        }
         bool big = effective != Endian::little;
 
         Node<Expr> acc;
@@ -150,6 +151,9 @@ namespace brgen::nast::lowering {
         auto byte = b.int_type(8, false, loc);
         auto raw = b.int_type(info->bit_size, false, loc);
         auto effective = order != Endian::unspec ? order : info->endian;
+        if (effective == Endian::native) {
+            return nullref;
+        }
         bool big = effective != Endian::little;
 
         auto body = a.make<Body>(loc);

@@ -29,9 +29,18 @@ namespace brgen::nast::lowering {
     // にある。unspec を渡すと型に書かれたものを使い、それも無ければ big
     // (言語の既定)。
     //
-    // 実行時に決まる場合 (FieldEndian の dynamic) はここでは扱わない。
-    // 両方の順を出して選ばせる形が要る (EBM の add_endian_specific /
-    // IS_LITTLE_ENDIAN に当たるもの)。
+    // **ここで組めるのは big と little だけ。** 決まらない場合が 2 つあり、
+    // どちらも null を返す:
+    //
+    //   native   ターゲット上の静的な値。生成器には決められないが、ターゲットの
+    //            コンパイラには決められる (rust の cfg!(target_endian)、
+    //            C++ の std::endian::native、C の #if BYTE_ORDER)
+    //   dynamic  実行時の値 (FieldEndian の dynamic)。代入の位置で 1 度だけ
+    //            評価した変数を読んで選ぶ
+    //
+    // 構造はどちらも同じで、「両方の順で組んだものと選択子を渡し、選ぶのは
+    // 相手」になる。EBM の IS_LITTLE_ENDIAN が両方を兼ねているのもそのため。
+    // その規則はまだ無い。
 
     // bytes[offset + 0..n) から値を組む式。type は IntType であること。
     // offset が null なら 0 から。符号つきなら最後にその型へ落とす。
