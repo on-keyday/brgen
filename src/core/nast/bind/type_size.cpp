@@ -106,6 +106,46 @@ namespace brgen::nast::bind {
         return s;
     }
 
+    // 型だけでは書けない幅を、値の名前で呼ぶ。`sizeof(items) * 8`。
+    //
+    // 要素ごとに幅が違う配列や、分岐で幅が揃わない field がこれに当たる。
+    // 型からは決まらないが値からは決まるので、値を指して sizeof に渡す。
+    // 展開 (要素を走って足す) は lowering の仕事で、EBM が
+    // "dynamic sizeof is not supported yet" と断っているのがまさにその段。
+    // available(x) と同じ形 — 値に対する述語で、意味は式評価器ではなく
+    // lowering 側にある。
+    //
+    // sizeof はバイト単位なので 8 倍する。裏を返すと、この項はその field の
+    // 幅がバイトの整数倍であることを前提にしている。
+    Node<Expr> SizeAnalysis::size_of_value(Node<Field> f, lexer::Loc loc) {
+        auto name = f.ref(a)->name;
+        auto text = ident_text(a, name);
+        if (text.empty()) {
+            return nullref;  // 無名 field は指す名前が無い
+        }
+        // 参照は新しく作る。宣言側の Ident を使い回すと「宣言」と「使用」が
+        // 同じノードになってしまう。解決先は分かっているので表に入れる。
+        auto id = a.make<Ident>(loc);
+        id->identifier = std::string(text);
+        tables.table<Resolution>().set(id, Resolution{.target = f});
+        auto ref = a.make<Reference>(loc);
+        ref->name = id;
+        ref->type = f.ref(a)->type;
+        auto sz = a.make<Sizeof>(loc);
+        sz->target = ref;
+        sz->type = bits_type(loc);
+        return bin(BinaryOp::mul, sz, lit(8, loc), loc);
+    }
+
+    // field 1 つぶんの幅。型だけで書けなければ値の名前で呼ぶ。
+    TypeSize SizeAnalysis::field_size(Node<Field> f, lexer::Loc loc) {
+        auto s = size_of(f.ref(a)->type);
+        if (s.kind == SizeKind::dynamic && !s.bits_expr) {
+            s.bits_expr = size_of_value(f, loc);
+        }
+        return s;
+    }
+
     TypeSize SizeAnalysis::put(Node<Type> t, TypeSize s) {
         tables.table<TypeSize>().set(t, s);
         analyzed++;
@@ -298,7 +338,7 @@ namespace brgen::nast::bind {
         auto loc = a.header_at(fmt.id())->loc;
         auto total = fixed(0);
         for (auto& f : state->fields) {
-            total = add(total, size_of(f.ref(a)->type), loc);
+            total = add(total, field_size(f, loc), loc);
         }
         return total;
     }
@@ -316,7 +356,7 @@ namespace brgen::nast::bind {
         auto loc = a.header_at(block.id())->loc;
         auto total = fixed(0);
         for (auto& f : inner->fields) {
-            total = add(total, size_of(f.ref(a)->type), loc);
+            total = add(total, field_size(f, loc), loc);
         }
         return total;
     }
