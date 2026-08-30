@@ -6,7 +6,10 @@
   "compounds": [
     {
       "name": "LSP Client + Server",
-      "configurations": ["Launch LSP Client", "Attach to LSP Server"]
+      "configurations": [
+        "Launch LSP Client",
+        "Attach to LSP Server"
+      ]
     }
   ],
   "configurations": [
@@ -16,7 +19,11 @@
       "request": "launch",
       "mode": "debug",
       "program": "${workspaceRoot}/src/tool/brgen",
-      "args": ["-config", "test-brgen.json", "-debug"],
+      "args": [
+        "-config",
+        "test-brgen.json",
+        "-debug"
+      ],
       "cwd": "${workspaceRoot}",
       "output": "${workspaceRoot}/tool/br_debuggee"
     },
@@ -35,7 +42,7 @@
       "args": [],
       // 入口で必ず止める。ここでも止まらないなら、乗っている exe が違うか
       // シンボルが読めていない (ブレークポイントの位置の問題ではない)。
-      "stopAtEntry": true,
+      "stopAtEntry": false,
       "cwd": "${workspaceRoot}",
       "environment": [],
       "console": "integratedTerminal"
@@ -128,7 +135,9 @@
       "request": "launch",
       "mode": "exec",
       "program": "${workspaceRoot}/tool/gen_ast2csharp.exe",
-      "args": ["/dev/stdout"],
+      "args": [
+        "/dev/stdout"
+      ],
       "cwd": "${workspaceRoot}"
     },
     {
@@ -142,7 +151,9 @@
       "request": "launch",
       "name": "Launch LSP Client",
       "runtimeExecutable": "${execPath}",
-      "args": ["--extensionDevelopmentPath=${workspaceRoot}/lsp"],
+      "args": [
+        "--extensionDevelopmentPath=${workspaceRoot}/lsp"
+      ],
       "preLaunchTask": "npm_build_and_watch",
       "sourceMaps": true
     },
@@ -156,7 +167,6 @@
       "localRoot": "${workspaceFolder}/lsp/server",
       "remoteRoot": "${workspaceFolder}/lsp/server"
     },
-
     {
       "type": "cppvsdbg",
       "request": "launch",
@@ -176,7 +186,9 @@
       "type": "node",
       "request": "attach",
       "port": 9229,
-      "skipFiles": ["<node_internals>/**"]
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
     },
     {
       "type": "cppvsdbg",
@@ -218,7 +230,10 @@
       "type": "cppvsdbg",
       "request": "launch",
       "program": "${workspaceRoot}/rebrgen/tool/ebm2c",
-      "args": ["-i", "${workspaceRoot}/rebrgen/save/wasm.ebm"],
+      "args": [
+        "-i",
+        "${workspaceRoot}/rebrgen/save/wasm.ebm"
+      ],
       "stopAtEntry": false,
       "cwd": "${workspaceRoot}/rebrgen",
       "environment": [],
