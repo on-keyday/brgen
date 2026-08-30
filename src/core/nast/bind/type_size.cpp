@@ -1,6 +1,7 @@
 /*license*/
 #include "type_size.hpp"
 #include "../lowering/predicate.hpp"
+#include "../lowering/self_ref.hpp"
 #include "../node/build.h"
 #include "../node/util.h"
 
@@ -75,17 +76,19 @@ namespace brgen::nast::bind {
     // ビット単位のほうを使うのは、幅がバイトの整数倍とは限らないため
     // (sizeof はバイト単位なので、ビット境界を跨ぐ field を表せない)。
     Node<Expr> SizeAnalysis::size_of_value(Node<Field> f, lexer::Loc loc) {
-        auto name = f.ref(a)->name;
-        auto text = ident_text(a, name);
-        if (text.empty()) {
+        if (ident_text(a, f.ref(a)->name).empty()) {
             return nullref;  // 無名 field は指す名前が無い
         }
         // 参照は新しく作る。宣言側の Ident を使い回すと「宣言」と「使用」が
         // 同じノードになってしまう。解決先は分かっているので表に入れる。
         Builder b{a, loc};
-        auto ref = b.ref(text, f.ref(a)->type);
-        tables.table<Resolution>().set(ref.as_any<Reference>().ref(a)->name,
-                                       Resolution{.target = f});
+        // field は受け手越しに指す。原文の木には受け手が無く、生成コードでは
+        // 要るので、合成する側が付ける (lowering/self_ref)。
+        lowering::Context lc{a, tables};
+        auto ref = lowering::field_access(lc, f);
+        if (!ref) {
+            return nullref;
+        }
         auto sz = a.make<BitSizeof>(loc);
         sz->target = ref;
         sz->type = b.int_type(64);

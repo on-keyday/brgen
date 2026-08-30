@@ -499,6 +499,31 @@ EBM は `ctx.identifier(ref)` という登録簿でこれをやっているが�
 `endian<id>` に落とし、`IsLittleEndian` の既定ハンドラがその名前を読んで
 `endian<id> == <little_endian_value>` を出す。
 
+### 受け手 (self) (2026-08-31)
+
+**原文の木に受け手は無い。** `data :[len]u8` の `len` は裸の `Reference` で、
+`Resolution` に解決先が `Field` だと載っているだけ。生成コードでは `t.Len` の
+ように受け手が要るのに、「ここに要る」という印が木のどこにもない。
+
+`Self` ノードを足し、lowering が field を指すときは `self.<名前>` の形で作る
+(`lowering/self_ref` の `field_access`)。EBM が変換時に
+`MEMBER_ACCESS{base: SELF}` へ実体化して綴りだけ言語側に残しているのと同じ形。
+受け手が要ることは共通で、どう綴るか (`this` / `self` / レシーバ名 / 省略) は
+言語ごと — `MEMBER_ACCESS` は共通化不適と測定済みのグループでもある。
+
+```
+self.scalar = (u16(buf[o]) << 8) | u16(buf[o + 1])
+buf[o] = u8(self.scalar >> 8)
+Uses  dynamic  ((8 + bit_sizeof(self.items)) + 64) + (8 * n) bits
+```
+
+**原文から来た式は書き換えない。** 複製すると中の名前が Resolution 表に載って
+いない別ノードになり解決先を失うので、`8 * n` の `n` は裸のまま残る。そちらは
+`receiver_field(ref)` が「その参照は field を指しているか」を答えるだけにして、
+前置するのは綴る側。上の式で `self.items` と `n` が混在しているのはそのため
+(前者は合成、後者は原文)。`receiver_field` はまだ使う側が無い — 実バックエンドを
+書くときの最初の消費者になる。
+
 ## 5. EBM との差 (訂正を含む)
 
 「置く側が違う」と書きかけたが誤り。EBM も emit 時にホイストしている:
