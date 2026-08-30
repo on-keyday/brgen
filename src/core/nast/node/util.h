@@ -2,6 +2,8 @@
 #pragma once
 #include "nodes.h"
 
+#include <number/prefix.h>
+
 #include <optional>
 #include <string_view>
 
@@ -104,17 +106,27 @@ namespace brgen::nast {
         return e;
     }
 
-    // 畳んだ値が非負の整数ならそれ。定数でなければ空。
+    // その式が非負の整数として決まるならその値。
     //
-    // 「長さが定数か」「回数が定数か」は解析でも lowering でも同じ問いなので
-    // ここに置く。表を見るので Arena だけでは足りず SideTables を取る。
-    inline std::optional<std::uint64_t> const_uint(SideTables& tables, Node<Expr> e) {
+    // 「長さが定数か」「回数が定数か」は解析でも lowering でも同じ問い。
+    //
+    // 表 (ConstantValue) を見た後に整数リテラルも直に見るのは、**合成した
+    // リテラルが表に載らない**ため。表を埋めるのは evaluator の段で、lowering
+    // が後から作ったノードはそこを通っていない。綴りの解釈は evaluator と
+    // 同じ prefix_integer に任せる (0x / 0b / 0o が付く)。
+    inline std::optional<std::uint64_t> const_uint(Arena& a, SideTables& tables, Node<Expr> e) {
         if (!e) {
             return std::nullopt;
         }
         if (auto* v = tables.table<ConstantValue>().get(e);
             v && v->kind == EvalKind::integer && !v->is_negative) {
             return v->integer;
+        }
+        if (auto lit = e.as_any<IntLiteral>()) {
+            std::uint64_t value = 0;
+            if (futils::number::prefix_integer(lit.ref(a)->value, value)) {
+                return value;
+            }
         }
         return std::nullopt;
     }

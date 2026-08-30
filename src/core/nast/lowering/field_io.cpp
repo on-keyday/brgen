@@ -16,7 +16,7 @@ namespace brgen::nast::lowering {
             if (!r->length || r->length.as_any<Range>()) {
                 return nullref;  // 末尾まで。位置の管理が要るので呼ぶ側の領分
             }
-            if (auto n = const_uint(c.tables, r->length)) {
+            if (auto n = const_uint(c.a, c.tables, r->length)) {
                 return b.lit(*n);
             }
             return r->length;  // 元の木のノードを指す (複製しない)
