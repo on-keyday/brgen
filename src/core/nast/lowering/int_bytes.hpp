@@ -24,12 +24,22 @@
 
 namespace brgen::nast::lowering {
 
+    // バイト順は呼ぶ側が渡す。型に綴られていない限り、実際の順は
+    // `input.endian` のスコープで決まり、それは FieldEndian 表 (over Field)
+    // にある。unspec を渡すと型に書かれたものを使い、それも無ければ big
+    // (言語の既定)。
+    //
+    // 実行時に決まる場合 (FieldEndian の dynamic) はここでは扱わない。
+    // 両方の順を出して選ばせる形が要る (EBM の add_endian_specific /
+    // IS_LITTLE_ENDIAN に当たるもの)。
+
     // bytes[offset + 0..n) から値を組む式。type は IntType であること。
     // offset が null なら 0 から。符号つきなら最後にその型へ落とす。
-    Node<Expr> combine_int(Context& c, Node<Expr> bytes, Node<Expr> offset, Node<Type> type);
+    Node<Expr> combine_int(Context& c, Node<Expr> bytes, Node<Expr> offset, Node<Type> type,
+                           Endian order = Endian::unspec);
 
     // 値を bytes[offset + 0..n) へ書く文の並び。
     Node<Body> split_int(Context& c, Node<Expr> bytes, Node<Expr> offset, Node<Expr> value,
-                         Node<Type> type);
+                         Node<Type> type, Endian order = Endian::unspec);
 
 }  // namespace brgen::nast::lowering

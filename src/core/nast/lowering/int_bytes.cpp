@@ -96,7 +96,8 @@ namespace brgen::nast::lowering {
         }
     }  // namespace
 
-    Node<Expr> combine_int(Context& c, Node<Expr> bytes, Node<Expr> offset, Node<Type> type) {
+    Node<Expr> combine_int(Context& c, Node<Expr> bytes, Node<Expr> offset, Node<Type> type,
+                           Endian order) {
         auto& a = c.a;
         if (!bytes || !type) {
             return nullref;
@@ -112,8 +113,10 @@ namespace brgen::nast::lowering {
         // 合成は符号なしで行う。符号つきの型はそのまま OR すると上位バイトの
         // 符号拡張が混ざるので、組み終えてから落とす。
         auto raw = b.int_type(info->bit_size, false, loc);
-        // endian が未指定なら big。.bgn の既定で、明示されたときだけ変わる。
-        bool big = info->endian != Endian::little;
+        // 呼ぶ側が渡した順が優先。無ければ型に綴られたもの、それも無ければ
+        // big (言語の既定)。
+        auto effective = order != Endian::unspec ? order : info->endian;
+        bool big = effective != Endian::little;
 
         Node<Expr> acc;
         for (std::size_t i = 0; i < *n; i++) {
@@ -132,7 +135,7 @@ namespace brgen::nast::lowering {
     }
 
     Node<Body> split_int(Context& c, Node<Expr> bytes, Node<Expr> offset, Node<Expr> value,
-                         Node<Type> type) {
+                         Node<Type> type, Endian order) {
         auto& a = c.a;
         if (!bytes || !value || !type) {
             return nullref;
@@ -146,7 +149,8 @@ namespace brgen::nast::lowering {
         Build b{c};
         auto byte = b.int_type(8, false, loc);
         auto raw = b.int_type(info->bit_size, false, loc);
-        bool big = info->endian != Endian::little;
+        auto effective = order != Endian::unspec ? order : info->endian;
+        bool big = effective != Endian::little;
 
         auto body = a.make<Body>(loc);
         for (std::size_t i = 0; i < *n; i++) {

@@ -606,6 +606,15 @@ format UnionLayoutTable:
     len :u32
     entries :[len]UnionLayoutEntry
 
+format FieldEndianEntry:
+    key :Ref
+    endian :Endian
+    dynamic :Ref
+
+format FieldEndianTable:
+    len :u32
+    entries :[len]FieldEndianEntry
+
 format LoweredRangeCompareEntry:
     key :Ref
     expr :Ref
@@ -662,6 +671,7 @@ format NastModule:
     requirements :RequirementsTable
     constant_value :ConstantValueTable
     union_layout :UnionLayoutTable
+    field_endian :FieldEndianTable
     lowered_range_compare :LoweredRangeCompareTable
     lowered_match :LoweredMatchTable
     lowered_cond :LoweredCondTable
