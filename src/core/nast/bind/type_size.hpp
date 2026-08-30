@@ -56,7 +56,6 @@ namespace brgen::nast::bind {
         // ものにもう一度入ったら unknown で切る。
         std::unordered_set<std::uint32_t> in_progress;
 
-        bool counts_in_layout(Node<Field> f);
         TypeSize field_size(Node<Field> f, lexer::Loc loc);
         Node<Expr> size_of_value(Node<Field> f, lexer::Loc loc);
         TypeSize format_size(Node<Format> fmt);
