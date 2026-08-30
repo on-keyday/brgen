@@ -74,6 +74,7 @@ namespace brgen::nast::lowering {
             // enum は下地の整数として読み書きし、値を型の側へ移す。
             Node<Type> io_type = stripped;
             bool is_enum = false;
+            bool is_float = false;
             if (auto e = stripped.as_any<EnumType>()) {
                 auto base = e.ref(a)->base;
                 if (!base) {
@@ -82,8 +83,19 @@ namespace brgen::nast::lowering {
                 io_type = strip_wrappers(a, base.ref(a)->base_type);
                 is_enum = true;
             }
+            else if (auto fl = stripped.as_any<FloatType>()) {
+                // 浮動小数は同じ幅の整数として並べ、値はビットの読み替えで移す。
+                // `<u32>(f)` (値の変換) とは別物なので BitCast で分ける —
+                // 取り違えると 1.0 が 1065353216 になる。
+                auto bits = fl.ref(a)->bit_size;
+                if (bits == 0 || bits % 8 != 0) {
+                    return nullref;
+                }
+                io_type = b.int_type(bits);
+                is_float = true;
+            }
             if (!io_type || !io_type.as_any<IntType>()) {
-                return nullref;  // 浮動小数 / 入れ子 format などはまだ
+                return nullref;  // 入れ子 format などはまだ
             }
 
             // その field に効いているバイト順。実行時に決まるなら代入を指す。
@@ -101,10 +113,25 @@ namespace brgen::nast::lowering {
                 if (is_enum) {
                     value = b.cast(stripped, value);
                 }
+                else if (is_float) {
+                    auto bc = a.make<BitCast>(b.loc);
+                    bc->target = b.paren(value);
+                    bc->type = stripped;
+                    value = bc;
+                }
                 return b.body(b.assign(target, value));
             }
-            // 書く側。enum は下地へ上げてから並べる。
-            auto value = is_enum ? b.cast(io_type, target) : target;
+            // 書く側。enum は下地へ上げ、浮動小数はビットを整数として見る。
+            Node<Expr> value = target;
+            if (is_enum) {
+                value = b.cast(io_type, target);
+            }
+            else if (is_float) {
+                auto bc = a.make<BitCast>(b.loc);
+                bc->target = target;
+                bc->type = io_type;
+                value = bc;
+            }
             return undecided ? split_int_either(c, bytes, offset, value, io_type, dyn)
                              : split_int(c, bytes, offset, value, io_type, order);
         }
