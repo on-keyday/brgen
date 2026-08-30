@@ -389,6 +389,62 @@ llvm    ""                                  ← 空 = 未対応の目印に落�
 当初 `native` を big として組んでいた (`effective != Endian::little` の判定)。
 コーパスに 97 field ある。
 
+### ebmgen の lowering 一覧 (2026-08-31 時点の棚卸し)
+
+移す先を選ぶときの地図。3 系統ある。
+
+**(a) `transform/` の 13 段** — 全員に対して 1 度走るパイプライン。
+
+```
+flatten_io_expression
+lowered_dynamic_bit_io (read/write, CFG 使用)
+merge_bit_field
+vectorized_io (read/write)
+derive_property_setter_getter
+add_cast_func
+derive_array_setter
+derive_encode_decode_wrapper
+propagate_io_input_desc
+lower_runtime_state
+[derive_very_slow_bit_ops]        フラグ付き
+remove_unused_object
+```
+
+**(b) `LoweringIOType` 10 種** — READ_DATA / WRITE_DATA に付く形。
+
+| | nast | |
+| --- | --- | --- |
+| `INT_TO_BYTE_ARRAY` | ✔ `int_bytes` | |
+| `ENUM_UNDERLYING_TO_INT` | ✔ `field_io` | |
+| `ARRAY_FOR_EACH` | ✔ `field_io` | |
+| `STRING_FOR_EACH` | — | magic の各バイト (組めない field 47) |
+| `FLOAT_TO_BYTE_ARRAY` | — | ビット列との相互変換 (20) |
+| `STRUCT_CALL` | — | 入れ子 format の呼び出し (1310) |
+| `BIT_FIELD_TO_BIT_SHIFT` | — | ビット畳み込み。CFG が前提 (1090) |
+| `VECTORIZED_IO` | — | 連続する固定長のまとめ |
+| `SCAN_UNTIL` | — | 末尾まで読む |
+| `MULTI_REPRESENTATION` | — | 複数形を並べて選ばせる (ADR 0011) |
+
+**(c) `lowered_expr` を持つ式** — 意味のノードと展開形を両方持つもの。既定の
+visitor が展開形を出しているのは 6 種
+(`default_codegen_visitor/visitor/Expression_*` にある):
+
+| | nast |
+| --- | --- |
+| `CONDITIONAL` → `CONDITIONAL_STATEMENT` | ✔ `conditional` |
+| `RANGE_EQUAL` → `a <= x && x <= b` | ✔ `predicate` の `lower_range_compare` |
+| `AVAILABLE` | — 存在検査 |
+| `ENUM_IS_DEFINED` | — 値が列挙に定義済みか |
+| `GET_STREAM_OFFSET` | — RuntimeState の読み (ADR 0039) |
+| `MAX_VALUE` | — その型の最大値 |
+
+marker 系はほかに `FIELD_STORE` (ADR 0032)、`ENDIAN_VARIABLE`、
+`IS_LITTLE_ENDIAN` (nast にノードを足した)、`INT_TO_ARRAY` / `ARRAY_TO_INT`。
+
+nast にある残りは match→if (ebmgen だと `derive_match_lowered_if`) と
+`stream_io` (バイトの出し入れ)。手を付けやすいのは `STRING_FOR_EACH` と
+`ENUM_IS_DEFINED`、重いのは `STRUCT_CALL` と `BIT_FIELD_TO_BIT_SHIFT`。
+
 ## 5. EBM との差 (訂正を含む)
 
 「置く側が違う」と書きかけたが誤り。EBM も emit 時にホイストしている:
