@@ -280,8 +280,11 @@ decode: c = is_little_endian(order.is_big ? config.endian.big : config.endian.li
 なく**代入**なので、バックエンドは代入の位置で材料化した値を読む
 (式を field ごとに焼き直さない)。
 
-`is_little_endian(...)` は unparse が印字する唯一の**再パースできない綴り**。
-.bgn の構文には無く、合成した木を印字したときだけ出る (木からは辿れない)。
+`is_little_endian(...)` には .bgn の構文が無いので、この綴りは再 parse を
+通らない。合成専用のノードは全部そうなるので、lowering が増えれば同じものも
+増える。往復の検証が踏まないのは、合成ノードが木からは辿れず side table から
+しか来ないため。unparse の保証は「parse が組んだ木の範囲で再 parse できる」
+であって、木全体ではない (`parse/unparse.h` に明記した)。
 
 EBM も同じ切り分けで、
 `add_endian_specific` (converter.cpp:208) が native と dynamic を 1 つの経路に
