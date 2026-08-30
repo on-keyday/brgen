@@ -12,6 +12,7 @@
 #include "../lowering/int_bytes.hpp"
 #include "../lowering/match_to_if.hpp"
 #include "../lowering/predicate.hpp"
+#include "../lowering/stream_io.hpp"
 #include "../node/util.h"
 #include "../parse/unparse.h"
 
@@ -137,12 +138,49 @@ namespace {
         target->name = f.ref(a)->name;
         target->type = ty;
 
+        // 入力からバイトを並べるところ。int_bytes とは別の規則で、合成して
+        // 初めて「読む」形になる。ここでは幅が固定の整数だけ見せる。
+        Node<Expr> count;
+        if (auto* s = p.tables.table<TypeSize>().get(strip_wrappers(a, ty));
+            s && s->kind == SizeKind::fixed && s->bits % 8 == 0) {
+            auto n = a.make<IntLiteral>(loc);
+            n->value = std::to_string(s->bits / 8);
+            count = n;
+        }
+        else if (auto arr = strip_wrappers(a, ty).as_any<ArrayType>()) {
+            // 個数が式の配列。バイト数も式になるので、並べる側は回す形になる。
+            auto* es = p.tables.table<TypeSize>().get(arr.ref(a)->element_type);
+            if (es && es->kind == SizeKind::fixed && es->bits % 8 == 0 && arr.ref(a)->length &&
+                !arr.ref(a)->length.as_any<Range>()) {
+                auto w = a.make<IntLiteral>(loc);
+                w->value = std::to_string(es->bits / 8);
+                auto mul = a.make<Binary>(loc);
+                mul->op = BinaryOp::mul;
+                mul->left = arr.ref(a)->length;
+                mul->right = w;
+                count = mul;
+            }
+        }
+        if (count) {
+            auto fill = lowering::read_bytes(c, lowering::input_stream(c, loc), buf, nullref, count);
+            if (fill) {
+                std::println("--- {} :{}", name, unparse_node(a, ty));
+                std::println("fill:");
+                for (auto& st : fill.ref(a)->statements) {
+                    std::println("{}", unparse_node(a, st));
+                }
+                auto drain = lowering::write_bytes(c, lowering::output_stream(c, loc), buf, nullref, count);
+                std::println("drain:");
+                for (auto& st : drain.ref(a)->statements) {
+                    std::println("{}", unparse_node(a, st));
+                }
+            }
+        }
         auto dec = lowering::lower_field_decode(c, f, target, buf, off);
         auto enc = lowering::lower_field_encode(c, f, target, buf, off);
         if (!dec) {
             return;
         }
-        std::println("--- {} :{}", name, unparse_node(a, ty));
         auto print_body = [&](const char* label, Node<Body> body) {
             std::println("{}:", label);
             if (!body) {
