@@ -176,6 +176,7 @@ add_library(nast_core STATIC
     "lowering/int_bytes.cpp"
     "lowering/match_to_if.cpp"
     "lowering/predicate.cpp"
+    "bind/endian_scope.cpp"
     "bind/evaluator.cpp"
     "bind/import_resolver.cpp"
     "bind/pipeline.cpp"
@@ -206,7 +207,7 @@ endforeach()
 # newbackend.py が足す。ここに並んだものが nast2<lang> として建つ。
 
 # ---- 計測 ----------------------------------------------------------------
-foreach(b coverage fn_fallible lex_split lower_probe parse_split size_probe token_cost)
+foreach(b coverage endian_probe fn_fallible lex_split lower_probe parse_split size_probe token_cost)
     add_executable(nast_${b} "bench/${b}.cpp")
     target_link_libraries(nast_${b} PRIVATE nast_core)
 endforeach()

@@ -2,6 +2,7 @@
 #include "pipeline.h"
 
 #include "binder.hpp"
+#include "endian_scope.hpp"
 #include "evaluator.hpp"
 #include "import_resolver.hpp"
 #include "requires.hpp"
@@ -129,6 +130,16 @@ namespace brgen::nast {
         }
         p.stats.constants = evaluator.evaluated;
         done(opt, Stage::evaluate);
+
+        if (!wants(opt, Stage::endian)) {
+            return AnalyzeResult::ok;
+        }
+        // バイト順は書かれた位置で決まるので、木の並び順に歩く。
+        bind::EndianScope endian_scope{p.arena, p.tables, p.err};
+        endian_scope.run(p.modules);
+        p.stats.endian_fields = endian_scope.analyzed;
+        p.stats.endian_dynamic = endian_scope.dynamic;
+        done(opt, Stage::endian);
 
         if (!wants(opt, Stage::size)) {
             return AnalyzeResult::ok;

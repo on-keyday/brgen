@@ -178,18 +178,45 @@ encode:
 1 つ決まる変換 (conditional / match / range) は表に載せ、これは材料を受け取って
 組み立てる道具、という線引き。
 
-ADR 0045 (backend が要る IO ランタイムはバイト列 read/write だけ) が正しければ、
-**新しく要る原始ノードは「バイト列を読む/書く」1 対だけ**で、シフト合成も境界
-検査もループも既存ノードで書ける — というのが今の見立て。int_bytes はその
-一番内側を、新ノード無しで組めることの確認でもある。
+ADR 0045 は「backend が用意すべき IO ランタイムはバイト列の read/write
+プリミティブ」と言っている。ここから素直に読むと、いま要りそうな原始ノードは
+「バイト列を読む/書く」あたりで、シフト合成も境界検査もループも既存ノードで
+書ける。int_bytes はその一番内側が新ノード無しで組めることの確認。
+ただし今見えている範囲での話で、subrange / peek / offset のような要求
+(Requirements の語彙にあるもの) を実際に降ろすと足りないものが出てくると思われる。
 
-**見つかった穴: endian が伝播していない。** `input.endian = config.endian.little`
-の後の `e :u16` も big のまま出る。typer は `input.endian` への代入を型なしで
-素通しするだけで、`IntType::endian` を埋める段が無い。言語の既定が big なので
-「未指定 = big」は正しいが、**スコープを記録する解析が無い**。int_bytes は
-`IntType::endian` を正しく見ているので、埋める側を足せば直る。
-これは memory の未完リスト (サイズ/ビット幅、sub_byte、**endian スコープ**、
-monomorphize) にあったもので、幅の次はこれになる。
+### endian のスコープ (2026-08-31)
+
+`bind/endian_scope.{hpp,cpp}`、段は `Stage::endian` (evaluate と size の間)。
+結果は `FieldEndian` 表 (over Field)。
+
+規約は rebrgen の `converter.hpp:462` に書かれているものに合わせた:
+
+> `input.endian = ...` は**字句スコープ**。書いた文からその block の末尾まで
+> 効き、呼び出しグラフを辿って入れ子 format には及ばない。block は format の
+> 本体・fn の本体・if/match/loop の本体。トップレベルの代入は block では
+> ないので、そこから先のファイル全体に効く。
+
+強さの順は 型に綴られたもの > スコープ > big (言語の既定)。
+
+**値は定数とは限らない。** `input.endian = endian.is_big ? config.endian.big :
+config.endian.little` (bpf.bgn) の形があり、表の `dynamic` に式が入る。
+ebmgen も同じ扱いで、静的な値だけ見て済ませると動的 endian が全部 native に
+なる (converter.cpp:69)。
+
+値の判定は**列挙メンバの名前**で行う (`config.endian.little` の解決先が
+組み込み `endian` 列挙の `little`)。畳んだ整数を使うと列挙の並び順に依存する。
+
+元実装 (middle/typing.cpp:1993) はトップレベルの最後の 1 つをファイル全体に
+効かせる。こちらは書かれた位置から効かせる。トップレベルの指定が全 format より
+前にあるコーパスでは同じ結果。
+
+測定 (example/ 180 本, 7090 field): big 6271 / little 641 / native 97 /
+dynamic 81。
+
+`int_bytes` はバイト順を引数で受け取る (渡さなければ型に綴られたもの)。
+**動的 endian はまだ降ろせない** — 両方の順を出して選ばせる形が要る
+(EBM の `add_endian_specific` / `IS_LITTLE_ENDIAN` に当たるもの)。
 
 ## 5. EBM との差 (訂正を含む)
 

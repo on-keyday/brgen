@@ -241,6 +241,23 @@
             ]
         },
         {
+            "name": "FieldEndian",
+            "over": "Field",
+            "storage": "sparse",
+            "fields": [
+                {
+                    "name": "endian",
+                    "type": "Endian"
+                },
+                {
+                    "name": "dynamic",
+                    "type": "Node<Expr>",
+                    "description": "Set when the byte order is decided at run time. The expression yields config.endian.*"
+                }
+            ],
+            "description": "Byte order in effect where this field is read or written"
+        },
+        {
             "name": "LoweredRangeCompare",
             "over": "Binary",
             "storage": "sparse",
