@@ -14,6 +14,15 @@ configure を毎回書かなくて済むようにするためのもので、コ�
   python src/core/nast/build.py -j 8             # 並列数 (既定は CMake 側の 4)
   python src/core/nast/build.py -D FOO=BAR       # cmake にそのまま渡す
 
+道具を走らせる (ビルドツリーの場所を知らなくて済むように):
+
+  python src/core/nast/build.py -r probe size example/udp.bgn
+  python src/core/nast/build.py -r probe lower src/core/nast/testdata/match_patterns.bgn
+  python src/core/nast/build.py -r corpus --tree src/core/nast/testdata/match_branch.bgn
+  python src/core/nast/build.py -r dump example/udp.bgn
+
+`-r <名前>` は `nast_<名前>` を建ててから走らせる。以降の引数はそのまま渡す。
+
 ビルドツリーは構成ごとに分ける:
 
   build/fast     Debug   (既定。ctest はこちら。デバッグ情報なしで速い)
@@ -82,7 +91,13 @@ def main():
                    help="do not run the unit test after building")
     p.add_argument("--test", action="store_true",
                    help="run ctest (unit test and both round trips)")
-    args = p.parse_args()
+    p.add_argument("-r", "--run", metavar="TOOL",
+                   help="build nast_<TOOL> and run it; the rest of the "
+                        "command line is passed to it")
+    # -r の後ろは道具への引数なので、こちらでは解釈しない。
+    args, rest = p.parse_known_args()
+    if not args.run and rest:
+        p.error("unrecognized arguments: " + " ".join(rest))
 
     tree = tree_for(args.release, args.debug_info)
     if args.clean and os.path.isdir(tree):
@@ -95,12 +110,21 @@ def main():
         configure(tree, args.release, args.define, args.debug_info)
 
     build = ["cmake", "--build", tree]
-    for t in args.target:
+    targets = list(args.target)
+    if args.run:
+        targets.append("nast_" + args.run)
+    for t in targets:
         build += ["--target", t]
     if args.jobs:
         build += ["-j", str(args.jobs)]
     run(build)
 
+    if args.run:
+        exe = os.path.join(tree, "bin", "nast_" + args.run + (".exe" if os.name == "nt" else ""))
+        if not os.path.exists(exe):
+            sys.exit(f"no such tool: {exe}")
+        run([exe] + rest)
+        return
     if args.test:
         run(["ctest", "--test-dir", tree, "--output-on-failure"])
         return
