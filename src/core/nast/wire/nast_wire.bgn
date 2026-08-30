@@ -606,6 +606,7 @@ format TypeSizeEntry:
     key :Ref
     kind_size_kind :SizeKind
     bits :u32
+    bits_expr :Ref
 
 format TypeSizeTable:
     len :u32

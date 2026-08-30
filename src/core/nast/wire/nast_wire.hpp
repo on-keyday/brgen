@@ -598,9 +598,10 @@ namespace brgen::nast::wire {
         Ref key;
         SizeKind kind_size_kind{};
         std::uint32_t bits = 0;
+        Ref bits_expr;
         ::futils::error::Error<> encode(::futils::binary::writer& w) const ;
         ::futils::error::Error<> decode(::futils::binary::reader& r);
-        static constexpr size_t fixed_header_size = 9;
+        static constexpr size_t fixed_header_size = 13;
     };
     struct TypeSizeTable{
         std::uint32_t len = 0;
@@ -41553,6 +41554,9 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).bits) ,true)) {
             return ::futils::error::Error<>("encode: TypeSizeEntry::bits: write std::uint32_t failed",::futils::error::Category::lib);
         }
+        if (auto err = (*this).bits_expr.encode(w)) {
+            return err;
+        }
         return ::futils::error::Error<>();
     }
     inline ::futils::error::Error<> TypeSizeEntry::decode(::futils::binary::reader& r) {
@@ -41566,6 +41570,9 @@ namespace brgen::nast::wire {
         (*this).kind_size_kind = static_cast<SizeKind>(tmp_209_);
         if (!::futils::binary::read_num(r,(*this).bits ,true)) {
             return ::futils::error::Error<>("decode: TypeSizeEntry::bits: read int failed",::futils::error::Category::lib);
+        }
+        if (auto err = (*this).bits_expr.decode(r)) {
+            return err;
         }
         return ::futils::error::Error<>();
     }

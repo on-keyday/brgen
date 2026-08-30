@@ -253,6 +253,11 @@
                     "name": "bits",
                     "type": "size",
                     "description": "Number of bits. Valid only when kind is fixed"
+                },
+                {
+                    "name": "bits_expr",
+                    "type": "Node<Expr>",
+                    "description": "Number of bits as an expression. Set when kind is dynamic and the width can be written as one. Synthesized by the size analysis"
                 }
             ]
         }
