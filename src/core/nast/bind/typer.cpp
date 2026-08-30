@@ -979,6 +979,16 @@ namespace brgen::nast::bind {
             auto f = type_of_expr(d->els);
             result = common_type(t, f);
         }
+        else if (auto bsz = e.as_any<BitSizeof>()) {
+            // 単位が違うだけで型は sizeof と同じ。
+            type_of_expr(bsz.ref(a)->target);
+            auto t = a.make<IntType>(loc);
+            auto d = t;
+            d->bit_size = 64;
+            d->is_signed = false;
+            d->endian = Endian::unspec;
+            result = t;
+        }
         else if (auto sz = e.as_any<Sizeof>()) {
             type_of_expr(sz.ref(a)->target);
             auto t = a.make<IntType>(loc);

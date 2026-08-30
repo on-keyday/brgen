@@ -171,6 +171,16 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        std::function<expected<R>(BaseContext<R>&, Node<BitSizeof>)> custom_BitSizeof;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<BitSizeof>> F>
+        void bind_BitSizeof(Context<R,T>&,F&& f) {
+            custom_BitSizeof = [f = std::forward<F>(f)](BaseContext<R>& c,Node<BitSizeof> n) -> expected<R> {
+                   auto l = c.l.template as<T>();
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   Context<R,T> new_c{c,*l};
+                   return f(new_c,n);
+            };
+        }
         std::function<expected<R>(BaseContext<R>&, Node<Available>)> custom_Available;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Available>> F>
         void bind_Available(Context<R,T>&,F&& f) {
