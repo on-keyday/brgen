@@ -30,19 +30,28 @@ CMake + Ninja。brgen 本体の CMake からは独立していて、ここだけ
 python src/core/nast/build.py                 # 建てて単体テスト
 python src/core/nast/build.py --test          # ctest を全部
 python src/core/nast/build.py -t nast_corpus  # ターゲット指定
-python src/core/nast/build.py --release       # 最適化 (build/release)
+python src/core/nast/build.py --release       # 最適化 (計測用)
+python src/core/nast/build.py --debug-info    # デバッガに乗せる版
 python src/core/nast/build.py --clean         # 建て直し
 ```
+
+ツリーは構成ごとに分ける。どれも CMake + Ninja で、違うのは構成だけ。
+
+| | | |
+| --- | --- | --- |
+| `build/fast` | 既定 | デバッグ情報なし。ctest はここ |
+| `build/debug` | `--debug-info` | デバッガに乗せる版 (pdb を作るぶんリンクが遅い) |
+| `build/release` | `--release` | 最適化。`bench.py` が使う |
 
 直に呼んでもよい。
 
 ```sh
-cmake -S src/core/nast -B src/core/nast/build/cmake -G Ninja
-cmake --build src/core/nast/build/cmake
-ctest --test-dir src/core/nast/build/cmake --output-on-failure
+cmake -S src/core/nast -B src/core/nast/build/fast -G Ninja
+cmake --build src/core/nast/build/fast
+ctest --test-dir src/core/nast/build/fast --output-on-failure
 ```
 
-実行ファイルは `build/cmake/bin/` に出る。生成 (`node/nodes.h` /
+実行ファイルは `build/fast/bin/` に出る。生成 (`node/nodes.h` /
 `wire/nast_wire.*` / lsp の `nast_nodes.ts`) はビルドの依存として走るので、
 `node/nodes.json` を直せば次のビルドで追随する。`wire/nast_wire.hpp` だけは
 brgen 本体の `src2json` / `json2cpp2` を要るので、建っていなければ既存の
@@ -55,7 +64,7 @@ brgen 本体の `src2json` / `json2cpp2` を要るので、建っていなけれ
 20 秒近くかかる (ライブラリを 1 つ触ると全ツールがリンクし直される)。
 
 ```sh
-cmake --build src/core/nast/build/cmake -j 8      # 並列数を上げる
+cmake --build src/core/nast/build/fast -j 8      # 並列数を上げる
 cmake -S ... -B ... -DNAST_DEBUG_INFO=ON          # デバッガに乗せる
 ```
 
@@ -71,7 +80,7 @@ python src/core/nast/bench.py --tools  # -O2 で建てるだけ
 ツールは `.bgn` を引数に取るものが多い。
 
 ```sh
-B=src/core/nast/build/cmake/bin
+B=src/core/nast/build/fast/bin
 $B/nast_corpus $(find example -name "*.bgn")        # parse と解析
 $B/nast_wire_test $(find example -name "*.bgn")     # 線上の往復
 $B/nast_unparse_test $(find example -name "*.bgn")  # .bgn の往復

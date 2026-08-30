@@ -16,9 +16,11 @@ configure を毎回書かなくて済むようにするためのもので、コ�
 
 ビルドツリーは構成ごとに分ける:
 
-  build/cmake    Debug   (既定。ctest はこちら。デバッグ情報なし)
+  build/fast     Debug   (既定。ctest はこちら。デバッグ情報なしで速い)
   build/debug    Debug   (--debug-info。デバッガに乗せる版)
   build/release  Release (--release。bench.py が使う)
+
+どれも CMake + Ninja のツリーで、違うのは構成だけ。
 
 生成 (node/nodes.h / wire/*) はビルドの依存として走るので、ここでは何もしない。
 """
@@ -36,10 +38,10 @@ BUILD_ROOT = os.path.join(SCRIPT_DIR, "build")
 def tree_for(release, debug_info=False):
     if release:
         return os.path.join(BUILD_ROOT, "release")
-    # デバッガに乗せる版は別ツリーに置く。既定のツリーはデバッグ情報を
-    # 出さない (pdb のリンクで毎回 20 秒近く持っていかれるため) ので、
-    # 両方を同じ場所には作れない。
-    return os.path.join(BUILD_ROOT, "debug" if debug_info else "cmake")
+    # デバッガに乗せる版は別ツリーに置く。既定 (fast) はデバッグ情報を
+    # 出さない — pdb のリンクで毎回 20 秒近く持っていかれるため。
+    # 同じツリーで切り替えると configure し直しになるので分ける。
+    return os.path.join(BUILD_ROOT, "debug" if debug_info else "fast")
 
 
 def run(cmd):

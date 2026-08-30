@@ -23,7 +23,7 @@
     {
       // nast のバックエンド試作 (src/core/nast/tool/backend.cpp)。
       // 乗るのは build/debug の版 (デバッグ情報つき)。既定のツリー
-      // build/cmake にはデバッグ情報が無くブレークポイントが効かない。
+      // build/fast にはデバッグ情報が無くブレークポイントが効かない。
       //
       // **ビルドはしない**。先に手で建ててから起動すること:
       //   python src/core/nast/build.py --debug-info -t nast_backend --no-run
