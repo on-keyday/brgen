@@ -15,7 +15,7 @@ int main() {
     LanguageConfig l;
     auto conf = bc.to_context(l);
     using namespace brgen::nast;
-    knobs.bind_Module(conf, [](Context& c, Node<Module> m) -> brgen::result<CodeWriter> {
+    knobs.bind_Module(conf, [](Context& c, Node<Module> m) -> brgen::nast::expected<CodeWriter> {
         CodeWriter w;
         {
             auto b = w.with_loc_scope(m);
@@ -31,7 +31,7 @@ int main() {
         }
         return w;
     });
-    knobs.bind_Return(conf, [](Context& c, Node<Return> m) -> brgen::result<CodeWriter> {
+    knobs.bind_Return(conf, [](Context& c, Node<Return> m) -> brgen::nast::expected<CodeWriter> {
         return CODELINE(brgen::nast::unparse_writer(c.arena(), m));
     });
     auto m = a.make<Module>();
@@ -43,7 +43,7 @@ int main() {
     auto invoked = conf.b.visit(m.id());
     if (!invoked) {
         brgen::FileSet fs;
-        auto src = brgen::to_source_error(fs)(invoked.error());
+        auto src = brgen::to_source_error(fs)(invoked.error().to_location_error(a));
         std::print("{}", src.to_string());
     }
     else {

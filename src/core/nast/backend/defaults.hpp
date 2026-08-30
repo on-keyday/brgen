@@ -8,1407 +8,1564 @@
 #include <functional>
 #include "invocable.hpp"
 #include "common.hpp"
+#include "defaults/handler.hpp"
 #if __has_include("defaults/emit_Module.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Module> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Module>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<Module>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Module>::operator()(BaseContext<R>& ctx,Node<Module> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Module>::operator()(BaseContext<R>& ctx,Node<Module> node)
 #include "defaults/emit_Module.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Module> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Module>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<Module> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_BodyStatement.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::BodyStatement> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<BodyStatement>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<BodyStatement>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::BodyStatement>::operator()(BaseContext<R>& ctx,Node<BodyStatement> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::BodyStatement>::operator()(BaseContext<R>& ctx,Node<BodyStatement> node)
 #include "defaults/emit_BodyStatement.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::BodyStatement> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<BodyStatement>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<BodyStatement> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_Field.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Field> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Field>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<Field>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Field>::operator()(BaseContext<R>& ctx,Node<Field> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Field>::operator()(BaseContext<R>& ctx,Node<Field> node)
 #include "defaults/emit_Field.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Field> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Field>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<Field> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_StateVariable.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::StateVariable> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<StateVariable>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<StateVariable>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::StateVariable>::operator()(BaseContext<R>& ctx,Node<StateVariable> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::StateVariable>::operator()(BaseContext<R>& ctx,Node<StateVariable> node)
 #include "defaults/emit_StateVariable.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::StateVariable> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<StateVariable>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<StateVariable> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_Format.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Format> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Format>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<Format>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Format>::operator()(BaseContext<R>& ctx,Node<Format> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Format>::operator()(BaseContext<R>& ctx,Node<Format> node)
 #include "defaults/emit_Format.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Format> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Format>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<Format> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_GenericFormat.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::GenericFormat> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<GenericFormat>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<GenericFormat>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::GenericFormat>::operator()(BaseContext<R>& ctx,Node<GenericFormat> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::GenericFormat>::operator()(BaseContext<R>& ctx,Node<GenericFormat> node)
 #include "defaults/emit_GenericFormat.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::GenericFormat> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<GenericFormat>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<GenericFormat> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_Function.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Function> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Function>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<Function>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Function>::operator()(BaseContext<R>& ctx,Node<Function> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Function>::operator()(BaseContext<R>& ctx,Node<Function> node)
 #include "defaults/emit_Function.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Function> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Function>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<Function> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_If.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::If> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<If>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<If>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::If>::operator()(BaseContext<R>& ctx,Node<If> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::If>::operator()(BaseContext<R>& ctx,Node<If> node)
 #include "defaults/emit_If.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::If> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<If>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<If> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_Match.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Match> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Match>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<Match>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Match>::operator()(BaseContext<R>& ctx,Node<Match> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Match>::operator()(BaseContext<R>& ctx,Node<Match> node)
 #include "defaults/emit_Match.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Match> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Match>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<Match> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_Loop.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Loop> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Loop>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<Loop>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Loop>::operator()(BaseContext<R>& ctx,Node<Loop> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Loop>::operator()(BaseContext<R>& ctx,Node<Loop> node)
 #include "defaults/emit_Loop.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Loop> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Loop>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<Loop> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_RangeLoop.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::RangeLoop> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<RangeLoop>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<RangeLoop>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::RangeLoop>::operator()(BaseContext<R>& ctx,Node<RangeLoop> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::RangeLoop>::operator()(BaseContext<R>& ctx,Node<RangeLoop> node)
 #include "defaults/emit_RangeLoop.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::RangeLoop> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<RangeLoop>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<RangeLoop> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_Assign.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Assign> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Assign>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<Assign>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Assign>::operator()(BaseContext<R>& ctx,Node<Assign> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Assign>::operator()(BaseContext<R>& ctx,Node<Assign> node)
 #include "defaults/emit_Assign.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Assign> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Assign>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<Assign> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_VariableDefinition.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::VariableDefinition> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<VariableDefinition>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<VariableDefinition>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::VariableDefinition>::operator()(BaseContext<R>& ctx,Node<VariableDefinition> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::VariableDefinition>::operator()(BaseContext<R>& ctx,Node<VariableDefinition> node)
 #include "defaults/emit_VariableDefinition.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::VariableDefinition> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<VariableDefinition>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<VariableDefinition> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_Metadata.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Metadata> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Metadata>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<Metadata>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Metadata>::operator()(BaseContext<R>& ctx,Node<Metadata> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Metadata>::operator()(BaseContext<R>& ctx,Node<Metadata> node)
 #include "defaults/emit_Metadata.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Metadata> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Metadata>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<Metadata> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_SpecifyOrder.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::SpecifyOrder> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<SpecifyOrder>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<SpecifyOrder>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::SpecifyOrder>::operator()(BaseContext<R>& ctx,Node<SpecifyOrder> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::SpecifyOrder>::operator()(BaseContext<R>& ctx,Node<SpecifyOrder> node)
 #include "defaults/emit_SpecifyOrder.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::SpecifyOrder> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<SpecifyOrder>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<SpecifyOrder> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_Sizeof.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Sizeof> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Sizeof>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<Sizeof>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Sizeof>::operator()(BaseContext<R>& ctx,Node<Sizeof> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Sizeof>::operator()(BaseContext<R>& ctx,Node<Sizeof> node)
 #include "defaults/emit_Sizeof.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Sizeof> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Sizeof>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<Sizeof> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_Available.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Available> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Available>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<Available>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Available>::operator()(BaseContext<R>& ctx,Node<Available> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Available>::operator()(BaseContext<R>& ctx,Node<Available> node)
 #include "defaults/emit_Available.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Available> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Available>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<Available> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_ExplicitError.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::ExplicitError> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<ExplicitError>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<ExplicitError>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::ExplicitError>::operator()(BaseContext<R>& ctx,Node<ExplicitError> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::ExplicitError>::operator()(BaseContext<R>& ctx,Node<ExplicitError> node)
 #include "defaults/emit_ExplicitError.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::ExplicitError> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<ExplicitError>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<ExplicitError> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_Binary.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Binary> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Binary>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<Binary>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Binary>::operator()(BaseContext<R>& ctx,Node<Binary> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Binary>::operator()(BaseContext<R>& ctx,Node<Binary> node)
 #include "defaults/emit_Binary.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Binary> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Binary>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<Binary> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_Unary.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Unary> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Unary>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<Unary>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Unary>::operator()(BaseContext<R>& ctx,Node<Unary> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Unary>::operator()(BaseContext<R>& ctx,Node<Unary> node)
 #include "defaults/emit_Unary.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Unary> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Unary>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<Unary> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_Call.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Call> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Call>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<Call>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Call>::operator()(BaseContext<R>& ctx,Node<Call> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Call>::operator()(BaseContext<R>& ctx,Node<Call> node)
 #include "defaults/emit_Call.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Call> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Call>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<Call> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_Reference.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Reference> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Reference>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<Reference>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Reference>::operator()(BaseContext<R>& ctx,Node<Reference> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Reference>::operator()(BaseContext<R>& ctx,Node<Reference> node)
 #include "defaults/emit_Reference.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Reference> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Reference>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<Reference> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_MemberAccess.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::MemberAccess> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<MemberAccess>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<MemberAccess>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::MemberAccess>::operator()(BaseContext<R>& ctx,Node<MemberAccess> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::MemberAccess>::operator()(BaseContext<R>& ctx,Node<MemberAccess> node)
 #include "defaults/emit_MemberAccess.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::MemberAccess> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<MemberAccess>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<MemberAccess> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_TypeLiteral.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::TypeLiteral> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<TypeLiteral>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<TypeLiteral>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::TypeLiteral>::operator()(BaseContext<R>& ctx,Node<TypeLiteral> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::TypeLiteral>::operator()(BaseContext<R>& ctx,Node<TypeLiteral> node)
 #include "defaults/emit_TypeLiteral.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::TypeLiteral> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<TypeLiteral>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<TypeLiteral> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_ConditionalStatement.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::ConditionalStatement> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<ConditionalStatement>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<ConditionalStatement>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::ConditionalStatement>::operator()(BaseContext<R>& ctx,Node<ConditionalStatement> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::ConditionalStatement>::operator()(BaseContext<R>& ctx,Node<ConditionalStatement> node)
 #include "defaults/emit_ConditionalStatement.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::ConditionalStatement> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<ConditionalStatement>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<ConditionalStatement> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_Parameter.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Parameter> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Parameter>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<Parameter>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Parameter>::operator()(BaseContext<R>& ctx,Node<Parameter> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Parameter>::operator()(BaseContext<R>& ctx,Node<Parameter> node)
 #include "defaults/emit_Parameter.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Parameter> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Parameter>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<Parameter> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_Body.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Body> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Body>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<Body>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Body>::operator()(BaseContext<R>& ctx,Node<Body> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Body>::operator()(BaseContext<R>& ctx,Node<Body> node)
 #include "defaults/emit_Body.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Body> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Body>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<Body> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_Arguments.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Arguments> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Arguments>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<Arguments>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Arguments>::operator()(BaseContext<R>& ctx,Node<Arguments> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Arguments>::operator()(BaseContext<R>& ctx,Node<Arguments> node)
 #include "defaults/emit_Arguments.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Arguments> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Arguments>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<Arguments> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_Argument.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Argument> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Argument>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<Argument>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Argument>::operator()(BaseContext<R>& ctx,Node<Argument> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Argument>::operator()(BaseContext<R>& ctx,Node<Argument> node)
 #include "defaults/emit_Argument.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Argument> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Argument>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<Argument> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_NamedArgument.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::NamedArgument> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<NamedArgument>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<NamedArgument>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::NamedArgument>::operator()(BaseContext<R>& ctx,Node<NamedArgument> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::NamedArgument>::operator()(BaseContext<R>& ctx,Node<NamedArgument> node)
 #include "defaults/emit_NamedArgument.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::NamedArgument> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<NamedArgument>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<NamedArgument> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_Ident.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Ident> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Ident>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<Ident>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Ident>::operator()(BaseContext<R>& ctx,Node<Ident> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Ident>::operator()(BaseContext<R>& ctx,Node<Ident> node)
 #include "defaults/emit_Ident.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Ident> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Ident>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<Ident> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_IntType.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::IntType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<IntType>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<IntType>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::IntType>::operator()(BaseContext<R>& ctx,Node<IntType> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::IntType>::operator()(BaseContext<R>& ctx,Node<IntType> node)
 #include "defaults/emit_IntType.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::IntType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<IntType>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<IntType> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_IntLiteral.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::IntLiteral> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<IntLiteral>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<IntLiteral>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::IntLiteral>::operator()(BaseContext<R>& ctx,Node<IntLiteral> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::IntLiteral>::operator()(BaseContext<R>& ctx,Node<IntLiteral> node)
 #include "defaults/emit_IntLiteral.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::IntLiteral> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<IntLiteral>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<IntLiteral> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_BoolLiteral.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::BoolLiteral> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<BoolLiteral>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<BoolLiteral>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::BoolLiteral>::operator()(BaseContext<R>& ctx,Node<BoolLiteral> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::BoolLiteral>::operator()(BaseContext<R>& ctx,Node<BoolLiteral> node)
 #include "defaults/emit_BoolLiteral.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::BoolLiteral> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<BoolLiteral>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<BoolLiteral> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_StrLiteral.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::StrLiteral> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<StrLiteral>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<StrLiteral>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::StrLiteral>::operator()(BaseContext<R>& ctx,Node<StrLiteral> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::StrLiteral>::operator()(BaseContext<R>& ctx,Node<StrLiteral> node)
 #include "defaults/emit_StrLiteral.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::StrLiteral> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<StrLiteral>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<StrLiteral> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_CharLiteral.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::CharLiteral> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<CharLiteral>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<CharLiteral>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::CharLiteral>::operator()(BaseContext<R>& ctx,Node<CharLiteral> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::CharLiteral>::operator()(BaseContext<R>& ctx,Node<CharLiteral> node)
 #include "defaults/emit_CharLiteral.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::CharLiteral> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<CharLiteral>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<CharLiteral> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_RegexLiteral.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::RegexLiteral> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<RegexLiteral>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<RegexLiteral>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::RegexLiteral>::operator()(BaseContext<R>& ctx,Node<RegexLiteral> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::RegexLiteral>::operator()(BaseContext<R>& ctx,Node<RegexLiteral> node)
 #include "defaults/emit_RegexLiteral.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::RegexLiteral> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<RegexLiteral>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<RegexLiteral> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_SpecialLiteral.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::SpecialLiteral> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<SpecialLiteral>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<SpecialLiteral>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::SpecialLiteral>::operator()(BaseContext<R>& ctx,Node<SpecialLiteral> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::SpecialLiteral>::operator()(BaseContext<R>& ctx,Node<SpecialLiteral> node)
 #include "defaults/emit_SpecialLiteral.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::SpecialLiteral> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<SpecialLiteral>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<SpecialLiteral> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_Paren.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Paren> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Paren>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<Paren>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Paren>::operator()(BaseContext<R>& ctx,Node<Paren> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Paren>::operator()(BaseContext<R>& ctx,Node<Paren> node)
 #include "defaults/emit_Paren.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Paren> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Paren>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<Paren> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_Index.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Index> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Index>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<Index>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Index>::operator()(BaseContext<R>& ctx,Node<Index> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Index>::operator()(BaseContext<R>& ctx,Node<Index> node)
 #include "defaults/emit_Index.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Index> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Index>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<Index> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_Cond.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Cond> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Cond>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<Cond>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Cond>::operator()(BaseContext<R>& ctx,Node<Cond> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Cond>::operator()(BaseContext<R>& ctx,Node<Cond> node)
 #include "defaults/emit_Cond.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Cond> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Cond>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<Cond> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_Range.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Range> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Range>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<Range>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Range>::operator()(BaseContext<R>& ctx,Node<Range> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Range>::operator()(BaseContext<R>& ctx,Node<Range> node)
 #include "defaults/emit_Range.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Range> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Range>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<Range> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_BadExpr.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::BadExpr> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<BadExpr>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<BadExpr>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::BadExpr>::operator()(BaseContext<R>& ctx,Node<BadExpr> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::BadExpr>::operator()(BaseContext<R>& ctx,Node<BadExpr> node)
 #include "defaults/emit_BadExpr.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::BadExpr> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<BadExpr>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<BadExpr> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_Assert.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Assert> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Assert>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<Assert>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Assert>::operator()(BaseContext<R>& ctx,Node<Assert> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Assert>::operator()(BaseContext<R>& ctx,Node<Assert> node)
 #include "defaults/emit_Assert.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Assert> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Assert>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<Assert> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_FloatType.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::FloatType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<FloatType>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<FloatType>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::FloatType>::operator()(BaseContext<R>& ctx,Node<FloatType> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::FloatType>::operator()(BaseContext<R>& ctx,Node<FloatType> node)
 #include "defaults/emit_FloatType.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::FloatType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<FloatType>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<FloatType> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_BoolType.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::BoolType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<BoolType>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<BoolType>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::BoolType>::operator()(BaseContext<R>& ctx,Node<BoolType> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::BoolType>::operator()(BaseContext<R>& ctx,Node<BoolType> node)
 #include "defaults/emit_BoolType.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::BoolType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<BoolType>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<BoolType> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_VoidType.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::VoidType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<VoidType>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<VoidType>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::VoidType>::operator()(BaseContext<R>& ctx,Node<VoidType> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::VoidType>::operator()(BaseContext<R>& ctx,Node<VoidType> node)
 #include "defaults/emit_VoidType.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::VoidType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<VoidType>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<VoidType> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_IdentType.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::IdentType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<IdentType>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<IdentType>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::IdentType>::operator()(BaseContext<R>& ctx,Node<IdentType> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::IdentType>::operator()(BaseContext<R>& ctx,Node<IdentType> node)
 #include "defaults/emit_IdentType.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::IdentType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<IdentType>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<IdentType> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_ImportedType.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::ImportedType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<ImportedType>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<ImportedType>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::ImportedType>::operator()(BaseContext<R>& ctx,Node<ImportedType> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::ImportedType>::operator()(BaseContext<R>& ctx,Node<ImportedType> node)
 #include "defaults/emit_ImportedType.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::ImportedType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<ImportedType>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<ImportedType> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_IntLiteralType.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::IntLiteralType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<IntLiteralType>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<IntLiteralType>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::IntLiteralType>::operator()(BaseContext<R>& ctx,Node<IntLiteralType> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::IntLiteralType>::operator()(BaseContext<R>& ctx,Node<IntLiteralType> node)
 #include "defaults/emit_IntLiteralType.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::IntLiteralType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<IntLiteralType>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<IntLiteralType> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_StrLiteralType.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::StrLiteralType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<StrLiteralType>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<StrLiteralType>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::StrLiteralType>::operator()(BaseContext<R>& ctx,Node<StrLiteralType> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::StrLiteralType>::operator()(BaseContext<R>& ctx,Node<StrLiteralType> node)
 #include "defaults/emit_StrLiteralType.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::StrLiteralType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<StrLiteralType>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<StrLiteralType> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_RegexLiteralType.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::RegexLiteralType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<RegexLiteralType>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<RegexLiteralType>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::RegexLiteralType>::operator()(BaseContext<R>& ctx,Node<RegexLiteralType> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::RegexLiteralType>::operator()(BaseContext<R>& ctx,Node<RegexLiteralType> node)
 #include "defaults/emit_RegexLiteralType.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::RegexLiteralType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<RegexLiteralType>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<RegexLiteralType> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_ArrayType.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::ArrayType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<ArrayType>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<ArrayType>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::ArrayType>::operator()(BaseContext<R>& ctx,Node<ArrayType> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::ArrayType>::operator()(BaseContext<R>& ctx,Node<ArrayType> node)
 #include "defaults/emit_ArrayType.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::ArrayType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<ArrayType>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<ArrayType> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_StreamType.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::StreamType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<StreamType>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<StreamType>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::StreamType>::operator()(BaseContext<R>& ctx,Node<StreamType> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::StreamType>::operator()(BaseContext<R>& ctx,Node<StreamType> node)
 #include "defaults/emit_StreamType.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::StreamType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<StreamType>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<StreamType> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_FunctionType.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::FunctionType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<FunctionType>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<FunctionType>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::FunctionType>::operator()(BaseContext<R>& ctx,Node<FunctionType> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::FunctionType>::operator()(BaseContext<R>& ctx,Node<FunctionType> node)
 #include "defaults/emit_FunctionType.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::FunctionType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<FunctionType>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<FunctionType> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_StructType.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::StructType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<StructType>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<StructType>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::StructType>::operator()(BaseContext<R>& ctx,Node<StructType> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::StructType>::operator()(BaseContext<R>& ctx,Node<StructType> node)
 #include "defaults/emit_StructType.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::StructType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<StructType>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<StructType> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_InlineStructType.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::InlineStructType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<InlineStructType>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<InlineStructType>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::InlineStructType>::operator()(BaseContext<R>& ctx,Node<InlineStructType> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::InlineStructType>::operator()(BaseContext<R>& ctx,Node<InlineStructType> node)
 #include "defaults/emit_InlineStructType.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::InlineStructType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<InlineStructType>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<InlineStructType> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_StructUnionType.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::StructUnionType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<StructUnionType>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<StructUnionType>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::StructUnionType>::operator()(BaseContext<R>& ctx,Node<StructUnionType> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::StructUnionType>::operator()(BaseContext<R>& ctx,Node<StructUnionType> node)
 #include "defaults/emit_StructUnionType.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::StructUnionType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<StructUnionType>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<StructUnionType> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_StructUnionCandidate.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::StructUnionCandidate> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<StructUnionCandidate>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<StructUnionCandidate>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::StructUnionCandidate>::operator()(BaseContext<R>& ctx,Node<StructUnionCandidate> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::StructUnionCandidate>::operator()(BaseContext<R>& ctx,Node<StructUnionCandidate> node)
 #include "defaults/emit_StructUnionCandidate.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::StructUnionCandidate> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<StructUnionCandidate>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<StructUnionCandidate> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_UnionType.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::UnionType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<UnionType>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<UnionType>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::UnionType>::operator()(BaseContext<R>& ctx,Node<UnionType> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::UnionType>::operator()(BaseContext<R>& ctx,Node<UnionType> node)
 #include "defaults/emit_UnionType.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::UnionType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<UnionType>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<UnionType> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_RangeType.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::RangeType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<RangeType>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<RangeType>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::RangeType>::operator()(BaseContext<R>& ctx,Node<RangeType> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::RangeType>::operator()(BaseContext<R>& ctx,Node<RangeType> node)
 #include "defaults/emit_RangeType.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::RangeType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<RangeType>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<RangeType> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_EnumType.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::EnumType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<EnumType>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<EnumType>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::EnumType>::operator()(BaseContext<R>& ctx,Node<EnumType> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::EnumType>::operator()(BaseContext<R>& ctx,Node<EnumType> node)
 #include "defaults/emit_EnumType.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::EnumType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<EnumType>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<EnumType> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_MetaType.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::MetaType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<MetaType>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<MetaType>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::MetaType>::operator()(BaseContext<R>& ctx,Node<MetaType> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::MetaType>::operator()(BaseContext<R>& ctx,Node<MetaType> node)
 #include "defaults/emit_MetaType.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::MetaType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<MetaType>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<MetaType> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_OptionalType.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::OptionalType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<OptionalType>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<OptionalType>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::OptionalType>::operator()(BaseContext<R>& ctx,Node<OptionalType> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::OptionalType>::operator()(BaseContext<R>& ctx,Node<OptionalType> node)
 #include "defaults/emit_OptionalType.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::OptionalType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<OptionalType>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<OptionalType> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_GenericType.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::GenericType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<GenericType>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<GenericType>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::GenericType>::operator()(BaseContext<R>& ctx,Node<GenericType> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::GenericType>::operator()(BaseContext<R>& ctx,Node<GenericType> node)
 #include "defaults/emit_GenericType.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::GenericType> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<GenericType>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<GenericType> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_MatchBranch.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::MatchBranch> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<MatchBranch>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<MatchBranch>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::MatchBranch>::operator()(BaseContext<R>& ctx,Node<MatchBranch> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::MatchBranch>::operator()(BaseContext<R>& ctx,Node<MatchBranch> node)
 #include "defaults/emit_MatchBranch.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::MatchBranch> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<MatchBranch>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<MatchBranch> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_UnionCandidate.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::UnionCandidate> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<UnionCandidate>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<UnionCandidate>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::UnionCandidate>::operator()(BaseContext<R>& ctx,Node<UnionCandidate> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::UnionCandidate>::operator()(BaseContext<R>& ctx,Node<UnionCandidate> node)
 #include "defaults/emit_UnionCandidate.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::UnionCandidate> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<UnionCandidate>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<UnionCandidate> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_Return.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Return> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Return>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<Return>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Return>::operator()(BaseContext<R>& ctx,Node<Return> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Return>::operator()(BaseContext<R>& ctx,Node<Return> node)
 #include "defaults/emit_Return.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Return> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Return>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<Return> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_Break.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Break> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Break>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<Break>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Break>::operator()(BaseContext<R>& ctx,Node<Break> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Break>::operator()(BaseContext<R>& ctx,Node<Break> node)
 #include "defaults/emit_Break.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Break> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Break>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<Break> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_Continue.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Continue> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Continue>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<Continue>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Continue>::operator()(BaseContext<R>& ctx,Node<Continue> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Continue>::operator()(BaseContext<R>& ctx,Node<Continue> node)
 #include "defaults/emit_Continue.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Continue> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Continue>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<Continue> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_Enum.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Enum> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Enum>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<Enum>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Enum>::operator()(BaseContext<R>& ctx,Node<Enum> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Enum>::operator()(BaseContext<R>& ctx,Node<Enum> node)
 #include "defaults/emit_Enum.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Enum> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Enum>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<Enum> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_EnumMember.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::EnumMember> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<EnumMember>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<EnumMember>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::EnumMember>::operator()(BaseContext<R>& ctx,Node<EnumMember> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::EnumMember>::operator()(BaseContext<R>& ctx,Node<EnumMember> node)
 #include "defaults/emit_EnumMember.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::EnumMember> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<EnumMember>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<EnumMember> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_State.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::State> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<State>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<State>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::State>::operator()(BaseContext<R>& ctx,Node<State> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::State>::operator()(BaseContext<R>& ctx,Node<State> node)
 #include "defaults/emit_State.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::State> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<State>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<State> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_TypeParameter.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::TypeParameter> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<TypeParameter>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<TypeParameter>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::TypeParameter>::operator()(BaseContext<R>& ctx,Node<TypeParameter> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::TypeParameter>::operator()(BaseContext<R>& ctx,Node<TypeParameter> node)
 #include "defaults/emit_TypeParameter.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::TypeParameter> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<TypeParameter>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<TypeParameter> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_Identity.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Identity> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Identity>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<Identity>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Identity>::operator()(BaseContext<R>& ctx,Node<Identity> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Identity>::operator()(BaseContext<R>& ctx,Node<Identity> node)
 #include "defaults/emit_Identity.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Identity> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Identity>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<Identity> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_Cast.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Cast> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Cast>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<Cast>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Cast>::operator()(BaseContext<R>& ctx,Node<Cast> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Cast>::operator()(BaseContext<R>& ctx,Node<Cast> node)
 #include "defaults/emit_Cast.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Cast> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Cast>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<Cast> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_OrCond.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::OrCond> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<OrCond>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<OrCond>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::OrCond>::operator()(BaseContext<R>& ctx,Node<OrCond> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::OrCond>::operator()(BaseContext<R>& ctx,Node<OrCond> node)
 #include "defaults/emit_OrCond.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::OrCond> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<OrCond>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<OrCond> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
 #if __has_include("defaults/emit_Import.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Import> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Import>);
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<Import>);
 };
 #define DEFINE_VISITOR(dummy) \
     template<class R> \
-    constexpr brgen::result<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Import>::operator()(BaseContext<R>& ctx,Node<Import> node)
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::Import>::operator()(BaseContext<R>& ctx,Node<Import> node)
 #include "defaults/emit_Import.hpp"
 #undef DEFINE_VISITOR
 #else
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Import> {
-    constexpr result<R> operator()(BaseContext<R>&,Node<Import>) {
-          return {};
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<Import> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
     }
 };
 #endif
