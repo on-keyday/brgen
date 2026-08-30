@@ -51,28 +51,30 @@ namespace brgen::nast::lowering {
     Node<Body> split_int(Context& c, Node<Expr> bytes, Node<Expr> offset, Node<Expr> value,
                          Node<Type> type, Endian order = Endian::unspec);
 
-    // 順が決まらないとき用。両方の形を組んで選択子で選ぶ。
+    // 順が決まらないとき用。両方の形を組んで `is_little_endian(...)` で選ぶ。
     //
-    //   combine: is_little ? <little で組んだ式> : <big で組んだ式>
-    //   split:   if is_little: <little の代入> else: <big の代入>
+    //   combine: is_little_endian(..) ? <little で組んだ式> : <big で組んだ式>
+    //   split:   if is_little_endian(..): <little の代入> else: <big の代入>
     //
-    // **選択子は呼ぶ側が作る。** ここで作れないものだからこの形になっている:
+    // 判定は `IsLittleEndian` ノードとして置くだけで、**綴りはバックエンドが
+    // 決める**。ここで式に落とせないものだからノードにしてある:
     //
-    //   native   ターゲットのコンパイル時の判定。書き方は言語ごとに違う
-    //            (rust `cfg!(target_endian = "little")` / C
-    //            `(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)` / python
-    //            `sys.byteorder == 'little'`)
-    //   dynamic  代入の位置で 1 度だけ評価した変数との比較。どの値が little かは
-    //            保持の仕方で決まる
+    //   dynamic_order あり  実行時の値。バックエンドはその代入の位置で
+    //                       材料化した変数を読んで比べる
+    //   dynamic_order なし  ターゲット上の静的な値。書き方は言語ごとに違う
+    //                       (rust `cfg!(target_endian = "little")` / C
+    //                       `(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)` /
+    //                       python `sys.byteorder == 'little'`)。**nast の式に
+    //                       ならない**ので、ノードのまま渡して綴りを emit まで
+    //                       遅らせる
     //
-    // EBM も同じ形で、`add_endian_specific` が両方の枝を作り、`IS_LITTLE_ENDIAN`
-    // の中身 (native なら knob の文字列、dynamic なら変数比較) を言語側に委ねて
-    // いる。native と dynamic を 1 つの経路にまとめられるのは、違いが選択子の
-    // 中身だけだから。
+    // EBM の `IS_LITTLE_ENDIAN` と同じ形で、区別も同じところ (order が空か)
+    // に置いてある。`add_endian_specific` が native と dynamic を 1 つの経路に
+    // まとめているのも、違いが判定の中身だけだから。
     Node<Expr> combine_int_either(Context& c, Node<Expr> bytes, Node<Expr> offset, Node<Type> type,
-                                  Node<Expr> is_little);
+                                  Node<SpecifyOrder> dynamic_order = nullref);
 
     Node<Body> split_int_either(Context& c, Node<Expr> bytes, Node<Expr> offset, Node<Expr> value,
-                                Node<Type> type, Node<Expr> is_little);
+                                Node<Type> type, Node<SpecifyOrder> dynamic_order = nullref);
 
 }  // namespace brgen::nast::lowering

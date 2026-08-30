@@ -28,6 +28,7 @@ protected:
         case NodeType::Metadata: if(c.n.custom_Metadata) { c.c.inner_default = false; return  c.n.custom_Metadata(c,n.template as_any<Metadata>()); } else { c.c.inner_default = true; return c.d.default_Metadata(c,n.template as_any<Metadata>()); }
         case NodeType::SpecifyOrder: if(c.n.custom_SpecifyOrder) { c.c.inner_default = false; return  c.n.custom_SpecifyOrder(c,n.template as_any<SpecifyOrder>()); } else { c.c.inner_default = true; return c.d.default_SpecifyOrder(c,n.template as_any<SpecifyOrder>()); }
         case NodeType::Sizeof: if(c.n.custom_Sizeof) { c.c.inner_default = false; return  c.n.custom_Sizeof(c,n.template as_any<Sizeof>()); } else { c.c.inner_default = true; return c.d.default_Sizeof(c,n.template as_any<Sizeof>()); }
+        case NodeType::IsLittleEndian: if(c.n.custom_IsLittleEndian) { c.c.inner_default = false; return  c.n.custom_IsLittleEndian(c,n.template as_any<IsLittleEndian>()); } else { c.c.inner_default = true; return c.d.default_IsLittleEndian(c,n.template as_any<IsLittleEndian>()); }
         case NodeType::BitSizeof: if(c.n.custom_BitSizeof) { c.c.inner_default = false; return  c.n.custom_BitSizeof(c,n.template as_any<BitSizeof>()); } else { c.c.inner_default = true; return c.d.default_BitSizeof(c,n.template as_any<BitSizeof>()); }
         case NodeType::Available: if(c.n.custom_Available) { c.c.inner_default = false; return  c.n.custom_Available(c,n.template as_any<Available>()); } else { c.c.inner_default = true; return c.d.default_Available(c,n.template as_any<Available>()); }
         case NodeType::ExplicitError: if(c.n.custom_ExplicitError) { c.c.inner_default = false; return  c.n.custom_ExplicitError(c,n.template as_any<ExplicitError>()); } else { c.c.inner_default = true; return c.d.default_ExplicitError(c,n.template as_any<ExplicitError>()); }
@@ -114,6 +115,7 @@ protected:
         case NodeType::Metadata: { c.n.inner_default = true; return c.d.default_Metadata(c,n.template as_any<Metadata>()); }
         case NodeType::SpecifyOrder: { c.n.inner_default = true; return c.d.default_SpecifyOrder(c,n.template as_any<SpecifyOrder>()); }
         case NodeType::Sizeof: { c.n.inner_default = true; return c.d.default_Sizeof(c,n.template as_any<Sizeof>()); }
+        case NodeType::IsLittleEndian: { c.n.inner_default = true; return c.d.default_IsLittleEndian(c,n.template as_any<IsLittleEndian>()); }
         case NodeType::BitSizeof: { c.n.inner_default = true; return c.d.default_BitSizeof(c,n.template as_any<BitSizeof>()); }
         case NodeType::Available: { c.n.inner_default = true; return c.d.default_Available(c,n.template as_any<Available>()); }
         case NodeType::ExplicitError: { c.n.inner_default = true; return c.d.default_ExplicitError(c,n.template as_any<ExplicitError>()); }
