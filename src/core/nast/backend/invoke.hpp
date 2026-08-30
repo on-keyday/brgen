@@ -9,87 +9,172 @@ template<class Context>
 struct Invoker {
 protected:
     template<class R>
-    expected<R> invoke_impl(NodeAny n) {
+    expected<R> invoke_custom(NodeAny n) {
         auto& c = static_cast<Context&>(*this);
         switch(n.type()) {
-        case NodeType::Module: return c.n.custom_Module ? c.n.custom_Module(c,n.template as_any<Module>()) : c.d.default_Module(c,n.template as_any<Module>());
-        case NodeType::BodyStatement: return c.n.custom_BodyStatement ? c.n.custom_BodyStatement(c,n.template as_any<BodyStatement>()) : c.d.default_BodyStatement(c,n.template as_any<BodyStatement>());
-        case NodeType::Field: return c.n.custom_Field ? c.n.custom_Field(c,n.template as_any<Field>()) : c.d.default_Field(c,n.template as_any<Field>());
-        case NodeType::StateVariable: return c.n.custom_StateVariable ? c.n.custom_StateVariable(c,n.template as_any<StateVariable>()) : c.d.default_StateVariable(c,n.template as_any<StateVariable>());
-        case NodeType::Format: return c.n.custom_Format ? c.n.custom_Format(c,n.template as_any<Format>()) : c.d.default_Format(c,n.template as_any<Format>());
-        case NodeType::GenericFormat: return c.n.custom_GenericFormat ? c.n.custom_GenericFormat(c,n.template as_any<GenericFormat>()) : c.d.default_GenericFormat(c,n.template as_any<GenericFormat>());
-        case NodeType::Function: return c.n.custom_Function ? c.n.custom_Function(c,n.template as_any<Function>()) : c.d.default_Function(c,n.template as_any<Function>());
-        case NodeType::If: return c.n.custom_If ? c.n.custom_If(c,n.template as_any<If>()) : c.d.default_If(c,n.template as_any<If>());
-        case NodeType::Match: return c.n.custom_Match ? c.n.custom_Match(c,n.template as_any<Match>()) : c.d.default_Match(c,n.template as_any<Match>());
-        case NodeType::Loop: return c.n.custom_Loop ? c.n.custom_Loop(c,n.template as_any<Loop>()) : c.d.default_Loop(c,n.template as_any<Loop>());
-        case NodeType::RangeLoop: return c.n.custom_RangeLoop ? c.n.custom_RangeLoop(c,n.template as_any<RangeLoop>()) : c.d.default_RangeLoop(c,n.template as_any<RangeLoop>());
-        case NodeType::Assign: return c.n.custom_Assign ? c.n.custom_Assign(c,n.template as_any<Assign>()) : c.d.default_Assign(c,n.template as_any<Assign>());
-        case NodeType::VariableDefinition: return c.n.custom_VariableDefinition ? c.n.custom_VariableDefinition(c,n.template as_any<VariableDefinition>()) : c.d.default_VariableDefinition(c,n.template as_any<VariableDefinition>());
-        case NodeType::Metadata: return c.n.custom_Metadata ? c.n.custom_Metadata(c,n.template as_any<Metadata>()) : c.d.default_Metadata(c,n.template as_any<Metadata>());
-        case NodeType::SpecifyOrder: return c.n.custom_SpecifyOrder ? c.n.custom_SpecifyOrder(c,n.template as_any<SpecifyOrder>()) : c.d.default_SpecifyOrder(c,n.template as_any<SpecifyOrder>());
-        case NodeType::Sizeof: return c.n.custom_Sizeof ? c.n.custom_Sizeof(c,n.template as_any<Sizeof>()) : c.d.default_Sizeof(c,n.template as_any<Sizeof>());
-        case NodeType::Available: return c.n.custom_Available ? c.n.custom_Available(c,n.template as_any<Available>()) : c.d.default_Available(c,n.template as_any<Available>());
-        case NodeType::ExplicitError: return c.n.custom_ExplicitError ? c.n.custom_ExplicitError(c,n.template as_any<ExplicitError>()) : c.d.default_ExplicitError(c,n.template as_any<ExplicitError>());
-        case NodeType::Binary: return c.n.custom_Binary ? c.n.custom_Binary(c,n.template as_any<Binary>()) : c.d.default_Binary(c,n.template as_any<Binary>());
-        case NodeType::Unary: return c.n.custom_Unary ? c.n.custom_Unary(c,n.template as_any<Unary>()) : c.d.default_Unary(c,n.template as_any<Unary>());
-        case NodeType::Call: return c.n.custom_Call ? c.n.custom_Call(c,n.template as_any<Call>()) : c.d.default_Call(c,n.template as_any<Call>());
-        case NodeType::Reference: return c.n.custom_Reference ? c.n.custom_Reference(c,n.template as_any<Reference>()) : c.d.default_Reference(c,n.template as_any<Reference>());
-        case NodeType::MemberAccess: return c.n.custom_MemberAccess ? c.n.custom_MemberAccess(c,n.template as_any<MemberAccess>()) : c.d.default_MemberAccess(c,n.template as_any<MemberAccess>());
-        case NodeType::TypeLiteral: return c.n.custom_TypeLiteral ? c.n.custom_TypeLiteral(c,n.template as_any<TypeLiteral>()) : c.d.default_TypeLiteral(c,n.template as_any<TypeLiteral>());
-        case NodeType::ConditionalStatement: return c.n.custom_ConditionalStatement ? c.n.custom_ConditionalStatement(c,n.template as_any<ConditionalStatement>()) : c.d.default_ConditionalStatement(c,n.template as_any<ConditionalStatement>());
-        case NodeType::Parameter: return c.n.custom_Parameter ? c.n.custom_Parameter(c,n.template as_any<Parameter>()) : c.d.default_Parameter(c,n.template as_any<Parameter>());
-        case NodeType::Body: return c.n.custom_Body ? c.n.custom_Body(c,n.template as_any<Body>()) : c.d.default_Body(c,n.template as_any<Body>());
-        case NodeType::Arguments: return c.n.custom_Arguments ? c.n.custom_Arguments(c,n.template as_any<Arguments>()) : c.d.default_Arguments(c,n.template as_any<Arguments>());
-        case NodeType::Argument: return c.n.custom_Argument ? c.n.custom_Argument(c,n.template as_any<Argument>()) : c.d.default_Argument(c,n.template as_any<Argument>());
-        case NodeType::NamedArgument: return c.n.custom_NamedArgument ? c.n.custom_NamedArgument(c,n.template as_any<NamedArgument>()) : c.d.default_NamedArgument(c,n.template as_any<NamedArgument>());
-        case NodeType::Ident: return c.n.custom_Ident ? c.n.custom_Ident(c,n.template as_any<Ident>()) : c.d.default_Ident(c,n.template as_any<Ident>());
-        case NodeType::IntType: return c.n.custom_IntType ? c.n.custom_IntType(c,n.template as_any<IntType>()) : c.d.default_IntType(c,n.template as_any<IntType>());
-        case NodeType::IntLiteral: return c.n.custom_IntLiteral ? c.n.custom_IntLiteral(c,n.template as_any<IntLiteral>()) : c.d.default_IntLiteral(c,n.template as_any<IntLiteral>());
-        case NodeType::BoolLiteral: return c.n.custom_BoolLiteral ? c.n.custom_BoolLiteral(c,n.template as_any<BoolLiteral>()) : c.d.default_BoolLiteral(c,n.template as_any<BoolLiteral>());
-        case NodeType::StrLiteral: return c.n.custom_StrLiteral ? c.n.custom_StrLiteral(c,n.template as_any<StrLiteral>()) : c.d.default_StrLiteral(c,n.template as_any<StrLiteral>());
-        case NodeType::CharLiteral: return c.n.custom_CharLiteral ? c.n.custom_CharLiteral(c,n.template as_any<CharLiteral>()) : c.d.default_CharLiteral(c,n.template as_any<CharLiteral>());
-        case NodeType::RegexLiteral: return c.n.custom_RegexLiteral ? c.n.custom_RegexLiteral(c,n.template as_any<RegexLiteral>()) : c.d.default_RegexLiteral(c,n.template as_any<RegexLiteral>());
-        case NodeType::SpecialLiteral: return c.n.custom_SpecialLiteral ? c.n.custom_SpecialLiteral(c,n.template as_any<SpecialLiteral>()) : c.d.default_SpecialLiteral(c,n.template as_any<SpecialLiteral>());
-        case NodeType::Paren: return c.n.custom_Paren ? c.n.custom_Paren(c,n.template as_any<Paren>()) : c.d.default_Paren(c,n.template as_any<Paren>());
-        case NodeType::Index: return c.n.custom_Index ? c.n.custom_Index(c,n.template as_any<Index>()) : c.d.default_Index(c,n.template as_any<Index>());
-        case NodeType::Cond: return c.n.custom_Cond ? c.n.custom_Cond(c,n.template as_any<Cond>()) : c.d.default_Cond(c,n.template as_any<Cond>());
-        case NodeType::Range: return c.n.custom_Range ? c.n.custom_Range(c,n.template as_any<Range>()) : c.d.default_Range(c,n.template as_any<Range>());
-        case NodeType::BadExpr: return c.n.custom_BadExpr ? c.n.custom_BadExpr(c,n.template as_any<BadExpr>()) : c.d.default_BadExpr(c,n.template as_any<BadExpr>());
-        case NodeType::Assert: return c.n.custom_Assert ? c.n.custom_Assert(c,n.template as_any<Assert>()) : c.d.default_Assert(c,n.template as_any<Assert>());
-        case NodeType::FloatType: return c.n.custom_FloatType ? c.n.custom_FloatType(c,n.template as_any<FloatType>()) : c.d.default_FloatType(c,n.template as_any<FloatType>());
-        case NodeType::BoolType: return c.n.custom_BoolType ? c.n.custom_BoolType(c,n.template as_any<BoolType>()) : c.d.default_BoolType(c,n.template as_any<BoolType>());
-        case NodeType::VoidType: return c.n.custom_VoidType ? c.n.custom_VoidType(c,n.template as_any<VoidType>()) : c.d.default_VoidType(c,n.template as_any<VoidType>());
-        case NodeType::IdentType: return c.n.custom_IdentType ? c.n.custom_IdentType(c,n.template as_any<IdentType>()) : c.d.default_IdentType(c,n.template as_any<IdentType>());
-        case NodeType::ImportedType: return c.n.custom_ImportedType ? c.n.custom_ImportedType(c,n.template as_any<ImportedType>()) : c.d.default_ImportedType(c,n.template as_any<ImportedType>());
-        case NodeType::IntLiteralType: return c.n.custom_IntLiteralType ? c.n.custom_IntLiteralType(c,n.template as_any<IntLiteralType>()) : c.d.default_IntLiteralType(c,n.template as_any<IntLiteralType>());
-        case NodeType::StrLiteralType: return c.n.custom_StrLiteralType ? c.n.custom_StrLiteralType(c,n.template as_any<StrLiteralType>()) : c.d.default_StrLiteralType(c,n.template as_any<StrLiteralType>());
-        case NodeType::RegexLiteralType: return c.n.custom_RegexLiteralType ? c.n.custom_RegexLiteralType(c,n.template as_any<RegexLiteralType>()) : c.d.default_RegexLiteralType(c,n.template as_any<RegexLiteralType>());
-        case NodeType::ArrayType: return c.n.custom_ArrayType ? c.n.custom_ArrayType(c,n.template as_any<ArrayType>()) : c.d.default_ArrayType(c,n.template as_any<ArrayType>());
-        case NodeType::StreamType: return c.n.custom_StreamType ? c.n.custom_StreamType(c,n.template as_any<StreamType>()) : c.d.default_StreamType(c,n.template as_any<StreamType>());
-        case NodeType::FunctionType: return c.n.custom_FunctionType ? c.n.custom_FunctionType(c,n.template as_any<FunctionType>()) : c.d.default_FunctionType(c,n.template as_any<FunctionType>());
-        case NodeType::StructType: return c.n.custom_StructType ? c.n.custom_StructType(c,n.template as_any<StructType>()) : c.d.default_StructType(c,n.template as_any<StructType>());
-        case NodeType::InlineStructType: return c.n.custom_InlineStructType ? c.n.custom_InlineStructType(c,n.template as_any<InlineStructType>()) : c.d.default_InlineStructType(c,n.template as_any<InlineStructType>());
-        case NodeType::StructUnionType: return c.n.custom_StructUnionType ? c.n.custom_StructUnionType(c,n.template as_any<StructUnionType>()) : c.d.default_StructUnionType(c,n.template as_any<StructUnionType>());
-        case NodeType::StructUnionCandidate: return c.n.custom_StructUnionCandidate ? c.n.custom_StructUnionCandidate(c,n.template as_any<StructUnionCandidate>()) : c.d.default_StructUnionCandidate(c,n.template as_any<StructUnionCandidate>());
-        case NodeType::UnionType: return c.n.custom_UnionType ? c.n.custom_UnionType(c,n.template as_any<UnionType>()) : c.d.default_UnionType(c,n.template as_any<UnionType>());
-        case NodeType::RangeType: return c.n.custom_RangeType ? c.n.custom_RangeType(c,n.template as_any<RangeType>()) : c.d.default_RangeType(c,n.template as_any<RangeType>());
-        case NodeType::EnumType: return c.n.custom_EnumType ? c.n.custom_EnumType(c,n.template as_any<EnumType>()) : c.d.default_EnumType(c,n.template as_any<EnumType>());
-        case NodeType::MetaType: return c.n.custom_MetaType ? c.n.custom_MetaType(c,n.template as_any<MetaType>()) : c.d.default_MetaType(c,n.template as_any<MetaType>());
-        case NodeType::OptionalType: return c.n.custom_OptionalType ? c.n.custom_OptionalType(c,n.template as_any<OptionalType>()) : c.d.default_OptionalType(c,n.template as_any<OptionalType>());
-        case NodeType::GenericType: return c.n.custom_GenericType ? c.n.custom_GenericType(c,n.template as_any<GenericType>()) : c.d.default_GenericType(c,n.template as_any<GenericType>());
-        case NodeType::MatchBranch: return c.n.custom_MatchBranch ? c.n.custom_MatchBranch(c,n.template as_any<MatchBranch>()) : c.d.default_MatchBranch(c,n.template as_any<MatchBranch>());
-        case NodeType::UnionCandidate: return c.n.custom_UnionCandidate ? c.n.custom_UnionCandidate(c,n.template as_any<UnionCandidate>()) : c.d.default_UnionCandidate(c,n.template as_any<UnionCandidate>());
-        case NodeType::Return: return c.n.custom_Return ? c.n.custom_Return(c,n.template as_any<Return>()) : c.d.default_Return(c,n.template as_any<Return>());
-        case NodeType::Break: return c.n.custom_Break ? c.n.custom_Break(c,n.template as_any<Break>()) : c.d.default_Break(c,n.template as_any<Break>());
-        case NodeType::Continue: return c.n.custom_Continue ? c.n.custom_Continue(c,n.template as_any<Continue>()) : c.d.default_Continue(c,n.template as_any<Continue>());
-        case NodeType::Enum: return c.n.custom_Enum ? c.n.custom_Enum(c,n.template as_any<Enum>()) : c.d.default_Enum(c,n.template as_any<Enum>());
-        case NodeType::EnumMember: return c.n.custom_EnumMember ? c.n.custom_EnumMember(c,n.template as_any<EnumMember>()) : c.d.default_EnumMember(c,n.template as_any<EnumMember>());
-        case NodeType::State: return c.n.custom_State ? c.n.custom_State(c,n.template as_any<State>()) : c.d.default_State(c,n.template as_any<State>());
-        case NodeType::TypeParameter: return c.n.custom_TypeParameter ? c.n.custom_TypeParameter(c,n.template as_any<TypeParameter>()) : c.d.default_TypeParameter(c,n.template as_any<TypeParameter>());
-        case NodeType::Identity: return c.n.custom_Identity ? c.n.custom_Identity(c,n.template as_any<Identity>()) : c.d.default_Identity(c,n.template as_any<Identity>());
-        case NodeType::Cast: return c.n.custom_Cast ? c.n.custom_Cast(c,n.template as_any<Cast>()) : c.d.default_Cast(c,n.template as_any<Cast>());
-        case NodeType::OrCond: return c.n.custom_OrCond ? c.n.custom_OrCond(c,n.template as_any<OrCond>()) : c.d.default_OrCond(c,n.template as_any<OrCond>());
-        case NodeType::Import: return c.n.custom_Import ? c.n.custom_Import(c,n.template as_any<Import>()) : c.d.default_Import(c,n.template as_any<Import>());
+        case NodeType::Module: if(c.n.custom_Module) { c.c.inner_default = false; return  c.n.custom_Module(c,n.template as_any<Module>()); } else { c.c.inner_default = true; return c.d.default_Module(c,n.template as_any<Module>()); }
+        case NodeType::BodyStatement: if(c.n.custom_BodyStatement) { c.c.inner_default = false; return  c.n.custom_BodyStatement(c,n.template as_any<BodyStatement>()); } else { c.c.inner_default = true; return c.d.default_BodyStatement(c,n.template as_any<BodyStatement>()); }
+        case NodeType::Field: if(c.n.custom_Field) { c.c.inner_default = false; return  c.n.custom_Field(c,n.template as_any<Field>()); } else { c.c.inner_default = true; return c.d.default_Field(c,n.template as_any<Field>()); }
+        case NodeType::StateVariable: if(c.n.custom_StateVariable) { c.c.inner_default = false; return  c.n.custom_StateVariable(c,n.template as_any<StateVariable>()); } else { c.c.inner_default = true; return c.d.default_StateVariable(c,n.template as_any<StateVariable>()); }
+        case NodeType::Format: if(c.n.custom_Format) { c.c.inner_default = false; return  c.n.custom_Format(c,n.template as_any<Format>()); } else { c.c.inner_default = true; return c.d.default_Format(c,n.template as_any<Format>()); }
+        case NodeType::GenericFormat: if(c.n.custom_GenericFormat) { c.c.inner_default = false; return  c.n.custom_GenericFormat(c,n.template as_any<GenericFormat>()); } else { c.c.inner_default = true; return c.d.default_GenericFormat(c,n.template as_any<GenericFormat>()); }
+        case NodeType::Function: if(c.n.custom_Function) { c.c.inner_default = false; return  c.n.custom_Function(c,n.template as_any<Function>()); } else { c.c.inner_default = true; return c.d.default_Function(c,n.template as_any<Function>()); }
+        case NodeType::If: if(c.n.custom_If) { c.c.inner_default = false; return  c.n.custom_If(c,n.template as_any<If>()); } else { c.c.inner_default = true; return c.d.default_If(c,n.template as_any<If>()); }
+        case NodeType::Match: if(c.n.custom_Match) { c.c.inner_default = false; return  c.n.custom_Match(c,n.template as_any<Match>()); } else { c.c.inner_default = true; return c.d.default_Match(c,n.template as_any<Match>()); }
+        case NodeType::Loop: if(c.n.custom_Loop) { c.c.inner_default = false; return  c.n.custom_Loop(c,n.template as_any<Loop>()); } else { c.c.inner_default = true; return c.d.default_Loop(c,n.template as_any<Loop>()); }
+        case NodeType::RangeLoop: if(c.n.custom_RangeLoop) { c.c.inner_default = false; return  c.n.custom_RangeLoop(c,n.template as_any<RangeLoop>()); } else { c.c.inner_default = true; return c.d.default_RangeLoop(c,n.template as_any<RangeLoop>()); }
+        case NodeType::Assign: if(c.n.custom_Assign) { c.c.inner_default = false; return  c.n.custom_Assign(c,n.template as_any<Assign>()); } else { c.c.inner_default = true; return c.d.default_Assign(c,n.template as_any<Assign>()); }
+        case NodeType::VariableDefinition: if(c.n.custom_VariableDefinition) { c.c.inner_default = false; return  c.n.custom_VariableDefinition(c,n.template as_any<VariableDefinition>()); } else { c.c.inner_default = true; return c.d.default_VariableDefinition(c,n.template as_any<VariableDefinition>()); }
+        case NodeType::Metadata: if(c.n.custom_Metadata) { c.c.inner_default = false; return  c.n.custom_Metadata(c,n.template as_any<Metadata>()); } else { c.c.inner_default = true; return c.d.default_Metadata(c,n.template as_any<Metadata>()); }
+        case NodeType::SpecifyOrder: if(c.n.custom_SpecifyOrder) { c.c.inner_default = false; return  c.n.custom_SpecifyOrder(c,n.template as_any<SpecifyOrder>()); } else { c.c.inner_default = true; return c.d.default_SpecifyOrder(c,n.template as_any<SpecifyOrder>()); }
+        case NodeType::Sizeof: if(c.n.custom_Sizeof) { c.c.inner_default = false; return  c.n.custom_Sizeof(c,n.template as_any<Sizeof>()); } else { c.c.inner_default = true; return c.d.default_Sizeof(c,n.template as_any<Sizeof>()); }
+        case NodeType::Available: if(c.n.custom_Available) { c.c.inner_default = false; return  c.n.custom_Available(c,n.template as_any<Available>()); } else { c.c.inner_default = true; return c.d.default_Available(c,n.template as_any<Available>()); }
+        case NodeType::ExplicitError: if(c.n.custom_ExplicitError) { c.c.inner_default = false; return  c.n.custom_ExplicitError(c,n.template as_any<ExplicitError>()); } else { c.c.inner_default = true; return c.d.default_ExplicitError(c,n.template as_any<ExplicitError>()); }
+        case NodeType::Binary: if(c.n.custom_Binary) { c.c.inner_default = false; return  c.n.custom_Binary(c,n.template as_any<Binary>()); } else { c.c.inner_default = true; return c.d.default_Binary(c,n.template as_any<Binary>()); }
+        case NodeType::Unary: if(c.n.custom_Unary) { c.c.inner_default = false; return  c.n.custom_Unary(c,n.template as_any<Unary>()); } else { c.c.inner_default = true; return c.d.default_Unary(c,n.template as_any<Unary>()); }
+        case NodeType::Call: if(c.n.custom_Call) { c.c.inner_default = false; return  c.n.custom_Call(c,n.template as_any<Call>()); } else { c.c.inner_default = true; return c.d.default_Call(c,n.template as_any<Call>()); }
+        case NodeType::Reference: if(c.n.custom_Reference) { c.c.inner_default = false; return  c.n.custom_Reference(c,n.template as_any<Reference>()); } else { c.c.inner_default = true; return c.d.default_Reference(c,n.template as_any<Reference>()); }
+        case NodeType::MemberAccess: if(c.n.custom_MemberAccess) { c.c.inner_default = false; return  c.n.custom_MemberAccess(c,n.template as_any<MemberAccess>()); } else { c.c.inner_default = true; return c.d.default_MemberAccess(c,n.template as_any<MemberAccess>()); }
+        case NodeType::TypeLiteral: if(c.n.custom_TypeLiteral) { c.c.inner_default = false; return  c.n.custom_TypeLiteral(c,n.template as_any<TypeLiteral>()); } else { c.c.inner_default = true; return c.d.default_TypeLiteral(c,n.template as_any<TypeLiteral>()); }
+        case NodeType::ConditionalStatement: if(c.n.custom_ConditionalStatement) { c.c.inner_default = false; return  c.n.custom_ConditionalStatement(c,n.template as_any<ConditionalStatement>()); } else { c.c.inner_default = true; return c.d.default_ConditionalStatement(c,n.template as_any<ConditionalStatement>()); }
+        case NodeType::Parameter: if(c.n.custom_Parameter) { c.c.inner_default = false; return  c.n.custom_Parameter(c,n.template as_any<Parameter>()); } else { c.c.inner_default = true; return c.d.default_Parameter(c,n.template as_any<Parameter>()); }
+        case NodeType::Body: if(c.n.custom_Body) { c.c.inner_default = false; return  c.n.custom_Body(c,n.template as_any<Body>()); } else { c.c.inner_default = true; return c.d.default_Body(c,n.template as_any<Body>()); }
+        case NodeType::Arguments: if(c.n.custom_Arguments) { c.c.inner_default = false; return  c.n.custom_Arguments(c,n.template as_any<Arguments>()); } else { c.c.inner_default = true; return c.d.default_Arguments(c,n.template as_any<Arguments>()); }
+        case NodeType::Argument: if(c.n.custom_Argument) { c.c.inner_default = false; return  c.n.custom_Argument(c,n.template as_any<Argument>()); } else { c.c.inner_default = true; return c.d.default_Argument(c,n.template as_any<Argument>()); }
+        case NodeType::NamedArgument: if(c.n.custom_NamedArgument) { c.c.inner_default = false; return  c.n.custom_NamedArgument(c,n.template as_any<NamedArgument>()); } else { c.c.inner_default = true; return c.d.default_NamedArgument(c,n.template as_any<NamedArgument>()); }
+        case NodeType::Ident: if(c.n.custom_Ident) { c.c.inner_default = false; return  c.n.custom_Ident(c,n.template as_any<Ident>()); } else { c.c.inner_default = true; return c.d.default_Ident(c,n.template as_any<Ident>()); }
+        case NodeType::IntType: if(c.n.custom_IntType) { c.c.inner_default = false; return  c.n.custom_IntType(c,n.template as_any<IntType>()); } else { c.c.inner_default = true; return c.d.default_IntType(c,n.template as_any<IntType>()); }
+        case NodeType::IntLiteral: if(c.n.custom_IntLiteral) { c.c.inner_default = false; return  c.n.custom_IntLiteral(c,n.template as_any<IntLiteral>()); } else { c.c.inner_default = true; return c.d.default_IntLiteral(c,n.template as_any<IntLiteral>()); }
+        case NodeType::BoolLiteral: if(c.n.custom_BoolLiteral) { c.c.inner_default = false; return  c.n.custom_BoolLiteral(c,n.template as_any<BoolLiteral>()); } else { c.c.inner_default = true; return c.d.default_BoolLiteral(c,n.template as_any<BoolLiteral>()); }
+        case NodeType::StrLiteral: if(c.n.custom_StrLiteral) { c.c.inner_default = false; return  c.n.custom_StrLiteral(c,n.template as_any<StrLiteral>()); } else { c.c.inner_default = true; return c.d.default_StrLiteral(c,n.template as_any<StrLiteral>()); }
+        case NodeType::CharLiteral: if(c.n.custom_CharLiteral) { c.c.inner_default = false; return  c.n.custom_CharLiteral(c,n.template as_any<CharLiteral>()); } else { c.c.inner_default = true; return c.d.default_CharLiteral(c,n.template as_any<CharLiteral>()); }
+        case NodeType::RegexLiteral: if(c.n.custom_RegexLiteral) { c.c.inner_default = false; return  c.n.custom_RegexLiteral(c,n.template as_any<RegexLiteral>()); } else { c.c.inner_default = true; return c.d.default_RegexLiteral(c,n.template as_any<RegexLiteral>()); }
+        case NodeType::SpecialLiteral: if(c.n.custom_SpecialLiteral) { c.c.inner_default = false; return  c.n.custom_SpecialLiteral(c,n.template as_any<SpecialLiteral>()); } else { c.c.inner_default = true; return c.d.default_SpecialLiteral(c,n.template as_any<SpecialLiteral>()); }
+        case NodeType::Paren: if(c.n.custom_Paren) { c.c.inner_default = false; return  c.n.custom_Paren(c,n.template as_any<Paren>()); } else { c.c.inner_default = true; return c.d.default_Paren(c,n.template as_any<Paren>()); }
+        case NodeType::Index: if(c.n.custom_Index) { c.c.inner_default = false; return  c.n.custom_Index(c,n.template as_any<Index>()); } else { c.c.inner_default = true; return c.d.default_Index(c,n.template as_any<Index>()); }
+        case NodeType::Cond: if(c.n.custom_Cond) { c.c.inner_default = false; return  c.n.custom_Cond(c,n.template as_any<Cond>()); } else { c.c.inner_default = true; return c.d.default_Cond(c,n.template as_any<Cond>()); }
+        case NodeType::Range: if(c.n.custom_Range) { c.c.inner_default = false; return  c.n.custom_Range(c,n.template as_any<Range>()); } else { c.c.inner_default = true; return c.d.default_Range(c,n.template as_any<Range>()); }
+        case NodeType::BadExpr: if(c.n.custom_BadExpr) { c.c.inner_default = false; return  c.n.custom_BadExpr(c,n.template as_any<BadExpr>()); } else { c.c.inner_default = true; return c.d.default_BadExpr(c,n.template as_any<BadExpr>()); }
+        case NodeType::Assert: if(c.n.custom_Assert) { c.c.inner_default = false; return  c.n.custom_Assert(c,n.template as_any<Assert>()); } else { c.c.inner_default = true; return c.d.default_Assert(c,n.template as_any<Assert>()); }
+        case NodeType::FloatType: if(c.n.custom_FloatType) { c.c.inner_default = false; return  c.n.custom_FloatType(c,n.template as_any<FloatType>()); } else { c.c.inner_default = true; return c.d.default_FloatType(c,n.template as_any<FloatType>()); }
+        case NodeType::BoolType: if(c.n.custom_BoolType) { c.c.inner_default = false; return  c.n.custom_BoolType(c,n.template as_any<BoolType>()); } else { c.c.inner_default = true; return c.d.default_BoolType(c,n.template as_any<BoolType>()); }
+        case NodeType::VoidType: if(c.n.custom_VoidType) { c.c.inner_default = false; return  c.n.custom_VoidType(c,n.template as_any<VoidType>()); } else { c.c.inner_default = true; return c.d.default_VoidType(c,n.template as_any<VoidType>()); }
+        case NodeType::IdentType: if(c.n.custom_IdentType) { c.c.inner_default = false; return  c.n.custom_IdentType(c,n.template as_any<IdentType>()); } else { c.c.inner_default = true; return c.d.default_IdentType(c,n.template as_any<IdentType>()); }
+        case NodeType::ImportedType: if(c.n.custom_ImportedType) { c.c.inner_default = false; return  c.n.custom_ImportedType(c,n.template as_any<ImportedType>()); } else { c.c.inner_default = true; return c.d.default_ImportedType(c,n.template as_any<ImportedType>()); }
+        case NodeType::IntLiteralType: if(c.n.custom_IntLiteralType) { c.c.inner_default = false; return  c.n.custom_IntLiteralType(c,n.template as_any<IntLiteralType>()); } else { c.c.inner_default = true; return c.d.default_IntLiteralType(c,n.template as_any<IntLiteralType>()); }
+        case NodeType::StrLiteralType: if(c.n.custom_StrLiteralType) { c.c.inner_default = false; return  c.n.custom_StrLiteralType(c,n.template as_any<StrLiteralType>()); } else { c.c.inner_default = true; return c.d.default_StrLiteralType(c,n.template as_any<StrLiteralType>()); }
+        case NodeType::RegexLiteralType: if(c.n.custom_RegexLiteralType) { c.c.inner_default = false; return  c.n.custom_RegexLiteralType(c,n.template as_any<RegexLiteralType>()); } else { c.c.inner_default = true; return c.d.default_RegexLiteralType(c,n.template as_any<RegexLiteralType>()); }
+        case NodeType::ArrayType: if(c.n.custom_ArrayType) { c.c.inner_default = false; return  c.n.custom_ArrayType(c,n.template as_any<ArrayType>()); } else { c.c.inner_default = true; return c.d.default_ArrayType(c,n.template as_any<ArrayType>()); }
+        case NodeType::StreamType: if(c.n.custom_StreamType) { c.c.inner_default = false; return  c.n.custom_StreamType(c,n.template as_any<StreamType>()); } else { c.c.inner_default = true; return c.d.default_StreamType(c,n.template as_any<StreamType>()); }
+        case NodeType::FunctionType: if(c.n.custom_FunctionType) { c.c.inner_default = false; return  c.n.custom_FunctionType(c,n.template as_any<FunctionType>()); } else { c.c.inner_default = true; return c.d.default_FunctionType(c,n.template as_any<FunctionType>()); }
+        case NodeType::StructType: if(c.n.custom_StructType) { c.c.inner_default = false; return  c.n.custom_StructType(c,n.template as_any<StructType>()); } else { c.c.inner_default = true; return c.d.default_StructType(c,n.template as_any<StructType>()); }
+        case NodeType::InlineStructType: if(c.n.custom_InlineStructType) { c.c.inner_default = false; return  c.n.custom_InlineStructType(c,n.template as_any<InlineStructType>()); } else { c.c.inner_default = true; return c.d.default_InlineStructType(c,n.template as_any<InlineStructType>()); }
+        case NodeType::StructUnionType: if(c.n.custom_StructUnionType) { c.c.inner_default = false; return  c.n.custom_StructUnionType(c,n.template as_any<StructUnionType>()); } else { c.c.inner_default = true; return c.d.default_StructUnionType(c,n.template as_any<StructUnionType>()); }
+        case NodeType::StructUnionCandidate: if(c.n.custom_StructUnionCandidate) { c.c.inner_default = false; return  c.n.custom_StructUnionCandidate(c,n.template as_any<StructUnionCandidate>()); } else { c.c.inner_default = true; return c.d.default_StructUnionCandidate(c,n.template as_any<StructUnionCandidate>()); }
+        case NodeType::UnionType: if(c.n.custom_UnionType) { c.c.inner_default = false; return  c.n.custom_UnionType(c,n.template as_any<UnionType>()); } else { c.c.inner_default = true; return c.d.default_UnionType(c,n.template as_any<UnionType>()); }
+        case NodeType::RangeType: if(c.n.custom_RangeType) { c.c.inner_default = false; return  c.n.custom_RangeType(c,n.template as_any<RangeType>()); } else { c.c.inner_default = true; return c.d.default_RangeType(c,n.template as_any<RangeType>()); }
+        case NodeType::EnumType: if(c.n.custom_EnumType) { c.c.inner_default = false; return  c.n.custom_EnumType(c,n.template as_any<EnumType>()); } else { c.c.inner_default = true; return c.d.default_EnumType(c,n.template as_any<EnumType>()); }
+        case NodeType::MetaType: if(c.n.custom_MetaType) { c.c.inner_default = false; return  c.n.custom_MetaType(c,n.template as_any<MetaType>()); } else { c.c.inner_default = true; return c.d.default_MetaType(c,n.template as_any<MetaType>()); }
+        case NodeType::OptionalType: if(c.n.custom_OptionalType) { c.c.inner_default = false; return  c.n.custom_OptionalType(c,n.template as_any<OptionalType>()); } else { c.c.inner_default = true; return c.d.default_OptionalType(c,n.template as_any<OptionalType>()); }
+        case NodeType::GenericType: if(c.n.custom_GenericType) { c.c.inner_default = false; return  c.n.custom_GenericType(c,n.template as_any<GenericType>()); } else { c.c.inner_default = true; return c.d.default_GenericType(c,n.template as_any<GenericType>()); }
+        case NodeType::MatchBranch: if(c.n.custom_MatchBranch) { c.c.inner_default = false; return  c.n.custom_MatchBranch(c,n.template as_any<MatchBranch>()); } else { c.c.inner_default = true; return c.d.default_MatchBranch(c,n.template as_any<MatchBranch>()); }
+        case NodeType::UnionCandidate: if(c.n.custom_UnionCandidate) { c.c.inner_default = false; return  c.n.custom_UnionCandidate(c,n.template as_any<UnionCandidate>()); } else { c.c.inner_default = true; return c.d.default_UnionCandidate(c,n.template as_any<UnionCandidate>()); }
+        case NodeType::Return: if(c.n.custom_Return) { c.c.inner_default = false; return  c.n.custom_Return(c,n.template as_any<Return>()); } else { c.c.inner_default = true; return c.d.default_Return(c,n.template as_any<Return>()); }
+        case NodeType::Break: if(c.n.custom_Break) { c.c.inner_default = false; return  c.n.custom_Break(c,n.template as_any<Break>()); } else { c.c.inner_default = true; return c.d.default_Break(c,n.template as_any<Break>()); }
+        case NodeType::Continue: if(c.n.custom_Continue) { c.c.inner_default = false; return  c.n.custom_Continue(c,n.template as_any<Continue>()); } else { c.c.inner_default = true; return c.d.default_Continue(c,n.template as_any<Continue>()); }
+        case NodeType::Enum: if(c.n.custom_Enum) { c.c.inner_default = false; return  c.n.custom_Enum(c,n.template as_any<Enum>()); } else { c.c.inner_default = true; return c.d.default_Enum(c,n.template as_any<Enum>()); }
+        case NodeType::EnumMember: if(c.n.custom_EnumMember) { c.c.inner_default = false; return  c.n.custom_EnumMember(c,n.template as_any<EnumMember>()); } else { c.c.inner_default = true; return c.d.default_EnumMember(c,n.template as_any<EnumMember>()); }
+        case NodeType::State: if(c.n.custom_State) { c.c.inner_default = false; return  c.n.custom_State(c,n.template as_any<State>()); } else { c.c.inner_default = true; return c.d.default_State(c,n.template as_any<State>()); }
+        case NodeType::TypeParameter: if(c.n.custom_TypeParameter) { c.c.inner_default = false; return  c.n.custom_TypeParameter(c,n.template as_any<TypeParameter>()); } else { c.c.inner_default = true; return c.d.default_TypeParameter(c,n.template as_any<TypeParameter>()); }
+        case NodeType::Identity: if(c.n.custom_Identity) { c.c.inner_default = false; return  c.n.custom_Identity(c,n.template as_any<Identity>()); } else { c.c.inner_default = true; return c.d.default_Identity(c,n.template as_any<Identity>()); }
+        case NodeType::Cast: if(c.n.custom_Cast) { c.c.inner_default = false; return  c.n.custom_Cast(c,n.template as_any<Cast>()); } else { c.c.inner_default = true; return c.d.default_Cast(c,n.template as_any<Cast>()); }
+        case NodeType::OrCond: if(c.n.custom_OrCond) { c.c.inner_default = false; return  c.n.custom_OrCond(c,n.template as_any<OrCond>()); } else { c.c.inner_default = true; return c.d.default_OrCond(c,n.template as_any<OrCond>()); }
+        case NodeType::Import: if(c.n.custom_Import) { c.c.inner_default = false; return  c.n.custom_Import(c,n.template as_any<Import>()); } else { c.c.inner_default = true; return c.d.default_Import(c,n.template as_any<Import>()); }
+        default: return unexpect_loc_error(n,"unexpected node type: {}",to_string(n.type()));
+        }
+    }
+    template<class R>
+    expected<R> invoke_default(NodeAny n) {
+        auto& c = static_cast<Context&>(*this);
+        switch(n.type()) {
+        case NodeType::Module: { c.n.inner_default = true; return c.d.default_Module(c,n.template as_any<Module>()); }
+        case NodeType::BodyStatement: { c.n.inner_default = true; return c.d.default_BodyStatement(c,n.template as_any<BodyStatement>()); }
+        case NodeType::Field: { c.n.inner_default = true; return c.d.default_Field(c,n.template as_any<Field>()); }
+        case NodeType::StateVariable: { c.n.inner_default = true; return c.d.default_StateVariable(c,n.template as_any<StateVariable>()); }
+        case NodeType::Format: { c.n.inner_default = true; return c.d.default_Format(c,n.template as_any<Format>()); }
+        case NodeType::GenericFormat: { c.n.inner_default = true; return c.d.default_GenericFormat(c,n.template as_any<GenericFormat>()); }
+        case NodeType::Function: { c.n.inner_default = true; return c.d.default_Function(c,n.template as_any<Function>()); }
+        case NodeType::If: { c.n.inner_default = true; return c.d.default_If(c,n.template as_any<If>()); }
+        case NodeType::Match: { c.n.inner_default = true; return c.d.default_Match(c,n.template as_any<Match>()); }
+        case NodeType::Loop: { c.n.inner_default = true; return c.d.default_Loop(c,n.template as_any<Loop>()); }
+        case NodeType::RangeLoop: { c.n.inner_default = true; return c.d.default_RangeLoop(c,n.template as_any<RangeLoop>()); }
+        case NodeType::Assign: { c.n.inner_default = true; return c.d.default_Assign(c,n.template as_any<Assign>()); }
+        case NodeType::VariableDefinition: { c.n.inner_default = true; return c.d.default_VariableDefinition(c,n.template as_any<VariableDefinition>()); }
+        case NodeType::Metadata: { c.n.inner_default = true; return c.d.default_Metadata(c,n.template as_any<Metadata>()); }
+        case NodeType::SpecifyOrder: { c.n.inner_default = true; return c.d.default_SpecifyOrder(c,n.template as_any<SpecifyOrder>()); }
+        case NodeType::Sizeof: { c.n.inner_default = true; return c.d.default_Sizeof(c,n.template as_any<Sizeof>()); }
+        case NodeType::Available: { c.n.inner_default = true; return c.d.default_Available(c,n.template as_any<Available>()); }
+        case NodeType::ExplicitError: { c.n.inner_default = true; return c.d.default_ExplicitError(c,n.template as_any<ExplicitError>()); }
+        case NodeType::Binary: { c.n.inner_default = true; return c.d.default_Binary(c,n.template as_any<Binary>()); }
+        case NodeType::Unary: { c.n.inner_default = true; return c.d.default_Unary(c,n.template as_any<Unary>()); }
+        case NodeType::Call: { c.n.inner_default = true; return c.d.default_Call(c,n.template as_any<Call>()); }
+        case NodeType::Reference: { c.n.inner_default = true; return c.d.default_Reference(c,n.template as_any<Reference>()); }
+        case NodeType::MemberAccess: { c.n.inner_default = true; return c.d.default_MemberAccess(c,n.template as_any<MemberAccess>()); }
+        case NodeType::TypeLiteral: { c.n.inner_default = true; return c.d.default_TypeLiteral(c,n.template as_any<TypeLiteral>()); }
+        case NodeType::ConditionalStatement: { c.n.inner_default = true; return c.d.default_ConditionalStatement(c,n.template as_any<ConditionalStatement>()); }
+        case NodeType::Parameter: { c.n.inner_default = true; return c.d.default_Parameter(c,n.template as_any<Parameter>()); }
+        case NodeType::Body: { c.n.inner_default = true; return c.d.default_Body(c,n.template as_any<Body>()); }
+        case NodeType::Arguments: { c.n.inner_default = true; return c.d.default_Arguments(c,n.template as_any<Arguments>()); }
+        case NodeType::Argument: { c.n.inner_default = true; return c.d.default_Argument(c,n.template as_any<Argument>()); }
+        case NodeType::NamedArgument: { c.n.inner_default = true; return c.d.default_NamedArgument(c,n.template as_any<NamedArgument>()); }
+        case NodeType::Ident: { c.n.inner_default = true; return c.d.default_Ident(c,n.template as_any<Ident>()); }
+        case NodeType::IntType: { c.n.inner_default = true; return c.d.default_IntType(c,n.template as_any<IntType>()); }
+        case NodeType::IntLiteral: { c.n.inner_default = true; return c.d.default_IntLiteral(c,n.template as_any<IntLiteral>()); }
+        case NodeType::BoolLiteral: { c.n.inner_default = true; return c.d.default_BoolLiteral(c,n.template as_any<BoolLiteral>()); }
+        case NodeType::StrLiteral: { c.n.inner_default = true; return c.d.default_StrLiteral(c,n.template as_any<StrLiteral>()); }
+        case NodeType::CharLiteral: { c.n.inner_default = true; return c.d.default_CharLiteral(c,n.template as_any<CharLiteral>()); }
+        case NodeType::RegexLiteral: { c.n.inner_default = true; return c.d.default_RegexLiteral(c,n.template as_any<RegexLiteral>()); }
+        case NodeType::SpecialLiteral: { c.n.inner_default = true; return c.d.default_SpecialLiteral(c,n.template as_any<SpecialLiteral>()); }
+        case NodeType::Paren: { c.n.inner_default = true; return c.d.default_Paren(c,n.template as_any<Paren>()); }
+        case NodeType::Index: { c.n.inner_default = true; return c.d.default_Index(c,n.template as_any<Index>()); }
+        case NodeType::Cond: { c.n.inner_default = true; return c.d.default_Cond(c,n.template as_any<Cond>()); }
+        case NodeType::Range: { c.n.inner_default = true; return c.d.default_Range(c,n.template as_any<Range>()); }
+        case NodeType::BadExpr: { c.n.inner_default = true; return c.d.default_BadExpr(c,n.template as_any<BadExpr>()); }
+        case NodeType::Assert: { c.n.inner_default = true; return c.d.default_Assert(c,n.template as_any<Assert>()); }
+        case NodeType::FloatType: { c.n.inner_default = true; return c.d.default_FloatType(c,n.template as_any<FloatType>()); }
+        case NodeType::BoolType: { c.n.inner_default = true; return c.d.default_BoolType(c,n.template as_any<BoolType>()); }
+        case NodeType::VoidType: { c.n.inner_default = true; return c.d.default_VoidType(c,n.template as_any<VoidType>()); }
+        case NodeType::IdentType: { c.n.inner_default = true; return c.d.default_IdentType(c,n.template as_any<IdentType>()); }
+        case NodeType::ImportedType: { c.n.inner_default = true; return c.d.default_ImportedType(c,n.template as_any<ImportedType>()); }
+        case NodeType::IntLiteralType: { c.n.inner_default = true; return c.d.default_IntLiteralType(c,n.template as_any<IntLiteralType>()); }
+        case NodeType::StrLiteralType: { c.n.inner_default = true; return c.d.default_StrLiteralType(c,n.template as_any<StrLiteralType>()); }
+        case NodeType::RegexLiteralType: { c.n.inner_default = true; return c.d.default_RegexLiteralType(c,n.template as_any<RegexLiteralType>()); }
+        case NodeType::ArrayType: { c.n.inner_default = true; return c.d.default_ArrayType(c,n.template as_any<ArrayType>()); }
+        case NodeType::StreamType: { c.n.inner_default = true; return c.d.default_StreamType(c,n.template as_any<StreamType>()); }
+        case NodeType::FunctionType: { c.n.inner_default = true; return c.d.default_FunctionType(c,n.template as_any<FunctionType>()); }
+        case NodeType::StructType: { c.n.inner_default = true; return c.d.default_StructType(c,n.template as_any<StructType>()); }
+        case NodeType::InlineStructType: { c.n.inner_default = true; return c.d.default_InlineStructType(c,n.template as_any<InlineStructType>()); }
+        case NodeType::StructUnionType: { c.n.inner_default = true; return c.d.default_StructUnionType(c,n.template as_any<StructUnionType>()); }
+        case NodeType::StructUnionCandidate: { c.n.inner_default = true; return c.d.default_StructUnionCandidate(c,n.template as_any<StructUnionCandidate>()); }
+        case NodeType::UnionType: { c.n.inner_default = true; return c.d.default_UnionType(c,n.template as_any<UnionType>()); }
+        case NodeType::RangeType: { c.n.inner_default = true; return c.d.default_RangeType(c,n.template as_any<RangeType>()); }
+        case NodeType::EnumType: { c.n.inner_default = true; return c.d.default_EnumType(c,n.template as_any<EnumType>()); }
+        case NodeType::MetaType: { c.n.inner_default = true; return c.d.default_MetaType(c,n.template as_any<MetaType>()); }
+        case NodeType::OptionalType: { c.n.inner_default = true; return c.d.default_OptionalType(c,n.template as_any<OptionalType>()); }
+        case NodeType::GenericType: { c.n.inner_default = true; return c.d.default_GenericType(c,n.template as_any<GenericType>()); }
+        case NodeType::MatchBranch: { c.n.inner_default = true; return c.d.default_MatchBranch(c,n.template as_any<MatchBranch>()); }
+        case NodeType::UnionCandidate: { c.n.inner_default = true; return c.d.default_UnionCandidate(c,n.template as_any<UnionCandidate>()); }
+        case NodeType::Return: { c.n.inner_default = true; return c.d.default_Return(c,n.template as_any<Return>()); }
+        case NodeType::Break: { c.n.inner_default = true; return c.d.default_Break(c,n.template as_any<Break>()); }
+        case NodeType::Continue: { c.n.inner_default = true; return c.d.default_Continue(c,n.template as_any<Continue>()); }
+        case NodeType::Enum: { c.n.inner_default = true; return c.d.default_Enum(c,n.template as_any<Enum>()); }
+        case NodeType::EnumMember: { c.n.inner_default = true; return c.d.default_EnumMember(c,n.template as_any<EnumMember>()); }
+        case NodeType::State: { c.n.inner_default = true; return c.d.default_State(c,n.template as_any<State>()); }
+        case NodeType::TypeParameter: { c.n.inner_default = true; return c.d.default_TypeParameter(c,n.template as_any<TypeParameter>()); }
+        case NodeType::Identity: { c.n.inner_default = true; return c.d.default_Identity(c,n.template as_any<Identity>()); }
+        case NodeType::Cast: { c.n.inner_default = true; return c.d.default_Cast(c,n.template as_any<Cast>()); }
+        case NodeType::OrCond: { c.n.inner_default = true; return c.d.default_OrCond(c,n.template as_any<OrCond>()); }
+        case NodeType::Import: { c.n.inner_default = true; return c.d.default_Import(c,n.template as_any<Import>()); }
         default: return unexpect_loc_error(n,"unexpected node type: {}",to_string(n.type()));
         }
     }
