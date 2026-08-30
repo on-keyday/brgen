@@ -9,8 +9,7 @@ namespace brgen::nast::backend {
     template <class C>
     struct Invoker;
 
-    // 未対応のノードに当たったときどうするか。ノードに紐づかない
-    // 唯一の設定で、--unhandled から来る。
+    // What to do at a node the backend has not handled
     enum class UnhandledMode : std::uint8_t {
         error,
         dummy,
@@ -18,6 +17,7 @@ namespace brgen::nast::backend {
     };
 
     struct CommonConfig {
+        // Set from --unhandled. dummy leaves a marker in the output, error stops at the node, ignore drops it
         UnhandledMode unhandled_mode = UnhandledMode::dummy;
 
         // IsLittleEndian のハンドラのつまみ。

@@ -18,6 +18,8 @@ class Schema:
         # ノードではない素の値型と、解析結果を置く side table。どちらも無くてもよい。
         self.structs = doc.get("structs", [])
         self.side_tables = doc.get("side_tables", [])
+        # バックエンドの設定。ノードに紐づかないものだけがここに来る。
+        self.backend_config = doc.get("backend_config", {})
 
         self._normalize_enum_layers()
         self._by_name = {n["name"]: n for n in self.nodes}

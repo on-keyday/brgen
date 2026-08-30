@@ -35,16 +35,20 @@ def emit_backend_config(s :Schema) -> str:
     w.line("    template <class C>")
     w.line("    struct Invoker;")
     w.line("")
-    w.line("    // 未対応のノードに当たったときどうするか。ノードに紐づかない")
-    w.line("    // 唯一の設定で、--unhandled から来る。")
-    w.line("    enum class UnhandledMode : std::uint8_t {")
-    w.line("        error,")
-    w.line("        dummy,")
-    w.line("        ignore,")
-    w.line("    };")
-    w.line("")
+    cfg = s.backend_config
+    for e in cfg.get("enums", []):
+        if e.get("description"):
+            w.line("    // ", e["description"])
+        w.line("    enum class ", e["name"], " : ", e.get("underlying", "std::uint8_t"), " {")
+        for v in e["values"]:
+            w.line("        ", v, ",")
+        w.line("    };")
+        w.line("")
     w.line("    struct CommonConfig {")
-    w.line("        UnhandledMode unhandled_mode = UnhandledMode::dummy;")
+    for k in cfg.get("knobs", []):
+        if k.get("description"):
+            w.line("        // ", k["description"])
+        w.line("        ", k["type"], " ", k["name"], " = ", k["default"], ";")
     for node in s.concrete_nodes():
         knobs = node.get("knobs")
         if not knobs:
