@@ -2,7 +2,9 @@
 #include "../bind/pipeline.h"
 #include "../lowering/conditional.hpp"
 #include "../lowering/match_to_if.hpp"
+#include "../lowering/int_bytes.hpp"
 #include "../lowering/predicate.hpp"
+#include "../node/util.h"
 #include "../parse/unparse.h"
 #include <print>
 using namespace brgen::nast;
@@ -25,6 +27,37 @@ int main(int argc, char** argv) {
                 if (if_ && argc == 2) {
                     std::println("--- match #{}", id);
                     std::println("{}", unparse_node(a, if_));
+                }
+                continue;
+            }
+            // field の整数を読み書きする形。バッファ名は呼ぶ側が決めるので
+            // ここでは `buf` / `o` を仮に置く。
+            if (h && h->type == NodeType::Field && argc == 2) {
+                auto f = Node<Field>::from_unique_id((std::uint64_t(NodeType::Field) << 32) | id);
+                auto ty = f.ref(a)->type;
+                if (ty && ty.as_any<IntType>()) {
+                    auto buf = a.make<Reference>(a.header_at(id)->loc);
+                    buf->name = a.make<Ident>(a.header_at(id)->loc);
+                    buf->name.ref(a)->identifier = "buf";
+                    auto off = a.make<Reference>(a.header_at(id)->loc);
+                    off->name = a.make<Ident>(a.header_at(id)->loc);
+                    off->name.ref(a)->identifier = "o";
+                    auto target = a.make<Reference>(a.header_at(id)->loc);
+                    target->name = f.ref(a)->name;
+                    target->type = ty;
+                    auto combined = lowering::combine_int(c, buf, off, ty);
+                    auto split = lowering::split_int(c, buf, off, target, ty);
+                    if (combined) {
+                        std::println("--- {} :{}", name_of(a, f), unparse_node(a, ty));
+                        std::println("decode: {} = {}", name_of(a, f), unparse_node(a, combined));
+                        std::println("encode:");
+                        // unparse は Body 単体を綴らない (文ではない) ので 1 つずつ。
+                        if (split) {
+                            for (auto& s : split.ref(a)->statements) {
+                                std::println("  {}", unparse_node(a, s));
+                            }
+                        }
+                    }
                 }
                 continue;
             }
