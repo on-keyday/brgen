@@ -185,6 +185,45 @@ ADR 0045 は「backend が用意すべき IO ランタイムはバイト列の r
 ただし今見えている範囲での話で、subrange / peek / offset のような要求
 (Requirements の語彙にあるもの) を実際に降ろすと足りないものが出てくると思われる。
 
+### field の読み書き (2026-08-31)
+
+`lowering/field_io` が int_bytes の外側を組む。EBM の `ENUM_UNDERLYING_TO_INT`
+と `ARRAY_FOR_EACH` に当たる:
+
+```
+--- kind :Kind
+decode: kind = <Kind>(u8(buf[o]))
+encode: buf[o] = u8(<u8>(kind))
+
+--- varying :[count]u16
+decode:
+for i40 := 0; i40 < count; i40 = i40 + 1:
+    varying[i40] = (u16(buf[o + (i40 * 2)]) << 8) | u16(buf[o + (i40 * 2) + 1])
+```
+
+**位置を進めるところは組まない。** 何バイト読んだかをどう持つかは IO の
+表し方と密で、IR で一意にできないと EBM が一度撤回している (ADR 0008)。
+「この位置から読む」形までを返し、位置の管理は呼ぶ側。配列の要素位置は
+要素幅が固定のときだけ組める (`offset + i * 幅`) ので、要素が可変幅の配列は
+断る — 進みながら読む形になり、同じ理由で呼ぶ側の領分。
+
+測定 (example/ 180 本、名前つき field 10496 のうち):
+
+| | 数 | |
+| --- | ---: | --- |
+| 組めた | 4030 | 38.4% |
+| StructType | 1310 | 入れ子 format。呼び出しの語彙が無い |
+| IntType | 1090 | バイト境界に乗らない幅 (u1/u2/u4 等)。畳み込み待ち |
+| UnionType | 769 | 分岐の field |
+| EnumType | 50 | 下地の型が書かれていない enum |
+| StrLiteralType | 47 | magic |
+| FloatType | 20 | ビット列との相互変換がまだ |
+
+副産物: unparse が `EnumType` / `StructType` を綴れず
+`/*unprintable type*/` を出していた。原文には宣言の名前が書かれ、これらの
+ノードは typer が合成するものなので、今まで印字の対象にならなかった。
+lowering がこれらへの cast を組むので、宣言の名前で綴るようにした。
+
 ### endian のスコープ (2026-08-31)
 
 `bind/endian_scope.{hpp,cpp}`、段は `Stage::endian` (evaluate と size の間)。
