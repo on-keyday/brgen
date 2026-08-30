@@ -47,6 +47,23 @@ namespace brgen::nast {
         return t;
     }
 
+    // 名前の包みを外す。`header :UDPHeader` の型は IdentType で、指している
+    // struct はその base にある。ImportedType など WrapperType の系列は全部
+    // 同じ形なのでまとめて剥がす。
+    //
+    // 型で分岐する側 (typer の as_struct、バックエンドの型対応) は、書かれ方
+    // ではなく指している実体を見たいので普通こちらが要る。
+    inline Node<Type> strip_wrappers(Arena& a, Node<Type> t) {
+        while (auto w = t.as_any<WrapperType>()) {
+            auto base = w.ref(a)->base;
+            if (!base) {
+                break;  // 解決に失敗した名前。剥がせないのでそのまま返す。
+            }
+            t = base;
+        }
+        return t;
+    }
+
     // 代入の左辺の根まで降りる。`sstate.isA` や `arr[i].x` から `sstate` /
     // `arr` を、`input.endian` から `input` を出す。メンバアクセスと添字だけを
     // 辿る (括弧は parse が代入の左辺として弾くので通らない)。
