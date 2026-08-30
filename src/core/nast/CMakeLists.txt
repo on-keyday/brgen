@@ -38,6 +38,15 @@ endif()
 # 書いて測る回転がそのぶん止まる。デバッガに乗せたいときだけ
 # -DNAST_DEBUG_INFO=ON。
 option(NAST_DEBUG_INFO "emit debug info (large pdb, slow link)" OFF)
+if(NAST_DEBUG_INFO)
+    # clang++ をドライバにすると、CMake はコンパイルに -g -gcodeview を
+    # 入れるだけでリンカには何も渡さない。lld-link / link.exe は /DEBUG が
+    # 無いと pdb を作らず、実行ファイルからも参照しないので、デバッガが
+    # シンボルを見つけられない (ブレークポイントが刺さらない)。
+    if(WIN32)
+        add_link_options("-Xlinker" "/DEBUG")
+    endif()
+endif()
 if(NOT NAST_DEBUG_INFO)
     # Windows の clang 向けに CMake が入れる -g -gcodeview を、構成ごとの
     # フラグ変数から抜く。後ろに -g0 を足すやり方でも消えるが、コマンドに
