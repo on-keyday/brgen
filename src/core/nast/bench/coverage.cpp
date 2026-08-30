@@ -1,9 +1,6 @@
 // 式の種類ごとの数と型の付き具合、および木から到達できないノードの数。
 // ファイルごとにアリーナが別なので、集合は必ずファイル単位で作り直す。
-#include "../bind/binder.hpp"
-#include "../bind/import_resolver.hpp"
-#include "../bind/scope_resolver.hpp"
-#include "../bind/typer.hpp"
+#include "../bind/pipeline.h"
 #include "../parse/parse.h"
 #include "../node/traverse.h"
 #include <core/common/file.h>
@@ -24,38 +21,16 @@ int main(int argc, char** argv) {
     std::size_t reach_exprs = 0, orphan_exprs = 0, designator_exprs = 0;
 
     for (int i = 1; i < argc; i++) {
-        brgen::FileSet files;
-        Arena a;
-        SideTables t;
-        brgen::LocationError err;
-        auto loaded = files.add_file(std::string(argv[i]));
-        if (!loaded) {
+        // 型の付き具合を見るので型付けまで。定数畳み込みから先は要らない。
+        Program p;
+        if (analyze(p, argv[i], {.until = Stage::type}) != AnalyzeResult::ok) {
             continue;
         }
-        auto* f = files.get_input(*loaded);
-        if (!f) {
-            continue;
-        }
-        Context ctx;
-        auto parsed = ctx.enter_stream(f, [&](Stream& s) { return parse(a, s, &err, {}); });
-        if (!parsed) {
-            continue;
-        }
-        bind::ImportResolver imp{a, t, files, err, {}};
-        imp.resolve(*parsed);
-        bind::ScopeResolver sr{a, t, err};
-        bind::Typer ty{a, t, err};
-        for (auto& m : imp.modules) {
-            bind::Binder b{a, err, t};
-            b.bind(m);
-            sr.resolve(m);
-        }
-        for (auto& m : imp.modules) {
-            ty.run(m);
-        }
+        auto& a = p.arena;
+        auto& t = p.tables;
 
         std::set<std::uint32_t> reachable;
-        for (auto& m : imp.modules) {
+        for (auto& m : p.modules) {
             visit_all(a, m, [&](NodeAny n) {
                 reachable.insert(n.id());
                 return true;

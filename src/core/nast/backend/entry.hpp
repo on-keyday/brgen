@@ -7,13 +7,7 @@
 #include "defaults.hpp"
 #include "knobs.hpp"
 
-#include "../bind/binder.hpp"
-#include "../bind/evaluator.hpp"
-#include "../bind/import_resolver.hpp"
-#include "../bind/requires.hpp"
-#include "../bind/scope_resolver.hpp"
-#include "../bind/typer.hpp"
-#include "../bind/union_layout.hpp"
+#include "../bind/pipeline.h"
 
 #include <core/common/file.h>
 #include <cmdline/template/help_option.h>
@@ -100,7 +94,9 @@ namespace brgen::nast::backend {
         }
     }
 
-    namespace internal {
+    // 入口の裏方。brgen::nast::internal (code_writer.h) と名前で衝突するので
+    // internal ではなくこの名前にしてある。
+    namespace entry {
 
         // --show-flags の出力。手で書くと足したフラグと食い違うので、cmdline の
         // Context に登録されているものをそのまま並べる。バックエンドが自分の
@@ -150,71 +146,6 @@ namespace brgen::nast::backend {
             return std::nullopt;
         }
 
-        // .bgn を読んで木を組み、解析の段を全部回す。バックエンドは型や
-        // 解決の結果を見て書くので、ここを飛ばすことはない。
-        struct Analyzed {
-            FileSet files;
-            Arena arena;
-            SideTables tables;
-            LocationError err;
-            std::vector<Node<Module>> modules;
-            Node<Module> root;
-        };
-
-        inline bool analyze(Analyzed& out, std::string_view path, std::string& why) {
-            auto loaded = out.files.add_file(std::string(path));
-            if (!loaded) {
-                why = "cannot open " + std::string(path);
-                return false;
-            }
-            auto* file = out.files.get_input(*loaded);
-            if (!file) {
-                why = "cannot read " + std::string(path);
-                return false;
-            }
-            // nast::Context (字句の入口) と backend::Context が同名なので明示する。
-            ::brgen::nast::Context sctx;
-            auto parsed = sctx.enter_stream(file, [&](Stream& s) {
-                return parse(out.arena, s, &out.err, {});
-            });
-            if (!parsed) {
-                to_source_error(out.files)(parsed.error()).for_each_error([&](auto& m, bool warn) {
-                    if (!warn && why.empty()) {
-                        why = std::string(m);
-                    }
-                });
-                if (why.empty()) {
-                    why = "parse error";
-                }
-                return false;
-            }
-            out.root = *parsed;
-
-            bind::ImportResolver importer{out.arena, out.tables, out.files, out.err, {}};
-            importer.resolve(out.root);
-            bind::ScopeResolver resolver{out.arena, out.tables, out.err};
-            for (auto& mod : importer.modules) {
-                bind::Binder binder{out.arena, out.err, out.tables};
-                binder.bind(mod);
-                resolver.resolve(mod);
-            }
-            bind::Typer typer{out.arena, out.tables, out.err};
-            for (auto& mod : importer.modules) {
-                typer.run(mod);
-            }
-            bind::Evaluator evaluator{out.arena, out.tables, out.err};
-            for (auto& mod : importer.modules) {
-                evaluator.run(mod);
-            }
-            bind::RequiresInference requires_{out.arena, out.tables, typer};
-            requires_.run(importer.modules);
-            bind::UnionLayoutAnalysis layout{out.arena, out.tables, typer, out.err};
-            layout.run();
-
-            out.modules = std::move(importer.modules);
-            return true;
-        }
-
         // backend の失敗は LocError (ノードと文言) で返る。位置つきの表示に
         // するには arena を通して LocationError に直す。
         inline void report(Arena& a, FileSet& files, LocError err) {
@@ -238,7 +169,7 @@ namespace brgen::nast::backend {
             return 0;
         }
 
-    }  // namespace internal
+    }  // namespace entry
 
 }  // namespace brgen::nast::backend
 
@@ -260,11 +191,12 @@ namespace brgen::nast::backend {
     static int nast_backend_main(int argc, char** argv) {                                                           \
         using namespace brgen::nast;                                                                                \
         using namespace brgen::nast::backend;                                                                       \
+        namespace nast_entry = ::brgen::nast::backend::entry;                                                       \
         LangConfig lang;                                                                                            \
         EntryFlags flags;                                                                                           \
         flags.program_name = argv[0];                                                                               \
         flags.lang_name = LangConfig::lang_name;                                                                    \
-        ::brgen::nast::backend::apply_lang_options(flags, lang);                                                    \
+        apply_lang_options(flags, lang);                                                                            \
         return futils::cmdline::templ::parse_or_err<std::string>(                                                   \
             argc, argv, flags,                                                                                      \
             [&](auto&& str, bool err) {                                                                             \
@@ -278,12 +210,12 @@ namespace brgen::nast::backend {
             [&](EntryFlags& flags, futils::cmdline::option::Context& opt_ctx) {                                     \
                 if (flags.show_flags) {                                                                             \
                     futils::wrap::cout_wrap()                                                                       \
-                        << ::brgen::nast::backend::internal::flag_description_json(                                 \
+                        << nast_entry::flag_description_json(                                                       \
                                opt_ctx, flags.lang_name, flags.file_extension)                                      \
                         << '\n';                                                                                    \
                     return 0;                                                                                       \
                 }                                                                                                   \
-                auto mode = ::brgen::nast::backend::internal::parse_unhandled(flags.unhandled);                     \
+                auto mode = nast_entry::parse_unhandled(flags.unhandled);                                           \
                 if (!mode) {                                                                                        \
                     futils::wrap::cerr_wrap()                                                                       \
                         << flags.program_name << ": unknown --unhandled: " << flags.unhandled                       \
@@ -294,27 +226,29 @@ namespace brgen::nast::backend {
                     futils::wrap::cerr_wrap() << flags.program_name << ": no input (-i FILE)\n";                    \
                     return 1;                                                                                       \
                 }                                                                                                   \
-                ::brgen::nast::backend::internal::Analyzed an;                                                      \
-                std::string why;                                                                                    \
-                if (!::brgen::nast::backend::internal::analyze(an, flags.input, why)) {                             \
-                    futils::wrap::cerr_wrap() << flags.program_name << ": " << why << '\n';                         \
+                Program program;                                                                                    \
+                if (auto r = analyze(program, flags.input); r != AnalyzeResult::ok) {                               \
+                    auto why = first_error(program);                                                                \
+                    futils::wrap::cerr_wrap()                                                                       \
+                        << flags.program_name << ": " << flags.input << ": "                                        \
+                        << (why.empty() ? describe(r) : why.c_str()) << '\n';                                       \
                     return 1;                                                                                       \
                 }                                                                                                   \
                 Knobs<CodeWriter> knobs;                                                                            \
-                BaseContext<CodeWriter> base{.a = an.arena, .n = knobs};                                            \
+                BaseContext<CodeWriter> base{.a = program.arena, .n = knobs};                                       \
                 base.config().unhandled_mode = *mode;                                                               \
                 auto ctx = base.to_context(lang);                                                                   \
                 if (auto ok = nast_backend_setup(ctx, knobs, flags); !ok) {                                         \
-                    ::brgen::nast::backend::internal::report(an.arena, an.files, ok.error());                       \
+                    nast_entry::report(program.arena, program.files, ok.error());                                   \
                     return 1;                                                                                       \
                 }                                                                                                   \
-                auto written = base.visit(an.root);                                                                 \
+                auto written = base.visit(program.root);                                                            \
                 if (!written) {                                                                                     \
-                    ::brgen::nast::backend::internal::report(an.arena, an.files, written.error());                  \
+                    nast_entry::report(program.arena, program.files, written.error());                              \
                     return 1;                                                                                       \
                 }                                                                                                   \
-                return ::brgen::nast::backend::internal::write_out(flags.output,                                    \
-                                                                   written->to_string(IndentStyle{}.text.c_str())); \
+                return nast_entry::write_out(flags.output,                                                          \
+                                             written->to_string(IndentStyle{}.text.c_str()));                       \
             });                                                                                                     \
     }                                                                                                               \
                                                                                                                     \

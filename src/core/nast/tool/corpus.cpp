@@ -11,13 +11,7 @@
 #include "../parse/parse.h"
 #include "../node/printer.h"
 #include "../node/traverse.h"
-#include "../bind/binder.hpp"
-#include "../bind/evaluator.hpp"
-#include "../bind/requires.hpp"
-#include "../bind/union_layout.hpp"
-#include "../bind/import_resolver.hpp"
-#include "../bind/typer.hpp"
-#include "../bind/scope_resolver.hpp"
+#include "../bind/pipeline.h"
 
 #include <core/common/file.h>
 #include <format>
@@ -87,58 +81,16 @@ namespace {
         std::size_t diagnostics = 0;
     };
 
-    // run() の中は 3 つに割れる。「parse」と一括りにすると、実際には
-    // ファイルを読む時間と診断を整形する時間が混ざる。
-    struct ParseTimes {
+    // 段ごとの所要。「parse」と一括りにすると、ファイルを読む時間と
+    // 診断を整形する時間が混ざる。分けて測る。
+    struct StageTimes {
         std::chrono::nanoseconds read{};    // 開いて全部読む
         std::chrono::nanoseconds parse{};   // 字句解析 (逐次) + 構文解析
+        std::chrono::nanoseconds import_{};
+        std::chrono::nanoseconds bind{};
+        std::chrono::nanoseconds type{};    // 型付け以降 (畳み込み / 要求 / 重ね合わせ)
         std::chrono::nanoseconds report{};  // 診断を数える / 整形する
     };
-
-    // files は import 解決が続けて使うので呼び出し側が持つ。
-    Result run(const std::string& path, brgen::FileSet& files, brgen::nast::Arena& arena,
-               brgen::nast::Node<brgen::nast::Module>& root, brgen::nast::ParseOption popt,
-               ParseTimes& times) {
-        using clock = std::chrono::steady_clock;
-        auto t_read = clock::now();
-        auto loaded = files.add_file(path);
-        if (!loaded) {
-            return {false, 0, "cannot open file"};
-        }
-        auto* file = files.get_input(*loaded);
-        if (!file) {
-            return {false, 0, "cannot read file"};
-        }
-        times.read += clock::now() - t_read;
-        brgen::LocationError err;
-        brgen::nast::Context ctx;
-        auto t_parse = clock::now();
-        auto parsed = ctx.enter_stream(file, [&](brgen::nast::Stream& s) {
-            return brgen::nast::parse(arena, s, &err, popt);
-        });
-        times.parse += clock::now() - t_parse;
-        auto t_report = clock::now();
-        if (!parsed) {
-            std::string msg;
-            brgen::to_source_error(files)(parsed.error()).for_each_error([&](std::string_view m, bool warn) {
-                if (!warn && msg.empty()) {
-                    msg = m;
-                }
-            });
-            times.report += clock::now() - t_report;
-            return {false, arena.node_count(), msg.empty() ? "parse error" : msg};
-        }
-        root = *parsed;
-        // error tolerant では木が返っても診断が溜まっている。件数だけ出す。
-        std::size_t diagnostics = 0;
-        brgen::to_source_error(files)(err).for_each_error([&](std::string_view, bool warn) {
-            if (!warn) {
-                diagnostics++;
-            }
-        });
-        times.report += clock::now() - t_report;
-        return {true, arena.node_count(), {}, diagnostics};
-    }
 
 }  // namespace
 
@@ -195,47 +147,60 @@ int main(int argc, char** argv) {
 
     std::size_t ok = 0, ng = 0;
     using clock = std::chrono::steady_clock;
-    ParseTimes t_front;
-    std::chrono::nanoseconds t_import{}, t_bind{}, t_type{};
-    auto took = [](auto start) { return clock::now() - start; };
-    for (auto& path : paths) {
-        brgen::FileSet files;
-        brgen::nast::Arena arena;
-        brgen::nast::Node<brgen::nast::Module> root;
-        auto r = run(path, files, arena, root, popt, t_front);
-        brgen::nast::SideTables tables;
-        brgen::LocationError err;
-        // import は束縛より先。読み込んだ Module も同じ扱いで回す。
-        brgen::nast::bind::ImportResolver importer{arena, tables, files, err, popt};
-        brgen::nast::bind::ScopeResolver resolver{arena, tables, err};
-        brgen::nast::bind::Typer typer{arena, tables, err};
-        brgen::nast::bind::Evaluator evaluator{arena, tables, err};
-        brgen::nast::bind::RequiresInference requires_{arena, tables, typer};
-        brgen::nast::bind::UnionLayoutAnalysis union_layout{arena, tables, typer, err};
-        if (!parse_only) {
-            auto t1 = clock::now();
-            importer.resolve(root);
-            t_import += took(t1);
-            auto t2 = clock::now();
-            for (auto& mod : importer.modules) {
-                brgen::nast::bind::Binder binder{arena, err, tables};
-                binder.bind(mod);
-                resolver.resolve(mod);
-            }
-            t_bind += took(t2);
-            // 型付けは名前解決の後。Reference の型は解決先から取る。
-            auto t3 = clock::now();
-            for (auto& mod : importer.modules) {
-                typer.run(mod);
-            }
-            // 定数畳み込みは型に依存しない (Resolution だけ使う) が、段としては最後。
-            for (auto& mod : importer.modules) {
-                evaluator.run(mod);
-            }
-            requires_.run(importer.modules);
-            union_layout.run();
-            t_type += took(t3);
+    StageTimes times;
+    auto mark = clock::now();
+
+    brgen::nast::AnalyzeOption aopt;
+    aopt.parse = popt;
+    aopt.until = parse_only ? brgen::nast::Stage::parse : brgen::nast::last_stage;
+    // 段が 1 つ終わるたびに呼ばれる。前の呼び出しからの差がその段の所要。
+    aopt.on_stage_done = [&](brgen::nast::Stage s) {
+        auto now = clock::now();
+        auto d = now - mark;
+        mark = now;
+        switch (s) {
+            case brgen::nast::Stage::open:
+                times.read += d;
+                break;
+            case brgen::nast::Stage::parse:
+                times.parse += d;
+                break;
+            case brgen::nast::Stage::import_:
+                times.import_ += d;
+                break;
+            case brgen::nast::Stage::bind:
+                times.bind += d;
+                break;
+            default:  // type / evaluate / require / layout
+                times.type += d;
+                break;
         }
+    };
+
+    for (auto& path : paths) {
+        brgen::nast::Program program;
+        mark = clock::now();
+        auto status = brgen::nast::analyze(program, path, aopt);
+        auto& arena = program.arena;
+
+        auto t_report = clock::now();
+        Result r;
+        r.nodes = arena.node_count();
+        r.ok = status == brgen::nast::AnalyzeResult::ok;
+        if (!r.ok) {
+            auto msg = brgen::nast::first_error(program);
+            r.message = msg.empty() ? brgen::nast::describe(status) : msg;
+        }
+        else {
+            // error tolerant では木が返っても診断が溜まっている。件数だけ出す。
+            brgen::to_source_error(program.files)(program.err).for_each_error([&](std::string_view, bool warn) {
+                if (!warn) {
+                    r.diagnostics++;
+                }
+            });
+        }
+        times.report += clock::now() - t_report;
+
         if (r.ok) {
             ok++;
             if (quiet) {
@@ -245,17 +210,18 @@ int main(int argc, char** argv) {
                 std::println("ok    {:<60} {:>5} nodes  ({} diagnostics)", path, r.nodes, r.diagnostics);
             }
             else {
+                auto& st = program.stats;
                 std::println("ok    {:<60} {:>5} nodes  ({} resolved, {} unresolved{})",
-                             path, arena.node_count(), resolver.resolved, resolver.unresolved,
-                             importer.resolved || importer.failed
+                             path, arena.node_count(), st.names_resolved, st.names_unresolved,
+                             st.imports_resolved || st.imports_failed
                                  ? std::format(", {} imports, {} import errors",
-                                               importer.resolved, importer.failed)
+                                               st.imports_resolved, st.imports_failed)
                                  : std::string());
-                auto cov = type_coverage(arena, importer.modules);
-                std::println("      {:<60} {:>5}/{} exprs typed, {} consts", "", cov.typed, cov.exprs, evaluator.evaluated);
+                auto cov = type_coverage(arena, program.modules);
+                std::println("      {:<60} {:>5}/{} exprs typed, {} consts", "", cov.typed, cov.exprs, st.constants);
             }
             if (show_tree) {
-                std::print("{}", brgen::nast::pretty_print(arena, tables, root, opt));
+                std::print("{}", brgen::nast::pretty_print(arena, program.tables, program.root, opt));
             }
         }
         else {
@@ -270,14 +236,14 @@ int main(int argc, char** argv) {
         auto ms = [](std::chrono::nanoseconds d) {
             return std::chrono::duration<double, std::milli>(d).count();
         };
-        auto total = t_front.read + t_front.parse + t_front.report + t_import + t_bind + t_type;
-        std::println("read   {:8.1f} ms  (open and read the file)", ms(t_front.read));
-        std::println("parse  {:8.1f} ms  (lex + parse)", ms(t_front.parse));
-        std::println("report {:8.1f} ms  (count diagnostics)", ms(t_front.report));
+        auto total = times.read + times.parse + times.report + times.import_ + times.bind + times.type;
+        std::println("read   {:8.1f} ms  (open and read the file)", ms(times.read));
+        std::println("parse  {:8.1f} ms  (lex + parse)", ms(times.parse));
+        std::println("report {:8.1f} ms  (count diagnostics)", ms(times.report));
         if (!parse_only) {
-            std::println("import {:8.1f} ms", ms(t_import));
-            std::println("bind   {:8.1f} ms  (binder + scope resolver)", ms(t_bind));
-            std::println("type   {:8.1f} ms", ms(t_type));
+            std::println("import {:8.1f} ms", ms(times.import_));
+            std::println("bind   {:8.1f} ms  (binder + scope resolver)", ms(times.bind));
+            std::println("type   {:8.1f} ms", ms(times.type));
         }
         std::println("total  {:8.1f} ms", ms(total));
     }

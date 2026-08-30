@@ -1,8 +1,6 @@
 // fn ごとに、本体に直接 assert/error があるか、他の fn を呼んでいるかを数える。
 // 伝播を入れると何件増えるかの見当をつける。
-#include "../bind/binder.hpp"
-#include "../bind/import_resolver.hpp"
-#include "../bind/scope_resolver.hpp"
+#include "../bind/pipeline.h"
 #include "../parse/parse.h"
 #include "../node/traverse.h"
 #include <core/common/file.h>
@@ -17,20 +15,15 @@ int main(int argc, char** argv) {
     std::size_t fns = 0, direct = 0, calls_fn = 0, both = 0;
     std::size_t reach = 0;  // 伝播後に失敗しうる fn
     for (int i = 1; i < argc; i++) {
-        brgen::FileSet fs; Arena a; SideTables t; brgen::LocationError err;
-        auto l = fs.add_file(std::string(argv[i])); if (!l) continue;
-        auto* f = fs.get_input(*l); if (!f) continue;
-        Context ctx;
-        auto p = ctx.enter_stream(f, [&](Stream& s) { return parse(a, s, &err, {}); });
-        if (!p) continue;
-        bind::ImportResolver imp{a, t, fs, err, {}};
-        imp.resolve(*p);
-        bind::ScopeResolver sr{a, t, err};
-        for (auto& m : imp.modules) { bind::Binder b{a, err, t}; b.bind(m); sr.resolve(m); }
+        // 呼び出し先を辿るだけなので名前解決まで。型は要らない。
+        Program prog;
+        if (analyze(prog, argv[i], {.until = Stage::bind}) != AnalyzeResult::ok) continue;
+        auto& a = prog.arena;
+        auto& t = prog.tables;
 
         std::vector<Node<Function>> all;
         std::set<std::uint32_t> seen;
-        visit_all(a, *p, [&](NodeAny n) {
+        visit_all(a, prog.root, [&](NodeAny n) {
             if (!seen.insert(n.id()).second) return false;
             if (auto fn = n.as_any<Function>()) all.push_back(fn);
             return true;

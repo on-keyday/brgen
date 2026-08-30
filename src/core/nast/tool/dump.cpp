@@ -16,13 +16,7 @@
 #include "core/common/error.h"
 #include "../parse/parse.h"
 #include "../node/traverse.h"
-#include "../bind/binder.hpp"
-#include "../bind/evaluator.hpp"
-#include "../bind/requires.hpp"
-#include "../bind/union_layout.hpp"
-#include "../bind/import_resolver.hpp"
-#include "../bind/typer.hpp"
-#include "../bind/scope_resolver.hpp"
+#include "../bind/pipeline.h"
 
 #include <core/common/file.h>
 #include <json/stringer.h>
@@ -99,43 +93,33 @@ int main(int argc, char** argv) {
         stdin_name = "<stdin>";
     }
 
-    brgen::FileSet files;
-    files.set_utf_mode(brgen::UtfMode::utf8, interpret);
+    brgen::nast::Program program;
+    program.files.set_utf_mode(brgen::UtfMode::utf8, interpret);
     brgen::expected<brgen::lexer::FileIndex, std::error_code> loaded;
     if (!path.empty()) {
-        loaded = files.add_file(path);
+        loaded = program.files.add_file(path);
     }
     else {
-        loaded = files.add_special(stdin_name, read_stdin());
+        loaded = program.files.add_special(stdin_name, read_stdin());
     }
     if (!loaded) {
         std::println("{{\"ok\":false,\"diagnostics\":[{{\"msg\":\"cannot open input\",\"warn\":false}}]}}");
         return 1;
     }
-    auto* file = files.get_input(*loaded);
-    if (!file) {
+
+    brgen::nast::AnalyzeOption aopt;
+    aopt.parse.error_tolerant = true;  // 編集途中の壊れた入力でも木を返す
+    auto result = brgen::nast::analyze_loaded(program, *loaded, aopt);
+    if (result == brgen::nast::AnalyzeResult::cannot_read) {
         std::println("{{\"ok\":false,\"diagnostics\":[{{\"msg\":\"cannot read input\",\"warn\":false}}]}}");
         return 1;
     }
 
-    brgen::nast::Arena arena;
-    brgen::LocationError err;
-    brgen::nast::ParseOption popt;
-    popt.error_tolerant = true;  // 編集途中の壊れた入力でも木を返す
-    brgen::nast::Context ctx;
-    brgen::nast::Node<brgen::nast::Module> root;
-    auto parsed = ctx.enter_stream(file, [&](brgen::nast::Stream& s) {
-        return brgen::nast::parse(arena, s, &err, popt);
-    });
-
     std::vector<Diag> diags;
-    auto collect = [&](brgen::LocationError& e) {
-        for (auto& entry : e.locations) {
-            diags.push_back(Diag{entry});
-        }
-    };
-    if (!parsed) {
-        collect(parsed.error());
+    for (auto& entry : program.err.locations) {
+        diags.push_back(Diag{entry});
+    }
+    if (result != brgen::nast::AnalyzeResult::ok) {
         futils::json::Stringer<> s;
         {
             auto obj_ = s.object();
@@ -146,38 +130,17 @@ int main(int argc, char** argv) {
         std::println("{}", s.out());
         return 0;
     }
-    root = *parsed;
 
-    brgen::nast::SideTables tables;
-    brgen::nast::bind::ImportResolver importer{arena, tables, files, err, popt};
-    brgen::nast::bind::ScopeResolver resolver{arena, tables, err};
-    brgen::nast::bind::Typer typer{arena, tables, err};
-    importer.resolve(root);
-    for (auto& mod : importer.modules) {
-        brgen::nast::bind::Binder binder{arena, err, tables};
-        binder.bind(mod);
-        resolver.resolve(mod);
-    }
-    for (auto& mod : importer.modules) {
-        typer.run(mod);
-    }
-    brgen::nast::bind::Evaluator evaluator{arena, tables, err};
-    for (auto& mod : importer.modules) {
-        evaluator.run(mod);
-    }
-    brgen::nast::bind::RequiresInference requires_{arena, tables, typer};
-    requires_.run(importer.modules);
-    brgen::nast::bind::UnionLayoutAnalysis union_layout{arena, tables, typer, err};
-    union_layout.run();
-    collect(err);
+    auto& arena = program.arena;
+    auto& tables = program.tables;
 
     futils::json::Stringer<> s;
     {
         auto obj_ = s.object();
         obj_("ok", true);
         obj_("main_file", std::uint64_t(*loaded));
-        obj_("root", root);
-        obj_("modules", importer.modules);
+        obj_("root", program.root);
+        obj_("modules", program.modules);
         obj_("diagnostics", diags);
         obj_("arena", arena);
         obj_("tables", tables);

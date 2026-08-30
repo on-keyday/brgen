@@ -174,6 +174,7 @@ add_library(nast_core STATIC
     "node/compare.cpp"
     "bind/evaluator.cpp"
     "bind/import_resolver.cpp"
+    "bind/pipeline.cpp"
     "bind/requires.cpp"
     "bind/scope_resolver.cpp"
     "bind/typer.cpp"
