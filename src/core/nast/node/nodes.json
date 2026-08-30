@@ -33,6 +33,30 @@
             ]
         }
     ],
+    "backend_config": {
+        "$comment": [
+            "ノードに紐づかない設定。ノードごとのつまみは各ノードの knobs に書く。",
+            "ここに来るのは「どのハンドラの話でもない」ものだけで、今のところ",
+            "未対応ノードの扱い 1 つ。バックエンドが宣言するものではなく、",
+            "コマンドラインから来る実行時の設定である点も他の knob と違う。"
+        ],
+        "enums": [
+            {
+                "name": "UnhandledMode",
+                "underlying": "std::uint8_t",
+                "values": ["error", "dummy", "ignore"],
+                "description": "What to do at a node the backend has not handled"
+            }
+        ],
+        "knobs": [
+            {
+                "name": "unhandled_mode",
+                "type": "UnhandledMode",
+                "default": "UnhandledMode::dummy",
+                "description": "Set from --unhandled. dummy leaves a marker in the output, error stops at the node, ignore drops it"
+            }
+        ]
+    },
     "side_tables": [
         {
             "name": "Resolution",
