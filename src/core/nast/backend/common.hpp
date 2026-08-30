@@ -1,6 +1,7 @@
 /*license*/
 #pragma once
 #include "../node/nodes.h"
+#include "config.hpp"
 #include "invoke.hpp"
 #include "lang.hpp"
 #include "../node/error.h"
@@ -8,12 +9,6 @@
 namespace brgen::nast::backend {
     template <class R>
     struct BaseContext;
-
-    enum class UnhandledMode : std::uint8_t {
-        error,
-        dummy,
-        ignore,
-    };
 
     template <class R, class Node>
     struct DefaultHandler;
@@ -23,17 +18,6 @@ namespace brgen::nast::backend {
     struct Knobs;
     template <class R, class L>
     struct Context;
-
-    struct CommonConfig {
-        UnhandledMode unhandled_mode = UnhandledMode::dummy;
-
-       private:
-        template <class R>
-        friend struct BaseContext;
-        template <class C>
-        friend struct Invoker;
-        bool inner_default = false;
-    };
 
     template <class R>
     struct BaseContext : Invoker<BaseContext<R>> {

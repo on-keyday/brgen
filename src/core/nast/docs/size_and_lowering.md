@@ -462,6 +462,35 @@ nast にある残りは match→if (ebmgen だと `derive_match_lowered_if`) と
 `stream_io` (バイトの出し入れ)。手を付けやすいのは `STRING_FOR_EACH` と
 `ENUM_IS_DEFINED`、重いのは `STRUCT_CALL` と `BIT_FIELD_TO_BIT_SHIFT`。
 
+### 値 knob と合成名の規約 (2026-08-31)
+
+**knob はノードに紐づける。** `nodes.json` のノードが `knobs` を持ち、
+`gen/backend.py` が `backend/config.hpp` を生やす。出力もノードごとに入れ子:
+
+```cpp
+ctx.config().IsLittleEndian.native_endian_check = "cfg!(target_endian = \"little\")";
+```
+
+knob は「そのノードのハンドラに付いた追加のつまみ」なので、宣言もハンドラの
+隣にある。フックを書かずに済ませられるものはここに置く — 言語差の大半は
+「どう綴るか」であって「どう辿るか」ではない (rebrgen 実測: 既定フック 103 本
+に対し言語側のフック 3〜30 本、knob 設定は 50〜83 件)。1 つの言語にしか無い
+ものは LangConfig に置き、3 言語で同じものを書いたら上げる (ADR 0016)。
+
+最初の実例が `IsLittleEndian` の 2 つ。既定ハンドラは native の綴りを knob から
+取り、空なら**黙って big と決めつけず未対応の目印に落ちる** (ebm2llvm が
+`native_endian_check = ""` で同じことをしている)。
+
+**合成した変数の名前は由来のノードから決まる** (`node/util.h` の
+`derived_name`)。`tmp<id>` / `endian<id>` / `i<id>` / `b<id>` の 4 つが同じ規約で、
+後から「その変数は何という名前か」を知りたい側は同じ関数を呼べばよい。
+EBM は `ctx.identifier(ref)` という登録簿でこれをやっているが、由来が決まれば
+名前も決まるので登録は要らない。
+
+実行時に決まるバイト順は `lowering/endian_variable` が代入の位置で
+`endian<id>` に落とし、`IsLittleEndian` の既定ハンドラがその名前を読んで
+`endian<id> == <little_endian_value>` を出す。
+
 ## 5. EBM との差 (訂正を含む)
 
 「置く側が違う」と書きかけたが誤り。EBM も emit 時にホイストしている:

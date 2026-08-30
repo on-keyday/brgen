@@ -639,6 +639,15 @@ format LoweredMatchTable:
     len :u32
     entries :[len]LoweredMatchEntry
 
+format LoweredEndianVariableEntry:
+    key :Ref
+    name :Ref
+    value_ref :Ref
+
+format LoweredEndianVariableTable:
+    len :u32
+    entries :[len]LoweredEndianVariableEntry
+
 format LoweredCondEntry:
     key :Ref
     temp_name :Ref
@@ -682,5 +691,6 @@ format NastModule:
     field_endian :FieldEndianTable
     lowered_range_compare :LoweredRangeCompareTable
     lowered_match :LoweredMatchTable
+    lowered_endian_variable :LoweredEndianVariableTable
     lowered_cond :LoweredCondTable
     type_size :TypeSizeTable

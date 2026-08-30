@@ -33,7 +33,7 @@ from gen.nodes import (  # noqa: E402
 )
 from gen.tables import emit_side_tables, emit_structs  # noqa: E402
 from gen.ts import emit_ts  # noqa: E402
-from gen.backend import emit_backend_knobs, emit_backend_defaults,emit_backend_invoke
+from gen.backend import emit_backend_knobs, emit_backend_defaults,emit_backend_invoke,emit_backend_config
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_SCHEMA = os.path.join(SCRIPT_DIR, "node", "nodes.json")
@@ -41,6 +41,7 @@ DEFAULT_OUT = os.path.join(SCRIPT_DIR, "node", "nodes.h")
 DEFAULT_BACKEND_KNOBS_OUT = os.path.join(SCRIPT_DIR,"backend","knobs.hpp")
 DEFAULT_BACKEND_DEFAULTS_OUT = os.path.join(SCRIPT_DIR,"backend","defaults.hpp")
 DEFAULT_BACKEND_INVOKER_OUT = os.path.join(SCRIPT_DIR,"backend","invoke.hpp")
+DEFAULT_BACKEND_CONFIG_OUT = os.path.join(SCRIPT_DIR,"backend","config.hpp")
 # LSP サーバーが nast_dump の JSON を読むための TS 側ライブラリ。
 # tsc の rootDir の都合でサーバーのソースの中に直接出す。
 DEFAULT_TS_OUT = os.path.join(SCRIPT_DIR, "..", "..", "..", "lsp", "server", "src", "nast_nodes.ts")
@@ -129,6 +130,7 @@ def main() -> int:
     ap.add_argument("--backend-defaults-out",default=DEFAULT_BACKEND_DEFAULTS_OUT)
     ap.add_argument("--backend-knobs-out",default=DEFAULT_BACKEND_KNOBS_OUT)
     ap.add_argument("--backend-invoke-out",default=DEFAULT_BACKEND_INVOKER_OUT)
+    ap.add_argument("--backend-config-out",default=DEFAULT_BACKEND_CONFIG_OUT)
     ap.add_argument("--ts-out", default=DEFAULT_TS_OUT,
                     help="TS 側ライブラリの出力先。空文字で出さない")
     ap.add_argument("--check", action="store_true",
@@ -139,6 +141,8 @@ def main() -> int:
     outputs = [(args.out, generate(schema))]
     if args.ts_out:
         outputs.append((os.path.normpath(args.ts_out), emit_ts(schema)))
+    if args.backend_config_out:
+        outputs.append((os.path.normpath(args.backend_config_out),emit_backend_config(schema)))
     if args.backend_knobs_out:
         outputs.append((os.path.normpath(args.backend_knobs_out),emit_backend_knobs(schema)))
     if args.backend_defaults_out:

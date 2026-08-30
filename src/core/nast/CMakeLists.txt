@@ -173,6 +173,7 @@ add_library(nast_core STATIC
     "parse/unparse.cpp"
     "node/compare.cpp"
     "lowering/conditional.cpp"
+    "lowering/endian_variable.cpp"
     "lowering/field_io.cpp"
     "lowering/int_bytes.cpp"
     "lowering/lowering.cpp"

@@ -2,6 +2,7 @@
 #pragma once
 
 #include "../../node/code_writer.h"
+#include "../../node/util.h"
 
 #define DEFAULT_HANDLER()  \
     if constexpr (false) { \

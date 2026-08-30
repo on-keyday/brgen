@@ -282,6 +282,22 @@
             "description": "If-chain form of a match, for targets without one. Produced on demand by lowering/"
         },
         {
+            "name": "LoweredEndianVariable",
+            "over": "SpecifyOrder",
+            "storage": "sparse",
+            "fields": [
+                {
+                    "name": "name",
+                    "type": "Node<Ident>"
+                },
+                {
+                    "name": "value",
+                    "type": "Node<Expr>"
+                }
+            ],
+            "description": "The variable holding a byte order decided at run time. The assignment is evaluated once, here, and every field that follows reads this"
+        },
+        {
             "name": "LoweredCond",
             "over": "Cond",
             "storage": "sparse",
@@ -1070,6 +1086,20 @@
                     "type": "Node<SpecifyOrder>",
                     "weak": true,
                     "description": "The assignment whose value decides the order at run time. Null means the order is the target platform's, which only the target's compiler knows"
+                }
+            ],
+            "knobs": [
+                {
+                    "name": "native_endian_check",
+                    "type": "std::string",
+                    "default": "{}",
+                    "description": "How the target spells 'the platform is little endian': cfg!(target_endian = \"little\") in Rust, (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__) in C, sys.byteorder == 'little' in Python. Left empty, the node falls through to the unhandled marker rather than guessing"
+                },
+                {
+                    "name": "little_endian_value",
+                    "type": "std::string",
+                    "default": "{}",
+                    "description": "What a stored byte order is compared against to mean little endian. Used only when order is set"
                 }
             ],
             "description": "Whether the byte order in effect is little endian. Synthesized by lowering; the spelling is the backend's (cfg!(target_endian) and the like)"
