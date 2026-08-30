@@ -1,86 +1,21 @@
 /*license*/
 #include "int_bytes.hpp"
+#include "../node/build.h"
 
 #include <string>
 
 namespace brgen::nast::lowering {
 
-    struct Build {
-            Context& c;
-
-            Node<Type> int_type(std::size_t bits, bool is_signed, lexer::Loc loc) {
-                auto t = c.a.make<IntType>(loc);
-                t->bit_size = bits;
-                t->is_signed = is_signed;
-                t->endian = Endian::unspec;
-                return t;
-            }
-
-            Node<Expr> lit(std::uint64_t v, lexer::Loc loc) {
-                auto n = c.a.make<IntLiteral>(loc);
-                n->value = std::to_string(v);
-                n->type = int_type(64, false, loc);
-                return n;
-            }
-
-            Node<Expr> bin(BinaryOp op, Node<Expr> l, Node<Expr> r, Node<Type> type, lexer::Loc loc) {
-                auto n = c.a.make<Binary>(loc);
-                n->op = op;
-                n->left = l;
-                n->right = r;
-                n->type = type;
-                return n;
-            }
-
-            // unparse は優先順位ではなく Paren ノードで括弧を出す。合成した
-            // 二項はそのままだと綴りが誤読される。
-            Node<Expr> paren(Node<Expr> e, lexer::Loc loc) {
-                if (!e || !e.as_any<Binary>()) {
-                    return e;
-                }
-                auto p = c.a.make<Paren>(loc);
-                p->expr = e;
-                p->type = e.ref(c.a)->type;
-                return p;
-            }
-
-            // `u16(x)` の形。Cast は TypeLiteral を callee にした Call を包む
-            // (parse_call_or_cast と同じ組み方)。
-            Node<Expr> cast(Node<Type> to, Node<Expr> value, lexer::Loc loc) {
-                auto tl = c.a.make<TypeLiteral>(loc);
-                tl->literal = to;
-                tl->type = c.a.make<MetaType>(loc);
-                auto args = c.a.make<Arguments>(loc);
-                auto arg = c.a.make<Argument>(loc);
-                arg->value = value;
-                args->arguments.push_back(arg);
-                auto call = c.a.make<Call>(loc);
-                call->callee = tl;
-                call->arguments = args;
-                call->type = to;
-                auto cst = c.a.make<Cast>(loc);
-                cst->base = call;
-                cst->arguments = args;
-                cst->type = to;
-                return cst;
-            }
-
-            // bytes[offset + i]。offset が無ければ bytes[i]。
-            Node<Expr> at(Node<Expr> bytes, Node<Expr> offset, std::size_t i, lexer::Loc loc) {
-                Node<Expr> index = lit(i, loc);
-                if (offset) {
-                    index = i ? bin(BinaryOp::add, offset, lit(i, loc), int_type(64, false, loc), loc)
-                              : offset;
-                }
-                auto n = c.a.make<Index>(loc);
-            n->base = bytes;
-            n->index = index;
-            n->type = int_type(8, false, loc);
-            return n;
-        }
-    };
-
     namespace {
+        // bytes[offset + i]
+        Node<Expr> at(Builder b, Node<Expr> bytes, Node<Expr> offset, std::size_t i) {
+            Node<Expr> index = b.lit(i);
+            if (offset) {
+                index = i ? b.bin(BinaryOp::add, offset, b.lit(i), b.int_type(64)) : offset;
+            }
+            return b.index(bytes, index, b.int_type(8));
+        }
+
         // 何バイトか。バイト境界に乗らない幅はここでは扱わない
         // (ビット単位の読み書きは畳み込みの段の話)。
         std::optional<std::size_t> byte_width(Arena& a, Node<Type> type, Ref<IntType>& out) {
@@ -108,11 +43,11 @@ namespace brgen::nast::lowering {
             return nullref;
         }
         auto loc = type.ref(a).loc();
-        Build b{c};
+        Builder b{a, loc};
 
         // 合成は符号なしで行う。符号つきの型はそのまま OR すると上位バイトの
         // 符号拡張が混ざるので、組み終えてから落とす。
-        auto raw = b.int_type(info->bit_size, false, loc);
+        auto raw = b.int_type(info->bit_size);
         auto effective = order != Endian::unspec ? order : info->endian;
         if (effective == Endian::native) {
             return nullref;  // ここでは決まらない。下の注記を見ること。
@@ -123,14 +58,14 @@ namespace brgen::nast::lowering {
         for (std::size_t i = 0; i < *n; i++) {
             auto byte_index = big ? i : *n - 1 - i;
             auto shift = (*n - 1 - i) * 8;
-            Node<Expr> term = b.cast(raw, b.at(bytes, offset, byte_index, loc), loc);
+            Node<Expr> term = b.cast(raw, at(b, bytes, offset, byte_index));
             if (shift) {
-                term = b.bin(BinaryOp::left_logical_shift, term, b.lit(shift, loc), raw, loc);
+                term = b.bin(BinaryOp::left_logical_shift, term, b.lit(shift), raw);
             }
-            acc = acc ? b.bin(BinaryOp::bit_or, b.paren(acc, loc), b.paren(term, loc), raw, loc) : term;
+            acc = acc ? b.bin(BinaryOp::bit_or, acc, term, raw) : term;
         }
         if (info->is_signed) {
-            acc = b.cast(type, b.paren(acc, loc), loc);
+            acc = b.cast(type, acc);
         }
         return acc;
     }
@@ -147,9 +82,9 @@ namespace brgen::nast::lowering {
             return nullref;
         }
         auto loc = type.ref(a).loc();
-        Build b{c};
-        auto byte = b.int_type(8, false, loc);
-        auto raw = b.int_type(info->bit_size, false, loc);
+        Builder b{a, loc};
+        auto byte = b.int_type(8);
+        auto raw = b.int_type(info->bit_size);
         auto effective = order != Endian::unspec ? order : info->endian;
         if (effective == Endian::native) {
             return nullref;
@@ -161,14 +96,14 @@ namespace brgen::nast::lowering {
             auto shift = big ? (*n - 1 - i) * 8 : i * 8;
             Node<Expr> src = value;
             if (info->is_signed) {
-                src = b.cast(raw, src, loc);  // 右シフトを算術にしない
+                src = b.cast(raw, src);  // 右シフトを算術にしない
             }
             if (shift) {
-                src = b.bin(BinaryOp::right_logical_shift, src, b.lit(shift, loc), raw, loc);
+                src = b.bin(BinaryOp::right_logical_shift, src, b.lit(shift), raw);
             }
             auto assign = a.make<Assign>(loc);
-            assign->assignee = b.at(bytes, offset, i, loc);
-            assign->value = b.cast(byte, b.paren(src, loc), loc);
+            assign->assignee = at(b, bytes, offset, i);
+            assign->value = b.cast(byte, src);
             assign->op = BinaryOp::assign;
             body->statements.push_back(assign);
         }
@@ -197,11 +132,11 @@ namespace brgen::nast::lowering {
             return nullref;
         }
         auto loc = type.ref(a).loc();
-        Build b{c};
+        Builder b{a, loc};
         auto n = a.make<Cond>(loc);
         n->cond = is_little_endian(c, dynamic_order, loc);
-        n->then = b.paren(little, loc);
-        n->els = b.paren(big, loc);
+        n->then = b.paren(little);
+        n->els = b.paren(big);
         n->type = type;
         return n;
     }

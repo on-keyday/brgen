@@ -1,41 +1,32 @@
 /*license*/
 #include "predicate.hpp"
+#include "../node/build.h"
 #include "../node/util.h"
 
 namespace brgen::nast::lowering {
 
-    // 綴り grater_or_eq は元実装から引き継いだもの。直すと生成物と元 AST に波及する。
-    struct Builder {
-        Context& c;
-        Node<Type> bool_type;
-
-        Node<Expr> bin(BinaryOp op, Node<Expr> l, Node<Expr> r, lexer::Loc loc) {
-            auto n = c.a.make<Binary>(loc);
-            n->op = op;
-            n->left = l;
-            n->right = r;
-            n->type = bool_type;
-            return n;
-        }
-
-        Node<Expr> and_(Node<Expr> l, Node<Expr> r, lexer::Loc loc) {
+    namespace {
+        // 片方が空なら残ったほうを返す。範囲は端が片方だけのことがある。
+        Node<Expr> and_(Builder b, Node<Expr> l, Node<Expr> r, Node<Type> type) {
             if (!l) {
                 return r;
             }
             if (!r) {
                 return l;
             }
-            return bin(BinaryOp::logical_and, l, r, loc);
+            return b.bin(BinaryOp::logical_and, l, r, type);
         }
-    };
+    }  // namespace
+
+    // 綴り grater_or_eq は元実装から引き継いだもの。直すと生成物と元 AST に波及する。
 
     Node<Expr> branch_predicate(Context& c, Node<Expr> subject, Node<Expr> pattern) {
         auto& a = c.a;
         if (!pattern) {
             return nullref;
         }
-        auto loc = pattern.ref(a).loc();
-        Builder b{c, a.make<BoolType>(loc)};
+        Builder b{a, pattern.ref(a).loc()};
+        auto bool_type = b.bool_type();
 
         if (!subject) {
             return pattern;  // 条件なし match。パターンがそのまま述語。
@@ -47,7 +38,7 @@ namespace brgen::nast::lowering {
             Node<Expr> acc;
             for (auto& leaf : orc.ref(a)->conds) {
                 auto one = branch_predicate(c, subject, leaf);
-                acc = acc ? b.bin(BinaryOp::logical_or, acc, one, loc) : one;
+                acc = acc ? b.bin(BinaryOp::logical_or, acc, one, bool_type) : one;
             }
             return acc;
         }
@@ -59,22 +50,18 @@ namespace brgen::nast::lowering {
             }
             Node<Expr> acc;
             if (d->start) {
-                acc = b.and_(acc, b.bin(BinaryOp::grater_or_eq, subject, d->start, loc), loc);
+                acc = and_(b, acc, b.bin(BinaryOp::grater_or_eq, subject, d->start, bool_type), bool_type);
             }
             if (d->end) {
                 // `..` は右開き、`..=` は右閉じ。
                 auto op = d->op == BinaryOp::range_inclusive ? BinaryOp::less_or_eq : BinaryOp::less;
-                acc = b.and_(acc, b.bin(op, subject, d->end, loc), loc);
+                acc = and_(b, acc, b.bin(op, subject, d->end, bool_type), bool_type);
             }
             return acc;
         }
 
-        return b.bin(BinaryOp::equal, subject, pattern, loc);
+        return b.bin(BinaryOp::equal, subject, pattern, bool_type);
     }
-
-}  // namespace brgen::nast::lowering
-
-namespace brgen::nast::lowering {
 
     Node<Expr> lower_range_compare(Context& c, Node<Binary> cmp) {
         auto& a = c.a;
@@ -88,6 +75,8 @@ namespace brgen::nast::lowering {
         if (d->op != BinaryOp::equal && d->op != BinaryOp::not_equal) {
             return nullref;
         }
+        Builder b{a, cmp.ref(a).loc()};
+        auto bool_type = b.bool_type();
         // 範囲はどちらの側にも書ける。括弧は綴りの都合なので剥がす。
         auto lhs = strip_paren(a, d->left);
         auto rhs = strip_paren(a, d->right);
@@ -106,18 +95,10 @@ namespace brgen::nast::lowering {
             return nullref;  // 両端とも無い (`..`)。比較になっていない。
         }
         if (d->op == BinaryOp::not_equal) {
-            auto loc = cmp.ref(a).loc();
-            // 括弧で包む。unparse は優先順位ではなく Paren ノードで括弧を出す
-            // ので、包まないと `!(a >= 20 && ...)` が `!a >= 20 && ...` と
-            // 綴られる (木は正しいが綴りが嘘になる)。
-            auto paren = a.make<Paren>(loc);
-            paren->expr = expanded;
-            paren->type = expanded.ref(a)->type;
-            auto n = a.make<Unary>(loc);
-            n->op = UnaryOp::not_;
-            n->target = paren;
-            n->type = a.make<BoolType>(loc);
-            expanded = n;
+            // Builder::not_ が括弧を入れる。unparse は優先順位ではなく Paren
+            // ノードで括弧を出すので、包まないと `!(a >= 20 && ...)` が
+            // `!a >= 20 && ...` と綴られる。
+            expanded = b.not_(expanded, bool_type);
         }
         LoweredRangeCompare lowered;
         lowered.expr = expanded;
