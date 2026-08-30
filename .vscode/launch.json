@@ -21,6 +21,39 @@
       "output": "${workspaceRoot}/tool/br_debuggee"
     },
     {
+      // nast のバックエンド試作 (src/core/nast/tool/backend.cpp)。
+      // 乗るのは build/debug の版 (デバッグ情報つき)。既定のツリー
+      // build/cmake にはデバッグ情報が無くブレークポイントが効かない。
+      //
+      // **ビルドはしない**。先に手で建ててから起動すること:
+      //   python src/core/nast/build.py --debug-info -t nast_backend --no-run
+      // (デバッグのたびに全ビルドが走ると、それだけで手が止まるため)
+      "name": "Debug nast backend",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceRoot}/src/core/nast/build/debug/bin/nast_backend.exe",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceRoot}",
+      "environment": [],
+      "console": "integratedTerminal"
+    },
+    {
+      // nast の他のツールを引数つきで debug したいとき用。
+      // 起動時にどれを走らせるか聞かれる。こちらもビルドはしない。
+      "name": "Debug nast tool (pick)",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceRoot}/src/core/nast/build/debug/bin/${input:nastTool}.exe",
+      "args": [
+        "${input:nastArgs}"
+      ],
+      "stopAtEntry": false,
+      "cwd": "${workspaceRoot}",
+      "environment": [],
+      "console": "integratedTerminal"
+    },
+    {
       "name": "Debug src2json",
       "type": "cppvsdbg",
       "request": "launch",
@@ -184,6 +217,30 @@
       "cwd": "${workspaceRoot}/rebrgen",
       "environment": [],
       "console": "integratedTerminal"
+    }
+  ],
+  "inputs": [
+    {
+      // build/debug/bin にあるもの。増えたらここに足す。
+      "id": "nastTool",
+      "type": "pickString",
+      "description": "which nast tool to debug",
+      "options": [
+        "nast_backend",
+        "nast_corpus",
+        "nast_dump",
+        "nast_unparse_test",
+        "nast_wire_test",
+        "nast_test"
+      ],
+      "default": "nast_backend"
+    },
+    {
+      // 引数が要らないものは空のまま Enter。
+      "id": "nastArgs",
+      "type": "promptString",
+      "description": "arguments (a single .bgn path, or empty)",
+      "default": "example/udp.bgn"
     }
   ]
 }

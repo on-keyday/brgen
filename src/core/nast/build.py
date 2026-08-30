@@ -16,7 +16,8 @@ configure を毎回書かなくて済むようにするためのもので、コ�
 
 ビルドツリーは構成ごとに分ける:
 
-  build/cmake    Debug   (既定。ctest はこちら)
+  build/cmake    Debug   (既定。ctest はこちら。デバッグ情報なし)
+  build/debug    Debug   (--debug-info。デバッガに乗せる版)
   build/release  Release (--release。bench.py が使う)
 
 生成 (node/nodes.h / wire/*) はビルドの依存として走るので、ここでは何もしない。
@@ -32,8 +33,13 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 BUILD_ROOT = os.path.join(SCRIPT_DIR, "build")
 
 
-def tree_for(release):
-    return os.path.join(BUILD_ROOT, "release" if release else "cmake")
+def tree_for(release, debug_info=False):
+    if release:
+        return os.path.join(BUILD_ROOT, "release")
+    # デバッガに乗せる版は別ツリーに置く。既定のツリーはデバッグ情報を
+    # 出さない (pdb のリンクで毎回 20 秒近く持っていかれるため) ので、
+    # 両方を同じ場所には作れない。
+    return os.path.join(BUILD_ROOT, "debug" if debug_info else "cmake")
 
 
 def run(cmd):
@@ -43,9 +49,11 @@ def run(cmd):
         sys.exit(result.returncode)
 
 
-def configure(tree, release, defines):
+def configure(tree, release, defines, debug_info=False):
     args = ["cmake", "-S", SCRIPT_DIR, "-B", tree, "-G", "Ninja",
             "-DCMAKE_BUILD_TYPE=" + ("Release" if release else "Debug")]
+    if debug_info:
+        args.append("-DNAST_DEBUG_INFO=ON")
     for d in defines:
         args.append("-D" + d)
     run(args)
@@ -62,6 +70,8 @@ def main():
                    metavar="VAR=VALUE", help="passed to cmake as -DVAR=VALUE")
     p.add_argument("--release", action="store_true",
                    help="build optimized into build/release")
+    p.add_argument("--debug-info", action="store_true",
+                   help="build with debug info into build/debug (for a debugger)")
     p.add_argument("--clean", action="store_true",
                    help="delete the build tree first")
     p.add_argument("--reconfigure", action="store_true",
@@ -72,15 +82,15 @@ def main():
                    help="run ctest (unit test and both round trips)")
     args = p.parse_args()
 
-    tree = tree_for(args.release)
+    tree = tree_for(args.release, args.debug_info)
     if args.clean and os.path.isdir(tree):
         print(f"removing {tree}")
         shutil.rmtree(tree)
     if args.reconfigure or not os.path.exists(os.path.join(tree, "CMakeCache.txt")):
-        configure(tree, args.release, args.define)
+        configure(tree, args.release, args.define, args.debug_info)
     elif args.define:
         # 既にあるツリーへの -D は configure し直さないと効かない。
-        configure(tree, args.release, args.define)
+        configure(tree, args.release, args.define, args.debug_info)
 
     build = ["cmake", "--build", tree]
     for t in args.target:

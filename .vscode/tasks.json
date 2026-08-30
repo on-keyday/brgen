@@ -12,6 +12,31 @@
             ]
         },
         {
+            // nast のバックエンドをデバッガに乗せる版で建てる (build/debug)。
+            // 既定のツリー (build/cmake) はデバッグ情報を出さないので、
+            // ブレークポイントを効かせるにはこちらが要る。
+            //
+            // launch の preLaunchTask には**しない**。デバッグのたびに走ると、
+            // 拍子で全ビルドになって手が止まる。デバッグ前に必要なときだけ
+            // 明示的に叩く。ターゲットを絞ってあるので、これ自体は
+            // nast_core + nast_backend しか建てない。
+            "label": "nast: build backend (debug info)",
+            "type": "process",
+            "command": "python",
+            "args": [
+                "${workspaceFolder}/src/core/nast/build.py",
+                "--debug-info",
+                "--no-run",
+                "-t",
+                "nast_backend"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": "$gcc",
+            "group": "build"
+        },
+        {
             "label": "npm_compile_server",
             "type": "npm",
             "script": "compile",
