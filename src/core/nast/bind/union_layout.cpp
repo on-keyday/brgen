@@ -1,5 +1,6 @@
 /*license*/
 #include "union_layout.hpp"
+#include "../node/util.h"
 
 #include <vector>
 
@@ -8,18 +9,13 @@ namespace brgen::nast::bind {
     void UnionLayoutAnalysis::run() {
         // UnionType は binder の合成でしか作られないので、アリーナ全体を
         // 走査してよい (パーサの先読みで捨てられた個体は無い)。
-        for (std::uint32_t id = 1; id <= a.node_count(); id++) {
-            auto* h = a.header_at(id);
-            if (!h || h->type != NodeType::UnionType) {
-                continue;
-            }
-            auto u = Node<UnionType>::from_unique_id((std::uint64_t(NodeType::UnionType) << 32) | id);
+        each_node<UnionType>(a, [&](Node<UnionType> u) {
             if (tables.table<UnionLayout>().get(u)) {
-                continue;
+                return;
             }
             // common_type は fit の途中で新しいノードを作ることがあり、header の
             // ポインタが無効になるので位置は先に写しておく。
-            auto loc = h->loc;
+            auto loc = u.ref(a).loc();
 
             // 候補 field の相異なる型。same_type で同一視して出現順に集める。
             // 入れ子の union (分岐の中の分岐で宣言された同名 field) は候補の
@@ -60,7 +56,7 @@ namespace brgen::nast::bind {
                 }
             }
             if (member_types.empty()) {
-                continue;
+                return;
             }
 
             // ebmgen の clustering_properties の写し: common_type が取れる型
@@ -103,7 +99,7 @@ namespace brgen::nast::bind {
                 merged[ci] = common;
             }
             if (!ok) {
-                continue;
+                return;
             }
 
             UnionLayout layout;
@@ -113,7 +109,7 @@ namespace brgen::nast::bind {
             }
             tables.table<UnionLayout>().set(u, std::move(layout));
             analyzed++;
-        }
+        });
     }
 
 }  // namespace brgen::nast::bind

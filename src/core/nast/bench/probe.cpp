@@ -13,6 +13,7 @@
 #include "../lowering/match_to_if.hpp"
 #include "../lowering/predicate.hpp"
 #include "../lowering/stream_io.hpp"
+#include "../node/build.h"
 #include "../node/util.h"
 #include "../parse/unparse.h"
 
@@ -26,32 +27,22 @@ namespace {
 
     using Hist = std::map<std::string, std::size_t>;
 
-    template <class T, NodeType Kind>
-    Node<T> node_at(std::uint32_t id) {
-        return Node<T>::from_unique_id((std::uint64_t(Kind) << 32) | id);
-    }
-
     // ---- size ------------------------------------------------------------
 
     void probe_size(Program& p, bool detail, Hist& hist) {
         auto& a = p.arena;
         auto& t = p.tables;
-        for (std::uint32_t id = 1; id <= a.node_count(); id++) {
-            auto* h = a.header_at(id);
-            if (h && h->type == NodeType::ArrayType) {
-                auto at = node_at<ArrayType, NodeType::ArrayType>(id);
-                auto* es = t.table<TypeSize>().get(at.ref(a)->element_type);
-                if (es && es->kind == SizeKind::dynamic) {
-                    hist["  (配列: 要素が dynamic = 畳み込みが要る)"]++;
-                }
+        // 畳み込みが要る配列 (要素ごとに幅が違う) の数。
+        each_node<ArrayType>(a, [&](Node<ArrayType> at) {
+            auto* es = t.table<TypeSize>().get(at.ref(a)->element_type);
+            if (es && es->kind == SizeKind::dynamic) {
+                hist["  (配列: 要素が dynamic = 畳み込みが要る)"]++;
             }
-            if (!h || h->type != NodeType::Format) {
-                continue;
-            }
-            auto f = node_at<Format, NodeType::Format>(id);
+        });
+        each_node<Format>(a, [&](Node<Format> f) {
             auto* s = t.table<TypeSize>().get(f.ref(a)->struct_type);
             if (!s) {
-                continue;
+                return;
             }
             const char* k = s->kind == SizeKind::fixed      ? "fixed"
                             : s->kind == SizeKind::dynamic  ? "dynamic"
@@ -67,22 +58,17 @@ namespace {
                 }
                 std::println("{:<28} {}{}", name_of(a, f), k, tail);
             }
-        }
+        });
     }
 
     // ---- endian ----------------------------------------------------------
 
     void probe_endian(Program& p, bool detail, Hist& hist) {
         auto& a = p.arena;
-        for (std::uint32_t id = 1; id <= a.node_count(); id++) {
-            auto* h = a.header_at(id);
-            if (!h || h->type != NodeType::Field) {
-                continue;
-            }
-            auto f = node_at<Field, NodeType::Field>(id);
+        each_node<Field>(a, [&](Node<Field> f) {
             auto* e = p.tables.table<FieldEndian>().get(f);
             if (!e) {
-                continue;
+                return;
             }
             std::string k = e->dynamic ? "dynamic" : to_string(e->endian);
             hist[k]++;
@@ -91,37 +77,24 @@ namespace {
                 std::println("{:<24} {}{}", name.empty() ? "(無名)" : std::string(name), k,
                              e->dynamic ? "  " + unparse_node(a, e->dynamic.ref(a)->order) : "");
             }
-        }
+        });
         // 動的な順を含む format の数。呼び出しに乗せる規則にした場合の波及元。
-        for (std::uint32_t id = 1; id <= a.node_count(); id++) {
-            auto* h = a.header_at(id);
-            if (!h || h->type != NodeType::Format) {
-                continue;
-            }
-            auto f = node_at<Format, NodeType::Format>(id);
+        each_node<Format>(a, [&](Node<Format> f) {
             auto* st = p.tables.table<FormatState>().get(f);
             if (!st) {
-                continue;
+                return;
             }
             for (auto& fld : st->fields) {
                 auto* e = p.tables.table<FieldEndian>().get(fld);
                 if (e && e->dynamic) {
                     hist["  (動的な順を含む format)"]++;
-                    break;
+                    return;
                 }
             }
-        }
+        });
     }
 
     // ---- lower -----------------------------------------------------------
-
-    Node<Expr> named_ref(Arena& a, brgen::lexer::Loc loc, std::string_view name, Node<Type> type) {
-        auto r = a.make<Reference>(loc);
-        r->name = a.make<Ident>(loc);
-        r->name.ref(a)->identifier = std::string(name);
-        r->type = type;
-        return r;
-    }
 
     void probe_lower_field(Program& p, lowering::Context& c, Node<Field> f, std::uint32_t id) {
         auto& a = p.arena;
@@ -132,8 +105,9 @@ namespace {
         }
         auto loc = a.header_at(id)->loc;
         // バッファと位置は呼ぶ側が決めるものなので仮に置く。
-        auto buf = named_ref(a, loc, "buf", nullref);
-        auto off = named_ref(a, loc, "o", nullref);
+        Builder b{a, loc};
+        auto buf = b.ref("buf");
+        auto off = b.ref("o");
         auto target = a.make<Reference>(loc);
         target->name = f.ref(a)->name;
         target->type = ty;
@@ -205,8 +179,9 @@ namespace {
             return;  // 無名 (分岐が合成したもの) は読み書きの対象ではない
         }
         auto loc = a.header_at(id)->loc;
-        auto buf = named_ref(a, loc, "buf", nullref);
-        auto off = named_ref(a, loc, "o", nullref);
+        Builder b{a, loc};
+        auto buf = b.ref("buf");
+        auto off = b.ref("o");
         auto target = a.make<Reference>(loc);
         target->name = f.ref(a)->name;
         target->type = ty;
@@ -222,58 +197,49 @@ namespace {
     void probe_lower(Program& p, bool detail, Hist& hist) {
         auto& a = p.arena;
         lowering::Context c{a, p.tables};
-        auto last = a.node_count();  // 合成した分は歩かない
-        for (std::uint32_t id = 1; id <= last; id++) {
-            auto* h = a.header_at(id);
-            if (!h) {
-                continue;
-            }
-            if (h->type == NodeType::Match) {
-                if (auto if_ = lowering::lower_match(c, node_at<Match, NodeType::Match>(id))) {
-                    hist["match -> if"]++;
-                    if (detail) {
-                        std::println("--- match #{}", id);
-                        std::println("{}", unparse_node(a, if_));
-                    }
-                }
-                continue;
-            }
-            if (h->type == NodeType::Field) {
-                auto f = node_at<Field, NodeType::Field>(id);
+        // 走査を分けても、数えるのは元の木にあるものだけ。前の段が合成した
+        // ノード (combine_int_either が作る三項など) を後の段が拾わないよう、
+        // 範囲は始める前に固定して共有する。
+        auto last = a.node_count();
+        each_node<Match>(a, last, [&](Node<Match> m) {
+            if (auto if_ = lowering::lower_match(c, m)) {
+                hist["match -> if"]++;
                 if (detail) {
-                    probe_lower_field(p, c, f, id);
+                    std::println("--- match #{}", m.id());
+                    std::println("{}", unparse_node(a, if_));
                 }
-                else {
-                    count_field(p, c, f, id, hist);
-                }
-                continue;
             }
-            if (h->type == NodeType::Binary) {
-                auto b = node_at<Binary, NodeType::Binary>(id);
-                if (auto e = lowering::lower_range_compare(c, b)) {
-                    hist["範囲比較 -> 比較"]++;
-                    if (detail) {
-                        std::println("--- {}", unparse_node(a, b));
-                        std::println("{}", unparse_node(a, e));
-                    }
-                }
-                continue;
+        });
+        each_node<Field>(a, [&](Node<Field> f) {
+            if (detail) {
+                probe_lower_field(p, c, f, f.id());
             }
-            if (h->type == NodeType::Cond) {
-                auto cond = node_at<Cond, NodeType::Cond>(id);
-                auto* low = lowering::lower_conditional(c, cond);
-                if (!low) {
-                    hist["三項 (型が無く落とせない)"]++;
-                    continue;
-                }
-                hist["三項 -> if"]++;
+            else {
+                count_field(p, c, f, f.id(), hist);
+            }
+        });
+        each_node<Binary>(a, last, [&](Node<Binary> bin) {
+            if (auto e = lowering::lower_range_compare(c, bin)) {
+                hist["範囲比較 -> 比較"]++;
                 if (detail) {
-                    std::println("--- {}", unparse_node(a, cond));
-                    std::println("{}", unparse_node(a, low->branch));
-                    std::println("use: {}", unparse_node(a, low->value));
+                    std::println("--- {}", unparse_node(a, bin));
+                    std::println("{}", unparse_node(a, e));
                 }
             }
-        }
+        });
+        each_node<Cond>(a, last, [&](Node<Cond> cond) {
+            auto* low = lowering::lower_conditional(c, cond);
+            if (!low) {
+                hist["三項 (型が無く落とせない)"]++;
+                return;
+            }
+            hist["三項 -> if"]++;
+            if (detail) {
+                std::println("--- {}", unparse_node(a, cond));
+                std::println("{}", unparse_node(a, low->branch));
+                std::println("use: {}", unparse_node(a, low->value));
+            }
+        });
     }
 
 }  // namespace
@@ -309,18 +275,27 @@ int main(int argc, char** argv) {
         }
     }
     if (!detail) {
-        std::size_t total = 0;
+        // 行は母集団ごとに分かれている (`field: ...` と lowering の規則)。
+        // 混ぜて割ると割合が意味を失うので、`:` の手前を群として分けて数える。
+        // 先頭が空白の行は内訳なので母数に入れない。
+        std::map<std::string, std::size_t> group_total;
+        auto group_of = [](const std::string& k) {
+            auto pos = k.find(':');
+            return pos == std::string::npos ? std::string() : k.substr(0, pos);
+        };
         for (auto& [k, v] : hist) {
             if (!k.starts_with("  ")) {
-                total += v;
+                group_total[group_of(k)] += v;
             }
         }
         for (auto& [k, v] : hist) {
+            auto total = k.starts_with("  ") ? 0 : group_total[group_of(k)];
             std::println("{:<32} {:>6}{}", k, v,
-                         !k.starts_with("  ") && total
-                             ? std::format("  {:>5.1f}%", 100.0 * double(v) / double(total))
-                             : "");
+                         total ? std::format("  {:>5.1f}%", 100.0 * double(v) / double(total)) : "");
         }
-        std::println("{:<32} {:>6}  ({} files)", "合計", total, files);
+        for (auto& [g, v] : group_total) {
+            std::println("{:<32} {:>6}", g.empty() ? "合計" : g + " 合計", v);
+        }
+        std::println("({} files)", files);
     }
 }

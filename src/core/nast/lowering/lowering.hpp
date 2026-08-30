@@ -2,6 +2,8 @@
 #pragma once
 #include "../node/nodes.h"
 
+#include <optional>
+
 // バックエンドが呼びたいときに呼ぶ変換の置き場。
 //
 // EBM (ebmgen/transform) は変換を 13 段のパイプラインとして持ち、しかも
@@ -36,5 +38,9 @@ namespace brgen::nast::lowering {
         Arena& a;
         SideTables& tables;
     };
+
+    // その型が何バイトか。整数は幅から直に、それ以外は TypeSize 表から。
+    // バイト境界に乗らないものと、幅が決まらないものは空を返す。
+    std::optional<std::uint64_t> byte_width(Context& c, Node<Type> t);
 
 }  // namespace brgen::nast::lowering

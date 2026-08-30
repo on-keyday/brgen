@@ -2,6 +2,7 @@
 #pragma once
 #include "nodes.h"
 
+#include <optional>
 #include <string_view>
 
 // 木を歩くときの小物。段をまたいで使うものだけをここに置く。
@@ -16,6 +17,32 @@
 // 同じように、ここも「ちょうどの粒度」を狙わず、要るものを足していく。
 
 namespace brgen::nast {
+
+    // アリーナにある型 T のノードを順に渡す。木からは辿れないものも含む
+    // (合成したノード、パーサが先読みで捨てた個体)。
+    //
+    // 走査の範囲は先に固定する。中でノードを足す使い方 (解析が式を合成する
+    // など) があり、足した分まで歩くと終わらない。
+    // 範囲を明示する形。走査を何本かに分けるとき、途中で足したノードを
+    // 後続の走査が拾わないよう、始める前の node_count を共有する。
+    template <class T>
+    void each_node(Arena& a, std::uint32_t last, auto&& fn) {
+        for (std::uint32_t id = 1; id <= last; id++) {
+            auto* h = a.header_at(id);
+            if (!h) {
+                continue;
+            }
+            auto any = NodeAny::from_unique_id((std::uint64_t(h->type) << 32) | id);
+            if (auto n = any.template as_any<T>()) {
+                fn(n);
+            }
+        }
+    }
+
+    template <class T>
+    void each_node(Arena& a, auto&& fn) {
+        each_node<T>(a, a.node_count(), fn);
+    }
 
     // 名前を持つ文の綴り。持たない文 (無名 field / 分岐が合成した Field など)
     // では空を返す。ノードが無いときも空。
@@ -75,6 +102,21 @@ namespace brgen::nast {
             e = inner;
         }
         return e;
+    }
+
+    // 畳んだ値が非負の整数ならそれ。定数でなければ空。
+    //
+    // 「長さが定数か」「回数が定数か」は解析でも lowering でも同じ問いなので
+    // ここに置く。表を見るので Arena だけでは足りず SideTables を取る。
+    inline std::optional<std::uint64_t> const_uint(SideTables& tables, Node<Expr> e) {
+        if (!e) {
+            return std::nullopt;
+        }
+        if (auto* v = tables.table<ConstantValue>().get(e);
+            v && v->kind == EvalKind::integer && !v->is_negative) {
+            return v->integer;
+        }
+        return std::nullopt;
     }
 
     // 分岐の条件が「既定」を表しているか。if/elif の else は条件なしの

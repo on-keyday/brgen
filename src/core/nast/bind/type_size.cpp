@@ -1,6 +1,7 @@
 /*license*/
 #include "type_size.hpp"
 #include "../lowering/predicate.hpp"
+#include "../node/build.h"
 #include "../node/util.h"
 
 #include <fnet/util/base64.h>
@@ -19,55 +20,10 @@ namespace brgen::nast::bind {
         }
     }  // namespace
 
-    // 合成した式に付ける型。幅はビット数なので符号なし 64bit。1 つ作って
-    // 使い回す (型が同じなら同じノードでよい。equivalent は形で比べる)。
-    Node<Type> SizeAnalysis::bits_type(lexer::Loc loc) {
-        if (!bits_type_) {
-            auto t = a.make<IntType>(loc);
-            t->bit_size = 64;
-            t->is_signed = false;
-            t->endian = Endian::unspec;
-            bits_type_ = t;
-        }
-        return bits_type_;
-    }
-
-    Node<Expr> SizeAnalysis::lit(std::uint64_t v, lexer::Loc loc) {
-        auto n = a.make<IntLiteral>(loc);
-        n->value = std::to_string(v);
-        n->type = bits_type(loc);
-        return n;
-    }
-
-    // 二項の中身が二項なら括弧で包む。unparse は優先順位を見ずに Paren
-    // ノードで括弧を出すので、包まないと `8 * (len - 8)` が
-    // `8 * len - 8` と綴られて読み手が誤る (木は正しいが綴りが嘘になる)。
-    Node<Expr> SizeAnalysis::wrap(Node<Expr> e, lexer::Loc loc) {
-        if (!e || (!e.as_any<Binary>() && !e.as_any<Cond>())) {
-            return e;
-        }
-        auto p = a.make<Paren>(loc);
-        p->expr = e;
-        p->type = bits_type(loc);
-        return p;
-    }
-
-    Node<Expr> SizeAnalysis::bin(BinaryOp op, Node<Expr> l, Node<Expr> r, lexer::Loc loc) {
-        if (!l || !r) {
-            return nullref;  // 片方が書けなければ全体も書けない
-        }
-        auto n = a.make<Binary>(loc);
-        n->op = op;
-        n->left = wrap(l, loc);
-        n->right = wrap(r, loc);
-        n->type = bits_type(loc);
-        return n;
-    }
-
     // その幅を式にする。fixed はリテラル、dynamic は持っている式。
     Node<Expr> SizeAnalysis::as_expr(TypeSize s, lexer::Loc loc) {
         if (s.kind == SizeKind::fixed) {
-            return lit(s.bits, loc);
+            return Builder{a, loc}.lit(s.bits);
         }
         if (s.kind == SizeKind::dynamic) {
             return s.bits_expr;  // 書けなかったものは null のまま伝わる
@@ -85,7 +41,8 @@ namespace brgen::nast::bind {
         if (l.kind == SizeKind::fixed && r.kind == SizeKind::fixed) {
             return fixed(l.bits + r.bits);
         }
-        return dynamic(bin(BinaryOp::add, as_expr(l, loc), as_expr(r, loc), loc));
+        Builder b{a, loc};
+        return dynamic(b.bin(BinaryOp::add, as_expr(l, loc), as_expr(r, loc), b.int_type(64)));
     }
 
     // 分岐の幅を畳む。全部 fixed で同じ値ならその値。揃わないときは
@@ -125,15 +82,13 @@ namespace brgen::nast::bind {
         }
         // 参照は新しく作る。宣言側の Ident を使い回すと「宣言」と「使用」が
         // 同じノードになってしまう。解決先は分かっているので表に入れる。
-        auto id = a.make<Ident>(loc);
-        id->identifier = std::string(text);
-        tables.table<Resolution>().set(id, Resolution{.target = f});
-        auto ref = a.make<Reference>(loc);
-        ref->name = id;
-        ref->type = f.ref(a)->type;
+        Builder b{a, loc};
+        auto ref = b.ref(text, f.ref(a)->type);
+        tables.table<Resolution>().set(ref.as_any<Reference>().ref(a)->name,
+                                       Resolution{.target = f});
         auto sz = a.make<BitSizeof>(loc);
         sz->target = ref;
-        sz->type = bits_type(loc);
+        sz->type = b.int_type(64);
         return sz;
     }
 
@@ -180,7 +135,7 @@ namespace brgen::nast::bind {
     template <class Cands>
     Node<Expr> SizeAnalysis::branch_expr(const Cands& candidates, Node<Expr> subject, lexer::Loc loc,
                                          auto&& width_of) {
-        Node<Expr> els = lit(0, loc);
+        Node<Expr> els = Builder{a, loc}.lit(0);
         bool have_default = false;
         // 後ろから積む。既定の分岐 (cond なし) は else の位置に入る。
         std::vector<std::pair<Node<Expr>, Node<Expr>>> arms;
@@ -198,13 +153,9 @@ namespace brgen::nast::bind {
             arms.push_back({branch_cond(subject, cd->cond, loc), w});
         }
         (void)have_default;
+        Builder b{a, loc};
         for (auto it = arms.rbegin(); it != arms.rend(); ++it) {
-            auto n = a.make<Cond>(loc);
-            n->cond = wrap(it->first, loc);
-            n->then = wrap(it->second, loc);
-            n->els = wrap(els, loc);
-            n->type = bits_type(loc);
-            els = n;
+            els = b.cond(it->first, it->second, els, b.int_type(64));
         }
         return els;
     }
@@ -251,12 +202,13 @@ namespace brgen::nast::bind {
         if (auto id = t.as_any<IdentType>()) {
             if (auto* r = tables.table<Resolution>().get(id.ref(a)->ident)) {
                 if (r->target.as_any<TypeParameter>()) {
+                    Builder b{a, loc};
                     auto tl = a.make<TypeLiteral>(loc);
                     tl->literal = t;
                     tl->type = a.make<MetaType>(loc);
                     auto sz = a.make<BitSizeof>(loc);
                     sz->target = tl;
-                    sz->type = bits_type(loc);
+                    sz->type = b.int_type(64);
                     return put(t, dynamic(sz));
                 }
             }
@@ -319,15 +271,15 @@ namespace brgen::nast::bind {
                 // 変数も一緒に要る)。掛け算で誤魔化さず、式なしで返す。
                 return put(t, dynamic());
             }
-            if (auto* v = tables.table<ConstantValue>().get(r->length);
-                v && v->kind == EvalKind::integer && !v->is_negative) {
-                return put(t, fixed(elem.bits * v->integer));
+            if (auto n = const_uint(tables, r->length)) {
+                return put(t, fixed(elem.bits * *n));
             }
             // 要素が固定幅なので、全体は `要素の幅 * 長さ` で書ける。長さの式は
             // 元の木のノードをそのまま指す (複製すると中の名前が Resolution 表に
             // 載っていない別ノードになり、解決先を辿れなくなる)。同じノードを
             // 2 か所から指す形になるが、この式は木からは辿れず表からしか来ない。
-            return put(t, dynamic(bin(BinaryOp::mul, lit(elem.bits, loc), r->length, loc)));
+            return put(t, dynamic(Builder{a, loc}.bin(BinaryOp::mul, Builder{a, loc}.lit(elem.bits),
+                                                      r->length, Builder{a, loc}.int_type(64))));
         }
         if (auto st = t.as_any<StructType>()) {
             if (auto fmt = st.ref(a)->base.as_any<Format>()) {
@@ -393,7 +345,8 @@ namespace brgen::nast::bind {
                 if (!f) {
                     // その分岐には現れない = 0 ビット。場合分けで書く。
                     return put(t, dynamic(branch_expr(r->candidates, r->cond, loc, [&](auto cd) {
-                        return cd->field ? as_expr(size_of(cd->field.ref(a)->type), loc) : lit(0, loc);
+                        return cd->field ? as_expr(size_of(cd->field.ref(a)->type), loc)
+                                         : Builder{a, loc}.lit(0);
                     })));
                 }
                 auto merged = merge_branch(acc, size_of(f.ref(a)->type));
@@ -402,7 +355,8 @@ namespace brgen::nast::bind {
                 }
                 if (merged.kind == SizeKind::dynamic) {
                     return put(t, dynamic(branch_expr(r->candidates, r->cond, loc, [&](auto cd) {
-                        return cd->field ? as_expr(size_of(cd->field.ref(a)->type), loc) : lit(0, loc);
+                        return cd->field ? as_expr(size_of(cd->field.ref(a)->type), loc)
+                                         : Builder{a, loc}.lit(0);
                     })));
                 }
                 acc = merged;

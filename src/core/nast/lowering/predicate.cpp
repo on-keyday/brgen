@@ -5,19 +5,6 @@
 
 namespace brgen::nast::lowering {
 
-    namespace {
-        // 片方が空なら残ったほうを返す。範囲は端が片方だけのことがある。
-        Node<Expr> and_(Builder b, Node<Expr> l, Node<Expr> r, Node<Type> type) {
-            if (!l) {
-                return r;
-            }
-            if (!r) {
-                return l;
-            }
-            return b.bin(BinaryOp::logical_and, l, r, type);
-        }
-    }  // namespace
-
     // 綴り grater_or_eq は元実装から引き継いだもの。直すと生成物と元 AST に波及する。
 
     Node<Expr> branch_predicate(Context& c, Node<Expr> subject, Node<Expr> pattern) {
@@ -38,7 +25,7 @@ namespace brgen::nast::lowering {
             Node<Expr> acc;
             for (auto& leaf : orc.ref(a)->conds) {
                 auto one = branch_predicate(c, subject, leaf);
-                acc = acc ? b.bin(BinaryOp::logical_or, acc, one, bool_type) : one;
+                acc = b.join(BinaryOp::logical_or, acc, one, bool_type);
             }
             return acc;
         }
@@ -50,12 +37,12 @@ namespace brgen::nast::lowering {
             }
             Node<Expr> acc;
             if (d->start) {
-                acc = and_(b, acc, b.bin(BinaryOp::grater_or_eq, subject, d->start, bool_type), bool_type);
+                acc = b.join(BinaryOp::logical_and, acc, b.bin(BinaryOp::grater_or_eq, subject, d->start, bool_type), bool_type);
             }
             if (d->end) {
                 // `..` は右開き、`..=` は右閉じ。
                 auto op = d->op == BinaryOp::range_inclusive ? BinaryOp::less_or_eq : BinaryOp::less;
-                acc = and_(b, acc, b.bin(op, subject, d->end, bool_type), bool_type);
+                acc = b.join(BinaryOp::logical_and, acc, b.bin(op, subject, d->end, bool_type), bool_type);
             }
             return acc;
         }

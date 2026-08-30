@@ -207,17 +207,19 @@ for i40 := 0; i40 < count; i40 = i40 + 1:
 要素幅が固定のときだけ組める (`offset + i * 幅`) ので、要素が可変幅の配列は
 断る — 進みながら読む形になり、同じ理由で呼ぶ側の領分。
 
-測定 (example/ 180 本、名前つき field 10496 のうち):
+測定 (example/ 180 本、名前つき field 7835 のうち):
 
-| | 数 | |
-| --- | ---: | --- |
-| 組めた | 4030 | 38.4% |
-| StructType | 1310 | 入れ子 format。呼び出しの語彙が無い |
-| IntType | 1090 | バイト境界に乗らない幅 (u1/u2/u4 等)。畳み込み待ち |
-| UnionType | 769 | 分岐の field |
-| EnumType | 50 | 下地の型が書かれていない enum |
-| StrLiteralType | 47 | magic |
-| FloatType | 20 | ビット列との相互変換がまだ |
+| | 数 | | |
+| --- | ---: | ---: | --- |
+| 組めた | 4030 | 51.4% | |
+| StructType | 1310 | 16.7% | 入れ子 format。呼び出しの語彙が無い |
+| IntType | 1090 | 13.9% | バイト境界に乗らない幅 (u1/u2/u4 等)。畳み込み待ち |
+| UnionType | 769 | 9.8% | 分岐の field |
+| ArrayType | 506 | 6.5% | 要素が可変幅 / 末尾まで |
+| EnumType | 50 | 0.6% | 下地の型が書かれていない enum |
+| StrLiteralType | 47 | 0.6% | magic |
+| FloatType | 20 | 0.3% | ビット列との相互変換がまだ |
+| その他 | 13 | 0.2% | bool / 関数型 / generic / inline struct |
 
 副産物: unparse が `EnumType` / `StructType` を綴れず
 `/*unprintable type*/` を出していた。原文には宣言の名前が書かれ、これらの

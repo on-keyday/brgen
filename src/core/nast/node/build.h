@@ -77,6 +77,19 @@ namespace brgen::nast {
             return n;
         }
 
+        // 片方が空なら残ったほうを返す。積み上げに使う:
+        // 範囲の端が片方だけ、`1,2 =>` の葉が 1 つ、といった形で、
+        // 空を単位元として扱えると呼ぶ側の分岐が消える。
+        Node<Expr> join(BinaryOp op, Node<Expr> l, Node<Expr> r, Node<Type> type) const {
+            if (!l) {
+                return r;
+            }
+            if (!r) {
+                return l;
+            }
+            return bin(op, l, r, type);
+        }
+
         Node<Expr> cond(Node<Expr> c, Node<Expr> then, Node<Expr> els, Node<Type> type) const {
             if (!c || !then || !els) {
                 return nullref;
@@ -100,6 +113,37 @@ namespace brgen::nast {
             return n;
         }
 
+        // `<callee>(arg)`。引数は 0 個か 1 個 (今のところそれで足りる)。
+        Node<Call> call(Node<Expr> callee, Node<Expr> arg, Node<Type> result) const {
+            auto args = a.make<Arguments>(loc);
+            if (arg) {
+                auto one = a.make<Argument>(loc);
+                one->value = arg;
+                args->arguments.push_back(one);
+            }
+            auto n = a.make<Call>(loc);
+            n->callee = callee;
+            n->arguments = args;
+            n->type = result;
+            return n;
+        }
+
+        // `base.name(arg)`。input.get() / output.put(x) を組む形。
+        Node<Call> member_call(Node<Expr> base, std::string_view name, Node<Expr> arg,
+                               Node<Type> result) const {
+            auto id = a.make<Ident>(loc);
+            id->identifier = std::string(name);
+            auto ma = a.make<MemberAccess>(loc);
+            ma->base = base;
+            ma->member = id;
+            // 呼び出し先の宣言は無いので parameters は空のまま
+            // (typer が input.get に付けるのと同じ形)。
+            auto ft = a.make<FunctionType>(loc);
+            ft->return_type = result;
+            ma->type = ft;
+            return call(ma, arg, result);
+        }
+
         // `<T>(x)`。Cast は TypeLiteral を callee にした Call を包む形
         // (parse.cpp の parse_call_or_cast と同じ組み方)。
         Node<Expr> cast(Node<Type> to, Node<Expr> value) const {
@@ -109,17 +153,10 @@ namespace brgen::nast {
             auto tl = a.make<TypeLiteral>(loc);
             tl->literal = to;
             tl->type = a.make<MetaType>(loc);
-            auto args = a.make<Arguments>(loc);
-            auto arg = a.make<Argument>(loc);
-            arg->value = value;
-            args->arguments.push_back(arg);
-            auto call = a.make<Call>(loc);
-            call->callee = tl;
-            call->arguments = args;
-            call->type = to;
+            auto inner = call(tl, value, to);
             auto n = a.make<Cast>(loc);
-            n->base = call;
-            n->arguments = args;
+            n->base = inner;
+            n->arguments = inner.ref(a)->arguments;
             n->type = to;
             return n;
         }
@@ -144,6 +181,21 @@ namespace brgen::nast {
             n->index = idx;
             n->type = type;
             return n;
+        }
+
+        // base[offset + i]。offset が空なら base[i]、i が 0 なら base[offset]
+        // (`o + 0` を綴らない)。
+        Node<Expr> index_at(Node<Expr> base, Node<Expr> offset, Node<Expr> i,
+                            Node<Type> type = nullref) const {
+            Node<Expr> idx = i;
+            if (offset) {
+                auto zero = false;
+                if (auto lit_node = i.template as_any<IntLiteral>()) {
+                    zero = lit_node.ref(a)->value == "0";
+                }
+                idx = zero ? offset : bin(BinaryOp::add, offset, i, int_type(64));
+            }
+            return index(base, idx, type);
         }
 
         Node<Statement> assign(Node<Expr> to, Node<Expr> value) const {

@@ -175,6 +175,7 @@ add_library(nast_core STATIC
     "lowering/conditional.cpp"
     "lowering/field_io.cpp"
     "lowering/int_bytes.cpp"
+    "lowering/lowering.cpp"
     "lowering/match_to_if.cpp"
     "lowering/predicate.cpp"
     "lowering/stream_io.cpp"
