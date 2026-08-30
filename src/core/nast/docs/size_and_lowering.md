@@ -211,15 +211,32 @@ for i40 := 0; i40 < count; i40 = i40 + 1:
 
 | | 数 | | |
 | --- | ---: | ---: | --- |
-| 組めた | 4030 | 51.4% | |
+| 組めた | 4053 | 51.7% | |
 | StructType | 1310 | 16.7% | 入れ子 format。呼び出しの語彙が無い |
 | IntType | 1090 | 13.9% | バイト境界に乗らない幅 (u1/u2/u4 等)。畳み込み待ち |
 | UnionType | 769 | 9.8% | 分岐の field |
-| ArrayType | 506 | 6.5% | 要素が可変幅 / 末尾まで |
+| ArrayType | 483 | 6.2% | 要素が可変幅 / 末尾まで |
 | EnumType | 50 | 0.6% | 下地の型が書かれていない enum |
 | StrLiteralType | 47 | 0.6% | magic |
-| FloatType | 20 | 0.3% | ビット列との相互変換がまだ |
 | その他 | 13 | 0.2% | bool / 関数型 / generic / inline struct |
+
+浮動小数は同じ幅の整数として並べ、値は `BitCast` で移す:
+
+```
+--- single :f32
+decode: single = bit_cast<f32>((((u32(buf[o]) << 24) | ...) | u32(buf[o + 3])))
+encode: buf[o] = u8(bit_cast<u32>(single) >> 24)
+        ...
+```
+
+**`Cast` とは別のノードにした。** `<u32>(f)` は値の変換で、ビットの読み替えと
+取り違えると 1.0 が 1065353216 になる。EBM は `CastType::FLOAT_TO_INT_BIT` /
+`INT_TO_FLOAT_BIT` として cast の種類で持ち、`get_cast_type(dest, src)` が型から
+導出している (convert/expression.cpp:139)。**その導出だと float→int は常に
+ビット再解釈**になり、値として切り捨てる変換が表現できない。nast は
+`bit_sizeof` / `IsLittleEndian` と同じく、見落としたら音が鳴る別ノードにした。
+消費側の綴りは言語ごと (go は `math.Float32bits` / `Float32frombits`、
+zig / c / llvm にもそれぞれの分岐がある)。
 
 副産物: unparse が `EnumType` / `StructType` を綴れず
 `/*unprintable type*/` を出していた。原文には宣言の名前が書かれ、これらの

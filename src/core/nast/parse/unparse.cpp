@@ -235,6 +235,18 @@ namespace brgen::nast {
                         expr(e.as<Sizeof>().ref(a)->target);
                         w.write(")");
                         return;
+                    case NodeType::BitCast: {
+                        // 綴りは .bgn の構文には無い。合成した木を印字した
+                        // ときだけ出る (is_little_endian と同じ)。行き先は
+                        // この式自身の型。
+                        auto d = e.as<BitCast>().ref(a);
+                        w.write("bit_cast<");
+                        type(d->type);
+                        w.write(">(");
+                        expr(d->target);
+                        w.write(")");
+                        return;
+                    }
                     case NodeType::IsLittleEndian: {
                         // 綴りはバックエンドが決めるもので、.bgn の構文には
                         // 無い。ここに出るのは合成した木を印字したときだけ

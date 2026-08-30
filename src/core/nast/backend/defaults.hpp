@@ -329,6 +329,26 @@ struct brgen::nast::backend::DefaultHandler<R,brgen::nast::Sizeof> {
     }
 };
 #endif
+#if __has_include("defaults/emit_BitCast.hpp")
+template<class R>
+struct brgen::nast::backend::DefaultHandler<R,brgen::nast::BitCast> {
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>&,Node<BitCast>);
+};
+#define DEFINE_VISITOR(dummy) \
+    template<class R> \
+    constexpr brgen::nast::expected<R> brgen::nast::backend::DefaultHandler<R,brgen::nast::BitCast>::operator()(BaseContext<R>& ctx,Node<BitCast> node)
+#include "defaults/emit_BitCast.hpp"
+#undef DEFINE_VISITOR
+#else
+template<class R>
+struct brgen::nast::backend::DefaultHandler<R,brgen::nast::BitCast> {
+    constexpr brgen::nast::expected<R> operator()(BaseContext<R>& ctx,Node<BitCast> node) {
+          DEFAULT_HANDLER()
+          ON_CODEGEN_DEFAULT()
+          ON_UNHANDLED_DEFAULT()
+    }
+};
+#endif
 #if __has_include("defaults/emit_IsLittleEndian.hpp")
 template<class R>
 struct brgen::nast::backend::DefaultHandler<R,brgen::nast::IsLittleEndian> {
@@ -1628,6 +1648,7 @@ namespace brgen::nast::backend {
         DefaultHandler<R,Metadata> default_Metadata;
         DefaultHandler<R,SpecifyOrder> default_SpecifyOrder;
         DefaultHandler<R,Sizeof> default_Sizeof;
+        DefaultHandler<R,BitCast> default_BitCast;
         DefaultHandler<R,IsLittleEndian> default_IsLittleEndian;
         DefaultHandler<R,BitSizeof> default_BitSizeof;
         DefaultHandler<R,Available> default_Available;
