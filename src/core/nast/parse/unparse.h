@@ -48,4 +48,14 @@ namespace brgen::nast {
     std::string unparse_node(Arena& a, NodeAny n);
     CodeOutput unparse_node_with_spans(Arena& a, NodeAny n);
 
+    // 組み立て途中の Writer に貼るための形。文字列に落とさないので、
+    // どの断片がどのノードから出たかがそのまま残る。
+    //
+    //   return CODELINE_AT(m, unparse_writer(c.arena(), m));  // 由来が消える
+    //   return unparse_writer(c.arena(), m);                  // 残る
+    //
+    // バックエンドが .bgn の一部をそのまま出したいとき (未対応の構文を
+    // コメントで添える、元の宣言を残す) はこちらを使う。
+    CodeWriter unparse_writer(Arena& a, NodeAny n);
+
 }  // namespace brgen::nast
