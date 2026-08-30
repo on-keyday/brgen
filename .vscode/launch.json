@@ -33,7 +33,9 @@
       "request": "launch",
       "program": "${workspaceRoot}/src/core/nast/build/debug/bin/nast_backend.exe",
       "args": [],
-      "stopAtEntry": false,
+      // 入口で必ず止める。ここでも止まらないなら、乗っている exe が違うか
+      // シンボルが読めていない (ブレークポイントの位置の問題ではない)。
+      "stopAtEntry": true,
       "cwd": "${workspaceRoot}",
       "environment": [],
       "console": "integratedTerminal"
