@@ -19,9 +19,19 @@
 // big — 言語の既定。
 //
 // **値は定数とは限らない。** `input.endian = endian.is_big ? config.endian.big :
-// config.endian.little` (bpf.bgn) のように実行時に決まる形があり、そのときは
-// 表の dynamic に式が入る。ebmgen も同じ扱いで、静的な値だけを見て済ませると
-// 動的 endian が全部 native になる (converter.cpp:69 のコメント)。
+// config.endian.little` (bpf.bgn) のように実行時に決まる形がある。そのとき表は
+// **式ではなく代入 (SpecifyOrder) を指す**。式は代入の位置で 1 回だけ評価される
+// ものなので、field ごとに展開すると (a) 参照している field が先に進んでいれば
+// 別の答えになり、(b) 同じ三項を field の数だけ焼くことになる。EBM が
+// ENDIAN_VARIABLE という文に落としているのも同じ理由。
+//
+// 格納される値の型も揃っていない (bpf/elf は config.endian.* の列挙、
+// omg_cdr は bool)。EBM の IS_LITTLE_ENDIAN が little_endian_value を持つのは
+// そのため。代入の位置で正規化すれば、判定は定数との普通の比較で足りる。
+//
+// なお ebmgen の動的 endian は未完 (converter.cpp:45-63 に明記: set_on_function
+// が呼ばれないため current_dynamic_endian が入らず、動的 endian が全部 native
+// として生成される)。写せる実装は無い。
 //
 // 元実装 (middle/typing.cpp:1993) はトップレベルの最後の 1 つを取って
 // ファイル全体に効かせる。こちらは書かれた位置から効かせる (字句スコープの
@@ -44,7 +54,7 @@ namespace brgen::nast::bind {
 
         struct State {
             Endian endian = Endian::unspec;
-            Node<Expr> dynamic;  // 実行時に決まるならその式
+            Node<SpecifyOrder> dynamic;  // 実行時に決まるならその代入
         };
 
         State current;

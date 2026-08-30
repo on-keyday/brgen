@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
             if (detail) {
                 auto name = name_of(a, f);
                 std::println("{:<24} {}{}", name.empty() ? "(無名)" : std::string(name), k,
-                             e->dynamic ? "  " + unparse_node(a, e->dynamic) : "");
+                             e->dynamic ? "  " + unparse_node(a, e->dynamic.ref(a)->order) : "");
             }
         }
     }

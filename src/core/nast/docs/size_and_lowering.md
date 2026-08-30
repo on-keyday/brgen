@@ -199,10 +199,32 @@ ADR 0045 は「backend が用意すべき IO ランタイムはバイト列の r
 
 強さの順は 型に綴られたもの > スコープ > big (言語の既定)。
 
-**値は定数とは限らない。** `input.endian = endian.is_big ? config.endian.big :
-config.endian.little` (bpf.bgn) の形があり、表の `dynamic` に式が入る。
-ebmgen も同じ扱いで、静的な値だけ見て済ませると動的 endian が全部 native に
-なる (converter.cpp:69)。
+**値は定数とは限らない。** example/ に動的な代入が 12 箇所ある:
+
+```
+bpf.bgn:87     input.endian = endian.is_big ? config.endian.big : config.endian.little
+elf.bgn:18     input.endian = endian == Endian.LittleEndian ? config.endian.little : config.endian.big
+omg_cdr.bgn:47 input.endian = endian.is_little_endian
+```
+
+表はこのとき**式ではなく代入 (SpecifyOrder) を指す**。式は代入の位置で 1 回
+評価されるものなので、field ごとに展開すると (a) 参照している field が先に
+進んでいれば別の答えになり、(b) 同じ三項を field の数だけ焼く。EBM が
+ENDIAN_VARIABLE という文に落としているのも同じ理由。
+
+判定を専用ノードにするかどうかについて: EBM の
+`IS_LITTLE_ENDIAN{endian_expr, little_endian_value}` の `endian_expr` は式では
+なく ENDIAN_VARIABLE 文への参照で、実質「その変数 == little」である。専用な
+のは左辺が普通の式でないためで、比較そのものは普通の比較。加えて格納される値
+の型が揃っていない (bpf/elf は列挙、omg_cdr は bool) ので、どの値が little か
+を持つ必要がある = `little_endian_value`。**代入の位置で正規化すれば**
+(「little か」の bool か正準の列挙値に落とす)、判定は定数との普通の Binary に
+なり、語彙の追加は要らなくなる。
+
+なお ebmgen の動的 endian は未完で、コードにそう書いてある
+(`converter.cpp:45-63`): `set_on_function()` が呼ばれないため
+`current_dynamic_endian` が入らず、IS_LITTLE_ENDIAN が endian_expr 無しで
+作られ、**動的 endian が全部 native として生成される**。写せる実装は無い。
 
 値の判定は**列挙メンバの名前**で行う (`config.endian.little` の解決先が
 組み込み `endian` 列挙の `little`)。畳んだ整数を使うと列挙の並び順に依存する。
