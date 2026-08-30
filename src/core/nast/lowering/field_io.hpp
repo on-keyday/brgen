@@ -18,11 +18,15 @@
 // 呼ぶ側の領分になる。
 //
 // バッファと位置は呼ぶ側が用意する。int_bytes と同じ線引き。
+//
+// **分岐が合成した同名 field (型が UnionType) は対象ではない。** あれは名前
+// 解決のための人工物で、実際に読むのは分岐の中に並んでいる field のほう
+// (`node/util.h` の `is_layout_field`)。渡されたら断る。
 
 namespace brgen::nast::lowering {
 
     // 組めなければ null。今のところ組めないもの:
-    //   要素が可変幅の配列 / 末尾までの配列 / 入れ子 format / 浮動小数 /
+    //   要素が可変幅の配列 / 末尾までの配列 / 入れ子 format /
     //   バイト境界に乗らない幅
     Node<Body> lower_field_decode(Context& c, Node<Field> f, Node<Expr> target, Node<Expr> bytes,
                                   Node<Expr> offset);

@@ -147,6 +147,18 @@ namespace brgen::nast {
         return std::nullopt;
     }
 
+    // 並びに現れる field か。
+    //
+    // binder は分岐に対して 2 種類の field を作る: 分岐そのものを表す 1 つ
+    // (型は StructUnionType) と、分岐をまたぐ同名の field ごとに 1 つ
+    // (型は UnionType)。後者は「その名前がどの宣言を指すか」を一意にする
+    // ための人工物で、**読み書きの対象ではない** — 実際に読むのは分岐の中に
+    // 並んでいる field のほう。並びとして数えるときも前者に含まれている
+    // (両方数えると二重計上になる)。
+    inline bool is_layout_field(Arena& a, Node<Field> f) {
+        return !f.ref(a)->type.as_any<UnionType>();
+    }
+
     // 分岐の条件が「既定」を表しているか。if/elif の else は条件なしの
     // BodyStatement で来るが、match の `..` は両端が空の Range で来る
     // (parse.cpp は match の全分岐を条件付きの ConditionalStatement にする)。

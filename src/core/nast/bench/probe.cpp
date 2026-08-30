@@ -175,8 +175,10 @@ namespace {
     void count_field(Program& p, lowering::Context& c, Node<Field> f, std::uint32_t id, Hist& hist) {
         auto& a = p.arena;
         auto ty = f.ref(a)->type;
-        if (!ty || name_of(a, f).empty()) {
-            return;  // 無名 (分岐が合成したもの) は読み書きの対象ではない
+        if (!ty || name_of(a, f).empty() || !is_layout_field(a, f)) {
+            // 無名の合成 field と、名前解決のための同名 field (UnionType) は
+            // 読み書きの対象ではない。数えると分母が膨らむ。
+            return;
         }
         auto loc = a.header_at(id)->loc;
         Builder b{a, loc};

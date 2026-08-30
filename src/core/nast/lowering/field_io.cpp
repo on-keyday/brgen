@@ -140,7 +140,7 @@ namespace brgen::nast::lowering {
 
     Node<Body> lower_field_decode(Context& c, Node<Field> f, Node<Expr> target, Node<Expr> bytes,
                                   Node<Expr> offset) {
-        if (!f) {
+        if (!f || !is_layout_field(c.a, f)) {
             return nullref;
         }
         return lower_one(c, f, target, f.ref(c.a)->type, bytes, offset, true);
@@ -148,7 +148,7 @@ namespace brgen::nast::lowering {
 
     Node<Body> lower_field_encode(Context& c, Node<Field> f, Node<Expr> target, Node<Expr> bytes,
                                   Node<Expr> offset) {
-        if (!f) {
+        if (!f || !is_layout_field(c.a, f)) {
             return nullref;
         }
         return lower_one(c, f, target, f.ref(c.a)->type, bytes, offset, false);

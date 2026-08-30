@@ -92,15 +92,6 @@ namespace brgen::nast::bind {
         return sz;
     }
 
-    // 並びに数える field か。binder は分岐に対して 2 種類の field を作る:
-    // 分岐そのものを表す 1 つ (StructUnionType) と、分岐をまたぐ同名の
-    // field ごとに 1 つ (UnionType)。後者は「その名前がどの宣言を指すか」を
-    // 一意にするための人工物で、並びとしては前者に含まれている。両方足すと
-    // 二重に数える。
-    bool SizeAnalysis::counts_in_layout(Node<Field> f) {
-        return !f.ref(a)->type.as_any<UnionType>();
-    }
-
     // field 1 つぶんの幅。型だけで書けなければ値の名前で呼ぶ。
     TypeSize SizeAnalysis::field_size(Node<Field> f, lexer::Loc loc) {
         auto s = size_of(f.ref(a)->type);
@@ -381,7 +372,7 @@ namespace brgen::nast::bind {
         auto loc = a.header_at(fmt.id())->loc;
         auto total = fixed(0);
         for (auto& f : state->fields) {
-            if (!counts_in_layout(f)) {
+            if (!is_layout_field(a, f)) {
                 continue;
             }
             total = add(total, field_size(f, loc), loc);
@@ -402,7 +393,7 @@ namespace brgen::nast::bind {
         auto loc = a.header_at(block.id())->loc;
         auto total = fixed(0);
         for (auto& f : inner->fields) {
-            if (!counts_in_layout(f)) {
+            if (!is_layout_field(a, f)) {
                 continue;
             }
             total = add(total, field_size(f, loc), loc);
