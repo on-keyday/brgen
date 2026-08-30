@@ -3,6 +3,7 @@
 #include "../bind/pipeline.h"
 #include "../parse/parse.h"
 #include "../node/traverse.h"
+#include "../node/util.h"
 #include <core/common/file.h>
 #include <algorithm>
 #include <map>
@@ -42,20 +43,19 @@ int main(int argc, char** argv) {
         // NamedArgument の name (input.align = 32 の左辺など) は指示子であって
         // 型を付ける対象ではないので、式のカバレッジの分母から外す。
         std::set<std::uint32_t> designator;
-        for (std::uint32_t id = 1; id <= a.node_count(); id++) {
-            auto* h = a.header_at(id);
-            if (!h || h->type != NodeType::NamedArgument || !reachable.count(id)) {
-                continue;
+        each_node<NamedArgument>(a, [&](Node<NamedArgument> na) {
+            if (!reachable.count(na.id())) {
+                return;
             }
-            auto* d = a.data_at<NamedArgument>(h->data_index);
-            if (!d || !d->name) {
-                continue;
+            auto name = na.ref(a)->name;
+            if (!name) {
+                return;
             }
-            visit_all(a, d->name, [&](NodeAny n) {
+            visit_all(a, name, [&](NodeAny n) {
                 designator.insert(n.id());
                 return true;
             });
-        }
+        });
 
         for (std::uint32_t id = 1; id <= a.node_count(); id++) {
             auto* h = a.header_at(id);

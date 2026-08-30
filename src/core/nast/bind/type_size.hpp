@@ -65,13 +65,8 @@ namespace brgen::nast::bind {
         TypeSize add(TypeSize l, TypeSize r, lexer::Loc loc);
         TypeSize merge_branch(std::optional<TypeSize> acc, TypeSize s);
 
-        // 幅の式を組み立てるための道具。合成したノードはアリーナに積まれるが
-        // 木からは辿れず、TypeSize 表からだけ来る。
-        Node<Type> bits_type_;
-        Node<Type> bits_type(lexer::Loc loc);
-        Node<Expr> lit(std::uint64_t v, lexer::Loc loc);
-        Node<Expr> wrap(Node<Expr> e, lexer::Loc loc);
-        Node<Expr> bin(BinaryOp op, Node<Expr> l, Node<Expr> r, lexer::Loc loc);
+        // 合成したノードはアリーナに積まれるが、木からは辿れず TypeSize 表
+        // からだけ来る。組み立ては node/build.h の Builder。
         Node<Expr> as_expr(TypeSize s, lexer::Loc loc);
         Node<Expr> match_subject(Node<ConditionalExpr> base);
         Node<Expr> branch_cond(Node<Expr> subject, Node<Expr> pattern, lexer::Loc loc);

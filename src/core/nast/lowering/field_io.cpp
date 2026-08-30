@@ -10,24 +10,14 @@ namespace brgen::nast::lowering {
 
     namespace {
 
-        // 型が固定幅なら何バイトか。
-        std::optional<std::uint64_t> fixed_bytes(Context& c, Node<Type> t) {
-            auto* s = c.tables.table<TypeSize>().get(t);
-            if (!s || s->kind != SizeKind::fixed || s->bits % 8 != 0) {
-                return std::nullopt;
-            }
-            return s->bits / 8;
-        }
-
         // 配列の個数。定数なら畳んだ値、式ならその式。`[..]` は決まらない。
         Node<Expr> element_count(Context& c, Builder b, Node<ArrayType> arr) {
             auto r = arr.ref(c.a);
             if (!r->length || r->length.as_any<Range>()) {
                 return nullref;  // 末尾まで。位置の管理が要るので呼ぶ側の領分
             }
-            if (auto* v = c.tables.table<ConstantValue>().get(r->length);
-                v && v->kind == EvalKind::integer && !v->is_negative) {
-                return b.lit(v->integer);
+            if (auto n = const_uint(c.tables, r->length)) {
+                return b.lit(*n);
             }
             return r->length;  // 元の木のノードを指す (複製しない)
         }
@@ -41,7 +31,7 @@ namespace brgen::nast::lowering {
             auto& a = c.a;
             Builder b{a, arr.ref(a).loc()};
             auto elem_type = arr.ref(a)->element_type;
-            auto width = fixed_bytes(c, elem_type);
+            auto width = byte_width(c, elem_type);
             if (!width) {
                 return nullref;
             }
