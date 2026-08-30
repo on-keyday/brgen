@@ -377,6 +377,25 @@ namespace brgen::nast {
                         w.write("]");
                         return;
                     }
+                    // 宣言を指す型。原文には宣言の名前が書かれていて、この
+                    // ノード自体は typer が合成する (EnumType は Enum の
+                    // enum_type、StructType は format の struct_type)。lowering が
+                    // これらへの cast を組むことがあるので、名前で綴る。
+                    case NodeType::EnumType: {
+                        if (auto base = t.as<EnumType>().ref(a)->base) {
+                            w.write(ident_text(base.ref(a)->name));
+                            return;
+                        }
+                        break;
+                    }
+                    case NodeType::StructType: {
+                        auto base = t.as<StructType>().ref(a)->base;
+                        if (auto fmt = base.as_any<Format>()) {
+                            w.write(ident_text(fmt.ref(a)->name));
+                            return;
+                        }
+                        break;
+                    }
                     case NodeType::InlineStructType: {
                         auto fmt = t.as<InlineStructType>().ref(a)->inlined_format;
                         w.write("format");

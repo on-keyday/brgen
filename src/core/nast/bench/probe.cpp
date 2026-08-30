@@ -8,6 +8,7 @@
 // 戻して眺めるのが一番速い (docs/size_and_lowering.md 末尾)。
 #include "../bind/pipeline.h"
 #include "../lowering/conditional.hpp"
+#include "../lowering/field_io.hpp"
 #include "../lowering/int_bytes.hpp"
 #include "../lowering/match_to_if.hpp"
 #include "../lowering/predicate.hpp"
@@ -124,46 +125,60 @@ namespace {
     void probe_lower_field(Program& p, lowering::Context& c, Node<Field> f, std::uint32_t id) {
         auto& a = p.arena;
         auto ty = f.ref(a)->type;
-        if (!ty || !ty.as_any<IntType>()) {
+        auto name = name_of(a, f);
+        if (!ty || name.empty()) {
             return;
         }
         auto loc = a.header_at(id)->loc;
-        // バッファ名は呼ぶ側が決めるものなので仮に置く。
+        // バッファと位置は呼ぶ側が決めるものなので仮に置く。
         auto buf = named_ref(a, loc, "buf", nullref);
         auto off = named_ref(a, loc, "o", nullref);
         auto target = a.make<Reference>(loc);
         target->name = f.ref(a)->name;
         target->type = ty;
 
-        auto* fe = p.tables.table<FieldEndian>().get(f);
-        auto order = fe && !fe->dynamic ? fe->endian : Endian::unspec;
-        // 順が決まらない (native / 実行時) なら両方の形を出す。判定は
-        // IsLittleEndian ノードとして置かれ、綴りはバックエンドが埋める。
-        bool undecided = fe && (fe->dynamic || fe->endian == Endian::native);
-
-        Node<Expr> combined;
-        Node<Body> split;
-        if (undecided) {
-            auto dyn = fe->dynamic;  // null なら native
-            combined = lowering::combine_int_either(c, buf, off, ty, dyn);
-            split = lowering::split_int_either(c, buf, off, target, ty, dyn);
-        }
-        else {
-            combined = lowering::combine_int(c, buf, off, ty, order);
-            split = lowering::split_int(c, buf, off, target, ty, order);
-        }
-        if (!combined) {
+        auto dec = lowering::lower_field_decode(c, f, target, buf, off);
+        auto enc = lowering::lower_field_encode(c, f, target, buf, off);
+        if (!dec) {
             return;
         }
-        std::println("--- {} :{}", name_of(a, f), unparse_node(a, ty));
-        std::println("decode: {} = {}", name_of(a, f), unparse_node(a, combined));
-        std::println("encode:");
-        // unparse は Body 単体を綴らない (文ではない) ので 1 つずつ。
-        if (split) {
-            for (auto& s : split.ref(a)->statements) {
+        std::println("--- {} :{}", name, unparse_node(a, ty));
+        auto print_body = [&](const char* label, Node<Body> body) {
+            std::println("{}:", label);
+            if (!body) {
+                std::println("  (組めない)");
+                return;
+            }
+            // unparse は Body 単体を綴らない (文ではない) ので 1 つずつ。
+            for (auto& s : body.ref(a)->statements) {
                 std::println("{}", unparse_node(a, s));
             }
+        };
+        print_body("decode", dec);
+        print_body("encode", enc);
+    }
+
+    // 集計側。field の読み書きが組めるかどうかを数える。組めない理由は
+    // 型で分けて出す (次に何を足すかの目安になる)。
+    void count_field(Program& p, lowering::Context& c, Node<Field> f, std::uint32_t id, Hist& hist) {
+        auto& a = p.arena;
+        auto ty = f.ref(a)->type;
+        if (!ty || name_of(a, f).empty()) {
+            return;  // 無名 (分岐が合成したもの) は読み書きの対象ではない
         }
+        auto loc = a.header_at(id)->loc;
+        auto buf = named_ref(a, loc, "buf", nullref);
+        auto off = named_ref(a, loc, "o", nullref);
+        auto target = a.make<Reference>(loc);
+        target->name = f.ref(a)->name;
+        target->type = ty;
+        if (lowering::lower_field_decode(c, f, target, buf, off)) {
+            hist["field: 組めた"]++;
+            return;
+        }
+        auto stripped = strip_wrappers(a, ty);
+        auto kind = stripped ? to_string(stripped.type()) : "(型なし)";
+        hist[std::format("field: 組めない ({})", kind)]++;
     }
 
     void probe_lower(Program& p, bool detail, Hist& hist) {
@@ -186,8 +201,12 @@ namespace {
                 continue;
             }
             if (h->type == NodeType::Field) {
+                auto f = node_at<Field, NodeType::Field>(id);
                 if (detail) {
-                    probe_lower_field(p, c, node_at<Field, NodeType::Field>(id), id);
+                    probe_lower_field(p, c, f, id);
+                }
+                else {
+                    count_field(p, c, f, id, hist);
                 }
                 continue;
             }
