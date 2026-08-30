@@ -207,7 +207,7 @@ endforeach()
 # newbackend.py が足す。ここに並んだものが nast2<lang> として建つ。
 
 # ---- 計測 ----------------------------------------------------------------
-foreach(b coverage endian_fmt endian_probe fn_fallible lex_split lower_probe parse_split size_probe token_cost)
+foreach(b coverage fn_fallible lex_split parse_split probe token_cost)
     add_executable(nast_${b} "bench/${b}.cpp")
     target_link_libraries(nast_${b} PRIVATE nast_core)
 endforeach()
@@ -216,7 +216,10 @@ endforeach()
 enable_testing()
 add_test(NAME nast_unit COMMAND nast_test)
 
-file(GLOB_RECURSE NAST_CORPUS "${REPO_ROOT}/example/*.bgn")
+# example/ の実フォーマットに加えて、testdata/ の確認用も往復に乗せる。
+# あちらは「この構文がこう解けること」を目で見るために書いたものだが、
+# 目で見た後は往復が守ってくれる側に置く。
+file(GLOB_RECURSE NAST_CORPUS "${REPO_ROOT}/example/*.bgn" "${NAST_DIR}/testdata/*.bgn")
 if(NAST_CORPUS)
     # 構文エラーを含む入力が 3 つあるので、corpus は戻り値を見ない
     # (数え上げが目的で、落ちないことだけ確かめる)。
