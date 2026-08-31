@@ -553,6 +553,14 @@ EBM は変換の時点で `MEMBER_ACCESS{base: SELF}` に実体化している�
 揃える先が逆になる。綴りが言語ごとなのは同じ (`MEMBER_ACCESS` は共通化不適と
 測定済みのグループ)。
 
+**この差は `available` の解決で効く。** `available(field)` (裸) と
+`available(a.b.field)` (修飾) では gating 条件を別の base に載せ直すかどうかが
+変わるが、EBM は変換で裸の Ident も `MEMBER_ACCESS{base: SELF}` にしてしまう
+ので、変換後の形では区別できず、変換前の AST を見に行っている
+(`ebmgen/convert/expression.cpp` の `convert_expr_impl(Available)`)。木に受け手を
+実体化しないというのは、その区別を最後まで残すということでもある。実装するとき
+`Available.target` に受け手を足さないこと。
+
 ## 5. EBM との差 (訂正を含む)
 
 「置く側が違う」と書きかけたが誤り。EBM も emit 時にホイストしている:
