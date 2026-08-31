@@ -79,11 +79,7 @@ namespace brgen::nast::bind {
         if (ident_text(a, f.ref(a)->name).empty()) {
             return nullref;  // 無名 field は指す名前が無い
         }
-        // 参照は新しく作る。宣言側の Ident を使い回すと「宣言」と「使用」が
-        // 同じノードになってしまう。解決先は分かっているので表に入れる。
         Builder b{a, loc};
-        // field を指す参照。受け手は付けない — 原文の参照と同じ形にして、
-        // 前置は綴る側の 1 規則に寄せる (lowering/self_ref)。
         lowering::Context lc{a, tables};
         auto ref = lowering::field_ref(lc, f);
         if (!ref) {
