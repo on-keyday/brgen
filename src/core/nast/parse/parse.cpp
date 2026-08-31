@@ -169,6 +169,10 @@ namespace brgen::nast {
         ParserState state;
         Arena& a;
 
+        // 今どの format / state / fn の中を読んでいるか。field の belong に
+        // する。分岐の block では変わらない (分岐は持ち主ではない)。
+        Node<Statement> current_member_;
+
         Parser(Stream& s, LocationError& errors, Arena& arena)
             : s(s), state(errors), a(arena) {
         }
@@ -268,6 +272,15 @@ namespace brgen::nast {
             // Create a new context for the current indent level
             auto current_indent = base.loc.pos.len();
             auto c = state.new_indent_no_scope(s, current_indent);
+            // 名前と body を持つもの (format / state / fn) だけが持ち主。
+            // 分岐の block は持ち主ではないので、外側のままにする。
+            auto outer_member = current_member_;
+            if (scope_owner.as<NamedBodyStatement>()) {
+                current_member_ = scope_owner;
+            }
+            auto member_scope = futils::helper::defer([&] {
+                current_member_ = outer_member;
+            });
             // auto ss = state.enter_struct(block->struct_type);
 
             /*
@@ -1571,7 +1584,11 @@ namespace brgen::nast {
             if (top_level) {
                 return fill(a.make<StateVariable>(loc));
             }
-            return fill(a.make<Field>(loc));
+            auto field = a.make<Field>(loc);
+            // 持ち主。fn の中で宣言されたものはローカルで、他から名前で
+            // 指せない (レシーバも付かない)。
+            field->belong = current_member_;
+            return fill(field);
         }
 
         void set_enum_value(Node<EnumMember> member, size_t& offset, NodeData<EnumMember>*& prev_specified) {
