@@ -525,14 +525,28 @@ EBM は `ctx.identifier(ref)` という登録簿でこれをやっているが�
 2 つの文字列を申告すれば済む:
 
 ```cpp
-ctx.config().Self.spelling = "t";          //  t.scalar
+ctx.config().Self.spelling = "t";          //  t.bytes.length
 ctx.config().MemberAccess.separator = ".";
-
-ctx.config().Self.spelling = "self";       //  self->scalar
-ctx.config().MemberAccess.separator = "->";
 ```
 
 `Self.spelling` が空なら黙って名前だけ出さず、未対応の目印に落ちる。
+
+**separator は深さに依らず一律で、受け手だけ別の綴りにはしない。** 一度
+`--self self --sep '->'` を「C 系の形」として出したが、これは継ぎ目が 1 つの
+ときしか合っていない:
+
+```
+bytes.length   →   self->bytes->length     ← --sep '->' (壊れる)
+bytes.length   →   (*this).bytes.length    ← 参照外しを spelling に畳む
+```
+
+受け手の次は普通の member なので、hop ごとに `->` を選ぶ余地はない。参照外しが
+要る言語は **spelling 側に畳む** (`(*this)` / `(*self)`)。ebm2cpp が
+`config.self_value = "(*this)"` にして `MEMBER_ACCESS` の綴りを `.` 固定に
+しているのと同じ形で、あちらはそもそも separator を knob にしていない。
+
+見るには `nast_backend <file.bgn>` (既定は `--self '(*this)' --sep .`)。左が
+原文の綴り、右が生成側の綴りで、変わったものだけ出る。
 
 EBM は変換の時点で `MEMBER_ACCESS{base: SELF}` に実体化している。あちらは
 変換が式を作り直す立場なので揃えられるが、こちらは原木を残す立場なので

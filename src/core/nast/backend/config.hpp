@@ -22,7 +22,7 @@ namespace brgen::nast::backend {
 
         // Self のハンドラのつまみ。
         struct SelfKnobs {
-            // How the target names the value being coded: self in Rust and Python, this in Java, the receiver name in Go, (*this) in C++. Empty falls through to the unhandled marker
+            // The receiver expression itself, dereferencing included: self in Rust and Python, this in Java, the receiver name in Go, (*this) in C++ so that the member separator stays a dot at every hop. Empty falls through to the unhandled marker
             std::string spelling = {};
         } Self;
 
@@ -36,7 +36,7 @@ namespace brgen::nast::backend {
 
         // MemberAccess のハンドラのつまみ。
         struct MemberAccessKnobs {
-            // What goes between a value and its member. A dot nearly everywhere; -> in C
+            // What goes between a value and its member. The same at every hop, however deep the chain, so a pointer receiver does not belong here: -> as the separator would spell self->a->b. A dot nearly everywhere; a target whose receiver needs dereferencing folds that into Self.spelling instead
             std::string separator = ".";
         } MemberAccess;
 
