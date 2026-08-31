@@ -70,6 +70,18 @@
             ]
         },
         {
+            "name": "FieldOwner",
+            "over": "Field",
+            "storage": "dense",
+            "fields": [
+                {
+                    "name": "owner",
+                    "type": "Node<NamedBodyStatement>"
+                }
+            ],
+            "description": "The format a field is declared in. Absent for a field declared inside a function body, which is a local and takes no receiver"
+        },
+        {
             "name": "InnerStruct",
             "over": "BodyStatement",
             "storage": "sparse",

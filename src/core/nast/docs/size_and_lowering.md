@@ -594,13 +594,24 @@ ADR 0027 (inner-anon accessor relocation) は同じ問題の生成側で、acces
 body が外側の field を参照するので、レシーバは内側 struct ではなく外側でないと
 解決できない、という話。
 
-**nast との対応。** 5 つのうち 3 つは nast では構造的に起きない:
+**nast との対応。** 構造的に起きないもの:
 
-- state variable は `StateVariable`、関数ローカルは `VariableDefinition` で、
-  どちらも `Field` ではないので `receiver_field` が最初から false
-  (dns.bgn の `lab := input.get(...)` にレシーバが付かないことを確認済み)
+- state variable は `StateVariable` という別のノードなので、`receiver_field` が
+  最初から false
 - `MemberAccess.member` は `Ident` であって式ではないので、member 側を参照と
   して綴る経路が無い
+
+**関数ローカルは起きた。** `x := 1` は `VariableDefinition` で Field ではないが、
+**`y :u8` は format の中でも関数の中でも同じ `Field`** で、木の形が同じ。
+「解決先が Field なら前置」だけでは関数の中の宣言まで `(*this).y` になる。
+ebmgen が `has_parent` (= 宣言の belong が function でない) で外していたのは
+これで、nast も同じ区別が要った。
+
+持ち主を `FieldOwner` 表 (over Field) に置いて判定する。binder は関数の body に
+降りない (`bind` は Function を押し込むだけ) ので、関数の中で宣言された field は
+表に載らない。corpus では 2 箇所 (`llvm_ir.bgn:52` の `f :VBRField`、
+`zip.bgn:93` の `pkt :Section(...)`) が誤ってレシーバを付けていた
+(参照 4 件、2683 -> 2679)。確認は `testdata/receiver.bgn`。
 
 残る 1 つが本題で、**分岐の中の field の保存場所**。nast は binder が名前ごとに
 format 直下の union field を作るので、参照の解決先は使用位置で変わる:
