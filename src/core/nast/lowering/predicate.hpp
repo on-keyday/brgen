@@ -1,6 +1,11 @@
 /*license*/
 #pragma once
 #include "lowering.hpp"
+#include "../node/build.h"
+#include "../node/util.h"
+
+#include <utility>
+#include <vector>
 
 // 分岐のパターンを述語にする。
 //
@@ -42,5 +47,47 @@ namespace brgen::nast::lowering {
     //
     // 範囲との比較でなければ null。
     Node<Expr> lower_range_compare(Context& c, Node<Binary> cmp);
+
+    // 分岐の候補を三項の連鎖に畳む。
+    //
+    //   cond1 ? v1 : (cond2 ? v2 : fallback)
+    //
+    // subject は match の主語 (条件なし match や if 連鎖では null)。候補が
+    // 持つのはパターンなので、比較の実体化は branch_predicate を通る。
+    // 既定の分岐 (`.. =>` / else) の値は else の位置に入る。値が 1 つでも
+    // 組めなければ全体が null。
+    //
+    // 候補の型は問わない (`cond` を持ち、`value_of` が値を返せればよい) —
+    // 幅は StructUnionCandidate と UnionCandidate、available は UnionCandidate
+    // と、同じ畳み方を別の候補型でする。
+    template <class Cands, class ValueOf>
+    Node<Expr> branch_chain(Context& c, const Cands& candidates, Node<Expr> subject,
+                            Node<Type> type, Node<Expr> fallback, lexer::Loc loc,
+                            ValueOf&& value_of) {
+        Builder b{c.a, loc};
+        std::vector<std::pair<Node<Expr>, Node<Expr>>> arms;
+        Node<Expr> els = fallback;
+        for (auto& cand : candidates) {
+            auto cd = cand.ref(c.a);
+            auto v = value_of(cd);
+            if (!v) {
+                return nullref;
+            }
+            if (is_default_cond(c.a, cd->cond)) {
+                els = v;
+                continue;
+            }
+            auto pred = branch_predicate(c, subject, cd->cond);
+            if (!pred) {
+                return nullref;
+            }
+            arms.push_back({pred, v});
+        }
+        // 後ろから積む。既定の分岐の値は els に入っている。
+        for (auto it = arms.rbegin(); it != arms.rend(); ++it) {
+            els = b.cond(it->first, it->second, els, type);
+        }
+        return els;
+    }
 
 }  // namespace brgen::nast::lowering

@@ -626,6 +626,14 @@ format FieldEndianTable:
     len :u32
     entries :[len]FieldEndianEntry
 
+format LoweredAvailableEntry:
+    key :Ref
+    expr :Ref
+
+format LoweredAvailableTable:
+    len :u32
+    entries :[len]LoweredAvailableEntry
+
 format LoweredRangeCompareEntry:
     key :Ref
     expr :Ref
@@ -692,6 +700,7 @@ format NastModule:
     constant_value :ConstantValueTable
     union_layout :UnionLayoutTable
     field_endian :FieldEndianTable
+    lowered_available :LoweredAvailableTable
     lowered_range_compare :LoweredRangeCompareTable
     lowered_match :LoweredMatchTable
     lowered_endian_variable :LoweredEndianVariableTable

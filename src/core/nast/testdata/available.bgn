@@ -1,0 +1,33 @@
+# available(x) は「その field を宣言した分岐を通ったか」を訊く。
+# 第 2 引数の型は「今どちらの候補か」(example/coap.bgn と同じ形)。
+
+format Opt:
+    kind :u8
+    match kind:
+        1 => value :u8
+        2 => value :u16
+    flag :u8
+    if flag == 1:
+        extra :u8
+    picked ::= available(value)
+    picked8 ::= available(value,u8)
+    picked16 ::= available(value,u16)
+    has_extra ::= available(extra)
+    always ::= available(kind)
+
+# 修飾された target。候補の条件は Opt の中の kind を指しているので、
+# そのままでは綴れない (lowering/available.hpp)。
+format Wrap:
+    opt :Opt
+    inner ::= available(opt.value)
+
+# 分岐の中の分岐。c があるのは a == 1 かつ b == 2 のときだけで、
+# 外側の条件だけでは足りない。
+format Nest:
+    a :u8
+    if a == 1:
+        b :u8
+        if b == 2:
+            c :u8
+    deep ::= available(c)
+    mid ::= available(b)

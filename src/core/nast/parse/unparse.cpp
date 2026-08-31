@@ -225,11 +225,18 @@ namespace brgen::nast {
                         expr(d->els);
                         return;
                     }
-                    case NodeType::Available:
+                    case NodeType::Available: {
+                        auto av = e.as<Available>().ref(a);
                         w.write("available(");
-                        expr(e.as<Available>().ref(a)->target);
+                        expr(av->target);
+                        if (av->selected_type) {
+                            // `available(x, u8)` の型。落とすと往復で消える。
+                            w.write(",");
+                            type_literal(av->selected_type);
+                        }
                         w.write(")");
                         return;
+                    }
                     case NodeType::Sizeof:
                         w.write("sizeof(");
                         expr(e.as<Sizeof>().ref(a)->target);

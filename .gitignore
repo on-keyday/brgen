@@ -23,6 +23,8 @@ __pycache__/
 bin/
 obj/
 testdata/
+# nast の確認用 .bgn は往復テストの入力なので、上の testdata/ 除外から戻す。
+!/src/core/nast/testdata/
 *.profraw
 go_dump_env.bat
 /web/public/doc

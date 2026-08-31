@@ -53,6 +53,13 @@ namespace brgen::nast {
             return n;
         }
 
+        Node<Expr> bool_lit(bool v) const {
+            auto n = a.make<BoolLiteral>(loc);
+            n->value = v;
+            n->type = bool_type();
+            return n;
+        }
+
         // 中身が二項か三項なら括弧で包む。それ以外はそのまま。
         Node<Expr> paren(Node<Expr> e) const {
             if (!e || (!e.template as_any<Binary>() && !e.template as_any<Cond>())) {

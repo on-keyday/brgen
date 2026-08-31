@@ -1,0 +1,7 @@
+format I:
+    a :u8
+    b :u16
+    c :u32
+    d :i16
+    input.endian = config.endian.little
+    e :u16

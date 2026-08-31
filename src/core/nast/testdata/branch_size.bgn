@@ -1,0 +1,8 @@
+format Var:
+    kind :u8
+    if kind == 1:
+        a :u16
+    elif kind == 2:
+        b :u32
+    else:
+        c :u8

@@ -1,0 +1,7 @@
+format Bits:
+    a :u3
+    b :u5
+    n :u8
+    data :[n]u8
+    bit_sizeof(data) == u64(n) * 8
+    sizeof(<u32>) == 4
