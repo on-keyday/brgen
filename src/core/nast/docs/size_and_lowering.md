@@ -607,11 +607,20 @@ body が外側の field を参照するので、レシーバは内側 struct で
 ebmgen が `has_parent` (= 宣言の belong が function でない) で外していたのは
 これで、nast も同じ区別が要った。
 
-持ち主を `FieldOwner` 表 (over Field) に置いて判定する。binder は関数の body に
-降りない (`bind` は Function を押し込むだけ) ので、関数の中で宣言された field は
-表に載らない。corpus では 2 箇所 (`llvm_ir.bgn:52` の `f :VBRField`、
-`zip.bgn:93` の `pkt :Section(...)`) が誤ってレシーバを付けていた
-(参照 4 件、2683 -> 2679)。確認は `testdata/receiver.bgn`。
+持ち主は `Field.belong` に置く。`belong` は元の AST では `Member` にあり
+(Field も Member だった)、nast では body を持つ側 (`NamedBodyStatement`) と
+`BodyStatement` / `MatchBranch` / `EnumMember` / `TypeParameter` にだけ残って
+いた。Field に無かったのは移植の取りこぼしで、parse.cpp には
+`// field->belong = state.current_member();` がコメントのまま残っている。
+持ち主を追う機構 (`enter_member`) ごと落ちていたので、`parse_indent_block` が
+既に受け取っている `scope_owner` から辿り直した — 名前と body を持つもの
+(format / state / fn) だけを持ち主にし、分岐の block では変えない。
+
+判定は `belong` が `Function` かどうか。ebmgen の `has_parent`
+(= 宣言の belong が function でない) と同じ形になる。corpus では 2 箇所
+(`llvm_ir.bgn:52` の `f :VBRField`、`zip.bgn:93` の `pkt :Section(...)`) が
+誤ってレシーバを付けていた (参照 4 件、2683 -> 2679)。確認は
+`testdata/receiver.bgn`。
 
 残る 1 つが本題で、**分岐の中の field の保存場所**。nast は binder が名前ごとに
 format 直下の union field を作るので、参照の解決先は使用位置で変わる:

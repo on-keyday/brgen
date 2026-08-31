@@ -70,18 +70,6 @@
             ]
         },
         {
-            "name": "FieldOwner",
-            "over": "Field",
-            "storage": "dense",
-            "fields": [
-                {
-                    "name": "owner",
-                    "type": "Node<NamedBodyStatement>"
-                }
-            ],
-            "description": "The format a field is declared in. Absent for a field declared inside a function body, which is a local and takes no receiver"
-        },
-        {
             "name": "InnerStruct",
             "over": "BodyStatement",
             "storage": "sparse",
@@ -945,6 +933,12 @@
             "name": "Field",
             "derive": "NamedTypeStatement",
             "fields": [
+                {
+                    "name": "belong",
+                    "type": "Node<Statement>",
+                    "weak": true,
+                    "description": "The format, state or function the field is declared in. A field belonging to a function is a local: it takes no receiver, and nothing else can name it. StateVariable and Parameter do not carry this because their owner is reachable already (the module, and the function's parameter list)"
+                },
                 {
                     "name": "arguments",
                     "type": "Node<Arguments>"

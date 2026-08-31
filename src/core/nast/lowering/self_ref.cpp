@@ -37,8 +37,10 @@ namespace brgen::nast::lowering {
         }
         // 関数の中で宣言された field はローカルで、レシーバは付かない。
         // `y :u8` は format の中でも関数の中でも同じ Field なので、Field で
-        // あることだけでは足りない。持ち主は binder が置いている。
-        if (!c.tables.table<FieldOwner>().get(f)) {
+        // あることだけでは足りず、持ち主 (belong) を見る。ebmgen の
+        // has_parent (belong が function でない) と同じ判定。
+        auto belong = f.ref(c.a)->belong;
+        if (!belong || belong.as_any<Function>()) {
             return nullref;
         }
         return f;

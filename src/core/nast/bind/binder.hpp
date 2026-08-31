@@ -15,11 +15,9 @@ namespace brgen::nast::bind {
         LocationError& err;
         SideTables& tables;
 
-        // 今どの format の body を見ているか。field の持ち主を FieldOwner 表に
-        // 置くために持つ。関数の body には降りない (bind が Function を
-        // 押し込むだけで中を見ない) ので、関数ローカルの field はここを
-        // 通らず、表にも載らない — それが「レシーバの付かない field」の判定に
-        // なる (ebmgen の has_parent に当たる)。
+        // 今どの format の body を見ているか。ここで合成する field (分岐の
+        // 無名 field と、分岐ごとの同名 field をまとめる union field) の
+        // belong にする。parser が作った field は parser が付けている。
         Node<NamedBodyStatement> owner;
 
         void bind(Node<Module> mod) {
@@ -47,9 +45,6 @@ namespace brgen::nast::bind {
                   FormatKind* decode_kind = nullptr) {
             if (auto fld = stmt.as<Field>()) {
                 fields.push_back(fld);
-                if (owner) {
-                    tables.table<FieldOwner>().set(fld, FieldOwner{.owner = owner});
-                }
             }
             else if (auto enm = stmt.as<Enum>()) {
                 enums.push_back(enm);
@@ -111,10 +106,8 @@ namespace brgen::nast::bind {
                 }
                 auto field = a.make<Field>(loc);
                 field->type = type;
+                field->belong = owner;
                 fields.push_back(field);
-                if (owner) {
-                    tables.table<FieldOwner>().set(field, FieldOwner{.owner = owner});
-                }
 
                 // 同じ名前が複数の分岐で宣言されうる。名前ごとに 1 つの Field を作り、
                 // 型を UnionType にして分岐との対応を candidates に持たせる。
@@ -166,11 +159,9 @@ namespace brgen::nast::bind {
                     auto union_field = a.make<Field>(decl_loc);
                     union_field->name = a.make<Ident>(decl_loc, name);
                     union_field->type = union_type;
+                    union_field->belong = owner;
                     fields.push_back(union_field);
                     synthesized.fields.push_back(union_field);
-                    if (owner) {
-                        tables.table<FieldOwner>().set(union_field, FieldOwner{.owner = owner});
-                    }
                 }
                 tables.table<UnionFields>().set(c, std::move(synthesized));
             }

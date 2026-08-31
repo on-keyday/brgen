@@ -591,6 +591,7 @@ export interface Expr extends Statement {
 }
 
 export interface Field extends NamedTypeStatement {
+    belong: NodeId;
     arguments: NodeId;
 }
 
@@ -988,7 +989,7 @@ export const NODE_FIELDS: Readonly<Record<NodeKind, readonly NodeFieldMeta[]>> =
     NamedTypeStatement: [{ name: "name", weak: false, list: false }, { name: "type", weak: false, list: false }],
     BodyStatement: [{ name: "belong", weak: true, list: false }, { name: "body", weak: false, list: false }],
     Expr: [{ name: "type", weak: false, list: false }],
-    Field: [{ name: "name", weak: false, list: false }, { name: "type", weak: false, list: false }, { name: "arguments", weak: false, list: false }],
+    Field: [{ name: "name", weak: false, list: false }, { name: "type", weak: false, list: false }, { name: "belong", weak: true, list: false }, { name: "arguments", weak: false, list: false }],
     StateVariable: [{ name: "name", weak: false, list: false }, { name: "type", weak: false, list: false }, { name: "arguments", weak: false, list: false }],
     Format: [{ name: "name", weak: false, list: false }, { name: "belong", weak: true, list: false }, { name: "body", weak: false, list: false }, { name: "struct_type", weak: false, list: false }],
     GenericFormat: [{ name: "name", weak: false, list: false }, { name: "belong", weak: true, list: false }, { name: "body", weak: false, list: false }, { name: "type_parameters", weak: false, list: true }],
@@ -1080,10 +1081,6 @@ export interface CommentRange {
 
 export interface Resolution {
     target: NodeId;
-}
-
-export interface FieldOwner {
-    owner: NodeId;
 }
 
 export interface InnerStruct {
@@ -1180,7 +1177,6 @@ export interface TypeSize {
 
 export const SIDE_TABLES = {
     Resolution: { over: "Ident", storage: "dense" },
-    FieldOwner: { over: "Field", storage: "dense" },
     InnerStruct: { over: "BodyStatement", storage: "sparse" },
     FormatState: { over: "NamedBodyStatement", storage: "sparse" },
     DocComment: { over: "Statement", storage: "sparse" },
