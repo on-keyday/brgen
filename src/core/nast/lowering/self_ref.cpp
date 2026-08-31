@@ -31,7 +31,17 @@ namespace brgen::nast::lowering {
         if (!res) {
             return nullref;
         }
-        return res->target.as_any<Field>();
+        auto f = res->target.as_any<Field>();
+        if (!f) {
+            return nullref;
+        }
+        // 関数の中で宣言された field はローカルで、レシーバは付かない。
+        // `y :u8` は format の中でも関数の中でも同じ Field なので、Field で
+        // あることだけでは足りない。持ち主は binder が置いている。
+        if (!c.tables.table<FieldOwner>().get(f)) {
+            return nullref;
+        }
+        return f;
     }
 
     Node<Expr> self_ref(Context& c, Node<Format> owner, lexer::Loc loc) {

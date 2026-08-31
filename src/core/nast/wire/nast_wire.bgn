@@ -506,6 +506,14 @@ format ResolutionTable:
     len :u32
     entries :[len]ResolutionEntry
 
+format FieldOwnerEntry:
+    key :Ref
+    owner :Ref
+
+format FieldOwnerTable:
+    len :u32
+    entries :[len]FieldOwnerEntry
+
 format InnerStructEntry:
     key :Ref
     fields_len :u32
@@ -690,6 +698,7 @@ format NastModule:
     nodes :[nodes_len]Node
     root :Ref
     resolution :ResolutionTable
+    field_owner :FieldOwnerTable
     inner_struct :InnerStructTable
     format_state :FormatStateTable
     doc_comment :DocCommentTable

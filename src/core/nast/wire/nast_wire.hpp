@@ -175,6 +175,8 @@ namespace brgen::nast::wire {
     struct StringEntry;
     struct ResolutionEntry;
     struct ResolutionTable;
+    struct FieldOwnerEntry;
+    struct FieldOwnerTable;
     struct InnerStructEntry;
     struct InnerStructTable;
     struct FormatStateEntry;
@@ -250,6 +252,28 @@ namespace brgen::nast::wire {
     struct ResolutionTable{
         std::uint32_t len = 0;
         std::vector<ResolutionEntry> entries;
+        bool set_entries(auto&& v) {
+            if(v.size()> 0xffffffff) {
+                return false;
+            }
+            (*this).len = v.size();
+            (*this).entries = std::forward<decltype(v)>(v);
+            return true;
+        }
+        ::futils::error::Error<> encode(::futils::binary::writer& w) const ;
+        ::futils::error::Error<> decode(::futils::binary::reader& r);
+        static constexpr size_t fixed_header_size = 4;
+    };
+    struct FieldOwnerEntry{
+        Ref key;
+        Ref owner;
+        ::futils::error::Error<> encode(::futils::binary::writer& w) const ;
+        ::futils::error::Error<> decode(::futils::binary::reader& r);
+        static constexpr size_t fixed_header_size = 8;
+    };
+    struct FieldOwnerTable{
+        std::uint32_t len = 0;
+        std::vector<FieldOwnerEntry> entries;
         bool set_entries(auto&& v) {
             if(v.size()> 0xffffffff) {
                 return false;
@@ -1535,6 +1559,7 @@ namespace brgen::nast::wire {
         }
         Ref root;
         ResolutionTable resolution;
+        FieldOwnerTable field_owner;
         InnerStructTable inner_struct;
         FormatStateTable format_state;
         DocCommentTable doc_comment;
@@ -43693,6 +43718,54 @@ namespace brgen::nast::wire {
         }
         return ::futils::error::Error<>();
     }
+    inline ::futils::error::Error<> FieldOwnerEntry::encode(::futils::binary::writer& w) const {
+        if (auto err = (*this).key.encode(w)) {
+            return err;
+        }
+        if (auto err = (*this).owner.encode(w)) {
+            return err;
+        }
+        return ::futils::error::Error<>();
+    }
+    inline ::futils::error::Error<> FieldOwnerEntry::decode(::futils::binary::reader& r) {
+        if (auto err = (*this).key.decode(r)) {
+            return err;
+        }
+        if (auto err = (*this).owner.decode(r)) {
+            return err;
+        }
+        return ::futils::error::Error<>();
+    }
+    inline ::futils::error::Error<> FieldOwnerTable::encode(::futils::binary::writer& w) const {
+        if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).len) ,true)) {
+            return ::futils::error::Error<>("encode: FieldOwnerTable::len: write std::uint32_t failed",::futils::error::Category::lib);
+        }
+        auto tmp_91_ = (*this).len;
+        if (tmp_91_!=(*this).entries.size()) {
+            return ::futils::error::Error<>("encode: FieldOwnerTable::entries: dynamic length is not compatible with its length; tmp_91_!=(*this).entries.size()",::futils::error::Category::lib);
+        }
+        for (auto& tmp_92_ : (*this).entries) {
+            if (auto err = tmp_92_.encode(w)) {
+                return err;
+            }
+        }
+        return ::futils::error::Error<>();
+    }
+    inline ::futils::error::Error<> FieldOwnerTable::decode(::futils::binary::reader& r) {
+        if (!::futils::binary::read_num(r,(*this).len ,true)) {
+            return ::futils::error::Error<>("decode: FieldOwnerTable::len: read int failed",::futils::error::Category::lib);
+        }
+        auto tmp_93_ = (*this).len;
+        (*this).entries.clear();
+        for (size_t  tmp_95_= 0; tmp_95_<tmp_93_; ++tmp_95_ ) {
+            FieldOwnerEntry tmp_94_;
+            if (auto err = tmp_94_.decode(r)) {
+                return err;
+            }
+            (*this).entries.push_back(std::move(tmp_94_));
+        }
+        return ::futils::error::Error<>();
+    }
     inline ::futils::error::Error<> InnerStructEntry::encode(::futils::binary::writer& w) const {
         if (auto err = (*this).key.encode(w)) {
             return err;
@@ -43700,24 +43773,24 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).fields_len) ,true)) {
             return ::futils::error::Error<>("encode: InnerStructEntry::fields_len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_91_ = (*this).fields_len;
-        if (tmp_91_!=(*this).fields.size()) {
-            return ::futils::error::Error<>("encode: InnerStructEntry::fields: dynamic length is not compatible with its length; tmp_91_!=(*this).fields.size()",::futils::error::Category::lib);
+        auto tmp_96_ = (*this).fields_len;
+        if (tmp_96_!=(*this).fields.size()) {
+            return ::futils::error::Error<>("encode: InnerStructEntry::fields: dynamic length is not compatible with its length; tmp_96_!=(*this).fields.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_92_ : (*this).fields) {
-            if (auto err = tmp_92_.encode(w)) {
+        for (auto& tmp_97_ : (*this).fields) {
+            if (auto err = tmp_97_.encode(w)) {
                 return err;
             }
         }
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).asserts_len) ,true)) {
             return ::futils::error::Error<>("encode: InnerStructEntry::asserts_len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_93_ = (*this).asserts_len;
-        if (tmp_93_!=(*this).asserts.size()) {
-            return ::futils::error::Error<>("encode: InnerStructEntry::asserts: dynamic length is not compatible with its length; tmp_93_!=(*this).asserts.size()",::futils::error::Category::lib);
+        auto tmp_98_ = (*this).asserts_len;
+        if (tmp_98_!=(*this).asserts.size()) {
+            return ::futils::error::Error<>("encode: InnerStructEntry::asserts: dynamic length is not compatible with its length; tmp_98_!=(*this).asserts.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_94_ : (*this).asserts) {
-            if (auto err = tmp_94_.encode(w)) {
+        for (auto& tmp_99_ : (*this).asserts) {
+            if (auto err = tmp_99_.encode(w)) {
                 return err;
             }
         }
@@ -43730,26 +43803,26 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).fields_len ,true)) {
             return ::futils::error::Error<>("decode: InnerStructEntry::fields_len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_95_ = (*this).fields_len;
+        auto tmp_100_ = (*this).fields_len;
         (*this).fields.clear();
-        for (size_t  tmp_97_= 0; tmp_97_<tmp_95_; ++tmp_97_ ) {
-            Ref tmp_96_;
-            if (auto err = tmp_96_.decode(r)) {
+        for (size_t  tmp_102_= 0; tmp_102_<tmp_100_; ++tmp_102_ ) {
+            Ref tmp_101_;
+            if (auto err = tmp_101_.decode(r)) {
                 return err;
             }
-            (*this).fields.push_back(std::move(tmp_96_));
+            (*this).fields.push_back(std::move(tmp_101_));
         }
         if (!::futils::binary::read_num(r,(*this).asserts_len ,true)) {
             return ::futils::error::Error<>("decode: InnerStructEntry::asserts_len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_98_ = (*this).asserts_len;
+        auto tmp_103_ = (*this).asserts_len;
         (*this).asserts.clear();
-        for (size_t  tmp_100_= 0; tmp_100_<tmp_98_; ++tmp_100_ ) {
-            Ref tmp_99_;
-            if (auto err = tmp_99_.decode(r)) {
+        for (size_t  tmp_105_= 0; tmp_105_<tmp_103_; ++tmp_105_ ) {
+            Ref tmp_104_;
+            if (auto err = tmp_104_.decode(r)) {
                 return err;
             }
-            (*this).asserts.push_back(std::move(tmp_99_));
+            (*this).asserts.push_back(std::move(tmp_104_));
         }
         return ::futils::error::Error<>();
     }
@@ -43757,12 +43830,12 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).len) ,true)) {
             return ::futils::error::Error<>("encode: InnerStructTable::len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_101_ = (*this).len;
-        if (tmp_101_!=(*this).entries.size()) {
-            return ::futils::error::Error<>("encode: InnerStructTable::entries: dynamic length is not compatible with its length; tmp_101_!=(*this).entries.size()",::futils::error::Category::lib);
+        auto tmp_106_ = (*this).len;
+        if (tmp_106_!=(*this).entries.size()) {
+            return ::futils::error::Error<>("encode: InnerStructTable::entries: dynamic length is not compatible with its length; tmp_106_!=(*this).entries.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_102_ : (*this).entries) {
-            if (auto err = tmp_102_.encode(w)) {
+        for (auto& tmp_107_ : (*this).entries) {
+            if (auto err = tmp_107_.encode(w)) {
                 return err;
             }
         }
@@ -43772,14 +43845,14 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).len ,true)) {
             return ::futils::error::Error<>("decode: InnerStructTable::len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_103_ = (*this).len;
+        auto tmp_108_ = (*this).len;
         (*this).entries.clear();
-        for (size_t  tmp_105_= 0; tmp_105_<tmp_103_; ++tmp_105_ ) {
-            InnerStructEntry tmp_104_;
-            if (auto err = tmp_104_.decode(r)) {
+        for (size_t  tmp_110_= 0; tmp_110_<tmp_108_; ++tmp_110_ ) {
+            InnerStructEntry tmp_109_;
+            if (auto err = tmp_109_.decode(r)) {
                 return err;
             }
-            (*this).entries.push_back(std::move(tmp_104_));
+            (*this).entries.push_back(std::move(tmp_109_));
         }
         return ::futils::error::Error<>();
     }
@@ -43787,12 +43860,12 @@ namespace brgen::nast::wire {
         if (auto err = (*this).key.encode(w)) {
             return err;
         }
-        auto tmp_106_ = static_cast<std::uint8_t>((*this).encode_kind);
-        if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_106_) ,true)) {
+        auto tmp_111_ = static_cast<std::uint8_t>((*this).encode_kind);
+        if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_111_) ,true)) {
             return ::futils::error::Error<>("encode: FormatStateEntry::encode_kind: write std::uint8_t failed",::futils::error::Category::lib);
         }
-        auto tmp_107_ = static_cast<std::uint8_t>((*this).decode_kind);
-        if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_107_) ,true)) {
+        auto tmp_112_ = static_cast<std::uint8_t>((*this).decode_kind);
+        if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_112_) ,true)) {
             return ::futils::error::Error<>("encode: FormatStateEntry::decode_kind: write std::uint8_t failed",::futils::error::Category::lib);
         }
         if (auto err = (*this).encode_custom.encode(w)) {
@@ -43804,60 +43877,60 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).fields_len) ,true)) {
             return ::futils::error::Error<>("encode: FormatStateEntry::fields_len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_108_ = (*this).fields_len;
-        if (tmp_108_!=(*this).fields.size()) {
-            return ::futils::error::Error<>("encode: FormatStateEntry::fields: dynamic length is not compatible with its length; tmp_108_!=(*this).fields.size()",::futils::error::Category::lib);
+        auto tmp_113_ = (*this).fields_len;
+        if (tmp_113_!=(*this).fields.size()) {
+            return ::futils::error::Error<>("encode: FormatStateEntry::fields: dynamic length is not compatible with its length; tmp_113_!=(*this).fields.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_109_ : (*this).fields) {
-            if (auto err = tmp_109_.encode(w)) {
+        for (auto& tmp_114_ : (*this).fields) {
+            if (auto err = tmp_114_.encode(w)) {
                 return err;
             }
         }
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).functions_len) ,true)) {
             return ::futils::error::Error<>("encode: FormatStateEntry::functions_len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_110_ = (*this).functions_len;
-        if (tmp_110_!=(*this).functions.size()) {
-            return ::futils::error::Error<>("encode: FormatStateEntry::functions: dynamic length is not compatible with its length; tmp_110_!=(*this).functions.size()",::futils::error::Category::lib);
+        auto tmp_115_ = (*this).functions_len;
+        if (tmp_115_!=(*this).functions.size()) {
+            return ::futils::error::Error<>("encode: FormatStateEntry::functions: dynamic length is not compatible with its length; tmp_115_!=(*this).functions.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_111_ : (*this).functions) {
-            if (auto err = tmp_111_.encode(w)) {
+        for (auto& tmp_116_ : (*this).functions) {
+            if (auto err = tmp_116_.encode(w)) {
                 return err;
             }
         }
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).asserts_len) ,true)) {
             return ::futils::error::Error<>("encode: FormatStateEntry::asserts_len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_112_ = (*this).asserts_len;
-        if (tmp_112_!=(*this).asserts.size()) {
-            return ::futils::error::Error<>("encode: FormatStateEntry::asserts: dynamic length is not compatible with its length; tmp_112_!=(*this).asserts.size()",::futils::error::Category::lib);
+        auto tmp_117_ = (*this).asserts_len;
+        if (tmp_117_!=(*this).asserts.size()) {
+            return ::futils::error::Error<>("encode: FormatStateEntry::asserts: dynamic length is not compatible with its length; tmp_117_!=(*this).asserts.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_113_ : (*this).asserts) {
-            if (auto err = tmp_113_.encode(w)) {
+        for (auto& tmp_118_ : (*this).asserts) {
+            if (auto err = tmp_118_.encode(w)) {
                 return err;
             }
         }
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).nested_formats_len) ,true)) {
             return ::futils::error::Error<>("encode: FormatStateEntry::nested_formats_len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_114_ = (*this).nested_formats_len;
-        if (tmp_114_!=(*this).nested_formats.size()) {
-            return ::futils::error::Error<>("encode: FormatStateEntry::nested_formats: dynamic length is not compatible with its length; tmp_114_!=(*this).nested_formats.size()",::futils::error::Category::lib);
+        auto tmp_119_ = (*this).nested_formats_len;
+        if (tmp_119_!=(*this).nested_formats.size()) {
+            return ::futils::error::Error<>("encode: FormatStateEntry::nested_formats: dynamic length is not compatible with its length; tmp_119_!=(*this).nested_formats.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_115_ : (*this).nested_formats) {
-            if (auto err = tmp_115_.encode(w)) {
+        for (auto& tmp_120_ : (*this).nested_formats) {
+            if (auto err = tmp_120_.encode(w)) {
                 return err;
             }
         }
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).nested_enums_len) ,true)) {
             return ::futils::error::Error<>("encode: FormatStateEntry::nested_enums_len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_116_ = (*this).nested_enums_len;
-        if (tmp_116_!=(*this).nested_enums.size()) {
-            return ::futils::error::Error<>("encode: FormatStateEntry::nested_enums: dynamic length is not compatible with its length; tmp_116_!=(*this).nested_enums.size()",::futils::error::Category::lib);
+        auto tmp_121_ = (*this).nested_enums_len;
+        if (tmp_121_!=(*this).nested_enums.size()) {
+            return ::futils::error::Error<>("encode: FormatStateEntry::nested_enums: dynamic length is not compatible with its length; tmp_121_!=(*this).nested_enums.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_117_ : (*this).nested_enums) {
-            if (auto err = tmp_117_.encode(w)) {
+        for (auto& tmp_122_ : (*this).nested_enums) {
+            if (auto err = tmp_122_.encode(w)) {
                 return err;
             }
         }
@@ -43867,16 +43940,16 @@ namespace brgen::nast::wire {
         if (auto err = (*this).key.decode(r)) {
             return err;
         }
-        std::uint8_t tmp_118_ = 0;
-        if (!::futils::binary::read_num(r,tmp_118_ ,true)) {
+        std::uint8_t tmp_123_ = 0;
+        if (!::futils::binary::read_num(r,tmp_123_ ,true)) {
             return ::futils::error::Error<>("decode: FormatStateEntry::encode_kind: read int failed",::futils::error::Category::lib);
         }
-        (*this).encode_kind = static_cast<FormatKind>(tmp_118_);
-        std::uint8_t tmp_119_ = 0;
-        if (!::futils::binary::read_num(r,tmp_119_ ,true)) {
+        (*this).encode_kind = static_cast<FormatKind>(tmp_123_);
+        std::uint8_t tmp_124_ = 0;
+        if (!::futils::binary::read_num(r,tmp_124_ ,true)) {
             return ::futils::error::Error<>("decode: FormatStateEntry::decode_kind: read int failed",::futils::error::Category::lib);
         }
-        (*this).decode_kind = static_cast<FormatKind>(tmp_119_);
+        (*this).decode_kind = static_cast<FormatKind>(tmp_124_);
         if (auto err = (*this).encode_custom.decode(r)) {
             return err;
         }
@@ -43886,62 +43959,62 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).fields_len ,true)) {
             return ::futils::error::Error<>("decode: FormatStateEntry::fields_len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_120_ = (*this).fields_len;
+        auto tmp_125_ = (*this).fields_len;
         (*this).fields.clear();
-        for (size_t  tmp_122_= 0; tmp_122_<tmp_120_; ++tmp_122_ ) {
-            Ref tmp_121_;
-            if (auto err = tmp_121_.decode(r)) {
+        for (size_t  tmp_127_= 0; tmp_127_<tmp_125_; ++tmp_127_ ) {
+            Ref tmp_126_;
+            if (auto err = tmp_126_.decode(r)) {
                 return err;
             }
-            (*this).fields.push_back(std::move(tmp_121_));
+            (*this).fields.push_back(std::move(tmp_126_));
         }
         if (!::futils::binary::read_num(r,(*this).functions_len ,true)) {
             return ::futils::error::Error<>("decode: FormatStateEntry::functions_len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_123_ = (*this).functions_len;
+        auto tmp_128_ = (*this).functions_len;
         (*this).functions.clear();
-        for (size_t  tmp_125_= 0; tmp_125_<tmp_123_; ++tmp_125_ ) {
-            Ref tmp_124_;
-            if (auto err = tmp_124_.decode(r)) {
+        for (size_t  tmp_130_= 0; tmp_130_<tmp_128_; ++tmp_130_ ) {
+            Ref tmp_129_;
+            if (auto err = tmp_129_.decode(r)) {
                 return err;
             }
-            (*this).functions.push_back(std::move(tmp_124_));
+            (*this).functions.push_back(std::move(tmp_129_));
         }
         if (!::futils::binary::read_num(r,(*this).asserts_len ,true)) {
             return ::futils::error::Error<>("decode: FormatStateEntry::asserts_len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_126_ = (*this).asserts_len;
+        auto tmp_131_ = (*this).asserts_len;
         (*this).asserts.clear();
-        for (size_t  tmp_128_= 0; tmp_128_<tmp_126_; ++tmp_128_ ) {
-            Ref tmp_127_;
-            if (auto err = tmp_127_.decode(r)) {
+        for (size_t  tmp_133_= 0; tmp_133_<tmp_131_; ++tmp_133_ ) {
+            Ref tmp_132_;
+            if (auto err = tmp_132_.decode(r)) {
                 return err;
             }
-            (*this).asserts.push_back(std::move(tmp_127_));
+            (*this).asserts.push_back(std::move(tmp_132_));
         }
         if (!::futils::binary::read_num(r,(*this).nested_formats_len ,true)) {
             return ::futils::error::Error<>("decode: FormatStateEntry::nested_formats_len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_129_ = (*this).nested_formats_len;
+        auto tmp_134_ = (*this).nested_formats_len;
         (*this).nested_formats.clear();
-        for (size_t  tmp_131_= 0; tmp_131_<tmp_129_; ++tmp_131_ ) {
-            Ref tmp_130_;
-            if (auto err = tmp_130_.decode(r)) {
+        for (size_t  tmp_136_= 0; tmp_136_<tmp_134_; ++tmp_136_ ) {
+            Ref tmp_135_;
+            if (auto err = tmp_135_.decode(r)) {
                 return err;
             }
-            (*this).nested_formats.push_back(std::move(tmp_130_));
+            (*this).nested_formats.push_back(std::move(tmp_135_));
         }
         if (!::futils::binary::read_num(r,(*this).nested_enums_len ,true)) {
             return ::futils::error::Error<>("decode: FormatStateEntry::nested_enums_len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_132_ = (*this).nested_enums_len;
+        auto tmp_137_ = (*this).nested_enums_len;
         (*this).nested_enums.clear();
-        for (size_t  tmp_134_= 0; tmp_134_<tmp_132_; ++tmp_134_ ) {
-            Ref tmp_133_;
-            if (auto err = tmp_133_.decode(r)) {
+        for (size_t  tmp_139_= 0; tmp_139_<tmp_137_; ++tmp_139_ ) {
+            Ref tmp_138_;
+            if (auto err = tmp_138_.decode(r)) {
                 return err;
             }
-            (*this).nested_enums.push_back(std::move(tmp_133_));
+            (*this).nested_enums.push_back(std::move(tmp_138_));
         }
         return ::futils::error::Error<>();
     }
@@ -43949,12 +44022,12 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).len) ,true)) {
             return ::futils::error::Error<>("encode: FormatStateTable::len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_135_ = (*this).len;
-        if (tmp_135_!=(*this).entries.size()) {
-            return ::futils::error::Error<>("encode: FormatStateTable::entries: dynamic length is not compatible with its length; tmp_135_!=(*this).entries.size()",::futils::error::Category::lib);
+        auto tmp_140_ = (*this).len;
+        if (tmp_140_!=(*this).entries.size()) {
+            return ::futils::error::Error<>("encode: FormatStateTable::entries: dynamic length is not compatible with its length; tmp_140_!=(*this).entries.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_136_ : (*this).entries) {
-            if (auto err = tmp_136_.encode(w)) {
+        for (auto& tmp_141_ : (*this).entries) {
+            if (auto err = tmp_141_.encode(w)) {
                 return err;
             }
         }
@@ -43964,14 +44037,14 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).len ,true)) {
             return ::futils::error::Error<>("decode: FormatStateTable::len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_137_ = (*this).len;
+        auto tmp_142_ = (*this).len;
         (*this).entries.clear();
-        for (size_t  tmp_139_= 0; tmp_139_<tmp_137_; ++tmp_139_ ) {
-            FormatStateEntry tmp_138_;
-            if (auto err = tmp_138_.decode(r)) {
+        for (size_t  tmp_144_= 0; tmp_144_<tmp_142_; ++tmp_144_ ) {
+            FormatStateEntry tmp_143_;
+            if (auto err = tmp_143_.decode(r)) {
                 return err;
             }
-            (*this).entries.push_back(std::move(tmp_138_));
+            (*this).entries.push_back(std::move(tmp_143_));
         }
         return ::futils::error::Error<>();
     }
@@ -43997,12 +44070,12 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).len) ,true)) {
             return ::futils::error::Error<>("encode: DocCommentTable::len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_140_ = (*this).len;
-        if (tmp_140_!=(*this).entries.size()) {
-            return ::futils::error::Error<>("encode: DocCommentTable::entries: dynamic length is not compatible with its length; tmp_140_!=(*this).entries.size()",::futils::error::Category::lib);
+        auto tmp_145_ = (*this).len;
+        if (tmp_145_!=(*this).entries.size()) {
+            return ::futils::error::Error<>("encode: DocCommentTable::entries: dynamic length is not compatible with its length; tmp_145_!=(*this).entries.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_141_ : (*this).entries) {
-            if (auto err = tmp_141_.encode(w)) {
+        for (auto& tmp_146_ : (*this).entries) {
+            if (auto err = tmp_146_.encode(w)) {
                 return err;
             }
         }
@@ -44012,14 +44085,14 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).len ,true)) {
             return ::futils::error::Error<>("decode: DocCommentTable::len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_142_ = (*this).len;
+        auto tmp_147_ = (*this).len;
         (*this).entries.clear();
-        for (size_t  tmp_144_= 0; tmp_144_<tmp_142_; ++tmp_144_ ) {
-            DocCommentEntry tmp_143_;
-            if (auto err = tmp_143_.decode(r)) {
+        for (size_t  tmp_149_= 0; tmp_149_<tmp_147_; ++tmp_149_ ) {
+            DocCommentEntry tmp_148_;
+            if (auto err = tmp_148_.decode(r)) {
                 return err;
             }
-            (*this).entries.push_back(std::move(tmp_143_));
+            (*this).entries.push_back(std::move(tmp_148_));
         }
         return ::futils::error::Error<>();
     }
@@ -44039,12 +44112,12 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).len) ,true)) {
             return ::futils::error::Error<>("encode: IsMutatedTable::len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_145_ = (*this).len;
-        if (tmp_145_!=(*this).entries.size()) {
-            return ::futils::error::Error<>("encode: IsMutatedTable::entries: dynamic length is not compatible with its length; tmp_145_!=(*this).entries.size()",::futils::error::Category::lib);
+        auto tmp_150_ = (*this).len;
+        if (tmp_150_!=(*this).entries.size()) {
+            return ::futils::error::Error<>("encode: IsMutatedTable::entries: dynamic length is not compatible with its length; tmp_150_!=(*this).entries.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_146_ : (*this).entries) {
-            if (auto err = tmp_146_.encode(w)) {
+        for (auto& tmp_151_ : (*this).entries) {
+            if (auto err = tmp_151_.encode(w)) {
                 return err;
             }
         }
@@ -44054,14 +44127,14 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).len ,true)) {
             return ::futils::error::Error<>("decode: IsMutatedTable::len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_147_ = (*this).len;
+        auto tmp_152_ = (*this).len;
         (*this).entries.clear();
-        for (size_t  tmp_149_= 0; tmp_149_<tmp_147_; ++tmp_149_ ) {
-            IsMutatedEntry tmp_148_;
-            if (auto err = tmp_148_.decode(r)) {
+        for (size_t  tmp_154_= 0; tmp_154_<tmp_152_; ++tmp_154_ ) {
+            IsMutatedEntry tmp_153_;
+            if (auto err = tmp_153_.decode(r)) {
                 return err;
             }
-            (*this).entries.push_back(std::move(tmp_148_));
+            (*this).entries.push_back(std::move(tmp_153_));
         }
         return ::futils::error::Error<>();
     }
@@ -44072,12 +44145,12 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).fields_len) ,true)) {
             return ::futils::error::Error<>("encode: UnionFieldsEntry::fields_len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_150_ = (*this).fields_len;
-        if (tmp_150_!=(*this).fields.size()) {
-            return ::futils::error::Error<>("encode: UnionFieldsEntry::fields: dynamic length is not compatible with its length; tmp_150_!=(*this).fields.size()",::futils::error::Category::lib);
+        auto tmp_155_ = (*this).fields_len;
+        if (tmp_155_!=(*this).fields.size()) {
+            return ::futils::error::Error<>("encode: UnionFieldsEntry::fields: dynamic length is not compatible with its length; tmp_155_!=(*this).fields.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_151_ : (*this).fields) {
-            if (auto err = tmp_151_.encode(w)) {
+        for (auto& tmp_156_ : (*this).fields) {
+            if (auto err = tmp_156_.encode(w)) {
                 return err;
             }
         }
@@ -44090,14 +44163,14 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).fields_len ,true)) {
             return ::futils::error::Error<>("decode: UnionFieldsEntry::fields_len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_152_ = (*this).fields_len;
+        auto tmp_157_ = (*this).fields_len;
         (*this).fields.clear();
-        for (size_t  tmp_154_= 0; tmp_154_<tmp_152_; ++tmp_154_ ) {
-            Ref tmp_153_;
-            if (auto err = tmp_153_.decode(r)) {
+        for (size_t  tmp_159_= 0; tmp_159_<tmp_157_; ++tmp_159_ ) {
+            Ref tmp_158_;
+            if (auto err = tmp_158_.decode(r)) {
                 return err;
             }
-            (*this).fields.push_back(std::move(tmp_153_));
+            (*this).fields.push_back(std::move(tmp_158_));
         }
         return ::futils::error::Error<>();
     }
@@ -44105,12 +44178,12 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).len) ,true)) {
             return ::futils::error::Error<>("encode: UnionFieldsTable::len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_155_ = (*this).len;
-        if (tmp_155_!=(*this).entries.size()) {
-            return ::futils::error::Error<>("encode: UnionFieldsTable::entries: dynamic length is not compatible with its length; tmp_155_!=(*this).entries.size()",::futils::error::Category::lib);
+        auto tmp_160_ = (*this).len;
+        if (tmp_160_!=(*this).entries.size()) {
+            return ::futils::error::Error<>("encode: UnionFieldsTable::entries: dynamic length is not compatible with its length; tmp_160_!=(*this).entries.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_156_ : (*this).entries) {
-            if (auto err = tmp_156_.encode(w)) {
+        for (auto& tmp_161_ : (*this).entries) {
+            if (auto err = tmp_161_.encode(w)) {
                 return err;
             }
         }
@@ -44120,14 +44193,14 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).len ,true)) {
             return ::futils::error::Error<>("decode: UnionFieldsTable::len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_157_ = (*this).len;
+        auto tmp_162_ = (*this).len;
         (*this).entries.clear();
-        for (size_t  tmp_159_= 0; tmp_159_<tmp_157_; ++tmp_159_ ) {
-            UnionFieldsEntry tmp_158_;
-            if (auto err = tmp_158_.decode(r)) {
+        for (size_t  tmp_164_= 0; tmp_164_<tmp_162_; ++tmp_164_ ) {
+            UnionFieldsEntry tmp_163_;
+            if (auto err = tmp_163_.decode(r)) {
                 return err;
             }
-            (*this).entries.push_back(std::move(tmp_158_));
+            (*this).entries.push_back(std::move(tmp_163_));
         }
         return ::futils::error::Error<>();
     }
@@ -44153,12 +44226,12 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).len) ,true)) {
             return ::futils::error::Error<>("encode: ImportResolutionTable::len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_160_ = (*this).len;
-        if (tmp_160_!=(*this).entries.size()) {
-            return ::futils::error::Error<>("encode: ImportResolutionTable::entries: dynamic length is not compatible with its length; tmp_160_!=(*this).entries.size()",::futils::error::Category::lib);
+        auto tmp_165_ = (*this).len;
+        if (tmp_165_!=(*this).entries.size()) {
+            return ::futils::error::Error<>("encode: ImportResolutionTable::entries: dynamic length is not compatible with its length; tmp_165_!=(*this).entries.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_161_ : (*this).entries) {
-            if (auto err = tmp_161_.encode(w)) {
+        for (auto& tmp_166_ : (*this).entries) {
+            if (auto err = tmp_166_.encode(w)) {
                 return err;
             }
         }
@@ -44168,14 +44241,14 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).len ,true)) {
             return ::futils::error::Error<>("decode: ImportResolutionTable::len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_162_ = (*this).len;
+        auto tmp_167_ = (*this).len;
         (*this).entries.clear();
-        for (size_t  tmp_164_= 0; tmp_164_<tmp_162_; ++tmp_164_ ) {
-            ImportResolutionEntry tmp_163_;
-            if (auto err = tmp_163_.decode(r)) {
+        for (size_t  tmp_169_= 0; tmp_169_<tmp_167_; ++tmp_169_ ) {
+            ImportResolutionEntry tmp_168_;
+            if (auto err = tmp_168_.decode(r)) {
                 return err;
             }
-            (*this).entries.push_back(std::move(tmp_163_));
+            (*this).entries.push_back(std::move(tmp_168_));
         }
         return ::futils::error::Error<>();
     }
@@ -44198,24 +44271,24 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).decode_state_read_len) ,true)) {
             return ::futils::error::Error<>("encode: RequirementsEntry::decode_state_read_len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_165_ = (*this).decode_state_read_len;
-        if (tmp_165_!=(*this).decode_state_read.size()) {
-            return ::futils::error::Error<>("encode: RequirementsEntry::decode_state_read: dynamic length is not compatible with its length; tmp_165_!=(*this).decode_state_read.size()",::futils::error::Category::lib);
+        auto tmp_170_ = (*this).decode_state_read_len;
+        if (tmp_170_!=(*this).decode_state_read.size()) {
+            return ::futils::error::Error<>("encode: RequirementsEntry::decode_state_read: dynamic length is not compatible with its length; tmp_170_!=(*this).decode_state_read.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_166_ : (*this).decode_state_read) {
-            if (auto err = tmp_166_.encode(w)) {
+        for (auto& tmp_171_ : (*this).decode_state_read) {
+            if (auto err = tmp_171_.encode(w)) {
                 return err;
             }
         }
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).decode_state_write_len) ,true)) {
             return ::futils::error::Error<>("encode: RequirementsEntry::decode_state_write_len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_167_ = (*this).decode_state_write_len;
-        if (tmp_167_!=(*this).decode_state_write.size()) {
-            return ::futils::error::Error<>("encode: RequirementsEntry::decode_state_write: dynamic length is not compatible with its length; tmp_167_!=(*this).decode_state_write.size()",::futils::error::Category::lib);
+        auto tmp_172_ = (*this).decode_state_write_len;
+        if (tmp_172_!=(*this).decode_state_write.size()) {
+            return ::futils::error::Error<>("encode: RequirementsEntry::decode_state_write: dynamic length is not compatible with its length; tmp_172_!=(*this).decode_state_write.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_168_ : (*this).decode_state_write) {
-            if (auto err = tmp_168_.encode(w)) {
+        for (auto& tmp_173_ : (*this).decode_state_write) {
+            if (auto err = tmp_173_.encode(w)) {
                 return err;
             }
         }
@@ -44234,24 +44307,24 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).encode_state_read_len) ,true)) {
             return ::futils::error::Error<>("encode: RequirementsEntry::encode_state_read_len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_169_ = (*this).encode_state_read_len;
-        if (tmp_169_!=(*this).encode_state_read.size()) {
-            return ::futils::error::Error<>("encode: RequirementsEntry::encode_state_read: dynamic length is not compatible with its length; tmp_169_!=(*this).encode_state_read.size()",::futils::error::Category::lib);
+        auto tmp_174_ = (*this).encode_state_read_len;
+        if (tmp_174_!=(*this).encode_state_read.size()) {
+            return ::futils::error::Error<>("encode: RequirementsEntry::encode_state_read: dynamic length is not compatible with its length; tmp_174_!=(*this).encode_state_read.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_170_ : (*this).encode_state_read) {
-            if (auto err = tmp_170_.encode(w)) {
+        for (auto& tmp_175_ : (*this).encode_state_read) {
+            if (auto err = tmp_175_.encode(w)) {
                 return err;
             }
         }
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).encode_state_write_len) ,true)) {
             return ::futils::error::Error<>("encode: RequirementsEntry::encode_state_write_len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_171_ = (*this).encode_state_write_len;
-        if (tmp_171_!=(*this).encode_state_write.size()) {
-            return ::futils::error::Error<>("encode: RequirementsEntry::encode_state_write: dynamic length is not compatible with its length; tmp_171_!=(*this).encode_state_write.size()",::futils::error::Category::lib);
+        auto tmp_176_ = (*this).encode_state_write_len;
+        if (tmp_176_!=(*this).encode_state_write.size()) {
+            return ::futils::error::Error<>("encode: RequirementsEntry::encode_state_write: dynamic length is not compatible with its length; tmp_176_!=(*this).encode_state_write.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_172_ : (*this).encode_state_write) {
-            if (auto err = tmp_172_.encode(w)) {
+        for (auto& tmp_177_ : (*this).encode_state_write) {
+            if (auto err = tmp_177_.encode(w)) {
                 return err;
             }
         }
@@ -44276,26 +44349,26 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).decode_state_read_len ,true)) {
             return ::futils::error::Error<>("decode: RequirementsEntry::decode_state_read_len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_173_ = (*this).decode_state_read_len;
+        auto tmp_178_ = (*this).decode_state_read_len;
         (*this).decode_state_read.clear();
-        for (size_t  tmp_175_= 0; tmp_175_<tmp_173_; ++tmp_175_ ) {
-            Ref tmp_174_;
-            if (auto err = tmp_174_.decode(r)) {
+        for (size_t  tmp_180_= 0; tmp_180_<tmp_178_; ++tmp_180_ ) {
+            Ref tmp_179_;
+            if (auto err = tmp_179_.decode(r)) {
                 return err;
             }
-            (*this).decode_state_read.push_back(std::move(tmp_174_));
+            (*this).decode_state_read.push_back(std::move(tmp_179_));
         }
         if (!::futils::binary::read_num(r,(*this).decode_state_write_len ,true)) {
             return ::futils::error::Error<>("decode: RequirementsEntry::decode_state_write_len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_176_ = (*this).decode_state_write_len;
+        auto tmp_181_ = (*this).decode_state_write_len;
         (*this).decode_state_write.clear();
-        for (size_t  tmp_178_= 0; tmp_178_<tmp_176_; ++tmp_178_ ) {
-            Ref tmp_177_;
-            if (auto err = tmp_177_.decode(r)) {
+        for (size_t  tmp_183_= 0; tmp_183_<tmp_181_; ++tmp_183_ ) {
+            Ref tmp_182_;
+            if (auto err = tmp_182_.decode(r)) {
                 return err;
             }
-            (*this).decode_state_write.push_back(std::move(tmp_177_));
+            (*this).decode_state_write.push_back(std::move(tmp_182_));
         }
         if (!::futils::binary::read_num(r,(*this).encode_peek ,true)) {
             return ::futils::error::Error<>("decode: RequirementsEntry::encode_peek: read int failed",::futils::error::Category::lib);
@@ -44312,26 +44385,26 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).encode_state_read_len ,true)) {
             return ::futils::error::Error<>("decode: RequirementsEntry::encode_state_read_len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_179_ = (*this).encode_state_read_len;
+        auto tmp_184_ = (*this).encode_state_read_len;
         (*this).encode_state_read.clear();
-        for (size_t  tmp_181_= 0; tmp_181_<tmp_179_; ++tmp_181_ ) {
-            Ref tmp_180_;
-            if (auto err = tmp_180_.decode(r)) {
+        for (size_t  tmp_186_= 0; tmp_186_<tmp_184_; ++tmp_186_ ) {
+            Ref tmp_185_;
+            if (auto err = tmp_185_.decode(r)) {
                 return err;
             }
-            (*this).encode_state_read.push_back(std::move(tmp_180_));
+            (*this).encode_state_read.push_back(std::move(tmp_185_));
         }
         if (!::futils::binary::read_num(r,(*this).encode_state_write_len ,true)) {
             return ::futils::error::Error<>("decode: RequirementsEntry::encode_state_write_len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_182_ = (*this).encode_state_write_len;
+        auto tmp_187_ = (*this).encode_state_write_len;
         (*this).encode_state_write.clear();
-        for (size_t  tmp_184_= 0; tmp_184_<tmp_182_; ++tmp_184_ ) {
-            Ref tmp_183_;
-            if (auto err = tmp_183_.decode(r)) {
+        for (size_t  tmp_189_= 0; tmp_189_<tmp_187_; ++tmp_189_ ) {
+            Ref tmp_188_;
+            if (auto err = tmp_188_.decode(r)) {
                 return err;
             }
-            (*this).encode_state_write.push_back(std::move(tmp_183_));
+            (*this).encode_state_write.push_back(std::move(tmp_188_));
         }
         return ::futils::error::Error<>();
     }
@@ -44339,12 +44412,12 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).len) ,true)) {
             return ::futils::error::Error<>("encode: RequirementsTable::len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_185_ = (*this).len;
-        if (tmp_185_!=(*this).entries.size()) {
-            return ::futils::error::Error<>("encode: RequirementsTable::entries: dynamic length is not compatible with its length; tmp_185_!=(*this).entries.size()",::futils::error::Category::lib);
+        auto tmp_190_ = (*this).len;
+        if (tmp_190_!=(*this).entries.size()) {
+            return ::futils::error::Error<>("encode: RequirementsTable::entries: dynamic length is not compatible with its length; tmp_190_!=(*this).entries.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_186_ : (*this).entries) {
-            if (auto err = tmp_186_.encode(w)) {
+        for (auto& tmp_191_ : (*this).entries) {
+            if (auto err = tmp_191_.encode(w)) {
                 return err;
             }
         }
@@ -44354,14 +44427,14 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).len ,true)) {
             return ::futils::error::Error<>("decode: RequirementsTable::len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_187_ = (*this).len;
+        auto tmp_192_ = (*this).len;
         (*this).entries.clear();
-        for (size_t  tmp_189_= 0; tmp_189_<tmp_187_; ++tmp_189_ ) {
-            RequirementsEntry tmp_188_;
-            if (auto err = tmp_188_.decode(r)) {
+        for (size_t  tmp_194_= 0; tmp_194_<tmp_192_; ++tmp_194_ ) {
+            RequirementsEntry tmp_193_;
+            if (auto err = tmp_193_.decode(r)) {
                 return err;
             }
-            (*this).entries.push_back(std::move(tmp_188_));
+            (*this).entries.push_back(std::move(tmp_193_));
         }
         return ::futils::error::Error<>();
     }
@@ -44369,8 +44442,8 @@ namespace brgen::nast::wire {
         if (auto err = (*this).key.encode(w)) {
             return err;
         }
-        auto tmp_190_ = static_cast<std::uint8_t>((*this).kind_eval_kind);
-        if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_190_) ,true)) {
+        auto tmp_195_ = static_cast<std::uint8_t>((*this).kind_eval_kind);
+        if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_195_) ,true)) {
             return ::futils::error::Error<>("encode: ConstantValueEntry::kind_eval_kind: write std::uint8_t failed",::futils::error::Category::lib);
         }
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).integer) ,true)) {
@@ -44391,11 +44464,11 @@ namespace brgen::nast::wire {
         if (auto err = (*this).key.decode(r)) {
             return err;
         }
-        std::uint8_t tmp_191_ = 0;
-        if (!::futils::binary::read_num(r,tmp_191_ ,true)) {
+        std::uint8_t tmp_196_ = 0;
+        if (!::futils::binary::read_num(r,tmp_196_ ,true)) {
             return ::futils::error::Error<>("decode: ConstantValueEntry::kind_eval_kind: read int failed",::futils::error::Category::lib);
         }
-        (*this).kind_eval_kind = static_cast<EvalKind>(tmp_191_);
+        (*this).kind_eval_kind = static_cast<EvalKind>(tmp_196_);
         if (!::futils::binary::read_num(r,(*this).integer ,true)) {
             return ::futils::error::Error<>("decode: ConstantValueEntry::integer: read int failed",::futils::error::Category::lib);
         }
@@ -44414,12 +44487,12 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).len) ,true)) {
             return ::futils::error::Error<>("encode: ConstantValueTable::len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_192_ = (*this).len;
-        if (tmp_192_!=(*this).entries.size()) {
-            return ::futils::error::Error<>("encode: ConstantValueTable::entries: dynamic length is not compatible with its length; tmp_192_!=(*this).entries.size()",::futils::error::Category::lib);
+        auto tmp_197_ = (*this).len;
+        if (tmp_197_!=(*this).entries.size()) {
+            return ::futils::error::Error<>("encode: ConstantValueTable::entries: dynamic length is not compatible with its length; tmp_197_!=(*this).entries.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_193_ : (*this).entries) {
-            if (auto err = tmp_193_.encode(w)) {
+        for (auto& tmp_198_ : (*this).entries) {
+            if (auto err = tmp_198_.encode(w)) {
                 return err;
             }
         }
@@ -44429,14 +44502,14 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).len ,true)) {
             return ::futils::error::Error<>("decode: ConstantValueTable::len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_194_ = (*this).len;
+        auto tmp_199_ = (*this).len;
         (*this).entries.clear();
-        for (size_t  tmp_196_= 0; tmp_196_<tmp_194_; ++tmp_196_ ) {
-            ConstantValueEntry tmp_195_;
-            if (auto err = tmp_195_.decode(r)) {
+        for (size_t  tmp_201_= 0; tmp_201_<tmp_199_; ++tmp_201_ ) {
+            ConstantValueEntry tmp_200_;
+            if (auto err = tmp_200_.decode(r)) {
                 return err;
             }
-            (*this).entries.push_back(std::move(tmp_195_));
+            (*this).entries.push_back(std::move(tmp_200_));
         }
         return ::futils::error::Error<>();
     }
@@ -44447,24 +44520,24 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).member_types_len) ,true)) {
             return ::futils::error::Error<>("encode: UnionLayoutEntry::member_types_len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_197_ = (*this).member_types_len;
-        if (tmp_197_!=(*this).member_types.size()) {
-            return ::futils::error::Error<>("encode: UnionLayoutEntry::member_types: dynamic length is not compatible with its length; tmp_197_!=(*this).member_types.size()",::futils::error::Category::lib);
+        auto tmp_202_ = (*this).member_types_len;
+        if (tmp_202_!=(*this).member_types.size()) {
+            return ::futils::error::Error<>("encode: UnionLayoutEntry::member_types: dynamic length is not compatible with its length; tmp_202_!=(*this).member_types.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_198_ : (*this).member_types) {
-            if (auto err = tmp_198_.encode(w)) {
+        for (auto& tmp_203_ : (*this).member_types) {
+            if (auto err = tmp_203_.encode(w)) {
                 return err;
             }
         }
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).cluster_types_len) ,true)) {
             return ::futils::error::Error<>("encode: UnionLayoutEntry::cluster_types_len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_199_ = (*this).cluster_types_len;
-        if (tmp_199_!=(*this).cluster_types.size()) {
-            return ::futils::error::Error<>("encode: UnionLayoutEntry::cluster_types: dynamic length is not compatible with its length; tmp_199_!=(*this).cluster_types.size()",::futils::error::Category::lib);
+        auto tmp_204_ = (*this).cluster_types_len;
+        if (tmp_204_!=(*this).cluster_types.size()) {
+            return ::futils::error::Error<>("encode: UnionLayoutEntry::cluster_types: dynamic length is not compatible with its length; tmp_204_!=(*this).cluster_types.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_200_ : (*this).cluster_types) {
-            if (auto err = tmp_200_.encode(w)) {
+        for (auto& tmp_205_ : (*this).cluster_types) {
+            if (auto err = tmp_205_.encode(w)) {
                 return err;
             }
         }
@@ -44477,26 +44550,26 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).member_types_len ,true)) {
             return ::futils::error::Error<>("decode: UnionLayoutEntry::member_types_len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_201_ = (*this).member_types_len;
+        auto tmp_206_ = (*this).member_types_len;
         (*this).member_types.clear();
-        for (size_t  tmp_203_= 0; tmp_203_<tmp_201_; ++tmp_203_ ) {
-            Ref tmp_202_;
-            if (auto err = tmp_202_.decode(r)) {
+        for (size_t  tmp_208_= 0; tmp_208_<tmp_206_; ++tmp_208_ ) {
+            Ref tmp_207_;
+            if (auto err = tmp_207_.decode(r)) {
                 return err;
             }
-            (*this).member_types.push_back(std::move(tmp_202_));
+            (*this).member_types.push_back(std::move(tmp_207_));
         }
         if (!::futils::binary::read_num(r,(*this).cluster_types_len ,true)) {
             return ::futils::error::Error<>("decode: UnionLayoutEntry::cluster_types_len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_204_ = (*this).cluster_types_len;
+        auto tmp_209_ = (*this).cluster_types_len;
         (*this).cluster_types.clear();
-        for (size_t  tmp_206_= 0; tmp_206_<tmp_204_; ++tmp_206_ ) {
-            Ref tmp_205_;
-            if (auto err = tmp_205_.decode(r)) {
+        for (size_t  tmp_211_= 0; tmp_211_<tmp_209_; ++tmp_211_ ) {
+            Ref tmp_210_;
+            if (auto err = tmp_210_.decode(r)) {
                 return err;
             }
-            (*this).cluster_types.push_back(std::move(tmp_205_));
+            (*this).cluster_types.push_back(std::move(tmp_210_));
         }
         return ::futils::error::Error<>();
     }
@@ -44504,12 +44577,12 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).len) ,true)) {
             return ::futils::error::Error<>("encode: UnionLayoutTable::len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_207_ = (*this).len;
-        if (tmp_207_!=(*this).entries.size()) {
-            return ::futils::error::Error<>("encode: UnionLayoutTable::entries: dynamic length is not compatible with its length; tmp_207_!=(*this).entries.size()",::futils::error::Category::lib);
+        auto tmp_212_ = (*this).len;
+        if (tmp_212_!=(*this).entries.size()) {
+            return ::futils::error::Error<>("encode: UnionLayoutTable::entries: dynamic length is not compatible with its length; tmp_212_!=(*this).entries.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_208_ : (*this).entries) {
-            if (auto err = tmp_208_.encode(w)) {
+        for (auto& tmp_213_ : (*this).entries) {
+            if (auto err = tmp_213_.encode(w)) {
                 return err;
             }
         }
@@ -44519,14 +44592,14 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).len ,true)) {
             return ::futils::error::Error<>("decode: UnionLayoutTable::len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_209_ = (*this).len;
+        auto tmp_214_ = (*this).len;
         (*this).entries.clear();
-        for (size_t  tmp_211_= 0; tmp_211_<tmp_209_; ++tmp_211_ ) {
-            UnionLayoutEntry tmp_210_;
-            if (auto err = tmp_210_.decode(r)) {
+        for (size_t  tmp_216_= 0; tmp_216_<tmp_214_; ++tmp_216_ ) {
+            UnionLayoutEntry tmp_215_;
+            if (auto err = tmp_215_.decode(r)) {
                 return err;
             }
-            (*this).entries.push_back(std::move(tmp_210_));
+            (*this).entries.push_back(std::move(tmp_215_));
         }
         return ::futils::error::Error<>();
     }
@@ -44534,8 +44607,8 @@ namespace brgen::nast::wire {
         if (auto err = (*this).key.encode(w)) {
             return err;
         }
-        auto tmp_212_ = static_cast<std::uint8_t>((*this).endian);
-        if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_212_) ,true)) {
+        auto tmp_217_ = static_cast<std::uint8_t>((*this).endian);
+        if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_217_) ,true)) {
             return ::futils::error::Error<>("encode: FieldEndianEntry::endian: write std::uint8_t failed",::futils::error::Category::lib);
         }
         if (auto err = (*this).dynamic.encode(w)) {
@@ -44547,11 +44620,11 @@ namespace brgen::nast::wire {
         if (auto err = (*this).key.decode(r)) {
             return err;
         }
-        std::uint8_t tmp_213_ = 0;
-        if (!::futils::binary::read_num(r,tmp_213_ ,true)) {
+        std::uint8_t tmp_218_ = 0;
+        if (!::futils::binary::read_num(r,tmp_218_ ,true)) {
             return ::futils::error::Error<>("decode: FieldEndianEntry::endian: read int failed",::futils::error::Category::lib);
         }
-        (*this).endian = static_cast<Endian>(tmp_213_);
+        (*this).endian = static_cast<Endian>(tmp_218_);
         if (auto err = (*this).dynamic.decode(r)) {
             return err;
         }
@@ -44561,12 +44634,12 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).len) ,true)) {
             return ::futils::error::Error<>("encode: FieldEndianTable::len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_214_ = (*this).len;
-        if (tmp_214_!=(*this).entries.size()) {
-            return ::futils::error::Error<>("encode: FieldEndianTable::entries: dynamic length is not compatible with its length; tmp_214_!=(*this).entries.size()",::futils::error::Category::lib);
+        auto tmp_219_ = (*this).len;
+        if (tmp_219_!=(*this).entries.size()) {
+            return ::futils::error::Error<>("encode: FieldEndianTable::entries: dynamic length is not compatible with its length; tmp_219_!=(*this).entries.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_215_ : (*this).entries) {
-            if (auto err = tmp_215_.encode(w)) {
+        for (auto& tmp_220_ : (*this).entries) {
+            if (auto err = tmp_220_.encode(w)) {
                 return err;
             }
         }
@@ -44576,14 +44649,14 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).len ,true)) {
             return ::futils::error::Error<>("decode: FieldEndianTable::len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_216_ = (*this).len;
+        auto tmp_221_ = (*this).len;
         (*this).entries.clear();
-        for (size_t  tmp_218_= 0; tmp_218_<tmp_216_; ++tmp_218_ ) {
-            FieldEndianEntry tmp_217_;
-            if (auto err = tmp_217_.decode(r)) {
+        for (size_t  tmp_223_= 0; tmp_223_<tmp_221_; ++tmp_223_ ) {
+            FieldEndianEntry tmp_222_;
+            if (auto err = tmp_222_.decode(r)) {
                 return err;
             }
-            (*this).entries.push_back(std::move(tmp_217_));
+            (*this).entries.push_back(std::move(tmp_222_));
         }
         return ::futils::error::Error<>();
     }
@@ -44609,12 +44682,12 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).len) ,true)) {
             return ::futils::error::Error<>("encode: LoweredAvailableTable::len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_219_ = (*this).len;
-        if (tmp_219_!=(*this).entries.size()) {
-            return ::futils::error::Error<>("encode: LoweredAvailableTable::entries: dynamic length is not compatible with its length; tmp_219_!=(*this).entries.size()",::futils::error::Category::lib);
+        auto tmp_224_ = (*this).len;
+        if (tmp_224_!=(*this).entries.size()) {
+            return ::futils::error::Error<>("encode: LoweredAvailableTable::entries: dynamic length is not compatible with its length; tmp_224_!=(*this).entries.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_220_ : (*this).entries) {
-            if (auto err = tmp_220_.encode(w)) {
+        for (auto& tmp_225_ : (*this).entries) {
+            if (auto err = tmp_225_.encode(w)) {
                 return err;
             }
         }
@@ -44624,14 +44697,14 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).len ,true)) {
             return ::futils::error::Error<>("decode: LoweredAvailableTable::len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_221_ = (*this).len;
+        auto tmp_226_ = (*this).len;
         (*this).entries.clear();
-        for (size_t  tmp_223_= 0; tmp_223_<tmp_221_; ++tmp_223_ ) {
-            LoweredAvailableEntry tmp_222_;
-            if (auto err = tmp_222_.decode(r)) {
+        for (size_t  tmp_228_= 0; tmp_228_<tmp_226_; ++tmp_228_ ) {
+            LoweredAvailableEntry tmp_227_;
+            if (auto err = tmp_227_.decode(r)) {
                 return err;
             }
-            (*this).entries.push_back(std::move(tmp_222_));
+            (*this).entries.push_back(std::move(tmp_227_));
         }
         return ::futils::error::Error<>();
     }
@@ -44657,12 +44730,12 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).len) ,true)) {
             return ::futils::error::Error<>("encode: LoweredRangeCompareTable::len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_224_ = (*this).len;
-        if (tmp_224_!=(*this).entries.size()) {
-            return ::futils::error::Error<>("encode: LoweredRangeCompareTable::entries: dynamic length is not compatible with its length; tmp_224_!=(*this).entries.size()",::futils::error::Category::lib);
+        auto tmp_229_ = (*this).len;
+        if (tmp_229_!=(*this).entries.size()) {
+            return ::futils::error::Error<>("encode: LoweredRangeCompareTable::entries: dynamic length is not compatible with its length; tmp_229_!=(*this).entries.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_225_ : (*this).entries) {
-            if (auto err = tmp_225_.encode(w)) {
+        for (auto& tmp_230_ : (*this).entries) {
+            if (auto err = tmp_230_.encode(w)) {
                 return err;
             }
         }
@@ -44672,14 +44745,14 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).len ,true)) {
             return ::futils::error::Error<>("decode: LoweredRangeCompareTable::len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_226_ = (*this).len;
+        auto tmp_231_ = (*this).len;
         (*this).entries.clear();
-        for (size_t  tmp_228_= 0; tmp_228_<tmp_226_; ++tmp_228_ ) {
-            LoweredRangeCompareEntry tmp_227_;
-            if (auto err = tmp_227_.decode(r)) {
+        for (size_t  tmp_233_= 0; tmp_233_<tmp_231_; ++tmp_233_ ) {
+            LoweredRangeCompareEntry tmp_232_;
+            if (auto err = tmp_232_.decode(r)) {
                 return err;
             }
-            (*this).entries.push_back(std::move(tmp_227_));
+            (*this).entries.push_back(std::move(tmp_232_));
         }
         return ::futils::error::Error<>();
     }
@@ -44705,12 +44778,12 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).len) ,true)) {
             return ::futils::error::Error<>("encode: LoweredMatchTable::len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_229_ = (*this).len;
-        if (tmp_229_!=(*this).entries.size()) {
-            return ::futils::error::Error<>("encode: LoweredMatchTable::entries: dynamic length is not compatible with its length; tmp_229_!=(*this).entries.size()",::futils::error::Category::lib);
+        auto tmp_234_ = (*this).len;
+        if (tmp_234_!=(*this).entries.size()) {
+            return ::futils::error::Error<>("encode: LoweredMatchTable::entries: dynamic length is not compatible with its length; tmp_234_!=(*this).entries.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_230_ : (*this).entries) {
-            if (auto err = tmp_230_.encode(w)) {
+        for (auto& tmp_235_ : (*this).entries) {
+            if (auto err = tmp_235_.encode(w)) {
                 return err;
             }
         }
@@ -44720,14 +44793,14 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).len ,true)) {
             return ::futils::error::Error<>("decode: LoweredMatchTable::len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_231_ = (*this).len;
+        auto tmp_236_ = (*this).len;
         (*this).entries.clear();
-        for (size_t  tmp_233_= 0; tmp_233_<tmp_231_; ++tmp_233_ ) {
-            LoweredMatchEntry tmp_232_;
-            if (auto err = tmp_232_.decode(r)) {
+        for (size_t  tmp_238_= 0; tmp_238_<tmp_236_; ++tmp_238_ ) {
+            LoweredMatchEntry tmp_237_;
+            if (auto err = tmp_237_.decode(r)) {
                 return err;
             }
-            (*this).entries.push_back(std::move(tmp_232_));
+            (*this).entries.push_back(std::move(tmp_237_));
         }
         return ::futils::error::Error<>();
     }
@@ -44759,12 +44832,12 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).len) ,true)) {
             return ::futils::error::Error<>("encode: LoweredEndianVariableTable::len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_234_ = (*this).len;
-        if (tmp_234_!=(*this).entries.size()) {
-            return ::futils::error::Error<>("encode: LoweredEndianVariableTable::entries: dynamic length is not compatible with its length; tmp_234_!=(*this).entries.size()",::futils::error::Category::lib);
+        auto tmp_239_ = (*this).len;
+        if (tmp_239_!=(*this).entries.size()) {
+            return ::futils::error::Error<>("encode: LoweredEndianVariableTable::entries: dynamic length is not compatible with its length; tmp_239_!=(*this).entries.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_235_ : (*this).entries) {
-            if (auto err = tmp_235_.encode(w)) {
+        for (auto& tmp_240_ : (*this).entries) {
+            if (auto err = tmp_240_.encode(w)) {
                 return err;
             }
         }
@@ -44774,14 +44847,14 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).len ,true)) {
             return ::futils::error::Error<>("decode: LoweredEndianVariableTable::len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_236_ = (*this).len;
+        auto tmp_241_ = (*this).len;
         (*this).entries.clear();
-        for (size_t  tmp_238_= 0; tmp_238_<tmp_236_; ++tmp_238_ ) {
-            LoweredEndianVariableEntry tmp_237_;
-            if (auto err = tmp_237_.decode(r)) {
+        for (size_t  tmp_243_= 0; tmp_243_<tmp_241_; ++tmp_243_ ) {
+            LoweredEndianVariableEntry tmp_242_;
+            if (auto err = tmp_242_.decode(r)) {
                 return err;
             }
-            (*this).entries.push_back(std::move(tmp_237_));
+            (*this).entries.push_back(std::move(tmp_242_));
         }
         return ::futils::error::Error<>();
     }
@@ -44825,12 +44898,12 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).len) ,true)) {
             return ::futils::error::Error<>("encode: LoweredCondTable::len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_239_ = (*this).len;
-        if (tmp_239_!=(*this).entries.size()) {
-            return ::futils::error::Error<>("encode: LoweredCondTable::entries: dynamic length is not compatible with its length; tmp_239_!=(*this).entries.size()",::futils::error::Category::lib);
+        auto tmp_244_ = (*this).len;
+        if (tmp_244_!=(*this).entries.size()) {
+            return ::futils::error::Error<>("encode: LoweredCondTable::entries: dynamic length is not compatible with its length; tmp_244_!=(*this).entries.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_240_ : (*this).entries) {
-            if (auto err = tmp_240_.encode(w)) {
+        for (auto& tmp_245_ : (*this).entries) {
+            if (auto err = tmp_245_.encode(w)) {
                 return err;
             }
         }
@@ -44840,14 +44913,14 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).len ,true)) {
             return ::futils::error::Error<>("decode: LoweredCondTable::len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_241_ = (*this).len;
+        auto tmp_246_ = (*this).len;
         (*this).entries.clear();
-        for (size_t  tmp_243_= 0; tmp_243_<tmp_241_; ++tmp_243_ ) {
-            LoweredCondEntry tmp_242_;
-            if (auto err = tmp_242_.decode(r)) {
+        for (size_t  tmp_248_= 0; tmp_248_<tmp_246_; ++tmp_248_ ) {
+            LoweredCondEntry tmp_247_;
+            if (auto err = tmp_247_.decode(r)) {
                 return err;
             }
-            (*this).entries.push_back(std::move(tmp_242_));
+            (*this).entries.push_back(std::move(tmp_247_));
         }
         return ::futils::error::Error<>();
     }
@@ -44855,8 +44928,8 @@ namespace brgen::nast::wire {
         if (auto err = (*this).key.encode(w)) {
             return err;
         }
-        auto tmp_244_ = static_cast<std::uint8_t>((*this).kind_size_kind);
-        if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_244_) ,true)) {
+        auto tmp_249_ = static_cast<std::uint8_t>((*this).kind_size_kind);
+        if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_249_) ,true)) {
             return ::futils::error::Error<>("encode: TypeSizeEntry::kind_size_kind: write std::uint8_t failed",::futils::error::Category::lib);
         }
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).bits) ,true)) {
@@ -44871,11 +44944,11 @@ namespace brgen::nast::wire {
         if (auto err = (*this).key.decode(r)) {
             return err;
         }
-        std::uint8_t tmp_245_ = 0;
-        if (!::futils::binary::read_num(r,tmp_245_ ,true)) {
+        std::uint8_t tmp_250_ = 0;
+        if (!::futils::binary::read_num(r,tmp_250_ ,true)) {
             return ::futils::error::Error<>("decode: TypeSizeEntry::kind_size_kind: read int failed",::futils::error::Category::lib);
         }
-        (*this).kind_size_kind = static_cast<SizeKind>(tmp_245_);
+        (*this).kind_size_kind = static_cast<SizeKind>(tmp_250_);
         if (!::futils::binary::read_num(r,(*this).bits ,true)) {
             return ::futils::error::Error<>("decode: TypeSizeEntry::bits: read int failed",::futils::error::Category::lib);
         }
@@ -44888,12 +44961,12 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).len) ,true)) {
             return ::futils::error::Error<>("encode: TypeSizeTable::len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_246_ = (*this).len;
-        if (tmp_246_!=(*this).entries.size()) {
-            return ::futils::error::Error<>("encode: TypeSizeTable::entries: dynamic length is not compatible with its length; tmp_246_!=(*this).entries.size()",::futils::error::Category::lib);
+        auto tmp_251_ = (*this).len;
+        if (tmp_251_!=(*this).entries.size()) {
+            return ::futils::error::Error<>("encode: TypeSizeTable::entries: dynamic length is not compatible with its length; tmp_251_!=(*this).entries.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_247_ : (*this).entries) {
-            if (auto err = tmp_247_.encode(w)) {
+        for (auto& tmp_252_ : (*this).entries) {
+            if (auto err = tmp_252_.encode(w)) {
                 return err;
             }
         }
@@ -44903,20 +44976,20 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).len ,true)) {
             return ::futils::error::Error<>("decode: TypeSizeTable::len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_248_ = (*this).len;
+        auto tmp_253_ = (*this).len;
         (*this).entries.clear();
-        for (size_t  tmp_250_= 0; tmp_250_<tmp_248_; ++tmp_250_ ) {
-            TypeSizeEntry tmp_249_;
-            if (auto err = tmp_249_.decode(r)) {
+        for (size_t  tmp_255_= 0; tmp_255_<tmp_253_; ++tmp_255_ ) {
+            TypeSizeEntry tmp_254_;
+            if (auto err = tmp_254_.decode(r)) {
                 return err;
             }
-            (*this).entries.push_back(std::move(tmp_249_));
+            (*this).entries.push_back(std::move(tmp_254_));
         }
         return ::futils::error::Error<>();
     }
     inline ::futils::error::Error<> Node::encode(::futils::binary::writer& w) const {
-        auto tmp_251_ = static_cast<std::uint32_t>((*this).node_kind);
-        if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(tmp_251_) ,true)) {
+        auto tmp_256_ = static_cast<std::uint32_t>((*this).node_kind);
+        if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(tmp_256_) ,true)) {
             return ::futils::error::Error<>("encode: Node::node_kind: write std::uint32_t failed",::futils::error::Category::lib);
         }
         if (auto err = (*this).loc.encode(w)) {
@@ -44929,12 +45002,12 @@ namespace brgen::nast::wire {
             if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(std::get<1>((*this).union_variant_1).statements_len) ,true)) {
                 return ::futils::error::Error<>("encode: Node::statements_len: write std::uint32_t failed",::futils::error::Category::lib);
             }
-            auto tmp_252_ = std::get<1>((*this).union_variant_1).statements_len;
-            if (tmp_252_!=std::get<1>((*this).union_variant_1).statements.size()) {
-                return ::futils::error::Error<>("encode: Node::statements: dynamic length is not compatible with its length; tmp_252_!=std::get<1>((*this).union_variant_1).statements.size()",::futils::error::Category::lib);
+            auto tmp_257_ = std::get<1>((*this).union_variant_1).statements_len;
+            if (tmp_257_!=std::get<1>((*this).union_variant_1).statements.size()) {
+                return ::futils::error::Error<>("encode: Node::statements: dynamic length is not compatible with its length; tmp_257_!=std::get<1>((*this).union_variant_1).statements.size()",::futils::error::Category::lib);
             }
-            for (auto& tmp_253_ : std::get<1>((*this).union_variant_1).statements) {
-                if (auto err = tmp_253_.encode(w)) {
+            for (auto& tmp_258_ : std::get<1>((*this).union_variant_1).statements) {
+                if (auto err = tmp_258_.encode(w)) {
                     return err;
                 }
             }
@@ -45014,12 +45087,12 @@ namespace brgen::nast::wire {
             if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(std::get<6>((*this).union_variant_1).type_parameters_len) ,true)) {
                 return ::futils::error::Error<>("encode: Node::type_parameters_len: write std::uint32_t failed",::futils::error::Category::lib);
             }
-            auto tmp_254_ = std::get<6>((*this).union_variant_1).type_parameters_len;
-            if (tmp_254_!=std::get<6>((*this).union_variant_1).type_parameters.size()) {
-                return ::futils::error::Error<>("encode: Node::type_parameters: dynamic length is not compatible with its length; tmp_254_!=std::get<6>((*this).union_variant_1).type_parameters.size()",::futils::error::Category::lib);
+            auto tmp_259_ = std::get<6>((*this).union_variant_1).type_parameters_len;
+            if (tmp_259_!=std::get<6>((*this).union_variant_1).type_parameters.size()) {
+                return ::futils::error::Error<>("encode: Node::type_parameters: dynamic length is not compatible with its length; tmp_259_!=std::get<6>((*this).union_variant_1).type_parameters.size()",::futils::error::Category::lib);
             }
-            for (auto& tmp_255_ : std::get<6>((*this).union_variant_1).type_parameters) {
-                if (auto err = tmp_255_.encode(w)) {
+            for (auto& tmp_260_ : std::get<6>((*this).union_variant_1).type_parameters) {
+                if (auto err = tmp_260_.encode(w)) {
                     return err;
                 }
             }
@@ -45040,12 +45113,12 @@ namespace brgen::nast::wire {
             if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(std::get<7>((*this).union_variant_1).parameters_len) ,true)) {
                 return ::futils::error::Error<>("encode: Node::parameters_len: write std::uint32_t failed",::futils::error::Category::lib);
             }
-            auto tmp_256_ = std::get<7>((*this).union_variant_1).parameters_len;
-            if (tmp_256_!=std::get<7>((*this).union_variant_1).parameters.size()) {
-                return ::futils::error::Error<>("encode: Node::parameters: dynamic length is not compatible with its length; tmp_256_!=std::get<7>((*this).union_variant_1).parameters.size()",::futils::error::Category::lib);
+            auto tmp_261_ = std::get<7>((*this).union_variant_1).parameters_len;
+            if (tmp_261_!=std::get<7>((*this).union_variant_1).parameters.size()) {
+                return ::futils::error::Error<>("encode: Node::parameters: dynamic length is not compatible with its length; tmp_261_!=std::get<7>((*this).union_variant_1).parameters.size()",::futils::error::Category::lib);
             }
-            for (auto& tmp_257_ : std::get<7>((*this).union_variant_1).parameters) {
-                if (auto err = tmp_257_.encode(w)) {
+            for (auto& tmp_262_ : std::get<7>((*this).union_variant_1).parameters) {
+                if (auto err = tmp_262_.encode(w)) {
                     return err;
                 }
             }
@@ -45063,12 +45136,12 @@ namespace brgen::nast::wire {
             if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(std::get<8>((*this).union_variant_1).blocks_len) ,true)) {
                 return ::futils::error::Error<>("encode: Node::blocks_len: write std::uint32_t failed",::futils::error::Category::lib);
             }
-            auto tmp_258_ = std::get<8>((*this).union_variant_1).blocks_len;
-            if (tmp_258_!=std::get<8>((*this).union_variant_1).blocks.size()) {
-                return ::futils::error::Error<>("encode: Node::blocks: dynamic length is not compatible with its length; tmp_258_!=std::get<8>((*this).union_variant_1).blocks.size()",::futils::error::Category::lib);
+            auto tmp_263_ = std::get<8>((*this).union_variant_1).blocks_len;
+            if (tmp_263_!=std::get<8>((*this).union_variant_1).blocks.size()) {
+                return ::futils::error::Error<>("encode: Node::blocks: dynamic length is not compatible with its length; tmp_263_!=std::get<8>((*this).union_variant_1).blocks.size()",::futils::error::Category::lib);
             }
-            for (auto& tmp_259_ : std::get<8>((*this).union_variant_1).blocks) {
-                if (auto err = tmp_259_.encode(w)) {
+            for (auto& tmp_264_ : std::get<8>((*this).union_variant_1).blocks) {
+                if (auto err = tmp_264_.encode(w)) {
                     return err;
                 }
             }
@@ -45083,12 +45156,12 @@ namespace brgen::nast::wire {
             if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(std::get<9>((*this).union_variant_1).blocks_len) ,true)) {
                 return ::futils::error::Error<>("encode: Node::blocks_len: write std::uint32_t failed",::futils::error::Category::lib);
             }
-            auto tmp_260_ = std::get<9>((*this).union_variant_1).blocks_len;
-            if (tmp_260_!=std::get<9>((*this).union_variant_1).blocks.size()) {
-                return ::futils::error::Error<>("encode: Node::blocks: dynamic length is not compatible with its length; tmp_260_!=std::get<9>((*this).union_variant_1).blocks.size()",::futils::error::Category::lib);
+            auto tmp_265_ = std::get<9>((*this).union_variant_1).blocks_len;
+            if (tmp_265_!=std::get<9>((*this).union_variant_1).blocks.size()) {
+                return ::futils::error::Error<>("encode: Node::blocks: dynamic length is not compatible with its length; tmp_265_!=std::get<9>((*this).union_variant_1).blocks.size()",::futils::error::Category::lib);
             }
-            for (auto& tmp_261_ : std::get<9>((*this).union_variant_1).blocks) {
-                if (auto err = tmp_261_.encode(w)) {
+            for (auto& tmp_266_ : std::get<9>((*this).union_variant_1).blocks) {
+                if (auto err = tmp_266_.encode(w)) {
                     return err;
                 }
             }
@@ -45140,8 +45213,8 @@ namespace brgen::nast::wire {
             if (auto err = std::get<12>((*this).union_variant_1).value_ref.encode(w)) {
                 return err;
             }
-            auto tmp_262_ = static_cast<std::uint8_t>(std::get<12>((*this).union_variant_1).op_binary_op);
-            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_262_) ,true)) {
+            auto tmp_267_ = static_cast<std::uint8_t>(std::get<12>((*this).union_variant_1).op_binary_op);
+            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_267_) ,true)) {
                 return ::futils::error::Error<>("encode: Node::op_binary_op: write std::uint8_t failed",::futils::error::Category::lib);
             }
         }
@@ -45155,8 +45228,8 @@ namespace brgen::nast::wire {
             if (auto err = std::get<13>((*this).union_variant_1).value_ref.encode(w)) {
                 return err;
             }
-            auto tmp_263_ = static_cast<std::uint8_t>(std::get<13>((*this).union_variant_1).op_binary_op);
-            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_263_) ,true)) {
+            auto tmp_268_ = static_cast<std::uint8_t>(std::get<13>((*this).union_variant_1).op_binary_op);
+            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_268_) ,true)) {
                 return ::futils::error::Error<>("encode: Node::op_binary_op: write std::uint8_t failed",::futils::error::Category::lib);
             }
         }
@@ -45266,8 +45339,8 @@ namespace brgen::nast::wire {
             if (auto err = std::get<23>((*this).union_variant_1).type.encode(w)) {
                 return err;
             }
-            auto tmp_264_ = static_cast<std::uint8_t>(std::get<23>((*this).union_variant_1).op_binary_op);
-            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_264_) ,true)) {
+            auto tmp_269_ = static_cast<std::uint8_t>(std::get<23>((*this).union_variant_1).op_binary_op);
+            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_269_) ,true)) {
                 return ::futils::error::Error<>("encode: Node::op_binary_op: write std::uint8_t failed",::futils::error::Category::lib);
             }
             if (auto err = std::get<23>((*this).union_variant_1).left.encode(w)) {
@@ -45284,8 +45357,8 @@ namespace brgen::nast::wire {
             if (auto err = std::get<24>((*this).union_variant_1).type.encode(w)) {
                 return err;
             }
-            auto tmp_265_ = static_cast<std::uint8_t>(std::get<24>((*this).union_variant_1).op_unary_op);
-            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_265_) ,true)) {
+            auto tmp_270_ = static_cast<std::uint8_t>(std::get<24>((*this).union_variant_1).op_unary_op);
+            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_270_) ,true)) {
                 return ::futils::error::Error<>("encode: Node::op_unary_op: write std::uint8_t failed",::futils::error::Category::lib);
             }
             if (auto err = std::get<24>((*this).union_variant_1).target.encode(w)) {
@@ -45374,12 +45447,12 @@ namespace brgen::nast::wire {
             if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(std::get<31>((*this).union_variant_1).statements_len) ,true)) {
                 return ::futils::error::Error<>("encode: Node::statements_len: write std::uint32_t failed",::futils::error::Category::lib);
             }
-            auto tmp_266_ = std::get<31>((*this).union_variant_1).statements_len;
-            if (tmp_266_!=std::get<31>((*this).union_variant_1).statements.size()) {
-                return ::futils::error::Error<>("encode: Node::statements: dynamic length is not compatible with its length; tmp_266_!=std::get<31>((*this).union_variant_1).statements.size()",::futils::error::Category::lib);
+            auto tmp_271_ = std::get<31>((*this).union_variant_1).statements_len;
+            if (tmp_271_!=std::get<31>((*this).union_variant_1).statements.size()) {
+                return ::futils::error::Error<>("encode: Node::statements: dynamic length is not compatible with its length; tmp_271_!=std::get<31>((*this).union_variant_1).statements.size()",::futils::error::Category::lib);
             }
-            for (auto& tmp_267_ : std::get<31>((*this).union_variant_1).statements) {
-                if (auto err = tmp_267_.encode(w)) {
+            for (auto& tmp_272_ : std::get<31>((*this).union_variant_1).statements) {
+                if (auto err = tmp_272_.encode(w)) {
                     return err;
                 }
             }
@@ -45394,12 +45467,12 @@ namespace brgen::nast::wire {
             if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(std::get<32>((*this).union_variant_1).arguments_list_len) ,true)) {
                 return ::futils::error::Error<>("encode: Node::arguments_list_len: write std::uint32_t failed",::futils::error::Category::lib);
             }
-            auto tmp_268_ = std::get<32>((*this).union_variant_1).arguments_list_len;
-            if (tmp_268_!=std::get<32>((*this).union_variant_1).arguments_list.size()) {
-                return ::futils::error::Error<>("encode: Node::arguments_list: dynamic length is not compatible with its length; tmp_268_!=std::get<32>((*this).union_variant_1).arguments_list.size()",::futils::error::Category::lib);
+            auto tmp_273_ = std::get<32>((*this).union_variant_1).arguments_list_len;
+            if (tmp_273_!=std::get<32>((*this).union_variant_1).arguments_list.size()) {
+                return ::futils::error::Error<>("encode: Node::arguments_list: dynamic length is not compatible with its length; tmp_273_!=std::get<32>((*this).union_variant_1).arguments_list.size()",::futils::error::Category::lib);
             }
-            for (auto& tmp_269_ : std::get<32>((*this).union_variant_1).arguments_list) {
-                if (auto err = tmp_269_.encode(w)) {
+            for (auto& tmp_274_ : std::get<32>((*this).union_variant_1).arguments_list) {
+                if (auto err = tmp_274_.encode(w)) {
                     return err;
                 }
             }
@@ -45447,8 +45520,8 @@ namespace brgen::nast::wire {
             if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(std::get<36>((*this).union_variant_1).is_signed) ,true)) {
                 return ::futils::error::Error<>("encode: Node::is_signed: write std::uint8_t failed",::futils::error::Category::lib);
             }
-            auto tmp_270_ = static_cast<std::uint8_t>(std::get<36>((*this).union_variant_1).endian);
-            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_270_) ,true)) {
+            auto tmp_275_ = static_cast<std::uint8_t>(std::get<36>((*this).union_variant_1).endian);
+            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_275_) ,true)) {
                 return ::futils::error::Error<>("encode: Node::endian: write std::uint8_t failed",::futils::error::Category::lib);
             }
         }
@@ -45520,8 +45593,8 @@ namespace brgen::nast::wire {
             if (auto err = std::get<42>((*this).union_variant_1).type.encode(w)) {
                 return err;
             }
-            auto tmp_271_ = static_cast<std::uint8_t>(std::get<42>((*this).union_variant_1).kind_special_literal_kind);
-            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_271_) ,true)) {
+            auto tmp_276_ = static_cast<std::uint8_t>(std::get<42>((*this).union_variant_1).kind_special_literal_kind);
+            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_276_) ,true)) {
                 return ::futils::error::Error<>("encode: Node::kind_special_literal_kind: write std::uint8_t failed",::futils::error::Category::lib);
             }
         }
@@ -45589,8 +45662,8 @@ namespace brgen::nast::wire {
             if (auto err = std::get<46>((*this).union_variant_1).end.encode(w)) {
                 return err;
             }
-            auto tmp_272_ = static_cast<std::uint8_t>(std::get<46>((*this).union_variant_1).op_binary_op);
-            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_272_) ,true)) {
+            auto tmp_277_ = static_cast<std::uint8_t>(std::get<46>((*this).union_variant_1).op_binary_op);
+            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_277_) ,true)) {
                 return ::futils::error::Error<>("encode: Node::op_binary_op: write std::uint8_t failed",::futils::error::Category::lib);
             }
         }
@@ -45626,8 +45699,8 @@ namespace brgen::nast::wire {
             if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(std::get<49>((*this).union_variant_1).bit_size) ,true)) {
                 return ::futils::error::Error<>("encode: Node::bit_size: write std::uint32_t failed",::futils::error::Category::lib);
             }
-            auto tmp_273_ = static_cast<std::uint8_t>(std::get<49>((*this).union_variant_1).endian);
-            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_273_) ,true)) {
+            auto tmp_278_ = static_cast<std::uint8_t>(std::get<49>((*this).union_variant_1).endian);
+            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_278_) ,true)) {
                 return ::futils::error::Error<>("encode: Node::endian: write std::uint8_t failed",::futils::error::Category::lib);
             }
         }
@@ -45732,8 +45805,8 @@ namespace brgen::nast::wire {
             if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(std::get<58>((*this).union_variant_1).is_explicit) ,true)) {
                 return ::futils::error::Error<>("encode: Node::is_explicit: write std::uint8_t failed",::futils::error::Category::lib);
             }
-            auto tmp_274_ = static_cast<std::uint8_t>(std::get<58>((*this).union_variant_1).kind_special_literal_kind);
-            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_274_) ,true)) {
+            auto tmp_279_ = static_cast<std::uint8_t>(std::get<58>((*this).union_variant_1).kind_special_literal_kind);
+            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_279_) ,true)) {
                 return ::futils::error::Error<>("encode: Node::kind_special_literal_kind: write std::uint8_t failed",::futils::error::Category::lib);
             }
             if (auto err = std::get<58>((*this).union_variant_1).length.encode(w)) {
@@ -45753,12 +45826,12 @@ namespace brgen::nast::wire {
             if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(std::get<59>((*this).union_variant_1).parameters_len) ,true)) {
                 return ::futils::error::Error<>("encode: Node::parameters_len: write std::uint32_t failed",::futils::error::Category::lib);
             }
-            auto tmp_275_ = std::get<59>((*this).union_variant_1).parameters_len;
-            if (tmp_275_!=std::get<59>((*this).union_variant_1).parameters.size()) {
-                return ::futils::error::Error<>("encode: Node::parameters: dynamic length is not compatible with its length; tmp_275_!=std::get<59>((*this).union_variant_1).parameters.size()",::futils::error::Category::lib);
+            auto tmp_280_ = std::get<59>((*this).union_variant_1).parameters_len;
+            if (tmp_280_!=std::get<59>((*this).union_variant_1).parameters.size()) {
+                return ::futils::error::Error<>("encode: Node::parameters: dynamic length is not compatible with its length; tmp_280_!=std::get<59>((*this).union_variant_1).parameters.size()",::futils::error::Category::lib);
             }
-            for (auto& tmp_276_ : std::get<59>((*this).union_variant_1).parameters) {
-                if (auto err = tmp_276_.encode(w)) {
+            for (auto& tmp_281_ : std::get<59>((*this).union_variant_1).parameters) {
+                if (auto err = tmp_281_.encode(w)) {
                     return err;
                 }
             }
@@ -45798,12 +45871,12 @@ namespace brgen::nast::wire {
             if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(std::get<62>((*this).union_variant_1).candidates_len) ,true)) {
                 return ::futils::error::Error<>("encode: Node::candidates_len: write std::uint32_t failed",::futils::error::Category::lib);
             }
-            auto tmp_277_ = std::get<62>((*this).union_variant_1).candidates_len;
-            if (tmp_277_!=std::get<62>((*this).union_variant_1).candidates.size()) {
-                return ::futils::error::Error<>("encode: Node::candidates: dynamic length is not compatible with its length; tmp_277_!=std::get<62>((*this).union_variant_1).candidates.size()",::futils::error::Category::lib);
+            auto tmp_282_ = std::get<62>((*this).union_variant_1).candidates_len;
+            if (tmp_282_!=std::get<62>((*this).union_variant_1).candidates.size()) {
+                return ::futils::error::Error<>("encode: Node::candidates: dynamic length is not compatible with its length; tmp_282_!=std::get<62>((*this).union_variant_1).candidates.size()",::futils::error::Category::lib);
             }
-            for (auto& tmp_278_ : std::get<62>((*this).union_variant_1).candidates) {
-                if (auto err = tmp_278_.encode(w)) {
+            for (auto& tmp_283_ : std::get<62>((*this).union_variant_1).candidates) {
+                if (auto err = tmp_283_.encode(w)) {
                     return err;
                 }
             }
@@ -45832,12 +45905,12 @@ namespace brgen::nast::wire {
             if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(std::get<64>((*this).union_variant_1).candidates_len) ,true)) {
                 return ::futils::error::Error<>("encode: Node::candidates_len: write std::uint32_t failed",::futils::error::Category::lib);
             }
-            auto tmp_279_ = std::get<64>((*this).union_variant_1).candidates_len;
-            if (tmp_279_!=std::get<64>((*this).union_variant_1).candidates.size()) {
-                return ::futils::error::Error<>("encode: Node::candidates: dynamic length is not compatible with its length; tmp_279_!=std::get<64>((*this).union_variant_1).candidates.size()",::futils::error::Category::lib);
+            auto tmp_284_ = std::get<64>((*this).union_variant_1).candidates_len;
+            if (tmp_284_!=std::get<64>((*this).union_variant_1).candidates.size()) {
+                return ::futils::error::Error<>("encode: Node::candidates: dynamic length is not compatible with its length; tmp_284_!=std::get<64>((*this).union_variant_1).candidates.size()",::futils::error::Category::lib);
             }
-            for (auto& tmp_280_ : std::get<64>((*this).union_variant_1).candidates) {
-                if (auto err = tmp_280_.encode(w)) {
+            for (auto& tmp_285_ : std::get<64>((*this).union_variant_1).candidates) {
+                if (auto err = tmp_285_.encode(w)) {
                     return err;
                 }
             }
@@ -45853,12 +45926,12 @@ namespace brgen::nast::wire {
             if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(std::get<64>((*this).union_variant_1).member_candidates_len) ,true)) {
                 return ::futils::error::Error<>("encode: Node::member_candidates_len: write std::uint32_t failed",::futils::error::Category::lib);
             }
-            auto tmp_281_ = std::get<64>((*this).union_variant_1).member_candidates_len;
-            if (tmp_281_!=std::get<64>((*this).union_variant_1).member_candidates.size()) {
-                return ::futils::error::Error<>("encode: Node::member_candidates: dynamic length is not compatible with its length; tmp_281_!=std::get<64>((*this).union_variant_1).member_candidates.size()",::futils::error::Category::lib);
+            auto tmp_286_ = std::get<64>((*this).union_variant_1).member_candidates_len;
+            if (tmp_286_!=std::get<64>((*this).union_variant_1).member_candidates.size()) {
+                return ::futils::error::Error<>("encode: Node::member_candidates: dynamic length is not compatible with its length; tmp_286_!=std::get<64>((*this).union_variant_1).member_candidates.size()",::futils::error::Category::lib);
             }
-            for (auto& tmp_282_ : std::get<64>((*this).union_variant_1).member_candidates) {
-                if (auto err = tmp_282_.encode(w)) {
+            for (auto& tmp_287_ : std::get<64>((*this).union_variant_1).member_candidates) {
+                if (auto err = tmp_287_.encode(w)) {
                     return err;
                 }
             }
@@ -45920,12 +45993,12 @@ namespace brgen::nast::wire {
             if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(std::get<69>((*this).union_variant_1).type_arguments_len) ,true)) {
                 return ::futils::error::Error<>("encode: Node::type_arguments_len: write std::uint32_t failed",::futils::error::Category::lib);
             }
-            auto tmp_283_ = std::get<69>((*this).union_variant_1).type_arguments_len;
-            if (tmp_283_!=std::get<69>((*this).union_variant_1).type_arguments.size()) {
-                return ::futils::error::Error<>("encode: Node::type_arguments: dynamic length is not compatible with its length; tmp_283_!=std::get<69>((*this).union_variant_1).type_arguments.size()",::futils::error::Category::lib);
+            auto tmp_288_ = std::get<69>((*this).union_variant_1).type_arguments_len;
+            if (tmp_288_!=std::get<69>((*this).union_variant_1).type_arguments.size()) {
+                return ::futils::error::Error<>("encode: Node::type_arguments: dynamic length is not compatible with its length; tmp_288_!=std::get<69>((*this).union_variant_1).type_arguments.size()",::futils::error::Category::lib);
             }
-            for (auto& tmp_284_ : std::get<69>((*this).union_variant_1).type_arguments) {
-                if (auto err = tmp_284_.encode(w)) {
+            for (auto& tmp_289_ : std::get<69>((*this).union_variant_1).type_arguments) {
+                if (auto err = tmp_289_.encode(w)) {
                     return err;
                 }
             }
@@ -45998,12 +46071,12 @@ namespace brgen::nast::wire {
             if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(std::get<75>((*this).union_variant_1).members_len) ,true)) {
                 return ::futils::error::Error<>("encode: Node::members_len: write std::uint32_t failed",::futils::error::Category::lib);
             }
-            auto tmp_285_ = std::get<75>((*this).union_variant_1).members_len;
-            if (tmp_285_!=std::get<75>((*this).union_variant_1).members.size()) {
-                return ::futils::error::Error<>("encode: Node::members: dynamic length is not compatible with its length; tmp_285_!=std::get<75>((*this).union_variant_1).members.size()",::futils::error::Category::lib);
+            auto tmp_290_ = std::get<75>((*this).union_variant_1).members_len;
+            if (tmp_290_!=std::get<75>((*this).union_variant_1).members.size()) {
+                return ::futils::error::Error<>("encode: Node::members: dynamic length is not compatible with its length; tmp_290_!=std::get<75>((*this).union_variant_1).members.size()",::futils::error::Category::lib);
             }
-            for (auto& tmp_286_ : std::get<75>((*this).union_variant_1).members) {
-                if (auto err = tmp_286_.encode(w)) {
+            for (auto& tmp_291_ : std::get<75>((*this).union_variant_1).members) {
+                if (auto err = tmp_291_.encode(w)) {
                     return err;
                 }
             }
@@ -46097,12 +46170,12 @@ namespace brgen::nast::wire {
             if (!::futils::binary::write_num(w,static_cast<std::uint32_t>(std::get<81>((*this).union_variant_1).conds_len) ,true)) {
                 return ::futils::error::Error<>("encode: Node::conds_len: write std::uint32_t failed",::futils::error::Category::lib);
             }
-            auto tmp_287_ = std::get<81>((*this).union_variant_1).conds_len;
-            if (tmp_287_!=std::get<81>((*this).union_variant_1).conds.size()) {
-                return ::futils::error::Error<>("encode: Node::conds: dynamic length is not compatible with its length; tmp_287_!=std::get<81>((*this).union_variant_1).conds.size()",::futils::error::Category::lib);
+            auto tmp_292_ = std::get<81>((*this).union_variant_1).conds_len;
+            if (tmp_292_!=std::get<81>((*this).union_variant_1).conds.size()) {
+                return ::futils::error::Error<>("encode: Node::conds: dynamic length is not compatible with its length; tmp_292_!=std::get<81>((*this).union_variant_1).conds.size()",::futils::error::Category::lib);
             }
-            for (auto& tmp_288_ : std::get<81>((*this).union_variant_1).conds) {
-                if (auto err = tmp_288_.encode(w)) {
+            for (auto& tmp_293_ : std::get<81>((*this).union_variant_1).conds) {
+                if (auto err = tmp_293_.encode(w)) {
                     return err;
                 }
             }
@@ -46121,11 +46194,11 @@ namespace brgen::nast::wire {
         return ::futils::error::Error<>();
     }
     inline ::futils::error::Error<> Node::decode(::futils::binary::reader& r) {
-        std::uint32_t tmp_289_ = 0;
-        if (!::futils::binary::read_num(r,tmp_289_ ,true)) {
+        std::uint32_t tmp_294_ = 0;
+        if (!::futils::binary::read_num(r,tmp_294_ ,true)) {
             return ::futils::error::Error<>("decode: Node::node_kind: read int failed",::futils::error::Category::lib);
         }
-        (*this).node_kind = static_cast<NodeKind>(tmp_289_);
+        (*this).node_kind = static_cast<NodeKind>(tmp_294_);
         if (auto err = (*this).loc.decode(r)) {
             return err;
         }
@@ -46136,14 +46209,14 @@ namespace brgen::nast::wire {
             if (!::futils::binary::read_num(r,std::get<1>((*this).union_variant_1).statements_len ,true)) {
                 return ::futils::error::Error<>("decode: Node::statements_len: read int failed",::futils::error::Category::lib);
             }
-            auto tmp_290_ = std::get<1>((*this).union_variant_1).statements_len;
+            auto tmp_295_ = std::get<1>((*this).union_variant_1).statements_len;
             std::get<1>((*this).union_variant_1).statements.clear();
-            for (size_t  tmp_292_= 0; tmp_292_<tmp_290_; ++tmp_292_ ) {
-                Ref tmp_291_;
-                if (auto err = tmp_291_.decode(r)) {
+            for (size_t  tmp_297_= 0; tmp_297_<tmp_295_; ++tmp_297_ ) {
+                Ref tmp_296_;
+                if (auto err = tmp_296_.decode(r)) {
                     return err;
                 }
-                std::get<1>((*this).union_variant_1).statements.push_back(std::move(tmp_291_));
+                std::get<1>((*this).union_variant_1).statements.push_back(std::move(tmp_296_));
             }
             if (auto err = std::get<1>((*this).union_variant_1).struct_type.decode(r)) {
                 return err;
@@ -46221,14 +46294,14 @@ namespace brgen::nast::wire {
             if (!::futils::binary::read_num(r,std::get<6>((*this).union_variant_1).type_parameters_len ,true)) {
                 return ::futils::error::Error<>("decode: Node::type_parameters_len: read int failed",::futils::error::Category::lib);
             }
-            auto tmp_293_ = std::get<6>((*this).union_variant_1).type_parameters_len;
+            auto tmp_298_ = std::get<6>((*this).union_variant_1).type_parameters_len;
             std::get<6>((*this).union_variant_1).type_parameters.clear();
-            for (size_t  tmp_295_= 0; tmp_295_<tmp_293_; ++tmp_295_ ) {
-                Ref tmp_294_;
-                if (auto err = tmp_294_.decode(r)) {
+            for (size_t  tmp_300_= 0; tmp_300_<tmp_298_; ++tmp_300_ ) {
+                Ref tmp_299_;
+                if (auto err = tmp_299_.decode(r)) {
                     return err;
                 }
-                std::get<6>((*this).union_variant_1).type_parameters.push_back(std::move(tmp_294_));
+                std::get<6>((*this).union_variant_1).type_parameters.push_back(std::move(tmp_299_));
             }
         }
         else if (NodeKind::Function==(*this).node_kind) {
@@ -46247,14 +46320,14 @@ namespace brgen::nast::wire {
             if (!::futils::binary::read_num(r,std::get<7>((*this).union_variant_1).parameters_len ,true)) {
                 return ::futils::error::Error<>("decode: Node::parameters_len: read int failed",::futils::error::Category::lib);
             }
-            auto tmp_296_ = std::get<7>((*this).union_variant_1).parameters_len;
+            auto tmp_301_ = std::get<7>((*this).union_variant_1).parameters_len;
             std::get<7>((*this).union_variant_1).parameters.clear();
-            for (size_t  tmp_298_= 0; tmp_298_<tmp_296_; ++tmp_298_ ) {
-                Ref tmp_297_;
-                if (auto err = tmp_297_.decode(r)) {
+            for (size_t  tmp_303_= 0; tmp_303_<tmp_301_; ++tmp_303_ ) {
+                Ref tmp_302_;
+                if (auto err = tmp_302_.decode(r)) {
                     return err;
                 }
-                std::get<7>((*this).union_variant_1).parameters.push_back(std::move(tmp_297_));
+                std::get<7>((*this).union_variant_1).parameters.push_back(std::move(tmp_302_));
             }
             if (auto err = std::get<7>((*this).union_variant_1).return_type.decode(r)) {
                 return err;
@@ -46270,14 +46343,14 @@ namespace brgen::nast::wire {
             if (!::futils::binary::read_num(r,std::get<8>((*this).union_variant_1).blocks_len ,true)) {
                 return ::futils::error::Error<>("decode: Node::blocks_len: read int failed",::futils::error::Category::lib);
             }
-            auto tmp_299_ = std::get<8>((*this).union_variant_1).blocks_len;
+            auto tmp_304_ = std::get<8>((*this).union_variant_1).blocks_len;
             std::get<8>((*this).union_variant_1).blocks.clear();
-            for (size_t  tmp_301_= 0; tmp_301_<tmp_299_; ++tmp_301_ ) {
-                Ref tmp_300_;
-                if (auto err = tmp_300_.decode(r)) {
+            for (size_t  tmp_306_= 0; tmp_306_<tmp_304_; ++tmp_306_ ) {
+                Ref tmp_305_;
+                if (auto err = tmp_305_.decode(r)) {
                     return err;
                 }
-                std::get<8>((*this).union_variant_1).blocks.push_back(std::move(tmp_300_));
+                std::get<8>((*this).union_variant_1).blocks.push_back(std::move(tmp_305_));
             }
         }
         else if (NodeKind::Match==(*this).node_kind) {
@@ -46290,14 +46363,14 @@ namespace brgen::nast::wire {
             if (!::futils::binary::read_num(r,std::get<9>((*this).union_variant_1).blocks_len ,true)) {
                 return ::futils::error::Error<>("decode: Node::blocks_len: read int failed",::futils::error::Category::lib);
             }
-            auto tmp_302_ = std::get<9>((*this).union_variant_1).blocks_len;
+            auto tmp_307_ = std::get<9>((*this).union_variant_1).blocks_len;
             std::get<9>((*this).union_variant_1).blocks.clear();
-            for (size_t  tmp_304_= 0; tmp_304_<tmp_302_; ++tmp_304_ ) {
-                Ref tmp_303_;
-                if (auto err = tmp_303_.decode(r)) {
+            for (size_t  tmp_309_= 0; tmp_309_<tmp_307_; ++tmp_309_ ) {
+                Ref tmp_308_;
+                if (auto err = tmp_308_.decode(r)) {
                     return err;
                 }
-                std::get<9>((*this).union_variant_1).blocks.push_back(std::move(tmp_303_));
+                std::get<9>((*this).union_variant_1).blocks.push_back(std::move(tmp_308_));
             }
             if (auto err = std::get<9>((*this).union_variant_1).condition.decode(r)) {
                 return err;
@@ -46347,11 +46420,11 @@ namespace brgen::nast::wire {
             if (auto err = std::get<12>((*this).union_variant_1).value_ref.decode(r)) {
                 return err;
             }
-            std::uint8_t tmp_305_ = 0;
-            if (!::futils::binary::read_num(r,tmp_305_ ,true)) {
+            std::uint8_t tmp_310_ = 0;
+            if (!::futils::binary::read_num(r,tmp_310_ ,true)) {
                 return ::futils::error::Error<>("decode: Node::op_binary_op: read int failed",::futils::error::Category::lib);
             }
-            std::get<12>((*this).union_variant_1).op_binary_op = static_cast<BinaryOp>(tmp_305_);
+            std::get<12>((*this).union_variant_1).op_binary_op = static_cast<BinaryOp>(tmp_310_);
         }
         else if (NodeKind::VariableDefinition==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_14>(union_variant_1)) {
@@ -46363,11 +46436,11 @@ namespace brgen::nast::wire {
             if (auto err = std::get<13>((*this).union_variant_1).value_ref.decode(r)) {
                 return err;
             }
-            std::uint8_t tmp_306_ = 0;
-            if (!::futils::binary::read_num(r,tmp_306_ ,true)) {
+            std::uint8_t tmp_311_ = 0;
+            if (!::futils::binary::read_num(r,tmp_311_ ,true)) {
                 return ::futils::error::Error<>("decode: Node::op_binary_op: read int failed",::futils::error::Category::lib);
             }
-            std::get<13>((*this).union_variant_1).op_binary_op = static_cast<BinaryOp>(tmp_306_);
+            std::get<13>((*this).union_variant_1).op_binary_op = static_cast<BinaryOp>(tmp_311_);
         }
         else if (NodeKind::Metadata==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_15>(union_variant_1)) {
@@ -46475,11 +46548,11 @@ namespace brgen::nast::wire {
             if (auto err = std::get<23>((*this).union_variant_1).type.decode(r)) {
                 return err;
             }
-            std::uint8_t tmp_307_ = 0;
-            if (!::futils::binary::read_num(r,tmp_307_ ,true)) {
+            std::uint8_t tmp_312_ = 0;
+            if (!::futils::binary::read_num(r,tmp_312_ ,true)) {
                 return ::futils::error::Error<>("decode: Node::op_binary_op: read int failed",::futils::error::Category::lib);
             }
-            std::get<23>((*this).union_variant_1).op_binary_op = static_cast<BinaryOp>(tmp_307_);
+            std::get<23>((*this).union_variant_1).op_binary_op = static_cast<BinaryOp>(tmp_312_);
             if (auto err = std::get<23>((*this).union_variant_1).left.decode(r)) {
                 return err;
             }
@@ -46494,11 +46567,11 @@ namespace brgen::nast::wire {
             if (auto err = std::get<24>((*this).union_variant_1).type.decode(r)) {
                 return err;
             }
-            std::uint8_t tmp_308_ = 0;
-            if (!::futils::binary::read_num(r,tmp_308_ ,true)) {
+            std::uint8_t tmp_313_ = 0;
+            if (!::futils::binary::read_num(r,tmp_313_ ,true)) {
                 return ::futils::error::Error<>("decode: Node::op_unary_op: read int failed",::futils::error::Category::lib);
             }
-            std::get<24>((*this).union_variant_1).op_unary_op = static_cast<UnaryOp>(tmp_308_);
+            std::get<24>((*this).union_variant_1).op_unary_op = static_cast<UnaryOp>(tmp_313_);
             if (auto err = std::get<24>((*this).union_variant_1).target.decode(r)) {
                 return err;
             }
@@ -46585,14 +46658,14 @@ namespace brgen::nast::wire {
             if (!::futils::binary::read_num(r,std::get<31>((*this).union_variant_1).statements_len ,true)) {
                 return ::futils::error::Error<>("decode: Node::statements_len: read int failed",::futils::error::Category::lib);
             }
-            auto tmp_309_ = std::get<31>((*this).union_variant_1).statements_len;
+            auto tmp_314_ = std::get<31>((*this).union_variant_1).statements_len;
             std::get<31>((*this).union_variant_1).statements.clear();
-            for (size_t  tmp_311_= 0; tmp_311_<tmp_309_; ++tmp_311_ ) {
-                Ref tmp_310_;
-                if (auto err = tmp_310_.decode(r)) {
+            for (size_t  tmp_316_= 0; tmp_316_<tmp_314_; ++tmp_316_ ) {
+                Ref tmp_315_;
+                if (auto err = tmp_315_.decode(r)) {
                     return err;
                 }
-                std::get<31>((*this).union_variant_1).statements.push_back(std::move(tmp_310_));
+                std::get<31>((*this).union_variant_1).statements.push_back(std::move(tmp_315_));
             }
             if (auto err = std::get<31>((*this).union_variant_1).end_loc.decode(r)) {
                 return err;
@@ -46605,14 +46678,14 @@ namespace brgen::nast::wire {
             if (!::futils::binary::read_num(r,std::get<32>((*this).union_variant_1).arguments_list_len ,true)) {
                 return ::futils::error::Error<>("decode: Node::arguments_list_len: read int failed",::futils::error::Category::lib);
             }
-            auto tmp_312_ = std::get<32>((*this).union_variant_1).arguments_list_len;
+            auto tmp_317_ = std::get<32>((*this).union_variant_1).arguments_list_len;
             std::get<32>((*this).union_variant_1).arguments_list.clear();
-            for (size_t  tmp_314_= 0; tmp_314_<tmp_312_; ++tmp_314_ ) {
-                Ref tmp_313_;
-                if (auto err = tmp_313_.decode(r)) {
+            for (size_t  tmp_319_= 0; tmp_319_<tmp_317_; ++tmp_319_ ) {
+                Ref tmp_318_;
+                if (auto err = tmp_318_.decode(r)) {
                     return err;
                 }
-                std::get<32>((*this).union_variant_1).arguments_list.push_back(std::move(tmp_313_));
+                std::get<32>((*this).union_variant_1).arguments_list.push_back(std::move(tmp_318_));
             }
             if (auto err = std::get<32>((*this).union_variant_1).end_loc.decode(r)) {
                 return err;
@@ -46658,11 +46731,11 @@ namespace brgen::nast::wire {
             if (!::futils::binary::read_num(r,std::get<36>((*this).union_variant_1).is_signed ,true)) {
                 return ::futils::error::Error<>("decode: Node::is_signed: read int failed",::futils::error::Category::lib);
             }
-            std::uint8_t tmp_315_ = 0;
-            if (!::futils::binary::read_num(r,tmp_315_ ,true)) {
+            std::uint8_t tmp_320_ = 0;
+            if (!::futils::binary::read_num(r,tmp_320_ ,true)) {
                 return ::futils::error::Error<>("decode: Node::endian: read int failed",::futils::error::Category::lib);
             }
-            std::get<36>((*this).union_variant_1).endian = static_cast<Endian>(tmp_315_);
+            std::get<36>((*this).union_variant_1).endian = static_cast<Endian>(tmp_320_);
         }
         else if (NodeKind::IntLiteral==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_38>(union_variant_1)) {
@@ -46732,11 +46805,11 @@ namespace brgen::nast::wire {
             if (auto err = std::get<42>((*this).union_variant_1).type.decode(r)) {
                 return err;
             }
-            std::uint8_t tmp_316_ = 0;
-            if (!::futils::binary::read_num(r,tmp_316_ ,true)) {
+            std::uint8_t tmp_321_ = 0;
+            if (!::futils::binary::read_num(r,tmp_321_ ,true)) {
                 return ::futils::error::Error<>("decode: Node::kind_special_literal_kind: read int failed",::futils::error::Category::lib);
             }
-            std::get<42>((*this).union_variant_1).kind_special_literal_kind = static_cast<SpecialLiteralKind>(tmp_316_);
+            std::get<42>((*this).union_variant_1).kind_special_literal_kind = static_cast<SpecialLiteralKind>(tmp_321_);
         }
         else if (NodeKind::Paren==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_44>(union_variant_1)) {
@@ -46802,11 +46875,11 @@ namespace brgen::nast::wire {
             if (auto err = std::get<46>((*this).union_variant_1).end.decode(r)) {
                 return err;
             }
-            std::uint8_t tmp_317_ = 0;
-            if (!::futils::binary::read_num(r,tmp_317_ ,true)) {
+            std::uint8_t tmp_322_ = 0;
+            if (!::futils::binary::read_num(r,tmp_322_ ,true)) {
                 return ::futils::error::Error<>("decode: Node::op_binary_op: read int failed",::futils::error::Category::lib);
             }
-            std::get<46>((*this).union_variant_1).op_binary_op = static_cast<BinaryOp>(tmp_317_);
+            std::get<46>((*this).union_variant_1).op_binary_op = static_cast<BinaryOp>(tmp_322_);
         }
         else if (NodeKind::BadExpr==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_48>(union_variant_1)) {
@@ -46840,11 +46913,11 @@ namespace brgen::nast::wire {
             if (!::futils::binary::read_num(r,std::get<49>((*this).union_variant_1).bit_size ,true)) {
                 return ::futils::error::Error<>("decode: Node::bit_size: read int failed",::futils::error::Category::lib);
             }
-            std::uint8_t tmp_318_ = 0;
-            if (!::futils::binary::read_num(r,tmp_318_ ,true)) {
+            std::uint8_t tmp_323_ = 0;
+            if (!::futils::binary::read_num(r,tmp_323_ ,true)) {
                 return ::futils::error::Error<>("decode: Node::endian: read int failed",::futils::error::Category::lib);
             }
-            std::get<49>((*this).union_variant_1).endian = static_cast<Endian>(tmp_318_);
+            std::get<49>((*this).union_variant_1).endian = static_cast<Endian>(tmp_323_);
         }
         else if (NodeKind::BoolType==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_51>(union_variant_1)) {
@@ -46947,11 +47020,11 @@ namespace brgen::nast::wire {
             if (!::futils::binary::read_num(r,std::get<58>((*this).union_variant_1).is_explicit ,true)) {
                 return ::futils::error::Error<>("decode: Node::is_explicit: read int failed",::futils::error::Category::lib);
             }
-            std::uint8_t tmp_319_ = 0;
-            if (!::futils::binary::read_num(r,tmp_319_ ,true)) {
+            std::uint8_t tmp_324_ = 0;
+            if (!::futils::binary::read_num(r,tmp_324_ ,true)) {
                 return ::futils::error::Error<>("decode: Node::kind_special_literal_kind: read int failed",::futils::error::Category::lib);
             }
-            std::get<58>((*this).union_variant_1).kind_special_literal_kind = static_cast<SpecialLiteralKind>(tmp_319_);
+            std::get<58>((*this).union_variant_1).kind_special_literal_kind = static_cast<SpecialLiteralKind>(tmp_324_);
             if (auto err = std::get<58>((*this).union_variant_1).length.decode(r)) {
                 return err;
             }
@@ -46969,14 +47042,14 @@ namespace brgen::nast::wire {
             if (!::futils::binary::read_num(r,std::get<59>((*this).union_variant_1).parameters_len ,true)) {
                 return ::futils::error::Error<>("decode: Node::parameters_len: read int failed",::futils::error::Category::lib);
             }
-            auto tmp_320_ = std::get<59>((*this).union_variant_1).parameters_len;
+            auto tmp_325_ = std::get<59>((*this).union_variant_1).parameters_len;
             std::get<59>((*this).union_variant_1).parameters.clear();
-            for (size_t  tmp_322_= 0; tmp_322_<tmp_320_; ++tmp_322_ ) {
-                Ref tmp_321_;
-                if (auto err = tmp_321_.decode(r)) {
+            for (size_t  tmp_327_= 0; tmp_327_<tmp_325_; ++tmp_327_ ) {
+                Ref tmp_326_;
+                if (auto err = tmp_326_.decode(r)) {
                     return err;
                 }
-                std::get<59>((*this).union_variant_1).parameters.push_back(std::move(tmp_321_));
+                std::get<59>((*this).union_variant_1).parameters.push_back(std::move(tmp_326_));
             }
         }
         else if (NodeKind::StructType==(*this).node_kind) {
@@ -47014,14 +47087,14 @@ namespace brgen::nast::wire {
             if (!::futils::binary::read_num(r,std::get<62>((*this).union_variant_1).candidates_len ,true)) {
                 return ::futils::error::Error<>("decode: Node::candidates_len: read int failed",::futils::error::Category::lib);
             }
-            auto tmp_323_ = std::get<62>((*this).union_variant_1).candidates_len;
+            auto tmp_328_ = std::get<62>((*this).union_variant_1).candidates_len;
             std::get<62>((*this).union_variant_1).candidates.clear();
-            for (size_t  tmp_325_= 0; tmp_325_<tmp_323_; ++tmp_325_ ) {
-                Ref tmp_324_;
-                if (auto err = tmp_324_.decode(r)) {
+            for (size_t  tmp_330_= 0; tmp_330_<tmp_328_; ++tmp_330_ ) {
+                Ref tmp_329_;
+                if (auto err = tmp_329_.decode(r)) {
                     return err;
                 }
-                std::get<62>((*this).union_variant_1).candidates.push_back(std::move(tmp_324_));
+                std::get<62>((*this).union_variant_1).candidates.push_back(std::move(tmp_329_));
             }
         }
         else if (NodeKind::StructUnionCandidate==(*this).node_kind) {
@@ -47048,14 +47121,14 @@ namespace brgen::nast::wire {
             if (!::futils::binary::read_num(r,std::get<64>((*this).union_variant_1).candidates_len ,true)) {
                 return ::futils::error::Error<>("decode: Node::candidates_len: read int failed",::futils::error::Category::lib);
             }
-            auto tmp_326_ = std::get<64>((*this).union_variant_1).candidates_len;
+            auto tmp_331_ = std::get<64>((*this).union_variant_1).candidates_len;
             std::get<64>((*this).union_variant_1).candidates.clear();
-            for (size_t  tmp_328_= 0; tmp_328_<tmp_326_; ++tmp_328_ ) {
-                Ref tmp_327_;
-                if (auto err = tmp_327_.decode(r)) {
+            for (size_t  tmp_333_= 0; tmp_333_<tmp_331_; ++tmp_333_ ) {
+                Ref tmp_332_;
+                if (auto err = tmp_332_.decode(r)) {
                     return err;
                 }
-                std::get<64>((*this).union_variant_1).candidates.push_back(std::move(tmp_327_));
+                std::get<64>((*this).union_variant_1).candidates.push_back(std::move(tmp_332_));
             }
             if (auto err = std::get<64>((*this).union_variant_1).base_type.decode(r)) {
                 return err;
@@ -47069,14 +47142,14 @@ namespace brgen::nast::wire {
             if (!::futils::binary::read_num(r,std::get<64>((*this).union_variant_1).member_candidates_len ,true)) {
                 return ::futils::error::Error<>("decode: Node::member_candidates_len: read int failed",::futils::error::Category::lib);
             }
-            auto tmp_329_ = std::get<64>((*this).union_variant_1).member_candidates_len;
+            auto tmp_334_ = std::get<64>((*this).union_variant_1).member_candidates_len;
             std::get<64>((*this).union_variant_1).member_candidates.clear();
-            for (size_t  tmp_331_= 0; tmp_331_<tmp_329_; ++tmp_331_ ) {
-                Ref tmp_330_;
-                if (auto err = tmp_330_.decode(r)) {
+            for (size_t  tmp_336_= 0; tmp_336_<tmp_334_; ++tmp_336_ ) {
+                Ref tmp_335_;
+                if (auto err = tmp_335_.decode(r)) {
                     return err;
                 }
-                std::get<64>((*this).union_variant_1).member_candidates.push_back(std::move(tmp_330_));
+                std::get<64>((*this).union_variant_1).member_candidates.push_back(std::move(tmp_335_));
             }
         }
         else if (NodeKind::RangeType==(*this).node_kind) {
@@ -47136,14 +47209,14 @@ namespace brgen::nast::wire {
             if (!::futils::binary::read_num(r,std::get<69>((*this).union_variant_1).type_arguments_len ,true)) {
                 return ::futils::error::Error<>("decode: Node::type_arguments_len: read int failed",::futils::error::Category::lib);
             }
-            auto tmp_332_ = std::get<69>((*this).union_variant_1).type_arguments_len;
+            auto tmp_337_ = std::get<69>((*this).union_variant_1).type_arguments_len;
             std::get<69>((*this).union_variant_1).type_arguments.clear();
-            for (size_t  tmp_334_= 0; tmp_334_<tmp_332_; ++tmp_334_ ) {
-                Ref tmp_333_;
-                if (auto err = tmp_333_.decode(r)) {
+            for (size_t  tmp_339_= 0; tmp_339_<tmp_337_; ++tmp_339_ ) {
+                Ref tmp_338_;
+                if (auto err = tmp_338_.decode(r)) {
                     return err;
                 }
-                std::get<69>((*this).union_variant_1).type_arguments.push_back(std::move(tmp_333_));
+                std::get<69>((*this).union_variant_1).type_arguments.push_back(std::move(tmp_338_));
             }
         }
         else if (NodeKind::MatchBranch==(*this).node_kind) {
@@ -47214,14 +47287,14 @@ namespace brgen::nast::wire {
             if (!::futils::binary::read_num(r,std::get<75>((*this).union_variant_1).members_len ,true)) {
                 return ::futils::error::Error<>("decode: Node::members_len: read int failed",::futils::error::Category::lib);
             }
-            auto tmp_335_ = std::get<75>((*this).union_variant_1).members_len;
+            auto tmp_340_ = std::get<75>((*this).union_variant_1).members_len;
             std::get<75>((*this).union_variant_1).members.clear();
-            for (size_t  tmp_337_= 0; tmp_337_<tmp_335_; ++tmp_337_ ) {
-                Ref tmp_336_;
-                if (auto err = tmp_336_.decode(r)) {
+            for (size_t  tmp_342_= 0; tmp_342_<tmp_340_; ++tmp_342_ ) {
+                Ref tmp_341_;
+                if (auto err = tmp_341_.decode(r)) {
                     return err;
                 }
-                std::get<75>((*this).union_variant_1).members.push_back(std::move(tmp_336_));
+                std::get<75>((*this).union_variant_1).members.push_back(std::move(tmp_341_));
             }
             if (auto err = std::get<75>((*this).union_variant_1).enum_type.decode(r)) {
                 return err;
@@ -47313,14 +47386,14 @@ namespace brgen::nast::wire {
             if (!::futils::binary::read_num(r,std::get<81>((*this).union_variant_1).conds_len ,true)) {
                 return ::futils::error::Error<>("decode: Node::conds_len: read int failed",::futils::error::Category::lib);
             }
-            auto tmp_338_ = std::get<81>((*this).union_variant_1).conds_len;
+            auto tmp_343_ = std::get<81>((*this).union_variant_1).conds_len;
             std::get<81>((*this).union_variant_1).conds.clear();
-            for (size_t  tmp_340_= 0; tmp_340_<tmp_338_; ++tmp_340_ ) {
-                Ref tmp_339_;
-                if (auto err = tmp_339_.decode(r)) {
+            for (size_t  tmp_345_= 0; tmp_345_<tmp_343_; ++tmp_345_ ) {
+                Ref tmp_344_;
+                if (auto err = tmp_344_.decode(r)) {
                     return err;
                 }
-                std::get<81>((*this).union_variant_1).conds.push_back(std::move(tmp_339_));
+                std::get<81>((*this).union_variant_1).conds.push_back(std::move(tmp_344_));
             }
         }
         else if (NodeKind::Import==(*this).node_kind) {
@@ -47346,24 +47419,24 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).strings_len) ,true)) {
             return ::futils::error::Error<>("encode: NastModule::strings_len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_341_ = (*this).strings_len;
-        if (tmp_341_!=(*this).strings.size()) {
-            return ::futils::error::Error<>("encode: NastModule::strings: dynamic length is not compatible with its length; tmp_341_!=(*this).strings.size()",::futils::error::Category::lib);
+        auto tmp_346_ = (*this).strings_len;
+        if (tmp_346_!=(*this).strings.size()) {
+            return ::futils::error::Error<>("encode: NastModule::strings: dynamic length is not compatible with its length; tmp_346_!=(*this).strings.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_342_ : (*this).strings) {
-            if (auto err = tmp_342_.encode(w)) {
+        for (auto& tmp_347_ : (*this).strings) {
+            if (auto err = tmp_347_.encode(w)) {
                 return err;
             }
         }
         if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).nodes_len) ,true)) {
             return ::futils::error::Error<>("encode: NastModule::nodes_len: write std::uint32_t failed",::futils::error::Category::lib);
         }
-        auto tmp_343_ = (*this).nodes_len;
-        if (tmp_343_!=(*this).nodes.size()) {
-            return ::futils::error::Error<>("encode: NastModule::nodes: dynamic length is not compatible with its length; tmp_343_!=(*this).nodes.size()",::futils::error::Category::lib);
+        auto tmp_348_ = (*this).nodes_len;
+        if (tmp_348_!=(*this).nodes.size()) {
+            return ::futils::error::Error<>("encode: NastModule::nodes: dynamic length is not compatible with its length; tmp_348_!=(*this).nodes.size()",::futils::error::Category::lib);
         }
-        for (auto& tmp_344_ : (*this).nodes) {
-            if (auto err = tmp_344_.encode(w)) {
+        for (auto& tmp_349_ : (*this).nodes) {
+            if (auto err = tmp_349_.encode(w)) {
                 return err;
             }
         }
@@ -47371,6 +47444,9 @@ namespace brgen::nast::wire {
             return err;
         }
         if (auto err = (*this).resolution.encode(w)) {
+            return err;
+        }
+        if (auto err = (*this).field_owner.encode(w)) {
             return err;
         }
         if (auto err = (*this).inner_struct.encode(w)) {
@@ -47424,11 +47500,11 @@ namespace brgen::nast::wire {
         return ::futils::error::Error<>();
     }
     inline ::futils::error::Error<> NastModule::decode(::futils::binary::reader& r) {
-        ::futils::view::rvec tmp_345_ = {};
-        if (!r.read_direct(tmp_345_, 4)) {
+        ::futils::view::rvec tmp_350_ = {};
+        if (!r.read_direct(tmp_350_, 4)) {
             return ::futils::error::Error<>("decode: NastModule::magic: read string failed",::futils::error::Category::lib);
         }
-        if (tmp_345_ != ::futils::view::rvec("NAST",4)) {
+        if (tmp_350_ != ::futils::view::rvec("NAST",4)) {
             return ::futils::error::Error<>("decode: NastModule::magic: read string failed; not match to \"NAST\"",::futils::error::Category::lib);
         }
         if (!::futils::binary::read_num(r,(*this).version ,true)) {
@@ -47437,31 +47513,34 @@ namespace brgen::nast::wire {
         if (!::futils::binary::read_num(r,(*this).strings_len ,true)) {
             return ::futils::error::Error<>("decode: NastModule::strings_len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_346_ = (*this).strings_len;
+        auto tmp_351_ = (*this).strings_len;
         (*this).strings.clear();
-        for (size_t  tmp_348_= 0; tmp_348_<tmp_346_; ++tmp_348_ ) {
-            StringEntry tmp_347_;
-            if (auto err = tmp_347_.decode(r)) {
+        for (size_t  tmp_353_= 0; tmp_353_<tmp_351_; ++tmp_353_ ) {
+            StringEntry tmp_352_;
+            if (auto err = tmp_352_.decode(r)) {
                 return err;
             }
-            (*this).strings.push_back(std::move(tmp_347_));
+            (*this).strings.push_back(std::move(tmp_352_));
         }
         if (!::futils::binary::read_num(r,(*this).nodes_len ,true)) {
             return ::futils::error::Error<>("decode: NastModule::nodes_len: read int failed",::futils::error::Category::lib);
         }
-        auto tmp_349_ = (*this).nodes_len;
+        auto tmp_354_ = (*this).nodes_len;
         (*this).nodes.clear();
-        for (size_t  tmp_351_= 0; tmp_351_<tmp_349_; ++tmp_351_ ) {
-            Node tmp_350_;
-            if (auto err = tmp_350_.decode(r)) {
+        for (size_t  tmp_356_= 0; tmp_356_<tmp_354_; ++tmp_356_ ) {
+            Node tmp_355_;
+            if (auto err = tmp_355_.decode(r)) {
                 return err;
             }
-            (*this).nodes.push_back(std::move(tmp_350_));
+            (*this).nodes.push_back(std::move(tmp_355_));
         }
         if (auto err = (*this).root.decode(r)) {
             return err;
         }
         if (auto err = (*this).resolution.decode(r)) {
+            return err;
+        }
+        if (auto err = (*this).field_owner.decode(r)) {
             return err;
         }
         if (auto err = (*this).inner_struct.decode(r)) {

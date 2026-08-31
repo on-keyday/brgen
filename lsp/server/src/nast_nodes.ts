@@ -1082,6 +1082,10 @@ export interface Resolution {
     target: NodeId;
 }
 
+export interface FieldOwner {
+    owner: NodeId;
+}
+
 export interface InnerStruct {
     fields: NodeId[];
     asserts: NodeId[];
@@ -1176,6 +1180,7 @@ export interface TypeSize {
 
 export const SIDE_TABLES = {
     Resolution: { over: "Ident", storage: "dense" },
+    FieldOwner: { over: "Field", storage: "dense" },
     InnerStruct: { over: "BodyStatement", storage: "sparse" },
     FormatState: { over: "NamedBodyStatement", storage: "sparse" },
     DocComment: { over: "Statement", storage: "sparse" },
