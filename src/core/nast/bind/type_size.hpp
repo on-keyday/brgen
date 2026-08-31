@@ -68,7 +68,6 @@ namespace brgen::nast::bind {
         // からだけ来る。組み立ては node/build.h の Builder。
         Node<Expr> as_expr(TypeSize s, lexer::Loc loc);
         Node<Expr> match_subject(Node<ConditionalExpr> base);
-        Node<Expr> branch_cond(Node<Expr> subject, Node<Expr> pattern, lexer::Loc loc);
         template <class Cands>
         Node<Expr> branch_expr(const Cands& candidates, Node<Expr> subject, lexer::Loc loc,
                                auto&& width_of);

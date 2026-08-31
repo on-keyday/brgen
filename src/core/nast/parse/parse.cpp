@@ -878,6 +878,17 @@ namespace brgen::nast {
                 if (name == "available") {
                     auto avail = a.make<Available>(call.ref(a).loc());
                     avail->target = target;
+                    // `available(x, u8)` の第 2 引数は型。分岐ごとに型が違う
+                    // field で「今どちらか」を訊く形 (example/coap.bgn)。
+                    // 型名は式の位置でも TypeLiteral に解けている。
+                    if (auto want = nth_argument(call.ref(a)->arguments, 1)) {
+                        auto lit = want.as<TypeLiteral>();
+                        if (!lit) {
+                            s.report_error(want.ref(a).loc(),
+                                           "available()'s second argument must be a type");
+                        }
+                        avail->selected_type = lit;
+                    }
                     return avail;
                 }
                 if (name == "bit_sizeof") {
@@ -1938,12 +1949,16 @@ namespace brgen::nast {
             return expr.as<Reference>().ref(a)->name.ref(a)->identifier;
         }
 
-        Node<Expr> first_argument(const Node<Arguments>& args) {
+        Node<Expr> nth_argument(const Node<Arguments>& args, std::size_t i) {
             auto list = args.ref(a);
-            if (!list || list->arguments.empty()) {
+            if (!list || list->arguments.size() <= i) {
                 return nullref;
             }
-            return list->arguments[0].ref(a)->value;
+            return list->arguments[i].ref(a)->value;
+        }
+
+        Node<Expr> first_argument(const Node<Arguments>& args) {
+            return nth_argument(args, 0);
         }
 
         bool is_order_name(std::string_view name) {

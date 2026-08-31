@@ -1,0 +1,17 @@
+format Item:
+    len :u8
+    data :[len]u8
+
+format Fixed2:
+    a :u16
+
+format Uses:
+    n :u8
+    items :[n]Item
+    fixed :[4]Fixed2
+    tail :[n]u8
+
+format NoDynElem:
+    n :u8
+    fixed :[4]Fixed2
+    tail :[n]u8

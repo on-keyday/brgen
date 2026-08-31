@@ -561,6 +561,72 @@ EBM は変換の時点で `MEMBER_ACCESS{base: SELF}` に実体化している�
 実体化しないというのは、その区別を最後まで残すということでもある。実装するとき
 `Available.target` にレシーバを足さないこと。
 
+### available (2026-08-31)
+
+`available(x)` は「その field を宣言した分岐を通ったか」を訊く述語で、答えは
+**その分岐の条件そのもの**。材料は binder が置いた `UnionType` — 分岐ごとに
+宣言された同名 field を 1 つにまとめるとき、候補に「その分岐の条件」と
+「その分岐にその field があるか (無ければ null)」が並んでいる。要るものは
+既に木にあり、ここの仕事は畳み方だけ:
+
+```
+match kind:
+    1 => value :u8
+    2 => value :u16
+
+available(value)       ->  (kind == 1) ? true : ((kind == 2) ? true : false)
+available(value,u16)   ->  (kind == 1) ? false : ((kind == 2) ? true : false)
+```
+
+畳む形は幅の場合分けと同じなので、`lowering/predicate` の `branch_chain` に
+出して両方から呼ぶ (`type_size` にあった同じ折り畳みは消した)。候補の型が
+違うだけで、`cond` を持ち値を返せれば同じ規則で畳める。
+
+**第 2 引数の型。** `available(x, u8)` は「今どちらの候補か」を訊く形
+(`example/coap.bgn`)。候補の型が一致する分岐だけが真になる。nast の parser は
+これを落としていた (`first_argument` しか見ていなかった) ので、
+`Available.selected_type` に拾い、unparse も綴るようにした。ebmgen 側では
+`expected_type` を読んでいる箇所が rebrgen に 1 つも無く、u8 の問いと u16 の
+問いが同じ式になる。
+
+**入れ子の分岐。** 分岐の中の分岐で宣言された field は、候補の field 自身が
+また `UnionType` になっている。内側まで降りて掛け合わせる:
+
+```
+if a == 1:
+    b :u8
+    if b == 2:
+        c :u8
+
+available(c)  ->  (a == 1) ? ((b == 2) ? true : false) : false
+```
+
+外側の条件だけで答えると `a == 1` で真になってしまう。ebmgen の
+`convert_expr_impl(Available)` は候補の field が null かどうかだけを見ていて
+降りない。
+
+**修飾された target (`available(lab.pointer)`) はまだ落とせない。** 候補の
+条件は内側の format の field を指しているので、そのまま綴ると self に対する
+参照になる (`(*this).flag`)。ほしいのは `lab` に載せ替えた形。EBM は変換器の
+状態 (`set_self_ref`) で切り替えているが、nast は原木を残す立場なので、
+載せ替えの表し方が要る:
+
+- ノードを足す (`Rebase{base, expr}` のようなもの)。綴る側はレシーバを
+  スタックで持ち、参照は一番内側の base に付く。今のレシーバ規則の一般化に
+  なる
+- 参照を作り直せる複製器を用意する (`field_ref` が Resolution を登録するのと
+  同じことを式全体でやる)
+
+どちらも新しい機構なので未決。corpus では `available` 21 件中 5 件がこれ
+(`dns.bgn` の 2 箇所 + import 経由の重複 + testdata 1)。
+
+測定 (`nast_probe lower example/*.bgn testdata/*.bgn`):
+
+```
+available -> 式        16
+available (組めない)    5
+```
+
 ## 5. EBM との差 (訂正を含む)
 
 「置く側が違う」と書きかけたが誤り。EBM も emit 時にホイストしている:

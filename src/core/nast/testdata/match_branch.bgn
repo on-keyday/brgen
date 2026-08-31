@@ -1,0 +1,6 @@
+format M:
+    kind :u8
+    match kind:
+        1 => a :u8
+        2 => b :u16
+        .. => c :u32

@@ -1,0 +1,4 @@
+format NoElse:
+    kind :u8
+    if kind == 1:
+        a :u16

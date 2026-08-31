@@ -7,6 +7,7 @@
 // ファイルが 1 つなら明細、2 つ以上なら集計。合成した木の正しさは、綴りに
 // 戻して眺めるのが一番速い (docs/size_and_lowering.md 末尾)。
 #include "../bind/pipeline.h"
+#include "../lowering/available.hpp"
 #include "../lowering/conditional.hpp"
 #include "../lowering/field_io.hpp"
 #include "../lowering/int_bytes.hpp"
@@ -215,6 +216,18 @@ namespace {
             }
             else {
                 count_field(p, c, f, f.id(), hist);
+            }
+        });
+        each_node<Available>(a, last, [&](Node<Available> av) {
+            auto e = lowering::lower_available(c, av);
+            if (!e) {
+                hist["available (組めない)"]++;
+                return;
+            }
+            hist["available -> 式"]++;
+            if (detail) {
+                std::println("--- {}", unparse_node(a, av));
+                std::println("{}", unparse_node(a, e));
             }
         });
         each_node<Binary>(a, last, [&](Node<Binary> bin) {

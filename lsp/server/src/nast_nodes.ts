@@ -83,6 +83,11 @@ export type FormatKind =
     "as_is" |
     "custom";
 
+export type SizeKind =
+    "unknown" |
+    "fixed" |
+    "dynamic";
+
 export type EvalKind =
     "integer" |
     "boolean" |
@@ -152,6 +157,11 @@ export const ENUM_DISPLAY = {
         "as_is": "as_is",
         "custom": "custom",
     },
+    SizeKind: {
+        "unknown": "unknown",
+        "fixed": "fixed",
+        "dynamic": "dynamic",
+    },
     EvalKind: {
         "integer": "integer",
         "boolean": "boolean",
@@ -183,6 +193,10 @@ export type NodeKind =
     "Metadata" |
     "SpecifyOrder" |
     "Sizeof" |
+    "Self" |
+    "BitCast" |
+    "IsLittleEndian" |
+    "BitSizeof" |
     "Available" |
     "ExplicitError" |
     "Binary" |
@@ -273,6 +287,10 @@ export const NODE_KINDS: readonly NodeKind[] = [
     "Metadata",
     "SpecifyOrder",
     "Sizeof",
+    "Self",
+    "BitCast",
+    "IsLittleEndian",
+    "BitSizeof",
     "Available",
     "ExplicitError",
     "Binary",
@@ -364,71 +382,75 @@ export const NODE_VALUE: Readonly<Record<NodeKind, number>> = {
     Metadata: 81921,
     SpecifyOrder: 86017,
     Sizeof: 90145,
-    Available: 94241,
-    ExplicitError: 98305,
-    Binary: 102433,
-    Unary: 106529,
-    Call: 110625,
-    Reference: 114721,
-    MemberAccess: 118817,
-    TypeLiteral: 122913,
-    ConditionalStatement: 127105,
-    Parameter: 131083,
-    Body: 135168,
-    Arguments: 139264,
-    Argument: 143616,
-    NamedArgument: 147712,
-    Ident: 151552,
-    Type: 156160,
-    IntType: 160256,
-    Literal: 164897,
-    IntLiteral: 168993,
-    BoolLiteral: 173089,
-    StrLiteral: 177185,
-    CharLiteral: 181281,
-    RegexLiteral: 185377,
-    SpecialLiteral: 189473,
-    Paren: 192545,
-    Index: 196641,
-    Cond: 200737,
-    Range: 204833,
-    BadExpr: 208929,
-    Assert: 212993,
-    FloatType: 217600,
-    BoolType: 221696,
-    VoidType: 225792,
-    WrapperType: 231936,
-    IdentType: 236032,
-    ImportedType: 240128,
-    IntLiteralType: 242176,
-    StrLiteralType: 246272,
-    RegexLiteralType: 250368,
-    ArrayType: 254464,
-    StreamType: 258560,
-    FunctionType: 262656,
-    StructType: 266752,
-    InlineStructType: 270848,
-    StructUnionType: 274944,
-    StructUnionCandidate: 278528,
-    UnionType: 283136,
-    RangeType: 287232,
-    EnumType: 291328,
-    MetaType: 295424,
-    OptionalType: 299520,
-    GenericType: 303616,
-    MatchBranch: 307201,
-    UnionCandidate: 311296,
-    Return: 315393,
-    Break: 319489,
-    Continue: 323585,
-    Enum: 327683,
-    EnumMember: 331779,
-    State: 335895,
-    TypeParameter: 339971,
-    Identity: 344097,
-    Cast: 348193,
-    OrCond: 352289,
-    Import: 356385,
+    Self: 94241,
+    BitCast: 98337,
+    IsLittleEndian: 102433,
+    BitSizeof: 106529,
+    Available: 110625,
+    ExplicitError: 114689,
+    Binary: 118817,
+    Unary: 122913,
+    Call: 127009,
+    Reference: 131105,
+    MemberAccess: 135201,
+    TypeLiteral: 139297,
+    ConditionalStatement: 143489,
+    Parameter: 147467,
+    Body: 151552,
+    Arguments: 155648,
+    Argument: 160000,
+    NamedArgument: 164096,
+    Ident: 167936,
+    Type: 172544,
+    IntType: 176640,
+    Literal: 181281,
+    IntLiteral: 185377,
+    BoolLiteral: 189473,
+    StrLiteral: 193569,
+    CharLiteral: 197665,
+    RegexLiteral: 201761,
+    SpecialLiteral: 205857,
+    Paren: 208929,
+    Index: 213025,
+    Cond: 217121,
+    Range: 221217,
+    BadExpr: 225313,
+    Assert: 229377,
+    FloatType: 233984,
+    BoolType: 238080,
+    VoidType: 242176,
+    WrapperType: 248320,
+    IdentType: 252416,
+    ImportedType: 256512,
+    IntLiteralType: 258560,
+    StrLiteralType: 262656,
+    RegexLiteralType: 266752,
+    ArrayType: 270848,
+    StreamType: 274944,
+    FunctionType: 279040,
+    StructType: 283136,
+    InlineStructType: 287232,
+    StructUnionType: 291328,
+    StructUnionCandidate: 294912,
+    UnionType: 299520,
+    RangeType: 303616,
+    EnumType: 307712,
+    MetaType: 311808,
+    OptionalType: 315904,
+    GenericType: 320000,
+    MatchBranch: 323585,
+    UnionCandidate: 327680,
+    Return: 331777,
+    Break: 335873,
+    Continue: 339969,
+    Enum: 344067,
+    EnumMember: 348163,
+    State: 352279,
+    TypeParameter: 356355,
+    Identity: 360481,
+    Cast: 364577,
+    OrCond: 368673,
+    Import: 372769,
 };
 
 export function makeId(kind: NodeKind, index: number): NodeId {
@@ -459,6 +481,10 @@ export const ANCESTORS: Readonly<Record<NodeKind, readonly NodeKind[]>> = {
     Metadata: ["Statement"],
     SpecifyOrder: ["Statement"],
     Sizeof: ["Expr", "Statement"],
+    Self: ["Expr", "Statement"],
+    BitCast: ["Expr", "Statement"],
+    IsLittleEndian: ["Expr", "Statement"],
+    BitSizeof: ["Expr", "Statement"],
     Available: ["Expr", "Statement"],
     ExplicitError: ["Statement"],
     Binary: ["Expr", "Statement"],
@@ -627,6 +653,21 @@ export interface SpecifyOrder extends Statement {
 }
 
 export interface Sizeof extends Expr {
+    target: NodeId;
+}
+
+export interface Self extends Expr {
+}
+
+export interface BitCast extends Expr {
+    target: NodeId;
+}
+
+export interface IsLittleEndian extends Expr {
+    order: NodeId;
+}
+
+export interface BitSizeof extends Expr {
     target: NodeId;
 }
 
@@ -962,6 +1003,10 @@ export const NODE_FIELDS: Readonly<Record<NodeKind, readonly NodeFieldMeta[]>> =
     Metadata: [{ name: "arguments", weak: false, list: false }],
     SpecifyOrder: [{ name: "order", weak: false, list: false }],
     Sizeof: [{ name: "type", weak: false, list: false }, { name: "target", weak: false, list: false }],
+    Self: [{ name: "type", weak: false, list: false }],
+    BitCast: [{ name: "type", weak: false, list: false }, { name: "target", weak: false, list: false }],
+    IsLittleEndian: [{ name: "type", weak: false, list: false }, { name: "order", weak: true, list: false }],
+    BitSizeof: [{ name: "type", weak: false, list: false }, { name: "target", weak: false, list: false }],
     Available: [{ name: "type", weak: false, list: false }, { name: "target", weak: false, list: false }, { name: "selected_type", weak: false, list: false }],
     ExplicitError: [{ name: "message", weak: false, list: false }, { name: "extra_arguments", weak: false, list: false }],
     Binary: [{ name: "type", weak: false, list: false }, { name: "left", weak: false, list: false }, { name: "right", weak: false, list: false }],
@@ -1094,6 +1139,41 @@ export interface UnionLayout {
     cluster_types: NodeId[];
 }
 
+export interface FieldEndian {
+    endian: Endian;
+    dynamic: NodeId;
+}
+
+export interface LoweredAvailable {
+    expr: NodeId;
+}
+
+export interface LoweredRangeCompare {
+    expr: NodeId;
+}
+
+export interface LoweredMatch {
+    branch: NodeId;
+}
+
+export interface LoweredEndianVariable {
+    name: NodeId;
+    value: NodeId;
+}
+
+export interface LoweredCond {
+    temp_name: NodeId;
+    type: NodeId;
+    branch: NodeId;
+    value: NodeId;
+}
+
+export interface TypeSize {
+    kind: SizeKind;
+    bits: number;
+    bits_expr: NodeId;
+}
+
 export const SIDE_TABLES = {
     Resolution: { over: "Ident", storage: "dense" },
     InnerStruct: { over: "BodyStatement", storage: "sparse" },
@@ -1105,6 +1185,13 @@ export const SIDE_TABLES = {
     Requirements: { over: "Statement", storage: "sparse" },
     ConstantValue: { over: "Expr", storage: "sparse" },
     UnionLayout: { over: "UnionType", storage: "sparse" },
+    FieldEndian: { over: "Field", storage: "sparse" },
+    LoweredAvailable: { over: "Available", storage: "sparse" },
+    LoweredRangeCompare: { over: "Binary", storage: "sparse" },
+    LoweredMatch: { over: "Match", storage: "sparse" },
+    LoweredEndianVariable: { over: "SpecifyOrder", storage: "sparse" },
+    LoweredCond: { over: "Cond", storage: "sparse" },
+    TypeSize: { over: "Type", storage: "sparse" },
 } as const;
 
 export interface NodeHeader {

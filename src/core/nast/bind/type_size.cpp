@@ -105,49 +105,21 @@ namespace brgen::nast::bind {
     //
     //   cond1 ? w1 : (cond2 ? w2 : w_default)
     //
-    // 条件は候補が持っているものをそのまま指す (複製すると中の名前が
-    // Resolution 表に載らず解決先を失う)。既定の分岐が無ければ最後は 0 =
-    // どれも通らなかった経路。
+    // 既定の分岐が無ければ最後は 0 = どれも通らなかった経路。畳み方も、
+    // パターンから比較を実体化するところ (match の分岐は `kind == 1` を持たず
+    // 1 をそのまま条件に置く) も lowering/predicate にある。
     //
     // この式が評価できるのは、条件が見ている field が既に読めている文脈に
     // 限られる。decode の途中では成り立つが、encode 時の条件式の意味論は
     // まだ決まっていない (docs/requires_direction.md の段階 2)。式として
     // 持っておくこと自体は、その決着とは独立に意味がある。
-    // 分岐の条件を式にする。match の分岐は「パターン」であって比較ではない
-    // (parse.cpp は `kind == 1` を作らず 1 をそのまま条件に置く) ので、比較を
-    // 実体化する。範囲パターンの展開も含めて lowering/predicate に置いてある
-    // — 幅の式に使うのも、文に落とすのも、要る述語は同じもの。
-    Node<Expr> SizeAnalysis::branch_cond(Node<Expr> subject, Node<Expr> pattern, lexer::Loc loc) {
-        lowering::Context lc{a, tables};
-        return lowering::branch_predicate(lc, subject, pattern);
-    }
-
     template <class Cands>
     Node<Expr> SizeAnalysis::branch_expr(const Cands& candidates, Node<Expr> subject, lexer::Loc loc,
                                          auto&& width_of) {
-        Node<Expr> els = Builder{a, loc}.lit(0);
-        bool have_default = false;
-        // 後ろから積む。既定の分岐 (cond なし) は else の位置に入る。
-        std::vector<std::pair<Node<Expr>, Node<Expr>>> arms;
-        for (auto& c : candidates) {
-            auto cd = c.ref(a);
-            auto w = width_of(cd);
-            if (!w) {
-                return nullref;  // 1 つでも書けなければ全体も書けない
-            }
-            if (is_default_cond(a, cd->cond)) {
-                els = w;
-                have_default = true;
-                continue;
-            }
-            arms.push_back({branch_cond(subject, cd->cond, loc), w});
-        }
-        (void)have_default;
+        lowering::Context lc{a, tables};
         Builder b{a, loc};
-        for (auto it = arms.rbegin(); it != arms.rend(); ++it) {
-            els = b.cond(it->first, it->second, els, b.int_type(64));
-        }
-        return els;
+        return lowering::branch_chain(lc, candidates, subject, b.int_type(64), b.lit(0), loc,
+                                      width_of);
     }
 
     // 分岐の主語。match なら比較の左辺、if なら無い (条件がそのまま述語)。

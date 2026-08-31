@@ -1000,6 +1000,9 @@ namespace brgen::nast::bind {
         }
         else if (auto av = e.as_any<Available>()) {
             type_of_expr(av.ref(a)->target);
+            if (auto want = av.ref(a)->selected_type) {
+                type_of_expr(want);  // `available(x, u8)` の型。MetaType が付く
+            }
             result = a.make<BoolType>(loc);
         }
         else if (auto ma = e.as_any<MemberAccess>()) {

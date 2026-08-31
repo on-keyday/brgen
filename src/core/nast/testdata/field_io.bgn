@@ -1,0 +1,16 @@
+# field の読み書きを組む対象。整数 / enum / 固定長配列 / 式長配列。
+enum Kind:
+    :u8
+    a = 1
+    b = 2
+
+format Fields:
+    scalar :u16
+    kind :Kind
+    fixed :[4]u32
+    count :u8
+    varying :[count]u16
+
+format Floats:
+    single :f32
+    double :f64

@@ -282,6 +282,18 @@
             "description": "Byte order in effect where this field is read or written"
         },
         {
+            "name": "LoweredAvailable",
+            "over": "Available",
+            "storage": "sparse",
+            "fields": [
+                {
+                    "name": "expr",
+                    "type": "Node<Expr>"
+                }
+            ],
+            "description": "available(x) answered as an expression over the branch conditions that decide whether the field is there. Produced on demand by lowering/"
+        },
+        {
             "name": "LoweredRangeCompare",
             "over": "Binary",
             "storage": "sparse",
