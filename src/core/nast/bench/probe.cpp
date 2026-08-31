@@ -109,7 +109,6 @@ namespace {
         Builder b{a, loc};
         auto buf = b.ref("buf");
         auto off = b.ref("o");
-        // field を指す参照。受け手は付かない — 綴る側が足す。
         auto target = lowering::field_ref(c, f);
 
         // 入力からバイトを並べるところ。int_bytes とは別の規則で、合成して
@@ -184,7 +183,6 @@ namespace {
         Builder b{a, loc};
         auto buf = b.ref("buf");
         auto off = b.ref("o");
-        // field を指す参照。受け手は付かない — 綴る側が足す。
         auto target = lowering::field_ref(c, f);
         if (lowering::lower_field_decode(c, f, target, buf, off)) {
             hist["field: 組めた"]++;
