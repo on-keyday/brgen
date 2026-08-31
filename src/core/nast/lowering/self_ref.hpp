@@ -21,6 +21,13 @@
 // 揃える先が逆になる。綴りが言語ごとなのは同じ (`MEMBER_ACCESS` は共通化
 // 不適と測定済みのグループ)。
 //
+// EBM が変換時に実体化したのはレシーバが一定でないためで、スコープの
+// スタック + 宣言ごとの表 (`self_ref_map`) の 2 段になっている。nast では
+// そのうち 3 つ (state variable / 関数ローカル / member 側) が別のノード種に
+// なっていて起きない。残るのは分岐の中の field の保存場所で、平らに持つ間は
+// `self.name` で足りる — 詳細は docs/size_and_lowering.md の
+// 「ebmgen のレシーバ機構」。
+//
 // **`available` の解決はこの区別を要る。** `available(field)` (裸) と
 // `available(a.b.field)` (修飾) では、gating 条件を別の base に載せ直すか
 // どうかが変わる。EBM は変換で裸の Ident も `MEMBER_ACCESS{base: SELF}` に

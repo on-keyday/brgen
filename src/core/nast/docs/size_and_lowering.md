@@ -561,6 +561,62 @@ EBM は変換の時点で `MEMBER_ACCESS{base: SELF}` に実体化している�
 実体化しないというのは、その区別を最後まで残すということでもある。実装するとき
 `Available.target` にレシーバを足さないこと。
 
+### ebmgen のレシーバ機構 (2026-08-31 に読み直し)
+
+「なぜ EBM は変換時にレシーバを実体化したのか」を追った。理由は **レシーバが
+一定でないから**で、機構は 2 段になっている。
+
+**1. スコープのスタック (`ConverterState::self_ref`)** — 「今の self は何か」。
+`set_self_ref` は RAII で元に戻す。切り替わるのは:
+
+| 場所 | self | 出典 |
+| --- | --- | --- |
+| `Format` の変換に入る | `SELF` | `statement.cpp:753` |
+| variant の腕の block | その腕の accessor 式 | `handle_variant_alternative` (`statement.cpp:517`, `564`, `1022`) |
+| property の getter/setter | その property のレシーバ | `statement.cpp:1206` |
+| `MemberAccess` の member 側 / enum member | 無し (`nullopt`) | `expression.cpp:525`, `583` |
+| state variable / 関数ローカル | 付けない (`is_state_variable` / `has_parent`) | `expression.cpp:421` |
+
+腕の中で self が変わるのは、EBM では分岐の field の **保存場所が腕の struct の
+中** だから。`self.name` では届かない。
+
+**2. 宣言ごとの表 (`self_ref_map`)** — 「その宣言はどこに居るか」。
+FIELD_DECL を変換するたびに `MEMBER_ACCESS{base: その時点の self, member: 名前}`
+を記録する (`statement.cpp:1178-1236`)。参照 (Ident) を変換するときは、
+**使用位置の self ではなく宣言の記録の base** を取る (`expression.cpp:421-434`)。
+腕の中で宣言された field を腕の外から参照しても正しい経路になるのはこれ。
+
+**3. `on_available_check` フラグ** — 修飾された `available(a.b.field)` の gating
+条件だけは、宣言側の base を無視して `a.b` を使う。宣言の記録が勝つと
+`header.flag.padding` が variant の下に潜ってしまう (`expression.cpp:926-`)。
+
+ADR 0027 (inner-anon accessor relocation) は同じ問題の生成側で、accessor の
+body が外側の field を参照するので、レシーバは内側 struct ではなく外側でないと
+解決できない、という話。
+
+**nast との対応。** 5 つのうち 3 つは nast では構造的に起きない:
+
+- state variable は `StateVariable`、関数ローカルは `VariableDefinition` で、
+  どちらも `Field` ではないので `receiver_field` が最初から false
+  (dns.bgn の `lab := input.get(...)` にレシーバが付かないことを確認済み)
+- `MemberAccess.member` は `Ident` であって式ではないので、member 側を参照と
+  して綴る経路が無い
+
+残る 1 つが本題で、**分岐の中の field の保存場所**。nast は binder が名前ごとに
+format 直下の union field を作るので、参照の解決先は使用位置で変わる:
+
+```
+if k == 1:
+    v :u8
+    w ::= v + 1     # ここの v -> 分岐の中の Field
+z ::= v + 2         # ここの v -> format 直下の union field
+```
+
+(Resolution 表で確認: 同じ `v` が別の Field を指す。) 平らに持つバックエンドなら
+どちらも `self.v` で正しい。variant で持つバックエンドでは内側のほうに腕の経路が
+要る — つまり ebmgen の `self_ref_map` に当たるものが、変換順ではなく
+`UnionLayout` の決定から要る。今のレシーバ規則が答えられるのは平らな場合まで。
+
 ### available (2026-08-31)
 
 `available(x)` は「その field を宣言した分岐を通ったか」を訊く述語で、答えは
