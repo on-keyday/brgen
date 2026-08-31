@@ -3,8 +3,8 @@
 //   nast_backend                                 結線だけを合成した木で確かめる
 //   nast_backend [--self S] [--sep X] <file.bgn> その入力の参照と member access を綴る
 //
-// 後者は受け手の綴りを見るためのもの。既定は `--self '(*this)' --sep .`
-// (C++ の形)。原文の field 参照は裸なので (`len`)、綴る側が受け手を足して
+// 後者はレシーバの綴りを見るためのもの。既定は `--self '(*this)' --sep .`
+// (C++ の形)。原文の field 参照は裸なので (`len`)、綴る側がレシーバを足して
 // `(*this).len` になる。継ぎ目は深さに依らず同じ
 // separator なので、`--self '(*this)' --sep .` と `--self self --sep .` の
 // 違いは先頭だけに出る。`--sep '->'` にすると `self->a->b` になってしまう
@@ -92,7 +92,7 @@ namespace {
                 return;
             }
             auto spelled = out->to_string();
-            // 綴りが変わらないもの (受け手の付かない参照) は並べても読めない
+            // 綴りが変わらないもの (レシーバの付かない参照) は並べても読めない
             // だけなので、変わったものだけ出す。
             auto src = unparse_node(a, n);
             if (spelled == src) {

@@ -499,15 +499,15 @@ EBM は `ctx.identifier(ref)` という登録簿でこれをやっているが�
 `endian<id>` に落とし、`IsLittleEndian` の既定ハンドラがその名前を読んで
 `endian<id> == <little_endian_value>` を出す。
 
-### 受け手 (self) (2026-08-31)
+### レシーバ (self) (2026-08-31)
 
-**原文の木に受け手は無い。** `data :[len]u8` の `len` は裸の `Reference` で、
+**原文の木にレシーバは無い。** `data :[len]u8` の `len` は裸の `Reference` で、
 `Resolution` に解決先が `Field` だと載っているだけ。生成コードでは `t.Len` の
-ように受け手が要るのに、「ここに要る」という印が木のどこにもない。
+ようにレシーバが要るのに、「ここに要る」という印が木のどこにもない。
 
 **付けるのは綴る側。lowering は付けない。** 原文から来た式は書き換えられない
 ので (複製すると中の名前が Resolution 表に載らない別ノードになり解決先を
-失う)、lowering が作る参照にだけ受け手を付けると、**1 つの式の中で同じ意味の
+失う)、lowering が作る参照にだけレシーバを付けると、**1 つの式の中で同じ意味の
 ものが 2 つの形**になる:
 
 ```
@@ -515,11 +515,11 @@ EBM は `ctx.identifier(ref)` という登録簿でこれをやっているが�
                     ^^^^ 合成                ^ 原文
 ```
 
-読む側が両方を扱う羽目になるので、形は 1 つに揃えて裸の参照にし、受け手は
+読む側が両方を扱う羽目になるので、形は 1 つに揃えて裸の参照にし、レシーバは
 綴る側が 1 つの規則で足す — **参照の解決先が `Field` なら前置する**、以上。
 判定は `lowering/self_ref` の `receiver_field`。
 
-**受け手を使うのが普通なので、フックではなく knob で吸収する。** 既定の
+**レシーバを使うのが普通なので、フックではなく knob で吸収する。** 既定の
 `Reference` ハンドラが `receiver_field` を引いて、field なら
 `Self.spelling` + `MemberAccess.separator` を前置する。綴りが違うだけの言語は
 2 つの文字列を申告すれば済む:
@@ -531,7 +531,7 @@ ctx.config().MemberAccess.separator = ".";
 
 `Self.spelling` が空なら黙って名前だけ出さず、未対応の目印に落ちる。
 
-**separator は深さに依らず一律で、受け手だけ別の綴りにはしない。** 一度
+**separator は深さに依らず一律で、レシーバだけ別の綴りにはしない。** 一度
 `--self self --sep '->'` を「C 系の形」として出したが、これは継ぎ目が 1 つの
 ときしか合っていない:
 
@@ -540,7 +540,7 @@ bytes.length   →   self->bytes->length     ← --sep '->' (壊れる)
 bytes.length   →   (*this).bytes.length    ← 参照外しを spelling に畳む
 ```
 
-受け手の次は普通の member なので、hop ごとに `->` を選ぶ余地はない。参照外しが
+レシーバの次は普通の member なので、hop ごとに `->` を選ぶ余地はない。参照外しが
 要る言語は **spelling 側に畳む** (`(*this)` / `(*self)`)。ebm2cpp が
 `config.self_value = "(*this)"` にして `MEMBER_ACCESS` の綴りを `.` 固定に
 しているのと同じ形で、あちらはそもそも separator を knob にしていない。
@@ -557,9 +557,9 @@ EBM は変換の時点で `MEMBER_ACCESS{base: SELF}` に実体化している�
 `available(a.b.field)` (修飾) では gating 条件を別の base に載せ直すかどうかが
 変わるが、EBM は変換で裸の Ident も `MEMBER_ACCESS{base: SELF}` にしてしまう
 ので、変換後の形では区別できず、変換前の AST を見に行っている
-(`ebmgen/convert/expression.cpp` の `convert_expr_impl(Available)`)。木に受け手を
+(`ebmgen/convert/expression.cpp` の `convert_expr_impl(Available)`)。木にレシーバを
 実体化しないというのは、その区別を最後まで残すということでもある。実装するとき
-`Available.target` に受け手を足さないこと。
+`Available.target` にレシーバを足さないこと。
 
 ## 5. EBM との差 (訂正を含む)
 
