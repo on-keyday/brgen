@@ -20,6 +20,15 @@
 // 変換が式を作り直す立場なので揃えられる。こちらは原木を残す立場なので、
 // 揃える先が逆になる。綴りが言語ごとなのは同じ (`MEMBER_ACCESS` は共通化
 // 不適と測定済みのグループ)。
+//
+// **`available` の解決はこの区別を要る。** `available(field)` (裸) と
+// `available(a.b.field)` (修飾) では、gating 条件を別の base に載せ直すか
+// どうかが変わる。EBM は変換で裸の Ident も `MEMBER_ACCESS{base: SELF}` に
+// してしまうので、変換後の形を見ると裸まで修飾と判定してしまい、変換前の
+// AST の形を見に行っている (ebmgen/convert/expression.cpp の
+// convert_expr_impl(Available))。木に受け手を実体化しないというのは、その
+// 区別を最後まで残すということでもある — **available の target に受け手を
+// 足してはいけない**。
 
 namespace brgen::nast::lowering {
 
