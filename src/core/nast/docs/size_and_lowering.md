@@ -960,7 +960,9 @@ debugger に当たるもので、`p <id>` がノードとその下の side table
 あって `nast_core` に入っている** ので、バックエンドや LSP からも同じ問い合わせ
 ができる (`tool/query.cpp` は引数を読むだけ)。出力は文字列に積むだけで、
 どこへ出すかは呼ぶ側が決める。
-`find <Kind> [field=value]` で種別から探す:
+`find <Kind> [{ 条件 }]` で種別から探し、`show <Kind>` でそのノードの
+フィールド名と型 (列挙は取りうる値も)、`lower <id>` でそのノードに当てはまる
+lowering 規則を当てた結果が見られる:
 
 ```sh
 python src/core/nast/build.py -r query example/dns.bgn -c "find Available"

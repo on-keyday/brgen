@@ -194,6 +194,7 @@ add_library(nast_core STATIC
     "bind/typer.cpp"
     "bind/union_layout.cpp"
     "query/filter.cpp"
+    "query/lower_view.cpp"
     "query/session.cpp"
 )
 add_dependencies(nast_core nast_generate)
