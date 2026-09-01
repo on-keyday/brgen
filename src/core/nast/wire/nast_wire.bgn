@@ -642,6 +642,14 @@ format LoweredAvailableTable:
     len :u32
     entries :[len]LoweredAvailableEntry
 
+format LoweredEnumIsDefinedEntry:
+    key :Ref
+    expr :Ref
+
+format LoweredEnumIsDefinedTable:
+    len :u32
+    entries :[len]LoweredEnumIsDefinedEntry
+
 format LoweredRangeCompareEntry:
     key :Ref
     expr :Ref
@@ -709,6 +717,7 @@ format NastModule:
     union_layout :UnionLayoutTable
     field_endian :FieldEndianTable
     lowered_available :LoweredAvailableTable
+    lowered_enum_is_defined :LoweredEnumIsDefinedTable
     lowered_range_compare :LoweredRangeCompareTable
     lowered_match :LoweredMatchTable
     lowered_endian_variable :LoweredEndianVariableTable

@@ -176,6 +176,7 @@ add_library(nast_core STATIC
     "lowering/codec.cpp"
     "lowering/conditional.cpp"
     "lowering/endian_variable.cpp"
+    "lowering/enum_defined.cpp"
     "lowering/field_io.cpp"
     "lowering/int_bytes.cpp"
     "lowering/lowering.cpp"

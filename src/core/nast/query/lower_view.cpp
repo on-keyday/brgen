@@ -2,6 +2,7 @@
 #include "lower_view.hpp"
 #include "../lowering/available.hpp"
 #include "../lowering/conditional.hpp"
+#include "../lowering/enum_defined.hpp"
 #include "../lowering/field_io.hpp"
 #include "../lowering/int_bytes.hpp"
 #include "../lowering/match_to_if.hpp"
@@ -133,6 +134,15 @@ namespace brgen::nast::query {
             r.made.push_back({"branch", low->branch});
             r.made.push_back({"value", low->value});
             r.text += unparse_node(a, low->branch) + "\nuse: " + unparse_node(a, low->value) + "\n";
+            return r;
+        }
+        if (auto ma = n.as_any<MemberAccess>()) {
+            auto e = lowering::lower_enum_is_defined(c, ma);
+            if (!e) {
+                return {};  // is_defined でない普通のメンバアクセスは対象外
+            }
+            r.made.push_back({"expr", e});
+            r.text += unparse_node(a, e) + "\n";
             return r;
         }
         if (auto bin = n.as_any<Binary>()) {
