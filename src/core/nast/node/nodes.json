@@ -1111,7 +1111,14 @@
         {
             "name": "Self",
             "derive": "Expr",
-            "fields": [],
+            "fields": [
+                {
+                    "name": "owner",
+                    "type": "Node<NamedStructTypedStatement>",
+                    "weak": true,
+                    "description": "Whose instance this is. The type comes from here, and a backend that stores branch fields in arms needs it to know where the path starts"
+                }
+            ],
             "knobs": [
                 {
                     "name": "spelling",
@@ -1120,7 +1127,7 @@
                     "description": "The receiver expression itself, dereferencing included: self in Rust and Python, this in Java, the receiver name in Go, (*this) in C++ so that the member separator stays a dot at every hop. Empty falls through to the unhandled marker"
                 }
             ],
-            "description": "The value being encoded or decoded. Source field references carry no receiver; the side doing the spelling adds one"
+            "description": "The value being encoded or decoded. Never written in .bgn: bind/receiver materializes one under every field reference, so a bare name and a qualified one stay distinguishable after binding"
         },
         {
             "name": "BitCast",

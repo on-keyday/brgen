@@ -53,7 +53,9 @@ namespace brgen::nast::lowering {
             // 分岐で宣言された field ではない = いつでもある。
             return b.bool_lit(true);
         }
-        if (!d->target.as_any<Reference>()) {
+        // 裸の target は bind/receiver がレシーバを実体化した形で来る。base が
+        // Self でなければ原文で修飾されていたもの。
+        if (!referenced_name(a, d->target)) {
             return nullref;  // 修飾された target。条件を載せ替える形が未決 (available.hpp)
         }
         auto ud = u.ref(a);

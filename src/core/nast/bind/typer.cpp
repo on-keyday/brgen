@@ -338,11 +338,20 @@ namespace brgen::nast::bind {
     Node<Type> Typer::type_of_member_access(Node<MemberAccess> m) {
         auto d = m.ref(a);
         auto base_type = type_of_expr(d->base);
-        if (!base_type) {
-            return nullref;
-        }
         auto member = d->member.ref(a);
         if (!member) {
+            return nullref;
+        }
+        // 実体化したレシーバ越しの参照 (bind/receiver)。解決先は名前解決の
+        // 時点で決まっているので、名前で引き直さない — 分岐の中で宣言された
+        // field と format 直下の union field は同じ名前で別の宣言を指すので、
+        // 持ち主から名前で引くと使用位置の区別が消える。
+        if (d->base.as_any<Self>()) {
+            if (auto* r = tables.table<Resolution>().get(d->member)) {
+                return type_of_decl(r->target);
+            }
+        }
+        if (!base_type) {
             return nullref;
         }
         auto loc = a.header_at(m.id())->loc;
@@ -878,6 +887,11 @@ namespace brgen::nast::bind {
                 // 解決されず型なしのまま (従来どおり別扱い)。
                 result = struct_type_of_module(builtin_module());
             }
+        }
+        else if (auto self = e.as_any<Self>()) {
+            // 符号化中の値そのもの。誰のインスタンスかは bind/receiver が
+            // 実体化するときに入れている。
+            result = type_of_decl(self.ref(a)->owner);
         }
         else if (auto ref = e.as_any<Reference>()) {
             auto name = ref.ref(a)->name;

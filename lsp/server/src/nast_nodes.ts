@@ -658,6 +658,7 @@ export interface Sizeof extends Expr {
 }
 
 export interface Self extends Expr {
+    owner: NodeId;
 }
 
 export interface BitCast extends Expr {
@@ -1004,7 +1005,7 @@ export const NODE_FIELDS: Readonly<Record<NodeKind, readonly NodeFieldMeta[]>> =
     Metadata: [{ name: "arguments", weak: false, list: false }],
     SpecifyOrder: [{ name: "order", weak: false, list: false }],
     Sizeof: [{ name: "type", weak: false, list: false }, { name: "target", weak: false, list: false }],
-    Self: [{ name: "type", weak: false, list: false }],
+    Self: [{ name: "type", weak: false, list: false }, { name: "owner", weak: true, list: false }],
     BitCast: [{ name: "type", weak: false, list: false }, { name: "target", weak: false, list: false }],
     IsLittleEndian: [{ name: "type", weak: false, list: false }, { name: "order", weak: true, list: false }],
     BitSizeof: [{ name: "type", weak: false, list: false }, { name: "target", weak: false, list: false }],

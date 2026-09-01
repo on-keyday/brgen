@@ -51,6 +51,7 @@ namespace brgen::nast {
         std::size_t imports_failed = 0;
         std::size_t names_resolved = 0;
         std::size_t names_unresolved = 0;
+        std::size_t receivers = 0;
         std::size_t constants = 0;
         std::size_t sized_types = 0;
         std::size_t endian_fields = 0;

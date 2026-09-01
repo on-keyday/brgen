@@ -862,6 +862,7 @@ namespace brgen::nast::wire {
         };
         struct union_struct_18{
             Ref type;
+            Ref owner;
         };
         struct union_struct_19{
             Ref type;
@@ -1403,6 +1404,10 @@ namespace brgen::nast::wire {
         Ref* order();
         bool order(Ref&& v);
         bool order(const Ref& v);
+        const Ref* owner() const;
+        Ref* owner();
+        bool owner(Ref&& v);
+        bool owner(const Ref& v);
         const std::vector<Ref>* parameters() const;
         std::vector<Ref>* parameters();
         bool parameters(std::vector<Ref>&& v);
@@ -30029,6 +30034,182 @@ namespace brgen::nast::wire {
         }
         return false;
     }
+    inline const Ref* Node::owner() const {
+        if (NodeKind::Module==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::BodyStatement==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Field==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::StateVariable==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Format==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::GenericFormat==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Function==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::If==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Match==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Loop==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::RangeLoop==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Assign==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::VariableDefinition==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Metadata==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::SpecifyOrder==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Sizeof==(*this).node_kind) {
+        return nullptr;
+        }
+        if (NodeKind::Self==(*this).node_kind) {
+        if(!std::holds_alternative<union_struct_18>(union_variant_1)) {
+            return nullptr;
+        }
+        return std::addressof(std::get<17>((*this).union_variant_1).owner);
+        }
+        return nullptr;
+    }
+    inline Ref* Node::owner() {
+        return const_cast<Ref*>(std::as_const(*this).owner());
+    }
+    inline bool Node::owner(const Ref& v) {
+        if (NodeKind::Module==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::BodyStatement==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Field==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::StateVariable==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Format==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::GenericFormat==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Function==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::If==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Match==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Loop==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::RangeLoop==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Assign==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::VariableDefinition==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Metadata==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::SpecifyOrder==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Sizeof==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Self==(*this).node_kind) {
+            if(!std::holds_alternative<union_struct_18>(union_variant_1)) {
+                union_variant_1 = union_struct_18();
+            }
+            std::get<17>((*this).union_variant_1).owner = v;
+            return true;
+        }
+        return false;
+    }
+    inline bool Node::owner(Ref&& v) {
+        if (NodeKind::Module==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::BodyStatement==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Field==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::StateVariable==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Format==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::GenericFormat==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Function==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::If==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Match==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Loop==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::RangeLoop==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Assign==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::VariableDefinition==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Metadata==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::SpecifyOrder==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Sizeof==(*this).node_kind) {
+            return false;
+        }
+        if (NodeKind::Self==(*this).node_kind) {
+            if(!std::holds_alternative<union_struct_18>(union_variant_1)) {
+                union_variant_1 = union_struct_18();
+            }
+            std::get<17>((*this).union_variant_1).owner = std::move(v);
+            return true;
+        }
+        return false;
+    }
     inline const std::vector<Ref>* Node::parameters() const {
         if (NodeKind::Module==(*this).node_kind) {
         return nullptr;
@@ -45215,6 +45396,9 @@ namespace brgen::nast::wire {
             if (auto err = std::get<17>((*this).union_variant_1).type.encode(w)) {
                 return err;
             }
+            if (auto err = std::get<17>((*this).union_variant_1).owner.encode(w)) {
+                return err;
+            }
         }
         else if (NodeKind::BitCast==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_19>(union_variant_1)) {
@@ -46425,6 +46609,9 @@ namespace brgen::nast::wire {
                 union_variant_1 = union_struct_18();
             }
             if (auto err = std::get<17>((*this).union_variant_1).type.decode(r)) {
+                return err;
+            }
+            if (auto err = std::get<17>((*this).union_variant_1).owner.decode(r)) {
                 return err;
             }
         }
