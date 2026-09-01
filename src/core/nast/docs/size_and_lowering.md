@@ -954,6 +954,20 @@ python src/core/nast/build.py -r probe size   example/*.bgn      # 集計
 ビルドツリーの場所を知らずに済ませるためのもので、他の道具にも使える
 (`-r corpus --tree <f>.bgn` / `-r dump <f>.bgn`)。
 
+id が分かっているものを 1 つずつ追うときは `nast_query`。ebmgen の interactive
+debugger に当たるもので、`p <id>` がノードとその下の side table を一緒に出し、
+`u` で綴りに、`src` で原文の位置に戻せる。**中身は `query/session.{hpp,cpp}` に
+あって `nast_core` に入っている** ので、バックエンドや LSP からも同じ問い合わせ
+ができる (`tool/query.cpp` は引数を読むだけ)。出力は文字列に積むだけで、
+どこへ出すかは呼ぶ側が決める。
+`find <Kind> [field=value]` で種別から探す:
+
+```sh
+python src/core/nast/build.py -r query example/dns.bgn -c "find Available"
+#165    Available            @46:16  available(labels[i].pointer)
+#222    Available            @52:16  available(lab.pointer)
+```
+
 確認用の `.bgn` は `src/core/nast/testdata/` にある。目で見るために書いたもの
 だが、見た後は wire / unparse の往復に乗せて守る側に置いてある
 (CMakeLists の `NAST_CORPUS` が example/ と一緒に拾う)。

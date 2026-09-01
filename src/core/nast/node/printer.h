@@ -26,7 +26,38 @@ namespace brgen::nast {
         // side table のエントリを、キーになっているノードの下に併記する。
         // binder が何をどこに書いたかを木の形のまま見るためのもの。
         bool show_tables = true;
+        // 何段まで降りるか。0 は無制限。対話で 1 ノードを見るときは、
+        // 部分木を全部出されると画面が流れるので要る。
+        std::size_t max_depth = 0;
     };
+
+    // ノードでないフィールドの値を文字列に。印字と、対話での絞り込み
+    // (tool/query.cpp) が同じ綴りで比べられるように 1 か所に置く。
+    inline std::string scalar_text(const std::string& v) {
+        return "\"" + v + "\"";
+    }
+
+    inline std::string scalar_text(bool v) {
+        return v ? "true" : "false";
+    }
+
+    inline std::string scalar_text(const lexer::Loc& v) {
+        return std::to_string(v.line) + ":" + std::to_string(v.col);
+    }
+
+    template <class V>
+    std::string scalar_text(const V& v) {
+        if constexpr (std::is_enum_v<V>) {
+            auto* s = to_string(v);
+            return s ? std::string(s) : std::string("?");
+        }
+        else if constexpr (std::is_integral_v<V>) {
+            return std::to_string(v);
+        }
+        else {
+            return "...";
+        }
+    }
 
     struct PrettyPrinter {
         Arena* arena = nullptr;
@@ -36,45 +67,24 @@ namespace brgen::nast {
         bool show_weak = true;
         bool show_null = false;
         bool show_tables = true;
+        std::size_t max_depth = 0;
 
         explicit PrettyPrinter(Arena& a, PrintOptions opt = {})
-            : arena(&a), show_weak(opt.show_weak), show_null(opt.show_null), show_tables(opt.show_tables) {}
+            : arena(&a), show_weak(opt.show_weak), show_null(opt.show_null), show_tables(opt.show_tables), max_depth(opt.max_depth) {}
 
         PrettyPrinter(Arena& a, const SideTables& t, PrintOptions opt = {})
-            : arena(&a), tables(&t), show_weak(opt.show_weak), show_null(opt.show_null), show_tables(opt.show_tables) {}
+            : arena(&a), tables(&t), show_weak(opt.show_weak), show_null(opt.show_null), show_tables(opt.show_tables), max_depth(opt.max_depth) {}
 
         template <class T>
         void print(Node<T> root) {
-            walk(root.id(), "", "", true);
+            walk(root.id(), "", "", true, 0);
+        }
+
+        void print_id(std::uint32_t id) {
+            walk(id, "", "", true, 0);
         }
 
        private:
-        static std::string scalar_of(const std::string& v) {
-            return "\"" + v + "\"";
-        }
-
-        static std::string scalar_of(bool v) {
-            return v ? "true" : "false";
-        }
-
-        static std::string scalar_of(const lexer::Loc& v) {
-            return std::to_string(v.line) + ":" + std::to_string(v.col);
-        }
-
-        template <class V>
-        static std::string scalar_of(const V& v) {
-            if constexpr (std::is_enum_v<V>) {
-                auto* s = to_string(v);
-                return s ? std::string(s) : std::string("?");
-            }
-            else if constexpr (std::is_integral_v<V>) {
-                return std::to_string(v);
-            }
-            else {
-                return "...";
-            }
-        }
-
         template <class U>
         void add(std::vector<PrintItem>& items, const char* name, const Node<U>& v, bool weak) {
             if (weak && !show_weak) {
@@ -103,7 +113,7 @@ namespace brgen::nast {
 
         template <class V>
         void add(std::vector<PrintItem>& items, const char* name, const V& v, bool) {
-            items.push_back(PrintItem{name, 0, NodeType{}, false, false, scalar_of(v)});
+            items.push_back(PrintItem{name, 0, NodeType{}, false, false, scalar_text(v)});
         }
 
         // このノードを指す side table の中身を項目として足す。
@@ -136,7 +146,7 @@ namespace brgen::nast {
             });
         }
 
-        void walk(std::uint32_t id, const std::string& prefix, const std::string& branch, bool last) {
+        void walk(std::uint32_t id, const std::string& prefix, const std::string& branch, bool last, std::size_t depth) {
             out += prefix;
             out += branch;
             auto* h = arena->header_at(id);
@@ -201,7 +211,13 @@ namespace brgen::nast {
                     out += "\n";
                     continue;
                 }
-                walk(it.id, child_prefix, b + it.label + ": ", is_last);
+                if (max_depth && depth + 1 >= max_depth) {
+                    // 打ち切り。降りない先も「そこに何があるか」は出す。
+                    out += child_prefix + b + it.label + ": " + to_string(it.type) + " #" +
+                           std::to_string(it.id) + " ...\n";
+                    continue;
+                }
+                walk(it.id, child_prefix, b + it.label + ": ", is_last, depth + 1);
             }
         }
     };
