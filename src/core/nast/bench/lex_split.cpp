@@ -2,13 +2,16 @@
 //   A: parse_one を直接 (std::string 上の Sequencer)
 //   B: File::parse を直接ループ (実際の buffer 型 + 関数ポインタ経由)
 //   C: Stream 経由 (トークンを list に積み、行桁を数え、shrink する)
+#include "../node/console.h"
 #include "../parse/stream.h"
 #include <core/common/file.h>
 #include <core/lexer/lexer.h>
 #include <chrono>
-#include <print>
 #include <string>
 #include <vector>
+
+using brgen::nast::print_line;
+using brgen::nast::print_text;
 
 using clock_ = std::chrono::steady_clock;
 static double ms(std::chrono::nanoseconds d) {
@@ -93,9 +96,9 @@ int main(int argc, char** argv) {
         tb2 += clock_::now() - t;
     }
 
-    std::println("{} files, {} bytes, tokens A={} B={} C={}", paths.size(), bytes, na, nb, nc);
-    std::println("A parse_one direct   {:8.1f} ms", ms(ta));
-    std::println("B File::parse loop   {:8.1f} ms  (+{:.1f} over A)", ms(tb), ms(tb - ta));
-    std::println("C through Stream     {:8.1f} ms  (+{:.1f} over B)", ms(tc), ms(tc - tb));
-    std::println("B2 File over string  {:8.1f} ms  (tokens {})", ms(tb2), nb2);
+    print_line("{} files, {} bytes, tokens A={} B={} C={}", paths.size(), bytes, na, nb, nc);
+    print_line("A parse_one direct   {:8.1f} ms", ms(ta));
+    print_line("B File::parse loop   {:8.1f} ms  (+{:.1f} over A)", ms(tb), ms(tb - ta));
+    print_line("C through Stream     {:8.1f} ms  (+{:.1f} over B)", ms(tc), ms(tc - tb));
+    print_line("B2 File over string  {:8.1f} ms  (tokens {})", ms(tb2), nb2);
 }

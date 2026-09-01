@@ -13,6 +13,7 @@
 //   { "ok": bool, "main_file": n, "root": id, "modules": [id...],
 //     "diagnostics": [{"msg","loc","warn"}...], "arena": {...}, "tables": {...} }
 // ノード参照は unique_id (type << 32 | id)。下 32bit が 0 なら null。
+#include "../node/console.h"
 #include "core/common/error.h"
 #include "../parse/parse.h"
 #include "../node/traverse.h"
@@ -21,13 +22,15 @@
 #include <core/common/file.h>
 #include <json/stringer.h>
 #include <cstdio>
-#include <print>
 #include <string>
 #include <vector>
 
 #ifdef _WIN32
 #include <fcntl.h>
 #include <io.h>
+
+using brgen::nast::print_line;
+using brgen::nast::print_text;
 #endif
 
 namespace {
@@ -75,12 +78,12 @@ int main(int argc, char** argv) {
                 interpret = brgen::UtfMode::utf8;
             }
             else {
-                std::println(stderr, "unknown interpret mode: {}", m);
+                print_line(stderr, "unknown interpret mode: {}", m);
                 return 2;
             }
         }
         else if (!a.empty() && a[0] == '-') {
-            std::println(stderr,
+            print_line(stderr,
                          "usage: nast_dump [--stdin-name <path>] "
                          "[--interpret-mode utf8|utf16] [<file.bgn>]");
             return 2;
@@ -103,7 +106,7 @@ int main(int argc, char** argv) {
         loaded = program.files.add_special(stdin_name, read_stdin());
     }
     if (!loaded) {
-        std::println("{{\"ok\":false,\"diagnostics\":[{{\"msg\":\"cannot open input\",\"warn\":false}}]}}");
+        print_line("{{\"ok\":false,\"diagnostics\":[{{\"msg\":\"cannot open input\",\"warn\":false}}]}}");
         return 1;
     }
 
@@ -111,7 +114,7 @@ int main(int argc, char** argv) {
     aopt.parse.error_tolerant = true;  // 編集途中の壊れた入力でも木を返す
     auto result = brgen::nast::analyze_loaded(program, *loaded, aopt);
     if (result == brgen::nast::AnalyzeResult::cannot_read) {
-        std::println("{{\"ok\":false,\"diagnostics\":[{{\"msg\":\"cannot read input\",\"warn\":false}}]}}");
+        print_line("{{\"ok\":false,\"diagnostics\":[{{\"msg\":\"cannot read input\",\"warn\":false}}]}}");
         return 1;
     }
 
@@ -127,7 +130,7 @@ int main(int argc, char** argv) {
             obj_("main_file", std::uint64_t(*loaded));
             obj_("diagnostics", diags);
         }
-        std::println("{}", s.out());
+        print_line("{}", s.out());
         return 0;
     }
 
@@ -145,6 +148,6 @@ int main(int argc, char** argv) {
         obj_("arena", arena);
         obj_("tables", tables);
     }
-    std::println("{}", s.out());
+    print_line("{}", s.out());
     return 0;
 }

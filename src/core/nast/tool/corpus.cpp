@@ -7,6 +7,7 @@
 //   nast_corpus --tree <file.bgn>      構文木を表示する
 //   nast_corpus --tree --show-null ... 埋まっていないフィールドも出す
 //   nast_corpus --tree --no-weak ...   weak を落として所有辺だけにする
+#include "../node/console.h"
 #include "core/common/error.h"
 #include "../parse/parse.h"
 #include "../node/printer.h"
@@ -16,10 +17,12 @@
 #include <core/common/file.h>
 #include <format>
 #include <chrono>
-#include <print>
 #include <set>
 #include <string>
 #include <vector>
+
+using brgen::nast::print_line;
+using brgen::nast::print_text;
 
 namespace {
 
@@ -138,7 +141,7 @@ int main(int argc, char** argv) {
         }
     }
     if (paths.empty()) {
-        std::println(stderr,
+        print_line(stderr,
                      "usage: nast_corpus [--error-tolerant] [--comments] [--quiet] "
                      "[--time] [--parse-only] "
                      "[--tree [--show-null] [--no-weak]] <file.bgn>...");
@@ -207,45 +210,45 @@ int main(int argc, char** argv) {
                 // 何も出さない
             }
             else if (r.diagnostics) {
-                std::println("ok    {:<60} {:>5} nodes  ({} diagnostics)", path, r.nodes, r.diagnostics);
+                print_line("ok    {:<60} {:>5} nodes  ({} diagnostics)", path, r.nodes, r.diagnostics);
             }
             else {
                 auto& st = program.stats;
-                std::println("ok    {:<60} {:>5} nodes  ({} resolved, {} unresolved{})",
+                print_line("ok    {:<60} {:>5} nodes  ({} resolved, {} unresolved{})",
                              path, arena.node_count(), st.names_resolved, st.names_unresolved,
                              st.imports_resolved || st.imports_failed
                                  ? std::format(", {} imports, {} import errors",
                                                st.imports_resolved, st.imports_failed)
                                  : std::string());
                 auto cov = type_coverage(arena, program.modules);
-                std::println("      {:<60} {:>5}/{} exprs typed, {} consts", "", cov.typed, cov.exprs, st.constants);
+                print_line("      {:<60} {:>5}/{} exprs typed, {} consts", "", cov.typed, cov.exprs, st.constants);
             }
             if (show_tree) {
-                std::print("{}", brgen::nast::pretty_print(arena, program.tables, program.root, opt));
+                print_text("{}", brgen::nast::pretty_print(arena, program.tables, program.root, opt));
             }
         }
         else {
             ng++;
             if (!quiet) {
-                std::println("ERROR {:<60} {}", path, r.message);
+                print_line("ERROR {:<60} {}", path, r.message);
             }
         }
     }
-    std::println("\n{} ok / {} error / {} total", ok, ng, ok + ng);
+    print_line("\n{} ok / {} error / {} total", ok, ng, ok + ng);
     if (show_time) {
         auto ms = [](std::chrono::nanoseconds d) {
             return std::chrono::duration<double, std::milli>(d).count();
         };
         auto total = times.read + times.parse + times.report + times.import_ + times.bind + times.type;
-        std::println("read   {:8.1f} ms  (open and read the file)", ms(times.read));
-        std::println("parse  {:8.1f} ms  (lex + parse)", ms(times.parse));
-        std::println("report {:8.1f} ms  (count diagnostics)", ms(times.report));
+        print_line("read   {:8.1f} ms  (open and read the file)", ms(times.read));
+        print_line("parse  {:8.1f} ms  (lex + parse)", ms(times.parse));
+        print_line("report {:8.1f} ms  (count diagnostics)", ms(times.report));
         if (!parse_only) {
-            std::println("import {:8.1f} ms", ms(times.import_));
-            std::println("bind   {:8.1f} ms  (binder + scope resolver)", ms(times.bind));
-            std::println("type   {:8.1f} ms", ms(times.type));
+            print_line("import {:8.1f} ms", ms(times.import_));
+            print_line("bind   {:8.1f} ms  (binder + scope resolver)", ms(times.bind));
+            print_line("type   {:8.1f} ms", ms(times.type));
         }
-        std::println("total  {:8.1f} ms", ms(total));
+        print_line("total  {:8.1f} ms", ms(total));
     }
 
     return ng == 0 ? 0 : 1;

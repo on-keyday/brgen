@@ -1,11 +1,11 @@
 // fn ごとに、本体に直接 assert/error があるか、他の fn を呼んでいるかを数える。
 // 伝播を入れると何件増えるかの見当をつける。
+#include "../node/console.h"
 #include "../bind/pipeline.h"
 #include "../parse/parse.h"
 #include "../node/traverse.h"
 #include <core/common/file.h>
 #include <map>
-#include <print>
 #include <set>
 #include <string>
 #include <vector>
@@ -66,9 +66,9 @@ int main(int argc, char** argv) {
         }
         for (auto& [id, v] : fails) if (v) reach++;
     }
-    std::println("fn {} 個", fns);
-    std::println("  本体に直接 assert/error   {}", direct);
-    std::println("  他の fn を呼ぶ            {}", calls_fn);
-    std::println("  両方                      {}", both);
-    std::println("  伝播後に失敗しうる        {}", reach);
+    print_line("fn {} 個", fns);
+    print_line("  本体に直接 assert/error   {}", direct);
+    print_line("  他の fn を呼ぶ            {}", calls_fn);
+    print_line("  両方                      {}", both);
+    print_line("  伝播後に失敗しうる        {}", reach);
 }

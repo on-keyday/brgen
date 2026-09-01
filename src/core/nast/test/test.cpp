@@ -2,6 +2,7 @@
 // nast の単体スモークテスト。build.py から呼ばれる。
 // 生成された nodes.h が「コンパイルできる」だけでなく、
 // 型変換・ダウンキャスト・シリアライズが意図どおり動くところまで見る。
+#include "../node/console.h"
 #include "../node/nodes.h"
 #include "../node/access.h"
 #include "../node/traverse.h"
@@ -10,7 +11,6 @@
 #include "../node/from_json.h"
 
 #include <algorithm>
-#include <print>
 #include <string>
 #include <vector>
 
@@ -19,6 +19,9 @@
 #ifdef NAST_TEST_WITH_JSON
 #include <json/stringer.h>
 #endif
+
+using brgen::nast::print_line;
+using brgen::nast::print_text;
 
 namespace {
 
@@ -29,7 +32,7 @@ namespace {
     bool verbose = false;
 
     void check(bool ok, const char* what) {
-        std::println("  [{}] {}", ok ? "ok" : "NG", what);
+        print_line("  [{}] {}", ok ? "ok" : "NG", what);
         if (!ok) {
             failures++;
         }
@@ -39,7 +42,7 @@ namespace {
         if (!verbose) {
             return;
         }
-        std::println("\n--- {} ---\n{}", title, text);
+        print_line("\n--- {} ---\n{}", title, text);
     }
 
 }  // namespace
@@ -54,7 +57,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    std::println("nast smoke test");
+    print_line("nast smoke test");
 
     Arena arena;
     auto fmt = arena.make<Format>();
@@ -466,10 +469,10 @@ int main(int argc, char** argv) {
               tout.find("\"IsMutated\"") != std::string::npos,
           "SideTables::as_json serializes every table independently of the arena");
 #else
-    std::println("  [--] Arena::as_json (skipped: futils not available)");
+    print_line("  [--] Arena::as_json (skipped: futils not available)");
 #endif
 
-    std::println("{} ({} failure{})", failures == 0 ? "PASS" : "FAIL", failures,
+    print_line("{} ({} failure{})", failures == 0 ? "PASS" : "FAIL", failures,
                  failures == 1 ? "" : "s");
     return failures == 0 ? 0 : 1;
 }

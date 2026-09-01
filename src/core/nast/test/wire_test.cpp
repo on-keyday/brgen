@@ -10,6 +10,7 @@
 //
 // nast_wire.hpp は wiregen.py -> src2json -> json2cpp2 で作った生成物。
 // 作り直す手順は wiregen.py の docstring を見ること。
+#include "../node/console.h"
 #include "../wire/nast_wire_conv.hpp"
 
 #include "../bind/pipeline.h"
@@ -21,7 +22,6 @@
 #include <binary/writer.h>
 #include <core/common/error.h>
 #include <core/common/file.h>
-#include <print>
 #include <string>
 #include <vector>
 
@@ -130,7 +130,7 @@ int main(int argc, char** argv) {
         }
     }
     if (paths.empty()) {
-        std::println(stderr, "usage: nast_wire_test [--error-tolerant] <file.bgn>...");
+        print_line(stderr, "usage: nast_wire_test [--error-tolerant] <file.bgn>...");
         return 2;
     }
 
@@ -141,7 +141,7 @@ int main(int argc, char** argv) {
         Program program;
         if (auto r = analyze(program, path, {.parse = popt}); r != AnalyzeResult::ok) {
             skipped++;
-            std::println("skip  {:<52} {}", path, describe(r));
+            print_line("skip  {:<52} {}", path, describe(r));
             continue;
         }
         auto& arena = program.arena;
@@ -153,7 +153,7 @@ int main(int argc, char** argv) {
         wire::NastModule m;
         if (auto e = wire_conv::to_wire(arena, tables, root, pool, m)) {
             ng++;
-            std::println("NG    {:<52} {}", path, e.error<std::string>());
+            print_line("NG    {:<52} {}", path, e.error<std::string>());
             continue;
         }
 
@@ -163,7 +163,7 @@ int main(int argc, char** argv) {
         ::futils::binary::writer w{::futils::binary::resizable_buffer_writer<std::string>(), &buf};
         if (auto e = m.encode(w)) {
             ng++;
-            std::println("NG    {:<52} encode: {}", path, e.error<std::string>());
+            print_line("NG    {:<52} encode: {}", path, e.error<std::string>());
             continue;
         }
 
@@ -171,7 +171,7 @@ int main(int argc, char** argv) {
         ::futils::binary::reader r{::futils::view::rvec(buf.data(), buf.size())};
         if (auto e = got.decode(r)) {
             ng++;
-            std::println("NG    {:<52} decode: {}", path, e.error<std::string>());
+            print_line("NG    {:<52} decode: {}", path, e.error<std::string>());
             continue;
         }
 
@@ -180,7 +180,7 @@ int main(int argc, char** argv) {
         Node<Module> back_root;
         if (auto e = wire_conv::from_wire(got, back, back_tables, back_root)) {
             ng++;
-            std::println("NG    {:<52} {}", path, e.error<std::string>());
+            print_line("NG    {:<52} {}", path, e.error<std::string>());
             continue;
         }
 
@@ -191,24 +191,24 @@ int main(int argc, char** argv) {
         auto rt = table_sizes(back_tables);
         if (!cmp.diffs.empty() || !root_ok || lt != rt) {
             ng++;
-            std::println("NG    {:<52} {} nodes, {} bytes", path, arena.node_count(), buf.size());
+            print_line("NG    {:<52} {} nodes, {} bytes", path, arena.node_count(), buf.size());
             if (!root_ok) {
-                std::println("        root #{} -> #{}", root.id(), back_root.id());
+                print_line("        root #{} -> #{}", root.id(), back_root.id());
             }
             if (lt != rt) {
-                std::println("        tables {}", lt);
-                std::println("            -> {}", rt);
+                print_line("        tables {}", lt);
+                print_line("            -> {}", rt);
             }
             for (auto& d : cmp.diffs) {
-                std::println("        #{} {}", d.id, d.what);
+                print_line("        #{} {}", d.id, d.what);
             }
         }
         else {
             ok++;
-            std::println("ok    {:<52} {:>5} nodes  {:>7} bytes  {}", path, arena.node_count(),
+            print_line("ok    {:<52} {:>5} nodes  {:>7} bytes  {}", path, arena.node_count(),
                          buf.size(), lt);
         }
     }
-    std::println("\n{} ok / {} mismatch / {} skipped", ok, ng, skipped);
+    print_line("\n{} ok / {} mismatch / {} skipped", ok, ng, skipped);
     return ng == 0 ? 0 : 1;
 }

@@ -1,10 +1,10 @@
 /*license*/
 // `nast_probe size` — 型の幅と、実行時に決まる幅の式。
+#include "../../node/console.h"
 #include "probe.hpp"
 #include "../../node/util.h"
 #include "../../parse/unparse.h"
 
-#include <print>
 
 namespace brgen::nast::probe {
 
@@ -35,7 +35,7 @@ namespace brgen::nast::probe {
                 else if (s->bits_expr) {
                     tail = "  " + unparse_node(a, s->bits_expr) + " bits";
                 }
-                std::println("{:<28} {}{}", name_of(a, f), k, tail);
+                print_line("{:<28} {}{}", name_of(a, f), k, tail);
             }
         });
     }

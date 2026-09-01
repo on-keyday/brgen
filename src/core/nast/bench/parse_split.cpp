@@ -1,7 +1,7 @@
+#include "../node/console.h"
 #include "../parse/parse.h"
 #include <core/common/file.h>
 #include <chrono>
-#include <print>
 #include <string>
 #include <vector>
 using namespace brgen::nast;
@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
         if (r == 0 || l < lex) lex = l;
         if (r == 0 || fl < full) full = fl;
     }
-    std::println("lex only    {:8.1f} ms", ms(lex));
-    std::println("lex + parse {:8.1f} ms", ms(full));
-    std::println("parse alone {:8.1f} ms   ({} nodes)", ms(full - lex), nodes);
+    print_line("lex only    {:8.1f} ms", ms(lex));
+    print_line("lex + parse {:8.1f} ms", ms(full));
+    print_line("parse alone {:8.1f} ms   ({} nodes)", ms(full - lex), nodes);
 }

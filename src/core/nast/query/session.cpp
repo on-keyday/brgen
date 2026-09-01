@@ -327,17 +327,22 @@ namespace brgen::nast::query {
         return true;
     }
 
-    void repl(const Session& s, std::istream& in, std::ostream& out) {
+    void repl(const Session& s, futils::wrap::UtfIn& in, futils::wrap::UtfOut& out) {
         std::string line;
         while (true) {
-            out << "nast> " << std::flush;
-            if (!std::getline(in, line)) {
+            out << "nast> ";
+            line.clear();
+            in >> line;
+            // UtfIn は末尾を教えないので、端末でないときの空行を末尾と見る
+            // (`echo ... | nast_query` が回り続けないように)。端末では
+            // 空の Enter はそのまま次のプロンプト。
+            if (line.empty() && !in.is_tty()) {
                 out << "\n";
                 return;
             }
             std::string buf;
             auto go = s.run(line, buf);
-            out << buf << std::flush;
+            out << buf;
             if (!go) {
                 return;
             }

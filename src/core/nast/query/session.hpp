@@ -3,7 +3,9 @@
 #include "../bind/pipeline.h"
 #include "filter.hpp"
 
-#include <iosfwd>
+#include <wrap/cin.h>
+#include <wrap/cout.h>
+
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -68,6 +70,10 @@ namespace brgen::nast::query {
     };
 
     // 対話ループ。プロンプトは out へ、行は in から。
-    void repl(const Session& s, std::istream& in, std::ostream& out);
+    //
+    // 出し口が futils の wrap なのは、コンソールの符号化が UTF-8 とは限らない
+    // ため (Windows で日本語が崩れる)。UtfOut が端末なら変換して書き、
+    // ファイルなら素通しする。
+    void repl(const Session& s, futils::wrap::UtfIn& in, futils::wrap::UtfOut& out);
 
 }  // namespace brgen::nast::query

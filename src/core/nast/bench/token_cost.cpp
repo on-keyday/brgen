@@ -3,14 +3,17 @@
 // File::parse は本文つきの Token (88 バイト) を、File::parse_no_text は
 // tag と Loc だけの LiteToken (48 バイト) を返す。両方が残っているので、
 // 本文の切り出しと、それを容器へ積む代金を並べて測れる。
+#include "../node/console.h"
 #include <core/common/file.h>
 #include <core/lexer/lexer.h>
 
 #include <chrono>
 #include <list>
-#include <print>
 #include <string>
 #include <vector>
+
+using brgen::nast::print_line;
+using brgen::nast::print_text;
 
 using clock_ = std::chrono::steady_clock;
 
@@ -49,11 +52,11 @@ int main(int argc, char** argv) {
                 best = total;
             }
         }
-        std::println("{:<40} {:8.1f} ms", name, ms(best));
+        print_line("{:<40} {:8.1f} ms", name, ms(best));
         return best;
     };
 
-    std::println("sizeof(Token) = {}, sizeof(LiteToken) = {}", sizeof(brgen::lexer::Token),
+    print_line("sizeof(Token) = {}, sizeof(LiteToken) = {}", sizeof(brgen::lexer::Token),
                  sizeof(brgen::lexer::LiteToken));
 
     auto a = run("1 text, discarded", [&](brgen::File* f) {
@@ -97,12 +100,12 @@ int main(int argc, char** argv) {
         sink += v.size();
     });
 
-    std::println("");
-    std::println("building the text        {:.1f} ms", ms(a - b));
-    std::println("list push, with text    +{:.1f} ms", ms(c - a));
-    std::println("list push, without      +{:.1f} ms", ms(d - b));
-    std::println("");
-    std::println("tokens  full={} lite={}   bytes full={} lite={}   (should match)",
+    print_line("");
+    print_line("building the text        {:.1f} ms", ms(a - b));
+    print_line("list push, with text    +{:.1f} ms", ms(c - a));
+    print_line("list push, without      +{:.1f} ms", ms(d - b));
+    print_line("");
+    print_line("tokens  full={} lite={}   bytes full={} lite={}   (should match)",
                  n_full / 3, n_lite / 3, bytes_full / 3, bytes_lite / 3);
-    std::println("(checksum {})", sink);
+    print_line("(checksum {})", sink);
 }

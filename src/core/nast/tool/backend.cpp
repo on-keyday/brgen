@@ -9,13 +9,13 @@
 // separator なので、`--self '(*this)' --sep .` と `--self self --sep .` の
 // 違いは先頭だけに出る。`--sep '->'` にすると `self->a->b` になってしまう
 // ことも、ここで見える (だから参照外しは spelling 側に畳む)。
+#include "../node/console.h"
 #include "../backend/defaults.hpp"
 #include "../backend/knobs.hpp"
 #include "../bind/pipeline.h"
 #include "../node/util.h"
 #include "../parse/unparse.h"
 #include "core/common/file.h"
-#include <print>
 #include <string_view>
 
 struct LanguageConfig {
@@ -63,10 +63,10 @@ namespace {
         auto invoked = conf.b.visit(m.id());
         if (!invoked) {
             brgen::FileSet fs;
-            std::print("{}", brgen::to_source_error(fs)(invoked.error().to_location_error(a)).to_string());
+            print_text("{}", brgen::to_source_error(fs)(invoked.error().to_location_error(a)).to_string());
             return 1;
         }
-        std::print("{}", invoked->to_string());
+        print_text("{}", invoked->to_string());
         return 0;
     }
 
@@ -74,7 +74,7 @@ namespace {
     int spell(const char* path, const std::string& self, const std::string& sep) {
         Program p;
         if (auto r = analyze(p, path); r != AnalyzeResult::ok) {
-            std::println(stderr, "{}: {}", path, describe(r));
+            print_line(stderr, "{}: {}", path, describe(r));
             return 1;
         }
         auto& a = p.arena;
@@ -98,7 +98,7 @@ namespace {
             if (spelled == src) {
                 return;
             }
-            std::println("{:<28} {}", src, spelled);
+            print_line("{:<28} {}", src, spelled);
         };
         each_node<Reference>(a, last, [&](Node<Reference> r) { show(r); });
         each_node<MemberAccess>(a, last, [&](Node<MemberAccess> m) { show(m); });
@@ -119,7 +119,7 @@ int main(int argc, char** argv) {
             sep = argv[++i];
         }
         else if (arg.starts_with("--")) {
-            std::println(stderr, "usage: nast_backend [--self <spelling>] [--sep <separator>] [<file.bgn>]");
+            print_line(stderr, "usage: nast_backend [--self <spelling>] [--sep <separator>] [<file.bgn>]");
             return 2;
         }
         else {
