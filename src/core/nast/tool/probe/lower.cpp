@@ -6,6 +6,7 @@
 #include "../../query/lower_view.hpp"
 #include "../../lowering/available.hpp"
 #include "../../lowering/conditional.hpp"
+#include "../../lowering/enum_defined.hpp"
 #include "../../lowering/field_io.hpp"
 #include "../../lowering/int_bytes.hpp"
 #include "../../lowering/match_to_if.hpp"
@@ -82,6 +83,14 @@ namespace brgen::nast::probe {
             hist["available -> 式"]++;
             if (detail) {
                 print_text("{}", query::lower_text(p, av));
+            }
+        });
+        each_node<MemberAccess>(a, last, [&](Node<MemberAccess> ma) {
+            if (auto e = lowering::lower_enum_is_defined(c, ma)) {
+                hist["is_defined -> 比較"]++;
+                if (detail) {
+                    print_text("{}", query::lower_text(p, ma));
+                }
             }
         });
         each_node<Binary>(a, last, [&](Node<Binary> bin) {

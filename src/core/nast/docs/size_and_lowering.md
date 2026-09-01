@@ -455,7 +455,7 @@ visitor が展開形を出しているのは 6 種
 | `CONDITIONAL` → `CONDITIONAL_STATEMENT` | ✔ `conditional` |
 | `RANGE_EQUAL` → `a <= x && x <= b` | ✔ `predicate` の `lower_range_compare` |
 | `AVAILABLE` | ✔ `available` (修飾は `WithReceiver`) |
-| `ENUM_IS_DEFINED` | — 値が列挙に定義済みか |
+| `ENUM_IS_DEFINED` | ✔ `enum_defined` |
 | `GET_STREAM_OFFSET` | — RuntimeState の読み (ADR 0039) |
 | `MAX_VALUE` | — その型の最大値 |
 
@@ -463,9 +463,9 @@ marker 系はほかに `FIELD_STORE` (ADR 0032)、`ENDIAN_VARIABLE`、
 `IS_LITTLE_ENDIAN` (nast にノードを足した)、`INT_TO_ARRAY` / `ARRAY_TO_INT`。
 
 nast にある残りは match→if (ebmgen だと `derive_match_lowered_if`) と
-`stream_io` (バイトの出し入れ)。手を付けやすいのは `STRING_FOR_EACH` と
-`ENUM_IS_DEFINED`、重いのは `STRUCT_CALL` と `BIT_FIELD_TO_BIT_SHIFT`。
-`AVAILABLE` は 2026-09-02 に済んだ。
+`stream_io` (バイトの出し入れ)。手を付けやすいのは `STRING_FOR_EACH`、
+重いのは `STRUCT_CALL` と `BIT_FIELD_TO_BIT_SHIFT`。`AVAILABLE` と
+`ENUM_IS_DEFINED` は 2026-09-02 に済んだ。
 
 ### 値 knob と合成名の規約 (2026-08-31)
 
@@ -940,6 +940,9 @@ nast に無い部品: **`WriterManager` に当たるもの**。`node/code_writer
   (ebmgen の `CFGExpression` に当たるものが要る)
 - **union 越しのメンバアクセス** (`payload.payload`)。載せ替えは `WithReceiver`
   で済んだので、残るのはメンバアクセスを候補に分配する側
+- `x.is_defined` は落とせるようになった (`lowering/enum_defined`、メンバとの
+  比較の連鎖)。並びが連続していれば範囲比較に畳めるが、native に書ける言語が
+  あるので綴る側の判断
 - 畳み込み構文 (`sum(items, ...)` 相当) を言語に足すかどうか。`available` /
   `sizeof` と同じ「値に対する述語で意味は lowering 側」の系列だが、束縛の構文が
   無いので言語設計の判断が要る

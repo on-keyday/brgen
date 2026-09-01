@@ -1,0 +1,11 @@
+# `x.is_defined` は「その値が列挙に並んでいるどれかか」。
+# 落とすと各メンバとの比較の連鎖になる。
+
+enum Kind:
+    A = 1
+    B = 2
+    C = 4
+
+format K:
+    kind :Kind
+    known ::= kind.is_defined
