@@ -74,6 +74,9 @@ namespace brgen::nast::probe {
             auto e = lowering::lower_available(c, av);
             if (!e) {
                 hist["available (組めない)"]++;
+                if (detail) {
+                    print_text("{}", query::lower_text(p, av));
+                }
                 return;
             }
             hist["available -> 式"]++;
@@ -93,6 +96,9 @@ namespace brgen::nast::probe {
             auto* low = lowering::lower_conditional(c, cond);
             if (!low) {
                 hist["三項 (型が無く落とせない)"]++;
+                if (detail) {
+                    print_text("{}", query::lower_text(p, cond));
+                }
                 return;
             }
             hist["三項 -> if"]++;
