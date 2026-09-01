@@ -703,6 +703,135 @@ available -> 式        16
 available (組めない)    5
 ```
 
+### 「平らな場合まで」の実物 (2026-09-01)
+
+レシーバの節の「今のレシーバ規則が答えられるのは平らな場合まで」の、平らでない
+側の実物。既存の生成器はどちらも分岐の field を腕ごとの struct に入れている。
+
+`save/go/simple_case.go` (ebm2go):
+
+```go
+type tmp1109 struct { VarField1 []uint8 }
+type tmp1112 struct { VarField2 []uint8 }
+type Variant446 interface{ isVariant446() }
+
+type Simple struct {
+    Hello uint8          // 直下の field は平ら
+    ...
+    tmp804 Variant446    // 分岐の field はこの下
+}
+func (s *Simple) VarField1() *[]uint8 {
+    if s.bitField1() == 0 {
+        tmp1111, ok := s.tmp804.(*tmp1109)
+        ...
+```
+
+`save/rust/http2.rs` (ebm2rust):
+
+```rust
+pub struct Struct983 { pub settings: Vec<Setting> }
+pub enum Variant272 { None, V0(Struct2956), V1(Struct983) }
+pub struct Struct564 { pub tmp570: Variant272 }
+```
+
+つまり分岐の中の field の置き場は `self.VarField1` ではない。直下の `Hello` は
+平らなので `self.Hello` で合う — 今の規則が答えられているのはそちらだけ、という
+意味。
+
+### Field と分岐の対応 (2026-09-01 に確認)
+
+**腕 → field はある。** `InnerStruct` (over `BodyStatement`) が分岐の block ごとの
+field と assert を持ち、`StructUnionCandidate` が `{cond, inner_struct}` で腕と
+その block を結んでいる。`binder.hpp:99-110` が blocks と 1:1 で候補を作り、その
+型を持つ匿名 `Field` を format 直下に置く。`type_size.cpp:260` が既にこれを使って
+分岐の幅を畳んでいる (「分岐に CFG は不要」の根拠)。
+
+**field → 腕の逆引きは無い。** `Field.belong` は format / state / fn までで、
+分岐の block では持ち主を変えない。導出するなら index 経由:
+
+```
+UnionType.candidates[i].field == 探している Field となる i
+UnionType.base_type -> StructUnionType
+StructUnionType.candidates[i].inner_struct       -> その腕の BodyStatement
+```
+
+index は揃う。`UnionType` 側は宣言の無い分岐に cond だけの pad を入れるため
+(`binder.hpp:143-155`)。ただし**末尾の不在は pad を入れない**ので長さは短く
+なりうる。整合するのは prefix まで。
+
+### union 越しのメンバアクセス (未実装の構想)
+
+`UnionType.member_candidates` (`vector<Node<Field>>`) は宣言と生成コードと wire に
+だけあり、`bind/` `lowering/` `parse/` のどこも読み書きしていない。由来は
+「UnionType のメンバアクセスをまた UnionType にしようとしていた頃の名残」
+(2026-09-01)。想定していたのはこの形:
+
+```
+format PayloadA: len :u8  / payload :[len]u8
+format PayloadB: len :u16 / payload :[len]u8
+
+format Usage:
+    tag :u8
+    if tag <= 10: payload :PayloadA
+    else:         payload :PayloadB
+    utf.isUTF8(payload.payload) == true
+```
+
+`payload.payload` の実体を置く場所。要素が `Node<Field>` なのは、その先が
+`field :UnionType` になっていてそこをまた辿る想定だったため。cond は親の
+`candidates` と index で並ぶ (`UnionLayout` の member_types / cluster_types と
+同じ並行ベクタの形)。
+
+**今の挙動。** `typer.cpp:410` は union 越しのアクセスを common_type に剥がして
+から引く (元実装の `lookup_union` と同じ)。`common_type` に StructType 同士の
+分岐は無く `typer.cpp:569` で nullref に落ちるので、上の例は型が付かない。
+
+**分配のほうが強い理由。** base の候補 `PayloadA` / `PayloadB` に共通型は無い
+(UnionLayout で uncommon) が、メンバ側の候補 `[len:u8]u8` と `[len:u16]u8` は
+どちらも `[..]u8`。**base に共通型が無くてもメンバには共通型がありうる**。
+剥がしてから引く順序だとここで落ちる。
+
+畳む機構は既にある — `lowering/predicate` の `branch_chain` を `available` と
+`type_size` が共有している。メンバアクセスは同じ fold の「値」インスタンスで、
+3 つ目の呼び出し側になる。
+
+**需要。** コーパスの union 995 件のうち uncommon は 22 件だが、未型付けの残りは
+fixture 等で説明が付く = uncommon union 越しのメンバアクセスはコーパスに無い。
+コーパスが要求している穴ではなく、言語として書けるようにしたい機能の側。
+
+**出口は `available` の修飾ケースと同じ。** 分配して得られるのは分岐ごとの式で、
+綴るには腕の経路が要る。載せ替えの機構を 1 つ決めれば両方片付く。
+
+### self を木に実体化する案 (2026-09-01 の議論、未決)
+
+レシーバの節は「付けるのは綴る側」で書いたが、実体化する側の検討。
+
+**規則には抵触しない。** 「原木を書き換えない」は lowering の規約
+(`lowering/lowering.hpp` / `exit_and_reversibility.md` 規則 1) であって、
+フロントエンド全体の禁止ではない。parse は既に書き換えている — 引数の `x = y`
+を `NamedArgument` へ (`parse.cpp:833`)、文位置の `config.X = v` を `Metadata` へ
+(`rewrite_builtin_statement`, `parse.cpp:1988`)。binder が `Self` を実体化するのは
+この規則の外。
+
+**「裸/修飾の区別が消える」は印を残せば起きない。** 前例は `Cast` の
+`is_explicit` (`<u8>(x)` と `u8(x)` は同じノードになるが、フラグで往復が守れて
+いる)。EBM が区別を失ったのは実体化そのものではなく、印を持たずに実体化したから。
+
+**利点 2 つ。** (1) rebase が葉の差し替えになる — 今は式を辿って各 `Reference` の
+`Resolution` を引き、field なら包み直す walk が要る。(2) 判定が 1 箇所になる —
+「解決先が Field なら前置」は綴る側の再導出で、実際 2026-08-31 に関数ローカルを
+取りこぼしている (`belong` で修正)。
+
+**コスト。** `Resolution` のキーは `Reference` ではなく中の `Ident` なので、
+`MemberAccess.member` (これも `Node<Ident>`) に同じノードを載せ替えれば表は無傷。
+`nast_unparse_test` は parse のみでパイプラインを呼ばないので往復に影響しない
+(unparse 側は implicit な Self を飛ばす分岐 1 つ)。wire は再生成で通る。
+corpus の対象参照 2679 件が 2 ノードずつ増える。
+
+**境界。** 実体化するのは receiver 1 段 (= その format のインスタンス) まで。
+腕の経路まで実体化すると格納戦略をフロントエンドが決めることになる — EBM の
+`self_ref` スタックがそれ。腕の経路は `UnionLayout` + バックエンドの選択。
+
 ## 5. EBM との差 (訂正を含む)
 
 「置く側が違う」と書きかけたが誤り。EBM も emit 時にホイストしている:
@@ -735,6 +864,9 @@ nast に無い部品: **`WriterManager` に当たるもの**。`node/code_writer
   をノード自身が持っているので、構築時の loop_stack が要らない。
   面倒なのは `If`/`Match` が式なので、式の位置に出る制御フローを扱うこと
   (ebmgen の `CFGExpression` に当たるものが要る)
+- **載せ替えの機構**を 1 つ決める (`Rebase` ノード / 複製器 / self の実体化)。
+  修飾 `available(a.b.field)` と union 越しのメンバアクセスが同じ未決に合流して
+  いるので、決めれば両方片付く
 - 畳み込み構文 (`sum(items, ...)` 相当) を言語に足すかどうか。`available` /
   `sizeof` と同じ「値に対する述語で意味は lowering 側」の系列だが、束縛の構文が
   無いので言語設計の判断が要る
