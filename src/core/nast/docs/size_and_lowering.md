@@ -938,8 +938,10 @@ nast に無い部品: **`WriterManager` に当たるもの**。`node/code_writer
 (binder が分岐に 2 種類の field を作る) — は**全部 unparse で `.bgn` として
 印字して見つかった**。木を読んで論じるより、綴りに戻して眺めるほうが速い。
 
-`nast_probe` (`bench/probe.cpp`) がその用途の道具。入り口は 1 つで、見たいものを
-最初の引数で選ぶ。ファイルが 1 つなら明細、2 つ以上なら集計。
+`nast_probe` (`tool/probe/`) がその用途の道具。入り口は 1 つで、見たいものを
+最初の引数で選ぶ。ファイルが 1 つなら明細、2 つ以上なら集計。ソースはモードごとに
+`size.cpp` / `endian.cpp` / `lower.cpp` に分けてある — 覚える名前は増やさずに、
+木を見て何が見られるか分かるように。
 
 ```sh
 python src/core/nast/build.py -r probe size   src/core/nast/testdata/nested_size.bgn

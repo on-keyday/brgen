@@ -16,8 +16,8 @@
 // なっていた。段を足すときに直す場所もそのぶん増える。ここ 1 本にする。
 //
 // 使う側:
-//   backend/entry.hpp, tool/dump.cpp, tool/corpus.cpp, tool/wire_test.cpp,
-//   bench/coverage.cpp, bench/fn_fallible.cpp
+//   backend/entry.hpp, tool/dump.cpp, tool/corpus.cpp, tool/probe/,
+//   test/wire_test.cpp, bench/coverage.cpp, bench/fn_fallible.cpp
 
 namespace brgen::nast {
 
