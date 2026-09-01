@@ -54,14 +54,31 @@ namespace brgen::nast::lowering {
             return b.bool_lit(true);
         }
         // 裸の target は bind/receiver がレシーバを実体化した形で来る。base が
-        // Self でなければ原文で修飾されていたもの。
+        // Self でなければ原文で修飾されていたもので、条件はその base のほうの
+        // インスタンスについて訊いている。畳んだ式を WithReceiver で包み、
+        // 中の Self をその base に読み替えさせる。
+        Node<Expr> receiver;
         if (!referenced_name(a, d->target)) {
-            return nullref;  // 修飾された target。条件を載せ替える形が未決 (available.hpp)
+            auto ma = d->target.as_any<MemberAccess>();
+            if (!ma) {
+                return nullref;
+            }
+            receiver = ma.ref(a)->base;
+            if (!receiver) {
+                return nullref;
+            }
         }
         auto ud = u.ref(a);
         Node<Type> want = d->selected_type ? d->selected_type.ref(a)->literal : nullref;
         auto e = branch_chain(c, ud->candidates, ud->cond, b.bool_type(), b.bool_lit(false), loc,
                               [&](auto cd) { return field_available(c, cd->field, want, loc); });
+        if (e && receiver) {
+            auto wrapped = a.make<WithReceiver>(loc);
+            wrapped->receiver = receiver;
+            wrapped->expr = e;
+            wrapped->type = e.ref(a)->type;
+            e = wrapped;
+        }
         if (e) {
             c.tables.table<LoweredAvailable>().set(av, LoweredAvailable{.expr = e});
         }

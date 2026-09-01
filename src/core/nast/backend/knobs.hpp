@@ -181,6 +181,16 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        std::function<expected<R>(BaseContext<R>&, Node<WithReceiver>)> custom_WithReceiver;
+        template <class T,invocable_r<expected<R>,Context<R,T>&,Node<WithReceiver>> F>
+        void bind_WithReceiver(Context<R,T>&,F&& f) {
+            custom_WithReceiver = [f = std::forward<F>(f)](BaseContext<R>& c,Node<WithReceiver> n) -> expected<R> {
+                   auto l = c.l.template as<T>();
+                   if (!l) { return unexpect_loc_error(n,"expect language {} but got {}",T::lang_name,c.l.lang_name()); }
+                   Context<R,T> new_c{c,*l};
+                   return f(new_c,n);
+            };
+        }
         std::function<expected<R>(BaseContext<R>&, Node<BitCast>)> custom_BitCast;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<BitCast>> F>
         void bind_BitCast(Context<R,T>&,F&& f) {

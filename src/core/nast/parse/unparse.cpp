@@ -22,6 +22,9 @@ namespace brgen::nast {
             Arena& a;
             CodeWriter w;
             IndentStack indents{w};
+            // WithReceiver の中では Self がこれを指す。綴りを .bgn に保つため、
+            // 印字の時点で載せ替える。
+            std::vector<Node<Expr>> receivers;
 
             // 行を終える。次の write は新しい行に載り、インデントは Writer が
             // 現在の深さから決める。
@@ -133,7 +136,7 @@ namespace brgen::nast {
                         // (`is_explicit`)。Cast の `<u8>(x)` / `u8(x)` と同じ、
                         // 「同じノードに畳んだ 2 つの書き方」の区別。
                         auto self = d->base.as_any<Self>();
-                        if (!self || self.ref(a)->is_explicit) {
+                        if (!self || self.ref(a)->is_explicit || !receivers.empty()) {
                             expr(d->base);
                             w.write(".");
                         }
@@ -249,7 +252,23 @@ namespace brgen::nast {
                         expr(e.as<Sizeof>().ref(a)->target);
                         w.write(")");
                         return;
+                    case NodeType::WithReceiver: {
+                        auto d = e.as<WithReceiver>().ref(a);
+                        receivers.push_back(d->receiver);
+                        expr(d->expr);
+                        receivers.pop_back();
+                        return;
+                    }
                     case NodeType::Self:
+                        if (!receivers.empty()) {
+                            // レシーバ自身の中の Self は 1 つ外側のもの。
+                            // 積んだまま綴ると自分を綴り直して戻らない。
+                            auto r = receivers.back();
+                            receivers.pop_back();
+                            expr(r);
+                            receivers.push_back(r);
+                            return;
+                        }
                         // 綴りは .bgn の構文には無い。合成した木を印字した
                         // ときだけ出る。実際の綴りはバックエンドが決める。
                         w.write("self");
