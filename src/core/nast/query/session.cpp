@@ -244,7 +244,7 @@ namespace brgen::nast::query {
         return
             "  p <id> [depth]      ノードを木で。side table のエントリも一緒に出る (既定 depth 2)\n"
             "  pp <id>             深さ無制限の p\n"
-            "  u <id>              .bgn に綴り戻す\n"
+            "  u <id> [self]       .bgn に綴り戻す。self を付けると暗黙のレシーバも綴る\n"
             "  src <id>            原文のその位置\n"
             "  up <id>             所有辺で 1 つ上\n"
             "  find <Kind> [{ 条件 }]  その種別のノード (Any で全部)。条件の綴りは query/filter.hpp\n"
@@ -302,7 +302,10 @@ namespace brgen::nast::query {
             if (!want_id()) {
                 return true;
             }
-            auto text = unparse_node(a, node_at(id));
+            // `u <id> self` で、bind/receiver が足した暗黙のレシーバも綴る。
+            std::string how;
+            in >> how;
+            auto text = unparse_node(a, node_at(id), UnparseOption{.explicit_self = how == "self"});
             out += text.empty() ? "(綴れない)" : text;
             out += "\n";
             return true;
@@ -384,8 +387,37 @@ namespace brgen::nast::query {
             if (!want_id()) {
                 return true;
             }
-            auto text = lower_text(const_cast<Program&>(p), node_at(id));
+            auto n = node_at(id);
+            auto text = lower_text(const_cast<Program&>(p), n);
             out += text.empty() ? "(この種に当てはまる規則は無い)\n" : text;
+            // 結果のノードは表に載っているので id を出す。そのまま p / u で
+            // 追える (field の読み書きだけは表に載らないので出ない)。
+            auto note = [&](const char* label, NodeAny made) {
+                if (made) {
+                    out += std::format("[{} #{}]\n", label, made.id());
+                }
+            };
+            if (auto av = n.as_any<Available>()) {
+                if (auto* e = p.tables.table<LoweredAvailable>().get(av)) {
+                    note("expr", e->expr);
+                }
+            }
+            else if (auto bin = n.as_any<Binary>()) {
+                if (auto* e = p.tables.table<LoweredRangeCompare>().get(bin)) {
+                    note("expr", e->expr);
+                }
+            }
+            else if (auto m = n.as_any<Match>()) {
+                if (auto* e = p.tables.table<LoweredMatch>().get(m)) {
+                    note("branch", e->branch);
+                }
+            }
+            else if (auto cond = n.as_any<Cond>()) {
+                if (auto* e = p.tables.table<LoweredCond>().get(cond)) {
+                    note("branch", e->branch);
+                    note("value", e->value);
+                }
+            }
             return true;
         }
         if (cmd == "show") {
