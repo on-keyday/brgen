@@ -1,6 +1,7 @@
 /*license*/
 #pragma once
 #include "../bind/pipeline.h"
+#include "filter.hpp"
 
 #include <iosfwd>
 #include <string>
@@ -54,6 +55,9 @@ namespace brgen::nast::query {
         // ものだけ。文字列は引用符の有無どちらでも当たる。
         std::vector<std::uint32_t> find(NodeType kind, std::string_view key = {},
                                         std::string_view value = {}) const;
+        // 種別 (省略で全部) と条件式 (省略で全部) で選ぶ。条件式の綴りは
+        // filter.hpp に書いてある。
+        std::vector<std::uint32_t> select(std::optional<NodeType> kind, const FilterPtr& filter) const;
 
         // ---- 対話 ------------------------------------------------------------
 

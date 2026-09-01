@@ -147,6 +147,25 @@ namespace brgen::nast::query {
         return out;
     }
 
+    std::vector<std::uint32_t> Session::select(std::optional<NodeType> kind,
+                                               const FilterPtr& filter) const {
+        std::vector<std::uint32_t> out;
+        for (std::uint32_t id = 1; id <= p.arena.node_count(); id++) {
+            auto* h = p.arena.header_at(id);
+            if (!h) {
+                continue;
+            }
+            if (kind && h->type != *kind) {
+                continue;
+            }
+            if (filter && !matches(*this, id, *filter)) {
+                continue;
+            }
+            out.push_back(id);
+        }
+        return out;
+    }
+
     std::string Session::help() {
         return
             "  p <id> [depth]      ノードを木で。side table のエントリも一緒に出る (既定 depth 2)\n"
@@ -154,7 +173,10 @@ namespace brgen::nast::query {
             "  u <id>              .bgn に綴り戻す\n"
             "  src <id>            原文のその位置\n"
             "  up <id>             所有辺で 1 つ上\n"
-            "  find <Kind> [f=v]   その種別のノード。f=v はノードでないフィールドの一致で絞る\n"
+            "  find <Kind> [{ 条件 }]  その種別のノード (Any で全部)。条件の綴りは query/filter.hpp\n"
+            "      例: find Field { type.kind == IntType and type.bit_size == 8 }\n"
+            "          find Ident { @Resolution.target.kind == Field }\n"
+            "          find Any { line == 52 }\n"
             "  kinds               出ている NodeType と件数\n"
             "  stat                ノード数と到達可能数\n"
             "  help / quit\n"
@@ -231,26 +253,51 @@ namespace brgen::nast::query {
         if (cmd == "find") {
             std::string kind;
             if (!(in >> kind)) {
-                out += "Kind が要る (kinds で一覧)\n";
+                out += "Kind が要る (kinds で一覧、Any で全部)\n";
                 return true;
             }
-            auto type = from_string<NodeType>(kind);
-            if (!type) {
-                out += std::format("そんな NodeType は無い: {}\n", kind);
-                return true;
-            }
-            std::string filter, key, value;
-            in >> filter;
-            if (!filter.empty()) {
-                auto eq = filter.find('=');
-                if (eq == std::string::npos) {
-                    out += "絞り込みは field=value の形\n";
+            std::optional<NodeType> type;
+            if (kind != "Any") {
+                type = from_string<NodeType>(kind);
+                if (!type) {
+                    out += std::format("そんな NodeType は無い: {}\n", kind);
                     return true;
                 }
-                key = filter.substr(0, eq);
-                value = filter.substr(eq + 1);
             }
-            auto hit = find(*type, key, value);
+            // 残りは条件式。`{ ... }` でも裸でも受ける。`f=v` は昔の短縮形なので
+            // `f == v` に読み替えて同じ経路に乗せる。
+            std::string rest;
+            std::getline(in, rest);
+            auto trim = [](std::string& v) {
+                while (!v.empty() && (v.front() == ' ' || v.front() == '\t')) {
+                    v.erase(v.begin());
+                }
+                while (!v.empty() && (v.back() == ' ' || v.back() == '\t')) {
+                    v.pop_back();
+                }
+            };
+            trim(rest);
+            if (rest.size() >= 2 && rest.front() == '{' && rest.back() == '}') {
+                rest = rest.substr(1, rest.size() - 2);
+                trim(rest);
+            }
+            else if (auto eq = rest.find('='); eq != std::string::npos &&
+                                               rest.find("==") == std::string::npos &&
+                                               rest.find('<') == std::string::npos &&
+                                               rest.find('>') == std::string::npos &&
+                                               rest.find('!') == std::string::npos) {
+                rest = rest.substr(0, eq) + " == " + rest.substr(eq + 1);
+            }
+            FilterPtr filter;
+            if (!rest.empty()) {
+                std::string err;
+                filter = parse_filter(rest, err);
+                if (!filter) {
+                    out += err + "\n";
+                    return true;
+                }
+            }
+            auto hit = select(type, filter);
             for (auto n : hit) {
                 out += headline(n) + "\n";
             }
