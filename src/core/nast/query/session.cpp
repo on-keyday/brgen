@@ -331,15 +331,11 @@ namespace brgen::nast::query {
         while (true) {
             out << "nast> ";
             line.clear();
-            // 符号化の変換が要るのは端末だけ。パイプとファイルは末尾を
-            // 返してほしいので std::cin から読む。
-            if (in.is_tty()) {
-                in >> line;
-                while (!line.empty() && (line.back() == '\n' || line.back() == '\r')) {
-                    line.pop_back();
-                }
+            in >> line;
+            while (!line.empty() && (line.back() == '\n' || line.back() == '\r')) {
+                line.pop_back();
             }
-            else if (!std::getline(std::cin, line)) {
+            if (line.empty() && in.eof()) {
                 out << "\n";
                 return;
             }
