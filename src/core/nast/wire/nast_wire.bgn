@@ -257,6 +257,7 @@ format Node:
         NodeKind.Self:
             type :Ref
             owner :Ref
+            is_explicit :u8
         NodeKind.BitCast:
             type :Ref
             target :Ref

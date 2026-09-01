@@ -863,6 +863,7 @@ namespace brgen::nast::wire {
         struct union_struct_18{
             Ref type;
             Ref owner;
+            std::uint8_t is_explicit = 0;
         };
         struct union_struct_19{
             Ref type;
@@ -21767,7 +21768,10 @@ namespace brgen::nast::wire {
         return nullptr;
         }
         if (NodeKind::Self==(*this).node_kind) {
-        return nullptr;
+        if(!std::holds_alternative<union_struct_18>(union_variant_1)) {
+            return nullptr;
+        }
+        return std::addressof(std::get<17>((*this).union_variant_1).is_explicit);
         }
         if (NodeKind::BitCast==(*this).node_kind) {
         return nullptr;
@@ -22043,7 +22047,11 @@ namespace brgen::nast::wire {
             return false;
         }
         if (NodeKind::Self==(*this).node_kind) {
-            return false;
+            if(!std::holds_alternative<union_struct_18>(union_variant_1)) {
+                union_variant_1 = union_struct_18();
+            }
+            std::get<17>((*this).union_variant_1).is_explicit = v;
+            return true;
         }
         if (NodeKind::BitCast==(*this).node_kind) {
             return false;
@@ -22337,7 +22345,11 @@ namespace brgen::nast::wire {
             return false;
         }
         if (NodeKind::Self==(*this).node_kind) {
-            return false;
+            if(!std::holds_alternative<union_struct_18>(union_variant_1)) {
+                union_variant_1 = union_struct_18();
+            }
+            std::get<17>((*this).union_variant_1).is_explicit = std::move(v);
+            return true;
         }
         if (NodeKind::BitCast==(*this).node_kind) {
             return false;
@@ -45399,6 +45411,9 @@ namespace brgen::nast::wire {
             if (auto err = std::get<17>((*this).union_variant_1).owner.encode(w)) {
                 return err;
             }
+            if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(std::get<17>((*this).union_variant_1).is_explicit) ,true)) {
+                return ::futils::error::Error<>("encode: Node::is_explicit: write std::uint8_t failed",::futils::error::Category::lib);
+            }
         }
         else if (NodeKind::BitCast==(*this).node_kind) {
             if(!std::holds_alternative<union_struct_19>(union_variant_1)) {
@@ -46613,6 +46628,9 @@ namespace brgen::nast::wire {
             }
             if (auto err = std::get<17>((*this).union_variant_1).owner.decode(r)) {
                 return err;
+            }
+            if (!::futils::binary::read_num(r,std::get<17>((*this).union_variant_1).is_explicit ,true)) {
+                return ::futils::error::Error<>("decode: Node::is_explicit: read int failed",::futils::error::Category::lib);
             }
         }
         else if (NodeKind::BitCast==(*this).node_kind) {

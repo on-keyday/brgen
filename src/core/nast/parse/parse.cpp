@@ -173,6 +173,11 @@ namespace brgen::nast {
         // する。分岐の block では変わらない (分岐は持ち主ではない)。
         Node<Statement> current_member_;
 
+        // そのうち、レシーバを持つもの (format / state) だけ。`self` が誰を
+        // 指すか。fn の中の `self` は fn ではなくそれを持つ format なので、
+        // current_member_ とは別に持つ。
+        Node<NamedStructTypedStatement> current_receiver_;
+
         Parser(Stream& s, LocationError& errors, Arena& arena)
             : s(s), state(errors), a(arena) {
         }
@@ -275,11 +280,18 @@ namespace brgen::nast {
             // 名前と body を持つもの (format / state / fn) だけが持ち主。
             // 分岐の block は持ち主ではないので、外側のままにする。
             auto outer_member = current_member_;
+            auto outer_receiver = current_receiver_;
             if (scope_owner.as<NamedBodyStatement>()) {
                 current_member_ = scope_owner;
             }
+            // `self` が指すのは format / state だけ。fn の body に入っても
+            // 外側の format のままにする。
+            if (auto st = scope_owner.as_any<NamedStructTypedStatement>()) {
+                current_receiver_ = st;
+            }
             auto member_scope = futils::helper::defer([&] {
                 current_member_ = outer_member;
+                current_receiver_ = outer_receiver;
             });
             // auto ss = state.enter_struct(block->struct_type);
 
@@ -757,6 +769,25 @@ namespace brgen::nast {
             if (auto c = s.consume_token("config")) {
                 return a.make<SpecialLiteral>(c->loc, NodeData<Literal>{}, SpecialLiteralKind::config_);
             }
+            if (auto sf = s.consume_token("self")) {
+                // 符号化中の値そのもの。field 参照には bind/receiver が同じ
+                // ノードを黙って足すので、これはそれを明示的に書いた形。
+                // 書けると効くのは、同名の local に隠された field を指すとき
+                // (`self.x` は member を引くので local を飛ばす) と、
+                // インスタンスそのものを渡すとき。
+                if (!current_receiver_) {
+                    if (state.error_tolerant) {
+                        (void)state.errors.error(sf->loc, "`self` outside of a format or state");
+                    }
+                    else {
+                        s.report_error(sf->loc, "`self` outside of a format or state");
+                    }
+                }
+                auto n = a.make<Self>(sf->loc);
+                n->is_explicit = true;
+                n->owner = current_receiver_;
+                return n;
+            }
             if (auto paren = s.consume_token("(")) {
                 return parse_paren(std::move(*paren));
             }
@@ -1096,6 +1127,7 @@ namespace brgen::nast {
                 s.expect_token(lexer::Tag::str_literal) ||
                 s.expect_token(lexer::Tag::char_literal) ||
                 s.expect_token("input") || s.expect_token("output") ||
+                s.expect_token("self") ||
                 s.expect_token("if") || s.expect_token("match")) {
                 return true;
             }

@@ -1117,6 +1117,11 @@
                     "type": "Node<NamedStructTypedStatement>",
                     "weak": true,
                     "description": "Whose instance this is. The type comes from here, and a backend that stores branch fields in arms needs it to know where the path starts"
+                },
+                {
+                    "name": "is_explicit",
+                    "type": "bool",
+                    "description": "Written as self in the source, rather than materialized by bind/receiver. Unparse spells the explicit one and elides the other; an explicit self.x is an ordinary member access on the receiver, so it skips locals that shadow the name"
                 }
             ],
             "knobs": [

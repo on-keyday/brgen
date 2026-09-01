@@ -129,9 +129,11 @@ namespace brgen::nast {
                     case NodeType::MemberAccess: {
                         auto d = e.as<MemberAccess>().ref(a);
                         // 実体化したレシーバ (bind/receiver) は原文に無いので
-                        // 綴らない。綴ると `self` が .bgn の構文に無いぶん
-                        // 再 parse できないテキストになる。
-                        if (!d->base.as_any<Self>()) {
+                        // 綴らない。原文に `self` と書かれていたものは綴る
+                        // (`is_explicit`)。Cast の `<u8>(x)` / `u8(x)` と同じ、
+                        // 「同じノードに畳んだ 2 つの書き方」の区別。
+                        auto self = d->base.as_any<Self>();
+                        if (!self || self.ref(a)->is_explicit) {
                             expr(d->base);
                             w.write(".");
                         }

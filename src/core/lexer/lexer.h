@@ -176,7 +176,7 @@ namespace brgen::lexer {
         constexpr auto keywords = keyword(
             "format", "if", "elif", "else", "match", "fn", "for", "enum",
             "input", "output", "config", "true", "false",
-            "return", "break", "continue", "state");
+            "return", "break", "continue", "state", "self");
 
         struct Option {
             decltype(punct_) punct{punct_};
