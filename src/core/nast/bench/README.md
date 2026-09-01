@@ -1,5 +1,9 @@
 # nast の計測プログラム
 
+ここにあるのは**計測**だけ。木を見て回る道具は `tool/`、ctest に乗る試験は
+`test/` にある (`nast_probe` は計測ではないので 2026-09-01 に `tool/probe/` へ
+移した)。
+
 `python src/core/nast/bench.py --tools` で建つ (CMake の Release ツリー)。
 出力は `build/release/bin/` に入る。
 `example/` の `.bgn` を引数に取る。

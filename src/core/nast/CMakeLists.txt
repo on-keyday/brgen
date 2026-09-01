@@ -199,28 +199,45 @@ target_include_directories(nast_core PUBLIC "${NAST_DIR}" "${REPO_ROOT}/src")
 target_link_libraries(nast_core PUBLIC futils_imported)
 
 # ---- ツール --------------------------------------------------------------
-# nast_test はヘッダだけで足りるが、compare.cpp の実体は要る。
-add_executable(nast_test "tool/test.cpp" "node/compare.cpp")
-target_include_directories(nast_test PRIVATE "${NAST_DIR}" "${REPO_ROOT}/src")
-target_link_libraries(nast_test PRIVATE futils_imported)
-target_compile_definitions(nast_test PRIVATE NAST_TEST_WITH_JSON NAST_TEST_WITH_JSON_PARSE)
-add_dependencies(nast_test nast_generate)
-
-foreach(tool corpus dump unparse_test wire_test backend)
+# 木を見て回るための道具。tool/ が道具、bench/ が計測、test/ が試験で、
+# 箱は「何のためか」で分かれている。
+foreach(tool corpus dump backend)
     add_executable(nast_${tool} "tool/${tool}.cpp")
     target_link_libraries(nast_${tool} PRIVATE nast_core)
 endforeach()
+
+# probe だけ入り口 1 つに対してモードが 3 つある。覚える名前を増やさずに、
+# 木を見て何が見られるか分かるように、ソースはモードごとに分けてある。
+add_executable(nast_probe
+    "tool/probe/probe.cpp"
+    "tool/probe/size.cpp"
+    "tool/probe/endian.cpp"
+    "tool/probe/lower.cpp"
+)
+target_link_libraries(nast_probe PRIVATE nast_core)
 
 # ---- バックエンド ----
 # newbackend.py が足す。ここに並んだものが nast2<lang> として建つ。
 
 # ---- 計測 ----------------------------------------------------------------
-foreach(b coverage fn_fallible lex_split parse_split probe token_cost)
+foreach(b coverage fn_fallible lex_split parse_split token_cost)
     add_executable(nast_${b} "bench/${b}.cpp")
     target_link_libraries(nast_${b} PRIVATE nast_core)
 endforeach()
 
 # ---- テスト --------------------------------------------------------------
+# nast_test はヘッダだけで足りるが、compare.cpp の実体は要る。
+add_executable(nast_test "test/test.cpp" "node/compare.cpp")
+target_include_directories(nast_test PRIVATE "${NAST_DIR}" "${REPO_ROOT}/src")
+target_link_libraries(nast_test PRIVATE futils_imported)
+target_compile_definitions(nast_test PRIVATE NAST_TEST_WITH_JSON NAST_TEST_WITH_JSON_PARSE)
+add_dependencies(nast_test nast_generate)
+
+foreach(t unparse_test wire_test)
+    add_executable(nast_${t} "test/${t}.cpp")
+    target_link_libraries(nast_${t} PRIVATE nast_core)
+endforeach()
+
 enable_testing()
 add_test(NAME nast_unit COMMAND nast_test)
 
