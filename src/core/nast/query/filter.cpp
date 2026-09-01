@@ -1,5 +1,7 @@
 /*license*/
 #include "filter.hpp"
+#include "comb2/internal/test.h"
+#include "comb2/status.h"
 #include "session.hpp"
 #include "../node/printer.h"
 #include "../node/traverse.h"
@@ -29,116 +31,126 @@ namespace brgen::nast::query {
         // (lexer.h が internal 名前空間でそうしているのと同じ理由)。
         namespace lex {
 
-        namespace cps = futils::comb2::composite;
-        using namespace futils::comb2::ops;
+            namespace cps = futils::comb2::composite;
+            using namespace futils::comb2::ops;
 
-        enum class Tok {
-            space,
-            number,
-            string,
-            ident,
-            sym,
-        };
+            enum class Tok {
+                space,
+                number,
+                string,
+                ident,
+                sym,
+            };
 
-        constexpr auto tok_space = str(Tok::space, ~(cps::space | cps::tab));
-        constexpr auto tok_number = str(Tok::number, cps::hex_integer | cps::dec_integer);
-        constexpr auto tok_string = str(Tok::string, cps::c_str);
-        constexpr auto tok_ident = str(Tok::ident, cps::c_ident);
-        // 長いものから見る (`==` が `=` に、`->` が `-` に食われないように)。
-        constexpr auto tok_sym = str(Tok::sym, lit("==") | lit("!=") | lit("<=") | lit(">=") |
-                                                   lit("&&") | lit("||") | lit("->") | lit("<") |
-                                                   lit(">") | lit("!") | lit("(") | lit(")") |
-                                                   lit("[") | lit("]") | lit(".") | lit("@"));
-        constexpr auto tok_one = tok_space | tok_number | tok_string | tok_ident | tok_sym;
+            constexpr auto tok_space = str(Tok::space, ~(cps::space | cps::tab));
+            constexpr auto tok_number = str(Tok::number, cps::hex_integer | cps::dec_integer);
+            constexpr auto tok_string = str(Tok::string, cps::c_str);
+            constexpr auto tok_ident = str(Tok::ident, cps::c_ident);
+            // 長いものから見る (`==` が `=` に、`->` が `-` に食われないように)。
+            constexpr auto tok_sym = str(Tok::sym, lit("==") | lit("!=") | lit("<=") | lit(">=") |
+                                                       lit("&&") | lit("||") | lit("->") | lit("<") |
+                                                       lit(">") | lit("!") | lit("(") | lit(")") |
+                                                       lit("[") | lit("]") | lit(".") | lit("@"));
+            constexpr auto tok_one = tok_space | tok_number | tok_string | tok_ident | tok_sym;
 
-        struct Token {
-            Tok kind = Tok::sym;
-            std::string text;
-            std::size_t pos = 0;
-        };
-
-        // 読む口。構文側は「合えば進む」だけを使う。
-        struct Lexer {
-            std::vector<Token> toks;
-            std::size_t at = 0;
-            // 誤りの位置は文字の位置で言う (トークン番号では原文を指せない)。
-            std::size_t pos = 0;
-
-            bool eof() const {
-                return at >= toks.size();
+            constexpr auto test() {
+                auto a_parse = [](auto x) {
+                    auto seq = futils::make_ref_seq(x);
+                    return tok_one(seq, futils::comb2::test::TestContext<Tok>{}, 0);
+                };
+                return a_parse("Module");
             }
 
-            const Token* peek() const {
-                return eof() ? nullptr : &toks[at];
-            }
+            static_assert(test() == futils::comb2::Status::match, "Must parse");
 
-            void advance() {
-                at++;
-                pos = eof() ? pos : toks[at].pos;
-            }
+            struct Token {
+                Tok kind = Tok::sym;
+                std::string text;
+                std::size_t pos = 0;
+            };
 
-            // 記号か、その綴りの語 (and / or / not は識別子として来る)。
-            bool sym(std::string_view s) {
-                auto* t = peek();
-                if (!t || (t->kind != Tok::sym && t->kind != Tok::ident) || t->text != s) {
-                    return false;
+            // 読む口。構文側は「合えば進む」だけを使う。
+            struct Lexer {
+                std::vector<Token> toks;
+                std::size_t at = 0;
+                // 誤りの位置は文字の位置で言う (トークン番号では原文を指せない)。
+                std::size_t pos = 0;
+
+                bool eof() const {
+                    return at >= toks.size();
                 }
-                advance();
+
+                const Token* peek() const {
+                    return eof() ? nullptr : &toks[at];
+                }
+
+                void advance() {
+                    at++;
+                    pos = eof() ? pos : toks[at].pos;
+                }
+
+                // 記号か、その綴りの語 (and / or / not は識別子として来る)。
+                bool sym(std::string_view s) {
+                    auto* t = peek();
+                    if (!t || (t->kind != Tok::sym && t->kind != Tok::ident) || t->text != s) {
+                        return false;
+                    }
+                    advance();
+                    return true;
+                }
+
+                std::string ident() {
+                    auto* t = peek();
+                    if (!t || t->kind != Tok::ident) {
+                        return {};
+                    }
+                    auto text = t->text;
+                    advance();
+                    return text;
+                }
+
+                std::string number() {
+                    auto* t = peek();
+                    if (!t || t->kind != Tok::number) {
+                        return {};
+                    }
+                    auto text = t->text;
+                    advance();
+                    return text;
+                }
+
+                // 引用符は落として返す。
+                bool string_lit(std::string& out) {
+                    auto* t = peek();
+                    if (!t || t->kind != Tok::string) {
+                        return false;
+                    }
+                    out = t->text.size() >= 2 ? t->text.substr(1, t->text.size() - 2) : std::string();
+                    advance();
+                    return true;
+                }
+            };
+
+            bool tokenize(std::string_view src, Lexer& lx, std::string& err) {
+                auto seq = futils::make_ref_seq(src);
+                while (!seq.eos()) {
+                    auto ctx = futils::comb2::LexContext<Tok, std::string>{};
+                    if (auto status = tok_one(seq, ctx, 0); status != futils::comb2::Status::match) {
+                        auto substr = src.substr(seq.rptr);
+                        err = std::format("読めない字がある {} at {} {} (len: {})", status == futils::comb2::Status::fatal ? "fatal" : "not_match", seq.rptr, substr, substr.size());
+                        return false;
+                    }
+                    auto pos = ctx.str_pos;
+                    if (ctx.str_tag == Tok::space) {
+                        continue;
+                    }
+                    lx.toks.push_back(Token{ctx.str_tag,
+                                            std::string(src.substr(pos.begin, pos.end - pos.begin)),
+                                            pos.begin});
+                }
+                lx.pos = lx.toks.empty() ? 0 : lx.toks.front().pos;
                 return true;
             }
-
-            std::string ident() {
-                auto* t = peek();
-                if (!t || t->kind != Tok::ident) {
-                    return {};
-                }
-                auto text = t->text;
-                advance();
-                return text;
-            }
-
-            std::string number() {
-                auto* t = peek();
-                if (!t || t->kind != Tok::number) {
-                    return {};
-                }
-                auto text = t->text;
-                advance();
-                return text;
-            }
-
-            // 引用符は落として返す。
-            bool string_lit(std::string& out) {
-                auto* t = peek();
-                if (!t || t->kind != Tok::string) {
-                    return false;
-                }
-                out = t->text.size() >= 2 ? t->text.substr(1, t->text.size() - 2) : std::string();
-                advance();
-                return true;
-            }
-        };
-
-        bool tokenize(std::string_view src, Lexer& lx, std::string& err) {
-            auto seq = futils::make_ref_seq(src);
-            while (!seq.eos()) {
-                auto ctx = futils::comb2::LexContext<Tok, std::string>{};
-                if (tok_one(seq, ctx, 0) != futils::comb2::Status::match) {
-                    err = std::format("読めない字がある (位置 {})", seq.rptr);
-                    return false;
-                }
-                auto pos = ctx.str_pos;
-                seq.rptr = pos.end;
-                if (ctx.str_tag == Tok::space) {
-                    continue;
-                }
-                lx.toks.push_back(Token{ctx.str_tag,
-                                        std::string(src.substr(pos.begin, pos.end - pos.begin)),
-                                        pos.begin});
-            }
-            lx.pos = lx.toks.empty() ? 0 : lx.toks.front().pos;
-            return true;
-        }
 
         }  // namespace lex
 
@@ -195,16 +207,27 @@ namespace brgen::nast::query {
 
     // ---- 条件木 --------------------------------------------------------------
 
-    enum class CmpOp { none, eq, ne, lt, le, gt, ge };
+    enum class CmpOp { none,
+                       eq,
+                       ne,
+                       lt,
+                       le,
+                       gt,
+                       ge };
 
     struct Step {
-        enum class Kind { field, index, table } kind = Kind::field;
+        enum class Kind { field,
+                          index,
+                          table } kind = Kind::field;
         std::string name;
         std::size_t index = 0;
     };
 
     struct Filter {
-        enum class Kind { or_, and_, not_, test } kind = Kind::test;
+        enum class Kind { or_,
+                          and_,
+                          not_,
+                          test } kind = Kind::test;
         std::vector<FilterPtr> kids;
         std::vector<Step> path;
         CmpOp op = CmpOp::none;
@@ -276,8 +299,7 @@ namespace brgen::nast::query {
                 struct {
                     const char* sym;
                     CmpOp op;
-                } ops[] = {{"==", CmpOp::eq}, {"!=", CmpOp::ne}, {"<=", CmpOp::le},
-                           {">=", CmpOp::ge}, {"<", CmpOp::lt},  {">", CmpOp::gt}};
+                } ops[] = {{"==", CmpOp::eq}, {"!=", CmpOp::ne}, {"<=", CmpOp::le}, {">=", CmpOp::ge}, {"<", CmpOp::lt}, {">", CmpOp::gt}};
                 for (auto& o : ops) {
                     if (lx.sym(o.sym)) {
                         e->op = o.op;
@@ -541,23 +563,37 @@ namespace brgen::nast::query {
         bool compare_text(std::string_view l, CmpOp op, std::string_view r) {
             if (auto li = as_int(l), ri = as_int(r); li && ri) {
                 switch (op) {
-                    case CmpOp::eq: return *li == *ri;
-                    case CmpOp::ne: return *li != *ri;
-                    case CmpOp::lt: return *li < *ri;
-                    case CmpOp::le: return *li <= *ri;
-                    case CmpOp::gt: return *li > *ri;
-                    case CmpOp::ge: return *li >= *ri;
-                    default: return false;
+                    case CmpOp::eq:
+                        return *li == *ri;
+                    case CmpOp::ne:
+                        return *li != *ri;
+                    case CmpOp::lt:
+                        return *li < *ri;
+                    case CmpOp::le:
+                        return *li <= *ri;
+                    case CmpOp::gt:
+                        return *li > *ri;
+                    case CmpOp::ge:
+                        return *li >= *ri;
+                    default:
+                        return false;
                 }
             }
             switch (op) {
-                case CmpOp::eq: return l == r;
-                case CmpOp::ne: return l != r;
-                case CmpOp::lt: return l < r;
-                case CmpOp::le: return l <= r;
-                case CmpOp::gt: return l > r;
-                case CmpOp::ge: return l >= r;
-                default: return false;
+                case CmpOp::eq:
+                    return l == r;
+                case CmpOp::ne:
+                    return l != r;
+                case CmpOp::lt:
+                    return l < r;
+                case CmpOp::le:
+                    return l <= r;
+                case CmpOp::gt:
+                    return l > r;
+                case CmpOp::ge:
+                    return l >= r;
+                default:
+                    return false;
             }
         }
 

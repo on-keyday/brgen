@@ -6,9 +6,8 @@
 #include "../parse/unparse.h"
 
 #include <format>
-#include <istream>
+#include <iostream>
 #include <map>
-#include <ostream>
 #include <sstream>
 
 namespace brgen::nast::query {
@@ -332,11 +331,15 @@ namespace brgen::nast::query {
         while (true) {
             out << "nast> ";
             line.clear();
-            in >> line;
-            // UtfIn は末尾を教えないので、端末でないときの空行を末尾と見る
-            // (`echo ... | nast_query` が回り続けないように)。端末では
-            // 空の Enter はそのまま次のプロンプト。
-            if (line.empty() && !in.is_tty()) {
+            // 符号化の変換が要るのは端末だけ。パイプとファイルは末尾を
+            // 返してほしいので std::cin から読む。
+            if (in.is_tty()) {
+                in >> line;
+                while (!line.empty() && (line.back() == '\n' || line.back() == '\r')) {
+                    line.pop_back();
+                }
+            }
+            else if (!std::getline(std::cin, line)) {
                 out << "\n";
                 return;
             }
