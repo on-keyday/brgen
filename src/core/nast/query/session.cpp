@@ -244,7 +244,7 @@ namespace brgen::nast::query {
         return
             "  p <id> [depth]      ノードを木で。side table のエントリも一緒に出る (既定 depth 2)\n"
             "  pp <id>             深さ無制限の p\n"
-            "  u <id> [self]       .bgn に綴り戻す。self を付けると暗黙のレシーバも綴る\n"
+            "  u <id> [self][mark] .bgn に綴り戻す。self=暗黙のレシーバも綴る / mark=綴りの無いノードも目印で出す\n"
             "  src <id>            原文のその位置\n"
             "  up <id>             所有辺で 1 つ上\n"
             "  find <Kind> [{ 条件 }]  その種別のノード (Any で全部)。条件の綴りは query/filter.hpp\n"
@@ -302,11 +302,14 @@ namespace brgen::nast::query {
             if (!want_id()) {
                 return true;
             }
-            // `u <id> self` で、bind/receiver が足した暗黙のレシーバも綴る。
-            std::string how;
-            in >> how;
-            auto text = unparse_node(a, node_at(id), UnparseOption{.explicit_self = how == "self"});
-            out += text.empty() ? "(綴れない)" : text;
+            // self: 暗黙のレシーバも綴る。mark: 綴りの無いノードを目印で出す。
+            UnparseOption opt;
+            for (std::string how; in >> how;) {
+                opt.explicit_self |= how == "self";
+                opt.mark_unprintable |= how == "mark";
+            }
+            auto text = unparse_node(a, node_at(id), opt);
+            out += text.empty() ? "(綴れない。mark を付けると目印で出る)" : text;
             out += "\n";
             return true;
         }
