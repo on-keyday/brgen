@@ -193,6 +193,7 @@ add_library(nast_core STATIC
     "bind/type_size.cpp"
     "bind/typer.cpp"
     "bind/union_layout.cpp"
+    "query/session.cpp"
 )
 add_dependencies(nast_core nast_generate)
 target_include_directories(nast_core PUBLIC "${NAST_DIR}" "${REPO_ROOT}/src")
@@ -201,7 +202,7 @@ target_link_libraries(nast_core PUBLIC futils_imported)
 # ---- ツール --------------------------------------------------------------
 # 木を見て回るための道具。tool/ が道具、bench/ が計測、test/ が試験で、
 # 箱は「何のためか」で分かれている。
-foreach(tool corpus dump backend)
+foreach(tool corpus dump backend query)
     add_executable(nast_${tool} "tool/${tool}.cpp")
     target_link_libraries(nast_${tool} PRIVATE nast_core)
 endforeach()
