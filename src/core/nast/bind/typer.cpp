@@ -891,6 +891,9 @@ namespace brgen::nast::bind {
                 result = struct_type_of_module(builtin_module());
             }
         }
+        else if (auto wr = e.as_any<WithReceiver>()) {
+            result = type_of_expr(wr.ref(a)->expr);
+        }
         else if (auto self = e.as_any<Self>()) {
             // 符号化中の値そのもの。誰のインスタンスかは bind/receiver が
             // 実体化するときに入れている。

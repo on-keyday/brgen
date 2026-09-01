@@ -1135,6 +1135,21 @@
             "description": "The value being encoded or decoded. Never written in .bgn: bind/receiver materializes one under every field reference, so a bare name and a qualified one stay distinguishable after binding"
         },
         {
+            "name": "WithReceiver",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "receiver",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "expr",
+                    "type": "Node<Expr>"
+                }
+            ],
+            "description": "Read expr with the receiver replaced: a Self inside it means receiver, not the enclosing format. Never written in .bgn; lowering builds one when a condition that names another format's fields has to be answered about a particular instance"
+        },
+        {
             "name": "BitCast",
             "derive": "Expr",
             "fields": [

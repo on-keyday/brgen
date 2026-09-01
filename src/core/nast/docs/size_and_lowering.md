@@ -676,26 +676,41 @@ available(c)  ->  (a == 1) ? ((b == 2) ? true : false) : false
 `convert_expr_impl(Available)` は候補の field が null かどうかだけを見ていて
 降りない。
 
-**修飾された target (`available(lab.pointer)`) はまだ落とせない。** 候補の
-条件は内側の format の field を指しているので、そのまま綴ると self に対する
-参照になる (`(*this).flag`)。ほしいのは `lab` に載せ替えた形。EBM は変換器の
-状態 (`set_self_ref`) で切り替えているが、nast は原木を残す立場なので、
-載せ替えの表し方が要る:
+**修飾された target (`available(lab.pointer)`) は WithReceiver で包む** (2026-09-02)。
+候補の条件は内側の format の field を指しているので、そのまま綴ると self に
+対する参照になる。`WithReceiver{receiver, expr}` は「この中の Self は receiver」
+という包みで、綴る側 (unparse / バックエンドの既定ハンドラ) がレシーバを
+スタックで持ち、`Self` に出会ったら積まれているものを綴る。**式は複製しない。**
 
-- ノードを足す (`Rebase{base, expr}` のようなもの)。綴る側はレシーバを
-  スタックで持ち、参照は一番内側の base に付く。今のレシーバ規則の一般化に
-  なる
-- 参照を作り直せる複製器を用意する (`field_ref` が Resolution を登録するのと
-  同じことを式全体でやる)
+```
+available(lab.pointer)        -> (lab.prefix == 0b11) ? true : false
+available(labels[i].pointer)  -> (labels[i].prefix == 0b11) ? true : false
+available(opt.value)          -> (opt.kind == 1) ? true : ((opt.kind == 2) ? true : false)
+```
 
-どちらも新しい機構なので未決。corpus では `available` 21 件中 5 件がこれ
-(`dns.bgn` の 2 箇所 + import 経由の重複 + testdata 1)。
+複製する案 (`Self` の葉を差し替えた新しい式を作る) を採らなかったのは、
+side table が 17 本あってコピー先には付いてこないため — `Resolution` の
+再登録に加え、`ConstantValue` の欠けた式を「畳み込み済み」と読む側が出る。
+包む形なら表は無傷で、知らない消費者は未対応ノードとして音が鳴る。
+
+**base が式なので、綴りでは複数回出る** (`lab.a == 1 && lab.b == 2`)。
+一時変数に束ねるには文の書き出し先が要る (ebmcodegen の `WriterManager` =
+文のフックが積む一時 writer のスタック)。実際に使うバックエンドが出た時点で
+同じものを足す。
+
+**取りこぼしが 2 つあった** (どちらも今回の実装で判明):
+`bind/receiver` は所有辺しか辿っておらず、(1) weak の指す先を差し替えて
+おらず、(2) 表からしか指されていないノード (binder が作る union field と、
+その `UnionType.cond` が持つ match の主語) に届いていなかった。前者は木から
+外れた参照を指し続け、後者は綴る側がレシーバ無しの参照を見る。どちらも
+「同じ名前が self 越しでもそうでなくても同じに綴れる」ぶん、実体化した
+直後には見えなかった。
 
 測定 (`nast_probe lower example/*.bgn testdata/*.bgn`):
 
 ```
-available -> 式        16
-available (組めない)    5
+available -> 式        21
+available (組めない)    0
 ```
 
 ### 「平らな場合まで」の実物 (2026-09-01)
@@ -922,10 +937,8 @@ nast に無い部品: **`WriterManager` に当たるもの**。`node/code_writer
   をノード自身が持っているので、構築時の loop_stack が要らない。
   面倒なのは `If`/`Match` が式なので、式の位置に出る制御フローを扱うこと
   (ebmgen の `CFGExpression` に当たるものが要る)
-- **載せ替えの機構**を 1 つ決める (`Rebase` ノード / 複製器)。self の実体化は
-  済んだので差し替え点は `Self` の葉に決まったが、式そのものは共有されていて
-  書き換えられないので、複製の仕方はまだ要る。修飾 `available(a.b.field)` と
-  union 越しのメンバアクセスが同じ未決に合流しているので、決めれば両方片付く
+- **union 越しのメンバアクセス** (`payload.payload`)。載せ替えは `WithReceiver`
+  で済んだので、残るのはメンバアクセスを候補に分配する側
 - 畳み込み構文 (`sum(items, ...)` 相当) を言語に足すかどうか。`available` /
   `sizeof` と同じ「値に対する述語で意味は lowering 側」の系列だが、束縛の構文が
   無いので言語設計の判断が要る

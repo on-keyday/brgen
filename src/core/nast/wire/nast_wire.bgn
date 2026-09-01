@@ -114,6 +114,7 @@ enum NodeKind:
     SpecifyOrder
     Sizeof
     Self
+    WithReceiver
     BitCast
     IsLittleEndian
     BitSizeof
@@ -258,6 +259,10 @@ format Node:
             type :Ref
             owner :Ref
             is_explicit :u8
+        NodeKind.WithReceiver:
+            type :Ref
+            receiver :Ref
+            expr :Ref
         NodeKind.BitCast:
             type :Ref
             target :Ref

@@ -28,6 +28,34 @@ namespace brgen::nast::bind {
             return belong.as_any<NamedStructTypedStatement>();
         }
 
+        // 表の中から指されているノードを渡す。表そのものは書き換えない
+        // (中の Node は読むだけで、差し替えはノード側のスロットで起きる)。
+        void walk_tables(Arena& a, const SideTables& tables, auto&& fn) {
+            // flag の表は値を持たないので、entry が来ない形でも呼ばれる。
+            auto walk_entry = [&](const auto& entry) {
+                entry.for_each_field([&](const char*, const auto& v, bool) {
+                    using T = std::decay_t<decltype(v)>;
+                    if constexpr (node_of<T>::is_node) {
+                        if (v) {
+                            fn(NodeAny(v));
+                        }
+                    }
+                    else if constexpr (vector_of<T>::is_vector) {
+                        for (auto& e : v) {
+                            if (e) {
+                                fn(NodeAny(e));
+                            }
+                        }
+                    }
+                });
+            };
+            tables.for_each_table([&](const char*, const auto& table) {
+                table.for_each_entry([&](std::uint32_t, const auto&... entry) {
+                    (walk_entry(entry), ...);
+                });
+            });
+        }
+
         // 差し替え表に沿ってスロットを書き換える。**ノードは作らない** —
         // arena の pool は vector で、for_each_field の間はそのノードの実体を
         // 掴んだままなので、途中で make すると移動して無効になる。作るのは
@@ -59,11 +87,12 @@ namespace brgen::nast::bind {
                         return;
                     }
                     d->for_each_field([&](const char*, auto& v, bool weak) {
-                        // weak は所有辺ではない。指しているノードは所有側の
-                        // 経路で差し替わるので、こちらから触ると二重になる。
-                        if (weak) {
-                            return;
-                        }
+                        // **weak も差し替えるし、weak の先へも降りる。** 元の
+                        // ノードは置き換えるので (書き換えではない)、weak を
+                        // そのままにすると木から外れた参照を指し続ける。
+                        // match の主語のように weak からしか指されていない式も
+                        // ある。循環は seen で止まる。
+                        (void)weak;
                         using T = std::decay_t<decltype(v)>;
                         if constexpr (node_of<T>::is_node) {
                             if (v) {
@@ -87,15 +116,49 @@ namespace brgen::nast::bind {
 
     void MaterializeReceiver::run(Node<Module> mod) {
         // 1. 差し替える参照を集める。ここでは作らない。
+        //    **weak も辿る。** match の主語のように、所有辺からは外れていて
+        //    weak (UnionType.cond) からしか指されていない式がある。そこを
+        //    materialize し損ねると、綴る側がレシーバ無しの参照を見る。
         std::vector<std::pair<Node<Reference>, Node<NamedStructTypedStatement>>> targets;
-        visit_all(a, mod, [&](NodeAny n) {
-            if (auto ref = n.as_any<Reference>()) {
+        std::unordered_set<std::uint32_t> seen;
+        auto collect = [&](auto&& self, NodeAny id) -> void {
+            if (!id || !seen.insert(id.id()).second) {
+                return;
+            }
+            if (auto ref = id.as_any<Reference>()) {
                 if (auto owner = owner_of(a, tables, ref)) {
                     targets.push_back({ref, owner});
                 }
             }
-            return true;
-        });
+            visit_node_type(id.type(), [&](auto tag) {
+                using U = typename decltype(tag)::type;
+                auto d = id.as_any<U>().ref(a);
+                if (!d) {
+                    return;
+                }
+                d->for_each_field([&](const char*, const auto& v, bool) {
+                    using T = std::decay_t<decltype(v)>;
+                    if constexpr (node_of<T>::is_node) {
+                        if (v) {
+                            self(self, NodeAny(v));
+                        }
+                    }
+                    else if constexpr (vector_of<T>::is_vector) {
+                        for (auto& e : v) {
+                            if (e) {
+                                self(self, NodeAny(e));
+                            }
+                        }
+                    }
+                });
+            });
+        };
+        collect(collect, mod);
+        // 表からしか指されていないものも辿る。binder が作る union の field は
+        // まだ木に繋がっておらず (FormatState/InnerStruct に入っているだけ)、
+        // その型 (UnionType) が持つ match の主語をここで拾わないと、
+        // 綴る側がレシーバ無しの参照を見る。
+        walk_tables(a, tables, [&](NodeAny n) { collect(collect, n); });
 
         // 2. 置き換えるノードを作る。Ident は作り直さず持ち回す
         //    (Resolution 表のキーなので、作り直すと解決先を失う)。
@@ -113,6 +176,7 @@ namespace brgen::nast::bind {
         // 3. スロットを差し替える。元の Reference は木から外れて孤児になる。
         Rewriter rw{a, repl};
         rw.run(mod);
+        walk_tables(a, tables, [&](NodeAny n) { rw.run(n); });
         materialized += repl.size();
     }
 

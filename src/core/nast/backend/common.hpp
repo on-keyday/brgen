@@ -31,6 +31,8 @@ namespace brgen::nast::backend {
         DefaultBehavior<R> d;
         CommonConfig c;
         LanguageConfig l;
+        // WithReceiver が積む。Self はここが空でないならその先頭を綴る。
+        std::vector<R> receivers;
 
         expected<R> visit(NodeAny n) {
             return Invoker<BaseContext<R>>::template invoke_custom<R>(n);
