@@ -387,35 +387,12 @@ namespace brgen::nast::query {
             if (!want_id()) {
                 return true;
             }
-            auto n = node_at(id);
-            auto text = lower_text(const_cast<Program&>(p), n);
-            out += text.empty() ? "(この種に当てはまる規則は無い)\n" : text;
-            // 結果のノードは表に載っているので id を出す。そのまま p / u で
-            // 追える (field の読み書きだけは表に載らないので出ない)。
-            auto note = [&](const char* label, NodeAny made) {
+            auto lowered = lower_of(const_cast<Program&>(p), node_at(id));
+            out += lowered.text.empty() ? "(この種に当てはまる規則は無い)\n" : lowered.text;
+            // 作ったノードの id。そのまま p / u で追える。
+            for (auto& [label, made] : lowered.made) {
                 if (made) {
                     out += std::format("[{} #{}]\n", label, made.id());
-                }
-            };
-            if (auto av = n.as_any<Available>()) {
-                if (auto* e = p.tables.table<LoweredAvailable>().get(av)) {
-                    note("expr", e->expr);
-                }
-            }
-            else if (auto bin = n.as_any<Binary>()) {
-                if (auto* e = p.tables.table<LoweredRangeCompare>().get(bin)) {
-                    note("expr", e->expr);
-                }
-            }
-            else if (auto m = n.as_any<Match>()) {
-                if (auto* e = p.tables.table<LoweredMatch>().get(m)) {
-                    note("branch", e->branch);
-                }
-            }
-            else if (auto cond = n.as_any<Cond>()) {
-                if (auto* e = p.tables.table<LoweredCond>().get(cond)) {
-                    note("branch", e->branch);
-                    note("value", e->value);
                 }
             }
             return true;
