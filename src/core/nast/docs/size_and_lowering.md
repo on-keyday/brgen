@@ -505,24 +505,19 @@ EBM は `ctx.identifier(ref)` という登録簿でこれをやっているが�
 `Resolution` に解決先が `Field` だと載っているだけ。生成コードでは `t.Len` の
 ようにレシーバが要るのに、「ここに要る」という印が木のどこにもない。
 
-**付けるのは綴る側。lowering は付けない。** 原文から来た式は書き換えられない
-ので (複製すると中の名前が Resolution 表に載らない別ノードになり解決先を
-失う)、lowering が作る参照にだけレシーバを付けると、**1 つの式の中で同じ意味の
-ものが 2 つの形**になる:
+最初は綴る側で足していた (「参照の解決先が `Field` なら前置する」)。2026-09-01 に
+**束縛の段で木に実体化する**ほうへ移した — 下の「self を木に実体化した」を参照。
+形を 1 つに揃える理由はどちらでも同じで、原文から来た参照と合成した参照が
+違う形だと、**1 つの式の中で同じ意味のものが 2 つ**並ぶ:
 
 ```
 ((8 + bit_sizeof(self.items)) + 64) + (8 * n)     ← 一度こうなった
                     ^^^^ 合成                ^ 原文
 ```
 
-読む側が両方を扱う羽目になるので、形は 1 つに揃えて裸の参照にし、レシーバは
-綴る側が 1 つの規則で足す — **参照の解決先が `Field` なら前置する**、以上。
-判定は `lowering/self_ref` の `receiver_field`。
-
 **レシーバを使うのが普通なので、フックではなく knob で吸収する。** 既定の
-`Reference` ハンドラが `receiver_field` を引いて、field なら
-`Self.spelling` + `MemberAccess.separator` を前置する。綴りが違うだけの言語は
-2 つの文字列を申告すれば済む:
+`MemberAccess` / `Self` ハンドラが `Self.spelling` + `MemberAccess.separator` で
+綴る。綴りが違うだけの言語は 2 つの文字列を申告すれば済む:
 
 ```cpp
 ctx.config().Self.spelling = "t";          //  t.bytes.length
@@ -596,8 +591,8 @@ body が外側の field を参照するので、レシーバは内側 struct で
 
 **nast との対応。** 構造的に起きないもの:
 
-- state variable は `StateVariable` という別のノードなので、`receiver_field` が
-  最初から false
+- state variable は `StateVariable` という別のノードなので、`Field` を見る判定に
+  最初から掛からない
 - `MemberAccess.member` は `Ident` であって式ではないので、member 側を参照と
   して綴る経路が無い
 
@@ -802,9 +797,11 @@ fixture 等で説明が付く = uncommon union 越しのメンバアクセスは
 **出口は `available` の修飾ケースと同じ。** 分配して得られるのは分岐ごとの式で、
 綴るには腕の経路が要る。載せ替えの機構を 1 つ決めれば両方片付く。
 
-### self を木に実体化する案 (2026-09-01 の議論、未決)
+### self を木に実体化した (2026-09-01、`bind/receiver`)
 
-レシーバの節は「付けるのは綴る側」で書いたが、実体化する側の検討。
+レシーバの節は「付けるのは綴る側」で書いていたが、名前解決の後に木を書き換える
+ほうへ移した。`Reference` のうち解決先が「レシーバを取る field」のものを
+`MemberAccess{base: Self, member: 同じ Ident}` に差し替える。
 
 **規則には抵触しない。** 「原木を書き換えない」は lowering の規約
 (`lowering/lowering.hpp` / `exit_and_reversibility.md` 規則 1) であって、
@@ -813,24 +810,51 @@ fixture 等で説明が付く = uncommon union 越しのメンバアクセスは
 (`rewrite_builtin_statement`, `parse.cpp:1988`)。binder が `Self` を実体化するのは
 この規則の外。
 
-**「裸/修飾の区別が消える」は印を残せば起きない。** 前例は `Cast` の
-`is_explicit` (`<u8>(x)` と `u8(x)` は同じノードになるが、フラグで往復が守れて
-いる)。EBM が区別を失ったのは実体化そのものではなく、印を持たずに実体化したから。
+**「裸/修飾の区別が消える」は印を残せば起きない。** `Self` は .bgn の構文に無く
+この段以外では作られないので、`available(x)` は base が `Self`、`available(a.b.x)`
+は base がそれ以外、で見分けられる。前例は `Cast` の `is_explicit`
+(`<u8>(x)` と `u8(x)` は同じノードになるが、フラグで往復が守れている)。EBM が
+区別を失ったのは実体化そのものではなく、印を持たずに実体化したから。
 
-**利点 2 つ。** (1) rebase が葉の差し替えになる — 今は式を辿って各 `Reference` の
-`Resolution` を引き、field なら包み直す walk が要る。(2) 判定が 1 箇所になる —
-「解決先が Field なら前置」は綴る側の再導出で、実際 2026-08-31 に関数ローカルを
-取りこぼしている (`belong` で修正)。
+**利点 2 つ。** (1) rebase の差し替え点が明示になる — 綴る側で足していたときは、
+式を辿って各 `Reference` の `Resolution` を引き field なら包み直す walk が要った。
+(2) 判定が 1 箇所になる — 「解決先が Field なら前置」は綴る側の再導出で、実際
+2026-08-31 に関数ローカルを取りこぼしている (`belong` で修正)。
 
-**コスト。** `Resolution` のキーは `Reference` ではなく中の `Ident` なので、
-`MemberAccess.member` (これも `Node<Ident>`) に同じノードを載せ替えれば表は無傷。
-`nast_unparse_test` は parse のみでパイプラインを呼ばないので往復に影響しない
-(unparse 側は implicit な Self を飛ばす分岐 1 つ)。wire は再生成で通る。
-corpus の対象参照 2679 件が 2 ノードずつ増える。
+**Ident は作り直さず持ち回す。** `Resolution` のキーは `Reference` ではなく中の
+`Ident` で、`MemberAccess.member` も `Node<Ident>` なので、同じノードを移せば表は
+無傷。これは飾りではない — 分岐の中で宣言された field と format 直下の
+union field は同じ名前で別の宣言を指すので、持ち主から名前で引き直すと使用位置の
+区別が消える。`typer` の `type_of_member_access` も base が `Self` のときは
+`Resolution` を優先する。
+
+**2 パスで書き換える。** arena の pool は `vector` なので、走査中に `make` すると
+`data_at` で取った `NodeData*` が無効になる。差し替える参照を集める → ノードを
+作る → スロットを差し替える、の順にして、走査中は確保しない。
+
+**波及したのは 6 か所。** `unparse` (実体化した base は綴らない。綴ると `self` が
+構文に無いぶん再 parse できないテキストになる) / `node/util.h` の `assign_root`
+(実体化したレシーバは越えない — 越えると書き込み先が全部 self になる) と
+新しい `referenced_name` / `requires` の `lhs_root_name` / `lowering/self_ref` の
+`field_ref` (合成する参照も同じ形にする) / `available` の裸判定 / 既定の
+`Reference` ハンドラ (レシーバの前置をやめ、`MemberAccess` + `Self` が綴る)。
+`evaluator` と `endian_scope` は元から両方の形を見ていたので変更なし。
+
+**測定** (`example/` 314 ファイル):
+
+```
+実体化                1989 参照
+typed 22224 / 22244   (99.9%、未型付け 20 = 実体化前と同じ)
+到達可能な式          20255 -> 22244   (差し替えごとに Self が 1 つ増える)
+corpus                311 ok / 3 error
+wire / unparse 往復    ともに ok
+available -> 式 16 / 組めない 5        (実体化前と同じ)
+```
 
 **境界。** 実体化するのは receiver 1 段 (= その format のインスタンス) まで。
 腕の経路まで実体化すると格納戦略をフロントエンドが決めることになる — EBM の
 `self_ref` スタックがそれ。腕の経路は `UnionLayout` + バックエンドの選択。
+`Self.owner` はその起点を指すだけで、そこから先は持たない。
 
 ## 5. EBM との差 (訂正を含む)
 
@@ -864,9 +888,10 @@ nast に無い部品: **`WriterManager` に当たるもの**。`node/code_writer
   をノード自身が持っているので、構築時の loop_stack が要らない。
   面倒なのは `If`/`Match` が式なので、式の位置に出る制御フローを扱うこと
   (ebmgen の `CFGExpression` に当たるものが要る)
-- **載せ替えの機構**を 1 つ決める (`Rebase` ノード / 複製器 / self の実体化)。
-  修飾 `available(a.b.field)` と union 越しのメンバアクセスが同じ未決に合流して
-  いるので、決めれば両方片付く
+- **載せ替えの機構**を 1 つ決める (`Rebase` ノード / 複製器)。self の実体化は
+  済んだので差し替え点は `Self` の葉に決まったが、式そのものは共有されていて
+  書き換えられないので、複製の仕方はまだ要る。修飾 `available(a.b.field)` と
+  union 越しのメンバアクセスが同じ未決に合流しているので、決めれば両方片付く
 - 畳み込み構文 (`sum(items, ...)` 相当) を言語に足すかどうか。`available` /
   `sizeof` と同じ「値に対する述語で意味は lowering 側」の系列だが、束縛の構文が
   無いので言語設計の判断が要る

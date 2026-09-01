@@ -128,8 +128,13 @@ namespace brgen::nast {
                         return;
                     case NodeType::MemberAccess: {
                         auto d = e.as<MemberAccess>().ref(a);
-                        expr(d->base);
-                        w.write(".");
+                        // 実体化したレシーバ (bind/receiver) は原文に無いので
+                        // 綴らない。綴ると `self` が .bgn の構文に無いぶん
+                        // 再 parse できないテキストになる。
+                        if (!d->base.as_any<Self>()) {
+                            expr(d->base);
+                            w.write(".");
+                        }
                         w.write(ident_text(d->member));
                         return;
                     }

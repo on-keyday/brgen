@@ -5,6 +5,7 @@
 #include "endian_scope.hpp"
 #include "evaluator.hpp"
 #include "import_resolver.hpp"
+#include "receiver.hpp"
 #include "requires.hpp"
 #include "scope_resolver.hpp"
 #include "type_size.hpp"
@@ -108,6 +109,13 @@ namespace brgen::nast {
         }
         p.stats.names_resolved = resolver.resolved;
         p.stats.names_unresolved = resolver.unresolved;
+        // レシーバの実体化は名前解決の後。解決先が決まっていないと、その参照が
+        // field を指すのか、関数の中のローカルなのかが分からない。
+        bind::MaterializeReceiver receiver{p.arena, p.tables};
+        for (auto& mod : p.modules) {
+            receiver.run(mod);
+        }
+        p.stats.receivers = receiver.materialized;
         done(opt, Stage::bind);
 
         if (!wants(opt, Stage::type)) {

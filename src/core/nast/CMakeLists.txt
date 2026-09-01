@@ -187,6 +187,7 @@ add_library(nast_core STATIC
     "bind/evaluator.cpp"
     "bind/import_resolver.cpp"
     "bind/pipeline.cpp"
+    "bind/receiver.cpp"
     "bind/requires.cpp"
     "bind/scope_resolver.cpp"
     "bind/type_size.cpp"

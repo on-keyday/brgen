@@ -174,12 +174,35 @@ namespace brgen::nast {
         return false;
     }
 
+    // 名前を指している式から、その名前。裸の参照と、bind/receiver が
+    // 実体化したレシーバ越しの参照 (`self.x`) の両方で同じ答えを返す。
+    // 実体化の前後で形が変わるので、名前で引く側はこちらを通す。
+    inline Node<Ident> referenced_name(Arena& a, Node<Expr> e) {
+        if (auto ref = e.as_any<Reference>()) {
+            return ref.ref(a)->name;
+        }
+        if (auto ma = e.as_any<MemberAccess>()) {
+            auto d = ma.ref(a);
+            if (d->base.as_any<Self>()) {
+                return d->member;
+            }
+        }
+        return nullref;
+    }
+
     // 代入の左辺の根まで降りる。`sstate.isA` や `arr[i].x` から `sstate` /
     // `arr` を、`input.endian` から `input` を出す。メンバアクセスと添字だけを
     // 辿る (括弧は parse が代入の左辺として弾くので通らない)。
+    //
+    // **実体化したレシーバは越えない。** `self.x` の根は `self` ではなく
+    // `self.x` 自身 — 原文の `x` に当たるものがそれで、そこから先に降りると
+    // 「どの変数への書き込みか」が全部 self になる。
     inline Node<Expr> assign_root(Arena& a, Node<Expr> e) {
         for (;;) {
             if (auto ma = e.as_any<MemberAccess>()) {
+                if (ma.ref(a)->base.as_any<Self>()) {
+                    break;
+                }
                 e = ma.ref(a)->base;
                 continue;
             }
@@ -196,6 +219,7 @@ namespace brgen::nast {
     // input / output / config のいずれか。parse の検査 (check_assignment) と
     // 解析側の「どの変数への書き込みか」の判定は、同じこの規則で決まる。
     // ref が渡されていて根が参照なら、それを入れて返す。
+    // 呼ぶのは parse だけで、レシーバの実体化より前なので根は裸の参照。
     inline bool is_assignable(Arena& a, Node<Expr> e, Node<Reference>* ref = nullptr) {
         auto root = assign_root(a, e);
         if (auto r = root.as_any<Reference>()) {

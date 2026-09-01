@@ -111,10 +111,7 @@ namespace brgen::nast::bind {
 
             // 代入の左辺 (sstate.isA = .. / arr[i] = ..) の根の名前。
             Node<Ident> lhs_root_name(Node<Expr> e) {
-                if (auto ref = assign_root(a, e).as_any<Reference>()) {
-                    return ref.ref(a)->name;
-                }
-                return nullref;
+                return referenced_name(a, assign_root(a, e));
             }
 
             // field の型の先にいる format。配列と包みを剥がして struct の持ち主を見る。
