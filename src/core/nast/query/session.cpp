@@ -1,5 +1,6 @@
 /*license*/
 #include "session.hpp"
+#include "lower_view.hpp"
 #include "../node/printer.h"
 #include "../node/traverse.h"
 #include "../node/util.h"
@@ -250,6 +251,7 @@ namespace brgen::nast::query {
             "      例: find Field { type.kind == IntType and type.bit_size == 8 }\n"
             "          find Ident { @Resolution.target.kind == Field }\n"
             "          find Any { line == 52 }\n"
+            "  lower <id>          そのノードに当てはまる lowering 規則を当てて綴る\n"
             "  show [<Kind>]       その種のフィールド名と型 (引数なしで全 NodeType)\n"
             "  kinds               この木に出ている NodeType と件数\n"
             "  stat                ノード数と到達可能数\n"
@@ -376,6 +378,14 @@ namespace brgen::nast::query {
                 out += headline(n) + "\n";
             }
             out += std::format("{} 件\n", hit.size());
+            return true;
+        }
+        if (cmd == "lower") {
+            if (!want_id()) {
+                return true;
+            }
+            auto text = lower_text(const_cast<Program&>(p), node_at(id));
+            out += text.empty() ? "(この種に当てはまる規則は無い)\n" : text;
             return true;
         }
         if (cmd == "show") {
