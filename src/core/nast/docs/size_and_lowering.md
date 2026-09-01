@@ -454,7 +454,7 @@ visitor が展開形を出しているのは 6 種
 | --- | --- |
 | `CONDITIONAL` → `CONDITIONAL_STATEMENT` | ✔ `conditional` |
 | `RANGE_EQUAL` → `a <= x && x <= b` | ✔ `predicate` の `lower_range_compare` |
-| `AVAILABLE` | — 存在検査 |
+| `AVAILABLE` | ✔ `available` (修飾は `WithReceiver`) |
 | `ENUM_IS_DEFINED` | — 値が列挙に定義済みか |
 | `GET_STREAM_OFFSET` | — RuntimeState の読み (ADR 0039) |
 | `MAX_VALUE` | — その型の最大値 |
@@ -465,6 +465,7 @@ marker 系はほかに `FIELD_STORE` (ADR 0032)、`ENDIAN_VARIABLE`、
 nast にある残りは match→if (ebmgen だと `derive_match_lowered_if`) と
 `stream_io` (バイトの出し入れ)。手を付けやすいのは `STRING_FOR_EACH` と
 `ENUM_IS_DEFINED`、重いのは `STRUCT_CALL` と `BIT_FIELD_TO_BIT_SHIFT`。
+`AVAILABLE` は 2026-09-02 に済んだ。
 
 ### 値 knob と合成名の規約 (2026-08-31)
 
