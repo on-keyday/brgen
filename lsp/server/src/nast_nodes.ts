@@ -659,6 +659,7 @@ export interface Sizeof extends Expr {
 
 export interface Self extends Expr {
     owner: NodeId;
+    is_explicit: boolean;
 }
 
 export interface BitCast extends Expr {

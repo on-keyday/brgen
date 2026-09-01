@@ -856,6 +856,40 @@ available -> 式 16 / 組めない 5        (実体化前と同じ)
 `self_ref` スタックがそれ。腕の経路は `UnionLayout` + バックエンドの選択。
 `Self.owner` はその起点を指すだけで、そこから先は持たない。
 
+### `self` を文法に足した (2026-09-01)
+
+実体化と同じノードを**原文にも書けるようにした**。予約語に `self` を足し
+(`src/core/lexer/lexer.h`)、parse が `Self{is_explicit: true}` を作る。
+`owner` は parse が入れる — `current_member_` (field の belong) と並べて
+`current_receiver_` を持ち、こちらは format / state でだけ更新する
+(fn の body に入っても `self` は外側の format)。format の外に書いたら
+その場でエラー。
+
+**暗黙と明示で解決の仕方が違う。** 意図的:
+
+| | 解決 | |
+| --- | --- | --- |
+| 暗黙 (`x` → `self.x`) | 名前解決が決めた先をそのまま | 分岐の中の field と format 直下の union field の区別が残る |
+| 明示 (`self.x`) | 持ち主からメンバを引く | 同名の local に隠されない |
+
+暗黙のほうは「裸の名前をどう綴るか」の話なので解決は既に済んでいる。明示のほうは
+書いた側が「レシーバのメンバ」と言っているので、普通のメンバアクセスとして引く。
+`typer` の近道は `!is_explicit` のときだけ通る。
+
+**書けると効くのは 2 つ。** 同名の local に隠された field を指すこと
+(`testdata/self_keyword.bgn` で確認: `self.len` は 2 か所とも `Field` に、
+裸の `len` は `VariableDefinition` に解決される) と、インスタンスそのものを
+渡すこと。`available(self.x)` は `available(x)` と同義で、判定は
+「base が `Self`」のままなのでどちらも裸扱い。
+
+**往復は `is_explicit` が守る。** `Cast` の `<u8>(x)` / `u8(x)` と同じ、
+「同じノードに畳んだ 2 つの書き方」の区別。unparse は明示のものだけ綴る。
+
+コーパスへの影響なし (`example/` で `self` は全部コメント中の
+`self-describing` などで、識別子としては 1 件も使われていない)。ただし
+**予約語は src2json と共有**なので、`self` を書いた `.bgn` は旧経路では
+構文誤りになる。
+
 ## 5. EBM との差 (訂正を含む)
 
 「置く側が違う」と書きかけたが誤り。EBM も emit 時にホイストしている:

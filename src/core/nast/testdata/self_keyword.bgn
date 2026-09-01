@@ -1,0 +1,13 @@
+# 原文に書ける `self`。bind/receiver が field 参照に黙って足すものと同じノードで、
+# 綴りが残る (is_explicit) ぶんだけ違う。
+#
+#   self.x   -> レシーバのメンバを引く。同名の local には隠されない
+#   x        -> 普通の名前解決。近い宣言が勝つ
+
+format S:
+    len :u8
+    data :[self.len]u8
+
+    fn shadowed() -> u8:
+        len := 3
+        return self.len + len

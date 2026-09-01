@@ -218,14 +218,17 @@ namespace brgen::nast {
     // 代入の左辺として書ける形か。根が名前 (ident / メンバアクセス / 添字) か、
     // input / output / config のいずれか。parse の検査 (check_assignment) と
     // 解析側の「どの変数への書き込みか」の判定は、同じこの規則で決まる。
-    // ref が渡されていて根が参照なら、それを入れて返す。
-    // 呼ぶのは parse だけで、レシーバの実体化より前なので根は裸の参照。
+    // ref が渡されていて根が裸の参照なら、それを入れて返す。
     inline bool is_assignable(Arena& a, Node<Expr> e, Node<Reference>* ref = nullptr) {
         auto root = assign_root(a, e);
         if (auto r = root.as_any<Reference>()) {
             if (ref) {
                 *ref = r;
             }
+            return true;
+        }
+        // `self.x = ..`。assign_root はレシーバを越えないので根はこの形で来る。
+        if (referenced_name(a, root)) {
             return true;
         }
         return bool(root.as_any<SpecialLiteral>());

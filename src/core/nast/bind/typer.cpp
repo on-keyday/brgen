@@ -346,7 +346,10 @@ namespace brgen::nast::bind {
         // 時点で決まっているので、名前で引き直さない — 分岐の中で宣言された
         // field と format 直下の union field は同じ名前で別の宣言を指すので、
         // 持ち主から名前で引くと使用位置の区別が消える。
-        if (d->base.as_any<Self>()) {
+        // 原文に書かれた `self.x` はこちらを通さない。書いた側は「レシーバの
+        // メンバ」と言っているので、普通のメンバアクセスとして持ち主から引く
+        // (だから同名の local に隠されない)。
+        if (auto self = d->base.as_any<Self>(); self && !self.ref(a)->is_explicit) {
             if (auto* r = tables.table<Resolution>().get(d->member)) {
                 return type_of_decl(r->target);
             }
