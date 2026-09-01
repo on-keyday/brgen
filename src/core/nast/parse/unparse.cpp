@@ -25,6 +25,7 @@ namespace brgen::nast {
             // WithReceiver の中では Self がこれを指す。綴りを .bgn に保つため、
             // 印字の時点で載せ替える。
             std::vector<Node<Expr>> receivers;
+            bool explicit_self = false;
 
             // 行を終える。次の write は新しい行に載り、インデントは Writer が
             // 現在の深さから決める。
@@ -136,7 +137,7 @@ namespace brgen::nast {
                         // (`is_explicit`)。Cast の `<u8>(x)` / `u8(x)` と同じ、
                         // 「同じノードに畳んだ 2 つの書き方」の区別。
                         auto self = d->base.as_any<Self>();
-                        if (!self || self.ref(a)->is_explicit || !receivers.empty()) {
+                        if (!self || self.ref(a)->is_explicit || explicit_self || !receivers.empty()) {
                             expr(d->base);
                             w.write(".");
                         }
@@ -880,28 +881,31 @@ namespace brgen::nast {
 
     }  // namespace
 
-    std::string unparse(Arena& a, Node<Module> mod) {
-        return unparse_node(a, mod);
+    std::string unparse(Arena& a, Node<Module> mod, UnparseOption opt) {
+        return unparse_node(a, mod, opt);
     }
 
-    CodeOutput unparse_with_spans(Arena& a, Node<Module> mod) {
-        return unparse_node_with_spans(a, mod);
+    CodeOutput unparse_with_spans(Arena& a, Node<Module> mod, UnparseOption opt) {
+        return unparse_node_with_spans(a, mod, opt);
     }
 
-    std::string unparse_node(Arena& a, NodeAny n) {
+    std::string unparse_node(Arena& a, NodeAny n, UnparseOption opt) {
         Unparser u{a};
+        u.explicit_self = opt.explicit_self;
         run_any(u, n);
         return u.w.to_string(IndentStyle{}.text.c_str());
     }
 
-    CodeOutput unparse_node_with_spans(Arena& a, NodeAny n) {
+    CodeOutput unparse_node_with_spans(Arena& a, NodeAny n, UnparseOption opt) {
         Unparser u{a};
+        u.explicit_self = opt.explicit_self;
         run_any(u, n);
         return finish(u.w);
     }
 
-    CodeWriter unparse_writer(Arena& a, NodeAny n) {
+    CodeWriter unparse_writer(Arena& a, NodeAny n, UnparseOption opt) {
         Unparser u{a};
+        u.explicit_self = opt.explicit_self;
         run_any(u, n);
         return std::move(u.w);
     }

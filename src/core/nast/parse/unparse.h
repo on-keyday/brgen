@@ -37,10 +37,17 @@
 
 namespace brgen::nast {
 
+    struct UnparseOption {
+        // bind/receiver が足した暗黙のレシーバも綴る (`len` を `self.len` と
+        // 出す)。何がレシーバを取ると判定されたかをそのまま読むためのもの。
+        // 再 parse は通るが `is_explicit` が変わるので、往復の検証には使わない。
+        bool explicit_self = false;
+    };
+
     // 木を .bgn に戻す。由来の対応表 (CodeOutput::spans) も要るなら
     // *_with_spans を使う。型は node/code_writer.h にある。
-    std::string unparse(Arena& a, Node<Module> mod);
-    CodeOutput unparse_with_spans(Arena& a, Node<Module> mod);
+    std::string unparse(Arena& a, Node<Module> mod, UnparseOption opt = {});
+    CodeOutput unparse_with_spans(Arena& a, Node<Module> mod, UnparseOption opt = {});
 
     // 木の一部だけを書く。Module でなくてよく、文 / 式 / 型 / 名前のどれでも
     // その位置での書き方で出る (式は式として、型は型として)。
@@ -51,8 +58,8 @@ namespace brgen::nast {
     //
     // 出るのはそのノード単体で、インデントは 0 から始まる。周りの文脈
     // (何段目のブロックにいたか) は持たない。
-    std::string unparse_node(Arena& a, NodeAny n);
-    CodeOutput unparse_node_with_spans(Arena& a, NodeAny n);
+    std::string unparse_node(Arena& a, NodeAny n, UnparseOption opt = {});
+    CodeOutput unparse_node_with_spans(Arena& a, NodeAny n, UnparseOption opt = {});
 
     // 組み立て途中の Writer に貼るための形。文字列に落とさないので、
     // どの断片がどのノードから出たかがそのまま残る。
@@ -62,6 +69,6 @@ namespace brgen::nast {
     //
     // バックエンドが .bgn の一部をそのまま出したいとき (未対応の構文を
     // コメントで添える、元の宣言を残す) はこちらを使う。
-    CodeWriter unparse_writer(Arena& a, NodeAny n);
+    CodeWriter unparse_writer(Arena& a, NodeAny n, UnparseOption opt = {});
 
 }  // namespace brgen::nast
