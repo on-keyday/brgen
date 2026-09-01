@@ -1,9 +1,9 @@
 /*license*/
 // 入り口。見たいものを最初の引数で選ぶ。中身はモードごとに size.cpp /
 // endian.cpp / lower.cpp にある。
+#include "../../node/console.h"
 #include "probe.hpp"
 
-#include <print>
 #include <string_view>
 
 using namespace brgen::nast;
@@ -11,8 +11,8 @@ using namespace brgen::nast::probe;
 
 int main(int argc, char** argv) {
     if (argc < 3) {
-        std::println(stderr, "usage: nast_probe <size|endian|lower> <file.bgn>...");
-        std::println(stderr, "  ファイルが 1 つなら明細、2 つ以上なら集計");
+        print_line(stderr, "usage: nast_probe <size|endian|lower> <file.bgn>...");
+        print_line(stderr, "  ファイルが 1 つなら明細、2 つ以上なら集計");
         return 2;
     }
     std::string_view what = argv[1];
@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
             run_lower(p, detail, hist);
         }
         else {
-            std::println(stderr, "unknown mode: {}", what);
+            print_line(stderr, "unknown mode: {}", what);
             return 2;
         }
     }
@@ -55,12 +55,12 @@ int main(int argc, char** argv) {
         }
         for (auto& [k, v] : hist) {
             auto total = k.starts_with("  ") ? 0 : group_total[group_of(k)];
-            std::println("{:<32} {:>6}{}", k, v,
+            print_line("{:<32} {:>6}{}", k, v,
                          total ? std::format("  {:>5.1f}%", 100.0 * double(v) / double(total)) : "");
         }
         for (auto& [g, v] : group_total) {
-            std::println("{:<32} {:>6}", g.empty() ? "合計" : g + " 合計", v);
+            print_line("{:<32} {:>6}", g.empty() ? "合計" : g + " 合計", v);
         }
-        std::println("({} files)", files);
+        print_line("({} files)", files);
     }
 }

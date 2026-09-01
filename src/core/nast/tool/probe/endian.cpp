@@ -1,11 +1,11 @@
 /*license*/
 // `nast_probe endian` — field ごとに効いているバイト順。実行時に決まるものは
 // その代入 (SpecifyOrder) の式も出す。
+#include "../../node/console.h"
 #include "probe.hpp"
 #include "../../node/util.h"
 #include "../../parse/unparse.h"
 
-#include <print>
 
 namespace brgen::nast::probe {
 
@@ -20,7 +20,7 @@ namespace brgen::nast::probe {
             hist[k]++;
             if (detail) {
                 auto name = name_of(a, f);
-                std::println("{:<24} {}{}", name.empty() ? "(無名)" : std::string(name), k,
+                print_line("{:<24} {}{}", name.empty() ? "(無名)" : std::string(name), k,
                              e->dynamic ? "  " + unparse_node(a, e->dynamic.ref(a)->order) : "");
             }
         });

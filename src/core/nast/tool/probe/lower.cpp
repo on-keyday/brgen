@@ -1,6 +1,7 @@
 /*license*/
 // `nast_probe lower` — 三項 / match / 範囲比較 / 整数とバイト列。明細は綴りに
 // 戻して出す (合成した木の正しさは .bgn として眺めるのが一番速い)。
+#include "../../node/console.h"
 #include "probe.hpp"
 #include "../../lowering/available.hpp"
 #include "../../lowering/conditional.hpp"
@@ -14,7 +15,6 @@
 #include "../../node/util.h"
 #include "../../parse/unparse.h"
 
-#include <print>
 
 namespace brgen::nast::probe {
 
@@ -60,15 +60,15 @@ namespace brgen::nast::probe {
             if (count) {
                 auto fill = lowering::read_bytes(c, lowering::input_stream(c, loc), buf, nullref, count);
                 if (fill) {
-                    std::println("--- {} :{}", name, unparse_node(a, ty));
-                    std::println("fill:");
+                    print_line("--- {} :{}", name, unparse_node(a, ty));
+                    print_line("fill:");
                     for (auto& st : fill.ref(a)->statements) {
-                        std::println("{}", unparse_node(a, st));
+                        print_line("{}", unparse_node(a, st));
                     }
                     auto drain = lowering::write_bytes(c, lowering::output_stream(c, loc), buf, nullref, count);
-                    std::println("drain:");
+                    print_line("drain:");
                     for (auto& st : drain.ref(a)->statements) {
-                        std::println("{}", unparse_node(a, st));
+                        print_line("{}", unparse_node(a, st));
                     }
                 }
             }
@@ -78,14 +78,14 @@ namespace brgen::nast::probe {
                 return;
             }
             auto print_body = [&](const char* label, Node<Body> body) {
-                std::println("{}:", label);
+                print_line("{}:", label);
                 if (!body) {
-                    std::println("  (組めない)");
+                    print_line("  (組めない)");
                     return;
                 }
                 // unparse は Body 単体を綴らない (文ではない) ので 1 つずつ。
                 for (auto& s : body.ref(a)->statements) {
-                    std::println("{}", unparse_node(a, s));
+                    print_line("{}", unparse_node(a, s));
                 }
             };
             print_body("decode", dec);
@@ -129,8 +129,8 @@ namespace brgen::nast::probe {
             if (auto if_ = lowering::lower_match(c, m)) {
                 hist["match -> if"]++;
                 if (detail) {
-                    std::println("--- match #{}", m.id());
-                    std::println("{}", unparse_node(a, if_));
+                    print_line("--- match #{}", m.id());
+                    print_line("{}", unparse_node(a, if_));
                 }
             }
         });
@@ -150,16 +150,16 @@ namespace brgen::nast::probe {
             }
             hist["available -> 式"]++;
             if (detail) {
-                std::println("--- {}", unparse_node(a, av));
-                std::println("{}", unparse_node(a, e));
+                print_line("--- {}", unparse_node(a, av));
+                print_line("{}", unparse_node(a, e));
             }
         });
         each_node<Binary>(a, last, [&](Node<Binary> bin) {
             if (auto e = lowering::lower_range_compare(c, bin)) {
                 hist["範囲比較 -> 比較"]++;
                 if (detail) {
-                    std::println("--- {}", unparse_node(a, bin));
-                    std::println("{}", unparse_node(a, e));
+                    print_line("--- {}", unparse_node(a, bin));
+                    print_line("{}", unparse_node(a, e));
                 }
             }
         });
@@ -171,9 +171,9 @@ namespace brgen::nast::probe {
             }
             hist["三項 -> if"]++;
             if (detail) {
-                std::println("--- {}", unparse_node(a, cond));
-                std::println("{}", unparse_node(a, low->branch));
-                std::println("use: {}", unparse_node(a, low->value));
+                print_line("--- {}", unparse_node(a, cond));
+                print_line("{}", unparse_node(a, low->branch));
+                print_line("use: {}", unparse_node(a, low->value));
             }
         });
     }

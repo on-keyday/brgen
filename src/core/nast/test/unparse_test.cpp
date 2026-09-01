@@ -7,6 +7,7 @@
 //
 // 比較は所有木の形 (structural)。weak と位置と cosmetic は見ない。
 // 失敗したファイルの unparse 結果は ignore/nast/unparse/ に書き出す。
+#include "../node/console.h"
 #include "core/common/error.h"
 #include "../parse/parse.h"
 #include "../parse/unparse.h"
@@ -15,9 +16,11 @@
 #include <core/common/file.h>
 #include <filesystem>
 #include <fstream>
-#include <print>
 #include <string>
 #include <vector>
+
+using brgen::nast::print_line;
+using brgen::nast::print_text;
 
 namespace {
 
@@ -87,7 +90,7 @@ int main(int argc, char** argv) {
         }
     }
     if (paths.empty()) {
-        std::println(stderr, "usage: nast_unparse_test [--emit] <file.bgn>...");
+        print_line(stderr, "usage: nast_unparse_test [--emit] <file.bgn>...");
         return 2;
     }
 
@@ -118,7 +121,7 @@ int main(int argc, char** argv) {
         auto full = brgen::nast::unparse_with_spans(arena, *parsed);
         auto text = full.text;
         if (emit) {
-            std::print("{}", text);
+            print_text("{}", text);
             continue;
         }
         // 同じアリーナに読み直す。structural 比較は 1 つのアリーナの中で行う。
@@ -126,7 +129,7 @@ int main(int argc, char** argv) {
         // 不動点比較に使う)。
         auto reloaded = files.add_special(path + "@unparsed", std::string(text));
         if (!reloaded) {
-            std::println("REPARSE-SETUP-FAIL {}", path);
+            print_line("REPARSE-SETUP-FAIL {}", path);
             mismatch++;
             continue;
         }
@@ -143,27 +146,27 @@ int main(int argc, char** argv) {
                     msg = m;
                 }
             });
-            std::println("REPARSE-FAIL {}\n{}", path, msg);
+            print_line("REPARSE-FAIL {}\n{}", path, msg);
             save_failed(path, text);
             mismatch++;
             continue;
         }
         if (!brgen::nast::structural(arena, *parsed, *reparsed)) {
-            std::println("MISMATCH {}", path);
+            print_line("MISMATCH {}", path);
             save_failed(path, text);
             mismatch++;
             continue;
         }
         std::string why;
         if (!spans_are_sane(full, why)) {
-            std::println("SPAN-BROKEN {} ({})", path, why);
+            print_line("SPAN-BROKEN {} ({})", path, why);
             save_failed(path, text);
             mismatch++;
             continue;
         }
         auto text2 = brgen::nast::unparse(arena, *reparsed);
         if (text2 != text) {
-            std::println("UNSTABLE {}", path);
+            print_line("UNSTABLE {}", path);
             save_failed(path, text + "\n=====\n" + text2);
             unstable++;
             continue;
@@ -171,7 +174,7 @@ int main(int argc, char** argv) {
         ok++;
     }
     if (!emit) {
-        std::println("\n{} ok / {} mismatch / {} unstable / {} skipped", ok, mismatch, unstable, skipped);
+        print_line("\n{} ok / {} mismatch / {} unstable / {} skipped", ok, mismatch, unstable, skipped);
     }
     return (mismatch || unstable) ? 1 : 0;
 }

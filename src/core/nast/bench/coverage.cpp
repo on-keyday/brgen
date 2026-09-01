@@ -1,5 +1,6 @@
 // 式の種類ごとの数と型の付き具合、および木から到達できないノードの数。
 // ファイルごとにアリーナが別なので、集合は必ずファイル単位で作り直す。
+#include "../node/console.h"
 #include "../bind/pipeline.h"
 #include "../parse/parse.h"
 #include "../node/traverse.h"
@@ -7,7 +8,6 @@
 #include <core/common/file.h>
 #include <algorithm>
 #include <map>
-#include <print>
 #include <set>
 #include <string>
 #include <vector>
@@ -104,22 +104,22 @@ int main(int argc, char** argv) {
     for (auto& [k, n] : v) {
         auto ty = typed_hist.count(k) ? typed_hist[k] : 0;
         typed_total += ty;
-        std::println("{:<18} {:>6}  {:>5.1f}%  typed {:>6}/{:<6} {:>5.1f}%", k, n,
+        print_line("{:<18} {:>6}  {:>5.1f}%  typed {:>6}/{:<6} {:>5.1f}%", k, n,
                      100.0 * n / reach_exprs, ty, n, 100.0 * ty / n);
     }
-    std::println("");
-    std::println("arena {} nodes, reachable {} ({:.1f}%)", arena_nodes, reachable_nodes,
+    print_line("");
+    print_line("arena {} nodes, reachable {} ({:.1f}%)", arena_nodes, reachable_nodes,
                  100.0 * reachable_nodes / arena_nodes);
-    std::println("exprs {} total, reachable {}, orphan {} ({:.1f}%), designator {} (型付け対象外)",
+    print_line("exprs {} total, reachable {}, orphan {} ({:.1f}%), designator {} (型付け対象外)",
                  total, reach_exprs, orphan_exprs, 100.0 * orphan_exprs / total, designator_exprs);
-    std::println("typed {} / {} reachable exprs ({:.1f}%)", typed_total, reach_exprs,
+    print_line("typed {} / {} reachable exprs ({:.1f}%)", typed_total, reach_exprs,
                  100.0 * typed_total / reach_exprs);
-    std::println("");
-    std::println("Reference の解決先ごと (解決エントリ無し {}):", ref_unresolved);
+    print_line("");
+    print_line("Reference の解決先ごと (解決エントリ無し {}):", ref_unresolved);
     std::vector<std::pair<std::string, std::size_t>> rv(ref_tgt.begin(), ref_tgt.end());
     std::sort(rv.begin(), rv.end(), [](auto& l, auto& r) { return l.second > r.second; });
     for (auto& [k, n] : rv) {
         auto ty = ref_tgt_typed.count(k) ? ref_tgt_typed[k] : 0;
-        std::println("  -> {:<22} {:>6}  typed {:>6}  {:>5.1f}%", k, n, ty, 100.0 * ty / n);
+        print_line("  -> {:<22} {:>6}  typed {:>6}  {:>5.1f}%", k, n, ty, 100.0 * ty / n);
     }
 }
