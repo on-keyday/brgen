@@ -5,6 +5,12 @@
 #include "../node/traverse.h"
 #include "../parse/unparse.h"
 
+#include <comb2/basic/group.h>
+#include <comb2/composite/number.h>
+#include <comb2/composite/range.h>
+#include <comb2/composite/string.h>
+#include <comb2/lexctx.h>
+
 #include <charconv>
 #include <format>
 
@@ -14,62 +20,130 @@ namespace brgen::nast::query {
 
         // ---- 字句 ------------------------------------------------------------
 
+        // 字句は comb2 で組む。brgen の字句解析器 (src/core/lexer/lexer.h) と
+        // ebmgen の debugger が同じ書き方をしているので、綴りの規則を
+        // 手書きの走査で書き直さない。構文のほうは nast の parse/ と同じく
+        // 手書きの再帰下降。
+        // comb2 の演算子は自由関数なので、外に出すと範囲 for の `*it` や `-x`
+        // まで拾ってしまう。字句の定義だけを囲って閉じ込める
+        // (lexer.h が internal 名前空間でそうしているのと同じ理由)。
+        namespace lex {
+
+        namespace cps = futils::comb2::composite;
+        using namespace futils::comb2::ops;
+
+        enum class Tok {
+            space,
+            number,
+            string,
+            ident,
+            sym,
+        };
+
+        constexpr auto tok_space = str(Tok::space, ~(cps::space | cps::tab));
+        constexpr auto tok_number = str(Tok::number, cps::hex_integer | cps::dec_integer);
+        constexpr auto tok_string = str(Tok::string, cps::c_str);
+        constexpr auto tok_ident = str(Tok::ident, cps::c_ident);
+        // 長いものから見る (`==` が `=` に、`->` が `-` に食われないように)。
+        constexpr auto tok_sym = str(Tok::sym, lit("==") | lit("!=") | lit("<=") | lit(">=") |
+                                                   lit("&&") | lit("||") | lit("->") | lit("<") |
+                                                   lit(">") | lit("!") | lit("(") | lit(")") |
+                                                   lit("[") | lit("]") | lit(".") | lit("@"));
+        constexpr auto tok_one = tok_space | tok_number | tok_string | tok_ident | tok_sym;
+
+        struct Token {
+            Tok kind = Tok::sym;
+            std::string text;
+            std::size_t pos = 0;
+        };
+
+        // 読む口。構文側は「合えば進む」だけを使う。
         struct Lexer {
-            std::string_view src;
+            std::vector<Token> toks;
+            std::size_t at = 0;
+            // 誤りの位置は文字の位置で言う (トークン番号では原文を指せない)。
             std::size_t pos = 0;
 
-            void skip_space() {
-                while (pos < src.size() && (src[pos] == ' ' || src[pos] == '\t')) {
-                    pos++;
-                }
+            bool eof() const {
+                return at >= toks.size();
             }
 
-            bool eof() {
-                skip_space();
-                return pos >= src.size();
+            const Token* peek() const {
+                return eof() ? nullptr : &toks[at];
             }
 
-            // 記号。合えば読み進める。長いものから先に見る (`==` と `=`)。
+            void advance() {
+                at++;
+                pos = eof() ? pos : toks[at].pos;
+            }
+
+            // 記号か、その綴りの語 (and / or / not は識別子として来る)。
             bool sym(std::string_view s) {
-                skip_space();
-                if (src.substr(pos, s.size()) != s) {
+                auto* t = peek();
+                if (!t || (t->kind != Tok::sym && t->kind != Tok::ident) || t->text != s) {
                     return false;
                 }
-                pos += s.size();
+                advance();
                 return true;
             }
 
-            bool peek_sym(std::string_view s) {
-                skip_space();
-                return src.substr(pos, s.size()) == s;
-            }
-
-            // 識別子。数字始まりは通さない。
             std::string ident() {
-                skip_space();
-                auto start = pos;
-                while (pos < src.size() &&
-                       (std::isalnum(static_cast<unsigned char>(src[pos])) || src[pos] == '_')) {
-                    pos++;
+                auto* t = peek();
+                if (!t || t->kind != Tok::ident) {
+                    return {};
                 }
-                return std::string(src.substr(start, pos - start));
+                auto text = t->text;
+                advance();
+                return text;
             }
 
-            // 文字列リテラル。エスケープは扱わない (フィールドの値に出ない)。
+            std::string number() {
+                auto* t = peek();
+                if (!t || t->kind != Tok::number) {
+                    return {};
+                }
+                auto text = t->text;
+                advance();
+                return text;
+            }
+
+            // 引用符は落として返す。
             bool string_lit(std::string& out) {
-                skip_space();
-                if (pos >= src.size() || src[pos] != '"') {
+                auto* t = peek();
+                if (!t || t->kind != Tok::string) {
                     return false;
                 }
-                auto end = src.find('"', pos + 1);
-                if (end == std::string_view::npos) {
-                    return false;
-                }
-                out = std::string(src.substr(pos + 1, end - pos - 1));
-                pos = end + 1;
+                out = t->text.size() >= 2 ? t->text.substr(1, t->text.size() - 2) : std::string();
+                advance();
                 return true;
             }
         };
+
+        bool tokenize(std::string_view src, Lexer& lx, std::string& err) {
+            auto seq = futils::make_ref_seq(src);
+            while (!seq.eos()) {
+                auto ctx = futils::comb2::LexContext<Tok, std::string>{};
+                if (tok_one(seq, ctx, 0) != futils::comb2::Status::match) {
+                    err = std::format("読めない字がある (位置 {})", seq.rptr);
+                    return false;
+                }
+                auto pos = ctx.str_pos;
+                seq.rptr = pos.end;
+                if (ctx.str_tag == Tok::space) {
+                    continue;
+                }
+                lx.toks.push_back(Token{ctx.str_tag,
+                                        std::string(src.substr(pos.begin, pos.end - pos.begin)),
+                                        pos.begin});
+            }
+            lx.pos = lx.toks.empty() ? 0 : lx.toks.front().pos;
+            return true;
+        }
+
+        }  // namespace lex
+
+        using lex::Lexer;
+        using lex::tokenize;
 
         std::optional<std::int64_t> as_int(std::string_view s) {
             if (s.empty()) {
@@ -177,7 +251,7 @@ namespace brgen::nast::query {
                         continue;
                     }
                     if (lx.sym("[")) {
-                        auto digits = lx.ident();
+                        auto digits = lx.number();
                         auto n = as_int(digits);
                         if (!n || *n < 0) {
                             return fail("`[` の中は番号");
@@ -213,7 +287,11 @@ namespace brgen::nast::query {
                 if (e->op != CmpOp::none) {
                     std::string lit;
                     if (!lx.string_lit(lit)) {
-                        lit = lx.ident();
+                        // 数・名前 (種別名や列挙の綴り) のどちらでも書ける。
+                        lit = lx.number();
+                        if (lit.empty()) {
+                            lit = lx.ident();
+                        }
                         if (lit.empty()) {
                             return fail("比較する値が要る");
                         }
@@ -529,7 +607,10 @@ namespace brgen::nast::query {
     }  // namespace
 
     FilterPtr parse_filter(std::string_view text, std::string& err) {
-        Parser ps{Lexer{text}};
+        Parser ps;
+        if (!tokenize(text, ps.lx, err)) {
+            return nullptr;
+        }
         FilterPtr out;
         if (!ps.expr(out)) {
             err = ps.err;
