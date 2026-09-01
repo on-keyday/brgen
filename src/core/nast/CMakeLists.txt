@@ -237,7 +237,7 @@ target_link_libraries(nast_test PRIVATE futils_imported)
 target_compile_definitions(nast_test PRIVATE NAST_TEST_WITH_JSON NAST_TEST_WITH_JSON_PARSE)
 add_dependencies(nast_test nast_generate)
 
-foreach(t unparse_test wire_test)
+foreach(t unparse_test wire_test pipeline_test)
     add_executable(nast_${t} "test/${t}.cpp")
     target_link_libraries(nast_${t} PRIVATE nast_core)
 endforeach()
@@ -255,6 +255,9 @@ if(NAST_CORPUS)
     add_test(NAME nast_wire_roundtrip COMMAND nast_wire_test ${NAST_CORPUS})
     add_test(NAME nast_unparse_roundtrip COMMAND nast_unparse_test ${NAST_CORPUS})
 endif()
+
+# 解析 / lowering / 条件式。期待値は test/pipeline_test.cpp に直に書いてある。
+add_test(NAME nast_pipeline COMMAND nast_pipeline_test "${NAST_DIR}/testdata")
 
 # Windows では futils が dll なので、実行できるように隣へ置く。
 # Windows では futils が dll なので、実行できるように隣へ置く。
