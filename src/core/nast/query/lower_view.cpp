@@ -18,15 +18,16 @@ namespace brgen::nast::query {
 
     namespace {
 
-        void body_text(Arena& a, std::string& out, const char* label, Node<Body> body) {
-            out += std::format("{}:\n", label);
+        void body_text(Arena& a, Lowered& r, const char* label, Node<Body> body) {
+            r.text += std::format("{}:\n", label);
             if (!body) {
-                out += "  (組めない)\n";
+                r.text += "  (組めない)\n";
                 return;
             }
+            r.made.push_back({label, body});
             // unparse は Body 単体を綴らない (文ではない) ので 1 つずつ。
             for (auto& s : body.ref(a)->statements) {
-                out += unparse_node(a, s) + "\n";
+                r.text += unparse_node(a, s) + "\n";
             }
         }
 
@@ -58,7 +59,7 @@ namespace brgen::nast::query {
             return mul;
         }
 
-        std::string field_text(Program& p, lowering::Context& c, Node<Field> f) {
+        Lowered field_lowered(Program& p, lowering::Context& c, Node<Field> f) {
             auto& a = p.arena;
             auto ty = f.ref(a)->type;
             auto name = name_of(a, f);
@@ -71,57 +72,77 @@ namespace brgen::nast::query {
             auto off = b.ref("o");
             auto target = lowering::field_ref(c, f);
 
-            std::string out = std::format("--- {} :{}\n", name, unparse_node(a, ty));
+            Lowered r;
+            r.text = std::format("--- {} :{}\n", name, unparse_node(a, ty));
             if (auto count = byte_count(p, ty, loc)) {
                 if (auto fill = lowering::read_bytes(c, lowering::input_stream(c, loc), buf, nullref, count)) {
-                    body_text(a, out, "fill", fill);
-                    body_text(a, out, "drain",
+                    body_text(a, r, "fill", fill);
+                    body_text(a, r, "drain",
                               lowering::write_bytes(c, lowering::output_stream(c, loc), buf, nullref, count));
                 }
             }
             auto dec = lowering::lower_field_decode(c, f, target, buf, off);
             if (!dec) {
-                out += "decode:\n  (組めない)\n";
-                return out;
+                r.text += "decode:\n  (組めない)\n";
+                return r;
             }
-            body_text(a, out, "decode", dec);
-            body_text(a, out, "encode", lowering::lower_field_encode(c, f, target, buf, off));
-            return out;
+            body_text(a, r, "decode", dec);
+            body_text(a, r, "encode", lowering::lower_field_encode(c, f, target, buf, off));
+            return r;
         }
 
     }  // namespace
 
-    std::string lower_text(Program& p, NodeAny n) {
+    Lowered lower_of(Program& p, NodeAny n) {
         if (!n) {
             return {};
         }
         auto& a = p.arena;
         lowering::Context c{a, p.tables};
         if (auto f = n.as_any<Field>()) {
-            return field_text(p, c, f);
+            return field_lowered(p, c, f);
         }
-        auto head = std::format("--- {}\n", unparse_node(a, n));
+        Lowered r;
+        r.text = std::format("--- {}\n", unparse_node(a, n));
         if (auto m = n.as_any<Match>()) {
             auto if_ = lowering::lower_match(c, m);
-            return head + (if_ ? unparse_node(a, if_) + "\n" : "(組めない)\n");
+            if (!if_) {
+                r.text += "(組めない)\n";
+                return r;
+            }
+            r.made.push_back({"branch", if_});
+            r.text += unparse_node(a, if_) + "\n";
+            return r;
         }
         if (auto av = n.as_any<Available>()) {
             auto e = lowering::lower_available(c, av);
-            return head + (e ? unparse_node(a, e) + "\n" : "(組めない)\n");
+            if (!e) {
+                r.text += "(組めない)\n";
+                return r;
+            }
+            r.made.push_back({"expr", e});
+            r.text += unparse_node(a, e) + "\n";
+            return r;
         }
         if (auto cond = n.as_any<Cond>()) {
             auto* low = lowering::lower_conditional(c, cond);
             if (!low) {
-                return head + "(組めない)\n";
+                r.text += "(組めない)\n";
+                return r;
             }
-            return head + unparse_node(a, low->branch) + "\nuse: " + unparse_node(a, low->value) + "\n";
+            r.made.push_back({"branch", low->branch});
+            r.made.push_back({"value", low->value});
+            r.text += unparse_node(a, low->branch) + "\nuse: " + unparse_node(a, low->value) + "\n";
+            return r;
         }
         if (auto bin = n.as_any<Binary>()) {
             auto e = lowering::lower_range_compare(c, bin);
             if (!e) {
                 return {};  // 範囲比較でない普通の二項は対象外
             }
-            return head + unparse_node(a, e) + "\n";
+            r.made.push_back({"expr", e});
+            r.text += unparse_node(a, e) + "\n";
+            return r;
         }
         return {};
     }
