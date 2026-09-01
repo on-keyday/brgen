@@ -29,8 +29,9 @@ namespace brgen::nast::bind {
         }
 
         // 差し替え表に沿ってスロットを書き換える。**ノードは作らない** —
-        // arena の pool は vector なので、走査中に make すると今持っている
-        // NodeData* が無効になる。作るのは走査の外で済ませてある。
+        // arena の pool は vector で、for_each_field の間はそのノードの実体を
+        // 掴んだままなので、途中で make すると移動して無効になる。作るのは
+        // 走査の外で済ませてある。
         struct Rewriter {
             Arena& a;
             const std::unordered_map<std::uint32_t, Node<MemberAccess>>& repl;
@@ -51,15 +52,9 @@ namespace brgen::nast::bind {
                 if (!id || !seen.insert(id.id()).second) {
                     return;
                 }
-                auto* h = a.header_at(id.id());
-                if (!h) {
-                    return;
-                }
-                auto type = h->type;
-                auto index = h->data_index;
-                visit_node_type(type, [&](auto tag) {
+                visit_node_type(id.type(), [&](auto tag) {
                     using U = typename decltype(tag)::type;
-                    auto* d = a.template data_at<U>(index);
+                    auto d = id.as_any<U>().ref(a);
                     if (!d) {
                         return;
                     }
