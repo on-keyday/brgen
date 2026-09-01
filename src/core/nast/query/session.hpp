@@ -61,6 +61,11 @@ namespace brgen::nast::query {
         // filter.hpp に書いてある。
         std::vector<std::uint32_t> select(std::optional<NodeType> kind, const FilterPtr& filter) const;
 
+        // ノード種のフィールド一覧。条件式を書くときの綴りはこれで引く。
+        std::string show_kind(NodeType kind) const;
+        // 全ノード種。
+        static std::string list_kinds();
+
         // ---- 対話 ------------------------------------------------------------
 
         // 1 行を実行して out に積む。false を返したら終わり (quit)。
