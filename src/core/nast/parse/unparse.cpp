@@ -26,6 +26,7 @@ namespace brgen::nast {
             // 印字の時点で載せ替える。
             std::vector<Node<Expr>> receivers;
             bool explicit_self = false;
+            bool mark_unprintable = false;
 
             // 行を終える。次の write は新しい行に載り、インデントは Writer が
             // 現在の深さから決める。
@@ -877,6 +878,35 @@ namespace brgen::nast {
                 u.w.write(u.ident_text(id));
                 return;
             }
+            // 式でも文でも型でもない組み立て部品。式の位置に置けないので
+            // 中身を並べる。
+            if (auto body = n.as_any<Body>()) {
+                bool first = true;
+                for (auto& s : body.ref(u.a)->statements) {
+                    if (!first) {
+                        u.nl();
+                    }
+                    first = false;
+                    u.statement(s);
+                }
+                return;
+            }
+            if (auto args = n.as_any<Arguments>()) {
+                u.arguments(args);
+                return;
+            }
+            if (auto arg = n.as_any<Argument>()) {
+                if (auto na = arg.as_any<NamedArgument>()) {
+                    u.expr(na.ref(u.a)->name);
+                    u.w.write(" = ");
+                }
+                u.expr(arg.ref(u.a)->value);
+                return;
+            }
+            // 残りは .bgn の構文に対応しないもの (union の候補など)。
+            if (u.mark_unprintable) {
+                u.w.write("/*", to_string(n.type()), "#", std::to_string(n.id()), "*/");
+            }
         }
 
     }  // namespace
@@ -892,6 +922,7 @@ namespace brgen::nast {
     std::string unparse_node(Arena& a, NodeAny n, UnparseOption opt) {
         Unparser u{a};
         u.explicit_self = opt.explicit_self;
+        u.mark_unprintable = opt.mark_unprintable;
         run_any(u, n);
         return u.w.to_string(IndentStyle{}.text.c_str());
     }
@@ -899,6 +930,7 @@ namespace brgen::nast {
     CodeOutput unparse_node_with_spans(Arena& a, NodeAny n, UnparseOption opt) {
         Unparser u{a};
         u.explicit_self = opt.explicit_self;
+        u.mark_unprintable = opt.mark_unprintable;
         run_any(u, n);
         return finish(u.w);
     }
@@ -906,6 +938,7 @@ namespace brgen::nast {
     CodeWriter unparse_writer(Arena& a, NodeAny n, UnparseOption opt) {
         Unparser u{a};
         u.explicit_self = opt.explicit_self;
+        u.mark_unprintable = opt.mark_unprintable;
         run_any(u, n);
         return std::move(u.w);
     }

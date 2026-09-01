@@ -42,6 +42,10 @@ namespace brgen::nast {
         // 出す)。何がレシーバを取ると判定されたかをそのまま読むためのもの。
         // 再 parse は通るが `is_explicit` が変わるので、往復の検証には使わない。
         bool explicit_self = false;
+        // .bgn の構文に対応しないノード (union の候補など) を、空ではなく
+        // `/*Kind#id*/` の目印で出す。綴りが無いことと、そのノードが空で
+        // あることを見分けるためのもの。
+        bool mark_unprintable = false;
     };
 
     // 木を .bgn に戻す。由来の対応表 (CodeOutput::spans) も要るなら
