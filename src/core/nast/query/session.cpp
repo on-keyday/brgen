@@ -165,6 +165,80 @@ namespace brgen::nast::query {
         return out;
     }
 
+    namespace {
+        template <class M>
+        std::string field_type_name(const M&) {
+            if constexpr (node_of<M>::is_node) {
+                return std::string("Node<") + to_string(get_node_type<typename node_of<M>::type>()) + ">";
+            }
+            else if constexpr (vector_of<M>::is_vector) {
+                return std::string("[") + to_string(get_node_type<typename vector_of<M>::type>()) + "]";
+            }
+            else if constexpr (std::is_same_v<M, std::string>) {
+                return "string";
+            }
+            else if constexpr (std::is_same_v<M, bool>) {
+                return "bool";
+            }
+            else if constexpr (std::is_enum_v<M>) {
+                std::string s = "enum{";
+                bool first = true;
+                for (auto& [v, name] : enum_array<M>) {
+                    if (!first) {
+                        s += "|";
+                    }
+                    s += std::string(name);
+                    first = false;
+                }
+                return s + "}";
+            }
+            else if constexpr (std::is_integral_v<M>) {
+                return "int";
+            }
+            else {
+                return "loc";
+            }
+        }
+    }  // namespace
+
+    std::string Session::show_kind(NodeType kind) const {
+        std::string out = std::format("{} {{\n", to_string(kind));
+        visit_node_type(kind, [&](auto tag) {
+            using T = typename decltype(tag)::type;
+            NodeData<T> d{};
+            d.for_each_field([&](const char* name, const auto& v, bool weak) {
+                out += std::format("    {:<18} {}{}\n", name, field_type_name(v), weak ? "  (weak)" : "");
+            });
+        });
+        out += "}\n";
+        std::string tables;
+        p.tables.for_each_table([&](const char* name, const auto& table) {
+            using table_t = std::decay_t<decltype(table)>;
+            if (is_derived<typename table_t::node_type>(kind)) {
+                tables += std::format("    @{}\n", name);
+            }
+        });
+        if (!tables.empty()) {
+            out += "side tables:\n" + tables;
+        }
+        return out;
+    }
+
+    std::string Session::list_kinds() {
+        std::string out;
+        std::size_t col = 0;
+        for (auto& [v, name] : enum_array<NodeType>) {
+            out += std::format("{:<26}", name);
+            if (++col % 3 == 0) {
+                out += "\n";
+            }
+        }
+        if (col % 3) {
+            out += "\n";
+        }
+        return out;
+    }
+
     std::string Session::help() {
         return
             "  p <id> [depth]      ノードを木で。side table のエントリも一緒に出る (既定 depth 2)\n"
@@ -176,7 +250,8 @@ namespace brgen::nast::query {
             "      例: find Field { type.kind == IntType and type.bit_size == 8 }\n"
             "          find Ident { @Resolution.target.kind == Field }\n"
             "          find Any { line == 52 }\n"
-            "  kinds               出ている NodeType と件数\n"
+            "  show [<Kind>]       その種のフィールド名と型 (引数なしで全 NodeType)\n"
+            "  kinds               この木に出ている NodeType と件数\n"
             "  stat                ノード数と到達可能数\n"
             "  help / quit\n"
             "\n"
@@ -301,6 +376,20 @@ namespace brgen::nast::query {
                 out += headline(n) + "\n";
             }
             out += std::format("{} 件\n", hit.size());
+            return true;
+        }
+        if (cmd == "show") {
+            std::string kind;
+            if (!(in >> kind)) {
+                out += list_kinds();
+                return true;
+            }
+            auto type = from_string<NodeType>(kind);
+            if (!type) {
+                out += std::format("そんな NodeType は無い: {}\n", kind);
+                return true;
+            }
+            out += show_kind(*type);
             return true;
         }
         if (cmd == "kinds") {
