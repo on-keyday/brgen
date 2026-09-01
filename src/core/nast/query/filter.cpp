@@ -50,7 +50,8 @@ namespace brgen::nast::query {
             constexpr auto tok_sym = str(Tok::sym, lit("==") | lit("!=") | lit("<=") | lit(">=") |
                                                        lit("&&") | lit("||") | lit("->") | lit("<") |
                                                        lit(">") | lit("!") | lit("(") | lit(")") |
-                                                       lit("[") | lit("]") | lit(".") | lit("@"));
+                                                       lit("[") | lit("]") | lit(".") | lit("@") |
+                                                       lit("$"));
             constexpr auto tok_one = tok_space | tok_number | tok_string | tok_ident | tok_sym;
 
             constexpr auto test() {
@@ -217,6 +218,7 @@ namespace brgen::nast::query {
 
     struct Step {
         enum class Kind { field,
+                          pseudo,
                           index,
                           table } kind = Kind::field;
         std::string name;
@@ -249,23 +251,49 @@ namespace brgen::nast::query {
                 return false;
             }
 
-            bool path(std::vector<Step>& out) {
+            // 名前の前の印で、どこを引くかが決まる。印が無ければ木の
+            // フィールド、`@` は side table、`$` はノード自身について訊く
+            // 擬似フィールド。同じ名前が両方にあっても (`SpecialLiteral.kind`)
+            // 隠れない。
+            bool step_name(std::vector<Step>& out) {
                 if (lx.sym("@")) {
                     auto name = lx.ident();
                     if (name.empty()) {
                         return fail("@ の後に表の名前が要る");
                     }
                     out.push_back(Step{Step::Kind::table, name, 0});
+                    return true;
                 }
-                else {
+                if (lx.sym("$")) {
                     auto name = lx.ident();
                     if (name.empty()) {
-                        return fail("フィールド名が要る");
+                        return fail("$ の後に擬似フィールドの名前が要る");
                     }
-                    out.push_back(Step{Step::Kind::field, name, 0});
+                    out.push_back(Step{Step::Kind::pseudo, name, 0});
+                    return true;
+                }
+                auto name = lx.ident();
+                if (name.empty()) {
+                    return fail("フィールド名が要る");
+                }
+                out.push_back(Step{Step::Kind::field, name, 0});
+                return true;
+            }
+
+            bool path(std::vector<Step>& out) {
+                if (!step_name(out)) {
+                    return false;
                 }
                 for (;;) {
                     if (lx.sym("->") || lx.sym(".")) {
+                        if (lx.sym("$")) {
+                            auto name = lx.ident();
+                            if (name.empty()) {
+                                return fail("$ の後に擬似フィールドの名前が要る");
+                            }
+                            out.push_back(Step{Step::Kind::pseudo, name, 0});
+                            continue;
+                        }
                         auto name = lx.ident();
                         if (name.empty()) {
                             return fail("`.` の後にフィールド名が要る");
@@ -429,9 +457,6 @@ namespace brgen::nast::query {
 
         Val field_of_node(const Session& s, std::uint32_t id, const std::string& name) {
             Val out;
-            if (pseudo_field(s, id, name, out)) {
-                return out;
-            }
             auto* h = s.p.arena.header_at(id);
             if (!h) {
                 return {};
@@ -532,6 +557,16 @@ namespace brgen::nast::query {
                         i++;
                     }
                     cur = table_of_node(s, cur.id, st.name, field);
+                }
+                else if (st.kind == Step::Kind::pseudo) {
+                    if (!cur.is_node) {
+                        return {};
+                    }
+                    Val got;
+                    if (!pseudo_field(s, cur.id, st.name, got)) {
+                        return {};
+                    }
+                    cur = got;
                 }
                 else if (st.kind == Step::Kind::index) {
                     if (!cur.is_list || st.index >= cur.list.size()) {
