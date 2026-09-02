@@ -460,20 +460,35 @@ visitor が展開形を出しているのは 6 種
 | `MAX_VALUE` | — その型の最大値 |
 
 **field の引数** は上の 3 系統のどれでもなく、`convert_field_serialize` が
-直に組んでいる。位置で書かれた `f :T(期待値)` は `assert(field == 期待値)` に
-なり、読む側は読んだ後、書く側は書く前に置く (ebmgen も同じ向き)。nast は
-2026-09-02 に `field_io` へ入れた。名前つきの引数 (`input =` の付け替え、
-呼ぶ先の state への代入) はバッファと位置そのものを差し替えるので `field_io`
-の線引きの外にあり、組めない側に入れている。コーパス 180 本の内訳:
+直に組んでいる。nast は 2026-09-02 に `field_io` へ入れた。位置で書かれたもの
+と名前つきで意味が別で、名前つきは 5 種類ある (原実装の振り分けは
+`middle/typing.cpp:1774-1868`)。コーパス 180 本の内訳:
 
 ```
 引数つき field 404
-├ 位置指定 193 ── IntType 155 / EnumType 33 / StructType 4 / ArrayType 1
-│                 うち 135 が assert 込みで組める (残りは型の側が未対応)
-└ 名前つき 211 ── 組めない
-
-probe の `組めない (引数)` 213 = 名前つき 211 + 位置指定が 2 つ以上 2
+├ 位置指定 193      期待値。IntType 155 / EnumType 33 / StructType 4 / ArrayType 1
+│                   うち 135 が assert 込みで組める (残りは型の側が未対応)
+└ 名前つき 211
+  ├ input      186  読む先の付け替え。全部 input.subrange(..)   sub_byte_length
+  ├ vbr.len      9  呼ぶ先 (format VBR) の state へ代入          assigns
+  ├ config.type  7  ビット列をこの整数型として表す               type_map
+  ├ input.align  5  この位置で境界に揃える                       alignment
+  ├ qstate.enable_length 2  同じく呼ぶ先の state                 assigns
+  ├ input.peek   1  進めずに覗く                                 peek_value
+  └ input.xor    1  原実装も知らない名前。Metadata で生成器に届く
 ```
+
+右端は原実装の `FieldArgument` のどのフィールドに入るか。名前つきはどれも
+バッファと位置そのものを差し替えるので `field_io` の線引きの外にあり、
+組めない側に入れる (probe の `組めない (引数)` 213 = 名前つき 211 +
+位置指定が 2 つ以上 2)。
+
+位置指定は `assert(field == 期待値)` になり、読む側は読んだ後、書く側は書く前
+に置く (ebmgen も同じ向き)。**配列の field に付いたときは要素と比べる** —
+`[20]u8(0)` は 20 要素すべてが 0 の意味で、原実装が `repeat` mapping と
+呼んでいるもの。期待値そのものが配列なら全体と比べる (`direct`)。書かれ方では
+決まらないので期待値の型で分ける。位置指定が 2 つ以上ある `u8(7,128..255)` は
+「どれかに一致」(`some_candidate`) で、比較 1 つには落ちないので組めない。
 
 marker 系はほかに `FIELD_STORE` (ADR 0032)、`ENDIAN_VARIABLE`、
 `IS_LITTLE_ENDIAN` (nast にノードを足した)、`INT_TO_ARRAY` / `ARRAY_TO_INT`。
