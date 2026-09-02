@@ -7,7 +7,7 @@ DEFINE_VISITOR(IsLittleEndian) {
         if (auto order = node.ref(ctx.a)->order) {
             // 実行時に決まる順。代入の位置で作った変数を読んで比べる。名前は
             // その代入から決まる (lowering/endian_variable が表に置く)。表に
-            // 無ければ、まだ誰も代入を降ろしていないということなので断る。
+            // 無ければ、まだ誰も代入を降ろしていないということなので組めない。
             auto* var = ctx.t.template table<LoweredEndianVariable>().get(order);
             if (!var || knobs.little_endian_value.empty()) {
                 HANDLE_UNHANDLED();

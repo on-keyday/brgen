@@ -33,7 +33,7 @@ namespace brgen::nast::probe {
                 return;
             }
             // 引数の内訳。位置で書かれたものは assert に落ちるので組めた側に
-            // 入るが、名前つきが付いた field は断る。次に何を足すかの目安。
+            // 入るが、名前つきが付いた field は組めない。次に何を足すかの目安。
             auto args = field_args(a, f);
             if (args.positional) {
                 hist["field 引数: 位置指定 (期待値)"]++;

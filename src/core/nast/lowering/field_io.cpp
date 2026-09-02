@@ -25,7 +25,7 @@ namespace brgen::nast::lowering {
         Node<Body> lower_one(Context& c, Node<Field> f, Node<Expr> target, Node<Type> type,
                              Node<Expr> bytes, Node<Expr> offset, bool decode);
 
-        // 配列。要素を回す。要素幅が固定でないと位置が組めないので断る。
+        // 配列。要素を回す。要素幅が固定でないと位置が組めない。
         Node<Body> lower_array(Context& c, Node<Field> f, Node<ArrayType> arr, Node<Expr> target,
                                Node<Expr> bytes, Node<Expr> offset, bool decode) {
             auto& a = c.a;
@@ -172,6 +172,7 @@ namespace brgen::nast::lowering {
             if (args.named || args.positional > 1) {
                 // 名前つきは読む材料そのものを差し替えるもので、ここの線引きの
                 // 外 (ヘッダ)。位置引数が 2 つ以上ある形は意味が決まっていない。
+                // どちらも組めない側に入れる。
                 return nullref;
             }
             auto body = lower_one(c, f, target, f.ref(c.a)->type, bytes, offset, decode);
