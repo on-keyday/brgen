@@ -136,22 +136,58 @@ namespace brgen::nast::lowering {
                              : split_int(c, bytes, offset, value, io_type, order);
         }
 
+        // `f :T(期待値)` の期待値を assert に落として並びに足す。読んだ値が
+        // 違えば失敗する、という制約なので、書く側でも同じ式を検査する
+        // (期待値を代入して黙って直す形ではない)。
+        //
+        // 位置は読み書きを挟む向き: 読む側は読んでから、書く側は書く前に。
+        // 書いてから検査しても、失敗したときには既にバッファが汚れている。
+        Node<Body> add_expected_check(Context& c, Node<Field> f, Node<Expr> target, Node<Body> body,
+                                      Node<Expr> expected, bool decode) {
+            if (!body || !expected) {
+                return body;
+            }
+            auto& a = c.a;
+            Builder b{a, expected.ref(a).loc()};
+            auto check = b.assert_(b.bin(BinaryOp::equal, target, expected, b.bool_type()));
+            if (!check) {
+                return nullref;
+            }
+            auto& stmts = body.ref(a)->statements;
+            if (decode) {
+                stmts.push_back(check);
+            }
+            else {
+                stmts.insert(stmts.begin(), check);
+            }
+            return body;
+        }
+
+        Node<Body> lower_field(Context& c, Node<Field> f, Node<Expr> target, Node<Expr> bytes,
+                               Node<Expr> offset, bool decode) {
+            if (!f || !is_layout_field(c.a, f)) {
+                return nullref;
+            }
+            auto args = field_args(c.a, f);
+            if (args.named || args.positional > 1) {
+                // 名前つきは読む材料そのものを差し替えるもので、ここの線引きの
+                // 外 (ヘッダ)。位置引数が 2 つ以上ある形は意味が決まっていない。
+                return nullref;
+            }
+            auto body = lower_one(c, f, target, f.ref(c.a)->type, bytes, offset, decode);
+            return add_expected_check(c, f, target, body, args.expected, decode);
+        }
+
     }  // namespace
 
     Node<Body> lower_field_decode(Context& c, Node<Field> f, Node<Expr> target, Node<Expr> bytes,
                                   Node<Expr> offset) {
-        if (!f || !is_layout_field(c.a, f)) {
-            return nullref;
-        }
-        return lower_one(c, f, target, f.ref(c.a)->type, bytes, offset, true);
+        return lower_field(c, f, target, bytes, offset, true);
     }
 
     Node<Body> lower_field_encode(Context& c, Node<Field> f, Node<Expr> target, Node<Expr> bytes,
                                   Node<Expr> offset) {
-        if (!f || !is_layout_field(c.a, f)) {
-            return nullref;
-        }
-        return lower_one(c, f, target, f.ref(c.a)->type, bytes, offset, false);
+        return lower_field(c, f, target, bytes, offset, false);
     }
 
 }  // namespace brgen::nast::lowering

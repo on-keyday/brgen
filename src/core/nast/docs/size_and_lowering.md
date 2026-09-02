@@ -459,13 +459,27 @@ visitor が展開形を出しているのは 6 種
 | `GET_STREAM_OFFSET` | — RuntimeState の読み (ADR 0039) |
 | `MAX_VALUE` | — その型の最大値 |
 
+**field の引数** は上の 3 系統のどれでもなく、`convert_field_serialize` が
+直に組んでいる。位置で書かれた `f :T(期待値)` は `assert(field == 期待値)` に
+なり、読む側は読んだ後、書く側は書く前に置く (ebmgen も同じ向き)。nast は
+2026-09-02 に `field_io` へ入れた。名前つきの引数 (`input =` の付け替え、
+呼ぶ先の state への代入) はバッファと位置そのものを差し替えるので `field_io`
+の線引きの外にあり、断っている。コーパス 180 本の内訳:
+
+```
+引数つき field 404
+├ 位置指定 193 ── IntType 155 / EnumType 33 / StructType 4 / ArrayType 1
+│                 うち 135 が assert 込みで組める (残りは型の側が未対応)
+└ 名前つき 211 ── 断る (組めない (引数) 213 = これ + 位置指定 2 つ以上 2)
+```
+
 marker 系はほかに `FIELD_STORE` (ADR 0032)、`ENDIAN_VARIABLE`、
 `IS_LITTLE_ENDIAN` (nast にノードを足した)、`INT_TO_ARRAY` / `ARRAY_TO_INT`。
 
 nast にある残りは match→if (ebmgen だと `derive_match_lowered_if`) と
 `stream_io` (バイトの出し入れ)。手を付けやすいのは `STRING_FOR_EACH`、
 重いのは `STRUCT_CALL` と `BIT_FIELD_TO_BIT_SHIFT`。`AVAILABLE` と
-`ENUM_IS_DEFINED` は 2026-09-02 に済んだ。
+`ENUM_IS_DEFINED`、field の位置引数 (期待値) は 2026-09-02 に済んだ。
 
 ### 値 knob と合成名の規約 (2026-08-31)
 
