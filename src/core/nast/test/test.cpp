@@ -9,6 +9,7 @@
 #include "../node/compare.h"
 #include "../node/printer.h"
 #include "../node/from_json.h"
+#include "../node/build.h"
 
 #include <algorithm>
 #include <string>
@@ -471,6 +472,45 @@ int main(int argc, char** argv) {
 #else
     print_line("  [--] Arena::as_json (skipped: futils not available)");
 #endif
+
+    // Builder の真偽三項の畳み込み。条件を捨てる形だけが副作用の有無に効く。
+    {
+        using namespace brgen::nast;
+        Arena ba;
+        Builder b{ba, {}};
+        auto pure = b.bin(BinaryOp::equal, b.ref("kind"), b.lit(1), b.bool_type());
+        check(b.cond(pure, b.bool_lit(true), b.bool_lit(false), b.bool_type()) == pure,
+              "c ? true : false は条件そのもの");
+        check(b.cond(pure, b.bool_lit(true), b.ref("x"), b.bool_type())
+                  .as_any<Binary>()
+                  .ref(ba)
+                  ->op == BinaryOp::logical_or,
+              "c ? true : x は ||");
+        check(b.cond(pure, b.ref("x"), b.bool_lit(false), b.bool_type())
+                  .as_any<Binary>()
+                  .ref(ba)
+                  ->op == BinaryOp::logical_and,
+              "c ? x : false は &&");
+        check(bool(b.cond(pure, b.bool_lit(true), b.bool_lit(true), b.bool_type())
+                       .as_any<BoolLiteral>()),
+              "両腕が同じで条件が副作用なしなら定数に畳む");
+
+        // 呼び出しを含む条件は捨てられない。三項のまま残す。
+        auto call = b.member_call(b.ref("input"), "get", nullref, b.int_type(8));
+        auto impure = b.bin(BinaryOp::equal, call, b.lit(1), b.bool_type());
+        check(bool(b.cond(impure, b.bool_lit(true), b.bool_lit(true), b.bool_type())
+                       .as_any<Cond>()),
+              "条件に呼び出しがあれば畳まない");
+        check(bool(b.cond(impure, b.bool_lit(true), b.ref("x"), b.bool_type())
+                       .as_any<Binary>()),
+              "条件を残す畳み込みは呼び出しがあってもしてよい");
+        // 型変換も木の上では Call だが、副作用は無い。
+        auto cast = b.bin(BinaryOp::equal, b.cast(b.int_type(8), b.ref("v")), b.lit(1),
+                          b.bool_type());
+        check(bool(b.cond(cast, b.bool_lit(false), b.bool_lit(false), b.bool_type())
+                       .as_any<BoolLiteral>()),
+              "型変換の Call は副作用として数えない");
+    }
 
     print_line("{} ({} failure{})", failures == 0 ? "PASS" : "FAIL", failures,
                  failures == 1 ? "" : "s");

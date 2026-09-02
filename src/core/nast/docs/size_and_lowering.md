@@ -454,7 +454,7 @@ visitor が展開形を出しているのは 6 種
 | --- | --- |
 | `CONDITIONAL` → `CONDITIONAL_STATEMENT` | ✔ `conditional` |
 | `RANGE_EQUAL` → `a <= x && x <= b` | ✔ `predicate` の `lower_range_compare` |
-| `AVAILABLE` | ✔ `available` (修飾は `WithReceiver`) |
+| `AVAILABLE` | ✔ `available` (修飾は `WithReceiver`。腕が真偽値なので `\|\|` / `&&` に畳む) |
 | `ENUM_IS_DEFINED` | ✔ `enum_defined` |
 | `GET_STREAM_OFFSET` | — RuntimeState の読み (ADR 0039) |
 | `MAX_VALUE` | — その型の最大値 |
@@ -497,6 +497,41 @@ nast にある残りは match→if (ebmgen だと `derive_match_lowered_if`) と
 `stream_io` (バイトの出し入れ)。手を付けやすいのは `STRING_FOR_EACH`、
 重いのは `STRUCT_CALL` と `BIT_FIELD_TO_BIT_SHIFT`。`AVAILABLE` と
 `ENUM_IS_DEFINED`、field の位置引数 (期待値) は 2026-09-02 に済んだ。
+
+### 真偽値の三項は論理演算に畳む (2026-09-02)
+
+`branch_chain` (`lowering/predicate.hpp`) は分岐の候補を後ろから三項に積む。
+`available` はその値が真偽値なので、畳まないと
+`(kind == 1) ? true : ((kind == 2) ? true : false)` が出る。`Builder::cond` が
+腕の真偽リテラルを見て論理演算にする:
+
+```
+c ? true : x     ->  c || x
+c ? x : false    ->  c && x
+c ? false : x    ->  !c && x
+c ? x : true     ->  !c || x
+c ? true : false ->  c
+c ? false : true ->  !c
+```
+
+上 4 つは `x` を評価するのが「c がその向きに転んだとき」だけで、三項と評価の
+順も回数も変わらない。**両腕が同じリテラルのときだけ c の評価が消える**ので、
+そこは `node/util.h` の `is_side_effect_free` が通ったときに限る。副作用を
+持ちうるのは呼び出しだけだが、`<u8>(x)` の型変換も木の上では Call なので
+callee が TypeLiteral のものは除く。
+
+コーパス 180 本の `available` 13 件は全部これで式のまま出るようになった:
+
+```
+before  (kind == 1) ? true : ((kind == 2) ? true : false)
+after   (kind == 1) || (kind == 2)
+
+before  (a == 1) ? ((b == 2) ? true : false) : false
+after   (a == 1) && (b == 2)
+```
+
+サイズの `branch_chain` (値が整数) は畳まないので変わらない。三項 2517 件は
+全部整数か enum で、真偽リテラルの腕を持つものは元の木には 1 つも無い。
 
 ### 値 knob と合成名の規約 (2026-08-31)
 
