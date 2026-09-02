@@ -1,6 +1,7 @@
 /*license*/
 #pragma once
 #include "nodes.h"
+#include "traverse.h"
 
 #include <number/prefix.h>
 
@@ -210,6 +211,39 @@ namespace brgen::nast {
             return !d->start && !d->end;
         }
         return false;
+    }
+
+    // その式を「評価しないで済ませてよい」か。畳み込みが条件ごと式を捨てる
+    // とき (`c ? true : true` を true にする)、捨てても外から観測できないこと
+    // を確かめる。
+    //
+    // 副作用を持ちうるのは呼び出しだけ。ただし `<u8>(x)` の型変換も木の上では
+    // Call なので (parse.cpp の parse_call_or_cast)、callee が TypeLiteral の
+    // ものは除く。代入は式の位置には来ないが、来たなら捨てられない。
+    //
+    // 判定は「安全と分かるものだけ真」に倒す。知らないノードが増えたときに
+    // 黙って捨てる側に倒れると、間違いが出力にしか現れない。
+    inline bool is_side_effect_free(Arena& a, NodeAny e) {
+        bool ok = true;
+        visit_all(a, e, [&](NodeAny n) {
+            if (!ok) {
+                return false;
+            }
+            if (auto call = n.as_any<Call>()) {
+                if (!call.ref(a)->callee.as_any<TypeLiteral>()) {
+                    ok = false;
+                    return false;
+                }
+            }
+            if (auto bin = n.as_any<Binary>()) {
+                if (is_assign_op(bin.ref(a)->op)) {
+                    ok = false;
+                    return false;
+                }
+            }
+            return true;
+        });
+        return ok;
     }
 
     // 名前を指している式から、その名前。裸の参照と、bind/receiver が

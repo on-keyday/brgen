@@ -165,17 +165,17 @@ namespace {
         });
 
         check_eq(got["available(value)"],
-                 "(kind == 1) ? true : ((kind == 2) ? true : false)",
+                 "(kind == 1) || (kind == 2)",
                  "裸の available は分岐の条件の畳み込み");
         check_eq(got["available(value,u16)"],
-                 "(kind == 1) ? false : ((kind == 2) ? true : false)",
+                 "!(kind == 1) && (kind == 2)",
                  "型を訊く形は候補の型で分ける");
         check_eq(got["available(c)"],
-                 "(a == 1) ? ((b == 2) ? true : false) : false",
+                 "(a == 1) && (b == 2)",
                  "入れ子の分岐は掛け合わせる");
         // 修飾された target は WithReceiver で包み、綴りは base 側に載る。
         check_eq(got["available(opt.value)"],
-                 "(opt.kind == 1) ? true : ((opt.kind == 2) ? true : false)",
+                 "(opt.kind == 1) || (opt.kind == 2)",
                  "修飾された target はレシーバを載せ替える");
     }
 

@@ -1,7 +1,9 @@
 /*license*/
 #pragma once
 #include "nodes.h"
+#include "util.h"
 
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -97,9 +99,54 @@ namespace brgen::nast {
             return bin(op, l, r, type);
         }
 
+        // 腕が真偽リテラルなら論理演算にする。三項を持たない言語のために
+        // 後段が文へ落とす (lowering/conditional) 対象を減らすためで、
+        // available の畳み込みはこれが無いと `c1 ? true : (c2 ? true : false)`
+        // のまま出る。
+        //
+        //   c ? true : x    ->  c || x
+        //   c ? x : false   ->  c && x
+        //   c ? false : x   ->  !c && x
+        //   c ? x : true    ->  !c || x
+        //   c ? true : false -> c        両腕がリテラルのときだけ c を捨てうる
+        //   c ? false : true -> !c
+        //
+        // 上 4 つは評価の順も回数も三項と同じ (`x` を評価するのは c がその向き
+        // に転んだときだけ)。両腕が同じリテラルのときだけ c の評価が消えるので、
+        // そこは c に副作用が無いと分かるときに限る。
+        Node<Expr> fold_bool_cond(Node<Expr> c, Node<Expr> then, Node<Expr> els) const {
+            auto lit = [&](Node<Expr> e) -> std::optional<bool> {
+                if (auto b = strip_paren(a, e).template as_any<BoolLiteral>()) {
+                    return b.ref(a)->value;
+                }
+                return std::nullopt;
+            };
+            auto t = lit(then);
+            auto e = lit(els);
+            auto bt = bool_type();
+            if (t && e) {
+                if (*t == *e) {
+                    return is_side_effect_free(a, c) ? bool_lit(*t) : nullref;
+                }
+                return *t ? c : not_(c, bt);
+            }
+            if (t) {
+                return *t ? bin(BinaryOp::logical_or, c, els, bt)
+                          : bin(BinaryOp::logical_and, not_(c, bt), els, bt);
+            }
+            if (e) {
+                return *e ? bin(BinaryOp::logical_or, not_(c, bt), then, bt)
+                          : bin(BinaryOp::logical_and, c, then, bt);
+            }
+            return nullref;
+        }
+
         Node<Expr> cond(Node<Expr> c, Node<Expr> then, Node<Expr> els, Node<Type> type) const {
             if (!c || !then || !els) {
                 return nullref;
+            }
+            if (auto folded = fold_bool_cond(c, then, els)) {
+                return folded;
             }
             auto n = a.make<Cond>(loc);
             n->cond = paren(c);
