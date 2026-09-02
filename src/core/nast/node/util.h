@@ -159,6 +159,44 @@ namespace brgen::nast {
         return !f.ref(a)->type.as_any<UnionType>();
     }
 
+    // field に書かれた引数の内訳。位置で書かれたもの (`f :T(期待値)`) と
+    // 名前つきのもの (`input = ..` / `len = 8`) は綴りが同じ括弧の中に並ぶが
+    // 意味が別なので分けて返す。
+    //
+    //   位置    その位置を読んだ値がこれと等しいことを言う制約。読み書きを
+    //           組む側は assert に落とす (lowering/field_io)
+    //   名前つき 読む先の付け替え (`input =`) と、呼ぶ先の state への代入。
+    //           どちらも読み書きの材料そのものを差し替えるので、field_io の
+    //           「バッファと位置は呼ぶ側が用意する」という線引きの外にある
+    struct FieldArgs {
+        Node<Expr> expected;  // 位置引数。2 つ以上あるときは最初のもの
+        std::size_t positional = 0;
+        std::size_t named = 0;
+    };
+
+    inline FieldArgs field_args(Arena& a, Node<Field> f) {
+        FieldArgs r;
+        auto d = f.ref(a);
+        if (!d) {
+            return r;
+        }
+        auto args = d->arguments.ref(a);
+        if (!args) {
+            return r;
+        }
+        for (auto& arg : args->arguments) {
+            if (arg.as_any<NamedArgument>()) {
+                r.named++;
+                continue;
+            }
+            if (!r.positional) {
+                r.expected = arg.ref(a)->value;
+            }
+            r.positional++;
+        }
+        return r;
+    }
+
     // 分岐の条件が「既定」を表しているか。if/elif の else は条件なしの
     // BodyStatement で来るが、match の `..` は両端が空の Range で来る
     // (parse.cpp は match の全分岐を条件付きの ConditionalStatement にする)。

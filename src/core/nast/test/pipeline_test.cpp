@@ -25,6 +25,7 @@
 
 #include <filesystem>
 #include <string>
+#include <vector>
 
 using namespace brgen::nast;
 
@@ -227,6 +228,49 @@ namespace {
         }
     }
 
+    // `f :T(期待値)` が読み書きの前後に assert として付くか。読む側は読んで
+    // から、書く側は書く前 (lowering/field_io.hpp)。名前つきの引数は断る。
+    void test_field_expected(const std::filesystem::path& dir) {
+        print_line("lowering/field_io の期待値 (field_io.bgn)");
+        Program p;
+        load(p, dir, "field_io.bgn");
+        auto& a = p.arena;
+        lowering::Context c{a, p.tables};
+
+        auto lower = [&](std::string_view name, bool decode) -> std::vector<std::string> {
+            auto f = field_named(p, name);
+            if (!f) {
+                check(false, std::format("{} がある", name));
+                return {};
+            }
+            Builder b{a, f.ref(a).loc()};
+            auto target = lowering::field_ref(c, f);
+            auto body = decode ? lowering::lower_field_decode(c, f, target, b.ref("buf"), b.ref("o"))
+                               : lowering::lower_field_encode(c, f, target, b.ref("buf"), b.ref("o"));
+            std::vector<std::string> lines;
+            if (body) {
+                for (auto& st : body.ref(a)->statements) {
+                    lines.push_back(unparse_node(a, st));
+                }
+            }
+            return lines;
+        };
+
+        auto dec = lower("magic", true);
+        check_eq(dec.empty() ? "" : dec.back(), "magic == 0xcafe",
+                 "読む側は読んだ後に検査する");
+        auto enc = lower("magic", false);
+        check_eq(enc.empty() ? "" : enc.front(), "magic == 0xcafe",
+                 "書く側は書く前に検査する");
+
+        auto tag = lower("tag", true);
+        check_eq(tag.empty() ? "" : tag.back(), "tag == Kind.b",
+                 "enum の期待値は enum のまま比べる");
+
+        check(lower("body", true).empty(), "名前つきの引数が付いた field は断る");
+        check(!lower("len", true).empty(), "引数の無い field はそのまま組める");
+    }
+
     // ---- query -----------------------------------------------------------
 
     void test_query(const std::filesystem::path& dir) {
@@ -311,6 +355,7 @@ int main(int argc, char** argv) {
     test_available(dir);
     test_enum_defined(dir);
     test_field_io(dir);
+    test_field_expected(dir);
     test_query(dir);
     test_corpus(dir);
     print_line("");

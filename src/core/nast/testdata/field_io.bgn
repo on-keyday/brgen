@@ -14,3 +14,13 @@ format Fields:
 format Floats:
     single :f32
     double :f64
+
+# 位置で書かれた引数は期待値。読み書きの前後に assert が付く。
+format Expected:
+    magic :u16(0xcafe)
+    tag :Kind(Kind.b)
+
+# 名前つきの引数は読む先の付け替え。field_io の外なので断られる。
+format NamedArg:
+    len :u8
+    body :[2]u8(input = input.subrange(len))

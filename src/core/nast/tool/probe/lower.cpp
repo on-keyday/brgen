@@ -32,6 +32,19 @@ namespace brgen::nast::probe {
                 // 読み書きの対象ではない。数えると分母が膨らむ。
                 return;
             }
+            // 引数の内訳。位置で書かれたものは assert に落ちるので組めた側に
+            // 入るが、名前つきが付いた field は断る。次に何を足すかの目安。
+            auto args = field_args(a, f);
+            if (args.positional) {
+                hist["field 引数: 位置指定 (期待値)"]++;
+                // 期待値は assert に落ちるが、落とせるのは読み書きが組める
+                // field だけ。型で内訳を出す。
+                auto at = strip_wrappers(a, ty);
+                hist[std::format("  期待値の型: {}", at ? to_string(at.type()) : "(型なし)")]++;
+            }
+            if (args.named) {
+                hist["field 引数: 名前つき"]++;
+            }
             auto loc = a.header_at(id)->loc;
             Builder b{a, loc};
             auto buf = b.ref("buf");
@@ -39,6 +52,13 @@ namespace brgen::nast::probe {
             auto target = lowering::field_ref(c, f);
             if (lowering::lower_field_decode(c, f, target, buf, off)) {
                 hist["field: 組めた"]++;
+                if (args.positional) {
+                    hist["  うち期待値の assert つき"]++;
+                }
+                return;
+            }
+            if (args.named || args.positional > 1) {
+                hist["field: 組めない (引数)"]++;
                 return;
             }
             auto stripped = strip_wrappers(a, ty);

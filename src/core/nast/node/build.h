@@ -216,6 +216,15 @@ namespace brgen::nast {
             return n;
         }
 
+        Node<Statement> assert_(Node<Expr> cond) const {
+            if (!cond) {
+                return nullref;
+            }
+            auto n = a.make<Assert>(loc);
+            n->expr = cond;
+            return n;
+        }
+
         Node<Body> body(Node<Statement> one = nullref) const {
             auto b = a.make<Body>(loc);
             if (one) {
