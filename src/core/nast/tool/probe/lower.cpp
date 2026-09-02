@@ -44,6 +44,17 @@ namespace brgen::nast::probe {
             }
             if (args.named) {
                 hist["field 引数: 名前つき"]++;
+                // 何が名前つきで来るのか。左辺の綴りで数える。
+                if (auto all = f.ref(a)->arguments.ref(a)) {
+                    for (auto& arg : all->arguments) {
+                        auto na = arg.as_any<NamedArgument>();
+                        if (!na) {
+                            continue;
+                        }
+                        hist[std::format("  名前つきの左辺: {}",
+                                         unparse_node(a, na.ref(a)->name))]++;
+                    }
+                }
             }
             auto loc = a.header_at(id)->loc;
             Builder b{a, loc};

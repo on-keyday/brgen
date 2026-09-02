@@ -19,6 +19,8 @@ format Floats:
 format Expected:
     magic :u16(0xcafe)
     tag :Kind(Kind.b)
+    # 配列にスカラの期待値。全要素がその値、の意味 (原実装の repeat mapping)。
+    zeros :[3]u8(0)
 
 # 名前つきの引数は読む先の付け替え。field_io の外なので断られる。
 format NamedArg:

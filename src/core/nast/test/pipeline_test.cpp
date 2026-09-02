@@ -267,6 +267,13 @@ namespace {
         check_eq(tag.empty() ? "" : tag.back(), "tag == Kind.b",
                  "enum の期待値は enum のまま比べる");
 
+        // 配列にスカラの期待値が付いたら、比べるのは要素のほう。
+        auto zeros = lower("zeros", true);
+        check(zeros.size() == 1, "配列は要素を回す 1 文になる");
+        auto loop = zeros.empty() ? std::string() : zeros.front();
+        check(loop.find("] == 0") != std::string::npos, "検査は要素ごとに入る");
+        check(loop.find("zeros == 0") == std::string::npos, "配列そのものとは比べない");
+
         check(lower("body", true).empty(), "名前つきの引数が付いた field は組めない");
         check(!lower("len", true).empty(), "引数の無い field はそのまま組める");
     }
