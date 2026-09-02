@@ -229,7 +229,7 @@ namespace {
     }
 
     // `f :T(期待値)` が読み書きの前後に assert として付くか。読む側は読んで
-    // から、書く側は書く前 (lowering/field_io.hpp)。名前つきの引数は断る。
+    // から、書く側は書く前 (lowering/field_io.hpp)。名前つきの引数は組めない。
     void test_field_expected(const std::filesystem::path& dir) {
         print_line("lowering/field_io の期待値 (field_io.bgn)");
         Program p;
@@ -267,7 +267,7 @@ namespace {
         check_eq(tag.empty() ? "" : tag.back(), "tag == Kind.b",
                  "enum の期待値は enum のまま比べる");
 
-        check(lower("body", true).empty(), "名前つきの引数が付いた field は断る");
+        check(lower("body", true).empty(), "名前つきの引数が付いた field は組めない");
         check(!lower("len", true).empty(), "引数の無い field はそのまま組める");
     }
 
