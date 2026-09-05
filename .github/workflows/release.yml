@@ -22,7 +22,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@7bf79990b7c09f5dfb570ac30b814ca597bd538e # v3.1
+        uses: Kesin11/actions-timeline@57fc93f20c6da7fbc14063c6d24a2a5627c799ad # v3.2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Download Linux artifacts (LLVM)
@@ -187,7 +187,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@7bf79990b7c09f5dfb570ac30b814ca597bd538e # v3.1
+        uses: Kesin11/actions-timeline@57fc93f20c6da7fbc14063c6d24a2a5627c799ad # v3.2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Download Artifacts
@@ -213,7 +213,7 @@ jobs:
     needs: attest
     steps:
       - name: Timeline
-        uses: Kesin11/actions-timeline@7bf79990b7c09f5dfb570ac30b814ca597bd538e # v3.1
+        uses: Kesin11/actions-timeline@57fc93f20c6da7fbc14063c6d24a2a5627c799ad # v3.2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Download Artifacts
@@ -226,7 +226,7 @@ jobs:
           tar -xzf artifacts/artifacts.tar.gz -C ./artifacts
           ls -Ral .
       - name: Release
-        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           files: |
             ./artifacts/brgen-checksum.txt

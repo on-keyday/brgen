@@ -4,4 +4,4 @@
 # on the host (GitHub Actions ubuntu runners ship one).
 # Registry shorthand resolving to github:VirtusLab/scala-cli (the aqua
 # registry has no VirtusLab/scala-cli package -- CI-verified 404).
-scala-cli = "1.15.0"
+scala-cli = "1.16.0"

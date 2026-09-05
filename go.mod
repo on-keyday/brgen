@@ -4,7 +4,7 @@ go 1.25.0
 
 require github.com/iancoleman/strcase v0.3.0
 
-require golang.org/x/net v0.57.0
+require golang.org/x/net v0.58.0
 
 require (
 	golang.org/x/sys v0.47.0
