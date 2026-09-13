@@ -13,3 +13,5 @@ unictest_latest.txt
 .claude/settings.local.json
 .agents/skills/*/agents/openai.yaml
 .harness-worktrees/
+src/ebmcg/ebm2hike/.hike-lang/
+
