@@ -21,6 +21,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_Module() { custom_Module = [](BaseContext<R>& c,Node<Module> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<BodyStatement>)> custom_BodyStatement;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<BodyStatement>> F>
         void bind_BodyStatement(Context<R,T>&,F&& f) {
@@ -31,6 +32,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_BodyStatement() { custom_BodyStatement = [](BaseContext<R>& c,Node<BodyStatement> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<Field>)> custom_Field;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Field>> F>
         void bind_Field(Context<R,T>&,F&& f) {
@@ -41,6 +43,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_Field() { custom_Field = [](BaseContext<R>& c,Node<Field> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<StateVariable>)> custom_StateVariable;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<StateVariable>> F>
         void bind_StateVariable(Context<R,T>&,F&& f) {
@@ -51,6 +54,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_StateVariable() { custom_StateVariable = [](BaseContext<R>& c,Node<StateVariable> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<Format>)> custom_Format;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Format>> F>
         void bind_Format(Context<R,T>&,F&& f) {
@@ -61,6 +65,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_Format() { custom_Format = [](BaseContext<R>& c,Node<Format> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<GenericFormat>)> custom_GenericFormat;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<GenericFormat>> F>
         void bind_GenericFormat(Context<R,T>&,F&& f) {
@@ -71,6 +76,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_GenericFormat() { custom_GenericFormat = [](BaseContext<R>& c,Node<GenericFormat> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<Function>)> custom_Function;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Function>> F>
         void bind_Function(Context<R,T>&,F&& f) {
@@ -81,6 +87,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_Function() { custom_Function = [](BaseContext<R>& c,Node<Function> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<If>)> custom_If;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<If>> F>
         void bind_If(Context<R,T>&,F&& f) {
@@ -91,6 +98,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_If() { custom_If = [](BaseContext<R>& c,Node<If> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<Match>)> custom_Match;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Match>> F>
         void bind_Match(Context<R,T>&,F&& f) {
@@ -101,6 +109,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_Match() { custom_Match = [](BaseContext<R>& c,Node<Match> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<Loop>)> custom_Loop;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Loop>> F>
         void bind_Loop(Context<R,T>&,F&& f) {
@@ -111,6 +120,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_Loop() { custom_Loop = [](BaseContext<R>& c,Node<Loop> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<RangeLoop>)> custom_RangeLoop;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<RangeLoop>> F>
         void bind_RangeLoop(Context<R,T>&,F&& f) {
@@ -121,6 +131,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_RangeLoop() { custom_RangeLoop = [](BaseContext<R>& c,Node<RangeLoop> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<Assign>)> custom_Assign;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Assign>> F>
         void bind_Assign(Context<R,T>&,F&& f) {
@@ -131,6 +142,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_Assign() { custom_Assign = [](BaseContext<R>& c,Node<Assign> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<VariableDefinition>)> custom_VariableDefinition;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<VariableDefinition>> F>
         void bind_VariableDefinition(Context<R,T>&,F&& f) {
@@ -141,6 +153,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_VariableDefinition() { custom_VariableDefinition = [](BaseContext<R>& c,Node<VariableDefinition> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<Metadata>)> custom_Metadata;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Metadata>> F>
         void bind_Metadata(Context<R,T>&,F&& f) {
@@ -151,6 +164,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_Metadata() { custom_Metadata = [](BaseContext<R>& c,Node<Metadata> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<SpecifyOrder>)> custom_SpecifyOrder;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<SpecifyOrder>> F>
         void bind_SpecifyOrder(Context<R,T>&,F&& f) {
@@ -161,6 +175,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_SpecifyOrder() { custom_SpecifyOrder = [](BaseContext<R>& c,Node<SpecifyOrder> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<Sizeof>)> custom_Sizeof;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Sizeof>> F>
         void bind_Sizeof(Context<R,T>&,F&& f) {
@@ -171,6 +186,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_Sizeof() { custom_Sizeof = [](BaseContext<R>& c,Node<Sizeof> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<Self>)> custom_Self;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Self>> F>
         void bind_Self(Context<R,T>&,F&& f) {
@@ -181,6 +197,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_Self() { custom_Self = [](BaseContext<R>& c,Node<Self> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<WithReceiver>)> custom_WithReceiver;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<WithReceiver>> F>
         void bind_WithReceiver(Context<R,T>&,F&& f) {
@@ -191,6 +208,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_WithReceiver() { custom_WithReceiver = [](BaseContext<R>& c,Node<WithReceiver> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<BitCast>)> custom_BitCast;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<BitCast>> F>
         void bind_BitCast(Context<R,T>&,F&& f) {
@@ -201,6 +219,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_BitCast() { custom_BitCast = [](BaseContext<R>& c,Node<BitCast> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<IsLittleEndian>)> custom_IsLittleEndian;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<IsLittleEndian>> F>
         void bind_IsLittleEndian(Context<R,T>&,F&& f) {
@@ -211,6 +230,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_IsLittleEndian() { custom_IsLittleEndian = [](BaseContext<R>& c,Node<IsLittleEndian> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<BitSizeof>)> custom_BitSizeof;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<BitSizeof>> F>
         void bind_BitSizeof(Context<R,T>&,F&& f) {
@@ -221,6 +241,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_BitSizeof() { custom_BitSizeof = [](BaseContext<R>& c,Node<BitSizeof> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<Available>)> custom_Available;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Available>> F>
         void bind_Available(Context<R,T>&,F&& f) {
@@ -231,6 +252,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_Available() { custom_Available = [](BaseContext<R>& c,Node<Available> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<ExplicitError>)> custom_ExplicitError;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<ExplicitError>> F>
         void bind_ExplicitError(Context<R,T>&,F&& f) {
@@ -241,6 +263,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_ExplicitError() { custom_ExplicitError = [](BaseContext<R>& c,Node<ExplicitError> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<Binary>)> custom_Binary;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Binary>> F>
         void bind_Binary(Context<R,T>&,F&& f) {
@@ -251,6 +274,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_Binary() { custom_Binary = [](BaseContext<R>& c,Node<Binary> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<Unary>)> custom_Unary;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Unary>> F>
         void bind_Unary(Context<R,T>&,F&& f) {
@@ -261,6 +285,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_Unary() { custom_Unary = [](BaseContext<R>& c,Node<Unary> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<Call>)> custom_Call;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Call>> F>
         void bind_Call(Context<R,T>&,F&& f) {
@@ -271,6 +296,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_Call() { custom_Call = [](BaseContext<R>& c,Node<Call> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<Reference>)> custom_Reference;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Reference>> F>
         void bind_Reference(Context<R,T>&,F&& f) {
@@ -281,6 +307,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_Reference() { custom_Reference = [](BaseContext<R>& c,Node<Reference> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<MemberAccess>)> custom_MemberAccess;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<MemberAccess>> F>
         void bind_MemberAccess(Context<R,T>&,F&& f) {
@@ -291,6 +318,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_MemberAccess() { custom_MemberAccess = [](BaseContext<R>& c,Node<MemberAccess> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<TypeLiteral>)> custom_TypeLiteral;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<TypeLiteral>> F>
         void bind_TypeLiteral(Context<R,T>&,F&& f) {
@@ -301,6 +329,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_TypeLiteral() { custom_TypeLiteral = [](BaseContext<R>& c,Node<TypeLiteral> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<ConditionalStatement>)> custom_ConditionalStatement;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<ConditionalStatement>> F>
         void bind_ConditionalStatement(Context<R,T>&,F&& f) {
@@ -311,6 +340,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_ConditionalStatement() { custom_ConditionalStatement = [](BaseContext<R>& c,Node<ConditionalStatement> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<Parameter>)> custom_Parameter;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Parameter>> F>
         void bind_Parameter(Context<R,T>&,F&& f) {
@@ -321,6 +351,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_Parameter() { custom_Parameter = [](BaseContext<R>& c,Node<Parameter> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<Body>)> custom_Body;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Body>> F>
         void bind_Body(Context<R,T>&,F&& f) {
@@ -331,6 +362,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_Body() { custom_Body = [](BaseContext<R>& c,Node<Body> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<Arguments>)> custom_Arguments;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Arguments>> F>
         void bind_Arguments(Context<R,T>&,F&& f) {
@@ -341,6 +373,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_Arguments() { custom_Arguments = [](BaseContext<R>& c,Node<Arguments> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<Argument>)> custom_Argument;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Argument>> F>
         void bind_Argument(Context<R,T>&,F&& f) {
@@ -351,6 +384,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_Argument() { custom_Argument = [](BaseContext<R>& c,Node<Argument> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<NamedArgument>)> custom_NamedArgument;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<NamedArgument>> F>
         void bind_NamedArgument(Context<R,T>&,F&& f) {
@@ -361,6 +395,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_NamedArgument() { custom_NamedArgument = [](BaseContext<R>& c,Node<NamedArgument> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<Ident>)> custom_Ident;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Ident>> F>
         void bind_Ident(Context<R,T>&,F&& f) {
@@ -371,6 +406,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_Ident() { custom_Ident = [](BaseContext<R>& c,Node<Ident> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<IntType>)> custom_IntType;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<IntType>> F>
         void bind_IntType(Context<R,T>&,F&& f) {
@@ -381,6 +417,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_IntType() { custom_IntType = [](BaseContext<R>& c,Node<IntType> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<IntLiteral>)> custom_IntLiteral;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<IntLiteral>> F>
         void bind_IntLiteral(Context<R,T>&,F&& f) {
@@ -391,6 +428,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_IntLiteral() { custom_IntLiteral = [](BaseContext<R>& c,Node<IntLiteral> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<BoolLiteral>)> custom_BoolLiteral;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<BoolLiteral>> F>
         void bind_BoolLiteral(Context<R,T>&,F&& f) {
@@ -401,6 +439,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_BoolLiteral() { custom_BoolLiteral = [](BaseContext<R>& c,Node<BoolLiteral> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<StrLiteral>)> custom_StrLiteral;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<StrLiteral>> F>
         void bind_StrLiteral(Context<R,T>&,F&& f) {
@@ -411,6 +450,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_StrLiteral() { custom_StrLiteral = [](BaseContext<R>& c,Node<StrLiteral> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<CharLiteral>)> custom_CharLiteral;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<CharLiteral>> F>
         void bind_CharLiteral(Context<R,T>&,F&& f) {
@@ -421,6 +461,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_CharLiteral() { custom_CharLiteral = [](BaseContext<R>& c,Node<CharLiteral> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<RegexLiteral>)> custom_RegexLiteral;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<RegexLiteral>> F>
         void bind_RegexLiteral(Context<R,T>&,F&& f) {
@@ -431,6 +472,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_RegexLiteral() { custom_RegexLiteral = [](BaseContext<R>& c,Node<RegexLiteral> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<SpecialLiteral>)> custom_SpecialLiteral;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<SpecialLiteral>> F>
         void bind_SpecialLiteral(Context<R,T>&,F&& f) {
@@ -441,6 +483,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_SpecialLiteral() { custom_SpecialLiteral = [](BaseContext<R>& c,Node<SpecialLiteral> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<Paren>)> custom_Paren;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Paren>> F>
         void bind_Paren(Context<R,T>&,F&& f) {
@@ -451,6 +494,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_Paren() { custom_Paren = [](BaseContext<R>& c,Node<Paren> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<Index>)> custom_Index;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Index>> F>
         void bind_Index(Context<R,T>&,F&& f) {
@@ -461,6 +505,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_Index() { custom_Index = [](BaseContext<R>& c,Node<Index> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<Cond>)> custom_Cond;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Cond>> F>
         void bind_Cond(Context<R,T>&,F&& f) {
@@ -471,6 +516,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_Cond() { custom_Cond = [](BaseContext<R>& c,Node<Cond> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<Range>)> custom_Range;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Range>> F>
         void bind_Range(Context<R,T>&,F&& f) {
@@ -481,6 +527,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_Range() { custom_Range = [](BaseContext<R>& c,Node<Range> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<BadExpr>)> custom_BadExpr;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<BadExpr>> F>
         void bind_BadExpr(Context<R,T>&,F&& f) {
@@ -491,6 +538,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_BadExpr() { custom_BadExpr = [](BaseContext<R>& c,Node<BadExpr> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<Assert>)> custom_Assert;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Assert>> F>
         void bind_Assert(Context<R,T>&,F&& f) {
@@ -501,6 +549,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_Assert() { custom_Assert = [](BaseContext<R>& c,Node<Assert> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<FloatType>)> custom_FloatType;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<FloatType>> F>
         void bind_FloatType(Context<R,T>&,F&& f) {
@@ -511,6 +560,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_FloatType() { custom_FloatType = [](BaseContext<R>& c,Node<FloatType> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<BoolType>)> custom_BoolType;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<BoolType>> F>
         void bind_BoolType(Context<R,T>&,F&& f) {
@@ -521,6 +571,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_BoolType() { custom_BoolType = [](BaseContext<R>& c,Node<BoolType> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<VoidType>)> custom_VoidType;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<VoidType>> F>
         void bind_VoidType(Context<R,T>&,F&& f) {
@@ -531,6 +582,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_VoidType() { custom_VoidType = [](BaseContext<R>& c,Node<VoidType> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<IdentType>)> custom_IdentType;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<IdentType>> F>
         void bind_IdentType(Context<R,T>&,F&& f) {
@@ -541,6 +593,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_IdentType() { custom_IdentType = [](BaseContext<R>& c,Node<IdentType> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<ImportedType>)> custom_ImportedType;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<ImportedType>> F>
         void bind_ImportedType(Context<R,T>&,F&& f) {
@@ -551,6 +604,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_ImportedType() { custom_ImportedType = [](BaseContext<R>& c,Node<ImportedType> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<IntLiteralType>)> custom_IntLiteralType;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<IntLiteralType>> F>
         void bind_IntLiteralType(Context<R,T>&,F&& f) {
@@ -561,6 +615,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_IntLiteralType() { custom_IntLiteralType = [](BaseContext<R>& c,Node<IntLiteralType> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<StrLiteralType>)> custom_StrLiteralType;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<StrLiteralType>> F>
         void bind_StrLiteralType(Context<R,T>&,F&& f) {
@@ -571,6 +626,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_StrLiteralType() { custom_StrLiteralType = [](BaseContext<R>& c,Node<StrLiteralType> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<RegexLiteralType>)> custom_RegexLiteralType;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<RegexLiteralType>> F>
         void bind_RegexLiteralType(Context<R,T>&,F&& f) {
@@ -581,6 +637,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_RegexLiteralType() { custom_RegexLiteralType = [](BaseContext<R>& c,Node<RegexLiteralType> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<ArrayType>)> custom_ArrayType;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<ArrayType>> F>
         void bind_ArrayType(Context<R,T>&,F&& f) {
@@ -591,6 +648,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_ArrayType() { custom_ArrayType = [](BaseContext<R>& c,Node<ArrayType> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<StreamType>)> custom_StreamType;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<StreamType>> F>
         void bind_StreamType(Context<R,T>&,F&& f) {
@@ -601,6 +659,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_StreamType() { custom_StreamType = [](BaseContext<R>& c,Node<StreamType> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<FunctionType>)> custom_FunctionType;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<FunctionType>> F>
         void bind_FunctionType(Context<R,T>&,F&& f) {
@@ -611,6 +670,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_FunctionType() { custom_FunctionType = [](BaseContext<R>& c,Node<FunctionType> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<StructType>)> custom_StructType;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<StructType>> F>
         void bind_StructType(Context<R,T>&,F&& f) {
@@ -621,6 +681,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_StructType() { custom_StructType = [](BaseContext<R>& c,Node<StructType> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<InlineStructType>)> custom_InlineStructType;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<InlineStructType>> F>
         void bind_InlineStructType(Context<R,T>&,F&& f) {
@@ -631,6 +692,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_InlineStructType() { custom_InlineStructType = [](BaseContext<R>& c,Node<InlineStructType> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<StructUnionType>)> custom_StructUnionType;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<StructUnionType>> F>
         void bind_StructUnionType(Context<R,T>&,F&& f) {
@@ -641,6 +703,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_StructUnionType() { custom_StructUnionType = [](BaseContext<R>& c,Node<StructUnionType> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<StructUnionCandidate>)> custom_StructUnionCandidate;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<StructUnionCandidate>> F>
         void bind_StructUnionCandidate(Context<R,T>&,F&& f) {
@@ -651,6 +714,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_StructUnionCandidate() { custom_StructUnionCandidate = [](BaseContext<R>& c,Node<StructUnionCandidate> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<UnionType>)> custom_UnionType;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<UnionType>> F>
         void bind_UnionType(Context<R,T>&,F&& f) {
@@ -661,6 +725,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_UnionType() { custom_UnionType = [](BaseContext<R>& c,Node<UnionType> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<RangeType>)> custom_RangeType;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<RangeType>> F>
         void bind_RangeType(Context<R,T>&,F&& f) {
@@ -671,6 +736,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_RangeType() { custom_RangeType = [](BaseContext<R>& c,Node<RangeType> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<EnumType>)> custom_EnumType;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<EnumType>> F>
         void bind_EnumType(Context<R,T>&,F&& f) {
@@ -681,6 +747,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_EnumType() { custom_EnumType = [](BaseContext<R>& c,Node<EnumType> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<MetaType>)> custom_MetaType;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<MetaType>> F>
         void bind_MetaType(Context<R,T>&,F&& f) {
@@ -691,6 +758,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_MetaType() { custom_MetaType = [](BaseContext<R>& c,Node<MetaType> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<OptionalType>)> custom_OptionalType;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<OptionalType>> F>
         void bind_OptionalType(Context<R,T>&,F&& f) {
@@ -701,6 +769,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_OptionalType() { custom_OptionalType = [](BaseContext<R>& c,Node<OptionalType> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<GenericType>)> custom_GenericType;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<GenericType>> F>
         void bind_GenericType(Context<R,T>&,F&& f) {
@@ -711,6 +780,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_GenericType() { custom_GenericType = [](BaseContext<R>& c,Node<GenericType> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<MatchBranch>)> custom_MatchBranch;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<MatchBranch>> F>
         void bind_MatchBranch(Context<R,T>&,F&& f) {
@@ -721,6 +791,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_MatchBranch() { custom_MatchBranch = [](BaseContext<R>& c,Node<MatchBranch> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<UnionCandidate>)> custom_UnionCandidate;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<UnionCandidate>> F>
         void bind_UnionCandidate(Context<R,T>&,F&& f) {
@@ -731,6 +802,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_UnionCandidate() { custom_UnionCandidate = [](BaseContext<R>& c,Node<UnionCandidate> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<Return>)> custom_Return;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Return>> F>
         void bind_Return(Context<R,T>&,F&& f) {
@@ -741,6 +813,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_Return() { custom_Return = [](BaseContext<R>& c,Node<Return> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<Break>)> custom_Break;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Break>> F>
         void bind_Break(Context<R,T>&,F&& f) {
@@ -751,6 +824,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_Break() { custom_Break = [](BaseContext<R>& c,Node<Break> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<Continue>)> custom_Continue;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Continue>> F>
         void bind_Continue(Context<R,T>&,F&& f) {
@@ -761,6 +835,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_Continue() { custom_Continue = [](BaseContext<R>& c,Node<Continue> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<Enum>)> custom_Enum;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Enum>> F>
         void bind_Enum(Context<R,T>&,F&& f) {
@@ -771,6 +846,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_Enum() { custom_Enum = [](BaseContext<R>& c,Node<Enum> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<EnumMember>)> custom_EnumMember;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<EnumMember>> F>
         void bind_EnumMember(Context<R,T>&,F&& f) {
@@ -781,6 +857,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_EnumMember() { custom_EnumMember = [](BaseContext<R>& c,Node<EnumMember> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<State>)> custom_State;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<State>> F>
         void bind_State(Context<R,T>&,F&& f) {
@@ -791,6 +868,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_State() { custom_State = [](BaseContext<R>& c,Node<State> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<TypeParameter>)> custom_TypeParameter;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<TypeParameter>> F>
         void bind_TypeParameter(Context<R,T>&,F&& f) {
@@ -801,6 +879,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_TypeParameter() { custom_TypeParameter = [](BaseContext<R>& c,Node<TypeParameter> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<Identity>)> custom_Identity;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Identity>> F>
         void bind_Identity(Context<R,T>&,F&& f) {
@@ -811,6 +890,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_Identity() { custom_Identity = [](BaseContext<R>& c,Node<Identity> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<Cast>)> custom_Cast;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Cast>> F>
         void bind_Cast(Context<R,T>&,F&& f) {
@@ -821,6 +901,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_Cast() { custom_Cast = [](BaseContext<R>& c,Node<Cast> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<OrCond>)> custom_OrCond;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<OrCond>> F>
         void bind_OrCond(Context<R,T>&,F&& f) {
@@ -831,6 +912,7 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_OrCond() { custom_OrCond = [](BaseContext<R>& c,Node<OrCond> n){  return expected<R>{}; }; }
         std::function<expected<R>(BaseContext<R>&, Node<Import>)> custom_Import;
         template <class T,invocable_r<expected<R>,Context<R,T>&,Node<Import>> F>
         void bind_Import(Context<R,T>&,F&& f) {
@@ -841,5 +923,6 @@ namespace brgen::nast::backend {
                    return f(new_c,n);
             };
         }
+        void none_Import() { custom_Import = [](BaseContext<R>& c,Node<Import> n){  return expected<R>{}; }; }
     };
 } // namespace brgen::nast::backend

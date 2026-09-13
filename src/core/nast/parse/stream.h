@@ -1,7 +1,7 @@
 /*license*/
 #pragma once
-#include "../lexer/token.h"
-#include "../lexer/lexer.h"
+#include "core/lexer/token.h"
+#include "core/lexer/lexer.h"
 #include <list>
 #include <optional>
 #include <helper/defer.h>
@@ -9,7 +9,7 @@
 #include <map>
 #include <string_view>
 #include "../node/nodes.h"
-#include "../common/file.h"
+#include "core/common/file.h"
 #include "core/common/error.h"
 #include "core/lexer/lexer_enum.h"
 

@@ -249,88 +249,88 @@ namespace brgen::nast::backend {
 //   using result_type = X;                         木を辿るときの戻り値 (既定 CodeWriter)
 //   std::string finish(X&&)                        X から出力を作る (X が文字列でないとき必須)
 //   IndentStyle indent_style()                     字下げ (既定 4 空白, IndentStyle::tab() など)
-#define NAST_BACKEND_ENTRY(LangConfig)                                                                              \
-    using nast_result_t = ::brgen::nast::backend::lang_result_t<LangConfig>;                                        \
-                                                                                                                    \
-    static ::brgen::nast::expected<void> nast_backend_setup(                                                        \
-        ::brgen::nast::backend::Context<nast_result_t, LangConfig>& ctx,                                            \
-        ::brgen::nast::backend::Knobs<nast_result_t>& knobs,                                                        \
-        ::brgen::nast::backend::EntryFlags& flags);                                                                 \
-                                                                                                                    \
-    static int nast_backend_main(int argc, char** argv) {                                                           \
-        using namespace brgen::nast;                                                                                \
-        using namespace brgen::nast::backend;                                                                       \
-        namespace nast_entry = ::brgen::nast::backend::entry;                                                       \
-        LangConfig lang;                                                                                            \
-        EntryFlags flags;                                                                                           \
-        flags.program_name = argv[0];                                                                               \
-        flags.lang_name = LangConfig::lang_name;                                                                    \
-        apply_lang_options(flags, lang);                                                                            \
-        return futils::cmdline::templ::parse_or_err<std::string>(                                                   \
-            argc, argv, flags,                                                                                      \
-            [&](auto&& str, bool err) {                                                                             \
-                if (err) {                                                                                          \
-                    futils::wrap::cerr_wrap() << flags.program_name << ": " << str;                                 \
-                }                                                                                                   \
-                else {                                                                                              \
-                    futils::wrap::cout_wrap() << str;                                                               \
-                }                                                                                                   \
-            },                                                                                                      \
-            [&](EntryFlags& flags, futils::cmdline::option::Context& opt_ctx) {                                     \
-                if (flags.show_flags) {                                                                             \
-                    futils::wrap::cout_wrap()                                                                       \
-                        << nast_entry::flag_description_json(                                                       \
-                               opt_ctx, flags.lang_name, flags.file_extension)                                      \
-                        << '\n';                                                                                    \
-                    return 0;                                                                                       \
-                }                                                                                                   \
-                auto mode = nast_entry::parse_unhandled(flags.unhandled);                                           \
-                if (!mode) {                                                                                        \
-                    futils::wrap::cerr_wrap()                                                                       \
-                        << flags.program_name << ": unknown --unhandled: " << flags.unhandled                       \
-                        << " (want dummy, error or ignore)\n";                                                      \
-                    return 1;                                                                                       \
-                }                                                                                                   \
-                if (flags.input.empty()) {                                                                          \
-                    futils::wrap::cerr_wrap() << flags.program_name << ": no input (-i FILE)\n";                    \
-                    return 1;                                                                                       \
-                }                                                                                                   \
-                Program program;                                                                                    \
-                if (auto r = analyze(program, flags.input); r != AnalyzeResult::ok) {                               \
-                    auto why = first_error(program);                                                                \
-                    futils::wrap::cerr_wrap()                                                                       \
-                        << flags.program_name << ": " << flags.input << ": "                                        \
-                        << (why.empty() ? describe(r) : why.c_str()) << '\n';                                       \
-                    return 1;                                                                                       \
-                }                                                                                                   \
-                Knobs<nast_result_t> knobs;                                                                         \
-                BaseContext<nast_result_t> base{.a = program.arena, .t = program.tables, .n = knobs};               \
-                base.config().unhandled_mode = *mode;                                                               \
-                auto ctx = base.to_context(lang);                                                                   \
-                if (auto ok = nast_backend_setup(ctx, knobs, flags); !ok) {                                         \
-                    nast_entry::report(program.arena, program.files, ok.error());                                   \
-                    return 1;                                                                                       \
-                }                                                                                                   \
-                auto written = base.visit(program.root);                                                            \
-                if (!written) {                                                                                     \
-                    nast_entry::report(program.arena, program.files, written.error());                              \
-                    return 1;                                                                                       \
-                }                                                                                                   \
-                auto text = nast_entry::finish_output(lang, std::move(*written));                                   \
-                if (!text) {                                                                                        \
-                    nast_entry::report(program.arena, program.files, text.error());                                 \
-                    return 1;                                                                                       \
-                }                                                                                                   \
-                return nast_entry::write_out(flags.output, *text);                                                  \
-            });                                                                                                     \
-    }                                                                                                               \
-                                                                                                                    \
-    int main(int argc, char** argv) {                                                                               \
-        futils::wrap::U8Arg _(argc, argv);                                                                          \
-        return nast_backend_main(argc, argv);                                                                       \
-    }                                                                                                               \
-                                                                                                                    \
-    static ::brgen::nast::expected<void> nast_backend_setup(                                                        \
-        ::brgen::nast::backend::Context<nast_result_t, LangConfig>& ctx,                                            \
-        ::brgen::nast::backend::Knobs<nast_result_t>& knobs,                                                        \
+#define NAST_BACKEND_ENTRY(LangConfig)                                                                \
+    using nast_result_t = ::brgen::nast::backend::lang_result_t<LangConfig>;                          \
+    using LangContext = ::brgen::nast::backend::Context<nast_result_t, LangConfig>;                   \
+    static ::brgen::nast::expected<void> nast_backend_setup(                                          \
+        ::brgen::nast::backend::Context<nast_result_t, LangConfig>& ctx,                              \
+        ::brgen::nast::backend::Knobs<nast_result_t>& knobs,                                          \
+        ::brgen::nast::backend::EntryFlags& flags);                                                   \
+                                                                                                      \
+    static int nast_backend_main(int argc, char** argv) {                                             \
+        using namespace brgen::nast;                                                                  \
+        using namespace brgen::nast::backend;                                                         \
+        namespace nast_entry = ::brgen::nast::backend::entry;                                         \
+        LangConfig lang;                                                                              \
+        EntryFlags flags;                                                                             \
+        flags.program_name = argv[0];                                                                 \
+        flags.lang_name = LangConfig::lang_name;                                                      \
+        apply_lang_options(flags, lang);                                                              \
+        return futils::cmdline::templ::parse_or_err<std::string>(                                     \
+            argc, argv, flags,                                                                        \
+            [&](auto&& str, bool err) {                                                               \
+                if (err) {                                                                            \
+                    futils::wrap::cerr_wrap() << flags.program_name << ": " << str;                   \
+                }                                                                                     \
+                else {                                                                                \
+                    futils::wrap::cout_wrap() << str;                                                 \
+                }                                                                                     \
+            },                                                                                        \
+            [&](EntryFlags& flags, futils::cmdline::option::Context& opt_ctx) {                       \
+                if (flags.show_flags) {                                                               \
+                    futils::wrap::cout_wrap()                                                         \
+                        << nast_entry::flag_description_json(                                         \
+                               opt_ctx, flags.lang_name, flags.file_extension)                        \
+                        << '\n';                                                                      \
+                    return 0;                                                                         \
+                }                                                                                     \
+                auto mode = nast_entry::parse_unhandled(flags.unhandled);                             \
+                if (!mode) {                                                                          \
+                    futils::wrap::cerr_wrap()                                                         \
+                        << flags.program_name << ": unknown --unhandled: " << flags.unhandled         \
+                        << " (want dummy, error or ignore)\n";                                        \
+                    return 1;                                                                         \
+                }                                                                                     \
+                if (flags.input.empty()) {                                                            \
+                    futils::wrap::cerr_wrap() << flags.program_name << ": no input (-i FILE)\n";      \
+                    return 1;                                                                         \
+                }                                                                                     \
+                Program program;                                                                      \
+                if (auto r = analyze(program, flags.input); r != AnalyzeResult::ok) {                 \
+                    auto why = first_error(program);                                                  \
+                    futils::wrap::cerr_wrap()                                                         \
+                        << flags.program_name << ": " << flags.input << ": "                          \
+                        << (why.empty() ? describe(r) : why.c_str()) << '\n';                         \
+                    return 1;                                                                         \
+                }                                                                                     \
+                Knobs<nast_result_t> knobs;                                                           \
+                BaseContext<nast_result_t> base{.a = program.arena, .t = program.tables, .n = knobs}; \
+                base.config().unhandled_mode = *mode;                                                 \
+                auto ctx = base.to_context(lang);                                                     \
+                if (auto ok = nast_backend_setup(ctx, knobs, flags); !ok) {                           \
+                    nast_entry::report(program.arena, program.files, ok.error());                     \
+                    return 1;                                                                         \
+                }                                                                                     \
+                auto written = base.visit(program.root);                                              \
+                if (!written) {                                                                       \
+                    nast_entry::report(program.arena, program.files, written.error());                \
+                    return 1;                                                                         \
+                }                                                                                     \
+                auto text = nast_entry::finish_output(lang, std::move(*written));                     \
+                if (!text) {                                                                          \
+                    nast_entry::report(program.arena, program.files, text.error());                   \
+                    return 1;                                                                         \
+                }                                                                                     \
+                return nast_entry::write_out(flags.output, *text);                                    \
+            });                                                                                       \
+    }                                                                                                 \
+                                                                                                      \
+    int main(int argc, char** argv) {                                                                 \
+        futils::wrap::U8Arg _(argc, argv);                                                            \
+        return nast_backend_main(argc, argv);                                                         \
+    }                                                                                                 \
+                                                                                                      \
+    static ::brgen::nast::expected<void> nast_backend_setup(                                          \
+        ::brgen::nast::backend::Context<nast_result_t, LangConfig>& ctx,                              \
+        ::brgen::nast::backend::Knobs<nast_result_t>& knobs,                                          \
         ::brgen::nast::backend::EntryFlags& flags)

@@ -92,6 +92,11 @@ namespace brgen::nast::backend {
         L& lang_config() {
             return l;
         }
+
+        template <class T>
+        constexpr auto as_ref(Node<T> n) {
+            return arena().as_ref(n);
+        }
     };
 
 #define MAYBE(x, v)                                                      \

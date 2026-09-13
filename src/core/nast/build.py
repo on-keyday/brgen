@@ -112,7 +112,7 @@ def main():
     build = ["cmake", "--build", tree]
     targets = list(args.target)
     if args.run:
-        targets.append("nast_" + args.run)
+        targets.append(args.run)
     for t in targets:
         build += ["--target", t]
     if args.jobs:
@@ -120,7 +120,7 @@ def main():
     run(build)
 
     if args.run:
-        exe = os.path.join(tree, "bin", "nast_" + args.run + (".exe" if os.name == "nt" else ""))
+        exe = os.path.join(tree, "bin", args.run + (".exe" if os.name == "nt" else ""))
         if not os.path.exists(exe):
             sys.exit(f"no such tool: {exe}")
         run([exe] + rest)

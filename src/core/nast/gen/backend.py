@@ -134,6 +134,7 @@ def emit_backend_knobs(s :Schema) -> str:
         w.line("                   return f(new_c,n);")
         w.line("            };")
         w.line("        }")
+        w.line("        void none_",str(node["name"]),"() { custom_",str(node["name"])," = [](BaseContext<R>& c,Node<",node["name"],"> n){  return expected<R>{}; }; }")
     w.line("    };")
     w.line("} // namespace brgen::nast::backend")
     return w.getvalue()
