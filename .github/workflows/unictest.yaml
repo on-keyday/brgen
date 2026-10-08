@@ -68,7 +68,7 @@ jobs:
           echo "runner dir not found for ${{ matrix.shard.runner }}" >&2; exit 1
       - name: Install mise
         if: hashFiles(format('{0}/mise.toml', steps.runner.outputs.path)) != ''
-        uses: jdx/mise-action@dad1bfd3df957f44999b559dd69dc1671cb4e9ea # v4.2.1
+        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
         with:
           working_directory: ${{ steps.runner.outputs.path }}
           install: false
