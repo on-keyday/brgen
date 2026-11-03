@@ -52,14 +52,17 @@ cp -r web/dev/src/shims "$STAGING_DIR/web/dev/src/shims"
 
 
 # ---- 2. ast2ts package (file: dependency) ----
+# The dependency points at out/, so that is where npm looks for a package.json.
+# out/ is tsc output and has none, and npm 10 turns that into
+# "Cannot read properties of null (reading 'edgesOut')" during the
+# --package-lock-only run below. Write a manifest for the compiled entry
+# instead: out/ requires nothing but its own files, so the dependencies of the
+# source package do not carry over.
 if [ -d "astlib/ast2ts/out" ]; then
     mkdir -p "$STAGING_DIR/astlib/ast2ts"
     cp -r astlib/ast2ts/out "$STAGING_DIR/astlib/ast2ts/out"
-    # ast2ts also needs its own package.json for npm to resolve it
-    if [ -f "astlib/ast2ts/out/package.json" ]; then
-        : # already copied inside out/
-    elif [ -f "astlib/ast2ts/package.json" ]; then
-        cp astlib/ast2ts/package.json "$STAGING_DIR/astlib/ast2ts/"
+    if [ ! -f "$STAGING_DIR/astlib/ast2ts/out/package.json" ]; then
+        jq '{name, version, license, main: "index.js", types: "index.d.ts"}' astlib/ast2ts/package.json > "$STAGING_DIR/astlib/ast2ts/out/package.json"
     fi
 else
     echo "WARNING: astlib/ast2ts/out/ not found -- ast2ts dependency will be missing"
@@ -76,6 +79,15 @@ fi
 
 
 # ---- 4. Create the .tar.gz ----
+# A file: dependency whose directory has no package.json resolves to nothing and
+# npm reports it far from here, so say it plainly while the cause is in reach.
+for dep_dir in "$STAGING_DIR/astlib/ast2ts/out" "$STAGING_DIR/src/tool/json2rust/pkg"; do
+    if [ ! -f "$dep_dir/package.json" ]; then
+        echo "ERROR: $dep_dir is a file: dependency target but has no package.json" >&2
+        exit 1
+    fi
+done
+
 mkdir -p "$OUTPUT_DIR"
 (
     cd "$STAGING_DIR/web/dev"
