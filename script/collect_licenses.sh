@@ -25,7 +25,8 @@ else
   return 1
 fi
 cd web/doc
-$GOCREDITS -skip-missing > ../../license_cache/web/credits.txt
+THEME_DIR=$(go list -m -f '{{.Dir}}' github.com/alex-shpak/hugo-book)
+cat "$THEME_DIR/LICENSE" > ../../license_cache/web/credits.txt
 RESULT=$?
 cd ../..
 if [ $RESULT -eq 0 ]; then
