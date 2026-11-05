@@ -32,8 +32,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "serve": "node --experimental-strip-types --experimental-transform-types --import ./src/server/register-loader.mjs ./node_modules/vite-node/dist/cli.mjs src/server/main.ts",
-    "mcp": "node --inspect --experimental-strip-types --experimental-transform-types --import ./src/server/register-loader.mjs ./node_modules/vite-node/dist/cli.mjs src/server/mcp_main.ts",
+    "serve": "node --experimental-strip-types --import ./src/server/register-loader.mjs ./node_modules/vite-node/dist/cli.mjs src/server/main.ts",
+    "mcp": "node --inspect --experimental-strip-types --import ./src/server/register-loader.mjs ./node_modules/vite-node/dist/cli.mjs src/server/mcp_main.ts",
     "test": "vitest run"
   }
 }

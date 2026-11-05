@@ -9,7 +9,6 @@ export default mergeConfig(
       pool: "forks",
       execArgv: [
       '--experimental-strip-types',
-      '--experimental-transform-types',
       '--import', './src/server/register-loader.mjs'
       ],
       testTimeout: 60_000,
