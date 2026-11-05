@@ -1,9 +1,9 @@
 import { useRef, useEffect, useCallback } from "preact/hooks";
 import * as monaco from "monaco-editor";
 
-import "monaco-editor/esm/vs/language/json/monaco.contribution";
-import "monaco-editor/esm/vs/basic-languages/cpp/cpp.contribution";
-import "monaco-editor/esm/vs/basic-languages/go/go.contribution";
+import "monaco-editor/language/json/monaco.contribution";
+import "monaco-editor/languages/definitions/cpp/register";
+import "monaco-editor/languages/definitions/go/register";
 
 // Ensure Monaco workers are configured
 if (typeof window !== "undefined" && !window.MonacoEnvironment) {
