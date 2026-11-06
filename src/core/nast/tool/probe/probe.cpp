@@ -1,6 +1,6 @@
 /*license*/
 // 入り口。見たいものを最初の引数で選ぶ。中身はモードごとに size.cpp /
-// endian.cpp / lower.cpp にある。
+// endian.cpp / lower.cpp / bits.cpp にある。
 #include "../../node/console.h"
 #include "probe.hpp"
 
@@ -11,7 +11,7 @@ using namespace brgen::nast::probe;
 
 int main(int argc, char** argv) {
     if (argc < 3) {
-        print_line(stderr, "usage: nast_probe <size|endian|lower> <file.bgn>...");
+        print_line(stderr, "usage: nast_probe <size|endian|lower|bits> <file.bgn>...");
         print_line(stderr, "  ファイルが 1 つなら明細、2 つ以上なら集計");
         return 2;
     }
@@ -33,6 +33,9 @@ int main(int argc, char** argv) {
         }
         else if (what == "lower") {
             run_lower(p, detail, hist);
+        }
+        else if (what == "bits") {
+            run_bits(p, detail, hist);
         }
         else {
             print_line(stderr, "unknown mode: {}", what);

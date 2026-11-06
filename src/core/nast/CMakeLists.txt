@@ -210,13 +210,14 @@ foreach(tool corpus dump backend query)
     target_link_libraries(nast_${tool} PRIVATE nast_core)
 endforeach()
 
-# probe だけ入り口 1 つに対してモードが 3 つある。覚える名前を増やさずに、
+# probe だけ入り口 1 つに対してモードが 4 つある。覚える名前を増やさずに、
 # 木を見て何が見られるか分かるように、ソースはモードごとに分けてある。
 add_executable(nast_probe
     "tool/probe/probe.cpp"
     "tool/probe/size.cpp"
     "tool/probe/endian.cpp"
     "tool/probe/lower.cpp"
+    "tool/probe/bits.cpp"
 )
 target_link_libraries(nast_probe PRIVATE nast_core)
 
