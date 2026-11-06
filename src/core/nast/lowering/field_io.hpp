@@ -50,4 +50,9 @@ namespace brgen::nast::lowering {
     Node<Body> lower_field_encode(Context& c, Node<Field> f, Node<Expr> target, Node<Expr> bytes,
                                   Node<Expr> offset);
 
+    // `f :T(期待値)` の期待値を assert にして body に足す。読む側は読んだ後、
+    // 書く側は書く前。expected が無ければ body をそのまま返す。
+    Node<Body> add_expected_check(Context& c, Node<Expr> target, Node<Body> body,
+                                  Node<Expr> expected, bool decode);
+
 }  // namespace brgen::nast::lowering

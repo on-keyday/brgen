@@ -59,6 +59,7 @@ namespace brgen::nast {
     //   endian<id>  実行時に決まるバイト順を入れる変数 (lowering/endian_variable)
     //   i<id>       配列を回す添字 (lowering/field_io)
     //   b<id>       バイトを並べる添字 (lowering/stream_io)
+    //   bits<id>    ビット群をまとめて読んだ値 (lowering/bit_group)
     inline std::string derived_name(std::string_view prefix, NodeAny origin) {
         return std::string(prefix) + std::to_string(origin.id());
     }

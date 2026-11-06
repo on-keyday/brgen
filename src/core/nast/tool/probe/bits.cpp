@@ -1,91 +1,85 @@
 /*license*/
-// `nast_probe bits` — バイト境界に乗らない field の並び (ビット群) を数える。
+// `nast_probe bits` — バイト境界に乗らない field の並び (ビット群) と、
+// それをまとめて読み書きする lowering (lowering/bit_group) の結果。
 //
-// 同じ Body の中で連続していて、バイト境界から始まりバイト境界で閉じる群は
-// CFG なしで 1 回の読み書きに畳める (wirespec の BitGroup と同じ条件)。
-// 閉じる前に分岐・ループ・Body の終わりに当たる群は経路を辿らないと畳めない。
-// その割合が CFG を先に作るかどうかの材料になる。
+// 群の切り方は lowering の bit_groups そのもの。ここは閉じ方で数えるのと、
+// 組めた群を .bgn に戻して印字するだけ。
 #include "../../node/console.h"
 #include "probe.hpp"
+#include "../../lowering/bit_group.hpp"
+#include "../../lowering/self_ref.hpp"
+#include "../../node/build.h"
 #include "../../node/util.h"
+#include "../../parse/unparse.h"
 
 #include <set>
 
 namespace brgen::nast::probe {
 
     namespace {
-        // 群を閉じずに通してよい文。読み書きをしないもの。
-        bool is_transparent(NodeType t) {
-            switch (t) {
-                case NodeType::Assert:
-                case NodeType::VariableDefinition:
-                case NodeType::Metadata:
-                    return true;
-                default:
-                    return false;
+        const char* close_name(lowering::BitGroup::Close c, bool format_body) {
+            using C = lowering::BitGroup::Close;
+            switch (c) {
+                case C::flat:
+                    return "平ら (Body 内で閉じる)";
+                case C::branch:
+                    return "閉じる前に分岐";
+                case C::other_statement:
+                    return "閉じる前に分岐以外の文";
+                case C::variable_width:
+                    return "閉じる前に可変幅";
+                case C::body_end:
+                    // format の Body の終わりで開いたままの群は、親の側で前後の
+                    // field と合わさって閉じる (format の境界を跨ぐ)。分岐の腕で
+                    // 開いたままのものは経路の続きで閉じる。解き方が違う。
+                    return format_body ? "閉じる前に format の終わり" : "閉じる前に分岐の腕などの終わり";
             }
+            return "?";
         }
     }  // namespace
 
     void run_bits(Program& p, bool detail, Hist& hist) {
         auto& a = p.arena;
-        auto& t = p.tables;
-        // Body の持ち主。format の Body の終わりで開いたままの群は、親の側で
-        // 前後の field と合わさって閉じる (format の境界を跨ぐ)。分岐の腕で
-        // 開いたままのものは経路の続きで閉じる。解き方が違うので分けて数える。
+        lowering::Context c{a, p.tables};
         std::set<std::uint32_t> format_bodies;
         each_node<Format>(a, [&](Node<Format> f) {
             format_bodies.insert(f.ref(a)->body.id());
         });
-        each_node<Body>(a, [&](Node<Body> body) {
-            std::size_t open_bits = 0;   // 群の中で積んだ幅
-            std::size_t members = 0;     // 群の field 数
-            Node<Field> first{};
-            auto close = [&](const char* how) {
-                if (members == 0) {
-                    return;
-                }
+        // lowering が合成する Body を拾わないよう、範囲を先に固定する。
+        auto last = a.node_count();
+        each_node<Body>(a, last, [&](Node<Body> body) {
+            for (auto& g : lowering::bit_groups(c, body)) {
+                auto how = close_name(g.close, format_bodies.contains(body.id()));
                 hist[std::string("群: ") + how]++;
+                auto pos = g.fields.front().ref(a).loc();
+                if (g.close != lowering::BitGroup::Close::flat) {
+                    if (detail) {
+                        print_line("{}:{}  {} field, {} bits  {}", pos.line + 1, pos.col + 1, g.fields.size(), g.bits, how);
+                    }
+                    continue;
+                }
+                Builder b{a, pos};
+                std::vector<Node<Expr>> targets;
+                for (auto f : g.fields) {
+                    targets.push_back(name_of(a, f).empty() ? Node<Expr>{} : lowering::field_ref(c, f));
+                }
+                auto dec = lowering::lower_bit_group_decode(c, g, targets, b.ref("buf"), b.ref("o"));
+                auto enc = lowering::lower_bit_group_encode(c, g, targets, b.ref("buf"), b.ref("o"));
+                hist[dec && enc ? "平らな群: 組めた" : "平らな群: 組めない"]++;
+                if (!dec || !enc) {
+                    auto why = lowering::bit_group_refusal(c, g);
+                    hist[std::format("  組めない理由: {}", why ? why : "(理由なし)")]++;
+                }
                 if (detail) {
-                    auto pos = first.ref(a).loc();
-                    print_line("{}:{}  {} field, {} bits  {}", pos.line + 1, pos.col + 1, members, open_bits, how);
-                }
-                open_bits = 0;
-                members = 0;
-                first = {};
-            };
-            for (auto& s : body.ref(a)->statements) {
-                if (is_transparent(s.type())) {
-                    continue;
-                }
-                auto fld = s.as<Field>();
-                if (!fld) {
-                    if (members) {
-                        close(is_derived<ConditionalExpr>(s.type()) ? "閉じる前に分岐" : "閉じる前に分岐以外の文");
+                    print_line("{}:{}  {} field, {} bits  {}", pos.line + 1, pos.col + 1, g.fields.size(), g.bits, how);
+                    if (!dec || !enc) {
+                        auto why = lowering::bit_group_refusal(c, g);
+                        print_line("  (組めない: {})", why ? why : "理由なし");
+                        continue;
                     }
-                    continue;
-                }
-                auto type = fld.ref(a)->type;
-                auto* sz = type ? t.table<TypeSize>().get(type) : nullptr;
-                if (!sz || sz->kind != SizeKind::fixed) {
-                    if (members) {
-                        close("閉じる前に可変幅");
-                    }
-                    continue;
-                }
-                if (members == 0) {
-                    if (sz->bits % 8 == 0) {
-                        continue;  // 普通の field
-                    }
-                    first = fld;
-                }
-                members++;
-                open_bits += sz->bits;
-                if (open_bits % 8 == 0) {
-                    close("平ら (Body 内で閉じる)");
+                    print_text("decode:\n{}\nencode:\n{}\n", unparse_node(a, dec), unparse_node(a, enc));
                 }
             }
-            close(format_bodies.contains(body.id()) ? "閉じる前に format の終わり" : "閉じる前に分岐の腕などの終わり");
         });
     }
 

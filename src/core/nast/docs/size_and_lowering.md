@@ -972,6 +972,59 @@ available -> 式 16 / 組めない 5        (実体化前と同じ)
 **予約語は src2json と共有**なので、`self` を書いた `.bgn` は旧経路では
 構文誤りになる。
 
+### ビット群 (2026-11-07、`lowering/bit_group`)
+
+nast2go が止まった理由の 1 位 (非オクテット整数 59) に当たるもの。EBM では
+`merge_bit_field` で、CFG を使って経路ごとに畳む。
+
+**CFG より先に、CFG の要らない場合を作った。** `nast_probe bits` で
+example/ のビット群 (バイト境界に乗らない field の連続) を閉じ方で数えた:
+
+```
+群: 平ら (Body 内で閉じる)          350   68.9%
+群: 閉じる前に分岐の腕などの終わり     75   14.8%
+群: 閉じる前に分岐                   43    8.5%
+群: 閉じる前に format の終わり       24    4.7%
+群: 閉じる前に可変幅                 12    2.4%
+群: 閉じる前に分岐以外の文            4    0.8%
+群 合計                             508
+```
+
+分岐の 43 と腕の 75 は同じ現象を両側から数えている (quic_varint の
+`prefix :u2` + `match prefix: 0 => value :u6 ...`)。経路を辿る必要があるのは
+親の側で数えて 43 群前後。「平ら」は wirespec の BitGroup と同じ条件で、
+これは CFG なしで 1 回の読み書きに畳める。format の終わりの 24 は経路ではなく
+format の境界を跨ぐ話 (mptcp の `MpJoinSyn` は親の `subtype :u4` と合わせて
+1 バイト) で、別に解く。
+
+組み方は「群全体を 1 つの整数として読み、先頭の field を上位として切り出す」:
+
+```
+bits15 := (u16(buf[o]) << 8) | u16(buf[o + 1])
+has_checksum = <u1>((bits15 >> 15) & 1)
+...
+version = <u3>(bits15 & 7)
+```
+
+書く側も `bits<id> := (… | …)` を 1 度組んでから `split_int` に渡す
+(`split_int` は値の式をバイトごとに繰り返すため)。宣言は初期化子があるので
+`Builder::define` で合成できる (値の無い宣言が書けない、の制約には当たらない)。
+
+平らな 350 群のうち組めたのは 310。残り 40 の理由 (`bit_group_refusal`):
+
+| | |
+| --- | --- |
+| bit_order の指定がある | 31 |
+| 2 バイト以上でビッグエンディアンでない | 5 |
+| 整数と enum 以外の field | 3 |
+| 64 ビットを超える | 1 |
+
+bit_order は **木のどこかに書いてあれば断る** という粗い判定。
+`input.bit_order` のスコープは `EndianScope` が見ていない
+(`set_from` が `input.endian` 以外を捨てる) ので、FieldEndian と同じ形の
+表を作るのが先。リトルエンディアンの 2 バイト以上は、元実装が群を
+どう並べるかを確かめていないので断っている。
+
 ## 5. EBM との差 (訂正を含む)
 
 「置く側が違う」と書きかけたが誤り。EBM も emit 時にホイストしている:
@@ -997,7 +1050,8 @@ nast に無い部品: **`WriterManager` に当たるもの**。`node/code_writer
 
 ## 6. 次
 
-- **CFG**。ビット畳み込み (`merge_bit_field` に当たるもの) が経路探索を要る。
+- **CFG**。ビット畳み込みのうち経路を辿るもの (上の「ビット群」で平らに
+  ならなかった側、43 群前後) が経路探索を要る。平らな群は CFG なしで済んだ。
   nast には無い。ebmgen の `analyze_ref` は block / if / loop / match /
   continue / break / return / io の 8 種で約 120 行。nast の対応物は全部あり、
   しかも `Break`/`Continue` は `related_loop` を、`Return` は `related_function`

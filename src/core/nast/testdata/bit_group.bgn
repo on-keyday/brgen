@@ -1,0 +1,55 @@
+# ビット群 (lowering/bit_group) の切り方と組み方。
+
+enum Nib:
+    :u4
+    x = 1
+    y = 2
+
+# 1 バイトの群。enum と期待値つきが混ざる。
+format OneByte:
+    kind :Nib
+    reserved :u3(0)
+    flag :u1
+
+# 群の途中にバイト幅の field を挟む (4 + 8 + 4)。
+format Straddle:
+    hi :u4
+    mid :u8
+    lo :u4
+
+# 型幅の上限ちょうど (1 + 63 = 64)。
+format Exactly64:
+    top :u1
+    rest :u63
+
+# 上限を超える (4 + 64 + 4 = 72)。組めない。
+format Over64:
+    a :u4
+    b :u64
+    c :u4
+
+# 符号つき。符号拡張がまだなので組めない。
+format Signed:
+    s :i4
+    u :u4
+
+# 閉じる前に分岐に当たる。腕の中は閉じる前に Body が終わる。
+format Branch:
+    prefix :u2
+    if prefix == 0:
+        short :u6
+    else:
+        long :u14
+
+# 閉じる前に format が終わる。
+format Half:
+    a :u3
+    b :u1
+
+# リトルエンディアン。1 バイトなら順は関係ないので組める。2 バイトは組めない。
+format Little:
+    input.endian = config.endian.little
+    a :u4
+    b :u4
+    c :u4
+    d :u12

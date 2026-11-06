@@ -282,21 +282,30 @@ namespace brgen::nast {
 
         // `for <name> = 0; <name> < count; <name> = <name> + 1: <inner>`
         // 添字の名前は呼ぶ側が決める (由来のノード番号から作ることが多い)。
+        // `name := value`。nast の宣言は初期化子から型を取るので、値の無い
+        // 宣言はここでは作れない (lowering/conditional.hpp の注記)。
+        Node<VariableDefinition> define(std::string_view name, Node<Expr> value) const {
+            if (!value) {
+                return nullref;
+            }
+            auto id = a.make<Ident>(loc);
+            id->identifier = std::string(name);
+            auto def = a.make<VariableDefinition>(loc);
+            def->name = id;
+            def->value = value;
+            def->op = BinaryOp::define_assign;
+            return def;
+        }
+
         Node<Statement> count_loop(std::string_view index_name, Node<Expr> count,
                                    Node<Body> inner) const {
             if (!count || !inner) {
                 return nullref;
             }
-            auto id = a.make<Ident>(loc);
-            id->identifier = std::string(index_name);
+            auto init = define(index_name, lit(0));
             auto index = a.make<Reference>(loc);
-            index->name = id;
+            index->name = init.ref(a)->name;
             index->type = int_type(64);
-
-            auto init = a.make<VariableDefinition>(loc);
-            init->name = id;
-            init->value = lit(0);
-            init->op = BinaryOp::define_assign;
 
             auto loop = a.make<Loop>(loc);
             loop->init = init;

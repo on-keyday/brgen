@@ -28,9 +28,6 @@ namespace brgen::nast::lowering {
                              Node<Expr> bytes, Node<Expr> offset, bool decode,
                              Node<Expr> per_element);
 
-        Node<Body> add_expected_check(Context& c, Node<Expr> target, Node<Body> body,
-                                      Node<Expr> expected, bool decode);
-
         // 配列。要素を回す。要素幅が固定でないと位置が組めない。
         Node<Body> lower_array(Context& c, Node<Field> f, Node<ArrayType> arr, Node<Expr> target,
                                Node<Expr> bytes, Node<Expr> offset, bool decode,
@@ -147,33 +144,6 @@ namespace brgen::nast::lowering {
             return add_expected_check(c, target, written, per_element, false);
         }
 
-        // `f :T(期待値)` の期待値を assert に落として並びに足す。読んだ値が
-        // 違えば失敗する、という制約なので、書く側でも同じ式を検査する
-        // (期待値を代入して黙って直す形ではない)。
-        //
-        // 位置は読み書きを挟む向き: 読む側は読んでから、書く側は書く前に。
-        // 書いてから検査しても、失敗したときには既にバッファが汚れている。
-        Node<Body> add_expected_check(Context& c, Node<Expr> target, Node<Body> body,
-                                      Node<Expr> expected, bool decode) {
-            if (!body || !expected) {
-                return body;
-            }
-            auto& a = c.a;
-            Builder b{a, expected.ref(a).loc()};
-            auto check = b.assert_(b.bin(BinaryOp::equal, target, expected, b.bool_type()));
-            if (!check) {
-                return nullref;
-            }
-            auto& stmts = body.ref(a)->statements;
-            if (decode) {
-                stmts.push_back(check);
-            }
-            else {
-                stmts.insert(stmts.begin(), check);
-            }
-            return body;
-        }
-
         Node<Body> lower_field(Context& c, Node<Field> f, Node<Expr> target, Node<Expr> bytes,
                                Node<Expr> offset, bool decode) {
             auto& a = c.a;
@@ -209,6 +179,33 @@ namespace brgen::nast::lowering {
         }
 
     }  // namespace
+
+    // `f :T(期待値)` の期待値を assert に落として並びに足す。読んだ値が
+    // 違えば失敗する、という制約なので、書く側でも同じ式を検査する
+    // (期待値を代入して黙って直す形ではない)。
+    //
+    // 位置は読み書きを挟む向き: 読む側は読んでから、書く側は書く前に。
+    // 書いてから検査しても、失敗したときには既にバッファが汚れている。
+    Node<Body> add_expected_check(Context& c, Node<Expr> target, Node<Body> body,
+                                  Node<Expr> expected, bool decode) {
+        if (!body || !expected) {
+            return body;
+        }
+        auto& a = c.a;
+        Builder b{a, expected.ref(a).loc()};
+        auto check = b.assert_(b.bin(BinaryOp::equal, target, expected, b.bool_type()));
+        if (!check) {
+            return nullref;
+        }
+        auto& stmts = body.ref(a)->statements;
+        if (decode) {
+            stmts.push_back(check);
+        }
+        else {
+            stmts.insert(stmts.begin(), check);
+        }
+        return body;
+    }
 
     Node<Body> lower_field_decode(Context& c, Node<Field> f, Node<Expr> target, Node<Expr> bytes,
                                   Node<Expr> offset) {

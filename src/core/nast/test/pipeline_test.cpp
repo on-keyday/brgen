@@ -12,6 +12,7 @@
 //   nast_pipeline_test <testdata ディレクトリ>
 #include "../bind/pipeline.h"
 #include "../lowering/available.hpp"
+#include "../lowering/bit_group.hpp"
 #include "../lowering/enum_defined.hpp"
 #include "../lowering/field_io.hpp"
 #include "../lowering/self_ref.hpp"
@@ -228,6 +229,149 @@ namespace {
         }
     }
 
+    // ビット群の切り方 (閉じ方) と、組んだ読み書きの綴り。
+    void test_bit_group(const std::filesystem::path& dir) {
+        print_line("lowering/bit_group (bit_group.bgn)");
+        Program p;
+        load(p, dir, "bit_group.bgn");
+        auto& a = p.arena;
+        lowering::Context c{a, p.tables};
+        using Close = lowering::BitGroup::Close;
+
+        // format の名前で、その Body の群を引く。
+        auto groups_of = [&](std::string_view name) {
+            std::vector<lowering::BitGroup> r;
+            each<Format>(p, [&](Node<Format> f) {
+                if (name_of(a, f) == name) {
+                    r = lowering::bit_groups(c, f.ref(a)->body);
+                }
+            });
+            return r;
+        };
+        auto lines_of = [&](Node<Body> body) {
+            std::vector<std::string> lines;
+            if (body) {
+                for (auto& st : body.ref(a)->statements) {
+                    lines.push_back(unparse_node(a, st));
+                }
+            }
+            return lines;
+        };
+        struct Built {
+            std::vector<std::string> dec, enc;
+            std::string why;
+        };
+        auto build = [&](const lowering::BitGroup& g) {
+            std::vector<Node<Expr>> targets;
+            for (auto f : g.fields) {
+                targets.push_back(lowering::field_ref(c, f));
+            }
+            Builder b{a, g.fields.front().ref(a).loc()};
+            Built r;
+            r.dec = lines_of(lowering::lower_bit_group_decode(c, g, targets, b.ref("buf"), b.ref("o")));
+            r.enc = lines_of(lowering::lower_bit_group_encode(c, g, targets, b.ref("buf"), b.ref("o")));
+            auto why = lowering::bit_group_refusal(c, g);
+            r.why = why ? why : "";
+            return r;
+        };
+        auto bits_name = [&](const lowering::BitGroup& g) {
+            return derived_name("bits", g.fields.front());
+        };
+
+        {
+            auto gs = groups_of("OneByte");
+            check(gs.size() == 1 && gs[0].close == Close::flat && gs[0].bits == 8, "OneByte: 8 bit の平らな群 1 つ");
+            if (gs.size() == 1) {
+                auto r = build(gs[0]);
+                auto v = bits_name(gs[0]);
+                check(r.dec.size() == 5 && r.enc.size() == 3, "OneByte: decode 5 行 / encode 3 行");
+                if (r.dec.size() == 5) {
+                    check_eq(r.dec[0], v + " := u8(buf[o])", "1 バイトはそのまま読む");
+                    check_eq(r.dec[1], std::format("kind = <Nib>(({} >> 4) & 15)", v), "先頭の field が上位、enum へは cast");
+                    check_eq(r.dec[3], "reserved == 0", "期待値の検査は読んだ直後");
+                    check_eq(r.dec[4], std::format("flag = <u1>({} & 1)", v), "最下位はシフトしない");
+                }
+                if (r.enc.size() == 3) {
+                    check_eq(r.enc[0], "reserved == 0", "期待値の検査は書く前");
+                    check_eq(r.enc[2], std::format("buf[o] = u8({})", v), "まとめた値を 1 度だけ書く");
+                }
+            }
+        }
+        {
+            auto gs = groups_of("Straddle");
+            check(gs.size() == 1 && gs[0].fields.size() == 3 && gs[0].bits == 16, "Straddle: バイト幅の field を挟んで 16 bit");
+            if (gs.size() == 1) {
+                auto r = build(gs[0]);
+                if (r.dec.size() == 4) {
+                    check_eq(r.dec[2], std::format("mid = <u8>(({} >> 4) & 255)", bits_name(gs[0])), "挟まった u8 も切り出す");
+                }
+                else {
+                    check(false, "Straddle: decode 4 行");
+                }
+            }
+        }
+        {
+            auto gs = groups_of("Exactly64");
+            check(gs.size() == 1 && gs[0].bits == 64, "Exactly64: 64 bit");
+            if (gs.size() == 1) {
+                auto r = build(gs[0]);
+                check_eq(r.why, "", "64 bit ちょうどは組める");
+                if (r.dec.size() == 3) {
+                    auto v = bits_name(gs[0]);
+                    check_eq(r.dec[1], std::format("top = <u1>(({} >> 63) & 1)", v), "最上位ビット");
+                    check_eq(r.dec[2], std::format("rest = <u63>({} & 9223372036854775807)", v), "63 bit の mask");
+                }
+                else {
+                    check(false, "Exactly64: decode 3 行");
+                }
+            }
+        }
+        {
+            auto gs = groups_of("Over64");
+            check(gs.size() == 1 && gs[0].bits == 72, "Over64: 72 bit の群");
+            if (gs.size() == 1) {
+                auto r = build(gs[0]);
+                check_eq(r.why, "64 ビットを超える", "Over64 は組めない");
+                check(r.dec.empty() && r.enc.empty(), "Over64: 何も組まない");
+            }
+        }
+        {
+            auto gs = groups_of("Signed");
+            check(gs.size() == 1 && gs[0].close == Close::flat, "Signed: 平らな群");
+            if (gs.size() == 1) {
+                check_eq(build(gs[0]).why, "符号つき", "符号つきは組めない");
+            }
+        }
+        {
+            auto gs = groups_of("Branch");
+            check(gs.size() == 1 && gs[0].close == Close::branch && gs[0].bits == 2, "Branch: 閉じる前に分岐");
+            if (gs.size() == 1) {
+                check_eq(build(gs[0]).why, "平らでない", "分岐で閉じない群は組めない");
+            }
+            std::size_t arm_end = 0;
+            each<If>(p, [&](Node<If> n) {
+                for (auto& blk : n.ref(a)->blocks) {
+                    for (auto& g : lowering::bit_groups(c, blk.ref(a)->body)) {
+                        arm_end += g.close == Close::body_end;
+                    }
+                }
+            });
+            check(arm_end == 2, "Branch: 腕は 2 つとも閉じる前に Body が終わる");
+        }
+        {
+            auto gs = groups_of("Half");
+            check(gs.size() == 1 && gs[0].close == Close::body_end && gs[0].bits == 4, "Half: 閉じる前に format が終わる");
+        }
+        {
+            auto gs = groups_of("Little");
+            check(gs.size() == 2, "Little: 群が 2 つ");
+            if (gs.size() == 2) {
+                check_eq(build(gs[0]).why, "", "リトルでも 1 バイトは組める");
+                check_eq(build(gs[1]).why, "2 バイト以上でビッグエンディアンでない", "リトルの 2 バイトは組めない");
+            }
+        }
+    }
+
     // `f :T(期待値)` が読み書きの前後に assert として付くか。読む側は読んで
     // から、書く側は書く前 (lowering/field_io.hpp)。名前つきの引数は組めない。
     void test_field_expected(const std::filesystem::path& dir) {
@@ -363,6 +507,7 @@ int main(int argc, char** argv) {
     test_enum_defined(dir);
     test_field_io(dir);
     test_field_expected(dir);
+    test_bit_group(dir);
     test_query(dir);
     test_corpus(dir);
     print_line("");
