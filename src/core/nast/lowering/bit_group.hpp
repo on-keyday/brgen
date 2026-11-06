@@ -2,6 +2,7 @@
 #pragma once
 #include "lowering.hpp"
 
+#include <map>
 #include <optional>
 #include <span>
 #include <vector>
@@ -62,6 +63,13 @@ namespace brgen::nast::lowering {
         End end = End::closed;
         std::vector<Node<Field>> fields;
         std::size_t bits = 0;
+        // 閉じた経路の続き。閉じた位置から先に読む文の場所を内側の Body から
+        // 順に。閉じた後にまた群の field を読む経路を見つけるのに使う。
+        struct Resume {
+            Node<Body> body;
+            std::size_t index = 0;
+        };
+        std::vector<Resume> rest;
     };
 
     // body の statements[start] (群の先頭の field) から経路を数え上げる。
@@ -101,6 +109,43 @@ namespace brgen::nast::lowering {
     // target が null なら期待値を、それも無ければ何も重ねない (0 のまま)。
     Node<Body> lower_routed_bit_encode(Context& c, const RoutedBitGroup& g, std::size_t index, Node<Expr> target,
                                        Node<Expr> bytes, Node<Expr> offset);
+
+    // format の中の field がどの群に属すか。バックエンドが field ごとに引く表。
+    //
+    // format の Body を先頭から歩き、バイト境界にいる所でバイト境界に乗らない
+    // field に当たったら、そこから群を作る: 同じ Body の中で閉じれば平らな群、
+    // 閉じる前に分岐に当たれば分岐を跨ぐ群。群に入った field は (腕の中や
+    // 分岐の後にあっても) その群の一員として載り、歩く側はもう触らない。
+    //
+    // 組めない群の field は理由つきで載る。群が閉じないと、その後の位置は
+    // 静的に分からない — 同じ Body の残りと、それを囲む Body の残りの field は
+    // (バイト幅でも) 「手前の群が閉じない」で載る。平らな群が組めないだけ
+    // (符号つきなど) なら閉じてはいるので、後ろの位置は分かる。
+    //
+    // 載らない field はバイト境界から読む普通の field。
+    struct BitPlace {
+        enum class Kind {
+            flat,     // flat[group].fields[member]
+            routed,   // routed[group].fields[member]
+            refused,  // why に理由
+        };
+        Kind kind = Kind::refused;
+        std::size_t group = 0;
+        std::size_t member = 0;
+        const char* why = nullptr;
+    };
+    struct BitLayout {
+        std::vector<BitGroup> flat;
+        std::vector<RoutedBitGroup> routed;
+        std::map<std::uint32_t, BitPlace> places;  // field の id から
+
+        const BitPlace* find(Node<Field> f) const;
+        // 組めない field が 1 つも無い。
+        bool complete() const;
+    };
+
+    // fmt の Body (入れ子の format の中は含まない) の表を作る。
+    BitLayout bit_layout(Context& c, Node<Format> fmt);
 
     // 組めない理由。組めるなら null。下の 2 つが null を返すのはこれが
     // null でないとき (と、targets の数が合わないとき) だけ。

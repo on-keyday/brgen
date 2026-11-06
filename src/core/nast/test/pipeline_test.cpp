@@ -560,6 +560,76 @@ namespace {
         }
     }
 
+    // field と群の対応表。
+    void test_bit_layout(const std::filesystem::path& dir) {
+        print_line("lowering/bit_group の対応表 (bit_group.bgn)");
+        Program p;
+        load(p, dir, "bit_group.bgn");
+        auto& a = p.arena;
+        lowering::Context c{a, p.tables};
+        using Kind = lowering::BitPlace::Kind;
+
+        // format ごとに「名前:種類(群,一員)」か「名前:理由」を並べる。
+        auto layout_of = [&](std::string_view name, bool* complete) {
+            std::vector<std::string> out;
+            each<Format>(p, [&](Node<Format> f) {
+                if (name_of(a, f) != name) {
+                    return;
+                }
+                auto l = lowering::bit_layout(c, f);
+                if (complete) {
+                    *complete = l.complete();
+                }
+                visit_all(a, f.ref(a)->body, [&](NodeAny n) {
+                    auto fld = n.as_any<Field>();
+                    if (!fld) {
+                        return true;
+                    }
+                    auto* pl = l.find(fld);
+                    if (!pl) {
+                        out.push_back(std::format("{}:-", name_of(a, fld)));
+                    }
+                    else if (pl->kind == Kind::refused) {
+                        out.push_back(std::format("{}:{}", name_of(a, fld), pl->why ? pl->why : "?"));
+                    }
+                    else {
+                        out.push_back(std::format("{}:{}{}.{}", name_of(a, fld), pl->kind == Kind::flat ? "flat" : "routed",
+                                                  pl->group, pl->member));
+                    }
+                    return true;
+                });
+            });
+            std::string joined;
+            for (auto& s : out) {
+                joined += (joined.empty() ? "" : " ") + s;
+            }
+            return joined;
+        };
+
+        bool complete = false;
+        check_eq(layout_of("Straddle", &complete), "hi:flat0.0 mid:flat0.1 lo:flat0.2", "Straddle: 1 つの平らな群");
+        check(complete, "Straddle: 全部載る");
+        check_eq(layout_of("Signed", &complete), "s:符号つき u:符号つき", "Signed: 群ごと組めない");
+        check(!complete, "Signed: 組めない field がある");
+        // 腕の中の field も、分岐の後の field も、分岐の前で始まった群の一員。
+        check_eq(layout_of("ArmThenTail", &complete), "flag:routed0.0 x:routed0.1 y:routed0.2 tail:routed0.3",
+                 "ArmThenTail: 腕と分岐の後も 1 つの群");
+        check(complete, "ArmThenTail: 全部載る");
+        check_eq(layout_of("CloseThenTail", nullptr),
+                 "prefix:閉じた後に群の field を読む経路がある v:閉じた後に群の field を読む経路がある "
+                 "tail:閉じた後に群の field を読む経路がある pad:手前の分岐を跨ぐ群が組めない",
+                 "CloseThenTail: 腕で閉じた後に tail を読み直す経路があるので組めない");
+        check_eq(layout_of("LostAfterOpen", nullptr),
+                 "a:閉じる前に読み書きする文 b:手前の群が閉じない c:手前の群が閉じない d:手前の群が閉じない",
+                 "LostAfterOpen: 群が閉じないと後ろは (バイト幅でも) 位置が分からない");
+        check_eq(layout_of("LostInArm", nullptr),
+                 "sel:- a:閉じる前に読み書きする文 b:手前の群が閉じない tail:手前の群が閉じない",
+                 "LostInArm: 腕で分からなくなった位置は分岐の後へ持ち越す");
+        // break の経路が閉じないので、ループの Body の終わりの位置が分からない。
+        check_eq(layout_of("BreakInside", nullptr), "a:閉じない経路がある b:閉じない経路がある",
+                 "BreakInside: 群ごと断る");
+    }
+
     // `f :T(期待値)` が読み書きの前後に assert として付くか。読む側は読んで
     // から、書く側は書く前 (lowering/field_io.hpp)。名前つきの引数は組めない。
     void test_field_expected(const std::filesystem::path& dir) {
@@ -697,6 +767,7 @@ int main(int argc, char** argv) {
     test_field_expected(dir);
     test_bit_group(dir);
     test_routed_bit_group(dir);
+    test_bit_layout(dir);
     test_query(dir);
     test_corpus(dir);
     print_line("");

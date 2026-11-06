@@ -291,45 +291,67 @@ namespace brgen::nast::lowering {
         return why;
     }
 
+    namespace {
+        // statements[start] (バイト境界に乗らない field) から 1 群を切り出す。
+        // 返す添字は群を閉じた文の次 (分岐などで閉じたならその文)。
+        std::pair<BitGroup, std::size_t> scan_group(Context& c, Node<Body> body, std::size_t start) {
+            BitGroup g;
+            auto& stmts = body.ref(c.a)->statements;
+            std::size_t i = start;
+            auto close = [&](BitGroup::Close how) {
+                g.close = how;
+                return std::pair{std::move(g), i};
+            };
+            for (; i < stmts.size(); i++) {
+                auto s = stmts[i];
+                if (is_transparent(c, s)) {
+                    continue;
+                }
+                auto fld = s.as<Field>();
+                if (!fld) {
+                    return close(is_derived<ConditionalExpr>(s.type()) ? BitGroup::Close::branch
+                                                                       : BitGroup::Close::other_statement);
+                }
+                auto bits = fixed_bits(c, fld);
+                if (!bits) {
+                    return close(BitGroup::Close::variable_width);
+                }
+                g.fields.push_back(fld);
+                g.bits += *bits;
+                if (g.bits % 8 == 0) {
+                    i++;
+                    return close(BitGroup::Close::flat);
+                }
+            }
+            return close(BitGroup::Close::body_end);
+        }
+
+        // 群の先頭になれる文 (幅が決まっていてバイト境界に乗らない field)。
+        bool starts_group(Context& c, Node<Statement> s) {
+            auto fld = s.as<Field>();
+            if (!fld) {
+                return false;
+            }
+            auto bits = fixed_bits(c, fld);
+            return bits && *bits % 8 != 0;
+        }
+    }  // namespace
+
     std::vector<BitGroup> bit_groups(Context& c, Node<Body> body) {
         std::vector<BitGroup> out;
         if (!body) {
             return out;
         }
-        BitGroup cur;
-        auto close = [&](BitGroup::Close how) {
-            if (cur.fields.empty()) {
-                return;
-            }
-            cur.close = how;
-            out.push_back(std::move(cur));
-            cur = {};
-        };
-        for (auto& s : body.ref(c.a)->statements) {
-            if (is_transparent(c, s)) {
+        auto& stmts = body.ref(c.a)->statements;
+        for (std::size_t i = 0; i < stmts.size();) {
+            if (!starts_group(c, stmts[i])) {
+                i++;
                 continue;
             }
-            auto fld = s.as<Field>();
-            if (!fld) {
-                close(is_derived<ConditionalExpr>(s.type()) ? BitGroup::Close::branch
-                                                            : BitGroup::Close::other_statement);
-                continue;
-            }
-            auto bits = fixed_bits(c, fld);
-            if (!bits) {
-                close(BitGroup::Close::variable_width);
-                continue;
-            }
-            if (cur.fields.empty() && *bits % 8 == 0) {
-                continue;  // バイト境界に乗る普通の field
-            }
-            cur.fields.push_back(fld);
-            cur.bits += *bits;
-            if (cur.bits % 8 == 0) {
-                close(BitGroup::Close::flat);
-            }
+            auto [g, next] = scan_group(c, body, i);
+            out.push_back(std::move(g));
+            i = next > i ? next : i + 1;
         }
-        close(BitGroup::Close::body_end);
         return out;
     }
 
@@ -381,6 +403,9 @@ namespace brgen::nast::lowering {
                         break;
                     }
                     if (st.route.bits % 8 == 0) {
+                        for (auto it = st.frames.rbegin(); it != st.frames.rend(); ++it) {
+                            st.route.rest.push_back(BitRoute::Resume{it->body, it->index});
+                        }
                         finish(st, BitRoute::End::closed);
                         break;
                     }
@@ -555,6 +580,31 @@ namespace brgen::nast::lowering {
                 pos += m->bits;
             }
         }
+        // 閉じた経路の続きに群の field があれば、その経路ではその field を
+        // バイト境界から読み直す — 群の中の位置と食い違う。
+        //   prefix :u2 / if prefix == 0: v :u6 / tail :u6
+        // は腕に入ると v で閉じ、その後 tail を新しいバイトから読む。
+        for (auto& r : routes) {
+            for (auto& at : r.rest) {
+                auto& stmts = at.body.ref(c.a)->statements;
+                for (auto k = at.index; k < stmts.size(); k++) {
+                    bool hit = false;
+                    visit_all(c.a, stmts[k], [&](NodeAny x) {
+                        if (hit) {
+                            return false;
+                        }
+                        if (auto f = x.as_any<Field>(); f && by_field.contains(f.id())) {
+                            hit = true;
+                        }
+                        return !hit;
+                    });
+                    if (hit) {
+                        *why = "閉じた後に群の field を読む経路がある";
+                        return std::nullopt;
+                    }
+                }
+            }
+        }
         all.close = BitGroup::Close::flat;
         auto o = order_of(c, all, why);
         if (!o) {
@@ -689,6 +739,147 @@ namespace brgen::nast::lowering {
             return add_expected_check(c, target, body, m->expected, false);
         }
         return body;
+    }
+
+    const BitPlace* BitLayout::find(Node<Field> f) const {
+        auto it = places.find(f.id());
+        return it == places.end() ? nullptr : &it->second;
+    }
+
+    bool BitLayout::complete() const {
+        return std::ranges::none_of(places, [](auto& kv) { return kv.second.kind == BitPlace::Kind::refused; });
+    }
+
+    namespace {
+        constexpr const char* lost_after_open = "手前の群が閉じない";
+
+        const char* close_reason(BitGroup::Close how) {
+            switch (how) {
+                case BitGroup::Close::flat:
+                    return "平ら";
+                case BitGroup::Close::branch:
+                    return "閉じる前に分岐";
+                case BitGroup::Close::other_statement:
+                    return "閉じる前に読み書きする文";
+                case BitGroup::Close::variable_width:
+                    return "閉じる前に幅の決まらない field";
+                case BitGroup::Close::body_end:
+                    return "閉じる前に Body が終わる";
+            }
+            return "?";
+        }
+
+        struct LayoutWalk {
+            Context& c;
+            BitLayout& out;
+
+            void refuse(Node<Field> f, const char* why) {
+                out.places.try_emplace(f.id(), BitPlace{.kind = BitPlace::Kind::refused, .why = why});
+            }
+
+            // statements[i] から群を作って載せる。後ろの位置が分からなくなったら
+            // その理由を返す。
+            const char* place_from(Node<Body> body, std::size_t i) {
+                auto [g, _] = scan_group(c, body, i);
+                if (g.close == BitGroup::Close::flat) {
+                    if (auto why = bit_group_refusal(c, g)) {
+                        for (auto f : g.fields) {
+                            refuse(f, why);
+                        }
+                        return nullptr;  // 閉じてはいる
+                    }
+                    auto index = out.flat.size();
+                    for (std::size_t m = 0; m < g.fields.size(); m++) {
+                        out.places.try_emplace(g.fields[m].id(),
+                                               BitPlace{.kind = BitPlace::Kind::flat, .group = index, .member = m});
+                    }
+                    out.flat.push_back(std::move(g));
+                    return nullptr;
+                }
+                if (g.close != BitGroup::Close::branch) {
+                    for (auto f : g.fields) {
+                        refuse(f, close_reason(g.close));
+                    }
+                    return lost_after_open;
+                }
+                const char* why = nullptr;
+                if (auto r = routed_bit_group(c, body, i, &why)) {
+                    auto index = out.routed.size();
+                    for (std::size_t m = 0; m < r->fields.size(); m++) {
+                        out.places.try_emplace(r->fields[m].field.id(),
+                                               BitPlace{.kind = BitPlace::Kind::routed, .group = index, .member = m});
+                    }
+                    out.routed.push_back(std::move(*r));
+                    return nullptr;
+                }
+                for (auto& route : bit_routes(c, body, i)) {
+                    for (auto f : route.fields) {
+                        refuse(f, why);
+                    }
+                }
+                // どの経路も閉じていても、閉じた後に群の field を読み直す経路が
+                // あれば後ろの位置は経路で変わる。組めなければ一律に分からない
+                // 側に置く。
+                return "手前の分岐を跨ぐ群が組めない";
+            }
+
+            // body を歩く。lost は入るときに位置が分からなくなっている理由
+            // (バイト境界にいるなら null)。出るときの同じものを返す。
+            const char* walk(Node<Body> body, const char* lost) {
+                if (!body) {
+                    return lost;
+                }
+                auto& a = c.a;
+                auto& stmts = body.ref(a)->statements;
+                for (std::size_t i = 0; i < stmts.size(); i++) {
+                    auto s = stmts[i];
+                    if (auto fld = s.as<Field>()) {
+                        if (out.places.contains(fld.id())) {
+                            continue;  // 手前で始まった群の一員
+                        }
+                        if (lost) {
+                            refuse(fld, lost);
+                            continue;
+                        }
+                        if (starts_group(c, s)) {
+                            lost = place_from(body, i);
+                        }
+                        continue;
+                    }
+                    if (auto cond = s.as_any<ConditionalExpr>()) {
+                        const char* after = lost;
+                        for (auto& blk : cond.ref(a)->blocks) {
+                            auto r = walk(blk.ref(a)->body, lost);
+                            if (!after) {
+                                after = r;
+                            }
+                        }
+                        lost = after;
+                        continue;
+                    }
+                    if (s.as_any<Loop>() || s.as_any<RangeLoop>()) {
+                        // 回るたびに Body の頭から読むので、終わりでバイト境界に
+                        // 戻っていないと 2 周目から位置が分からない。
+                        auto r = walk(s.as_any<BodyStatement>().ref(a)->body, lost);
+                        if (!lost) {
+                            lost = r;
+                        }
+                        continue;
+                    }
+                }
+                return lost;
+            }
+        };
+    }  // namespace
+
+    BitLayout bit_layout(Context& c, Node<Format> fmt) {
+        BitLayout out;
+        if (!fmt) {
+            return out;
+        }
+        LayoutWalk w{c, out};
+        w.walk(fmt.ref(c.a)->body, nullptr);
+        return out;
     }
 
 }  // namespace brgen::nast::lowering

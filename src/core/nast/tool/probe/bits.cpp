@@ -149,6 +149,16 @@ namespace brgen::nast::probe {
         });
         // lowering が合成する Body を拾わないよう、範囲を先に固定する。
         auto last = a.node_count();
+        // 対応表で平らな群に載った field。Body ごとに切った群と食い違うものを数える。
+        std::map<std::uint32_t, const char*> placed;
+        each_node<Format>(a, last, [&](Node<Format> f) {
+            auto l = lowering::bit_layout(c, f);
+            for (auto& [id, pl] : l.places) {
+                placed[id] = pl.kind == lowering::BitPlace::Kind::flat     ? nullptr
+                             : pl.kind == lowering::BitPlace::Kind::routed ? "分岐を跨ぐ群の一員"
+                                                                          : pl.why;
+            }
+        });
         each_node<Body>(a, last, [&](Node<Body> body) {
             for (auto& g : lowering::bit_groups(c, body)) {
                 auto how = close_name(g.close, format_bodies.contains(body.id()));
@@ -171,6 +181,16 @@ namespace brgen::nast::probe {
                 auto dec = lowering::lower_bit_group_decode(c, g, targets, b.ref("buf"), b.ref("o"));
                 auto enc = lowering::lower_bit_group_encode(c, g, targets, b.ref("buf"), b.ref("o"));
                 hist[dec && enc ? "平らな群: 組めた" : "平らな群: 組めない"]++;
+                if (dec && enc) {
+                    auto it = placed.find(g.fields.front().id());
+                    if (it == placed.end() || it->second) {
+                        auto why = it == placed.end() ? "表に無い" : it->second;
+                        hist[std::format("  Body ごとには組めたが表では外れる: {}", why)]++;
+                        if (detail) {
+                            print_line("{}:{}  Body ごとには組めたが表では外れる: {}", pos.line + 1, pos.col + 1, why);
+                        }
+                    }
+                }
                 if (!dec || !enc) {
                     auto why = lowering::bit_group_refusal(c, g);
                     hist[std::format("  組めない理由: {}", why ? why : "(理由なし)")]++;
@@ -184,6 +204,44 @@ namespace brgen::nast::probe {
                     }
                     print_text("decode:\n{}\nencode:\n{}\n", unparse_node(a, dec), unparse_node(a, enc));
                 }
+            }
+        });
+        // field と群の対応表。format ごとに、バイト境界に乗らない field が
+        // 全部どこかの群に載るか。
+        each_node<Format>(a, last, [&](Node<Format> f) {
+            auto l = lowering::bit_layout(c, f);
+            if (l.places.empty()) {
+                hist["表 format: 群なし"]++;
+                return;
+            }
+            hist[l.complete() ? "表 format: 全部載る" : "表 format: 組めない field あり"]++;
+            hist["表 群: 平ら"] += l.flat.size();
+            hist["表 群: 分岐を跨ぐ"] += l.routed.size();
+            for (auto& [_, pl] : l.places) {
+                switch (pl.kind) {
+                    case lowering::BitPlace::Kind::flat:
+                        hist["表 field: 平らな群"]++;
+                        break;
+                    case lowering::BitPlace::Kind::routed:
+                        hist["表 field: 分岐を跨ぐ群"]++;
+                        break;
+                    case lowering::BitPlace::Kind::refused:
+                        hist["表 field: 組めない"]++;
+                        hist[std::format("  表 field の組めない理由: {}", pl.why ? pl.why : "(理由なし)")]++;
+                        break;
+                }
+            }
+            if (detail && !l.complete()) {
+                print_line("format {}", name_of(a, f));
+                visit_all(a, f.ref(a)->body, [&](NodeAny n) {
+                    if (auto fld = n.as_any<Field>()) {
+                        if (auto* pl = l.find(fld); pl && pl->kind == lowering::BitPlace::Kind::refused) {
+                            auto pos = fld.ref(a).loc();
+                            print_line("  {}:{}  {}  {}", pos.line + 1, pos.col + 1, name_of(a, fld), pl->why ? pl->why : "?");
+                        }
+                    }
+                    return true;
+                });
             }
         });
     }

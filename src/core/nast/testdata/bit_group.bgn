@@ -126,3 +126,29 @@ format BreakInside:
         if a == 0:
             break
         b :u4
+
+# 腕に入ると v で閉じ、その後 tail をバイト境界から読み直す。else の無い
+# 経路では tail が群の中の位置 2 にある。位置が 1 つに見えても組めない。
+format CloseThenTail:
+    prefix :u2
+    if prefix == 0:
+        v :u6
+    tail :u6
+    pad :u2
+
+# 群が閉じないと、後ろの field はバイト幅でも位置が分からない。
+format LostAfterOpen:
+    a :u4
+    peeked := input.get()
+    b :u4
+    c :u4
+    d :u8
+
+# 腕の中で位置が分からなくなると、分岐の後も分からない。
+format LostInArm:
+    sel :u8
+    if sel == 0:
+        a :u4
+        peeked := input.get()
+        b :u4
+    tail :u8
