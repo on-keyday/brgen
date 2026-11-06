@@ -503,6 +503,47 @@ namespace {
             check(false, "ArmThenTail が組める: " + why);
         }
         check(!routed("NoElse", why) && why == "位置が経路で変わる", "NoElse: else が無いと tail の位置が変わる");
+        {
+            // 入出力に触れる定義は群を閉じる。触れないものは通す。
+            auto closes = [&](std::string_view name) {
+                std::vector<lowering::BitGroup::Close> r;
+                each<Format>(p, [&](Node<Format> f) {
+                    if (name_of(a, f) == name) {
+                        for (auto& g : lowering::bit_groups(c, f.ref(a)->body)) {
+                            r.push_back(g.close);
+                        }
+                    }
+                });
+                return r;
+            };
+            using Close = lowering::BitGroup::Close;
+            auto io = closes("IoInBetween");
+            check(io.size() == 2 && io[0] == Close::other_statement, "IoInBetween: input.get() の定義で群が閉じる");
+            auto pure = closes("PureInBetween");
+            check(pure.size() == 1 && pure[0] == Close::flat, "PureInBetween: 入力に触れない定義は群を閉じない");
+        }
+        {
+            // ループの Body から始まる群。break の経路は閉じない。
+            Node<Body> loop_body;
+            each<Loop>(p, [&](Node<Loop> l) {
+                auto& st = l.ref(a)->body.ref(a)->statements;
+                if (!st.empty() && st[0].as<Field>() && name_of(a, st[0]) == "a") {
+                    loop_body = l.ref(a)->body;
+                }
+            });
+            check(bool(loop_body), "BreakInside: ループの Body がある");
+            if (loop_body) {
+                auto routes = lowering::bit_routes(c, loop_body, 0);
+                std::size_t open = 0;
+                for (auto& r : routes) {
+                    open += r.end != lowering::BitRoute::End::closed;
+                }
+                check(routes.size() == 2 && open == 1, "BreakInside: break の経路だけ閉じない");
+                const char* w = nullptr;
+                check(!lowering::routed_bit_group(c, loop_body, 0, &w) && w && std::string(w) == "閉じない経路がある",
+                      "BreakInside: 群ごと断る");
+            }
+        }
         if (auto g = routed("RoutedLittle", why)) {
             check(g->lsb, "RoutedLittle: lsb から");
             if (g->fields.size() == 3) {

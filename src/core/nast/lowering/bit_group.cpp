@@ -12,19 +12,46 @@ namespace brgen::nast::lowering {
 
     namespace {
 
-        // 群を閉じずに通してよい文。読み書きをしないもの: 検査・定義・config・
-        // 順の指定、それと宣言 (fn / 入れ子の format / enum / state)。順の指定は
-        // 群を閉じないが、群の中で順が変われば order_of が断る。
-        bool is_transparent(NodeType t) {
-            switch (t) {
+        // 式が入出力に触れうるか。呼び出し (input.get() も fn も) と、
+        // input / output そのもの (input.offset のような位置の読み) を数える。
+        // 群の途中で位置を読むと、どこを指すかが群をまとめて読む形と食い違う。
+        bool touches_io(Arena& a, NodeAny n) {
+            if (!is_side_effect_free(a, n)) {
+                return true;
+            }
+            bool found = false;
+            visit_all(a, n, [&](NodeAny x) {
+                if (found) {
+                    return false;
+                }
+                if (auto sl = x.as_any<SpecialLiteral>()) {
+                    auto k = sl.ref(a)->kind;
+                    if (k == SpecialLiteralKind::input_ || k == SpecialLiteralKind::output_) {
+                        found = true;
+                        return false;
+                    }
+                }
+                return true;
+            });
+            return found;
+        }
+
+        // 群を閉じずに通してよい文。読み書きをしないもの: 入出力に触れない
+        // 検査・定義・config・順の指定と、宣言 (fn / 入れ子の format / enum /
+        // state)。順の指定は群を閉じないが、群の中で順が変われば order_of が
+        // 断る。return / break / continue はここに入らない — 当たった経路は
+        // 閉じない側に数える。
+        bool is_transparent(Context& c, Node<Statement> s) {
+            switch (s.type()) {
                 case NodeType::Assert:
+                case NodeType::VariableDefinition:
                 case NodeType::Metadata:
                 case NodeType::SpecifyOrder:
-                    return true;
+                    return !touches_io(c.a, s);
                 case NodeType::Field:
                     return false;
                 default:
-                    return is_derived<NamedStatement>(t);
+                    return is_derived<NamedStatement>(s.type());
             }
         }
 
@@ -279,7 +306,7 @@ namespace brgen::nast::lowering {
             cur = {};
         };
         for (auto& s : body.ref(c.a)->statements) {
-            if (is_transparent(s.type())) {
+            if (is_transparent(c, s)) {
                 continue;
             }
             auto fld = s.as<Field>();
@@ -338,7 +365,7 @@ namespace brgen::nast::lowering {
                     continue;
                 }
                 auto s = stmts[top.index++];
-                if (is_transparent(s.type())) {
+                if (is_transparent(c, s)) {
                     continue;
                 }
                 if (auto fld = s.as<Field>()) {

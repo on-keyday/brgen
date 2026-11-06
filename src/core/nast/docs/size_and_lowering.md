@@ -1053,8 +1053,15 @@ ADR 0046 の言い方では、ebmgen は 3 軸 (byte / bit stream / bit mapping)
   quic_varint の `match prefix: 0 => … 3 => …` がこれ
 - 腕の終わりで開いていれば、フレームを降ろして分岐の後へ戻って続ける
 - ループと幅の決まらない field に当たったら、その経路は閉じない
-- 宣言 (fn / 入れ子の format / enum / state) と順の指定は読み書きしないので
-  通る (最初は fn に当たって止まっていた)
+- 宣言 (fn / 入れ子の format / enum / state) は読み書きしないので通る
+  (最初は fn に当たって止まっていた)。検査・定義・config・順の指定は、式が
+  入出力に触れないとき (呼び出しが無く `input` / `output` も出てこない)
+  だけ通る。`x := input.get()` を通すと読む順が入れ替わる。example/ では
+  通していた中に触れるものは組めた群に無かった (338 / 12 は変わらず) が、
+  mptcp の `optionLength ::= input.scope_length - 2` のように位置に依らない
+  ものまで止めるので保守側
+- return / break / continue は通らない。当たった経路は閉じない側に数え、
+  群ごと断る (ループの中で break で抜ける経路はそこで群が開いたまま)
 
 example/ の分岐を跨ぐ 43 群を経路で数えた:
 

@@ -106,3 +106,23 @@ format RoutedLittle:
         a :u4
     else:
         b :u12
+
+# 群の途中の定義が入力を読む。素通りさせると読む順が変わるので群を閉じる。
+format IoInBetween:
+    a :u4
+    peeked := input.get()
+    b :u4
+
+# 入力に触れない定義は群を閉じない。
+format PureInBetween:
+    a :u4
+    twice := a * 2
+    b :u4
+
+# ループの中で break に当たる経路は閉じない。群ごと断る。
+format BreakInside:
+    for:
+        a :u4
+        if a == 0:
+            break
+        b :u4
