@@ -9,6 +9,7 @@
     }
 #define UNHANDLED_ERROR() unexpect_loc_error(node, "Unhandled node: {}#{}", to_string(node.type()), node.id())
 #define HANDLE_UNHANDLED()                                      \
+    ctx.note_unhandled(node);                                   \
     if (ctx.config().unhandled_mode == UnhandledMode::ignore) { \
         return {};                                              \
     }                                                           \
@@ -16,6 +17,7 @@
 #define ON_CODEGEN() if constexpr (std::is_same_v<R, CodeWriter> || brgen::nast::has_to_writer<R>)
 #define HANDLE_CODEGEN_DEFAULT()                                                                         \
     if (ctx.config().unhandled_mode == UnhandledMode::dummy) {                                           \
+        ctx.note_unhandled(node);                                                                        \
         return CODE("{{Unhandled node:", std::format("{}#{}", to_string(node.type()), node.id()), "}}"); \
     }                                                                                                    \
     HANDLE_UNHANDLED();

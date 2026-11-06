@@ -16,8 +16,11 @@
 #include <json/stringer.h>
 #include <wrap/argv.h>
 #include <wrap/cout.h>
+#include <algorithm>
+#include <format>
 #include <fstream>
 #include <functional>
+#include <map>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -47,6 +50,12 @@ namespace brgen::nast::backend {
         std::string_view input;
         std::string_view output;
         bool show_flags = false;
+        // -i の代わりに位置引数で複数渡せる。1 プロセスで回すのは、Windows では
+        // 起動と DLL の読み込みが 1 回 0.8 秒ほどあり、解析本体 (0.1 秒台) より重いため。
+        std::vector<std::string_view> args;
+        const char* arg_desc = "[option] [FILE.bgn...]";
+        // 出力を書かずに、未対応のノードを種別ごとに数えて出す。
+        bool survey = false;
         // 未対応のノードに当たったときどうするか。既定は出力に目印を残す
         // (黙って消えるより、何が足りないかが出力から分かるほうがよい)。
         std::string_view unhandled = "dummy";
@@ -68,6 +77,7 @@ namespace brgen::nast::backend {
             ctx.VarString<true>(&output, "output,o", "output file (default: stdout; use - for stdout)", "FILE");
             ctx.VarString<true>(&unhandled, "unhandled", "what to do with an unhandled node: dummy, error, ignore", "MODE");
             ctx.VarBool(&show_flags, "show-flags", "print what this backend is, in JSON (for tooling)");
+            ctx.VarBool(&survey, "survey", "write no output; count the unhandled nodes of every input by kind");
             if (extra_bind) {
                 extra_bind(ctx);
             }
@@ -233,6 +243,152 @@ namespace brgen::nast::backend {
             return 0;
         }
 
+        // 1 入力ぶんの結果。text は成功したときだけ意味がある。
+        struct RunOne {
+            enum class Status : std::uint8_t {
+                ok,
+                analyze_failed,
+                backend_failed,
+            } status = Status::ok;
+            std::string text;
+            std::vector<NodeType> unhandled;
+        };
+
+        // 解析 → knob の設定 → 木を辿る → 出力の中身にする、を 1 入力ぶん。
+        // 失敗の表示はここでする (位置つきの表示に arena と files が要るため)。
+        template <class R, class Lang, class Setup>
+        RunOne run_one(std::string_view path, UnhandledMode mode, EntryFlags& flags, Lang& lang, Setup setup) {
+            RunOne res;
+            Program program;
+            if (auto r = analyze(program, path); r != AnalyzeResult::ok) {
+                auto why = first_error(program);
+                futils::wrap::cerr_wrap()
+                    << flags.program_name << ": " << path << ": "
+                    << (why.empty() ? describe(r) : why.c_str()) << '\n';
+                res.status = RunOne::Status::analyze_failed;
+                return res;
+            }
+            Knobs<R> knobs;
+            BaseContext<R> base{.a = program.arena, .t = program.tables, .n = knobs};
+            base.config().unhandled_mode = mode;
+            auto ctx = base.to_context(lang);
+            auto finish = [&](LocError err) {
+                report(program.arena, program.files, std::move(err));
+                res.status = RunOne::Status::backend_failed;
+            };
+            auto collect = [&] {
+                for (auto n : base.unhandled) {
+                    res.unhandled.push_back(n.type());
+                }
+            };
+            if (auto ok = setup(ctx, knobs, flags); !ok) {
+                finish(ok.error());
+                return res;
+            }
+            auto written = base.visit(program.root);
+            collect();
+            if (!written) {
+                finish(written.error());
+                return res;
+            }
+            auto text = finish_output(lang, std::move(*written));
+            if (!text) {
+                finish(text.error());
+                return res;
+            }
+            res.text = std::move(*text);
+            return res;
+        }
+
+        // --survey の集計。種別ごとに「何回出たか」と「何ファイルに出たか」。
+        struct Survey {
+            struct Count {
+                size_t occurrences = 0;
+                size_t files = 0;
+            };
+            std::map<std::string_view, Count> kinds;
+            size_t ok = 0, analyze_failed = 0, backend_failed = 0, clean = 0;
+
+            void add(const RunOne& r) {
+                switch (r.status) {
+                    case RunOne::Status::ok:
+                        ok++;
+                        break;
+                    case RunOne::Status::analyze_failed:
+                        analyze_failed++;
+                        return;
+                    case RunOne::Status::backend_failed:
+                        backend_failed++;
+                        break;
+                }
+                if (r.status == RunOne::Status::ok && r.unhandled.empty()) {
+                    clean++;
+                }
+                std::map<std::string_view, size_t> here;
+                for (auto t : r.unhandled) {
+                    here[to_string(t)]++;
+                }
+                for (auto& [k, n] : here) {
+                    auto& c = kinds[k];
+                    c.occurrences += n;
+                    c.files++;
+                }
+            }
+
+            std::string render(size_t inputs) const {
+                std::vector<std::pair<std::string_view, Count>> sorted(kinds.begin(), kinds.end());
+                std::stable_sort(sorted.begin(), sorted.end(), [](auto& a, auto& b) {
+                    return a.second.occurrences > b.second.occurrences;
+                });
+                std::string out;
+                out += std::format("inputs {} / ok {} (no unhandled {}) / analyze failed {} / backend failed {}\n",
+                                   inputs, ok, clean, analyze_failed, backend_failed);
+                out += std::format("{:>8} {:>6}  kind\n", "count", "files");
+                for (auto& [k, c] : sorted) {
+                    out += std::format("{:>8} {:>6}  {}\n", c.occurrences, c.files, k);
+                }
+                return out;
+            }
+        };
+
+        template <class R, class Lang, class Setup>
+        int run_inputs(EntryFlags& flags, UnhandledMode mode, Lang& lang, Setup setup) {
+            std::vector<std::string_view> inputs;
+            if (!flags.input.empty()) {
+                inputs.push_back(flags.input);
+            }
+            inputs.insert(inputs.end(), flags.args.begin(), flags.args.end());
+            if (inputs.empty()) {
+                futils::wrap::cerr_wrap() << flags.program_name << ": no input (-i FILE or FILE...)\n";
+                return 1;
+            }
+            if (flags.survey) {
+                Survey s;
+                for (auto path : inputs) {
+                    s.add(run_one<R>(path, mode, flags, lang, setup));
+                }
+                futils::wrap::cout_wrap() << s.render(inputs.size());
+                return 0;
+            }
+            // 書き出し先は 1 つなので、複数入力は標準出力に順に並べるだけにする。
+            if (inputs.size() > 1 && !flags.output.empty() && flags.output != "-") {
+                futils::wrap::cerr_wrap() << flags.program_name << ": -o takes one input; got " << inputs.size() << '\n';
+                return 1;
+            }
+            int status = 0;
+            for (auto path : inputs) {
+                auto r = run_one<R>(path, mode, flags, lang, setup);
+                if (r.status != RunOne::Status::ok) {
+                    status = 1;
+                    continue;
+                }
+                if (write_out(flags.output, r.text) != 0) {
+                    status = 1;
+                }
+            }
+            return status;
+        }
+
     }  // namespace entry
 
 }  // namespace brgen::nast::backend
@@ -291,37 +447,7 @@ namespace brgen::nast::backend {
                         << " (want dummy, error or ignore)\n";                                        \
                     return 1;                                                                         \
                 }                                                                                     \
-                if (flags.input.empty()) {                                                            \
-                    futils::wrap::cerr_wrap() << flags.program_name << ": no input (-i FILE)\n";      \
-                    return 1;                                                                         \
-                }                                                                                     \
-                Program program;                                                                      \
-                if (auto r = analyze(program, flags.input); r != AnalyzeResult::ok) {                 \
-                    auto why = first_error(program);                                                  \
-                    futils::wrap::cerr_wrap()                                                         \
-                        << flags.program_name << ": " << flags.input << ": "                          \
-                        << (why.empty() ? describe(r) : why.c_str()) << '\n';                         \
-                    return 1;                                                                         \
-                }                                                                                     \
-                Knobs<nast_result_t> knobs;                                                           \
-                BaseContext<nast_result_t> base{.a = program.arena, .t = program.tables, .n = knobs}; \
-                base.config().unhandled_mode = *mode;                                                 \
-                auto ctx = base.to_context(lang);                                                     \
-                if (auto ok = nast_backend_setup(ctx, knobs, flags); !ok) {                           \
-                    nast_entry::report(program.arena, program.files, ok.error());                     \
-                    return 1;                                                                         \
-                }                                                                                     \
-                auto written = base.visit(program.root);                                              \
-                if (!written) {                                                                       \
-                    nast_entry::report(program.arena, program.files, written.error());                \
-                    return 1;                                                                         \
-                }                                                                                     \
-                auto text = nast_entry::finish_output(lang, std::move(*written));                     \
-                if (!text) {                                                                          \
-                    nast_entry::report(program.arena, program.files, text.error());                   \
-                    return 1;                                                                         \
-                }                                                                                     \
-                return nast_entry::write_out(flags.output, *text);                                    \
+                return nast_entry::run_inputs<nast_result_t>(flags, *mode, lang, nast_backend_setup); \
             });                                                                                       \
     }                                                                                                 \
                                                                                                       \
