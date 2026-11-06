@@ -25,6 +25,7 @@
 #include "../query/session.hpp"
 
 #include <filesystem>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -348,11 +349,21 @@ namespace {
             if (gs.size() == 1) {
                 check_eq(build(gs[0]).why, "平らでない", "分岐で閉じない群は組めない");
             }
+            // Branch の Body にある If の腕だけを見る (他の format にも If がある)。
             std::size_t arm_end = 0;
-            each<If>(p, [&](Node<If> n) {
-                for (auto& blk : n.ref(a)->blocks) {
-                    for (auto& g : lowering::bit_groups(c, blk.ref(a)->body)) {
-                        arm_end += g.close == Close::body_end;
+            each<Format>(p, [&](Node<Format> f) {
+                if (name_of(a, f) != "Branch") {
+                    return;
+                }
+                for (auto& st : f.ref(a)->body.ref(a)->statements) {
+                    auto n = st.as_any<If>();
+                    if (!n) {
+                        continue;
+                    }
+                    for (auto& blk : n.ref(a)->blocks) {
+                        for (auto& g : lowering::bit_groups(c, blk.ref(a)->body)) {
+                            arm_end += g.close == Close::body_end;
+                        }
                     }
                 }
             });
@@ -410,6 +421,101 @@ namespace {
             if (gs.size() == 1) {
                 check_eq(build(gs[0]).why, "bit_order が実行時に決まる", "実行時の bit_order は組めない");
             }
+        }
+    }
+
+    // 分岐を跨ぐ群。経路で調べて、位置が静的なものを組む。
+    void test_routed_bit_group(const std::filesystem::path& dir) {
+        print_line("lowering/bit_group の分岐を跨ぐ群 (bit_group.bgn)");
+        Program p;
+        load(p, dir, "bit_group.bgn");
+        auto& a = p.arena;
+        lowering::Context c{a, p.tables};
+
+        // format の Body と、その最初の field の位置。
+        auto routed = [&](std::string_view name, std::string& why) -> std::optional<lowering::RoutedBitGroup> {
+            Node<Body> body;
+            each<Format>(p, [&](Node<Format> f) {
+                if (name_of(a, f) == name) {
+                    body = f.ref(a)->body;
+                }
+            });
+            if (!body) {
+                why = "format が無い";
+                return std::nullopt;
+            }
+            auto& stmts = body.ref(a)->statements;
+            std::size_t start = 0;
+            while (start < stmts.size() && !stmts[start].as<Field>()) {
+                start++;
+            }
+            const char* w = nullptr;
+            auto g = lowering::routed_bit_group(c, body, start, &w);
+            why = w ? w : "";
+            return g;
+        };
+        auto text = [&](Node<Body> body) {
+            std::vector<std::string> lines;
+            if (body) {
+                for (auto& st : body.ref(a)->statements) {
+                    lines.push_back(unparse_node(a, st));
+                }
+            }
+            return lines;
+        };
+        auto field_at = [&](const lowering::RoutedBitGroup& g, std::size_t i) {
+            return std::format("{}@{}:{} 読む前 [{},{}) 書いた後 [{},{})", name_of(a, g.fields[i].field), g.fields[i].offset,
+                               g.fields[i].bits, g.fields[i].fetch_from, g.fields[i].fetch_to, g.fields[i].flush_from,
+                               g.fields[i].flush_to);
+        };
+        auto lower = [&](const lowering::RoutedBitGroup& g, std::size_t i, bool decode) {
+            Builder b{a, g.fields[i].field.ref(a).loc()};
+            auto target = lowering::field_ref(c, g.fields[i].field);
+            return text(decode ? lowering::lower_routed_bit_decode(c, g, i, target, b.ref("buf"), b.ref("o"))
+                               : lowering::lower_routed_bit_encode(c, g, i, target, b.ref("buf"), b.ref("o")));
+        };
+
+        std::string why;
+        if (auto g = routed("VarIntLike", why)) {
+            check(g->fields.size() == 5 && g->max_bytes == 8 && !g->lsb, "VarIntLike: prefix と腕の v 4 つ、最長 8 バイト");
+            if (g->fields.size() == 5) {
+                check_eq(field_at(*g, 0), "prefix@0:2 読む前 [0,1) 書いた後 [0,0)", "prefix は 1 バイト目を読ませる");
+                check_eq(field_at(*g, 4), "v@2:62 読む前 [1,8) 書いた後 [0,8)", "62 bit の腕は残り 7 バイトを読ませる");
+                auto dec = lower(*g, 0, true);
+                check(dec.size() == 1 && dec[0] == "prefix = <u2>((u8(buf[o]) >> 6) & 3)", "prefix は上位 2 bit");
+                auto enc = lower(*g, 2, false);
+                check(enc.size() == 3 && enc[1] == "buf[o] = buf[o] | u8(" + derived_name("bits", g->fields[2].field) + " >> 8)",
+                      "書く側は 0 で埋めたバイトへ OR で重ねる");
+            }
+        }
+        else {
+            check(false, "VarIntLike が組める: " + why);
+        }
+        if (auto g = routed("ArmThenTail", why)) {
+            check(g->fields.size() == 4, "ArmThenTail: flag / x / y / tail");
+            if (g->fields.size() == 4) {
+                check_eq(field_at(*g, 3), "tail@4:4 読む前 [1,1) 書いた後 [0,1)", "腕から戻った tail は位置 4");
+                auto dec = lower(*g, 3, true);
+                check(dec.size() == 1 && dec[0] == "tail = <u4>(u8(buf[o]) & 15)", "tail は下位 4 bit");
+            }
+        }
+        else {
+            check(false, "ArmThenTail が組める: " + why);
+        }
+        check(!routed("NoElse", why) && why == "位置が経路で変わる", "NoElse: else が無いと tail の位置が変わる");
+        if (auto g = routed("RoutedLittle", why)) {
+            check(g->lsb, "RoutedLittle: lsb から");
+            if (g->fields.size() == 3) {
+                auto dec = lower(*g, 2, true);
+                check(dec.size() == 1 && dec[0] == "b = <u12>((((u16(buf[o + 1]) << 8) | u16(buf[o])) >> 4) & 4095)",
+                      "lsb の 2 バイトはリトルで読み、先頭の 4 bit の上から切る");
+            }
+            else {
+                check(false, "RoutedLittle: sel / a / b");
+            }
+        }
+        else {
+            check(false, "RoutedLittle が組める: " + why);
         }
     }
 
@@ -549,6 +655,7 @@ int main(int argc, char** argv) {
     test_field_io(dir);
     test_field_expected(dir);
     test_bit_group(dir);
+    test_routed_bit_group(dir);
     test_query(dir);
     test_corpus(dir);
     print_line("");

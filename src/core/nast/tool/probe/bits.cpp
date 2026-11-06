@@ -12,6 +12,7 @@
 #include "../../node/util.h"
 #include "../../parse/unparse.h"
 
+#include <map>
 #include <set>
 
 namespace brgen::nast::probe {
@@ -36,6 +37,107 @@ namespace brgen::nast::probe {
             }
             return "?";
         }
+        const char* end_name(lowering::BitRoute::End e) {
+            using E = lowering::BitRoute::End;
+            switch (e) {
+                case E::closed:
+                    return "閉じた";
+                case E::variable_width:
+                    return "可変幅";
+                case E::loop:
+                    return "ループ";
+                case E::other_statement:
+                    return "分岐以外の文";
+                case E::body_end:
+                    return "最初の Body の終わり";
+                case E::too_long:
+                    return "64 ビット超";
+            }
+            return "?";
+        }
+
+        // 分岐を跨ぐ群を経路で数える。全経路が閉じるか、長さが揃うか、
+        // field ごとの位置が経路によらず 1 つに決まるか (決まるなら実行時の
+        // カーソルが要らない)。
+        void count_routes(lowering::Context& c, Node<Body> body, const lowering::BitGroup& g, bool detail, Hist& hist) {
+            auto& a = c.a;
+            auto& stmts = body.ref(a)->statements;
+            std::size_t start = 0;
+            while (start < stmts.size() && stmts[start] != g.fields.front()) {
+                start++;
+            }
+            auto routes = lowering::bit_routes(c, body, start);
+            std::map<std::string, std::size_t> ends;
+            std::set<std::size_t> lengths;
+            std::map<std::uint32_t, std::set<std::size_t>> offsets;
+            bool all_closed = true;
+            for (auto& r : routes) {
+                ends[end_name(r.end)]++;
+                if (r.end != lowering::BitRoute::End::closed) {
+                    all_closed = false;
+                    continue;
+                }
+                lengths.insert(r.bits);
+                std::size_t pos = 0;
+                for (auto f : r.fields) {
+                    offsets[f.id()].insert(pos);
+                    auto* sz = c.tables.table<TypeSize>().get(f.ref(a)->type);
+                    pos += sz ? sz->bits : 0;
+                }
+            }
+            if (!all_closed) {
+                std::string why;
+                for (auto& [k, v] : ends) {
+                    if (k != "閉じた") {
+                        why += (why.empty() ? "" : ", ") + k;
+                    }
+                }
+                hist["経路: 閉じない経路がある"]++;
+                hist["  閉じない理由: " + why]++;
+            }
+            else {
+                bool one_offset = true;
+                for (auto& [_, set] : offsets) {
+                    one_offset = one_offset && set.size() == 1;
+                }
+                hist[std::format("経路: 全部閉じる ({}, {})", lengths.size() == 1 ? "長さ同じ" : "長さ違う",
+                                 one_offset ? "位置が 1 つ" : "位置が経路で変わる")]++;
+            }
+            const char* why = nullptr;
+            auto routed = lowering::routed_bit_group(c, body, start, &why);
+            hist[routed ? "分岐を跨ぐ群: 組めた" : "分岐を跨ぐ群: 組めない"]++;
+            if (!routed) {
+                hist[std::format("  分岐を跨ぐ群の組めない理由: {}", why ? why : "(理由なし)")]++;
+            }
+            if (detail) {
+                auto pos = g.fields.front().ref(a).loc();
+                print_line("{}:{}  経路 {} 本", pos.line + 1, pos.col + 1, routes.size());
+                for (auto& r : routes) {
+                    std::string names;
+                    for (auto f : r.fields) {
+                        names += std::string(names.empty() ? "" : " ") + std::string(name_of(a, f));
+                    }
+                    print_line("    {} bits  {}  [{}]", r.bits, end_name(r.end), names);
+                }
+                if (!routed) {
+                    print_line("  (組めない: {})", why ? why : "理由なし");
+                    return;
+                }
+                print_line("  {} bytes まで、{}", routed->max_bytes, routed->lsb ? "lsb から" : "msb から");
+                Builder b{a, pos};
+                for (std::size_t i = 0; i < routed->fields.size(); i++) {
+                    auto& f = routed->fields[i];
+                    auto target = lowering::field_ref(c, f.field);
+                    auto dec = lowering::lower_routed_bit_decode(c, *routed, i, target, b.ref("buf"), b.ref("o"));
+                    auto enc = lowering::lower_routed_bit_encode(c, *routed, i, target, b.ref("buf"), b.ref("o"));
+                    print_line("  --- {} @{} :{} bits  読む前に [{}, {})  書いた後に [{}, {})", name_of(a, f.field), f.offset, f.bits,
+                               f.fetch_from, f.fetch_to, f.flush_from, f.flush_to);
+                    print_text("  decode:\n{}\n  encode:\n{}\n", dec ? unparse_node(a, dec) : "(組めない)",
+                               enc ? unparse_node(a, enc) : "(組めない)");
+                }
+            }
+        }
+
     }  // namespace
 
     void run_bits(Program& p, bool detail, Hist& hist) {
@@ -52,6 +154,9 @@ namespace brgen::nast::probe {
                 auto how = close_name(g.close, format_bodies.contains(body.id()));
                 hist[std::string("群: ") + how]++;
                 auto pos = g.fields.front().ref(a).loc();
+                if (g.close == lowering::BitGroup::Close::branch) {
+                    count_routes(c, body, g, detail, hist);
+                }
                 if (g.close != lowering::BitGroup::Close::flat) {
                     if (detail) {
                         print_line("{}:{}  {} field, {} bits  {}", pos.line + 1, pos.col + 1, g.fields.size(), g.bits, how);

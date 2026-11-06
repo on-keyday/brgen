@@ -2,6 +2,7 @@
 #pragma once
 #include "lowering.hpp"
 
+#include <optional>
 #include <span>
 #include <vector>
 
@@ -40,6 +41,66 @@ namespace brgen::nast::lowering {
     // Body の中のビット群を並び順に返す。閉じなかった群も閉じ方つきで返す。
     // バイト境界に乗る field が単独で並んでいるところは群にならない。
     std::vector<BitGroup> bit_groups(Context& c, Node<Body> body);
+
+    // 分岐を跨ぐ群の経路。群の先頭から、木を辿って各経路がバイト境界で
+    // 閉じるまで進めたもの (EBM の search_byte_aligned_route に当たる)。
+    // nast の制御は構造化されている (If / Match / Loop だけ) ので、CFG を
+    // 作らずに木の上で数え上げる。
+    //
+    // 分岐はそれぞれの腕へ分かれ、既定の腕 (else / `..`) が無ければ
+    // 「何も読まずに分岐の後へ進む」経路も足す。腕の終わりで開いていれば
+    // 分岐の後へ戻って続ける。
+    struct BitRoute {
+        enum class End {
+            closed,           // バイト境界で閉じた
+            variable_width,   // 閉じる前に幅の決まらない field
+            loop,             // 閉じる前にループ
+            other_statement,  // 閉じる前に読み書きする分岐以外の文
+            body_end,         // 閉じる前に最初の Body が終わった
+            too_long,         // 64 ビットを超えた
+        };
+        End end = End::closed;
+        std::vector<Node<Field>> fields;
+        std::size_t bits = 0;
+    };
+
+    // body の statements[start] (群の先頭の field) から経路を数え上げる。
+    std::vector<BitRoute> bit_routes(Context& c, Node<Body> body, std::size_t start);
+
+    // 分岐を跨ぐ群のうち、どの field も経路によらず群の先頭から同じビット位置
+    // にあるもの。位置が静的なので、その field を読む前に要るバイトも、書いた
+    // 後に書き終わるバイトも静的に決まる — 実行時のカーソルが要らない
+    // (EBM の multi_route_merged は位置を実行時に持つ)。
+    //
+    // バイトを持つのは呼ぶ側。field ごとに、読む前に bytes へ揃えておく範囲と、
+    // 書いた後に出してよい範囲を返す。範囲は群の先頭からのバイト番号。
+    struct RoutedBitField {
+        Node<Field> field;
+        std::size_t offset = 0;  // 群の先頭からのビット位置
+        std::size_t bits = 0;
+        std::size_t fetch_from = 0, fetch_to = 0;  // 読む前に揃えておくバイト
+        std::size_t flush_from = 0, flush_to = 0;  // 書いた後に書き終わるバイト
+    };
+    struct RoutedBitGroup {
+        std::vector<RoutedBitField> fields;  // 位置の順
+        std::size_t max_bytes = 0;           // 一番長い経路のバイト数
+        bool lsb = false;                    // 先頭のビットを下位に置くか
+    };
+
+    // body の statements[start] から始まる群を経路で調べて組む。組めなければ
+    // 空を返し、理由を why に置く。
+    std::optional<RoutedBitGroup> routed_bit_group(Context& c, Node<Body> body, std::size_t start, const char** why);
+
+    // fields[index] を bytes から読む。bytes[offset + fetch_from .. fetch_to) は
+    // 呼ぶ側が先に読んでおくこと。
+    Node<Body> lower_routed_bit_decode(Context& c, const RoutedBitGroup& g, std::size_t index, Node<Expr> target,
+                                       Node<Expr> bytes, Node<Expr> offset);
+
+    // fields[index] を bytes へ OR で重ねる。bytes は群の前に 0 で埋めておく
+    // こと。書いた後 bytes[offset + flush_from .. flush_to) を出してよい。
+    // target が null なら期待値を、それも無ければ何も重ねない (0 のまま)。
+    Node<Body> lower_routed_bit_encode(Context& c, const RoutedBitGroup& g, std::size_t index, Node<Expr> target,
+                                       Node<Expr> bytes, Node<Expr> offset);
 
     // 組めない理由。組めるなら null。下の 2 つが null を返すのはこれが
     // null でないとき (と、targets の数が合わないとき) だけ。

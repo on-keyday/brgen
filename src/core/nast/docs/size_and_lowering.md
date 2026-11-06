@@ -1039,6 +1039,60 @@ ADR 0046 の言い方では、ebmgen は 3 軸 (byte / bit stream / bit mapping)
 | 符号つき | 1 | capnproto の `offset :i30` |
 | 64 ビットを超える | 1 | |
 
+### 分岐を跨ぐビット群 (2026-11-07、`bit_routes` / `routed_bit_group`)
+
+「CFG が要る」と書いていた側。**作ったのは CFG ではなく木の上の経路の
+数え上げ。** EBM の `search_byte_aligned_route` は CFG を BFS して群の先頭から
+バイト境界で閉じるまでの経路を集めるが、nast の制御は構造化されている
+(If / Match / Loop のみ、goto 無し) ので、Body と添字のフレームを積んで
+木を辿れば同じものが出る:
+
+- 分岐はそれぞれの腕へ分かれる。既定の腕 (else / `..`) が無ければ「何も
+  読まずに分岐の後へ進む」経路も足す。ただし match が照合する値の取りうる値を
+  定数と定数範囲の腕で全部覆っていれば (幅 16 ビットまで) 抜け道は無い —
+  quic_varint の `match prefix: 0 => … 3 => …` がこれ
+- 腕の終わりで開いていれば、フレームを降ろして分岐の後へ戻って続ける
+- ループと幅の決まらない field に当たったら、その経路は閉じない
+- 宣言 (fn / 入れ子の format / enum / state) と順の指定は読み書きしないので
+  通る (最初は fn に当たって止まっていた)
+
+example/ の分岐を跨ぐ 43 群を経路で数えた:
+
+```
+全経路が閉じ、各 field の位置が経路によらず 1 つ   13
+全経路が閉じるが、位置が経路で変わる                2
+閉じない経路がある                                28
+```
+
+閉じない 28 の中身は主に 3 つ: 腕が入れ子 format (mptcp の `subtype :u4` +
+`match subtype:` の腕が `MpJoinSyn` など — 「format の境界を跨ぐ」と同じ問題)、
+バイト境界に戻らないビット列 (qr_code — very_slow の領分)、64 ビット超。
+
+**位置が 1 つなら実行時のカーソルが要らない。** EBM の `multi_route_merged` は
+最大長のバッファとビット位置の変数を持ち、field ごとに足りないバイトを
+足し読みする。位置が静的なら、field を読む前に要るバイト
+`[ceil(off/8), ceil(end/8))` も、書いた後に書き終わるバイト
+`[floor(off/8), floor(end/8))` も静的に決まる (手前の field が必ず off まで
+来ているので)。`routed_bit_group` は field ごとにその 2 つの範囲を返し、
+`lower_routed_bit_decode/encode` は field が乗っている n バイトを 1 つの整数と
+見て切り出す / 0 で埋めたバイトへ OR で重ねる。バイトを持って読み足すのは
+呼ぶ側 (規約どおり):
+
+```
+--- prefix @0 :2  読む前に [0, 1)  書いた後に [0, 0)
+prefix = <u2>((u8(buf[o]) >> 6) & 3)
+--- value @2 :62  読む前に [1, 8)  書いた後に [0, 8)
+value = <u62>((((u64(buf[o]) << 56) | … | u64(buf[o + 7])) & 4611686018427387903)
+```
+
+43 群中 12 が組めた (13 のうち 1 つは腕の field が入れ子 format)。位置が
+経路で変わる 2 群は EBM と同じ実行時カーソルが要る。
+
+**残っていること。** 腕の中の field (`value`) は親の群の一員だが、腕の Body を
+`bit_groups` で見ると「閉じる前に Body が終わる」群として別に出てくる。
+format 全体で「どの field がどの群に属すか」をまとめる段 (バックエンドが
+field ごとに引く表) がまだ無い。
+
 ## 5. EBM との差 (訂正を含む)
 
 「置く側が違う」と書きかけたが誤り。EBM も emit 時にホイストしている:
@@ -1064,14 +1118,9 @@ nast に無い部品: **`WriterManager` に当たるもの**。`node/code_writer
 
 ## 6. 次
 
-- **CFG**。ビット畳み込みのうち経路を辿るもの (上の「ビット群」で平らに
-  ならなかった側、43 群前後) が経路探索を要る。平らな群は CFG なしで済んだ。
-  nast には無い。ebmgen の `analyze_ref` は block / if / loop / match /
-  continue / break / return / io の 8 種で約 120 行。nast の対応物は全部あり、
-  しかも `Break`/`Continue` は `related_loop` を、`Return` は `related_function`
-  をノード自身が持っているので、構築時の loop_stack が要らない。
-  面倒なのは `If`/`Match` が式なので、式の位置に出る制御フローを扱うこと
-  (ebmgen の `CFGExpression` に当たるものが要る)
+- ~~**CFG**~~ 木の上の経路の数え上げで済んだ (上の「分岐を跨ぐビット群」)。
+  残りは field と群の対応表、位置が経路で変わる 2 群 (実行時カーソル)、
+  format の境界を跨ぐ群
 - **union 越しのメンバアクセス** (`payload.payload`)。載せ替えは `WithReceiver`
   で済んだので、残るのはメンバアクセスを候補に分配する側
 - `x.is_defined` は落とせるようになった (`lowering/enum_defined`、メンバとの

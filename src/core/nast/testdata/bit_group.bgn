@@ -70,3 +70,39 @@ format DynamicBitOrder:
     input.bit_order = sel == 0 ? config.bit_order.lsb : config.bit_order.msb
     a :u4
     b :u4
+
+# 分岐を跨ぐ群。match は 0..3 を全部覆うので既定の腕が無くても抜け道は無い。
+format VarIntLike:
+    prefix :u2
+    match prefix:
+        0 => v :u6
+        1 => v :u14
+        2 => v :u30
+        3 => v :u62
+
+# 腕では閉じず、分岐の後で閉じる (腕の終わりから親へ戻る経路)。
+# どの腕でも幅が同じなので tail の位置は 1 つ。
+format ArmThenTail:
+    flag :u1
+    if flag == 1:
+        x :u3
+    else:
+        y :u3
+    tail :u4
+
+# else が無いと「何も読まない」経路があり、tail の位置が経路で変わる。
+format NoElse:
+    flag :u1
+    if flag == 1:
+        x :u3
+    tail :u4
+    pad :u3
+
+# lsb から。2 バイトの経路は LE で読む。
+format RoutedLittle:
+    input.endian = config.endian.little
+    sel :u4
+    if sel == 0:
+        a :u4
+    else:
+        b :u12

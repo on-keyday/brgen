@@ -5,20 +5,85 @@
 #include "../node/build.h"
 #include "../node/util.h"
 
+#include <algorithm>
+#include <map>
+
 namespace brgen::nast::lowering {
 
     namespace {
 
-        // 群を閉じずに通してよい文。読み書きをしないもの。
+        // 群を閉じずに通してよい文。読み書きをしないもの: 検査・定義・config・
+        // 順の指定、それと宣言 (fn / 入れ子の format / enum / state)。順の指定は
+        // 群を閉じないが、群の中で順が変われば order_of が断る。
         bool is_transparent(NodeType t) {
             switch (t) {
                 case NodeType::Assert:
-                case NodeType::VariableDefinition:
                 case NodeType::Metadata:
+                case NodeType::SpecifyOrder:
                     return true;
-                default:
+                case NodeType::Field:
                     return false;
+                default:
+                    return is_derived<NamedStatement>(t);
             }
+        }
+
+        // 既定の腕の無い match が、照合する値の取りうる値を全部腕で覆って
+        // いるか。覆っていれば「どの腕にも入らない」経路は無い。値の範囲は
+        // 型の幅から取り、腕は定数と定数の範囲だけを数える (それ以外が
+        // 混ざれば覆っているとは言わない)。幅は 16 ビットまで。
+        bool is_exhaustive(Context& c, Node<Match> m) {
+            auto& a = c.a;
+            auto cond = m.ref(a)->condition;
+            if (!cond) {
+                return false;
+            }
+            auto t = strip_wrappers(a, cond.ref(a)->type);
+            if (auto e = t.as_any<EnumType>()) {
+                auto base = e.ref(a)->base;
+                t = base ? strip_wrappers(a, base.ref(a)->base_type) : Node<Type>{};
+            }
+            auto it = t.as_any<IntType>();
+            if (!it || it.ref(a)->is_signed || it.ref(a)->bit_size > 16) {
+                return false;
+            }
+            std::uint64_t span = std::uint64_t(1) << it.ref(a)->bit_size;
+            std::vector<bool> covered(span, false);
+            for (auto& blk : m.ref(a)->blocks) {
+                auto cs = blk.as_any<ConditionalStatement>();
+                if (!cs) {
+                    return false;
+                }
+                auto p = strip_paren(a, cs.ref(a)->condition);
+                std::uint64_t lo = 0, hi = 0;
+                if (auto r = p.as_any<Range>()) {
+                    auto s = const_uint(a, c.tables, r.ref(a)->start);
+                    auto e = const_uint(a, c.tables, r.ref(a)->end);
+                    if (!s || !e) {
+                        return false;
+                    }
+                    lo = *s;
+                    hi = r.ref(a)->op == BinaryOp::range_inclusive ? *e : *e - 1;
+                    if (*e == 0 && r.ref(a)->op != BinaryOp::range_inclusive) {
+                        continue;  // 空の範囲
+                    }
+                }
+                else if (auto v = const_uint(a, c.tables, p)) {
+                    lo = hi = *v;
+                }
+                else {
+                    return false;
+                }
+                for (auto v = lo; v <= hi && v < span; v++) {
+                    covered[v] = true;
+                }
+            }
+            for (bool b : covered) {
+                if (!b) {
+                    return false;
+                }
+            }
+            return true;
         }
 
         std::optional<std::size_t> fixed_bits(Context& c, Node<Field> f) {
@@ -107,6 +172,46 @@ namespace brgen::nast::lowering {
             return o;
         }
 
+        // field 1 つを群の一員として読み書きできるか。整数と enum だけ。
+        std::optional<Member> member_of(Context& c, Node<Field> f, const char** why) {
+            auto& a = c.a;
+            auto refuse = [&](const char* reason) -> std::optional<Member> {
+                *why = reason;
+                return std::nullopt;
+            };
+            if (!is_layout_field(a, f)) {
+                return refuse("読み書きの対象でない field");
+            }
+            auto args = field_args(a, f);
+            if (args.named || args.positional > 1) {
+                return refuse("field の引数");
+            }
+            Member m{.field = f, .expected = args.expected};
+            m.type = strip_wrappers(a, f.ref(a)->type);
+            if (auto e = m.type.as_any<EnumType>()) {
+                m.is_enum = true;
+                auto base = e.ref(a)->base;
+                if (!base) {
+                    return refuse("enum の下地が無い");
+                }
+                auto io = strip_wrappers(a, base.ref(a)->base_type).as_any<IntType>();
+                if (!io || io.ref(a)->is_signed) {
+                    return refuse("enum の下地が符号なし整数でない");
+                }
+                m.bits = io.ref(a)->bit_size;
+            }
+            else if (auto i = m.type.as_any<IntType>()) {
+                if (i.ref(a)->is_signed) {
+                    return refuse("符号つき");  // 符号拡張がまだ
+                }
+                m.bits = i.ref(a)->bit_size;
+            }
+            else {
+                return refuse(m.type ? "整数と enum 以外の field" : "型の無い field");  // 入れ子 format / 配列
+            }
+            return m;
+        }
+
         std::vector<Member> members_of(Context& c, const BitGroup& g, const char** why, Order* order) {
             auto refuse = [&](const char* reason) {
                 *why = reason;
@@ -127,38 +232,12 @@ namespace brgen::nast::lowering {
             std::vector<Member> ms;
             std::size_t used = 0;
             for (auto f : g.fields) {
-                if (!is_layout_field(a, f)) {
-                    return refuse("読み書きの対象でない field");
+                auto m = member_of(c, f, why);
+                if (!m) {
+                    return {};
                 }
-                auto args = field_args(a, f);
-                if (args.named || args.positional > 1) {
-                    return refuse("field の引数");
-                }
-                Member m{.field = f, .expected = args.expected};
-                m.type = strip_wrappers(a, f.ref(a)->type);
-                if (auto e = m.type.as_any<EnumType>()) {
-                    m.is_enum = true;
-                    auto base = e.ref(a)->base;
-                    if (!base) {
-                        return refuse("enum の下地が無い");
-                    }
-                    auto io = strip_wrappers(a, base.ref(a)->base_type).as_any<IntType>();
-                    if (!io || io.ref(a)->is_signed) {
-                        return refuse("enum の下地が符号なし整数でない");
-                    }
-                    m.bits = io.ref(a)->bit_size;
-                }
-                else if (auto i = m.type.as_any<IntType>()) {
-                    if (i.ref(a)->is_signed) {
-                        return refuse("符号つき");  // 符号拡張がまだ
-                    }
-                    m.bits = i.ref(a)->bit_size;
-                }
-                else {
-                    return refuse(m.type ? "整数と enum 以外の field" : "型の無い field");  // 入れ子 format / 配列
-                }
-                used += m.bits;
-                ms.push_back(m);
+                used += m->bits;
+                ms.push_back(*m);
             }
             if (used != g.bits) {
                 return refuse("幅の表と型の幅が食い違う");
@@ -225,6 +304,91 @@ namespace brgen::nast::lowering {
         }
         close(BitGroup::Close::body_end);
         return out;
+    }
+
+    std::vector<BitRoute> bit_routes(Context& c, Node<Body> body, std::size_t start) {
+        auto& a = c.a;
+        struct Frame {
+            Node<Body> body;
+            std::size_t index;
+        };
+        struct State {
+            std::vector<Frame> frames;
+            BitRoute route;
+        };
+        std::vector<BitRoute> done;
+        std::vector<State> work;
+        work.push_back(State{.frames = {Frame{body, start}}});
+        auto finish = [&](State& st, BitRoute::End end) {
+            st.route.end = end;
+            done.push_back(std::move(st.route));
+        };
+        while (!work.empty()) {
+            auto st = std::move(work.back());
+            work.pop_back();
+            while (true) {
+                if (st.frames.empty()) {
+                    finish(st, BitRoute::End::body_end);
+                    break;
+                }
+                auto& top = st.frames.back();
+                auto& stmts = top.body.ref(a)->statements;
+                if (top.index >= stmts.size()) {
+                    st.frames.pop_back();  // 腕の終わり。分岐の後へ戻る
+                    continue;
+                }
+                auto s = stmts[top.index++];
+                if (is_transparent(s.type())) {
+                    continue;
+                }
+                if (auto fld = s.as<Field>()) {
+                    auto bits = fixed_bits(c, fld);
+                    if (!bits) {
+                        finish(st, BitRoute::End::variable_width);
+                        break;
+                    }
+                    st.route.fields.push_back(fld);
+                    st.route.bits += *bits;
+                    if (st.route.bits > 64) {
+                        finish(st, BitRoute::End::too_long);
+                        break;
+                    }
+                    if (st.route.bits % 8 == 0) {
+                        finish(st, BitRoute::End::closed);
+                        break;
+                    }
+                    continue;
+                }
+                if (auto cond = s.as_any<ConditionalExpr>()) {
+                    bool has_default = false;
+                    for (auto& blk : cond.ref(a)->blocks) {
+                        auto cs = blk.as_any<ConditionalStatement>();
+                        if (!cs || is_default_cond(a, cs.ref(a)->condition)) {
+                            has_default = true;
+                        }
+                        auto fork = st;
+                        fork.frames.push_back(Frame{blk.ref(a)->body, 0});
+                        work.push_back(std::move(fork));
+                    }
+                    if (!has_default) {
+                        if (auto m = cond.as_any<Match>(); m && is_exhaustive(c, m)) {
+                            has_default = true;
+                        }
+                    }
+                    if (has_default) {
+                        break;  // 全経路が腕に入った
+                    }
+                    continue;  // 既定の腕が無い: 何も読まずに分岐の後へ
+                }
+                if (s.as_any<Loop>() || s.as_any<RangeLoop>()) {
+                    finish(st, BitRoute::End::loop);
+                    break;
+                }
+                finish(st, BitRoute::End::other_statement);
+                break;
+            }
+        }
+        return done;
     }
 
     Node<Body> lower_bit_group_decode(Context& c, const BitGroup& g, std::span<const Node<Expr>> targets,
@@ -328,6 +492,174 @@ namespace brgen::nast::lowering {
             if (!add_expected_check(c, it->first, body, it->second, false)) {
                 return nullref;
             }
+        }
+        return body;
+    }
+
+    std::optional<RoutedBitGroup> routed_bit_group(Context& c, Node<Body> body, std::size_t start, const char** why) {
+        auto routes = bit_routes(c, body, start);
+        if (routes.empty()) {
+            *why = "経路が無い";
+            return std::nullopt;
+        }
+        // field ごとの位置。経路で変われば静的には組めない。
+        std::map<std::uint32_t, RoutedBitField> by_field;
+        BitGroup all;  // order_of に渡す和集合
+        for (auto& r : routes) {
+            if (r.end != BitRoute::End::closed) {
+                *why = "閉じない経路がある";
+                return std::nullopt;
+            }
+            all.bits = std::max(all.bits, r.bits);
+            std::size_t pos = 0;
+            for (auto f : r.fields) {
+                auto m = member_of(c, f, why);
+                if (!m) {
+                    return std::nullopt;
+                }
+                auto [it, fresh] = by_field.try_emplace(f.id(), RoutedBitField{.field = f, .offset = pos, .bits = m->bits});
+                if (!fresh && it->second.offset != pos) {
+                    *why = "位置が経路で変わる";
+                    return std::nullopt;
+                }
+                if (fresh) {
+                    all.fields.push_back(f);
+                }
+                pos += m->bits;
+            }
+        }
+        all.close = BitGroup::Close::flat;
+        auto o = order_of(c, all, why);
+        if (!o) {
+            return std::nullopt;
+        }
+        RoutedBitGroup g;
+        g.lsb = o->lsb;
+        g.max_bytes = all.bits / 8;
+        for (auto& [_, f] : by_field) {
+            auto end = f.offset + f.bits;
+            // 読む前: 手前の field が offset まで読ませているので、その続きから end まで。
+            f.fetch_from = (f.offset + 7) / 8;
+            f.fetch_to = (end + 7) / 8;
+            // 書いた後: offset の手前までのバイトは前の field で書き終わっている。
+            f.flush_from = f.offset / 8;
+            f.flush_to = end / 8;
+            if (end - f.offset / 8 * 8 > 64) {
+                *why = "field が 8 バイトを超える範囲に跨る";
+                return std::nullopt;
+            }
+            g.fields.push_back(f);
+        }
+        std::ranges::sort(g.fields, [](auto& l, auto& r) {
+            return l.offset != r.offset ? l.offset < r.offset : l.field.id() < r.field.id();
+        });
+        return g;
+    }
+
+    namespace {
+        // field が乗っているバイト [first, first + n) と、その n バイトを 1 つの
+        // 整数に見たときの field の下端の位置。
+        struct Span {
+            std::size_t first = 0;
+            std::size_t n = 0;
+            std::size_t shift = 0;
+        };
+
+        Span span_of(const RoutedBitGroup& g, const RoutedBitField& f) {
+            Span s;
+            s.first = f.offset / 8;
+            auto last = (f.offset + f.bits - 1) / 8;
+            s.n = last - s.first + 1;
+            auto in_byte = f.offset % 8;
+            // msb: n バイトをビッグで読んだ整数の上から in_byte 進んだところが
+            // field の上端。lsb: リトルで読んだ整数の下から in_byte 進んだところが
+            // field の下端。
+            s.shift = g.lsb ? in_byte : s.n * 8 - in_byte - f.bits;
+            return s;
+        }
+
+        Node<Expr> at_byte(Builder& b, Node<Expr> offset, std::size_t k) {
+            if (!offset) {
+                return b.lit(k);
+            }
+            if (k == 0) {
+                return offset;
+            }
+            return b.bin(BinaryOp::add, offset, b.lit(k), b.int_type(64));
+        }
+    }  // namespace
+
+    Node<Body> lower_routed_bit_decode(Context& c, const RoutedBitGroup& g, std::size_t index, Node<Expr> target,
+                                       Node<Expr> bytes, Node<Expr> offset) {
+        auto& a = c.a;
+        if (index >= g.fields.size() || !target) {
+            return nullref;
+        }
+        auto& f = g.fields[index];
+        const char* why = nullptr;
+        auto m = member_of(c, f.field, &why);
+        if (!m) {
+            return nullref;
+        }
+        auto sp = span_of(g, f);
+        Builder b{a, f.field.ref(a).loc()};
+        auto raw = b.int_type(sp.n * 8);
+        auto whole = combine_int(c, bytes, at_byte(b, offset, sp.first), raw, g.lsb ? Endian::little : Endian::big);
+        if (!whole) {
+            return nullref;
+        }
+        Node<Expr> part = whole;
+        if (sp.shift) {
+            part = b.bin(BinaryOp::right_logical_shift, b.paren(part), b.lit(sp.shift), raw);
+        }
+        part = b.bin(BinaryOp::bit_and, part, b.lit(mask_of(f.bits)), raw);
+        auto body = b.body(b.assign(target, b.cast(m->type, part)));
+        return add_expected_check(c, target, body, m->expected, true);
+    }
+
+    Node<Body> lower_routed_bit_encode(Context& c, const RoutedBitGroup& g, std::size_t index, Node<Expr> target,
+                                       Node<Expr> bytes, Node<Expr> offset) {
+        auto& a = c.a;
+        if (index >= g.fields.size()) {
+            return nullref;
+        }
+        auto& f = g.fields[index];
+        const char* why = nullptr;
+        auto m = member_of(c, f.field, &why);
+        if (!m) {
+            return nullref;
+        }
+        Builder b{a, f.field.ref(a).loc()};
+        Node<Expr> v = target ? target : m->expected;
+        if (!v) {
+            return b.body();  // 書き先も期待値も無い = 0 のまま
+        }
+        auto sp = span_of(g, f);
+        auto raw = b.int_type(sp.n * 8);
+        Node<Expr> part = b.bin(BinaryOp::bit_and, b.cast(raw, v), b.lit(mask_of(f.bits)), raw);
+        if (sp.shift) {
+            part = b.bin(BinaryOp::left_logical_shift, part, b.lit(sp.shift), raw);
+        }
+        auto def = b.define(derived_name("bits", f.field), part);
+        if (!def) {
+            return nullref;
+        }
+        auto body = b.body(def);
+        auto& stmts = body.ref(a)->statements;
+        auto value = b.ref(def.ref(a)->name.ref(a)->identifier, raw);
+        auto u8 = b.int_type(8);
+        for (std::size_t j = 0; j < sp.n; j++) {
+            // msb はビッグ (先頭のバイトが上位)、lsb はリトル。
+            auto byte_shift = g.lsb ? j * 8 : (sp.n - 1 - j) * 8;
+            Node<Expr> piece = value;
+            if (byte_shift) {
+                piece = b.bin(BinaryOp::right_logical_shift, piece, b.lit(byte_shift), raw);
+            }
+            auto slot = b.index(bytes, at_byte(b, offset, sp.first + j), u8);
+            stmts.push_back(b.assign(slot, b.bin(BinaryOp::bit_or, slot, b.cast(u8, piece), u8)));
+        }
+        if (target && m->expected) {
+            return add_expected_check(c, target, body, m->expected, false);
         }
         return body;
     }
