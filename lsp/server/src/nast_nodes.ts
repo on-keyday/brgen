@@ -73,6 +73,11 @@ export type SpecialLiteralKind =
     "output_" |
     "config_";
 
+export type BitOrder =
+    "unspec" |
+    "msb" |
+    "lsb";
+
 export type Endian =
     "unspec" |
     "big" |
@@ -146,6 +151,11 @@ export const ENUM_DISPLAY = {
         "input_": "input",
         "output_": "output",
         "config_": "config",
+    },
+    BitOrder: {
+        "unspec": "unspec",
+        "msb": "msb",
+        "lsb": "lsb",
     },
     Endian: {
         "unspec": "unspec",
@@ -1155,6 +1165,8 @@ export interface UnionLayout {
 export interface FieldEndian {
     endian: Endian;
     dynamic: NodeId;
+    bit_order: BitOrder;
+    bit_order_dynamic: NodeId;
 }
 
 export interface LoweredAvailable {

@@ -277,9 +277,19 @@
                     "name": "dynamic",
                     "type": "Node<SpecifyOrder>",
                     "description": "Set when the byte order is decided at run time. Points at the assignment, not its expression: the expression is evaluated once there and every field reads that one value"
+                },
+                {
+                    "name": "bit_order",
+                    "type": "BitOrder",
+                    "description": "Bit order set by input.bit_order in effect here. unspec when none is: the order then follows the byte order (big reads from the msb, little from the lsb), which is what every existing generator does"
+                },
+                {
+                    "name": "bit_order_dynamic",
+                    "type": "Node<SpecifyOrder>",
+                    "description": "Set when the bit order is decided at run time, like dynamic"
                 }
             ],
-            "description": "Byte order in effect where this field is read or written"
+            "description": "Byte order and bit order in effect where this field is read or written"
         },
         {
             "name": "LoweredAvailable",
@@ -786,6 +796,20 @@
                     "alt_names": [
                         "config"
                     ]
+                }
+            ]
+        },
+        {
+            "name": "BitOrder",
+            "enums": [
+                {
+                    "name": "unspec"
+                },
+                {
+                    "name": "msb"
+                },
+                {
+                    "name": "lsb"
                 }
             ]
         },

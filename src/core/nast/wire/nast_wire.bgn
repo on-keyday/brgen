@@ -71,6 +71,12 @@ enum SpecialLiteralKind:
     output_
     config_
 
+enum BitOrder:
+    :u8
+    unspec
+    msb
+    lsb
+
 enum Endian:
     :u8
     unspec
@@ -629,6 +635,8 @@ format FieldEndianEntry:
     key :Ref
     endian :Endian
     dynamic :Ref
+    bit_order :BitOrder
+    bit_order_dynamic :Ref
 
 format FieldEndianTable:
     len :u32

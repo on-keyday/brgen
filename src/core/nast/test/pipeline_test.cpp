@@ -366,8 +366,49 @@ namespace {
             auto gs = groups_of("Little");
             check(gs.size() == 2, "Little: 群が 2 つ");
             if (gs.size() == 2) {
-                check_eq(build(gs[0]).why, "", "リトルでも 1 バイトは組める");
-                check_eq(build(gs[1]).why, "2 バイト以上でビッグエンディアンでない", "リトルの 2 バイトは組めない");
+                auto one = build(gs[0]);
+                check_eq(one.why, "", "リトルの 1 バイトは組める");
+                if (one.dec.size() == 3) {
+                    auto v = bits_name(gs[0]);
+                    check_eq(one.dec[1], std::format("a = <u4>({} & 15)", v), "リトルは先頭の field が下位");
+                    check_eq(one.dec[2], std::format("b = <u4>(({} >> 4) & 15)", v), "2 つ目はその上");
+                }
+                else {
+                    check(false, "Little 1 バイト: decode 3 行");
+                }
+                auto two = build(gs[1]);
+                check_eq(two.why, "", "リトルの 2 バイトは対角 (LE×LSB) なので組める");
+                if (two.dec.size() == 3) {
+                    auto v = bits_name(gs[1]);
+                    check_eq(two.dec[0], std::format("{} := (u16(buf[o + 1]) << 8) | u16(buf[o])", v), "整数はリトルで読む (上位は後ろのバイト)");
+                    check_eq(two.dec[1], std::format("c = <u4>({} & 15)", v), "先頭が下位");
+                    check_eq(two.dec[2], std::format("d = <u12>(({} >> 4) & 4095)", v), "12 bit はその上");
+                }
+                else {
+                    check(false, "Little 2 バイト: decode 3 行");
+                }
+            }
+        }
+        {
+            auto gs = groups_of("BigLsb");
+            check(gs.size() == 2, "BigLsb: 群が 2 つ");
+            if (gs.size() == 2) {
+                auto one = build(gs[0]);
+                check_eq(one.why, "", "1 バイトは bit_order だけで決まる");
+                if (one.dec.size() == 3) {
+                    check_eq(one.dec[1], std::format("a = <u2>({} & 3)", bits_name(gs[0])), "lsb なら先頭が下位");
+                }
+                else {
+                    check(false, "BigLsb 1 バイト: decode 3 行");
+                }
+                check_eq(build(gs[1]).why, "2 バイト以上でバイト順とビット順が対角でない", "BE×LSB の 2 バイトは組めない");
+            }
+        }
+        {
+            auto gs = groups_of("DynamicBitOrder");
+            check(gs.size() == 1, "DynamicBitOrder: 群が 1 つ");
+            if (gs.size() == 1) {
+                check_eq(build(gs[0]).why, "bit_order が実行時に決まる", "実行時の bit_order は組めない");
             }
         }
     }

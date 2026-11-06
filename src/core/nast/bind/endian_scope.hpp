@@ -55,6 +55,8 @@ namespace brgen::nast::bind {
         struct State {
             Endian endian = Endian::unspec;
             Node<SpecifyOrder> dynamic;  // 実行時に決まるならその代入
+            BitOrder bit_order = BitOrder::unspec;
+            Node<SpecifyOrder> bit_order_dynamic;
         };
 
         State current;

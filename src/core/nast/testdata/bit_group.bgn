@@ -46,10 +46,27 @@ format Half:
     a :u3
     b :u1
 
-# リトルエンディアン。1 バイトなら順は関係ないので組める。2 バイトは組めない。
+# リトルエンディアン。bit_order の指定が無ければ lsb から (対角)。
+# 1 バイトでも 2 バイトでも先頭の field が下位。
 format Little:
     input.endian = config.endian.little
     a :u4
     b :u4
     c :u4
     d :u12
+
+# ビッグエンディアンに bit_order = lsb。1 バイトはバイト順が効かないので
+# bit_order だけで決まる。2 バイトは非対角 (BE×LSB) なので組めない。
+format BigLsb:
+    input.bit_order = config.bit_order.lsb
+    a :u2
+    b :u6
+    c :u4
+    d :u12
+
+# bit_order が実行時に決まる。
+format DynamicBitOrder:
+    sel :u8
+    input.bit_order = sel == 0 ? config.bit_order.lsb : config.bit_order.msb
+    a :u4
+    b :u4

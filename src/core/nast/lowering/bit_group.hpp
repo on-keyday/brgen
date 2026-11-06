@@ -14,10 +14,9 @@
 // 組めない (`nast_probe bits` が閉じ方ごとに数える。example/ では 508 群中
 // 350 が平ら)。
 //
-// ビットは先頭の field から上位に詰める (msb first)。`input.bit_order` は
-// スコープがまだ解析されていないので、それが書かれた木では組まない。
-// 2 バイト以上の群はビッグエンディアンのときだけ組む — リトルエンディアンで
-// 群をどう並べるかは元実装の意味論を確かめていない。
+// 群は 1 つの整数として読み、msb なら先頭の field を上位に、lsb なら下位に
+// 置く。順の決め方は bit_group.cpp の order_of (bit_order が無ければバイト順
+// に従う対角、2 バイト以上の非対角は組まない)。
 //
 // 群の途中にある読み書きしない文 (assert / 定義 / config) は群を閉じない。
 // 群はまとめて読むので、それらは群全体を読んだ後 (書く側は書く前) に置く
@@ -53,10 +52,7 @@ namespace brgen::nast::lowering {
     //   f0 = <T0>((bits<id> >> s0) & m0)
     //   ...
     //
-    // 組めなければ null。今のところ組めないもの: 平らでない群 / 64 ビットを
-    // 超える群 / 整数と enum 以外の field (入れ子 format・配列) / 符号つき /
-    // 名前つきの引数か位置引数が 2 つ以上ある field / bit_order の指定がある木 /
-    // 2 バイト以上でビッグエンディアン以外。
+    // 組めなければ null。理由は bit_group_refusal が返す。
     Node<Body> lower_bit_group_decode(Context& c, const BitGroup& g, std::span<const Node<Expr>> targets,
                                       Node<Expr> bytes, Node<Expr> offset);
 

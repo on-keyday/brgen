@@ -1010,20 +1010,34 @@ version = <u3>(bits15 & 7)
 (`split_int` は値の式をバイトごとに繰り返すため)。宣言は初期化子があるので
 `Builder::define` で合成できる (値の無い宣言が書けない、の制約には当たらない)。
 
-平らな 350 群のうち組めたのは 310。残り 40 の理由 (`bit_group_refusal`):
+**順の決め方 (2026-11-07 同日に修正)。** 最初は「msb から、2 バイト以上は
+big のときだけ」で組んでいたが、既存の挙動と食い違っていた。ebmgen の
+`bit_manipulator` はバイト内の位置を `big ? 8 - n - off : off`、値への積み方を
+`big ? size - done - n : done` で決めている — little なら群を LE の整数として
+読み、先頭の field を下位に置く。**1 バイトの群でも同じ** なので、little の
+1 バイトを msb から切っていたのは黙って違う値を出すバグだった。
 
-| | |
-| --- | --- |
-| bit_order の指定がある | 31 |
-| 2 バイト以上でビッグエンディアンでない | 5 |
-| 整数と enum 以外の field | 3 |
-| 64 ビットを超える | 1 |
+ADR 0046 の言い方では、ebmgen は 3 軸 (byte / bit stream / bit mapping) を
+1 つの Endian に潰していて、表現できるのは対角の 2 象限 (BE×MSB, LE×LSB)
+だけ。nast はその対角を既定にし、`input.bit_order` のスコープを
+`EndianScope` で追って FieldEndian (`bit_order` / `bit_order_dynamic`) に載せた:
 
-bit_order は **木のどこかに書いてあれば断る** という粗い判定。
-`input.bit_order` のスコープは `EndianScope` が見ていない
-(`set_from` が `input.endian` 以外を捨てる) ので、FieldEndian と同じ形の
-表を作るのが先。リトルエンディアンの 2 バイト以上は、元実装が群を
-どう並べるかを確かめていないので断っている。
+- bit_order の指定が無い → バイト順に従う (big は msb、little は lsb)
+- 1 バイトの群 → バイト順が効かないので bit_order だけで決まる
+- 2 バイト以上で非対角 (LE×MSB / BE×LSB) → 組めない。ADR 0046 で
+  very_slow_bit_ops の側に置いたもの
+- bit_order が実行時に決まる → 組めない
+
+平らな 350 群のうち組めたのは 338。残り 12 の理由 (`bit_group_refusal`):
+
+| | | |
+| --- | --- | --- |
+| 整数と enum 以外の field | 3 | 入れ子 format |
+| 2 バイト以上で非対角 | 3 | hci.bgn (LE×MSB) ×2、feature_test/bit_fields |
+| バイト順の表に無い field | 2 | ttf.bgn の `flags :format Flags:` — field の型の位置に書いた inline format の body を EndianScope が辿っていない。しかもこれは `config.type = u16` 付きで、群の切り方も別に扱う必要がある |
+| ビット順がバイト順に従い、そのバイト順が実行時に決まる | 2 | bpf.bgn。combine_int_either と同じく両方を組んで選ばせる形にできる |
+| 符号つき | 1 | capnproto の `offset :i30` |
+| 64 ビットを超える | 1 | |
 
 ## 5. EBM との差 (訂正を含む)
 

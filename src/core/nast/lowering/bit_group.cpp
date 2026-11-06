@@ -30,16 +30,6 @@ namespace brgen::nast::lowering {
             return sz->bits;
         }
 
-        bool has_bit_order(Context& c) {
-            bool found = false;
-            each_node<SpecifyOrder>(c.a, [&](Node<SpecifyOrder> s) {
-                if (s.ref(c.a)->name.ends_with("bit_order")) {
-                    found = true;
-                }
-            });
-            return found;
-        }
-
         // field 1 つ分の材料。読み書きに使う型と、期待値。
         struct Member {
             Node<Field> field;
@@ -51,7 +41,73 @@ namespace brgen::nast::lowering {
         };
 
         // 組める群かを確かめて、field ごとの材料を返す。組めなければ空。
-        std::vector<Member> members_of(Context& c, const BitGroup& g, const char** why) {
+        // 群をどの順で読むか。byte は 2 バイト以上のときの整数の読み方、lsb は
+        // 先頭の field を下位に置くか。
+        struct Order {
+            Endian byte = Endian::big;
+            bool lsb = false;
+        };
+
+        // 群の順を決める。field ごとの FieldEndian が全員一致していること。
+        //
+        // bit_order の指定が無ければバイト順に従う (big は msb から、little は
+        // lsb から)。既存の生成器は全部この対角の 2 象限で動いている (ebmgen は
+        // 2 軸を 1 つの Endian に潰していて、bit_manipulator の shift が
+        // `big ? 8 - n - off : off`)。1 バイトの群はバイト順が効かないので
+        // bit_order だけで決まる。2 バイト以上で対角でない組み合わせ
+        // (LE×MSB / BE×LSB) は組まない — ADR 0046 で very_slow_bit_ops の側に
+        // 置いたもの。
+        std::optional<Order> order_of(Context& c, const BitGroup& g, const char** why) {
+            const FieldEndian* first = nullptr;
+            for (auto f : g.fields) {
+                auto* fe = c.tables.table<FieldEndian>().get(f);
+                if (!fe) {
+                    *why = "バイト順の表に無い field";
+                    return std::nullopt;
+                }
+                if (!first) {
+                    first = fe;
+                    continue;
+                }
+                if (fe->endian != first->endian || fe->dynamic != first->dynamic ||
+                    fe->bit_order != first->bit_order || fe->bit_order_dynamic != first->bit_order_dynamic) {
+                    *why = "群の中で順が変わる";
+                    return std::nullopt;
+                }
+            }
+            if (!first) {
+                *why = "field が無い";
+                return std::nullopt;
+            }
+            if (first->bit_order_dynamic) {
+                *why = "bit_order が実行時に決まる";
+                return std::nullopt;
+            }
+            bool multi = g.bits > 8;
+            bool byte_known = !first->dynamic && first->endian != Endian::native;
+            if (multi && !byte_known) {
+                *why = "2 バイト以上でバイト順が実行時かターゲットで決まる";
+                return std::nullopt;
+            }
+            Order o;
+            o.byte = first->endian == Endian::little ? Endian::little : Endian::big;
+            if (first->bit_order != BitOrder::unspec) {
+                o.lsb = first->bit_order == BitOrder::lsb;
+                if (multi && o.lsb != (o.byte == Endian::little)) {
+                    *why = "2 バイト以上でバイト順とビット順が対角でない";
+                    return std::nullopt;
+                }
+                return o;
+            }
+            if (!byte_known) {
+                *why = "ビット順がバイト順に従い、そのバイト順が実行時かターゲットで決まる";
+                return std::nullopt;
+            }
+            o.lsb = o.byte == Endian::little;
+            return o;
+        }
+
+        std::vector<Member> members_of(Context& c, const BitGroup& g, const char** why, Order* order) {
             auto refuse = [&](const char* reason) {
                 *why = reason;
                 return std::vector<Member>{};
@@ -63,9 +119,11 @@ namespace brgen::nast::lowering {
             if (g.bits > 64) {
                 return refuse("64 ビットを超える");
             }
-            if (has_bit_order(c)) {
-                return refuse("bit_order の指定がある");
+            auto o = order_of(c, g, why);
+            if (!o) {
+                return {};
             }
+            *order = *o;
             std::vector<Member> ms;
             std::size_t used = 0;
             for (auto f : g.fields) {
@@ -75,12 +133,6 @@ namespace brgen::nast::lowering {
                 auto args = field_args(a, f);
                 if (args.named || args.positional > 1) {
                     return refuse("field の引数");
-                }
-                if (g.bits > 8) {
-                    auto* fe = c.tables.table<FieldEndian>().get(f);
-                    if (fe && (fe->dynamic || fe->endian == Endian::little || fe->endian == Endian::native)) {
-                        return refuse("2 バイト以上でビッグエンディアンでない");
-                    }
                 }
                 Member m{.field = f, .expected = args.expected};
                 m.type = strip_wrappers(a, f.ref(a)->type);
@@ -111,11 +163,11 @@ namespace brgen::nast::lowering {
             if (used != g.bits) {
                 return refuse("幅の表と型の幅が食い違う");
             }
-            // 先頭の field が上位。
-            std::size_t rest = g.bits;
+            // msb なら先頭の field が上位、lsb なら下位。
+            std::size_t pos = 0;
             for (auto& m : ms) {
-                rest -= m.bits;
-                m.shift = rest;
+                m.shift = o->lsb ? pos : g.bits - pos - m.bits;
+                pos += m.bits;
             }
             return ms;
         }
@@ -128,7 +180,8 @@ namespace brgen::nast::lowering {
 
     const char* bit_group_refusal(Context& c, const BitGroup& g) {
         const char* why = nullptr;
-        members_of(c, g, &why);
+        Order o;
+        members_of(c, g, &why, &o);
         return why;
     }
 
@@ -181,13 +234,14 @@ namespace brgen::nast::lowering {
             return nullref;
         }
         const char* why = nullptr;
-        auto ms = members_of(c, g, &why);
+        Order order;
+        auto ms = members_of(c, g, &why, &order);
         if (ms.empty()) {
             return nullref;
         }
         Builder b{a, g.fields.front().ref(a).loc()};
         auto raw = b.int_type(g.bits);
-        auto whole = combine_int(c, bytes, offset, raw, Endian::big);
+        auto whole = combine_int(c, bytes, offset, raw, order.byte);
         auto def = b.define(derived_name("bits", g.fields.front()), whole);
         if (!def) {
             return nullref;
@@ -227,7 +281,8 @@ namespace brgen::nast::lowering {
             return nullref;
         }
         const char* why = nullptr;
-        auto ms = members_of(c, g, &why);
+        Order order;
+        auto ms = members_of(c, g, &why, &order);
         if (ms.empty()) {
             return nullref;
         }
@@ -262,7 +317,7 @@ namespace brgen::nast::lowering {
         if (!def) {
             return nullref;
         }
-        auto body = split_int(c, bytes, offset, b.ref(def.ref(a)->name.ref(a)->identifier, raw), raw, Endian::big);
+        auto body = split_int(c, bytes, offset, b.ref(def.ref(a)->name.ref(a)->identifier, raw), raw, order.byte);
         if (!body) {
             return nullref;
         }

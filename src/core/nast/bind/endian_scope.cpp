@@ -5,10 +5,10 @@
 namespace brgen::nast::bind {
 
     namespace {
-        // `config.endian.little` のような綴りから値を出す。解決先が組み込みの
-        // endian 列挙のメンバなら、その名前で決まる。整数に畳んだ値を使わない
-        // のは、列挙の並び順に依存させないため。
-        std::optional<Endian> static_endian(Arena& a, SideTables& tables, Node<Expr> e) {
+        // `config.endian.little` のような綴りから、組み込みの列挙 (endian /
+        // bit_order) のどのメンバかを出す。整数に畳んだ値を使わないのは、列挙の
+        // 並び順に依存させないため。
+        std::string_view builtin_member(Arena& a, SideTables& tables, Node<Expr> e, std::string_view enum_name) {
             Node<Ident> member;
             if (auto ma = e.as_any<MemberAccess>()) {
                 member = ma.ref(a)->member;
@@ -17,21 +17,25 @@ namespace brgen::nast::bind {
                 member = ref.ref(a)->name;
             }
             if (!member) {
-                return std::nullopt;
+                return {};
             }
             auto* res = tables.table<Resolution>().get(member);
             if (!res) {
-                return std::nullopt;
+                return {};
             }
             auto em = res->target.as_any<EnumMember>();
             if (!em) {
-                return std::nullopt;
+                return {};
             }
             auto belong = em.ref(a)->belong;
-            if (!belong || name_of(a, belong) != "endian") {
-                return std::nullopt;
+            if (!belong || name_of(a, belong) != enum_name) {
+                return {};
             }
-            auto text = name_of(a, em);
+            return name_of(a, em);
+        }
+
+        std::optional<Endian> static_endian(Arena& a, SideTables& tables, Node<Expr> e) {
+            auto text = builtin_member(a, tables, e, "endian");
             if (text == "big") {
                 return Endian::big;
             }
@@ -40,6 +44,17 @@ namespace brgen::nast::bind {
             }
             if (text == "native") {
                 return Endian::native;
+            }
+            return std::nullopt;
+        }
+
+        std::optional<BitOrder> static_bit_order(Arena& a, SideTables& tables, Node<Expr> e) {
+            auto text = builtin_member(a, tables, e, "bit_order");
+            if (text == "msb") {
+                return BitOrder::msb;
+            }
+            if (text == "lsb") {
+                return BitOrder::lsb;
             }
             return std::nullopt;
         }
@@ -59,8 +74,20 @@ namespace brgen::nast::bind {
 
     bool EndianScope::set_from(Node<SpecifyOrder> order) {
         auto d = order.ref(a);
+        if (d->name == "input.bit_order") {
+            // ビット順。stream / mapping を分けて指定する形 (input.bit_order.stream
+            // など) はコーパスに無いので、両方を一度に指定するこの形だけを見る。
+            if (auto b = static_bit_order(a, tables, strip_paren(a, d->order))) {
+                current.bit_order = *b;
+                current.bit_order_dynamic = nullref;
+                return true;
+            }
+            current.bit_order = BitOrder::unspec;
+            current.bit_order_dynamic = order;
+            return true;
+        }
         if (d->name != "input.endian") {
-            return false;  // bit_order 系はバイト順ではない
+            return false;
         }
         if (auto e = static_endian(a, tables, strip_paren(a, d->order))) {
             current.endian = *e;
@@ -91,6 +118,8 @@ namespace brgen::nast::bind {
         else {
             entry.endian = Endian::big;  // 言語の既定
         }
+        entry.bit_order = current.bit_order;
+        entry.bit_order_dynamic = current.bit_order_dynamic;
         tables.table<FieldEndian>().set(f, std::move(entry));
         analyzed++;
     }
