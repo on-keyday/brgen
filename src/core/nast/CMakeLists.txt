@@ -226,6 +226,8 @@ target_link_libraries(nast_probe PRIVATE nast_core)
 # newbackend.py が足す。ここに並んだものが nast2<lang> として建つ。
 add_executable(nast2wirespec "backends/wirespec/main.cpp")
 target_link_libraries(nast2wirespec PRIVATE nast_core)
+add_executable(nast2go "backends/go/main.cpp")
+target_link_libraries(nast2go PRIVATE nast_core)
 
 # ---- 計測 ----------------------------------------------------------------
 foreach(b coverage fn_fallible lex_split parse_split token_cost)
@@ -279,7 +281,7 @@ if(WIN32)
         COMMENT "copying libfutils.dll next to the tools"
         VERBATIM)
     # どのツールも起動に要るので、実行ファイル全部から依存させる。
-    foreach(t nast2wirespec nast_test nast_corpus nast_dump nast_unparse_test nast_wire_test nast_backend
+    foreach(t nast2wirespec nast2go nast_test nast_corpus nast_dump nast_unparse_test nast_wire_test nast_backend
               nast_coverage nast_fn_fallible nast_lex_split nast_parse_split nast_token_cost)
         if(TARGET ${t})
             add_dependencies(${t} nast_runtime_dll)

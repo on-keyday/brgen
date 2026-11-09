@@ -1156,6 +1156,60 @@ field:  平らな群 1226 / 分岐を跨ぐ群 57 / 組めない 363
 
 群を持つ format 322 のうち 260 はバックエンドが表を引くだけで全部組める。
 
+### nast2go 2 代目 (2026-11-09、`backends/go`)
+
+§1 の初代は AST から直に codec を書いて止まった。2 代目は codec の形を
+lowering に組ませ、返ってきた nast のノードを Go に綴るだけにした:
+
+| 形 | 組む側 |
+| --- | --- |
+| field の並びとビット群 | `bit_layout` |
+| 整数 / enum / 固定幅の配列 | `lower_field_decode` / `encode` |
+| ビット群 | `lower_bit_group_*` / `lower_routed_bit_*` |
+| バイトの出し入れ | `read_bytes` / `write_bytes` (`input.get()` / `output.put(x)`) |
+| match | `lower_match` |
+| 範囲との比較 | `lower_range_compare` |
+
+バックエンドに残ったのは lowering が呼ぶ側に任せたもの: バッファの宣言、
+読み終えたことの検査、入れ子 format の呼び出し、配列の確保 (入力の残りに
+収まるかを先に確かめる)、Go の型の付け方 (Go は暗黙の変換が無いので、型の
+違う演算と代入には変換を挟む)。組めない format は飛ばし、それを使う format も
+落とす。
+
+測り方は `python src/core/nast/backends/go/measure.py -j 4 --roundtrip`。
+example/ の入力ごとに 1 パッケージを作り `go vet` を 1 回で回す。`--roundtrip`
+は各 format に乱数の入力を 3000 回与え、decode できたら encode して読んだ
+バイト列に戻るかを見る。往復は「同じ間違いを両方向でする」ものを見逃すので、
+`known/` に手で計算した値の検査 (bit_group.bgn、RFC 9000 の varint の例を含む)
+を置いて一緒に回す。
+
+```
+入力 314 本
+  全 format を生成し go vet を通った     100   (初代は 180 本中 3)
+  vet は通るが飛ばした format がある     210
+  go vet で落ちた                          1   (feature_test/recurse_defs、定数の循環)
+  入力の解析で失敗                         3
+format: 生成 1210 / 飛ばした 890
+往復: 1210 個中 882 個が乱数の入力を 1 回以上 decode、食い違い 0
+既知の値: ok
+```
+
+飛ばした理由の上位 (format 数、使う側の巻き添えを含む):
+
+```
+末尾までのバイト列以外の配列        104
+StrLiteralType (文字列の期待値)      70
+呼び出し (fn)                        48
+名前つきの引数の付いた配列           39
+引数つきの入れ子 format              38
+手書きの encode / decode             35
+Range が codec の文の位置にある      31
+field_io が組めない                  29
+state 変数                           29
+実行時に決まるバイト順 (IsLittleEndian)  26
+ビット群: 閉じる前に Body が終わる   20  (format の境界を跨ぐ)
+```
+
 ## 5. EBM との差 (訂正を含む)
 
 「置く側が違う」と書きかけたが誤り。EBM も emit 時にホイストしている:
@@ -1184,6 +1238,7 @@ nast に無い部品: **`WriterManager` に当たるもの**。`node/code_writer
 - ~~**CFG**~~ 木の上の経路の数え上げで済んだ (上の「分岐を跨ぐビット群」)。
   対応表もできた (上の「field と群の対応表」)。残りは位置が経路で変わる
   2 群 (実行時カーソル)、format の境界を跨ぐ群
+- nast2go の飛ばした理由 (上の「nast2go 2 代目」の表) を上から
 - **union 越しのメンバアクセス** (`payload.payload`)。載せ替えは `WithReceiver`
   で済んだので、残るのはメンバアクセスを候補に分配する側
 - `x.is_defined` は落とせるようになった (`lowering/enum_defined`、メンバとの
