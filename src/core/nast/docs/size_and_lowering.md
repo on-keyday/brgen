@@ -40,6 +40,7 @@ Go が出たのは 3 本 (cmsg / simple / udp)。
   気付かなかった
 
 `backends/go` は削除した。`backend/entry.hpp` / `newbackend.py` / knob 機構は残す。
+2026-11-09 に lowering を呼ぶ形で 2 代目を入れた (§4 の「nast2go 2 代目」)。
 
 ## 2. TypeSize 表
 
