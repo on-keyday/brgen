@@ -32,7 +32,7 @@ jobs:
       - name: Install libc++-dev and libc++abi-dev
         run: sudo apt-get install libc++-dev libc++abi-dev -y
       - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+        uses: hendrikmuhs/ccache-action@dbeefd73e8e2ffc1bbc412570072735eb4db3607 # v1.2.25
         with:
           key: rebrgen-native-${{ runner.os }}
       - name: Cache rebrgen native
@@ -95,7 +95,7 @@ jobs:
       - name: Install libc++-dev and libc++abi-dev
         run: sudo apt-get install libc++-dev libc++abi-dev -y
       - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+        uses: hendrikmuhs/ccache-action@dbeefd73e8e2ffc1bbc412570072735eb4db3607 # v1.2.25
         with:
           key: rebrgen-wasm-${{ runner.os }}
       - name: Cache rebrgen wasm
@@ -198,7 +198,7 @@ jobs:
         run: sudo apt-get install libc++-dev libc++abi-dev -y
         if: matrix.env == 'llvm'
       - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+        uses: hendrikmuhs/ccache-action@dbeefd73e8e2ffc1bbc412570072735eb4db3607 # v1.2.25
         with:
           key: brgen-linux-${{ matrix.env }}
       - name: Cache
@@ -282,7 +282,7 @@ jobs:
           echo "libc++abi"
           nm $LIBCPP/libc++abi.1.dylib | c++filt
       - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+        uses: hendrikmuhs/ccache-action@dbeefd73e8e2ffc1bbc412570072735eb4db3607 # v1.2.25
         with:
           key: brgen-macos
       - name: Cache
@@ -353,7 +353,7 @@ jobs:
           version: latest
           platform: x64
       - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+        uses: hendrikmuhs/ccache-action@dbeefd73e8e2ffc1bbc412570072735eb4db3607 # v1.2.25
         with:
           key: brgen-windows
       - name: Cache
@@ -454,7 +454,7 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y g++-aarch64-linux-gnu
       - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+        uses: hendrikmuhs/ccache-action@dbeefd73e8e2ffc1bbc412570072735eb4db3607 # v1.2.25
         with:
           key: brgen-arm-linux
       - name: Cache
@@ -521,7 +521,7 @@ jobs:
         with:
           ndk-version: r26b
       - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+        uses: hendrikmuhs/ccache-action@dbeefd73e8e2ffc1bbc412570072735eb4db3607 # v1.2.25
         with:
           key: brgen-android
       - name: Cache
@@ -610,7 +610,7 @@ jobs:
         run: |
           go install github.com/Songmu/gocredits/cmd/gocredits@latest
       - name: Set up ruby
-        uses: ruby/setup-ruby@de492cf36cbab201753d720ce4f4e336cd688c94 # v1.336.0
+        uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
         with:
           ruby-version: ruby
       - uses: github/setup-licensed@be11bcbb82e3140b6cf260e647c3efeeca8fcefd # v1.3.1
@@ -651,7 +651,7 @@ jobs:
         with:
           go-version: "1.27"
       - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+        uses: hendrikmuhs/ccache-action@dbeefd73e8e2ffc1bbc412570072735eb4db3607 # v1.2.25
         with:
           key: brgen-wasm-${{ matrix.env }}
       - name: Cache
