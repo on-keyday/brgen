@@ -272,6 +272,9 @@ namespace {
             if (auto f = s.ref(a)->base.as_any<Format>()) {
                 return camel(name_of(a, f));
             }
+            if (auto st = s.ref(a)->base.as_any<State>()) {
+                return camel(name_of(a, st));
+            }
         }
         if (auto e = t.as_any<EnumType>()) {
             return camel(name_of(a, e.ref(a)->base));
@@ -381,6 +384,9 @@ namespace {
             }
             if (target.as_any<VariableDefinition>() || target.as_any<Parameter>()) {
                 return local_name(name);
+            }
+            if (target.as_any<StateVariable>()) {
+                return camel(name);  // 受け取った state (ポインタ)
             }
             return unexpect_loc_error(e, "name referring to {}", to_string(target.type()));
         }
@@ -610,6 +616,39 @@ namespace {
 
     // --- codec -------------------------------------------------------------
 
+    // その format が decode / encode で受け取る state 変数 (Requirements から、id 順)。
+    std::vector<Node<StateVariable>> state_params(SideTables& tables, Node<Format> fmt, bool decode) {
+        std::vector<Node<StateVariable>> out;
+        auto* req = fmt ? tables.table<Requirements>().get(fmt) : nullptr;
+        if (!req) {
+            return out;
+        }
+        for (auto* v : {decode ? &req->decode_state_read : &req->encode_state_read,
+                        decode ? &req->decode_state_write : &req->encode_state_write}) {
+            for (auto sv : *v) {
+                if (std::find(out.begin(), out.end(), sv) == out.end()) {
+                    out.push_back(sv);
+                }
+            }
+        }
+        std::ranges::sort(out, [](auto l, auto r) { return l.id() < r.id(); });
+        return out;
+    }
+
+    // `, HeaderState` (呼ぶ側の引数) / `, HeaderState *FrameHeaderState` (受ける側)。
+    std::string state_args(Arena& a, const std::vector<Node<StateVariable>>& v) {
+        std::string out;
+        for (auto sv : v) {
+            out += ", " + camel(name_of(a, sv));
+        }
+        return out;
+    }
+
+    Node<Format> format_of(Arena& a, Node<Type> t) {
+        auto s = strip_wrappers(a, t).as_any<StructType>();
+        return s ? s.ref(a)->base.as_any<Format>() : Node<Format>{};
+    }
+
     using Walker = codec::Walker<struct GoCodec>;
 
     // 本体を 1 つの口に展開する。
@@ -774,18 +813,23 @@ namespace {
             return {};
         }
 
-        void call_nested(std::string_view target) {
+        // 入れ子 format を読む / 書く。呼ぶ先が state を受け取るなら、自分が
+        // 受け取ったものをそのまま渡す (Requirements が親へ伝播させてある)。
+        void call_nested(std::string_view target, Node<Format> callee) {
+            auto states = state_args(a, state_params(tables, callee, decode));
+            auto impl = states.empty() ? "" : "Impl";
             switch (mode) {
                 case Mode::slice:
-                    block(std::format("if err := {}.DecodeSlice(buf, off); err != nil", target), "return err");
+                    block(std::format("if err := {}.{}(buf, off{}); err != nil", target, states.empty() ? "DecodeSlice" : "decodeSliceImpl", states), "return err");
                     break;
                 case Mode::reader:
-                    block(std::format("if err := {}.Read(r); err != nil", target), "return err");
+                    block(std::format("if err := {}.{}(r{}); err != nil", target, states.empty() ? "Read" : "readImpl", states), "return err");
                     break;
                 case Mode::append:
-                    block(std::format("if out, err = {}.Append(out); err != nil", target), "return nil, err");
+                    block(std::format("if out, err = {}.{}(out{}); err != nil", target, states.empty() ? "Append" : "appendImpl", states), "return nil, err");
                     break;
             }
+            (void)impl;
         }
 
         expected<void> nested(Node<Field> f, Node<Expr> target) {
@@ -793,7 +837,7 @@ namespace {
                 target = temp_target(f);
             }
             MAYBE(t, p.expr(target));
-            call_nested(t);
+            call_nested(t, format_of(a, f.ref(a)->type));
             return {};
         }
 
@@ -808,7 +852,7 @@ namespace {
                 w.writeln("for i := range ", t, " {");
                 {
                     auto s = w.indent_scope();
-                    call_nested(t + "[i]");
+                    call_nested(t + "[i]", format_of(a, arr.ref(a)->element_type));
                 }
                 w.writeln("}");
                 return {};
@@ -819,7 +863,7 @@ namespace {
                 w.writeln("for i := range ", t, " {");
                 {
                     auto s = w.indent_scope();
-                    call_nested(t + "[i]");
+                    call_nested(t + "[i]", format_of(a, arr.ref(a)->element_type));
                 }
                 w.writeln("}");
                 return {};
@@ -831,7 +875,7 @@ namespace {
             {
                 auto s = w.indent_scope();
                 w.writeln("var e ", elem);
-                call_nested("e");
+                call_nested("e", format_of(a, arr.ref(a)->element_type));
                 w.writeln(t, " = append(", t, ", e)");
             }
             w.writeln("}");
@@ -908,7 +952,7 @@ namespace {
             // 要素 1 つを e に読む / 書く。
             auto one = [&](std::string_view e, Node<Expr> e_ref) -> expected<void> {
                 if (is_format) {
-                    call_nested(e);
+                    call_nested(e, format_of(a, elem_type));
                     return {};
                 }
                 return scalar(f, *shape, e_ref);
@@ -1168,7 +1212,7 @@ namespace {
             if (fmt_type) {
                 MAYBE(tn, p.type_name(fmt_type));
                 w.writeln("var ", name, " ", tn);
-                call_nested(name);
+                call_nested(name, format_of(a, fmt_type));
                 p.locals[name] = tn;
             }
             else if (mode == Mode::slice) {
@@ -1198,7 +1242,7 @@ namespace {
             MAYBE(text, p.expr(v));
             auto t = strip_wrappers(a, v.ref(a)->type);
             if (auto st = t.as_any<StructType>(); st && st.ref(a)->base.as_any<Format>()) {
-                call_nested(text);
+                call_nested(text, format_of(a, t));
                 return {};
             }
             auto have = p.type_of(v);
@@ -1628,9 +1672,58 @@ namespace {
             }
             w.writeln("}");
         };
-        func("DecodeSlice(buf []byte, off *int) error", std::move(slice), {}, "return nil");
-        func("Read(r io.Reader) error", std::move(reader), {}, "return nil");
-        func("Append(out []byte) ([]byte, error)", std::move(append), {"var err error", "_ = err"}, "return out, nil");
+        // state を受け取る format は本体を *Impl にして state を引数で受け、公開の
+        // 口は新しい state を作って呼ぶ (ebm2go の *_impl と同じ形)。
+        auto dec_states = state_params(tables, fmt, true);
+        auto enc_states = state_params(tables, fmt, false);
+        auto sig = [&](const std::vector<Node<StateVariable>>& v) {
+            std::string out;
+            for (auto sv : v) {
+                auto t = p.type_name(sv.ref(a)->type);
+                out += std::format(", {} *{}", camel(name_of(a, sv)), t ? *t : "struct{}");
+            }
+            return out;
+        };
+        auto fresh = [&](const std::vector<Node<StateVariable>>& v) {
+            std::vector<std::string> out;
+            for (auto sv : v) {
+                auto t = p.type_name(sv.ref(a)->type);
+                out.push_back(std::format("{} := &{}{{}}", camel(name_of(a, sv)), t ? *t : "struct{}"));
+            }
+            return out;
+        };
+        auto wrapper = [&](std::string_view public_sig, const std::vector<Node<StateVariable>>& v, std::string call) {
+            w.writeln();
+            w.writeln("func (t *", name, ") ", public_sig, " {");
+            {
+                auto s = w.indent_scope();
+                for (auto& line : fresh(v)) {
+                    w.writeln(line);
+                }
+                w.writeln("return ", call);
+            }
+            w.writeln("}");
+        };
+        if (dec_states.empty()) {
+            func("DecodeSlice(buf []byte, off *int) error", std::move(slice), {}, "return nil");
+            func("Read(r io.Reader) error", std::move(reader), {}, "return nil");
+        }
+        else {
+            auto args = state_args(a, dec_states);
+            func(std::format("decodeSliceImpl(buf []byte, off *int{}) error", sig(dec_states)), std::move(slice), {}, "return nil");
+            func(std::format("readImpl(r io.Reader{}) error", sig(dec_states)), std::move(reader), {}, "return nil");
+            wrapper("DecodeSlice(buf []byte, off *int) error", dec_states, std::format("t.decodeSliceImpl(buf, off{})", args));
+            wrapper("Read(r io.Reader) error", dec_states, std::format("t.readImpl(r{})", args));
+        }
+        if (enc_states.empty()) {
+            func("Append(out []byte) ([]byte, error)", std::move(append), {"var err error", "_ = err"}, "return out, nil");
+        }
+        else {
+            func(std::format("appendImpl(out []byte{}) ([]byte, error)", sig(enc_states)), std::move(append),
+                 {"var err error", "_ = err"}, "return out, nil");
+            wrapper("Append(out []byte) ([]byte, error)", enc_states,
+                    std::format("t.appendImpl(out{})", state_args(a, enc_states)));
+        }
         CodeWriter none;
         func("Decode(buf []byte) ([]byte, error)", std::move(none),
              {"var off int", "if err := t.DecodeSlice(buf, &off); err != nil {", "\treturn nil, err", "}"},
@@ -1763,6 +1856,38 @@ NAST_BACKEND_ENTRY(GoConfig) {
                 std::string name(name_of(a, s));
                 auto f = s.as_any<Format>();
                 auto en = s.as_any<Enum>();
+                if (auto st = s.as_any<State>()) {
+                    // `state X:` は読み書きしない入れ物。struct だけ出す。
+                    if (!seen.insert(camel(name)).second) {
+                        continue;
+                    }
+                    Decl d{.name = camel(name)};
+                    GoPrinter sp{.a = a, .tables = tables, .lc = lowering::Context{a, tables}};
+                    std::vector<std::string> order;
+                    if (auto r = collect_members(sp, st.ref(a)->body, order); !r) {
+                        d.skipped = r.error().message;
+                    }
+                    else {
+                        Emitted e;
+                        e.w.writeln("type ", camel(name), " struct {");
+                        {
+                            auto ind = e.w.indent_scope();
+                            for (auto& m : order) {
+                                e.w.writeln(camel(m), " ", sp.members[m]);
+                            }
+                        }
+                        e.w.writeln("}");
+                        for (auto& [_, t] : sp.members) {
+                            names_in(t, e.uses);
+                            if (!t.starts_with("[]")) {
+                                names_in(t, e.value_uses);
+                            }
+                        }
+                        d.out = std::move(e);
+                    }
+                    decls.push_back(std::move(d));
+                    continue;
+                }
                 if (!f && !en) {
                     continue;
                 }
