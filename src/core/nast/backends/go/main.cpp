@@ -27,7 +27,10 @@
 // 組めない format は飛ばし、それを使う format も落とす。
 #include "../../backend/codec.hpp"
 #include "../../backend/entry.hpp"
+#include "../../lowering/available.hpp"
 #include "../../lowering/predicate.hpp"
+
+#include <fnet/util/base64.h>
 #include "../../parse/unparse.h"
 
 #include <format>
@@ -456,6 +459,32 @@ namespace {
             }
             return to + "(" + v + ")";
         }
+        if (auto av = e.as_any<Available>()) {
+            auto lowered = lowering::lower_available(lc, av);
+            if (!lowered) {
+                return unexpect_loc_error(e, "cannot lower available()");
+            }
+            return expr(lowered);
+        }
+        if (auto sz = e.as_any<Sizeof>()) {
+            // 幅の決まった型か値のバイト数。TypeSize から。
+            auto target = strip_paren(a, sz.ref(a)->target);
+            Node<Type> t;
+            if (auto r = target.as_any<Reference>()) {
+                auto* res = tables.table<Resolution>().get(r.ref(a)->name);
+                if (auto f = res ? res->target.as_any<Format>() : Node<Format>{}) {
+                    t = f.ref(a)->struct_type;
+                }
+            }
+            if (!t && target) {
+                t = target.ref(a)->type;
+            }
+            auto* size = t ? tables.table<TypeSize>().get(t) : nullptr;
+            if (!size || size->kind != SizeKind::fixed || size->bits % 8 != 0) {
+                return unexpect_loc_error(e, "sizeof of a type without a fixed byte size");
+            }
+            return std::format("{}", size->bits / 8);
+        }
         if (auto ix = e.as_any<Index>()) {
             MAYBE(b, expr(ix.ref(a)->base));
             MAYBE(i, expr(ix.ref(a)->index));
@@ -551,6 +580,17 @@ namespace {
                 MAYBE_VOID(b, body(w, r->body));
             }
             w.writeln("}");
+            return {};
+        }
+        if (auto ee = s.as_any<ExplicitError>()) {
+            std::string msg = "error";
+            if (auto lit = ee.ref(a)->message) {
+                std::string decoded;
+                if (futils::base64::decode(lit.ref(a)->binary_value, decoded)) {
+                    msg = decoded;
+                }
+            }
+            w.writeln(fail(std::format("errors.New({})", go_string(msg))));
             return {};
         }
         return unexpect_loc_error(s, "{} is not supported as a Go statement yet", to_string(s.type()));
@@ -1582,9 +1622,20 @@ NAST_BACKEND_ENTRY(GoConfig) {
                 }
             }
         };
-        auto top = a.make<Body>(n.ref(a).loc());
-        top->statements = n.ref(a)->statements;
-        each_decl(each_decl, top);
+        // import した module の宣言も同じファイルに出す (Go のパッケージは 1 つ)。
+        std::vector<Node<Module>> modules{n};
+        each_node<Import>(a, [&](Node<Import> imp) {
+            if (auto* res = tables.table<ImportResolution>().get(imp); res && res->module) {
+                if (std::find(modules.begin(), modules.end(), res->module) == modules.end()) {
+                    modules.push_back(res->module);
+                }
+            }
+        });
+        for (auto m : modules) {
+            auto top = a.make<Body>(m.ref(a).loc());
+            top->statements = m.ref(a)->statements;
+            each_decl(each_decl, top);
+        }
 
         std::map<std::string, Decl*> by_name;
         for (auto& d : decls) {
@@ -1637,9 +1688,19 @@ NAST_BACKEND_ENTRY(GoConfig) {
         CodeWriter body;
         // トップレベルの定数 (`MAGIC ::= 0x...`)。整数に畳めたものは型を付けない
         // Go の定数にして、使う側の型に合わせさせる。
-        for (auto& s : n.ref(a)->statements) {
+        std::set<std::string> seen_consts;
+        std::vector<Node<Statement>> top_statements;
+        for (auto m : modules) {
+            for (auto& s : m.ref(a)->statements) {
+                top_statements.push_back(s);
+            }
+        }
+        for (auto& s : top_statements) {
             auto def = s.as_any<VariableDefinition>();
-            if (!def) {
+            if (!def || strip_paren(a, def.ref(a)->value).as_any<Import>()) {
+                continue;  // `q ::= import(...)` は名前空間で、値ではない
+            }
+            if (!seen_consts.insert(local_name(name_of(a, def))).second) {
                 continue;
             }
             auto name = local_name(name_of(a, def));

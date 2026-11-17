@@ -100,7 +100,7 @@ namespace brgen::nast::backend::codec {
             if (auto c = s.as_any<ConditionalExpr>()) {
                 return branch(c);
             }
-            if (s.as_any<VariableDefinition>() || s.as_any<Assert>()) {
+            if (s.as_any<VariableDefinition>() || s.as_any<Assert>() || s.as_any<ExplicitError>()) {
                 return d().emit_statement(s);
             }
             if (auto r = s.as_any<Range>(); r && !r.ref(a)->start && !r.ref(a)->end) {

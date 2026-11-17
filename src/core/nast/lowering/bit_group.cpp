@@ -436,6 +436,11 @@ namespace brgen::nast::lowering {
                     finish(st, BitRoute::End::loop);
                     break;
                 }
+                if (s.as_any<ExplicitError>()) {
+                    // error(...) で読み書きはそこで終わる。その経路は群の形に
+                    // 関わらないので数えない (閉じも開きもしない)。
+                    break;
+                }
                 finish(st, BitRoute::End::other_statement);
                 break;
             }
