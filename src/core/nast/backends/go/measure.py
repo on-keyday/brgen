@@ -104,6 +104,20 @@ def main():
         else:
             status["全 format を生成し go vet を通った"] += 1
 
+    # パッケージ直下に関数 / 変数を出すと、生成ファイルを同じパッケージに複数置けない
+    # (ebm2go と同じ性質を保つ)。.bgn が宣言したもの (型 / 定数) 以外を出していないこと。
+    leaked = []
+    for p, src, g, _, _ in results:
+        if not g:
+            continue
+        for line in (out / p / "gen.go").read_text(encoding="utf-8").splitlines():
+            if re.match(r"^(func [A-Za-z_]|var _ |var nast|const nast)", line):  # .bgn が宣言した名前は除く
+                leaked.append(f"{src.relative_to(ROOT)}: {line[:60]}")
+                break
+    print(f"パッケージ直下の関数 / 変数を出した入力: {len(leaked)}")
+    for l in leaked[:10]:
+        print("   ", l)
+
     gen_text = "".join((out / p / "gen.go").read_text(encoding="utf-8") for p, _, g, _, _ in results if g)
     fmt_ok = gen_text.count(") DecodeSlice(buf []byte")
 

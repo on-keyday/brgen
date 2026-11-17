@@ -131,6 +131,11 @@ namespace {
         return out;
     }
 
+    // 検査に落ちたときのエラー。
+    std::string assert_error(std::string_view what) {
+        return std::format("errors.New({})", go_string("assertion failed: " + std::string(what)));
+    }
+
     // バイト列を Go の文字列リテラルに。印字できない字は \xNN で逃がす。
     std::string go_bytes(std::string_view s) {
         std::string out = "\"";
@@ -473,7 +478,7 @@ namespace {
                 return "(" + v + " != 0)";
             }
             if (have == "bool" && is_go_int(to)) {
-                return "nastBoolToInt[" + to + "](" + v + ")";
+                return std::format("func() {} {{ if {} {{ return 1 }}; return 0 }}()", to, v);
             }
             return to + "(" + v + ")";
         }
@@ -574,7 +579,7 @@ namespace {
             w.writeln("if !(", c, ") {");
             {
                 auto sc = w.indent_scope();
-                w.writeln(fail(std::format("nastAssert({})", go_string(unparse_node(a, cond)))));
+                w.writeln(fail(assert_error((unparse_node(a, cond)))));
             }
             w.writeln("}");
             return {};
@@ -714,6 +719,52 @@ namespace {
             block(std::format("if _, err := io.ReadFull(r, {}); err != nil", dst), "return err");
         }
 
+        // reader から n バイト読み、dst ([]byte) に入れる。n は入力から来るので、
+        // 一度に確保せず 64 KiB ずつ伸ばす。パッケージ直下に routine を置かない
+        // (生成ファイルを同じパッケージに複数置けるように) ので、その場に展開する。
+        void read_n(std::string_view dst, std::string_view n) {
+            w.writeln("var ", dst, " []byte");
+            w.writeln("{");
+            {
+                auto s = w.indent_scope();
+                w.writeln("want := ", n);
+                block("if want < 0", "return io.ErrUnexpectedEOF");
+                w.writeln("for len(", dst, ") < want {");
+                {
+                    auto s2 = w.indent_scope();
+                    w.writeln("k := want - len(", dst, ")");
+                    block("if k > 1<<16", "k = 1 << 16");
+                    w.writeln("old := len(", dst, ")");
+                    w.writeln(dst, " = append(", dst, ", make([]byte, k)...)");
+                    read_full(std::string(dst) + "[old:]");
+                }
+                w.writeln("}");
+            }
+            w.writeln("}");
+        }
+
+        // dst[i] = src[i] ^ key[i % len(key)]。key が空ならそのまま写す (同じ領域なら何もしない)。
+        void xor_into(std::string_view dst, std::string_view src, std::string_view key) {
+            w.writeln("if k := ", key, "; len(k) > 0 {");
+            {
+                auto s = w.indent_scope();
+                w.writeln("for i := range ", src, " {");
+                {
+                    auto s2 = w.indent_scope();
+                    w.writeln(dst, "[i] = ", src, "[i] ^ k[i%len(k)]");
+                }
+                w.writeln("}");
+            }
+            if (dst != src) {
+                w.writeln("} else {");
+                {
+                    auto s = w.indent_scope();
+                    w.writeln("copy(", dst, ", ", src, ")");
+                }
+            }
+            w.writeln("}");
+        }
+
         std::string ref_name(Node<Expr> e) {
             auto r = p.expr(e);
             return r ? *r : std::string("?");
@@ -779,8 +830,7 @@ namespace {
                 p.locals[name] = std::format("[{}]uint8", fixed);
             }
             else {
-                w.writeln(name, ", err := nastReadN(r, ", n, ")");
-                block("if err != nil", "return err");
+                read_n(name, n);
                 p.locals[name] = "[]uint8";
             }
             return builder(f).ref(name);
@@ -841,7 +891,7 @@ namespace {
             MAYBE(t, p.expr(target));
             MAYBE(n, p.expr(count));
             block(std::format("if len({}) != int({})", t, n),
-                  p.fail(std::format("nastAssert({})", go_string("length of " + t + " matches " + unparse_node(a, count)))));
+                  p.fail(assert_error(("length of " + t + " matches " + unparse_node(a, count)))));
             return {};
         }
 
@@ -929,8 +979,7 @@ namespace {
                 w.writeln(start, " := len(out)");
                 MAYBE_VOID(r, inner());
                 block(std::format("if len(out)-{} != int({})", start, n),
-                      p.fail(std::format("nastAssert({})",
-                                         go_string("length of " + std::string(name_of(a, f)) + " matches " + unparse_node(a, len)))));
+                      p.fail(assert_error("length of " + std::string(name_of(a, f)) + " matches " + unparse_node(a, len))));
                 ind.leave();
                 w.writeln("}");
                 return {};
@@ -949,8 +998,7 @@ namespace {
             }
             else {
                 auto bytes_name = derived_name("subBytes", f);
-                w.writeln(bytes_name, ", err := nastReadN(r, ", nv, ")");
-                block("if err != nil", "return err");
+                read_n(bytes_name, nv);
                 w.writeln("buf := ", bytes_name);
                 w.writeln(sub_off, " := 0");
                 w.writeln("off := &", sub_off);
@@ -1198,7 +1246,7 @@ namespace {
             }
             auto src = take(f, bytes.size());
             block(std::format("if string({}) != {}", src, lit),
-                  p.fail(std::format("nastAssert({})", go_string(std::string(name_of(a, f)) + " == " + lit))));
+                  p.fail(assert_error((std::string(name_of(a, f)) + " == " + lit))));
             if (target && !name_of(a, f).empty()) {
                 MAYBE(t, p.expr(target));
                 w.writeln("copy(", t, "[:], ", src, ")");
@@ -1471,7 +1519,7 @@ namespace {
                         if (m.expected) {
                             MAYBE(e, p.expr(m.expected));
                             block(std::format("if {} != {}", part, convert(e, p.type_of(m.expected), uint)),
-                                  p.fail(std::format("nastAssert({})", go_string(unparse_node(a, m.expected)))));
+                                  p.fail(assert_error((unparse_node(a, m.expected)))));
                         }
                         continue;
                     }
@@ -1534,7 +1582,7 @@ namespace {
                     if (!fixed) {
                         w.writeln(t, " = make([]byte, len(", rt, "))");
                     }
-                    w.writeln("nastXor(", t, "[:], ", rt, "[:], ", k, "[:])");
+                    xor_into(t + "[:]", rt + "[:]", k + "[:]");
                     return {};
                 }
                 if (!fixed) {
@@ -1543,7 +1591,7 @@ namespace {
                 auto start = derived_name("start", f);
                 w.writeln(start, " := len(out)");
                 w.writeln("out = append(out, ", t, "[:]...)");
-                w.writeln("nastXor(out[", start, ":], out[", start, ":], ", k, "[:])");
+                xor_into("out[" + start + ":]", "out[" + start + ":]", k + "[:]");
                 return {};
             }
             if (auto n = const_uint(a, tables, len)) {
@@ -1576,8 +1624,7 @@ namespace {
                     w.writeln("{");
                     {
                         auto s = w.indent_scope();
-                        w.writeln("b, err := nastReadN(r, int(", n, "))");
-                        block("if err != nil", "return err");
+                        read_n("b", "int(" + n + ")");
                         w.writeln(t, " = b");
                     }
                     w.writeln("}");
@@ -1820,61 +1867,19 @@ namespace {
         return w;
     }
 
-    constexpr auto runtime = R"(var _ = bytes.Index
-var _ = binary.BigEndian
-var _ = math.Float32frombits
-
-func nastAssert(what string) error {
-	return errors.New("assertion failed: " + what)
-}
-
-// nastReadN reads n bytes. n comes from the input, so it grows the buffer in
-// chunks instead of allocating n bytes up front.
-func nastReadN(r io.Reader, n int) ([]byte, error) {
-	if n < 0 {
-		return nil, io.ErrUnexpectedEOF
-	}
-	const chunk = 1 << 16
-	if n <= chunk {
-		b := make([]byte, n)
-		if _, err := io.ReadFull(r, b); err != nil {
-			return nil, err
-		}
-		return b, nil
-	}
-	var out []byte
-	for len(out) < n {
-		k := n - len(out)
-		if k > chunk {
-			k = chunk
-		}
-		old := len(out)
-		out = append(out, make([]byte, k)...)
-		if _, err := io.ReadFull(r, out[old:]); err != nil {
-			return nil, err
-		}
-	}
-	return out, nil
-}
-
-// nastXor sets dst[i] = src[i] ^ key[i % len(key)]; an empty key copies.
-func nastXor(dst, src, key []byte) {
-	for i := range src {
-		if len(key) == 0 {
-			dst[i] = src[i]
-		} else {
-			dst[i] = src[i] ^ key[i%len(key)]
-		}
-	}
-}
-
-func nastBoolToInt[T ~uint8 | ~uint16 | ~uint32 | ~uint64](b bool) T {
-	if b {
-		return 1
-	}
-	return 0
-}
-)";
+    // pkg の公開名 (`pkg.Upper`) を使っているか。使っていない import は Go のコンパイル
+    // エラーなので、本体を組んでから import を決める。
+    bool uses_pkg(std::string_view text, std::string_view pkg) {
+        for (std::size_t pos = text.find(pkg); pos != std::string_view::npos; pos = text.find(pkg, pos + 1)) {
+            auto end = pos + pkg.size();
+            bool head = pos == 0 || !(std::isalnum(static_cast<unsigned char>(text[pos - 1])) || text[pos - 1] == '_' || text[pos - 1] == '.');
+            bool tail = end + 1 < text.size() && text[end] == '.' && std::isupper(static_cast<unsigned char>(text[end + 1]));
+            if (head && tail) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     void report(std::string_view msg) {
         futils::wrap::cerr_wrap() << "nast2go: " << msg << '\n';
@@ -2098,26 +2103,33 @@ NAST_BACKEND_ENTRY(GoConfig) {
             report(msg);
             body.writeln("// nast2go: ", msg);
         }
+        // パッケージ直下には型と定数しか出さない。routine を置くと、生成した
+        // ファイルを 2 つ同じパッケージに置いた時点で衝突する (ebm2go と同じ性質)。
+        // import は使った分だけ。
+        auto text = body.to_string("\t");
         CodeWriter w;
         w.writeln("// Code generated by nast2go. DO NOT EDIT.");
         w.writeln("package ", c.lang_config().package);
-        w.writeln();
-        w.writeln("import (");
-        {
-            auto s = w.indent_scope();
-            w.writeln("\"bytes\"");
-            w.writeln("\"encoding/binary\"");
-            w.writeln("\"errors\"");
-            w.writeln("\"io\"");
-            w.writeln("\"math\"");
+        std::vector<std::string_view> imports;
+        for (auto [pkg, path] : {std::pair<std::string_view, std::string_view>{"bytes", "bytes"},
+                                 {"binary", "encoding/binary"},
+                                 {"errors", "errors"},
+                                 {"io", "io"},
+                                 {"math", "math"}}) {
+            if (uses_pkg(text, pkg)) {
+                imports.push_back(path);
+            }
         }
-        w.writeln(")");
-        w.writeln();
-        std::string_view rt = runtime;
-        while (!rt.empty()) {
-            auto nl = rt.find('\n');
-            w.writeln(rt.substr(0, nl));
-            rt = nl == std::string_view::npos ? std::string_view{} : rt.substr(nl + 1);
+        if (!imports.empty()) {
+            w.writeln();
+            w.writeln("import (");
+            {
+                auto s = w.indent_scope();
+                for (auto path : imports) {
+                    w.writeln("\"", path, "\"");
+                }
+            }
+            w.writeln(")");
         }
         w.write(std::move(body));
         return w;
