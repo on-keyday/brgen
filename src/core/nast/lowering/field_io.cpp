@@ -186,6 +186,30 @@ namespace brgen::nast::lowering {
     //
     // 位置は読み書きを挟む向き: 読む側は読んでから、書く側は書く前に。
     // 書いてから検査しても、失敗したときには既にバッファが汚れている。
+    Node<Expr> subrange_length(Context& c, Node<Field> f) {
+        auto& a = c.a;
+        auto args = f.ref(a)->arguments.ref(a);
+        if (!args) {
+            return nullref;
+        }
+        for (auto& arg : args->arguments) {
+            auto na = arg.as_any<NamedArgument>();
+            if (!na) {
+                continue;
+            }
+            auto name = strip_paren(a, na.ref(a)->name).as_any<SpecialLiteral>();
+            if (!name || name.ref(a)->kind != SpecialLiteralKind::input_) {
+                continue;
+            }
+            auto value = na.ref(a)->value;
+            auto st = value ? value.ref(a)->type.as_any<StreamType>() : Node<StreamType>{};
+            if (st && st.ref(a)->kind == SpecialLiteralKind::input_ && st.ref(a)->length) {
+                return st.ref(a)->length;
+            }
+        }
+        return nullref;
+    }
+
     std::optional<ScalarShape> scalar_shape(Context& c, Node<Field> f, Node<Type> type) {
         auto& a = c.a;
         auto stripped = strip_wrappers(a, type);

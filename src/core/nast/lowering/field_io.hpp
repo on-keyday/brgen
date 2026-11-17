@@ -69,6 +69,12 @@ namespace brgen::nast::lowering {
     // バイト境界に乗る整数 / enum / 浮動小数点でなければ空。
     std::optional<ScalarShape> scalar_shape(Context& c, Node<Field> f, Node<Type> type);
 
+    // field の名前つきの引数のうち `input = input.subrange(n)` の n。読む先を
+    // 長さ n の部分範囲に付け替える (その field はその範囲の中で読み、外側は
+    // n バイト進む)。typer が値の型 (StreamType) に長さとして載せたものを返す。
+    // 無ければ null。
+    Node<Expr> subrange_length(Context& c, Node<Field> f);
+
     // 組めなければ null。今のところ組めないもの:
     //   要素が可変幅の配列 / 末尾までの配列 / 入れ子 format /
     //   バイト境界に乗らない幅 / 名前つきの引数が付いた field

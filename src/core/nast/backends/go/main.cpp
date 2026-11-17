@@ -786,6 +786,175 @@ namespace {
             return {};
         }
 
+        // `input = input.subrange(n)`: n バイトの部分範囲を作り、inner をその中で
+        // スライスの口として綴る。reader の口は n バイトを読んでからスライスに
+        // する。append の口は書いた長さが n と合うかを確かめる。
+        template <class Inner>
+        expected<void> subrange(Node<Field> f, Node<Expr> len, Inner&& inner) {
+            MAYBE(n, p.expr(len));
+            auto nv = derived_name("sub", f);
+            auto sub_off = derived_name("subOff", f);
+            w.writeln("{");
+            ind.enter();
+            if (mode == Mode::append) {
+                auto start = derived_name("start", f);
+                w.writeln(start, " := len(out)");
+                MAYBE_VOID(r, inner());
+                block(std::format("if len(out)-{} != int({})", start, n),
+                      p.fail(std::format("nastAssert({})",
+                                         go_string("length of " + std::string(name_of(a, f)) + " matches " + unparse_node(a, len)))));
+                ind.leave();
+                w.writeln("}");
+                return {};
+            }
+            w.writeln(nv, " := int(", n, ")");
+            if (mode == Mode::slice) {
+                block(std::format("if {} < 0 || len(buf)-*off < {}", nv, nv), "return io.ErrUnexpectedEOF");
+                auto outer = derived_name("outer", f);
+                w.writeln(outer, " := off");
+                w.writeln("buf := buf[*off : *off+", nv, "]");
+                w.writeln(sub_off, " := 0");
+                w.writeln("off := &", sub_off);
+                w.writeln("_, _ = buf, off");
+                MAYBE_VOID(r, inner());
+                w.writeln("*", outer, " += ", nv);
+            }
+            else {
+                auto bytes_name = derived_name("subBytes", f);
+                w.writeln(bytes_name, ", err := nastReadN(r, ", nv, ")");
+                block("if err != nil", "return err");
+                w.writeln("buf := ", bytes_name);
+                w.writeln(sub_off, " := 0");
+                w.writeln("off := &", sub_off);
+                w.writeln("_, _ = buf, off");
+                mode = Mode::slice;
+                auto r = inner();
+                mode = Mode::reader;
+                if (!r) {
+                    return r;
+                }
+            }
+            ind.leave();
+            w.writeln("}");
+            return {};
+        }
+
+        // 長さの無い配列で、要素がバイトでないもの (入れ子 format / 整数)。
+        // 要素を 1 つずつ読んで足す。どこで止まるかは follow で決まる。
+        expected<void> elements_until_end(Node<Field> f, Node<ArrayType> arr, Node<Expr> target,
+                                          const lowering::FieldFollow& follow) {
+            using Kind = lowering::FieldFollow::Kind;
+            auto elem_type = arr.ref(a)->element_type;
+            auto elem = strip_wrappers(a, elem_type);
+            bool is_format = elem.as_any<StructType>() && elem.as_any<StructType>().ref(a)->base.as_any<Format>();
+            auto shape = is_format ? std::nullopt : lowering::scalar_shape(lc, f, elem_type);
+            if (!is_format && !shape) {
+                return unexpect_loc_error(f, "array without length of {} elements", to_string(elem.type()));
+            }
+            MAYBE(elem_name, p.type_name(elem_type));
+            auto b = builder(f);
+            // 要素 1 つを e に読む / 書く。
+            auto one = [&](std::string_view e, Node<Expr> e_ref) -> expected<void> {
+                if (is_format) {
+                    call_nested(e);
+                    return {};
+                }
+                return scalar(f, *shape, e_ref);
+            };
+            if (!target) {
+                return unexpect_loc_error(f, "unnamed array without length");
+            }
+            MAYBE(t, p.expr(target));
+            if (!decode) {
+                auto idx = b.index(target, b.ref("i"), elem_type);
+                MAYBE(e, p.expr(idx));
+                w.writeln("for i := range ", t, " {");
+                {
+                    auto s = w.indent_scope();
+                    MAYBE_VOID(r, one(e, idx));
+                }
+                w.writeln("}");
+                return {};
+            }
+            auto e_name = derived_name("e", f);
+            auto e_ref = b.ref(e_name, elem_type);
+            p.locals[e_name] = elem_name;
+            auto body = [&]() -> expected<void> {
+                w.writeln("var ", e_name, " ", elem_name);
+                MAYBE_VOID(r, one(e_name, e_ref));
+                w.writeln(t, " = append(", t, ", ", e_name, ")");
+                return {};
+            };
+            w.writeln(t, " = nil");
+            if (follow.kind == Kind::end) {
+                if (mode == Mode::slice) {
+                    w.writeln("for *off < len(buf) {");
+                    ind.enter();
+                    MAYBE_VOID(r, body());
+                    ind.leave();
+                    w.writeln("}");
+                    return {};
+                }
+                // reader: 1 バイト覗けたら要素が始まっている。覗いた分は要素の
+                // 読み込みに戻す。要素の途中で尽きたらその読み込みが失敗を返す。
+                auto peek = derived_name("peek", f);
+                w.writeln("for {");
+                ind.enter();
+                w.writeln("var ", peek, " [1]byte");
+                w.writeln("if _, err := io.ReadFull(r, ", peek, "[:]); err != nil {");
+                {
+                    auto s = w.indent_scope();
+                    block("if err == io.EOF", "break");
+                    w.writeln("return err");
+                }
+                w.writeln("}");
+                w.writeln("r := io.MultiReader(bytes.NewReader(", peek, "[:]), r)");
+                w.writeln("_ = r");
+                MAYBE_VOID(r, body());
+                ind.leave();
+                w.writeln("}");
+                return {};
+            }
+            if (follow.kind == Kind::fixed && follow.eventual == Kind::end && follow.tail_bits && *follow.tail_bits % 8 == 0) {
+                auto tail = std::to_string(*follow.tail_bits / 8);
+                if (mode == Mode::slice) {
+                    w.writeln("for len(buf)-*off > ", tail, " {");
+                    ind.enter();
+                    MAYBE_VOID(r, body());
+                    ind.leave();
+                    w.writeln("}");
+                    return {};
+                }
+                // reader: 全部読み、後ろの固定幅を残りの field 用の reader に戻して、
+                // 要素はスライスの口で読む。
+                auto rest = derived_name("rest", f);
+                auto sub_off = derived_name("subOff", f);
+                w.writeln("{");
+                ind.enter();
+                w.writeln(rest, ", err := io.ReadAll(r)");
+                block("if err != nil", "return err");
+                block(std::format("if len({}) < {}", rest, tail), "return io.ErrUnexpectedEOF");
+                w.writeln("r = bytes.NewReader(", rest, "[len(", rest, ")-", tail, ":])");
+                w.writeln("buf := ", rest, "[:len(", rest, ")-", tail, "]");
+                w.writeln(sub_off, " := 0");
+                w.writeln("off := &", sub_off);
+                mode = Mode::slice;
+                w.writeln("for *off < len(buf) {");
+                ind.enter();
+                auto r = body();
+                ind.leave();
+                w.writeln("}");
+                mode = Mode::reader;
+                if (!r) {
+                    return r;
+                }
+                ind.leave();
+                w.writeln("}");
+                return {};
+            }
+            return unexpect_loc_error(f, "array without length followed by a variable-width or constant field");
+        }
+
         // 長さの無いバイト列。どこまで読むかは後ろに何が来るか (follow) で決まる:
         //   end                      入力の終わりまで
         //   fixed で eventual が end  残りから後ろの固定幅を除いたところまで
@@ -793,10 +962,12 @@ namespace {
         expected<void> array_until_end(Node<Field> f, Node<ArrayType> arr, Node<Expr> target,
                                        const lowering::FieldFollow& follow) {
             using Kind = lowering::FieldFollow::Kind;
+            if (field_args(a, f).positional || named_args(f)) {
+                return unexpect_loc_error(f, "array without length with arguments");
+            }
             auto it = strip_wrappers(a, arr.ref(a)->element_type).as_any<IntType>();
-            if (!it || it.ref(a)->bit_size != 8 || it.ref(a)->is_signed || field_args(a, f).positional ||
-                field_args(a, f).named) {
-                return unexpect_loc_error(f, "array without length with non-byte elements or arguments");
+            if (!it || it.ref(a)->bit_size != 8 || it.ref(a)->is_signed) {
+                return elements_until_end(f, arr, target, follow);
             }
             if (!decode) {
                 if (target) {
@@ -1102,7 +1273,7 @@ namespace {
             }
             auto args = field_args(a, f);
             bool bytes = it && it.ref(a)->bit_size == 8 && !it.ref(a)->is_signed;
-            if (!bytes || args.positional || args.named || !len || len.as_any<Range>() || name_of(a, f).empty()) {
+            if (!bytes || args.positional || named_args(f) || !len || len.as_any<Range>() || name_of(a, f).empty()) {
                 return Walker::array(f, arr);
             }
             auto target = lowering::field_ref(lc, f);

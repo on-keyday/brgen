@@ -50,6 +50,8 @@ namespace brgen::nast::backend::codec {
         std::size_t cur_index = 0;
         // decode: 手前の配列が終端として読み終えた field。その field 自身では読まない。
         std::set<std::uint32_t> consumed;
+        // 部分範囲の中で読んでいる field。
+        Node<Field> subrange_field;
 
         Walker(Arena& a, SideTables& t)
             : a(a), tables(t), lc{a, t} {}
@@ -145,9 +147,33 @@ namespace brgen::nast::backend::codec {
                     }
                 }
             }
+            if (auto len = lowering::subrange_length(lc, f)) {
+                // `input = input.subrange(n)`: その field を長さ n の部分範囲の
+                // 中で読み書きする。範囲の作り方は言語の口。
+                auto saved = subrange_field;
+                subrange_field = f;
+                auto r = d().subrange(f, len, [&]() { return typed_field(f); });
+                subrange_field = saved;
+                return r;
+            }
+            return typed_field(f);
+        }
+
+        // 名前つきの引数の数。部分範囲の中で読んでいる field の `input = ...` は数えない
+        // (subrange の口が受け持っている)。
+        std::size_t named_args(Node<Field> f) {
+            auto n = field_args(a, f).named;
+            if (f == subrange_field && n > 0) {
+                n--;
+            }
+            return n;
+        }
+
+        // 型で振り分ける。
+        expected<void> typed_field(Node<Field> f) {
             auto type = strip_wrappers(a, f.ref(a)->type);
             if (auto s = type.as_any<StructType>(); s && s.ref(a)->base.as_any<Format>()) {
-                if (field_args(a, f).named || field_args(a, f).positional) {
+                if (named_args(f) || field_args(a, f).positional) {
                     return unexpect_loc_error(f, "nested format with arguments");
                 }
                 return d().nested(f, target_of(f));
@@ -160,7 +186,7 @@ namespace brgen::nast::backend::codec {
                 return d().literal_field(f, *bytes, target_of(f));
             }
             if (auto shape = lowering::scalar_shape(lc, f, f.ref(a)->type)) {
-                if (field_args(a, f).named || field_args(a, f).positional > 1) {
+                if (named_args(f) || field_args(a, f).positional > 1) {
                     return unexpect_loc_error(f, "named arguments or more than one expected value");
                 }
                 return d().scalar(f, *shape, target_of(f));
@@ -196,6 +222,9 @@ namespace brgen::nast::backend::codec {
             if (!len || len.as_any<Range>()) {
                 // 長さの無い配列。どこまで読むかは後ろに何が来るかで決まる。
                 auto follow = lowering::field_follow(lc, cur_body, cur_index);
+                if (f == subrange_field) {
+                    follow = lowering::FieldFollow{};  // 部分範囲の終わりまで
+                }
                 return d().array_until_end(f, arr, target_of(f), follow);
             }
             if (auto s = elem.as_any<StructType>(); s && s.ref(a)->base.as_any<Format>()) {
@@ -205,7 +234,7 @@ namespace brgen::nast::backend::codec {
             if (!width) {
                 return unexpect_loc_error(f, "array element has no fixed byte width");
             }
-            if (field_args(a, f).named) {
+            if (named_args(f)) {
                 return unexpect_loc_error(f, "array field with named arguments");
             }
             auto target = target_of(f);
