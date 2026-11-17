@@ -8,6 +8,7 @@
 #include "../node/build.h"
 #include "../node/error.h"
 #include "../node/util.h"
+#include "../parse/unparse.h"
 
 #include <set>
 
@@ -382,6 +383,216 @@ namespace brgen::nast::backend::codec {
                 return d().flush(buf, f.flush_from, b.lit(f.flush_to - f.flush_from));
             }
             return {};
+        }
+
+        // --- 手書きの encode / decode (fn) ------------------------------------
+        //
+        // `fn decode():` / `fn encode():` の本体を文の並びのまま綴る。言語に依らない
+        // 部分はここで決める:
+        //
+        //   入出力の呼び出し (input.get() / input.get(T) / output.put(x)) は文の
+        //   前に出し、式の中ではその結果の名前を読む。式の中の評価順は言語ごとに
+        //   違うので任せない (lowering/stream_io.hpp と同じ理由)
+        //   `xs[xs.length] = v` は末尾に足す
+        //   式だけの文 (`i + 1 == labels.length`) は検査 (ADR 0033)
+        //
+        // 綴りの口: stream_get / stream_put / append_element / loop_begin /
+        // range_begin / loop_end / flow (break / continue / return)。
+
+        expected<void> run_custom(Node<Function> fn, bool dec) {
+            decode = dec;
+            routed_started.clear();
+            consumed.clear();
+            return fn_body(fn.ref(a)->body);
+        }
+
+        expected<void> fn_body(Node<Body> b) {
+            if (!b) {
+                return {};
+            }
+            for (auto& s : b.ref(a)->statements) {
+                auto r = fn_statement(s);
+                if (!r) {
+                    return r;
+                }
+            }
+            return {};
+        }
+
+        bool is_stream_call(Node<Expr> e, SpecialLiteralKind kind, std::string_view member) {
+            auto call = strip_paren(a, e).as_any<Call>();
+            if (!call) {
+                return false;
+            }
+            auto callee = strip_paren(a, call.ref(a)->callee).as_any<MemberAccess>();
+            if (!callee || ident_text(a, callee.ref(a)->member) != member) {
+                return false;
+            }
+            auto base = strip_paren(a, callee.ref(a)->base).as_any<SpecialLiteral>();
+            return base && base.ref(a)->kind == kind;
+        }
+
+        // root の中の input.get(...) を、現れる順に文の前へ出す。
+        expected<void> hoist_gets(NodeAny root) {
+            if (!root) {
+                return {};
+            }
+            std::vector<Node<Call>> calls;
+            visit_all(a, root, [&](NodeAny n) {
+                if (n.as_any<Body>()) {
+                    return false;  // 入れ子の文は自分の番で出す
+                }
+                if (auto c = n.as_any<Call>(); c && is_stream_call(c, SpecialLiteralKind::input_, "get")) {
+                    calls.push_back(c);
+                }
+                return true;
+            });
+            for (auto c : calls) {
+                auto r = d().stream_get(c);
+                if (!r) {
+                    return r;
+                }
+            }
+            return {};
+        }
+
+        // `xs[xs.length] = v` の xs。そうでなければ null。
+        Node<Expr> append_target(Node<Assign> as) {
+            auto ix = strip_paren(a, as.ref(a)->assignee).as_any<Index>();
+            if (!ix) {
+                return nullref;
+            }
+            auto len = strip_paren(a, ix.ref(a)->index).as_any<MemberAccess>();
+            if (!len || ident_text(a, len.ref(a)->member) != "length") {
+                return nullref;
+            }
+            if (unparse_node(a, len.ref(a)->base) != unparse_node(a, ix.ref(a)->base)) {
+                return nullref;
+            }
+            return ix.ref(a)->base;
+        }
+
+        expected<void> fn_statement(Node<Statement> s) {
+            if (auto c = s.as_any<ConditionalExpr>()) {
+                std::optional<expected<void>> bad;
+                visit_all(a, c, [&](NodeAny n) {
+                    if (n.as_any<Body>()) {
+                        return false;
+                    }
+                    if (auto call = n.as_any<Call>(); call && is_stream_call(call, SpecialLiteralKind::input_, "get")) {
+                        bad = unexpect_loc_error(n, "input.get() inside a branch condition");
+                    }
+                    return !bad;
+                });
+                if (bad) {
+                    return *bad;
+                }
+                if (auto m = c.as_any<Match>()) {
+                    auto lowered = lowering::lower_match(lc, m);
+                    if (!lowered) {
+                        return unexpect_loc_error(c, "cannot lower match to if");
+                    }
+                    c = lowered;
+                }
+                bool first = true;
+                for (auto& blk : c.ref(a)->blocks) {
+                    Node<Expr> cond;
+                    if (auto cs = blk.as_any<ConditionalStatement>(); cs && !is_default_cond(a, cs.ref(a)->condition)) {
+                        cond = cs.ref(a)->condition;
+                    }
+                    auto r = d().branch_arm(cond, first);
+                    if (!r) {
+                        return r;
+                    }
+                    first = false;
+                    r = fn_body(blk.ref(a)->body);
+                    if (!r) {
+                        return r;
+                    }
+                }
+                return first ? expected<void>{} : d().branch_end();
+            }
+            if (auto loop = s.as_any<Loop>()) {
+                auto r = loop.ref(a);
+                if (r->init || r->step) {
+                    return unexpect_loc_error(s, "loop with init or step");
+                }
+                auto b = d().loop_begin(r->condition);
+                if (!b) {
+                    return b;
+                }
+                auto body_r = fn_body(r->body);
+                if (!body_r) {
+                    return body_r;
+                }
+                return d().loop_end();
+            }
+            if (auto loop = s.as_any<RangeLoop>()) {
+                auto b = d().range_begin(loop.ref(a)->binding);
+                if (!b) {
+                    return b;
+                }
+                auto body_r = fn_body(loop.ref(a)->body);
+                if (!body_r) {
+                    return body_r;
+                }
+                return d().loop_end();
+            }
+            if (s.as_any<Break>() || s.as_any<Continue>() || s.as_any<Return>()) {
+                return d().flow(s);
+            }
+            if (auto as = s.as_any<Assign>()) {
+                auto r = hoist_gets(as.ref(a)->value);
+                if (!r) {
+                    return r;
+                }
+                if (auto base = append_target(as)) {
+                    return d().append_element(base, as.ref(a)->value);
+                }
+                return d().emit_statement(s);
+            }
+            if (auto def = s.as_any<VariableDefinition>()) {
+                auto r = hoist_gets(def.ref(a)->value);
+                if (!r) {
+                    return r;
+                }
+                return d().emit_statement(s);
+            }
+            if (s.as_any<Assert>() || s.as_any<ExplicitError>()) {
+                auto r = hoist_gets(s);
+                if (!r) {
+                    return r;
+                }
+                return d().emit_statement(s);
+            }
+            if (s.as_any<Metadata>() || s.as_any<SpecifyOrder>()) {
+                return {};
+            }
+            if (auto call = s.as_any<Call>()) {
+                if (is_stream_call(call, SpecialLiteralKind::output_, "put")) {
+                    auto args = call.ref(a)->arguments.ref(a);
+                    if (args && !args->arguments.empty()) {
+                        auto r = hoist_gets(args->arguments[0].ref(a)->value);
+                        if (!r) {
+                            return r;
+                        }
+                    }
+                    return d().stream_put(call);
+                }
+                if (is_stream_call(call, SpecialLiteralKind::input_, "get")) {
+                    return d().stream_get(call);  // 読み捨て
+                }
+            }
+            if (auto e = s.as_any<Expr>()) {
+                // 式だけの文は検査 (ADR 0033)。
+                auto r = hoist_gets(e);
+                if (!r) {
+                    return r;
+                }
+                auto b = builder(e);
+                return d().emit_statement(b.assert_(e));
+            }
+            return unexpect_loc_error(s, "{} is not supported in a custom encode / decode function yet", to_string(s.type()));
         }
 
         // --- 分岐 ------------------------------------------------------------

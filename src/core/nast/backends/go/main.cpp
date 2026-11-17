@@ -220,6 +220,10 @@ namespace {
         std::map<std::string, std::string> members;
         // 局所変数。名前から Go の型へ (分かるものだけ)。
         std::map<std::string, std::string> locals;
+        // 文の前に出した式 (input.get()) の代わりに読む名前。
+        std::map<std::uint32_t, std::string> replaced;
+        // WithReceiver が積むレシーバの綴り。空なら self (t)。
+        std::vector<std::string> receivers;
         Mode mode = Mode::slice;
 
         // エラーを返す文。Append は値も返す。
@@ -329,6 +333,9 @@ namespace {
         if (!e) {
             return unexpect_loc_error(e, "missing expression");
         }
+        if (auto it = replaced.find(strip_paren(a, e).id()); it != replaced.end()) {
+            return it->second;
+        }
         if (auto p = e.as_any<Paren>()) {
             MAYBE(inner, expr(p.ref(a)->expr));
             return "(" + inner + ")";
@@ -346,13 +353,15 @@ namespace {
             return std::format("{}", lit.ref(a)->code);
         }
         if (e.as_any<Self>()) {
-            return std::string("t");
+            return receivers.empty() ? std::string("t") : receivers.back();
         }
         if (auto w = e.as_any<WithReceiver>()) {
-            if (!strip_paren(a, w.ref(a)->receiver).as_any<Self>()) {
-                return unexpect_loc_error(e, "receiver other than self");
-            }
-            return expr(w.ref(a)->expr);
+            // レシーバを付け替えて中の式を綴る (`available(lab.pointer)` の lab)。
+            MAYBE(recv, expr(w.ref(a)->receiver));
+            receivers.push_back(recv);
+            auto r = expr(w.ref(a)->expr);
+            receivers.pop_back();
+            return r;
         }
         if (auto r = e.as_any<Reference>()) {
             auto name = ident_text(a, r.ref(a)->name);
@@ -362,6 +371,9 @@ namespace {
             }
             auto target = res->target;
             if (target.as_any<Field>()) {
+                if (!receivers.empty()) {
+                    return receivers.back() + "." + camel(name);
+                }
                 if (members.contains(std::string(name))) {
                     return "t." + camel(name);
                 }
@@ -1139,6 +1151,123 @@ namespace {
             return {};
         }
 
+        // ---- 手書きの fn の口 ----
+
+        expected<void> stream_get(Node<Call> call) {
+            auto name = derived_name("g", call);
+            auto args = call.ref(a)->arguments.ref(a);
+            Node<Type> fmt_type;
+            if (args && !args->arguments.empty()) {
+                auto t = strip_wrappers(a, call.ref(a)->type);
+                auto st = t.as_any<StructType>();
+                if (!st || !st.ref(a)->base.as_any<Format>()) {
+                    return unexpect_loc_error(call, "input.get with a non-format type argument");
+                }
+                fmt_type = t;
+            }
+            if (fmt_type) {
+                MAYBE(tn, p.type_name(fmt_type));
+                w.writeln("var ", name, " ", tn);
+                call_nested(name);
+                p.locals[name] = tn;
+            }
+            else if (mode == Mode::slice) {
+                need("1");
+                w.writeln(name, " := buf[*off]");
+                w.writeln("*off++");
+                p.locals[name] = "uint8";
+            }
+            else {
+                auto tmp = name + "b";
+                w.writeln("var ", tmp, " [1]byte");
+                read_full(tmp + "[:]");
+                w.writeln(name, " := ", tmp, "[0]");
+                p.locals[name] = "uint8";
+            }
+            w.writeln("_ = ", name);
+            p.replaced[call.id()] = name;
+            return {};
+        }
+
+        expected<void> stream_put(Node<Call> call) {
+            auto args = call.ref(a)->arguments.ref(a);
+            if (!args || args->arguments.size() != 1) {
+                return unexpect_loc_error(call, "output.put with other than one argument");
+            }
+            auto v = args->arguments[0].ref(a)->value;
+            MAYBE(text, p.expr(v));
+            auto t = strip_wrappers(a, v.ref(a)->type);
+            if (auto st = t.as_any<StructType>(); st && st.ref(a)->base.as_any<Format>()) {
+                call_nested(text);
+                return {};
+            }
+            auto have = p.type_of(v);
+            if (known(have) && have != "uint8" && have != "int8") {
+                return unexpect_loc_error(call, "output.put of {} (only bytes and formats)", have);
+            }
+            w.writeln("out = append(out, byte(", text, "))");
+            return {};
+        }
+
+        expected<void> append_element(Node<Expr> base, Node<Expr> value) {
+            MAYBE(b, p.expr(base));
+            MAYBE(v, p.expr(value));
+            auto elem = p.type_of(base);
+            if (auto pos = elem.find(']'); pos != std::string::npos) {
+                elem = elem.substr(pos + 1);
+            }
+            w.writeln(b, " = append(", b, ", ", convert(v, p.type_of(value), elem), ")");
+            return {};
+        }
+
+        expected<void> loop_begin(Node<Expr> cond) {
+            if (cond) {
+                MAYBE(c, p.expr(cond));
+                w.writeln("for ", c, " {");
+            }
+            else {
+                w.writeln("for {");
+            }
+            ind.enter();
+            return {};
+        }
+
+        expected<void> range_begin(Node<VariableDefinition> binding) {
+            auto r = binding.ref(a);
+            auto name = local_name(ident_text(a, r->name));
+            MAYBE(n, p.expr(r->value));
+            auto t = p.type_of(r->value);
+            if (!known(t) || !is_go_int(t)) {
+                t = "uint64";
+            }
+            p.locals[name] = t;
+            w.writeln("for ", name, " := ", t, "(0); ", name, " < ", convert(n, p.type_of(r->value), t), "; ", name, "++ {");
+            ind.enter();
+            return {};
+        }
+
+        expected<void> loop_end() {
+            ind.leave();
+            w.writeln("}");
+            return {};
+        }
+
+        expected<void> flow(Node<Statement> s) {
+            if (s.as_any<Break>()) {
+                w.writeln("break");
+            }
+            else if (s.as_any<Continue>()) {
+                w.writeln("continue");
+            }
+            else {
+                if (s.as_any<Return>().ref(a)->expr) {
+                    return unexpect_loc_error(s, "return with a value in encode / decode");
+                }
+                w.writeln(mode == Mode::append ? "return out, nil" : "return nil");
+            }
+            return {};
+        }
+
         // ---- Walker の既定のある口: Go が native に書けるものだけ上書き ----
 
         static bool native_width(std::size_t bytes) {
@@ -1423,8 +1552,11 @@ namespace {
     expected<Emitted> emit_format(Arena& a, SideTables& tables, Node<Format> fmt) {
         GoPrinter p{.a = a, .tables = tables, .lc = lowering::Context{a, tables}};
         auto* state = tables.table<FormatState>().get(fmt);
-        if (state && (state->decode_kind == FormatKind::custom || state->encode_kind == FormatKind::custom)) {
-            return unexpect_loc_error(fmt, "custom encode / decode function");
+        Node<Function> custom_decode = state && state->decode_kind == FormatKind::custom ? state->decode_custom : nullref;
+        Node<Function> custom_encode = state && state->encode_kind == FormatKind::custom ? state->encode_custom : nullref;
+        if ((state && state->decode_kind == FormatKind::custom && !custom_decode) ||
+            (state && state->encode_kind == FormatKind::custom && !custom_encode)) {
+            return unexpect_loc_error(fmt, "custom encode / decode without its function");
         }
         auto name = camel(name_of(a, fmt));
         std::vector<std::string> order;
@@ -1435,8 +1567,15 @@ namespace {
             CodeWriter w;
             p.locals.clear();
             p.mode = mode;
+            p.replaced.clear();
             GoCodec g{p, w, mode};
-            MAYBE_VOID(r, g.run(fmt, decode));
+            auto custom = decode ? custom_decode : custom_encode;
+            if (custom) {
+                MAYBE_VOID(r, g.run_custom(custom, decode));
+            }
+            else {
+                MAYBE_VOID(r, g.run(fmt, decode));
+            }
             return w;
         };
         MAYBE(slice, expand(Mode::slice, true));
