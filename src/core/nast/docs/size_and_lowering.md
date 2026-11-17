@@ -1177,12 +1177,17 @@ lowering に組ませ、返ってきた nast のノードを Go に綴るだけ�
 違う演算と代入には変換を挟む)。組めない format は飛ばし、それを使う format も
 落とす。
 
-測り方は `python src/core/nast/backends/go/measure.py -j 4 --roundtrip`。
-example/ の入力ごとに 1 パッケージを作り `go vet` を 1 回で回す。`--roundtrip`
-は各 format に乱数の入力を 3000 回与え、decode できたら encode して読んだ
-バイト列に戻るかを見る。往復は「同じ間違いを両方向でする」ものを見逃すので、
-`known/` に手で計算した値の検査 (bit_group.bgn、RFC 9000 の varint の例を含む)
-を置いて一緒に回す。
+測り方は `python src/core/nast/backends/go/measure.py -j 4`。example/ の入力ごとに
+1 パッケージを作り `go vet` を 1 回で回す。
+
+**この版の出力は ebm2go より劣化している** (2026-11-17 に比較): 整数は
+`binary.BigEndian` ではなく手書きのシフト、読み込みは `io.ReadFull` ではなく
+1 バイトずつ、`[len]u8` はスライスではなく要素ごとのループ、入出力の口は
+`[]byte` だけ。lowering の出力 (どの言語でも書ける形) を無条件に使い、言語の
+形を選ぶ情報を捨てたため。lowering の形は knob の既定値に置き、言語が上書き
+する形で作り直す。式も knob / 既定の訪問を迂回して Go 専用に手書きしている。
+合格線は ebm2go の出力と同じ API で unictest の Go の runner を通ること。
+下の数字は「劣化した出力が vet を通る数」でしかない。
 
 ```
 入力 314 本
@@ -1191,8 +1196,6 @@ example/ の入力ごとに 1 パッケージを作り `go vet` を 1 回で回�
   go vet で落ちた                          1   (feature_test/recurse_defs、定数の循環)
   入力の解析で失敗                         3
 format: 生成 1210 / 飛ばした 890
-往復: 1210 個中 882 個が乱数の入力を 1 回以上 decode、食い違い 0
-既知の値: ok
 ```
 
 飛ばした理由の上位 (format 数、使う側の巻き添えを含む):

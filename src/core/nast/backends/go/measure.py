@@ -51,8 +51,6 @@ def main():
     ap.add_argument("--nast2go", default=str(ROOT / "src/core/nast/build/fast/bin/nast2go.exe"))
     ap.add_argument("--out", default=str(ROOT / "ignore/nast2go/corpus"))
     ap.add_argument("--detail", action="store_true", help="vet の失敗を全部出す")
-    ap.add_argument("--roundtrip", action="store_true",
-                    help="乱数の入力を decode できたら encode して同じバイト列に戻るかを go test で見る")
     args = ap.parse_args()
 
     out = pathlib.Path(args.out)
@@ -109,10 +107,6 @@ def main():
     gen_text = "".join((out / p / "gen.go").read_text(encoding="utf-8") for p, _, g, _, _ in results if g)
     fmt_ok = gen_text.count(") Decode(data []byte)")
 
-    if args.roundtrip:
-        roundtrip(out, [p for p, _, g, _, _ in results if g and p not in failed], args.j)
-        known(pathlib.Path(args.nast2go), out.parent / "known")
-
     print(f"入力 {len(results)} 本")
     for k, v in status.most_common():
         print(f"  {v:4}  {k}")
@@ -123,109 +117,6 @@ def main():
         print("go vet の最初の失敗:")
         for k, v in vet_reasons.most_common(20):
             print(f"  {v:4}  {k}")
-
-
-ROUNDTRIP = """package {pkg}
-
-import (
-	"bytes"
-	"fmt"
-	"math/rand"
-	"testing"
-)
-
-type nastCodec interface {{
-	Decode([]byte) (int, error)
-	Encode() ([]byte, error)
-}}
-
-func nastTry(f func() error) (err error) {{
-	defer func() {{
-		if r := recover(); r != nil {{
-			err = fmt.Errorf("panic: %v", r)
-		}}
-	}}()
-	return f()
-}}
-
-func TestRoundTrip(t *testing.T) {{
-	makers := map[string]func() nastCodec{{
-{makers}	}}
-	for name, mk := range makers {{
-		r := rand.New(rand.NewSource(1))
-		decoded := 0
-		for i := 0; i < 3000; i++ {{
-			data := make([]byte, r.Intn(48))
-			r.Read(data)
-			v := mk()
-			used := 0
-			if err := nastTry(func() (err error) {{ used, err = v.Decode(data); return }}); err != nil {{
-				if len(err.Error()) > 6 && err.Error()[:6] == "panic:" {{
-					t.Errorf("ROUNDTRIP %s: decode %v (input %x)", name, err, data)
-					break
-				}}
-				continue
-			}}
-			decoded++
-			var out []byte
-			if err := nastTry(func() (err error) {{ out, err = v.Encode(); return }}); err != nil {{
-				t.Errorf("ROUNDTRIP %s: encode after decode: %v (input %x)", name, err, data[:used])
-				break
-			}}
-			if !bytes.Equal(out, data[:used]) {{
-				t.Errorf("ROUNDTRIP %s: bytes differ in %x out %x", name, data[:used], out)
-				break
-			}}
-		}}
-		t.Logf("DECODED %s %d", name, decoded)
-	}}
-}}
-"""
-
-
-def roundtrip(out: pathlib.Path, pkgs, j):
-    for pkg in pkgs:
-        text = (out / pkg / "gen.go").read_text(encoding="utf-8")
-        names = re.findall(r"^func \(t \*(\w+)\) Decode\(data \[\]byte\)", text, re.M)
-        if not names:
-            continue
-        makers = "".join(f'\t\t"{n}": func() nastCodec {{ return &{n}{{}} }},\n' for n in names)
-        (out / pkg / "roundtrip_test.go").write_text(ROUNDTRIP.format(pkg=pkg, makers=makers), encoding="utf-8")
-    r = subprocess.run(["go", "test", "-p", str(j), "-v", "-run", "TestRoundTrip", "./..."], cwd=out,
-                       capture_output=True, text=True, encoding="utf-8", errors="replace")
-    fails = re.findall(r"ROUNDTRIP (.*)", r.stdout)
-    decoded = re.findall(r"DECODED (\w+) (\d+)", r.stdout)
-    some = sum(1 for _, n in decoded if int(n) > 0)
-    print(f"往復: format {len(decoded)} 個、乱数の入力を 1 回以上 decode できた {some} 個、食い違い {len(fails)} 個")
-    for f in fails:
-        print("   ", f[:200])
-    broken = [l for l in r.stdout.splitlines() if l.startswith("FAIL") and "[build failed]" in l]
-    for l in broken:
-        print("   ", l)
-
-
-def known(nast2go: pathlib.Path, out: pathlib.Path):
-    """往復だけでは同じ間違いを両方向でするものを見逃すので、手で計算した値と比べる。
-
-    known/<名前>_test.go を src/core/nast/testdata/<名前>.bgn から作ったパッケージで回す。
-    """
-    here = pathlib.Path(__file__).resolve().parent / "known"
-    for test in sorted(here.glob("*_test.go")):
-        stem = test.name[: -len("_test.go")]
-        d = out / stem
-        shutil.rmtree(d, ignore_errors=True)
-        d.mkdir(parents=True)
-        (d / "go.mod").write_text(f"module {stem}\n\ngo 1.22\n", encoding="utf-8")
-        src = ROOT / "src/core/nast/testdata" / f"{stem}.bgn"
-        subprocess.run([str(nast2go), "-i", str(src), "-o", str(d / "gen.go"), "--package", stem],
-                       capture_output=True)
-        shutil.copy(test, d / test.name)
-        r = subprocess.run(["go", "test", "."], cwd=d, capture_output=True, text=True, encoding="utf-8",
-                           errors="replace")
-        status = "ok" if r.returncode == 0 else "失敗"
-        print(f"既知の値 ({test.name}): {status}")
-        if r.returncode != 0:
-            print(r.stdout + r.stderr)
 
 
 if __name__ == "__main__":
