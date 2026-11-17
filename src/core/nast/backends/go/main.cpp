@@ -64,7 +64,22 @@ namespace {
     // --- 名前 --------------------------------------------------------------
 
     // snake_case を CamelCase に (src_port -> SrcPort)。ebm2go と同じ綴り。
-    std::string camel(std::string_view name) {
+    // Go の識別子に使えない字 (ASCII 以外) は X と 16 進のバイト列にする。
+    std::string sanitize(std::string_view name) {
+        std::string out;
+        for (auto ch : name) {
+            auto u = static_cast<unsigned char>(ch);
+            if (u < 0x80) {
+                out += ch;
+                continue;
+            }
+            out += std::format("X{:02X}", u);
+        }
+        return out;
+    }
+
+    std::string camel(std::string_view raw) {
+        auto name = sanitize(raw);
         std::string out;
         bool up = true;
         for (auto ch : name) {
@@ -82,7 +97,9 @@ namespace {
     }
 
     // 局所変数の名前。Go の予約語と、生成した関数の引数の名前を避ける。
-    std::string local_name(std::string_view name) {
+    std::string local_name(std::string_view raw) {
+        auto sanitized = sanitize(raw);
+        std::string_view name = sanitized;
         static const std::set<std::string_view> reserved = {
             "break", "case", "chan", "const", "continue", "default", "defer", "else", "fallthrough", "for",
             "func", "go", "goto", "if", "import", "interface", "map", "package", "range", "return",
@@ -106,6 +123,21 @@ namespace {
                 continue;
             }
             out += ch;
+        }
+        out += '"';
+        return out;
+    }
+
+    // バイト列を Go の文字列リテラルに。印字できない字は \xNN で逃がす。
+    std::string go_bytes(std::string_view s) {
+        std::string out = "\"";
+        for (auto ch : s) {
+            auto u = static_cast<unsigned char>(ch);
+            if (u >= 0x20 && u < 0x7f && ch != '"' && ch != '\\') {
+                out += ch;
+                continue;
+            }
+            out += std::format("\\x{:02x}", u);
         }
         out += '"';
         return out;
@@ -236,6 +268,9 @@ namespace {
         }
         if (auto e = t.as_any<EnumType>()) {
             return camel(name_of(a, e.ref(a)->base));
+        }
+        if (auto bytes = lowering::literal_bytes(lc, t)) {
+            return std::format("[{}]uint8", bytes->size());  // 文字列の期待値は固定長のバイト列
         }
         return unexpect_loc_error(t, "no Go type for {} yet", to_string(t.type()));
     }
@@ -751,34 +786,123 @@ namespace {
             return {};
         }
 
-        expected<void> array_until_end(Node<Field> f, Node<ArrayType> arr, Node<Expr> target) {
+        // 長さの無いバイト列。どこまで読むかは後ろに何が来るか (follow) で決まる:
+        //   end                      入力の終わりまで
+        //   fixed で eventual が end  残りから後ろの固定幅を除いたところまで
+        //   constant                  終端の文字列が現れるところまで
+        expected<void> array_until_end(Node<Field> f, Node<ArrayType> arr, Node<Expr> target,
+                                       const lowering::FieldFollow& follow) {
+            using Kind = lowering::FieldFollow::Kind;
             auto it = strip_wrappers(a, arr.ref(a)->element_type).as_any<IntType>();
             if (!it || it.ref(a)->bit_size != 8 || it.ref(a)->is_signed || field_args(a, f).positional ||
                 field_args(a, f).named) {
-                return unexpect_loc_error(f, "array until the end of input with non-byte elements or arguments");
+                return unexpect_loc_error(f, "array without length with non-byte elements or arguments");
             }
-            if (!target) {
-                return {};  // 名前の無い末尾までのバイト列: 書くものは無い
+            if (!decode) {
+                if (target) {
+                    MAYBE(t, p.expr(target));
+                    w.writeln("out = append(out, ", t, "...)");
+                }
+                return {};
             }
             MAYBE(t, p.expr(target));
-            switch (mode) {
-                case Mode::slice:
+            if (follow.kind == Kind::end) {
+                if (mode == Mode::slice) {
                     w.writeln(t, " = buf[*off:]");
                     w.writeln("*off = len(buf)");
-                    break;
-                case Mode::reader:
-                    w.writeln("{");
+                    return {};
+                }
+                w.writeln("{");
+                {
+                    auto s = w.indent_scope();
+                    w.writeln("rest, err := io.ReadAll(r)");
+                    block("if err != nil", "return err");
+                    w.writeln(t, " = rest");
+                }
+                w.writeln("}");
+                return {};
+            }
+            if (follow.kind == Kind::fixed && follow.eventual == Kind::end && follow.tail_bits && *follow.tail_bits % 8 == 0) {
+                auto tail = std::to_string(*follow.tail_bits / 8);
+                if (mode == Mode::slice) {
+                    auto n = derived_name("n", f);
+                    w.writeln(n, " := len(buf) - *off - ", tail);
+                    block(std::format("if {} < 0", n), "return io.ErrUnexpectedEOF");
+                    w.writeln(t, " = buf[*off : *off+", n, "]");
+                    w.writeln("*off += ", n);
+                    return {};
+                }
+                // reader には残りの長さが無い。全部読んで、後ろの固定幅を残りの
+                // field 用の reader に戻す。
+                w.writeln("{");
+                {
+                    auto s = w.indent_scope();
+                    w.writeln("rest, err := io.ReadAll(r)");
+                    block("if err != nil", "return err");
+                    block(std::format("if len(rest) < {}", tail), "return io.ErrUnexpectedEOF");
+                    w.writeln(t, " = rest[:len(rest)-", tail, "]");
+                    w.writeln("r = bytes.NewReader(rest[len(rest)-", tail, ":])");
+                }
+                w.writeln("}");
+                return {};
+            }
+            if (follow.kind == Kind::constant && follow.next) {
+                auto term = lowering::literal_bytes(lc, follow.next.ref(a)->type);
+                if (!term || term->empty()) {
+                    return unexpect_loc_error(f, "terminator is not a byte string");
+                }
+                if (mode == Mode::slice) {
+                    // 終端の手前まで切り出す。終端そのものは後ろの field が読んで比べる。
+                    auto i = derived_name("n", f);
+                    w.writeln(i, " := bytes.Index(buf[*off:], []byte(", go_bytes(*term), "))");
+                    block(std::format("if {} < 0", i), "return io.ErrUnexpectedEOF");
+                    w.writeln(t, " = buf[*off : *off+", i, "]");
+                    w.writeln("*off += ", i);
+                    return {};
+                }
+                if (term->size() != 1) {
+                    return unexpect_loc_error(f, "multi-byte terminator needs peek on a reader");
+                }
+                // 1 バイトずつ読み、終端に当たったらそれを終端の field に入れて止まる。
+                auto sentinel = std::to_string(static_cast<unsigned char>((*term)[0]));
+                w.writeln(t, " = nil");
+                w.writeln("for {");
+                {
+                    auto s = w.indent_scope();
+                    w.writeln("var b [1]byte");
+                    read_full("b[:]");
+                    w.writeln("if b[0] == ", sentinel, " {");
                     {
-                        auto s = w.indent_scope();
-                        w.writeln("rest, err := io.ReadAll(r)");
-                        block("if err != nil", "return err");
-                        w.writeln(t, " = rest");
+                        auto s2 = w.indent_scope();
+                        if (!name_of(a, follow.next).empty()) {
+                            MAYBE(term_target, p.expr(lowering::field_ref(lc, follow.next)));
+                            w.writeln(term_target, "[0] = b[0]");
+                        }
+                        w.writeln("break");
                     }
                     w.writeln("}");
-                    break;
-                case Mode::append:
-                    w.writeln("out = append(out, ", t, "...)");
-                    break;
+                    w.writeln(t, " = append(", t, ", b[0])");
+                }
+                w.writeln("}");
+                consumed.insert(follow.next.id());
+                return {};
+            }
+            return unexpect_loc_error(f, "array without length followed by a variable-width field");
+        }
+
+        // 文字列の期待値。読んで比べる / そのまま書く。
+        expected<void> literal_field(Node<Field> f, const std::string& bytes, Node<Expr> target) {
+            auto lit = go_bytes(bytes);
+            if (!decode) {
+                w.writeln("out = append(out, ", lit, "...)");
+                return {};
+            }
+            auto src = take(f, bytes.size());
+            block(std::format("if string({}) != {}", src, lit),
+                  p.fail(std::format("nastAssert({})", go_string(std::string(name_of(a, f)) + " == " + lit))));
+            if (target && !name_of(a, f).empty()) {
+                MAYBE(t, p.expr(target));
+                w.writeln("copy(", t, "[:], ", src, ")");
             }
             return {};
         }
@@ -1157,10 +1281,13 @@ namespace {
     expected<CodeWriter> emit_enum(Arena& a, SideTables& tables, Node<Enum> en) {
         GoPrinter p{.a = a, .tables = tables, .lc = lowering::Context{a, tables}};
         auto r = en.ref(a);
-        if (!r->base_type) {
-            return unexpect_loc_error(en, "enum without a base type");
+        // 下地の型の無い enum は読み書きされない (field の型にならない)。値を
+        // 区別できればよいので Go の int にする。
+        std::string base = "int";
+        if (r->base_type) {
+            MAYBE(b, p.type_name(r->base_type));
+            base = b;
         }
-        MAYBE(base, p.type_name(r->base_type));
         auto name = camel(name_of(a, en));
         CodeWriter w;
         w.writeln("type ", name, " ", base);
@@ -1173,7 +1300,7 @@ namespace {
                 if (!v) {
                     return unexpect_loc_error(m, "enum member whose value is not a constant");
                 }
-                if (auto bits = int_bits_of(base); bits < 64 && *v >> bits) {
+                if (auto bits = int_bits_of(base); bits > 0 && bits < 64 && *v >> bits) {
                     return unexpect_loc_error(m, "enum member value {} does not fit in {}", *v, base);
                 }
                 w.writeln(name, camel(name_of(a, m)), " ", name, " = ", std::to_string(*v));
@@ -1183,7 +1310,8 @@ namespace {
         return w;
     }
 
-    constexpr auto runtime = R"(var _ = binary.BigEndian
+    constexpr auto runtime = R"(var _ = bytes.Index
+var _ = binary.BigEndian
 var _ = math.Float32frombits
 
 func nastAssert(what string) error {
@@ -1403,6 +1531,7 @@ NAST_BACKEND_ENTRY(GoConfig) {
         w.writeln("import (");
         {
             auto s = w.indent_scope();
+            w.writeln("\"bytes\"");
             w.writeln("\"encoding/binary\"");
             w.writeln("\"errors\"");
             w.writeln("\"io\"");

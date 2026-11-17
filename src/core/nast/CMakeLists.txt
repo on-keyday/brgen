@@ -179,6 +179,7 @@ add_library(nast_core STATIC
     "lowering/endian_variable.cpp"
     "lowering/enum_defined.cpp"
     "lowering/field_io.cpp"
+    "lowering/follow.cpp"
     "lowering/int_bytes.cpp"
     "lowering/lowering.cpp"
     "lowering/match_to_if.cpp"

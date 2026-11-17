@@ -2,6 +2,7 @@
 #pragma once
 #include "../lowering/bit_group.hpp"
 #include "../lowering/field_io.hpp"
+#include "../lowering/follow.hpp"
 #include "../lowering/match_to_if.hpp"
 #include "../lowering/self_ref.hpp"
 #include "../node/build.h"
@@ -44,6 +45,11 @@ namespace brgen::nast::backend::codec {
         bool decode = true;
         lowering::BitLayout layout;
         std::set<std::size_t> routed_started;
+        // 今歩いている文の場所 (配列の後ろに何が来るかを引くため)。
+        Node<Body> cur_body;
+        std::size_t cur_index = 0;
+        // decode: 手前の配列が終端として読み終えた field。その field 自身では読まない。
+        std::set<std::uint32_t> consumed;
 
         Walker(Arena& a, SideTables& t)
             : a(a), tables(t), lc{a, t} {}
@@ -61,6 +67,7 @@ namespace brgen::nast::backend::codec {
             decode = dec;
             layout = lowering::bit_layout(lc, fmt);
             routed_started.clear();
+            consumed.clear();
             return body(fmt.ref(a)->body);
         }
 
@@ -68,12 +75,19 @@ namespace brgen::nast::backend::codec {
             if (!b) {
                 return {};
             }
-            for (auto& s : b.ref(a)->statements) {
-                auto r = statement(s);
+            auto saved_body = cur_body;
+            auto saved_index = cur_index;
+            auto& stmts = b.ref(a)->statements;
+            for (std::size_t i = 0; i < stmts.size(); i++) {
+                cur_body = b;
+                cur_index = i;
+                auto r = statement(stmts[i]);
                 if (!r) {
                     return r;
                 }
             }
+            cur_body = saved_body;
+            cur_index = saved_index;
             return {};
         }
 
@@ -86,6 +100,9 @@ namespace brgen::nast::backend::codec {
             }
             if (s.as_any<VariableDefinition>() || s.as_any<Assert>()) {
                 return d().emit_statement(s);
+            }
+            if (auto r = s.as_any<Range>(); r && !r.ref(a)->start && !r.ref(a)->end) {
+                return {};  // `..` は空の文 (何もしない腕の置き場)
             }
             if (s.as_any<SpecifyOrder>() || s.as_any<Metadata>()) {
                 // 順は field ごとに FieldEndian に載っている。実行時に決まる順は
@@ -102,6 +119,9 @@ namespace brgen::nast::backend::codec {
 
         expected<void> field(Node<Field> f) {
             if (!is_layout_field(a, f)) {
+                return {};
+            }
+            if (decode && consumed.contains(f.id())) {
                 return {};
             }
             if (auto* pl = layout.find(f)) {
@@ -134,6 +154,10 @@ namespace brgen::nast::backend::codec {
             }
             if (auto arr = type.as_any<ArrayType>()) {
                 return d().array(f, arr);
+            }
+            if (auto bytes = lowering::literal_bytes(lc, type)) {
+                // 文字列の期待値 (`magic :"ustar\0"`)。読んで比べる / そのまま書く。
+                return d().literal_field(f, *bytes, target_of(f));
             }
             if (auto shape = lowering::scalar_shape(lc, f, f.ref(a)->type)) {
                 if (field_args(a, f).named || field_args(a, f).positional > 1) {
@@ -170,7 +194,9 @@ namespace brgen::nast::backend::codec {
             auto len = arr.ref(a)->length;
             auto elem = strip_wrappers(a, arr.ref(a)->element_type);
             if (!len || len.as_any<Range>()) {
-                return d().array_until_end(f, arr, target_of(f));
+                // 長さの無い配列。どこまで読むかは後ろに何が来るかで決まる。
+                auto follow = lowering::field_follow(lc, cur_body, cur_index);
+                return d().array_until_end(f, arr, target_of(f), follow);
             }
             if (auto s = elem.as_any<StructType>(); s && s.ref(a)->base.as_any<Format>()) {
                 return d().nested_array(f, arr, target_of(f));
