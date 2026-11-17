@@ -167,6 +167,9 @@ namespace brgen::nast::backend::codec {
             if (f == subrange_field && n > 0) {
                 n--;
             }
+            if (lowering::xor_key(lc, f) && n > 0) {
+                n--;  // input.xor は配列の口が受け持つ
+            }
             return n;
         }
 

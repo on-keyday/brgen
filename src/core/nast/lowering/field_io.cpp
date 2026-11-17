@@ -210,6 +210,29 @@ namespace brgen::nast::lowering {
         return nullref;
     }
 
+    Node<Expr> xor_key(Context& c, Node<Field> f) {
+        auto& a = c.a;
+        auto args = f.ref(a)->arguments.ref(a);
+        if (!args) {
+            return nullref;
+        }
+        for (auto& arg : args->arguments) {
+            auto na = arg.as_any<NamedArgument>();
+            if (!na) {
+                continue;
+            }
+            auto m = strip_paren(a, na.ref(a)->name).as_any<MemberAccess>();
+            if (!m || ident_text(a, m.ref(a)->member) != "xor") {
+                continue;
+            }
+            auto base = strip_paren(a, m.ref(a)->base).as_any<SpecialLiteral>();
+            if (base && base.ref(a)->kind == SpecialLiteralKind::input_) {
+                return na.ref(a)->value;
+            }
+        }
+        return nullref;
+    }
+
     std::optional<ScalarShape> scalar_shape(Context& c, Node<Field> f, Node<Type> type) {
         auto& a = c.a;
         auto stripped = strip_wrappers(a, type);

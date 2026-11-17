@@ -75,6 +75,10 @@ namespace brgen::nast::lowering {
     // 無ければ null。
     Node<Expr> subrange_length(Context& c, Node<Field> f);
 
+    // field の名前つきの引数 `input.xor = key` の key。読んだバイト列を key で
+    // (key の長さで巡回して) XOR したものが値 (書くときも同じ)。無ければ null。
+    Node<Expr> xor_key(Context& c, Node<Field> f);
+
     // 組めなければ null。今のところ組めないもの:
     //   要素が可変幅の配列 / 末尾までの配列 / 入れ子 format /
     //   バイト境界に乗らない幅 / 名前つきの引数が付いた field

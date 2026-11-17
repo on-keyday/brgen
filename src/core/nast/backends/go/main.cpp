@@ -1447,6 +1447,29 @@ namespace {
             }
             auto target = lowering::field_ref(lc, f);
             MAYBE(t, p.expr(target));
+            if (auto key = lowering::xor_key(lc, f)) {
+                // `input.xor = key`: 読んだバイト列を key で XOR する。読んだ元を
+                // 書き換えないよう、スライスの口でも別の領域に入れる。
+                MAYBE(k, p.expr(key));
+                auto fixed = const_uint(a, tables, len);
+                if (decode) {
+                    MAYBE(raw, acquire(f, fixed ? Node<Expr>{} : len, fixed ? *fixed : 0));
+                    MAYBE(rt, p.expr(raw));
+                    if (!fixed) {
+                        w.writeln(t, " = make([]byte, len(", rt, "))");
+                    }
+                    w.writeln("nastXor(", t, "[:], ", rt, "[:], ", k, "[:])");
+                    return {};
+                }
+                if (!fixed) {
+                    MAYBE_VOID(r, check_count(target, len));
+                }
+                auto start = derived_name("start", f);
+                w.writeln(start, " := len(out)");
+                w.writeln("out = append(out, ", t, "[:]...)");
+                w.writeln("nastXor(out[", start, ":], out[", start, ":], ", k, "[:])");
+                return {};
+            }
             if (auto n = const_uint(a, tables, len)) {
                 auto count = std::to_string(*n);
                 switch (mode) {
@@ -1695,6 +1718,17 @@ func nastReadN(r io.Reader, n int) ([]byte, error) {
 		}
 	}
 	return out, nil
+}
+
+// nastXor sets dst[i] = src[i] ^ key[i % len(key)]; an empty key copies.
+func nastXor(dst, src, key []byte) {
+	for i := range src {
+		if len(key) == 0 {
+			dst[i] = src[i]
+		} else {
+			dst[i] = src[i] ^ key[i%len(key)]
+		}
+	}
 }
 
 func nastBoolToInt[T ~uint8 | ~uint16 | ~uint32 | ~uint64](b bool) T {
