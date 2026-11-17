@@ -1188,25 +1188,44 @@ lowering の文の形を**無条件に**使い、ebm2go より劣化した出力
 cd rebrgen && ../tool/unictest.exe -c test/unictest_nast.json --save-tmp-dir --clean-tmp     --shorter-path --parallel-limit 4 --output-json save/nast_unictest.json
 ```
 
-同じ入力 (test/inputs.json の 59 本) × 同じ 3 つの口での比較 (2026-11-18):
+同じ入力 (test/inputs.json の 59 本) × 同じ 3 つの口での比較 (2026-11-18 夜):
 
 ```
            ebm2go    nast2go
-std-io      55/59     12/59
-slice-io    56/59     12/59
-append-io   56/59     12/59
-計         167/177    36/177   (nast2go だけが通るもの 0)
+std-io      55/59     52/59
+slice-io    56/59     52/59
+append-io   56/59     52/59
+計         167/177   156/177
 ```
 
-nast2go が通るのは quic_varint (8 入力) / signed_bytes / simple_vector (2) /
-until_eof の 4 format。残りの 19 format が止まる理由は
-「末尾までの非バイト配列」(dns_packet / http2)、文字列の期待値 (tar / wasm /
-extended_binary_module / null_terminated)、引数つきの入れ子 format
-(bgp / subrange_align)、import した型、手書きの fn、available、generics。
+nast2go だけが通る: http2_frame_inline_test (3 つの口とも)、ipv6_invalid_test (std-io)。
+ebm2go だけが通る: capnproto_test / generics_uses_foo / native_endian_test /
+subrange_align_test / wasm_src2json。止まる理由:
 
-example/ 全体の `go vet` (`measure.py -j 4`) は 100 本が全 format を生成して
-通過、飛ばした理由の上位は「末尾までの非バイト配列」145、文字列の期待値 98、
-fn 呼び出し 48、引数つきの入れ子 format 38、手書きの encode / decode 35。
+| format | 要るもの |
+| --- | --- |
+| capnproto | 符号つきのビット群 (符号拡張) |
+| generics_basic | generics の実体化 (前段に段が無い) |
+| netlink / subrange_align | `input.align` (絶対 offset = 実行時の位置が要る、ADR 0038) |
+| wasm | 普通の fn (メソッド `u32()` と、それを使った暗黙の変換)、腕ごとに型の違う field |
+| tar / softether | 普通の fn の呼び出し (`oct2int` / `isUtf8`)、腕ごとに型の違う field |
+
+ここまでに足したもの (この日の順):
+
+- 文字列の期待値と、長さの無い配列の終わり方 (`lowering/follow`: 元実装の
+  Follow / fixed_tail_size と同じ規則。nast の解析に無かった)
+- `input = input.subrange(n)` (`lowering::subrange_length`、型付けが
+  StreamType に載せた長さ) と、要素がバイトでない長さの無い配列
+- `error(...)`、`sizeof`、`available`、import した module
+- 手書きの `fn decode` / `fn encode` (`Walker::run_custom`)。input.get は文の
+  前に出す、`xs[xs.length] = v` は末尾に足す、式だけの文は検査
+- `input.xor` (websocket)
+- state 変数 (Requirements が伝播させた state を *Impl の引数で渡す。ebm2go の
+  *_impl と同じ形) と format の途中の return
+
+example/ 全体の `go vet` (`measure.py -j 4`) は 190 本が全 format を生成して
+通過。落ちる 2 本は .bgn 側 (bpf の `magic != A || magic != B` は常に真、
+feature_test/recurse_defs は定数の循環)。
 
 ## 5. EBM との差 (訂正を含む)
 

@@ -386,7 +386,7 @@ namespace {
                 return local_name(name);
             }
             if (target.as_any<StateVariable>()) {
-                return camel(name);  // 受け取った state (ポインタ)
+                return local_name(name);  // 受け取った state (ポインタ)
             }
             return unexpect_loc_error(e, "name referring to {}", to_string(target.type()));
         }
@@ -636,12 +636,44 @@ namespace {
     }
 
     // `, HeaderState` (呼ぶ側の引数) / `, HeaderState *FrameHeaderState` (受ける側)。
+    // state 変数の引数名。型名 (CamelCase) と衝突しないよう snake_case のまま。
+    std::string state_name(Arena& a, Node<StateVariable> sv) {
+        return local_name(name_of(a, sv));
+    }
+
     std::string state_args(Arena& a, const std::vector<Node<StateVariable>>& v) {
         std::string out;
         for (auto sv : v) {
-            out += ", " + camel(name_of(a, sv));
+            out += ", " + state_name(a, sv);
         }
         return out;
+    }
+
+    // 本体の最後が return か、抜け出しの無い無限ループなら、その後ろは届かない。
+    bool ends_terminal(Arena& a, Node<Body> b) {
+        if (!b || b.ref(a)->statements.empty()) {
+            return false;
+        }
+        auto last = b.ref(a)->statements.back();
+        if (last.as_any<Return>()) {
+            return true;
+        }
+        auto loop = last.as_any<Loop>();
+        if (!loop || loop.ref(a)->condition) {
+            return false;
+        }
+        // このループを抜ける break (入れ子のループの中のものは数えない)。
+        bool breaks = false;
+        visit_all(a, loop.ref(a)->body, [&](NodeAny n) {
+            if (n.as_any<Loop>() || n.as_any<RangeLoop>()) {
+                return false;
+            }
+            if (n.as_any<Break>()) {
+                breaks = true;
+            }
+            return !breaks;
+        });
+        return !breaks;
     }
 
     Node<Format> format_of(Arena& a, Node<Type> t) {
@@ -1674,13 +1706,18 @@ namespace {
         };
         // state を受け取る format は本体を *Impl にして state を引数で受け、公開の
         // 口は新しい state を作って呼ぶ (ebm2go の *_impl と同じ形)。
+        // 本体の最後が return / 抜け出しの無いループなら、末尾の return は届かない (vet が咎める)。
+        bool dec_terminal = ends_terminal(a, custom_decode ? custom_decode.ref(a)->body : fmt.ref(a)->body);
+        bool enc_terminal = ends_terminal(a, custom_encode ? custom_encode.ref(a)->body : fmt.ref(a)->body);
+        std::string_view dec_tail = dec_terminal ? "" : "return nil";
+        std::string_view enc_tail = enc_terminal ? "" : "return out, nil";
         auto dec_states = state_params(tables, fmt, true);
         auto enc_states = state_params(tables, fmt, false);
         auto sig = [&](const std::vector<Node<StateVariable>>& v) {
             std::string out;
             for (auto sv : v) {
                 auto t = p.type_name(sv.ref(a)->type);
-                out += std::format(", {} *{}", camel(name_of(a, sv)), t ? *t : "struct{}");
+                out += std::format(", {} *{}", state_name(a, sv), t ? *t : "struct{}");
             }
             return out;
         };
@@ -1688,7 +1725,7 @@ namespace {
             std::vector<std::string> out;
             for (auto sv : v) {
                 auto t = p.type_name(sv.ref(a)->type);
-                out.push_back(std::format("{} := &{}{{}}", camel(name_of(a, sv)), t ? *t : "struct{}"));
+                out.push_back(std::format("{} := &{}{{}}", state_name(a, sv), t ? *t : "struct{}"));
             }
             return out;
         };
@@ -1705,22 +1742,22 @@ namespace {
             w.writeln("}");
         };
         if (dec_states.empty()) {
-            func("DecodeSlice(buf []byte, off *int) error", std::move(slice), {}, "return nil");
-            func("Read(r io.Reader) error", std::move(reader), {}, "return nil");
+            func("DecodeSlice(buf []byte, off *int) error", std::move(slice), {}, dec_tail);
+            func("Read(r io.Reader) error", std::move(reader), {}, dec_tail);
         }
         else {
             auto args = state_args(a, dec_states);
-            func(std::format("decodeSliceImpl(buf []byte, off *int{}) error", sig(dec_states)), std::move(slice), {}, "return nil");
-            func(std::format("readImpl(r io.Reader{}) error", sig(dec_states)), std::move(reader), {}, "return nil");
+            func(std::format("decodeSliceImpl(buf []byte, off *int{}) error", sig(dec_states)), std::move(slice), {}, dec_tail);
+            func(std::format("readImpl(r io.Reader{}) error", sig(dec_states)), std::move(reader), {}, dec_tail);
             wrapper("DecodeSlice(buf []byte, off *int) error", dec_states, std::format("t.decodeSliceImpl(buf, off{})", args));
             wrapper("Read(r io.Reader) error", dec_states, std::format("t.readImpl(r{})", args));
         }
         if (enc_states.empty()) {
-            func("Append(out []byte) ([]byte, error)", std::move(append), {"var err error", "_ = err"}, "return out, nil");
+            func("Append(out []byte) ([]byte, error)", std::move(append), {"var err error", "_ = err"}, enc_tail);
         }
         else {
             func(std::format("appendImpl(out []byte{}) ([]byte, error)", sig(enc_states)), std::move(append),
-                 {"var err error", "_ = err"}, "return out, nil");
+                 {"var err error", "_ = err"}, enc_tail);
             wrapper("Append(out []byte) ([]byte, error)", enc_states,
                     std::format("t.appendImpl(out{})", state_args(a, enc_states)));
         }
@@ -1735,6 +1772,13 @@ namespace {
              {"b, err := t.Append(nil)", "if err != nil {", "\treturn err", "}", "_, err = w.Write(b)"}, "return err");
 
         Emitted out{.w = std::move(w)};
+        for (auto* v : {&dec_states, &enc_states}) {
+            for (auto sv : *v) {
+                if (auto t = p.type_name(sv.ref(a)->type)) {
+                    names_in(*t, out.uses);
+                }
+            }
+        }
         for (auto& [_, t] : p.members) {
             names_in(t, out.uses);
             if (!t.starts_with("[]")) {

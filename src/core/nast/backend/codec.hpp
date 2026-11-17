@@ -448,7 +448,10 @@ namespace brgen::nast::backend::codec {
                 if (n.as_any<Body>()) {
                     return false;  // 入れ子の文は自分の番で出す
                 }
-                if (auto c = n.as_any<Call>(); c && is_stream_call(c, SpecialLiteralKind::input_, "get")) {
+                // Cast は同じ Arguments を base (Call) からも指すので、同じ呼び出しに
+                // 2 度当たる。1 度だけ出す。
+                if (auto c = n.as_any<Call>(); c && is_stream_call(c, SpecialLiteralKind::input_, "get") &&
+                                                std::find(calls.begin(), calls.end(), c) == calls.end()) {
                     calls.push_back(c);
                 }
                 return true;
@@ -604,6 +607,17 @@ namespace brgen::nast::backend::codec {
         // --- 分岐 ------------------------------------------------------------
 
         expected<void> branch(Node<ConditionalExpr> cond) {
+            if (auto m = cond.as_any<Match>(); m && !m.ref(a)->condition) {
+                std::size_t defaults = 0;
+                for (auto& blk : m.ref(a)->blocks) {
+                    auto cs = blk.as_any<ConditionalStatement>();
+                    defaults += !cs || is_default_cond(a, cs.ref(a)->condition);
+                }
+                if (defaults > 1) {
+                    // `match:` の腕が全部 `..`: 順に試して最初に読めたもの (trial match)。
+                    return unexpect_loc_error(cond, "trial match (several default arms) is not supported yet");
+                }
+            }
             if (auto m = cond.as_any<Match>()) {
                 auto lowered = lowering::lower_match(lc, m);
                 if (!lowered) {
