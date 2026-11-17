@@ -40,7 +40,7 @@ Go が出たのは 3 本 (cmsg / simple / udp)。
   気付かなかった
 
 `backends/go` は削除した。`backend/entry.hpp` / `newbackend.py` / knob 機構は残す。
-2026-11-09 に lowering を呼ぶ形で 2 代目を入れた (§4 の「nast2go 2 代目」)。
+2026-11-18 に共通の walker と lowering のデータの形の上で作り直した (§4 の「nast2go」)。
 
 ## 2. TypeSize 表
 
@@ -1157,62 +1157,56 @@ field:  平らな群 1226 / 分岐を跨ぐ群 57 / 組めない 363
 
 群を持つ format 322 のうち 260 はバックエンドが表を引くだけで全部組める。
 
-### nast2go 2 代目 (2026-11-09、`backends/go`)
+### nast2go (2026-11-18 作り直し、`backends/go` + `backend/codec.hpp`)
 
-§1 の初代は AST から直に codec を書いて止まった。2 代目は codec の形を
-lowering に組ませ、返ってきた nast のノードを Go に綴るだけにした:
+§1 の初代は AST から直に codec を書いて止まった。2026-11-09 の 2 代目は
+lowering の文の形を**無条件に**使い、ebm2go より劣化した出力を出した
+(整数を手書きのシフト、1 バイトずつ読む、`[len]u8` を要素ループ、口は
+`[]byte` だけ)。lowering の形は「言語が native な書き方を持たないときの既定」
+であって、毎回使うものではなかった。
 
-| 形 | 組む側 |
-| --- | --- |
-| field の並びとビット群 | `bit_layout` |
-| 整数 / enum / 固定幅の配列 | `lower_field_decode` / `encode` |
-| ビット群 | `lower_bit_group_*` / `lower_routed_bit_*` |
-| バイトの出し入れ | `read_bytes` / `write_bytes` (`input.get()` / `output.put(x)`) |
-| match | `lower_match` |
-| 範囲との比較 | `lower_range_compare` |
+今の形:
 
-バックエンドに残ったのは lowering が呼ぶ側に任せたもの: バッファの宣言、
-読み終えたことの検査、入れ子 format の呼び出し、配列の確保 (入力の残りに
-収まるかを先に確かめる)、Go の型の付け方 (Go は暗黙の変換が無いので、型の
-違う演算と代入には変換を挟む)。組めない format は飛ばし、それを使う format も
-落とす。
+- `backend/codec.hpp` の `Walker` (CRTP) が format の Body を言語に依らず歩く。
+  bit_layout を引いて 1 つの値 / 配列 / 平らな群 / 分岐を跨ぐ群 / 入れ子 /
+  分岐に振り分け、各口の既定は lowering の文の形。言語は native に書けるもの
+  だけ上書きし、書けなければ `Walker::scalar(...)` で既定に落とす
+- lowering はデータの形も返す: `scalar_shape` (幅・符号・バイト順)、
+  `bit_group_shape` / `routed_span` (位置・shift・mask)。Go はこれを
+  `binary.BigEndian.Uint16` / `AppendUint16` / 1 つの整数の shift と mask に綴る
+- 本体は 1 つで、口ごとに展開する (slice / reader / append)。1 つの本体を
+  口の分岐で共有すると、interface に渡すバッファがエスケープ解析でスライスの
+  口までヒープに逃げる (udp で測定、`rebrgen/save/cmp/bench`)
+- API は ebm2go と同じ (`DecodeSlice` / `Read` / `Append` と `Decode` /
+  `Encode` / `Write`)。unictest の Go のハーネスがそのまま使える
 
-測り方は `python src/core/nast/backends/go/measure.py -j 4`。example/ の入力ごとに
-1 パッケージを作り `go vet` を 1 回で回す。
-
-**この版の出力は ebm2go より劣化している** (2026-11-17 に比較): 整数は
-`binary.BigEndian` ではなく手書きのシフト、読み込みは `io.ReadFull` ではなく
-1 バイトずつ、`[len]u8` はスライスではなく要素ごとのループ、入出力の口は
-`[]byte` だけ。lowering の出力 (どの言語でも書ける形) を無条件に使い、言語の
-形を選ぶ情報を捨てたため。lowering の形は knob の既定値に置き、言語が上書き
-する形で作り直す。式も knob / 既定の訪問を迂回して Go 専用に手書きしている。
-合格線は ebm2go の出力と同じ API で unictest の Go の runner を通ること。
-下の数字は「劣化した出力が vet を通る数」でしかない。
+検証は unictest。`rebrgen/test/unictest_nast.json` (CI の `test/unictest.json`
+とは別) と `unictest_setup.py` の nast2 の分岐で、nast の実行ファイルに .bgn を
+直に渡し、テストは ebm2go の `unictest.py` を使う:
 
 ```
-入力 314 本
-  全 format を生成し go vet を通った     100   (初代は 180 本中 3)
-  vet は通るが飛ばした format がある     210
-  go vet で落ちた                          1   (feature_test/recurse_defs、定数の循環)
-  入力の解析で失敗                         3
-format: 生成 1210 / 飛ばした 890
+cd rebrgen && ../tool/unictest.exe -c test/unictest_nast.json --save-tmp-dir --clean-tmp     --shorter-path --parallel-limit 4 --output-json save/nast_unictest.json
 ```
 
-飛ばした理由の上位 (format 数、使う側の巻き添えを含む):
+同じ入力 (test/inputs.json の 59 本) × 同じ 3 つの口での比較 (2026-11-18):
 
 ```
-末尾までのバイト列以外の配列        104
-StrLiteralType (文字列の期待値)      70
-呼び出し (fn)                        48
-名前つきの引数の付いた配列           39
-引数つきの入れ子 format              38
-手書きの encode / decode             35
-Range が codec の文の位置にある      31
-field_io が組めない                  29
-state 変数                           29
-実行時に決まるバイト順 (IsLittleEndian)  26
-ビット群: 閉じる前に Body が終わる   20  (format の境界を跨ぐ)
+           ebm2go    nast2go
+std-io      55/59     12/59
+slice-io    56/59     12/59
+append-io   56/59     12/59
+計         167/177    36/177   (nast2go だけが通るもの 0)
 ```
+
+nast2go が通るのは quic_varint (8 入力) / signed_bytes / simple_vector (2) /
+until_eof の 4 format。残りの 19 format が止まる理由は
+「末尾までの非バイト配列」(dns_packet / http2)、文字列の期待値 (tar / wasm /
+extended_binary_module / null_terminated)、引数つきの入れ子 format
+(bgp / subrange_align)、import した型、手書きの fn、available、generics。
+
+example/ 全体の `go vet` (`measure.py -j 4`) は 100 本が全 format を生成して
+通過、飛ばした理由の上位は「末尾までの非バイト配列」145、文字列の期待値 98、
+fn 呼び出し 48、引数つきの入れ子 format 38、手書きの encode / decode 35。
 
 ## 5. EBM との差 (訂正を含む)
 
@@ -1242,7 +1236,7 @@ nast に無い部品: **`WriterManager` に当たるもの**。`node/code_writer
 - ~~**CFG**~~ 木の上の経路の数え上げで済んだ (上の「分岐を跨ぐビット群」)。
   対応表もできた (上の「field と群の対応表」)。残りは位置が経路で変わる
   2 群 (実行時カーソル)、format の境界を跨ぐ群
-- nast2go の飛ばした理由 (上の「nast2go 2 代目」の表) を上から
+- nast2go: unictest の残り 19 format を、上の「nast2go」の止まる理由の順に通す
 - **union 越しのメンバアクセス** (`payload.payload`)。載せ替えは `WithReceiver`
   で済んだので、残るのはメンバアクセスを候補に分配する側
 - `x.is_defined` は落とせるようになった (`lowering/enum_defined`、メンバとの
