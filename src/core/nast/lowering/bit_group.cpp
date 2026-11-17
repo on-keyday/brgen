@@ -154,7 +154,7 @@ namespace brgen::nast::lowering {
             for (auto f : g.fields) {
                 auto* fe = c.tables.table<FieldEndian>().get(f);
                 if (!fe) {
-                    *why = "バイト順の表に無い field";
+                    *why = "field has no FieldEndian entry";
                     return std::nullopt;
                 }
                 if (!first) {
@@ -163,22 +163,22 @@ namespace brgen::nast::lowering {
                 }
                 if (fe->endian != first->endian || fe->dynamic != first->dynamic ||
                     fe->bit_order != first->bit_order || fe->bit_order_dynamic != first->bit_order_dynamic) {
-                    *why = "群の中で順が変わる";
+                    *why = "byte or bit order changes within the group";
                     return std::nullopt;
                 }
             }
             if (!first) {
-                *why = "field が無い";
+                *why = "group has no field";
                 return std::nullopt;
             }
             if (first->bit_order_dynamic) {
-                *why = "bit_order が実行時に決まる";
+                *why = "bit_order is decided at run time";
                 return std::nullopt;
             }
             bool multi = g.bits > 8;
             bool byte_known = !first->dynamic && first->endian != Endian::native;
             if (multi && !byte_known) {
-                *why = "2 バイト以上でバイト順が実行時かターゲットで決まる";
+                *why = "multi-byte group whose byte order is decided at run time or by the target";
                 return std::nullopt;
             }
             Order o;
@@ -186,13 +186,13 @@ namespace brgen::nast::lowering {
             if (first->bit_order != BitOrder::unspec) {
                 o.lsb = first->bit_order == BitOrder::lsb;
                 if (multi && o.lsb != (o.byte == Endian::little)) {
-                    *why = "2 バイト以上でバイト順とビット順が対角でない";
+                    *why = "multi-byte group whose byte order and bit order are off the diagonal";
                     return std::nullopt;
                 }
                 return o;
             }
             if (!byte_known) {
-                *why = "ビット順がバイト順に従い、そのバイト順が実行時かターゲットで決まる";
+                *why = "bit order follows a byte order decided at run time or by the target";
                 return std::nullopt;
             }
             o.lsb = o.byte == Endian::little;
@@ -207,11 +207,11 @@ namespace brgen::nast::lowering {
                 return std::nullopt;
             };
             if (!is_layout_field(a, f)) {
-                return refuse("読み書きの対象でない field");
+                return refuse("field is not part of the layout");
             }
             auto args = field_args(a, f);
             if (args.named || args.positional > 1) {
-                return refuse("field の引数");
+                return refuse("field has arguments");
             }
             Member m{.field = f, .expected = args.expected};
             m.type = strip_wrappers(a, f.ref(a)->type);
@@ -219,22 +219,22 @@ namespace brgen::nast::lowering {
                 m.is_enum = true;
                 auto base = e.ref(a)->base;
                 if (!base) {
-                    return refuse("enum の下地が無い");
+                    return refuse("enum has no base type");
                 }
                 auto io = strip_wrappers(a, base.ref(a)->base_type).as_any<IntType>();
                 if (!io || io.ref(a)->is_signed) {
-                    return refuse("enum の下地が符号なし整数でない");
+                    return refuse("enum base type is not an unsigned integer");
                 }
                 m.bits = io.ref(a)->bit_size;
             }
             else if (auto i = m.type.as_any<IntType>()) {
                 if (i.ref(a)->is_signed) {
-                    return refuse("符号つき");  // 符号拡張がまだ
+                    return refuse("signed field (sign extension is not supported yet)");  // 符号拡張がまだ
                 }
                 m.bits = i.ref(a)->bit_size;
             }
             else {
-                return refuse(m.type ? "整数と enum 以外の field" : "型の無い field");  // 入れ子 format / 配列
+                return refuse(m.type ? "field is neither an integer nor an enum" : "field has no type");  // 入れ子 format / 配列
             }
             return m;
         }
@@ -246,10 +246,10 @@ namespace brgen::nast::lowering {
             };
             auto& a = c.a;
             if (g.close != BitGroup::Close::flat || g.bits == 0 || g.bits % 8 != 0) {
-                return refuse("平らでない");
+                return refuse("group does not close within its body");
             }
             if (g.bits > 64) {
-                return refuse("64 ビットを超える");
+                return refuse("group is wider than 64 bits");
             }
             auto o = order_of(c, g, why);
             if (!o) {
@@ -267,7 +267,7 @@ namespace brgen::nast::lowering {
                 ms.push_back(*m);
             }
             if (used != g.bits) {
-                return refuse("幅の表と型の幅が食い違う");
+                return refuse("TypeSize disagrees with the field types");
             }
             // msb なら先頭の field が上位、lsb なら下位。
             std::size_t pos = 0;
@@ -551,7 +551,7 @@ namespace brgen::nast::lowering {
     std::optional<RoutedBitGroup> routed_bit_group(Context& c, Node<Body> body, std::size_t start, const char** why) {
         auto routes = bit_routes(c, body, start);
         if (routes.empty()) {
-            *why = "経路が無い";
+            *why = "no route";
             return std::nullopt;
         }
         // field ごとの位置。経路で変われば静的には組めない。
@@ -559,7 +559,7 @@ namespace brgen::nast::lowering {
         BitGroup all;  // order_of に渡す和集合
         for (auto& r : routes) {
             if (r.end != BitRoute::End::closed) {
-                *why = "閉じない経路がある";
+                *why = "a route does not close on a byte boundary";
                 return std::nullopt;
             }
             all.bits = std::max(all.bits, r.bits);
@@ -571,7 +571,7 @@ namespace brgen::nast::lowering {
                 }
                 auto [it, fresh] = by_field.try_emplace(f.id(), RoutedBitField{.field = f, .offset = pos, .bits = m->bits});
                 if (!fresh && it->second.offset != pos) {
-                    *why = "位置が経路で変わる";
+                    *why = "a field's bit offset depends on the route";
                     return std::nullopt;
                 }
                 if (fresh) {
@@ -599,7 +599,7 @@ namespace brgen::nast::lowering {
                         return !hit;
                     });
                     if (hit) {
-                        *why = "閉じた後に群の field を読む経路がある";
+                        *why = "a route reads a group field again after the group closed";
                         return std::nullopt;
                     }
                 }
@@ -622,7 +622,7 @@ namespace brgen::nast::lowering {
             f.flush_from = f.offset / 8;
             f.flush_to = end / 8;
             if (end - f.offset / 8 * 8 > 64) {
-                *why = "field が 8 バイトを超える範囲に跨る";
+                *why = "a field spans more than 8 bytes";
                 return std::nullopt;
             }
             g.fields.push_back(f);
@@ -751,20 +751,20 @@ namespace brgen::nast::lowering {
     }
 
     namespace {
-        constexpr const char* lost_after_open = "手前の群が閉じない";
+        constexpr const char* lost_after_open = "position unknown: an earlier group does not close";
 
         const char* close_reason(BitGroup::Close how) {
             switch (how) {
                 case BitGroup::Close::flat:
-                    return "平ら";
+                    return "flat";
                 case BitGroup::Close::branch:
-                    return "閉じる前に分岐";
+                    return "branch before the group closes";
                 case BitGroup::Close::other_statement:
-                    return "閉じる前に読み書きする文";
+                    return "statement that reads or writes before the group closes";
                 case BitGroup::Close::variable_width:
-                    return "閉じる前に幅の決まらない field";
+                    return "variable-width field before the group closes";
                 case BitGroup::Close::body_end:
-                    return "閉じる前に Body が終わる";
+                    return "body ends before the group closes";
             }
             return "?";
         }
@@ -820,7 +820,7 @@ namespace brgen::nast::lowering {
                 // どの経路も閉じていても、閉じた後に群の field を読み直す経路が
                 // あれば後ろの位置は経路で変わる。組めなければ一律に分からない
                 // 側に置く。
-                return "手前の分岐を跨ぐ群が組めない";
+                return "position unknown: an earlier group across a branch was refused";
             }
 
             // body を歩く。lost は入るときに位置が分からなくなっている理由
@@ -880,6 +880,49 @@ namespace brgen::nast::lowering {
         LayoutWalk w{c, out};
         w.walk(fmt.ref(c.a)->body, nullptr);
         return out;
+    }
+
+    std::optional<BitGroupShape> bit_group_shape(Context& c, const BitGroup& g, const char** why) {
+        Order order;
+        auto ms = members_of(c, g, why, &order);
+        if (ms.empty()) {
+            return std::nullopt;
+        }
+        BitGroupShape s{.bytes = g.bits / 8, .byte_order = order.byte, .lsb = order.lsb};
+        for (auto& m : ms) {
+            s.members.push_back(BitGroupMember{.field = m.field,
+                                               .type = m.type,
+                                               .is_enum = m.is_enum,
+                                               .bits = m.bits,
+                                               .shift = m.shift,
+                                               .mask = mask_of(m.bits),
+                                               .expected = m.expected});
+        }
+        return s;
+    }
+
+    std::optional<RoutedSpan> routed_span(Context& c, const RoutedBitGroup& g, std::size_t index) {
+        if (index >= g.fields.size()) {
+            return std::nullopt;
+        }
+        auto& f = g.fields[index];
+        const char* why = nullptr;
+        auto m = member_of(c, f.field, &why);
+        if (!m) {
+            return std::nullopt;
+        }
+        auto sp = span_of(g, f);
+        return RoutedSpan{.first = sp.first,
+                          .n = sp.n,
+                          .shift = sp.shift,
+                          .mask = mask_of(f.bits),
+                          .member = BitGroupMember{.field = f.field,
+                                                   .type = m->type,
+                                                   .is_enum = m->is_enum,
+                                                   .bits = m->bits,
+                                                   .shift = sp.shift,
+                                                   .mask = mask_of(f.bits),
+                                                   .expected = m->expected}};
     }
 
 }  // namespace brgen::nast::lowering

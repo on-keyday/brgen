@@ -28,7 +28,7 @@ int main(int argc, char** argv) {
         std::string_view arg = argv[i];
         if (arg == "-c") {
             if (i + 1 >= argc) {
-                cerr << "-c にコマンドが無い\n";
+                cerr << "-c needs a command\n";
                 return 2;
             }
             once.push_back(argv[++i]);
@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
             path = arg;
             continue;
         }
-        cerr << "余分な引数: " << arg << "\n";
+        cerr << "extra argument: " << arg << "\n";
         return 2;
     }
     if (path.empty()) {
@@ -54,7 +54,7 @@ int main(int argc, char** argv) {
     }
     // 解析は止まらないので、診断があっても中身は見られる。最初のものだけ言う。
     if (auto first = first_error(p); !first.empty()) {
-        cerr << "診断あり (最初のもの): " << first << "\n";
+        cerr << "diagnostics (first one): " << first << "\n";
     }
 
     query::Session s{p};

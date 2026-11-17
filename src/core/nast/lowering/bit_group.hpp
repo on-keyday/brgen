@@ -147,6 +147,48 @@ namespace brgen::nast::lowering {
     // fmt の Body (入れ子の format の中は含まない) の表を作る。
     BitLayout bit_layout(Context& c, Node<Format> fmt);
 
+    // ---- データの形 ----
+    //
+    // 下の lower_* は文 (代入) を組むが、文を組まずに材料だけ欲しい側がある:
+    // 言語が整数の読み書きを native に持っている (Go の binary.BigEndian) か、
+    // 代入ではなく式で値を組む (関数型) か、宣言に直す (wirespec の bits)。
+    // そういう側はここから位置と shift と mask を取り、自分の形で綴る。
+    // 文の形 (lower_*) はこのデータから組める既定の 1 つ。
+
+    // 平らな群の材料。群を bytes バイトの 1 つの整数として読み (2 バイト以上は
+    // byte_order で)、各 field を (値 >> shift) & mask で切り出す。
+    struct BitGroupMember {
+        Node<Field> field;
+        Node<Type> type;  // field の型 (enum ならその enum)
+        bool is_enum = false;
+        std::size_t bits = 0;
+        std::size_t shift = 0;
+        std::uint64_t mask = 0;
+        Node<Expr> expected;  // `f :u3(0)` の期待値。無ければ null
+    };
+    struct BitGroupShape {
+        std::size_t bytes = 0;
+        Endian byte_order = Endian::big;
+        bool lsb = false;
+        std::vector<BitGroupMember> members;
+    };
+
+    // 組めなければ空で、理由は why。
+    std::optional<BitGroupShape> bit_group_shape(Context& c, const BitGroup& g, const char** why);
+
+    // 分岐を跨ぐ群の fields[index] の材料。群のバッファの [first, first + n)
+    // バイトを 1 つの整数として読み (lsb ならリトル、msb ならビッグ)、
+    // (値 >> shift) & mask で切り出す。
+    struct RoutedSpan {
+        std::size_t first = 0;
+        std::size_t n = 0;
+        std::size_t shift = 0;
+        std::uint64_t mask = 0;
+        BitGroupMember member;
+    };
+
+    std::optional<RoutedSpan> routed_span(Context& c, const RoutedBitGroup& g, std::size_t index);
+
     // 組めない理由。組めるなら null。下の 2 つが null を返すのはこれが
     // null でないとき (と、targets の数が合わないとき) だけ。
     const char* bit_group_refusal(Context& c, const BitGroup& g);

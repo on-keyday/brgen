@@ -22,7 +22,7 @@ namespace brgen::nast::query {
         void body_text(Arena& a, Lowered& r, const char* label, Node<Body> body) {
             r.text += std::format("{}:\n", label);
             if (!body) {
-                r.text += "  (組めない)\n";
+                r.text += "  (not lowered)\n";
                 return;
             }
             r.made.push_back({label, body});
@@ -84,7 +84,7 @@ namespace brgen::nast::query {
             }
             auto dec = lowering::lower_field_decode(c, f, target, buf, off);
             if (!dec) {
-                r.text += "decode:\n  (組めない)\n";
+                r.text += "decode:\n  (not lowered)\n";
                 return r;
             }
             body_text(a, r, "decode", dec);
@@ -108,7 +108,7 @@ namespace brgen::nast::query {
         if (auto m = n.as_any<Match>()) {
             auto if_ = lowering::lower_match(c, m);
             if (!if_) {
-                r.text += "(組めない)\n";
+                r.text += "(not lowered)\n";
                 return r;
             }
             r.made.push_back({"branch", if_});
@@ -118,7 +118,7 @@ namespace brgen::nast::query {
         if (auto av = n.as_any<Available>()) {
             auto e = lowering::lower_available(c, av);
             if (!e) {
-                r.text += "(組めない)\n";
+                r.text += "(not lowered)\n";
                 return r;
             }
             r.made.push_back({"expr", e});
@@ -128,7 +128,7 @@ namespace brgen::nast::query {
         if (auto cond = n.as_any<Cond>()) {
             auto* low = lowering::lower_conditional(c, cond);
             if (!low) {
-                r.text += "(組めない)\n";
+                r.text += "(not lowered)\n";
                 return r;
             }
             r.made.push_back({"branch", low->branch});

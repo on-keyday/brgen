@@ -186,6 +186,58 @@ namespace brgen::nast::lowering {
     //
     // 位置は読み書きを挟む向き: 読む側は読んでから、書く側は書く前に。
     // 書いてから検査しても、失敗したときには既にバッファが汚れている。
+    std::optional<ScalarShape> scalar_shape(Context& c, Node<Field> f, Node<Type> type) {
+        auto& a = c.a;
+        auto stripped = strip_wrappers(a, type);
+        if (!stripped) {
+            return std::nullopt;
+        }
+        ScalarShape s{.type = stripped};
+        Node<Type> io = stripped;
+        if (auto e = stripped.as_any<EnumType>()) {
+            auto base = e.ref(a)->base;
+            if (!base) {
+                return std::nullopt;
+            }
+            io = strip_wrappers(a, base.ref(a)->base_type);
+            s.kind = ScalarShape::Kind::enum_;
+        }
+        else if (auto fl = stripped.as_any<FloatType>()) {
+            auto bits = fl.ref(a)->bit_size;
+            if (bits != 32 && bits != 64) {
+                return std::nullopt;
+            }
+            Builder b{a, stripped.ref(a).loc()};
+            io = b.int_type(bits);
+            s.kind = ScalarShape::Kind::float_;
+        }
+        auto it = io.as_any<IntType>();
+        if (!it || it.ref(a)->bit_size == 0 || it.ref(a)->bit_size % 8 != 0 || it.ref(a)->bit_size > 64) {
+            return std::nullopt;
+        }
+        s.io = it;
+        s.bytes = it.ref(a)->bit_size / 8;
+        s.is_signed = it.ref(a)->is_signed;
+        // 型に綴られた順が先、無ければ FieldEndian (input.endian のスコープ)。
+        auto spelled = it.ref(a)->endian;
+        auto* fe = f ? c.tables.table<FieldEndian>().get(f) : nullptr;
+        if (spelled == Endian::big || spelled == Endian::little) {
+            s.order = spelled;
+        }
+        else if (fe && fe->dynamic) {
+            s.order = Endian::unspec;
+            s.dynamic_order = fe->dynamic;
+        }
+        else if (fe && fe->endian == Endian::native) {
+            s.order = Endian::unspec;
+            s.native_order = true;
+        }
+        else {
+            s.order = fe && fe->endian == Endian::little ? Endian::little : Endian::big;
+        }
+        return s;
+    }
+
     Node<Body> add_expected_check(Context& c, Node<Expr> target, Node<Body> body,
                                   Node<Expr> expected, bool decode) {
         if (!body || !expected) {

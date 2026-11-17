@@ -138,7 +138,7 @@ namespace brgen::nast::query {
                     auto ctx = futils::comb2::LexContext<Tok, std::string>{};
                     if (auto status = tok_one(seq, ctx, 0); status != futils::comb2::Status::match) {
                         auto substr = src.substr(seq.rptr);
-                        err = std::format("読めない字がある {} at {} {} (len: {})", status == futils::comb2::Status::fatal ? "fatal" : "not_match", seq.rptr, substr, substr.size());
+                        err = std::format("unexpected character {} at {} {} (len: {})", status == futils::comb2::Status::fatal ? "fatal" : "not_match", seq.rptr, substr, substr.size());
                         return false;
                     }
                     auto pos = ctx.str_pos;
@@ -246,7 +246,7 @@ namespace brgen::nast::query {
 
             bool fail(std::string_view msg) {
                 if (err.empty()) {
-                    err = std::format("{} (位置 {})", msg, lx.pos);
+                    err = std::format("{} (at {})", msg, lx.pos);
                 }
                 return false;
             }
@@ -259,7 +259,7 @@ namespace brgen::nast::query {
                 if (lx.sym("@")) {
                     auto name = lx.ident();
                     if (name.empty()) {
-                        return fail("@ の後に表の名前が要る");
+                        return fail("expected a table name after @");
                     }
                     out.push_back(Step{Step::Kind::table, name, 0});
                     return true;
@@ -267,14 +267,14 @@ namespace brgen::nast::query {
                 if (lx.sym("$")) {
                     auto name = lx.ident();
                     if (name.empty()) {
-                        return fail("$ の後に擬似フィールドの名前が要る");
+                        return fail("expected a pseudo-field name after $");
                     }
                     out.push_back(Step{Step::Kind::pseudo, name, 0});
                     return true;
                 }
                 auto name = lx.ident();
                 if (name.empty()) {
-                    return fail("フィールド名が要る");
+                    return fail("expected a field name");
                 }
                 out.push_back(Step{Step::Kind::field, name, 0});
                 return true;
@@ -289,14 +289,14 @@ namespace brgen::nast::query {
                         if (lx.sym("$")) {
                             auto name = lx.ident();
                             if (name.empty()) {
-                                return fail("$ の後に擬似フィールドの名前が要る");
+                                return fail("expected a pseudo-field name after $");
                             }
                             out.push_back(Step{Step::Kind::pseudo, name, 0});
                             continue;
                         }
                         auto name = lx.ident();
                         if (name.empty()) {
-                            return fail("`.` の後にフィールド名が要る");
+                            return fail("expected a field name after `.`");
                         }
                         out.push_back(Step{Step::Kind::field, name, 0});
                         continue;
@@ -305,10 +305,10 @@ namespace brgen::nast::query {
                         auto digits = lx.number();
                         auto n = as_int(digits);
                         if (!n || *n < 0) {
-                            return fail("`[` の中は番号");
+                            return fail("expected an index inside `[`");
                         }
                         if (!lx.sym("]")) {
-                            return fail("`]` が無い");
+                            return fail("missing `]`");
                         }
                         out.push_back(Step{Step::Kind::index, {}, std::size_t(*n)});
                         continue;
@@ -343,7 +343,7 @@ namespace brgen::nast::query {
                             lit = lx.ident();
                         }
                         if (lit.empty()) {
-                            return fail("比較する値が要る");
+                            return fail("expected a value to compare with");
                         }
                     }
                     e->literal = std::move(lit);
@@ -369,7 +369,7 @@ namespace brgen::nast::query {
                         return false;
                     }
                     if (!lx.sym(")")) {
-                        return fail("`)` が無い");
+                        return fail("missing `)`");
                     }
                     return true;
                 }
@@ -688,7 +688,7 @@ namespace brgen::nast::query {
             return nullptr;
         }
         if (!ps.lx.eof()) {
-            err = std::format("読み切れない: {}", text.substr(ps.lx.pos));
+            err = std::format("unexpected trailing input: {}", text.substr(ps.lx.pos));
             return nullptr;
         }
         return out;

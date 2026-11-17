@@ -41,6 +41,34 @@
 
 namespace brgen::nast::lowering {
 
+    // ---- データの形 ----
+    //
+    // バイト境界に乗る 1 つの値 (整数 / enum / 浮動小数点) を何として読み書き
+    // するか。下の lower_field_* はこれを文 (combine_int / split_int の代入) に
+    // するが、言語が整数の読み書きを native に持っているならこの材料から直に
+    // 綴れる (Go の binary.BigEndian.Uint16、Python の int.from_bytes)。
+    struct ScalarShape {
+        enum class Kind : std::uint8_t {
+            int_,
+            enum_,   // 下地の整数として読み、enum に落とす
+            float_,  // 同じ幅の整数として読み、ビット列のまま浮動小数点にする
+        };
+        Kind kind = Kind::int_;
+        Node<Type> type;     // 値の型 (enum / float ならそれ自体)
+        Node<IntType> io;    // 読み書きする整数の型
+        std::size_t bytes = 0;
+        bool is_signed = false;
+        // big / little。ターゲット (native) か実行時 (dynamic) に決まるときは
+        // unspec で、dynamic はその代入の位置。
+        Endian order = Endian::big;
+        bool native_order = false;
+        Node<SpecifyOrder> dynamic_order;
+    };
+
+    // type はその field の型か、配列の要素の型。field は FieldEndian を引くため。
+    // バイト境界に乗る整数 / enum / 浮動小数点でなければ空。
+    std::optional<ScalarShape> scalar_shape(Context& c, Node<Field> f, Node<Type> type);
+
     // 組めなければ null。今のところ組めないもの:
     //   要素が可変幅の配列 / 末尾までの配列 / 入れ子 format /
     //   バイト境界に乗らない幅 / 名前つきの引数が付いた field

@@ -332,7 +332,7 @@ namespace {
             check(gs.size() == 1 && gs[0].bits == 72, "Over64: 72 bit の群");
             if (gs.size() == 1) {
                 auto r = build(gs[0]);
-                check_eq(r.why, "64 ビットを超える", "Over64 は組めない");
+                check_eq(r.why, "group is wider than 64 bits", "Over64 は組めない");
                 check(r.dec.empty() && r.enc.empty(), "Over64: 何も組まない");
             }
         }
@@ -340,14 +340,14 @@ namespace {
             auto gs = groups_of("Signed");
             check(gs.size() == 1 && gs[0].close == Close::flat, "Signed: 平らな群");
             if (gs.size() == 1) {
-                check_eq(build(gs[0]).why, "符号つき", "符号つきは組めない");
+                check_eq(build(gs[0]).why, "signed field (sign extension is not supported yet)", "符号つきは組めない");
             }
         }
         {
             auto gs = groups_of("Branch");
-            check(gs.size() == 1 && gs[0].close == Close::branch && gs[0].bits == 2, "Branch: 閉じる前に分岐");
+            check(gs.size() == 1 && gs[0].close == Close::branch && gs[0].bits == 2, "Branch: branch before the group closes");
             if (gs.size() == 1) {
-                check_eq(build(gs[0]).why, "平らでない", "分岐で閉じない群は組めない");
+                check_eq(build(gs[0]).why, "group does not close within its body", "分岐で閉じない群は組めない");
             }
             // Branch の Body にある If の腕だけを見る (他の format にも If がある)。
             std::size_t arm_end = 0;
@@ -412,14 +412,14 @@ namespace {
                 else {
                     check(false, "BigLsb 1 バイト: decode 3 行");
                 }
-                check_eq(build(gs[1]).why, "2 バイト以上でバイト順とビット順が対角でない", "BE×LSB の 2 バイトは組めない");
+                check_eq(build(gs[1]).why, "multi-byte group whose byte order and bit order are off the diagonal", "BE×LSB の 2 バイトは組めない");
             }
         }
         {
             auto gs = groups_of("DynamicBitOrder");
             check(gs.size() == 1, "DynamicBitOrder: 群が 1 つ");
             if (gs.size() == 1) {
-                check_eq(build(gs[0]).why, "bit_order が実行時に決まる", "実行時の bit_order は組めない");
+                check_eq(build(gs[0]).why, "bit_order is decided at run time", "実行時の bit_order は組めない");
             }
         }
     }
@@ -502,7 +502,7 @@ namespace {
         else {
             check(false, "ArmThenTail が組める: " + why);
         }
-        check(!routed("NoElse", why) && why == "位置が経路で変わる", "NoElse: else が無いと tail の位置が変わる");
+        check(!routed("NoElse", why) && why == "a field's bit offset depends on the route", "NoElse: else が無いと tail の位置が変わる");
         {
             // 入出力に触れる定義は群を閉じる。触れないものは通す。
             auto closes = [&](std::string_view name) {
@@ -540,7 +540,7 @@ namespace {
                 }
                 check(routes.size() == 2 && open == 1, "BreakInside: break の経路だけ閉じない");
                 const char* w = nullptr;
-                check(!lowering::routed_bit_group(c, loop_body, 0, &w) && w && std::string(w) == "閉じない経路がある",
+                check(!lowering::routed_bit_group(c, loop_body, 0, &w) && w && std::string(w) == "a route does not close on a byte boundary",
                       "BreakInside: 群ごと断る");
             }
         }
@@ -609,24 +609,24 @@ namespace {
         bool complete = false;
         check_eq(layout_of("Straddle", &complete), "hi:flat0.0 mid:flat0.1 lo:flat0.2", "Straddle: 1 つの平らな群");
         check(complete, "Straddle: 全部載る");
-        check_eq(layout_of("Signed", &complete), "s:符号つき u:符号つき", "Signed: 群ごと組めない");
+        check_eq(layout_of("Signed", &complete), "s:signed field (sign extension is not supported yet) u:signed field (sign extension is not supported yet)", "Signed: 群ごと組めない");
         check(!complete, "Signed: 組めない field がある");
         // 腕の中の field も、分岐の後の field も、分岐の前で始まった群の一員。
         check_eq(layout_of("ArmThenTail", &complete), "flag:routed0.0 x:routed0.1 y:routed0.2 tail:routed0.3",
                  "ArmThenTail: 腕と分岐の後も 1 つの群");
         check(complete, "ArmThenTail: 全部載る");
         check_eq(layout_of("CloseThenTail", nullptr),
-                 "prefix:閉じた後に群の field を読む経路がある v:閉じた後に群の field を読む経路がある "
-                 "tail:閉じた後に群の field を読む経路がある pad:手前の分岐を跨ぐ群が組めない",
+                 "prefix:a route reads a group field again after the group closed v:a route reads a group field again after the group closed "
+                 "tail:a route reads a group field again after the group closed pad:position unknown: an earlier group across a branch was refused",
                  "CloseThenTail: 腕で閉じた後に tail を読み直す経路があるので組めない");
         check_eq(layout_of("LostAfterOpen", nullptr),
-                 "a:閉じる前に読み書きする文 b:手前の群が閉じない c:手前の群が閉じない d:手前の群が閉じない",
+                 "a:statement that reads or writes before the group closes b:position unknown: an earlier group does not close c:position unknown: an earlier group does not close d:position unknown: an earlier group does not close",
                  "LostAfterOpen: 群が閉じないと後ろは (バイト幅でも) 位置が分からない");
         check_eq(layout_of("LostInArm", nullptr),
-                 "sel:- a:閉じる前に読み書きする文 b:手前の群が閉じない tail:手前の群が閉じない",
+                 "sel:- a:statement that reads or writes before the group closes b:position unknown: an earlier group does not close tail:position unknown: an earlier group does not close",
                  "LostInArm: 腕で分からなくなった位置は分岐の後へ持ち越す");
         // break の経路が閉じないので、ループの Body の終わりの位置が分からない。
-        check_eq(layout_of("BreakInside", nullptr), "a:閉じない経路がある b:閉じない経路がある",
+        check_eq(layout_of("BreakInside", nullptr), "a:a route does not close on a byte boundary b:a route does not close on a byte boundary",
                  "BreakInside: 群ごと断る");
     }
 

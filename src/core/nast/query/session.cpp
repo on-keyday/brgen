@@ -270,11 +270,11 @@ namespace brgen::nast::query {
         std::uint32_t id = 0;
         auto want_id = [&] {
             if (!(in >> id)) {
-                out += "id が要る\n";
+                out += "expected an id\n";
                 return false;
             }
             if (!a.header_at(id)) {
-                out += std::format("#{} は無い\n", id);
+                out += std::format("no node #{}\n", id);
                 return false;
             }
             return true;
@@ -309,7 +309,7 @@ namespace brgen::nast::query {
                 opt.mark_unprintable |= how == "mark";
             }
             auto text = unparse_node(a, node_at(id), opt);
-            out += text.empty() ? "(綴れない。mark を付けると目印で出る)" : text;
+            out += text.empty() ? "(cannot unparse; add mark to show placeholders)" : text;
             out += "\n";
             return true;
         }
@@ -335,14 +335,14 @@ namespace brgen::nast::query {
         if (cmd == "find") {
             std::string kind;
             if (!(in >> kind)) {
-                out += "Kind が要る (kinds で一覧、Any で全部)\n";
+                out += "expected a Kind (kinds lists them, Any matches all)\n";
                 return true;
             }
             std::optional<NodeType> type;
             if (kind != "Any") {
                 type = from_string<NodeType>(kind);
                 if (!type) {
-                    out += std::format("そんな NodeType は無い: {}\n", kind);
+                    out += std::format("no such NodeType: {}\n", kind);
                     return true;
                 }
             }
@@ -408,7 +408,7 @@ namespace brgen::nast::query {
             }
             auto type = from_string<NodeType>(kind);
             if (!type) {
-                out += std::format("そんな NodeType は無い: {}\n", kind);
+                out += std::format("no such NodeType: {}\n", kind);
                 return true;
             }
             out += show_kind(*type);
@@ -433,7 +433,7 @@ namespace brgen::nast::query {
             out += std::format("modules {}, root #{}\n", p.modules.size(), p.root.id());
             return true;
         }
-        out += std::format("知らないコマンド: {} (help)\n", cmd);
+        out += std::format("unknown command: {} (see help)\n", cmd);
         return true;
     }
 
