@@ -23,7 +23,19 @@ for e in list(unictest_env_vars.keys()):
 
 runner_dir = unictest_env_vars["UNICTEST_RUNNER_DIR"]
 original_workdir = unictest_env_vars["UNICTEST_ORIGINAL_WORK_DIR"]
-ebm2target = (pl.Path(original_workdir) / f"tool/{target_command}").as_posix()
+# nast のバックエンド (nast2<lang>) は .bgn を直に読む。ebmgen を通さず、
+# nast のビルドディレクトリにある実行ファイルを使う。テスト側は同じ言語の
+# ebm2<lang> のハーネス (unictest.py) をそのまま使う — 同じ API を出す前提。
+NAST_PREFIX = "nast2"
+is_nast = target_command.startswith(NAST_PREFIX)
+if is_nast:
+    nast_bin_dir = os.environ.get(
+        "NAST_BIN_DIR",
+        (pl.Path(original_workdir) / "../src/core/nast/build/fast/bin").as_posix(),
+    )
+    ebm2target = (pl.Path(nast_bin_dir) / target_command).as_posix()
+else:
+    ebm2target = (pl.Path(original_workdir) / f"tool/{target_command}").as_posix()
 if os.name == "nt":
     ebm2target += ".exe"
 
@@ -43,6 +55,8 @@ setup_target_file = pl.Path(runner_dir) / f"test_target{file_ext}"
 
 # Resolve which source directory the tool lives in (ebmcg = compiled generator, ebmip = interpreter)
 def find_tool_unictest_script(workdir: pl.Path, command: str) -> pl.Path:
+    if command.startswith(NAST_PREFIX):
+        command = "ebm2" + command[len(NAST_PREFIX):]
     for subdir in ("ebmcg", "ebmip"):
         candidate = workdir / "src" / subdir / command / "unictest.py"
         if candidate.exists():
@@ -100,7 +114,19 @@ def shift_bits(data: bytes, k: int) -> bytes:
     return bytes(out)
 
 
-if mode == "setup":
+if mode == "setup" and is_nast:
+    _, additional_args = split_setup_options()
+    cmd = [ebm2target, "-i", unictest_env_vars["UNICTEST_SOURCE_FILE"]] + additional_args
+    print(f"\nRunning command: {' '.join(cmd)}")
+    result = sp.run(cmd, timeout=60, capture_output=True)
+    if result.stderr:
+        sys.stderr.write(result.stderr.decode("utf-8", errors="replace"))
+    if result.returncode != 0:
+        sys.exit(result.returncode)
+    with open(setup_target_file, "wb") as f:
+        f.write(result.stdout)
+
+elif mode == "setup":
 
     ebmgen = (pl.Path(original_workdir) / "tool/ebmgen").as_posix()
     if os.name == "nt":

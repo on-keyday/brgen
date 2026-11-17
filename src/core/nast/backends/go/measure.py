@@ -37,7 +37,7 @@ def generate(nast2go: pathlib.Path, src: pathlib.Path, out: pathlib.Path):
         [str(nast2go), "-i", str(src), "-o", str(d / "gen.go"), "--package", pkg],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
-    skipped = [l for l in r.stderr.splitlines() if "を飛ばした" in l]
+    skipped = [l for l in r.stderr.splitlines() if "skipped " in l]
     generated = (d / "gen.go").exists() and r.returncode == 0
     if not generated:
         shutil.rmtree(d, ignore_errors=True)
@@ -105,7 +105,7 @@ def main():
             status["全 format を生成し go vet を通った"] += 1
 
     gen_text = "".join((out / p / "gen.go").read_text(encoding="utf-8") for p, _, g, _, _ in results if g)
-    fmt_ok = gen_text.count(") Decode(data []byte)")
+    fmt_ok = gen_text.count(") DecodeSlice(buf []byte")
 
     print(f"入力 {len(results)} 本")
     for k, v in status.most_common():
