@@ -470,5 +470,53 @@
         "source": "$WORK_DIR/../example/softether.bgn",
         "failure_case": false,
         "hex": true
+    },
+    {
+        "name": "bgp_flowspec_len_16",
+        "binary": "$WORK_DIR/test/binary_data/bgp_flowspec/len_16.dat",
+        "format_name": "FlowSpecNLRILength",
+        "source": "$WORK_DIR/../example/bgp.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "bgp_flowspec_len_239",
+        "binary": "$WORK_DIR/test/binary_data/bgp_flowspec/len_239.dat",
+        "format_name": "FlowSpecNLRILength",
+        "source": "$WORK_DIR/../example/bgp.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "bgp_flowspec_len_240",
+        "binary": "$WORK_DIR/test/binary_data/bgp_flowspec/len_240.dat",
+        "format_name": "FlowSpecNLRILength",
+        "source": "$WORK_DIR/../example/bgp.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "bgp_flowspec_len_291",
+        "binary": "$WORK_DIR/test/binary_data/bgp_flowspec/len_291.dat",
+        "format_name": "FlowSpecNLRILength",
+        "source": "$WORK_DIR/../example/bgp.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "bgp_flowspec_len_4095",
+        "binary": "$WORK_DIR/test/binary_data/bgp_flowspec/len_4095.dat",
+        "format_name": "FlowSpecNLRILength",
+        "source": "$WORK_DIR/../example/bgp.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "bgp_flowspec_len_truncated",
+        "binary": "$WORK_DIR/test/binary_data/bgp_flowspec/truncated.dat",
+        "format_name": "FlowSpecNLRILength",
+        "source": "$WORK_DIR/../example/bgp.bgn",
+        "failure_case": true,
+        "hex": true
     }
 ]
