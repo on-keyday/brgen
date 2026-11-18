@@ -711,12 +711,23 @@ namespace {
 
         // スライスの口: 残りが n バイト以上あること。
         void need(std::string_view n) {
-            block(std::format("if len(buf)-*off < {}", n), "return io.ErrUnexpectedEOF");
+            block(std::format("if len(buf)-*off < {}", n), "return " + short_err());
         }
 
         // reader の口: dst を埋める。
         void read_full(std::string_view dst) {
-            block(std::format("if _, err := io.ReadFull(r, {}); err != nil", dst), "return err");
+            block(std::format("if _, err := io.ReadFull(r, {}); err != nil", dst), "return " + read_err());
+        }
+
+        // 足りないときのエラー。どの field かは walker が決める (ebm2go と同じ文言)。
+        std::string short_err() {
+            return std::format("errors.New({})", go_string("not enough data to read for field \"" + where() + "\""));
+        }
+
+        // reader の読み込みに失敗したときのエラー。元のエラー (io.EOF など) は
+        // errors.Is で辿れるよう %w で包む。
+        std::string read_err() {
+            return std::format("fmt.Errorf({}, err)", go_string("read field \"" + where() + "\": %w"));
         }
 
         // reader から n バイト読み、dst ([]byte) に入れる。n は入力から来るので、
@@ -728,7 +739,7 @@ namespace {
             {
                 auto s = w.indent_scope();
                 w.writeln("want := ", n);
-                block("if want < 0", "return io.ErrUnexpectedEOF");
+                block("if want < 0", "return " + short_err());
                 w.writeln("for len(", dst, ") < want {");
                 {
                     auto s2 = w.indent_scope();
@@ -815,7 +826,7 @@ namespace {
             if (mode == Mode::slice) {
                 auto count = nbytes ? n : std::to_string(fixed);
                 if (nbytes) {
-                    block(std::format("if {} < 0 || len(buf)-*off < {}", n, n), "return io.ErrUnexpectedEOF");
+                    block(std::format("if {} < 0 || len(buf)-*off < {}", n, n), "return " + short_err());
                 }
                 else {
                     need(count);
@@ -986,7 +997,7 @@ namespace {
             }
             w.writeln(nv, " := int(", n, ")");
             if (mode == Mode::slice) {
-                block(std::format("if {} < 0 || len(buf)-*off < {}", nv, nv), "return io.ErrUnexpectedEOF");
+                block(std::format("if {} < 0 || len(buf)-*off < {}", nv, nv), "return " + short_err());
                 auto outer = derived_name("outer", f);
                 w.writeln(outer, " := off");
                 w.writeln("buf := buf[*off : *off+", nv, "]");
@@ -1109,7 +1120,7 @@ namespace {
                 ind.enter();
                 w.writeln(rest, ", err := io.ReadAll(r)");
                 block("if err != nil", "return err");
-                block(std::format("if len({}) < {}", rest, tail), "return io.ErrUnexpectedEOF");
+                block(std::format("if len({}) < {}", rest, tail), "return " + short_err());
                 w.writeln("r = bytes.NewReader(", rest, "[len(", rest, ")-", tail, ":])");
                 w.writeln("buf := ", rest, "[:len(", rest, ")-", tail, "]");
                 w.writeln(sub_off, " := 0");
@@ -1174,7 +1185,7 @@ namespace {
                 if (mode == Mode::slice) {
                     auto n = derived_name("n", f);
                     w.writeln(n, " := len(buf) - *off - ", tail);
-                    block(std::format("if {} < 0", n), "return io.ErrUnexpectedEOF");
+                    block(std::format("if {} < 0", n), "return " + short_err());
                     w.writeln(t, " = buf[*off : *off+", n, "]");
                     w.writeln("*off += ", n);
                     return {};
@@ -1186,7 +1197,7 @@ namespace {
                     auto s = w.indent_scope();
                     w.writeln("rest, err := io.ReadAll(r)");
                     block("if err != nil", "return err");
-                    block(std::format("if len(rest) < {}", tail), "return io.ErrUnexpectedEOF");
+                    block(std::format("if len(rest) < {}", tail), "return " + short_err());
                     w.writeln(t, " = rest[:len(rest)-", tail, "]");
                     w.writeln("r = bytes.NewReader(rest[len(rest)-", tail, ":])");
                 }
@@ -1202,7 +1213,7 @@ namespace {
                     // 終端の手前まで切り出す。終端そのものは後ろの field が読んで比べる。
                     auto i = derived_name("n", f);
                     w.writeln(i, " := bytes.Index(buf[*off:], []byte(", go_bytes(*term), "))");
-                    block(std::format("if {} < 0", i), "return io.ErrUnexpectedEOF");
+                    block(std::format("if {} < 0", i), "return " + short_err());
                     w.writeln(t, " = buf[*off : *off+", i, "]");
                     w.writeln("*off += ", i);
                     return {};
@@ -1622,7 +1633,7 @@ namespace {
             switch (mode) {
                 case Mode::slice:
                     w.writeln(nv, " := int(", n, ")");
-                    block(std::format("if {} < 0 || len(buf)-*off < {}", nv, nv), "return io.ErrUnexpectedEOF");
+                    block(std::format("if {} < 0 || len(buf)-*off < {}", nv, nv), "return " + short_err());
                     w.writeln(t, " = buf[*off : *off+", nv, "]");
                     w.writeln("*off += ", nv);
                     break;
@@ -2129,6 +2140,7 @@ NAST_BACKEND_ENTRY(GoConfig) {
         for (auto [pkg, path] : {std::pair<std::string_view, std::string_view>{"bytes", "bytes"},
                                  {"binary", "encoding/binary"},
                                  {"errors", "errors"},
+                                 {"fmt", "fmt"},
                                  {"io", "io"},
                                  {"math", "math"}}) {
             if (uses_pkg(text, pkg)) {

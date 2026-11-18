@@ -53,6 +53,26 @@ namespace brgen::nast::backend::codec {
         std::set<std::uint32_t> consumed;
         // 部分範囲の中で読んでいる field。
         Node<Field> subrange_field;
+        // 今どこを読み書きしているか (エラーメッセージ用)。
+        Node<Format> current_format;
+        Node<Field> current_field;
+        std::string_view current_fn;
+
+        // `Format::field` (custom fn の中なら `Format::decode`)。.bgn の名前のまま。
+        // どの言語のエラーメッセージにも同じ場所が出るよう、ここで決める。
+        std::string where() {
+            std::string out(current_format ? name_of(a, current_format) : "");
+            if (current_field && !name_of(a, current_field).empty()) {
+                return out + "::" + std::string(name_of(a, current_field));
+            }
+            if (current_field) {
+                return out + "::(unnamed field)";
+            }
+            if (!current_fn.empty()) {
+                return out + "::" + std::string(current_fn);
+            }
+            return out;
+        }
 
         Walker(Arena& a, SideTables& t)
             : a(a), tables(t), lc{a, t} {}
@@ -68,6 +88,9 @@ namespace brgen::nast::backend::codec {
         // fmt を 1 方向ぶん歩く。
         expected<void> run(Node<Format> fmt, bool dec) {
             decode = dec;
+            current_format = fmt;
+            current_field = nullref;
+            current_fn = {};
             layout = lowering::bit_layout(lc, fmt);
             routed_started.clear();
             consumed.clear();
@@ -127,6 +150,14 @@ namespace brgen::nast::backend::codec {
             if (!is_layout_field(a, f)) {
                 return {};
             }
+            auto saved_field = current_field;
+            current_field = f;
+            auto r = field_inner(f);
+            current_field = saved_field;
+            return r;
+        }
+
+        expected<void> field_inner(Node<Field> f) {
             if (decode && consumed.contains(f.id())) {
                 return {};
             }
@@ -407,6 +438,9 @@ namespace brgen::nast::backend::codec {
 
         expected<void> run_custom(Node<Function> fn, bool dec) {
             decode = dec;
+            current_field = nullref;
+            current_fn = dec ? "decode" : "encode";
+            current_format = fn.ref(a)->belong.as_any<Format>();
             routed_started.clear();
             consumed.clear();
             return fn_body(fn.ref(a)->body);
