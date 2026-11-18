@@ -1284,10 +1284,16 @@ namespace {
             if (args && !args->arguments.empty()) {
                 auto t = strip_wrappers(a, call.ref(a)->type);
                 auto st = t.as_any<StructType>();
-                if (!st || !st.ref(a)->base.as_any<Format>()) {
-                    return unexpect_loc_error(call, "input.get with a non-format type argument");
+                auto it = t.as_any<IntType>();
+                if (it && it.ref(a)->bit_size == 8) {
+                    // input.get(u8) / input.get(i8) は引数なしと同じ 1 バイト
                 }
-                fmt_type = t;
+                else if (!st || !st.ref(a)->base.as_any<Format>()) {
+                    return unexpect_loc_error(call, "input.get with a type argument other than a format or a byte");
+                }
+                else {
+                    fmt_type = t;
+                }
             }
             if (fmt_type) {
                 MAYBE(tn, p.type_name(fmt_type));
@@ -1594,7 +1600,7 @@ namespace {
                 xor_into("out[" + start + ":]", "out[" + start + ":]", k + "[:]");
                 return {};
             }
-            if (auto n = const_uint(a, tables, len)) {
+            if (auto n = const_uint(a, tables, len); n && !p.type_of(target).starts_with("[]")) {
                 auto count = std::to_string(*n);
                 switch (mode) {
                     case Mode::slice:
@@ -1657,6 +1663,15 @@ namespace {
                     order.push_back(name);
                 }
                 else if (it->second != t) {
+                    // 腕ごとに長さの違う固定長配列 (`[16]u8` / `[4]u8`) はスライスにする。
+                    auto elem_of = [](std::string_view ty) -> std::string_view {
+                        auto p = ty.find(']');
+                        return ty.starts_with("[") && p != std::string_view::npos ? ty.substr(p + 1) : std::string_view{};
+                    };
+                    if (!elem_of(it->second).empty() && elem_of(it->second) == elem_of(t)) {
+                        it->second = "[]" + std::string(elem_of(t));
+                        continue;
+                    }
                     if (!is_go_int(it->second) || !is_go_int(t)) {
                         return unexpect_loc_error(f, "field {} has different types in different branches", name);
                     }
