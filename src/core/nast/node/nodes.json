@@ -44,7 +44,11 @@
             {
                 "name": "UnhandledMode",
                 "underlying": "std::uint8_t",
-                "values": ["error", "dummy", "ignore"],
+                "values": [
+                    "error",
+                    "dummy",
+                    "ignore"
+                ],
                 "description": "What to do at a node the backend has not handled"
             }
         ],
@@ -399,6 +403,56 @@
                     "description": "Number of bits as an expression. Set when kind is dynamic and the width can be written as one. Synthesized by the size analysis"
                 }
             ]
+        }
+    ],
+    "codec_roles": [
+        {
+            "name": "not_statement",
+            "description": "Never stands as a statement of a body: types, bodies, arguments, identifiers, and the parts of a branch (its arms) or a match"
+        },
+        {
+            "name": "field",
+            "description": "A field: read or written in the encode / decode order"
+        },
+        {
+            "name": "branch",
+            "description": "If / match: the arms are bodies of their own"
+        },
+        {
+            "name": "loop",
+            "description": "A loop: its body runs repeatedly"
+        },
+        {
+            "name": "flow",
+            "description": "break / continue / return: leaves the enclosing loop or function"
+        },
+        {
+            "name": "assign",
+            "description": "An assignment to an existing place"
+        },
+        {
+            "name": "define",
+            "description": "A local definition (x := value / x ::= value)"
+        },
+        {
+            "name": "check",
+            "description": "An assertion that must hold"
+        },
+        {
+            "name": "error",
+            "description": "error(...): stops with a failure"
+        },
+        {
+            "name": "directive",
+            "description": "Configures what follows (config.x = ..., input.endian = ...) without reading or writing"
+        },
+        {
+            "name": "declaration",
+            "description": "Declares something (format, enum, fn, state ...) without running in the encode / decode order"
+        },
+        {
+            "name": "expression",
+            "description": "An expression; as a statement it is evaluated for its value (an implicit assertion in encode / decode)"
         }
     ],
     "header": {
@@ -888,7 +942,8 @@
                     "name": "struct_type",
                     "type": "Node<StructType>"
                 }
-            ]
+            ],
+            "codec_role": "not_statement"
         },
         {
             "name": "NamedStatement",
@@ -952,7 +1007,8 @@
                     "name": "body",
                     "type": "Node<Body>"
                 }
-            ]
+            ],
+            "codec_role": "not_statement"
         },
         {
             "name": "Expr",
@@ -963,7 +1019,8 @@
                     "type": "Node<Type>"
                 }
             ],
-            "abstract": true
+            "abstract": true,
+            "codec_role": "expression"
         },
         {
             "name": "Field",
@@ -979,7 +1036,8 @@
                     "name": "arguments",
                     "type": "Node<Arguments>"
                 }
-            ]
+            ],
+            "codec_role": "field"
         },
         {
             "name": "StateVariable",
@@ -989,12 +1047,14 @@
                     "name": "arguments",
                     "type": "Node<Arguments>"
                 }
-            ]
+            ],
+            "codec_role": "declaration"
         },
         {
             "name": "Format",
             "derive": "NamedStructTypedStatement",
-            "fields": []
+            "fields": [],
+            "codec_role": "declaration"
         },
         {
             "name": "GenericFormat",
@@ -1004,7 +1064,8 @@
                     "name": "type_parameters",
                     "type": "vector<Node<TypeParameter>>"
                 }
-            ]
+            ],
+            "codec_role": "declaration"
         },
         {
             "name": "Function",
@@ -1018,7 +1079,8 @@
                     "name": "return_type",
                     "type": "Node<Type>"
                 }
-            ]
+            ],
+            "codec_role": "declaration"
         },
         {
             "name": "ConditionalExpr",
@@ -1029,7 +1091,8 @@
                     "name": "blocks",
                     "type": "vector<Node<BodyStatement>>"
                 }
-            ]
+            ],
+            "codec_role": "branch"
         },
         {
             "name": "If",
@@ -1062,7 +1125,8 @@
                     "name": "step",
                     "type": "Node<Statement>"
                 }
-            ]
+            ],
+            "codec_role": "loop"
         },
         {
             "name": "RangeLoop",
@@ -1072,7 +1136,8 @@
                     "name": "binding",
                     "type": "Node<VariableDefinition>"
                 }
-            ]
+            ],
+            "codec_role": "loop"
         },
         {
             "name": "Assign",
@@ -1090,7 +1155,8 @@
                     "name": "op",
                     "type": "BinaryOp"
                 }
-            ]
+            ],
+            "codec_role": "assign"
         },
         {
             "name": "VariableDefinition",
@@ -1104,7 +1170,8 @@
                     "name": "op",
                     "type": "BinaryOp"
                 }
-            ]
+            ],
+            "codec_role": "define"
         },
         {
             "name": "Metadata",
@@ -1118,7 +1185,8 @@
                     "name": "arguments",
                     "type": "Node<Arguments>"
                 }
-            ]
+            ],
+            "codec_role": "directive"
         },
         {
             "name": "SpecifyOrder",
@@ -1132,7 +1200,8 @@
                     "name": "order",
                     "type": "Node<Expr>"
                 }
-            ]
+            ],
+            "codec_role": "directive"
         },
         {
             "name": "Sizeof",
@@ -1260,7 +1329,8 @@
                     "name": "extra_arguments",
                     "type": "Node<Arguments>"
                 }
-            ]
+            ],
+            "codec_role": "error"
         },
         {
             "name": "Binary",
@@ -1358,12 +1428,14 @@
                     "name": "condition",
                     "type": "Node<Expr>"
                 }
-            ]
+            ],
+            "codec_role": "not_statement"
         },
         {
             "name": "Parameter",
             "derive": "NamedTypeStatement",
-            "fields": []
+            "fields": [],
+            "codec_role": "declaration"
         },
         {
             "name": "Body",
@@ -1376,7 +1448,8 @@
                     "name": "end_loc",
                     "type": "lexer::Loc"
                 }
-            ]
+            ],
+            "codec_role": "not_statement"
         },
         {
             "name": "Arguments",
@@ -1389,7 +1462,8 @@
                     "name": "end_loc",
                     "type": "lexer::Loc"
                 }
-            ]
+            ],
+            "codec_role": "not_statement"
         },
         {
             "name": "Argument",
@@ -1398,7 +1472,8 @@
                     "name": "value",
                     "type": "Node<Expr>"
                 }
-            ]
+            ],
+            "codec_role": "not_statement"
         },
         {
             "name": "NamedArgument",
@@ -1417,7 +1492,8 @@
                     "name": "identifier",
                     "type": "string"
                 }
-            ]
+            ],
+            "codec_role": "not_statement"
         },
         {
             "name": "Type",
@@ -1428,7 +1504,8 @@
                     "cosmetic": true
                 }
             ],
-            "abstract": true
+            "abstract": true,
+            "codec_role": "not_statement"
         },
         {
             "name": "IntType",
@@ -1616,7 +1693,8 @@
                     "name": "expr",
                     "type": "Node<Expr>"
                 }
-            ]
+            ],
+            "codec_role": "check"
         },
         {
             "name": "FloatType",
@@ -1801,7 +1879,8 @@
                     "type": "Node<BodyStatement>",
                     "weak": true
                 }
-            ]
+            ],
+            "codec_role": "not_statement"
         },
         {
             "name": "UnionType",
@@ -1911,7 +1990,8 @@
                     "name": "then",
                     "type": "Node<Statement>"
                 }
-            ]
+            ],
+            "codec_role": "not_statement"
         },
         {
             "name": "UnionCandidate",
@@ -1926,7 +2006,8 @@
                     "type": "Node<Field>",
                     "weak": true
                 }
-            ]
+            ],
+            "codec_role": "not_statement"
         },
         {
             "name": "Return",
@@ -1941,7 +2022,8 @@
                     "type": "Node<Function>",
                     "weak": true
                 }
-            ]
+            ],
+            "codec_role": "flow"
         },
         {
             "name": "Break",
@@ -1952,7 +2034,8 @@
                     "type": "Node<Loop>",
                     "weak": true
                 }
-            ]
+            ],
+            "codec_role": "flow"
         },
         {
             "name": "Continue",
@@ -1963,7 +2046,8 @@
                     "type": "Node<Loop>",
                     "weak": true
                 }
-            ]
+            ],
+            "codec_role": "flow"
         },
         {
             "name": "Enum",
@@ -1981,7 +2065,8 @@
                     "name": "enum_type",
                     "type": "Node<EnumType>"
                 }
-            ]
+            ],
+            "codec_role": "declaration"
         },
         {
             "name": "EnumMember",
@@ -2004,12 +2089,14 @@
                     "name": "str_literal",
                     "type": "Node<StrLiteral>"
                 }
-            ]
+            ],
+            "codec_role": "declaration"
         },
         {
             "name": "State",
             "derive": "NamedStructTypedStatement",
-            "fields": []
+            "fields": [],
+            "codec_role": "declaration"
         },
         {
             "name": "TypeParameter",
@@ -2020,7 +2107,8 @@
                     "type": "Node<Statement>",
                     "weak": true
                 }
-            ]
+            ],
+            "codec_role": "declaration"
         },
         {
             "name": "Identity",

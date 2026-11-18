@@ -117,31 +117,45 @@ namespace brgen::nast::backend::codec {
             return {};
         }
 
+        // 文を codec_role (nodes.json が正本、nodegen が全ノードに付いていることを
+        // 確かめる) で振り分ける。ノードの種類を足しても役割さえ書けばここは
+        // 変わらない。役割を足したら switch が網羅していないと警告が出る。
         expected<void> statement(Node<Statement> s) {
-            if (auto f = s.as_any<Field>()) {
-                return field(f);
+            switch (codec_role(s.type())) {
+                case CodecRole::field:
+                    return field(s.as_any<Field>());
+                case CodecRole::branch:
+                    return branch(s.as_any<ConditionalExpr>());
+                case CodecRole::define:
+                case CodecRole::assign:
+                case CodecRole::check:
+                case CodecRole::error:
+                    return d().emit_statement(s);
+                case CodecRole::flow:
+                    return d().flow(s);  // format の途中で読み書きを終える
+                case CodecRole::directive:
+                    // 順は field ごとに FieldEndian に載っている。実行時に決まる順は
+                    // scalar_shape が dynamic_order として渡す。
+                    return {};
+                case CodecRole::declaration:
+                    return {};
+                case CodecRole::expression: {
+                    if (auto r = s.as_any<Range>(); r && !r.ref(a)->start && !r.ref(a)->end) {
+                        return {};  // `..` は空の文 (何もしない腕の置き場)
+                    }
+                    // 式だけの文は検査 (ADR 0033)。真偽値でない式は検査にならない。
+                    auto e = s.as_any<Expr>();
+                    if (!is_bool_expr(e)) {
+                        return unexpect_loc_error(s, "expression statement that is not a boolean");
+                    }
+                    return d().emit_statement(builder(e).assert_(e));
+                }
+                case CodecRole::loop:
+                    return unexpect_loc_error(s, "{} in a format body is not supported yet", to_string(s.type()));
+                case CodecRole::not_statement:
+                    break;
             }
-            if (auto c = s.as_any<ConditionalExpr>()) {
-                return branch(c);
-            }
-            if (s.as_any<VariableDefinition>() || s.as_any<Assert>() || s.as_any<ExplicitError>() || s.as_any<Assign>()) {
-                return d().emit_statement(s);
-            }
-            if (s.as_any<Return>()) {
-                return d().flow(s);  // format の途中で読み書きを終える
-            }
-            if (auto r = s.as_any<Range>(); r && !r.ref(a)->start && !r.ref(a)->end) {
-                return {};  // `..` は空の文 (何もしない腕の置き場)
-            }
-            if (s.as_any<SpecifyOrder>() || s.as_any<Metadata>()) {
-                // 順は field ごとに FieldEndian に載っている。実行時に決まる順は
-                // scalar_shape が dynamic_order として渡す。
-                return {};
-            }
-            if (s.as_any<Function>() || s.as_any<Format>() || s.as_any<Enum>() || s.as_any<State>()) {
-                return {};  // 宣言
-            }
-            return unexpect_loc_error(s, "{} is not supported in an encode/decode body yet", to_string(s.type()));
+            return unexpect_loc_error(s, "{} cannot stand as a statement", to_string(s.type()));
         }
 
         // --- field の振り分け ------------------------------------------------
@@ -516,45 +530,94 @@ namespace brgen::nast::backend::codec {
         }
 
         expected<void> fn_statement(Node<Statement> s) {
-            if (auto c = s.as_any<ConditionalExpr>()) {
-                std::optional<expected<void>> bad;
-                visit_all(a, c, [&](NodeAny n) {
-                    if (n.as_any<Body>()) {
-                        return false;
-                    }
-                    if (auto call = n.as_any<Call>(); call && is_stream_call(call, SpecialLiteralKind::input_, "get")) {
-                        bad = unexpect_loc_error(n, "input.get() inside a branch condition");
-                    }
-                    return !bad;
-                });
-                if (bad) {
-                    return *bad;
-                }
-                if (auto m = c.as_any<Match>()) {
-                    auto lowered = lowering::lower_match(lc, m);
-                    if (!lowered) {
-                        return unexpect_loc_error(c, "cannot lower match to if");
-                    }
-                    c = lowered;
-                }
-                bool first = true;
-                for (auto& blk : c.ref(a)->blocks) {
-                    Node<Expr> cond;
-                    if (auto cs = blk.as_any<ConditionalStatement>(); cs && !is_default_cond(a, cs.ref(a)->condition)) {
-                        cond = cs.ref(a)->condition;
-                    }
-                    auto r = d().branch_arm(cond, first);
+            switch (codec_role(s.type())) {
+                case CodecRole::branch:
+                    return fn_branch(s.as_any<ConditionalExpr>());
+                case CodecRole::loop:
+                    return fn_loop(s);
+                case CodecRole::flow:
+                    return d().flow(s);
+                case CodecRole::assign: {
+                    auto as = s.as_any<Assign>();
+                    auto r = hoist_gets(as.ref(a)->value);
                     if (!r) {
                         return r;
                     }
-                    first = false;
-                    r = fn_body(blk.ref(a)->body);
+                    if (auto base = append_target(as)) {
+                        return d().append_element(base, as.ref(a)->value);
+                    }
+                    return d().emit_statement(s);
+                }
+                case CodecRole::define: {
+                    auto r = hoist_gets(s.as_any<VariableDefinition>().ref(a)->value);
                     if (!r) {
                         return r;
                     }
+                    return d().emit_statement(s);
                 }
-                return first ? expected<void>{} : d().branch_end();
+                case CodecRole::check:
+                case CodecRole::error: {
+                    auto r = hoist_gets(s);
+                    if (!r) {
+                        return r;
+                    }
+                    return d().emit_statement(s);
+                }
+                case CodecRole::directive:
+                case CodecRole::declaration:
+                    return {};
+                case CodecRole::expression:
+                    return fn_expression(s.as_any<Expr>());
+                case CodecRole::field:
+                    return unexpect_loc_error(s, "field inside a custom encode / decode function");
+                case CodecRole::not_statement:
+                    break;
             }
+            return unexpect_loc_error(s, "{} cannot stand as a statement", to_string(s.type()));
+        }
+
+        expected<void> fn_branch(Node<ConditionalExpr> c) {
+            std::optional<expected<void>> bad;
+            visit_all(a, c, [&](NodeAny n) {
+                if (n.as_any<Body>()) {
+                    return false;
+                }
+                if (auto call = n.as_any<Call>(); call && is_stream_call(call, SpecialLiteralKind::input_, "get")) {
+                    bad = unexpect_loc_error(n, "input.get() inside a branch condition");
+                }
+                return !bad;
+            });
+            if (bad) {
+                return *bad;
+            }
+            if (auto m = c.as_any<Match>()) {
+                auto lowered = lowering::lower_match(lc, m);
+                if (!lowered) {
+                    return unexpect_loc_error(c, "cannot lower match to if");
+                }
+                c = lowered;
+            }
+            bool first = true;
+            for (auto& blk : c.ref(a)->blocks) {
+                Node<Expr> cond;
+                if (auto cs = blk.as_any<ConditionalStatement>(); cs && !is_default_cond(a, cs.ref(a)->condition)) {
+                    cond = cs.ref(a)->condition;
+                }
+                auto r = d().branch_arm(cond, first);
+                if (!r) {
+                    return r;
+                }
+                first = false;
+                r = fn_body(blk.ref(a)->body);
+                if (!r) {
+                    return r;
+                }
+            }
+            return first ? expected<void>{} : d().branch_end();
+        }
+
+        expected<void> fn_loop(Node<Statement> s) {
+            Node<Body> body;
             if (auto loop = s.as_any<Loop>()) {
                 auto r = loop.ref(a);
                 if (r->init || r->step) {
@@ -564,54 +627,28 @@ namespace brgen::nast::backend::codec {
                 if (!b) {
                     return b;
                 }
-                auto body_r = fn_body(r->body);
-                if (!body_r) {
-                    return body_r;
-                }
-                return d().loop_end();
+                body = r->body;
             }
-            if (auto loop = s.as_any<RangeLoop>()) {
-                auto b = d().range_begin(loop.ref(a)->binding);
+            else if (auto range = s.as_any<RangeLoop>()) {
+                auto b = d().range_begin(range.ref(a)->binding);
                 if (!b) {
                     return b;
                 }
-                auto body_r = fn_body(loop.ref(a)->body);
-                if (!body_r) {
-                    return body_r;
-                }
-                return d().loop_end();
+                body = range.ref(a)->body;
             }
-            if (s.as_any<Break>() || s.as_any<Continue>() || s.as_any<Return>()) {
-                return d().flow(s);
+            else {
+                return unexpect_loc_error(s, "{} is not a known loop", to_string(s.type()));
             }
-            if (auto as = s.as_any<Assign>()) {
-                auto r = hoist_gets(as.ref(a)->value);
-                if (!r) {
-                    return r;
-                }
-                if (auto base = append_target(as)) {
-                    return d().append_element(base, as.ref(a)->value);
-                }
-                return d().emit_statement(s);
+            auto body_r = fn_body(body);
+            if (!body_r) {
+                return body_r;
             }
-            if (auto def = s.as_any<VariableDefinition>()) {
-                auto r = hoist_gets(def.ref(a)->value);
-                if (!r) {
-                    return r;
-                }
-                return d().emit_statement(s);
-            }
-            if (s.as_any<Assert>() || s.as_any<ExplicitError>()) {
-                auto r = hoist_gets(s);
-                if (!r) {
-                    return r;
-                }
-                return d().emit_statement(s);
-            }
-            if (s.as_any<Metadata>() || s.as_any<SpecifyOrder>()) {
-                return {};
-            }
-            if (auto call = s.as_any<Call>()) {
+            return d().loop_end();
+        }
+
+        // 式だけの文: output.put(x) / 読み捨ての input.get() / それ以外は検査 (ADR 0033)。
+        expected<void> fn_expression(Node<Expr> e) {
+            if (auto call = e.as_any<Call>()) {
                 if (is_stream_call(call, SpecialLiteralKind::output_, "put")) {
                     auto args = call.ref(a)->arguments.ref(a);
                     if (args && !args->arguments.empty()) {
@@ -623,19 +660,25 @@ namespace brgen::nast::backend::codec {
                     return d().stream_put(call);
                 }
                 if (is_stream_call(call, SpecialLiteralKind::input_, "get")) {
-                    return d().stream_get(call);  // 読み捨て
+                    return d().stream_get(call);
                 }
             }
-            if (auto e = s.as_any<Expr>()) {
-                // 式だけの文は検査 (ADR 0033)。
-                auto r = hoist_gets(e);
-                if (!r) {
-                    return r;
-                }
-                auto b = builder(e);
-                return d().emit_statement(b.assert_(e));
+            if (auto r = e.as_any<Range>(); r && !r.ref(a)->start && !r.ref(a)->end) {
+                return {};
             }
-            return unexpect_loc_error(s, "{} is not supported in a custom encode / decode function yet", to_string(s.type()));
+            if (!is_bool_expr(e)) {
+                return unexpect_loc_error(e, "expression statement that is not a boolean");
+            }
+            auto r = hoist_gets(e);
+            if (!r) {
+                return r;
+            }
+            return d().emit_statement(builder(e).assert_(e));
+        }
+
+        bool is_bool_expr(Node<Expr> e) {
+            auto t = e ? e.ref(a)->type : Node<Type>{};
+            return t && strip_wrappers(a, t).as_any<BoolType>();
         }
 
         // --- 分岐 ------------------------------------------------------------

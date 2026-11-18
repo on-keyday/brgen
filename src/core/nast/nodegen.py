@@ -30,6 +30,7 @@ from gen.nodes import (  # noqa: E402
     emit_node_header,
     emit_node_type,
     emit_ref,
+    emit_codec_role,
 )
 from gen.tables import emit_side_tables, emit_structs  # noqa: E402
 from gen.ts import emit_ts  # noqa: E402
@@ -72,6 +73,7 @@ def generate(schema: Schema) -> str:
     types = Writer()
     emit_enums(types, schema)
     emit_node_type(types, schema)
+    emit_codec_role(types, schema)
     # Node/Ref の field<"..."> が非型引数に取るので、Node より前に要る。
     emit_fixed_string(types)
 

@@ -275,3 +275,29 @@ def emit_dispatch(w: Writer, schema: Schema) -> None:
     w.write("    }\n")
     w.write(f"    return f(node_tag<{schema.concrete_nodes()[0]['name']}>{{}});\n")
     w.write("}\n")
+
+
+def emit_codec_role(w: Writer, schema: Schema) -> None:
+    """CodecRole と、NodeType からそれを引く codec_role()。
+
+    分類は nodes.json の codec_role が正本 (Schema が全ノードに付いていることを
+    確かめてある)。バックエンドの walker はこれで文を振り分けるので、ノードを
+    足しても分類さえ書けば walker の側は振り分けを書き直さずに済む。
+    """
+    if not schema.codec_roles:
+        return
+    w.write("enum class CodecRole : std::uint8_t {\n")
+    for role in schema.codec_roles:
+        w.write("    // ", role.get("description", ""), "\n")
+        w.write("    ", role["name"], ",\n")
+    w.write("};\n")
+    w.write("constexpr const char* to_string(CodecRole r) {\n    switch (r) {\n")
+    for role in schema.codec_roles:
+        w.write("        case CodecRole::", role["name"], ': return "', role["name"], '";\n')
+    w.write("    }\n    return nullptr;\n}\n")
+    w.write("constexpr CodecRole codec_role(NodeType t) {\n    switch (t) {\n")
+    for node in schema.nodes:
+        if node.get("abstract"):
+            continue
+        w.write("        case NodeType::", node["name"], ": return CodecRole::", schema.codec_role_of(node), ";\n")
+    w.write("        default: return CodecRole::not_statement;\n    }\n}\n")

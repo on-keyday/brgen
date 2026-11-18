@@ -21,10 +21,49 @@ class Schema:
         # バックエンドの設定。ノードに紐づかないものだけがここに来る。
         self.backend_config = doc.get("backend_config", {})
 
+        # codec での役割 (field / 分岐 / 宣言 …)。バックエンドの walker が文を振り分ける
+        # のに使う。wire には載せないので enums とは別に持つ。
+        self.codec_roles = doc.get("codec_roles", [])
+
         self._normalize_enum_layers()
         self._by_name = {n["name"]: n for n in self.nodes}
         self._check_derive_order()
         self._derives = self._build_derives()
+        self._check_codec_roles()
+
+    def codec_role_of(self, node: dict):
+        """そのノードの codec_role。無ければ最も近い派生元のもの。どこにも無ければ None。"""
+        while node is not None:
+            if "codec_role" in node:
+                return node["codec_role"]
+            parent = node.get("derive")
+            node = self._by_name.get(parent) if parent else None
+        return None
+
+    def _check_codec_roles(self) -> None:
+        """具体的なノードはどれも codec_role を持つこと (自分か派生元で)。
+
+        walker は文をこの役割で振り分ける。新しいノードを足したときに役割を
+        書き忘れると、walker がそのノードをどう扱うかが決まらないまま黙って
+        通ってしまうので、生成の時点で止める。
+        """
+        if not self.codec_roles:
+            return
+        names = {r["name"] for r in self.codec_roles}
+        missing = []
+        for node in self.nodes:
+            role = node.get("codec_role")
+            if role is not None and role not in names:
+                raise ValueError(f"node {node['name']!r} has unknown codec_role {role!r}")
+            if node.get("abstract"):
+                continue
+            if self.codec_role_of(node) is None:
+                missing.append(node["name"])
+        if missing:
+            raise ValueError(
+                "nodes without a codec_role (set it on the node or on a base it derives): "
+                + ", ".join(missing)
+            )
 
     def _check_derive_order(self) -> None:
         """派生元は派生先より前に書く。
