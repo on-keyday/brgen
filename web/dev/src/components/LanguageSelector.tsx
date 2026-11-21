@@ -1,13 +1,10 @@
 import { languageRegistry, getLanguagesByCategory, LanguageCategory, LanguageMeta } from "../common/languages";
 import styles from "./App.module.css";
 
-const categories: LanguageCategory[] = [
-  LanguageCategory.ANALYSIS,
-  LanguageCategory.GENERATOR,
-  LanguageCategory.INTERMEDIATE,
-  LanguageCategory.BM,
-  LanguageCategory.EBM,
-];
+// Every category, in declaration order. Listing them by hand here hid any
+// category added to LanguageCategory later (nast languages were registered but
+// never shown).
+const categories: LanguageCategory[] = Object.values(LanguageCategory);
 
 const byCategory = getLanguagesByCategory();
 
