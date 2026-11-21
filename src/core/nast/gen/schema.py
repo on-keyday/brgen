@@ -185,6 +185,7 @@ class Schema:
             t.replace("vector<", "std::vector<")
             .replace("string", "std::string")
             .replace("uint32", "std::uint32_t")
+            .replace("uint64", "std::uint64_t")
             .replace("size", "std::size_t")
         )
 

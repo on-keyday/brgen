@@ -31,6 +31,7 @@ _SCALARS = {
     "bool": "boolean",
     "size": "number",
     "uint32": "number",
+    "uint64": "number",
     "lexer::Loc": "Loc",
 }
 

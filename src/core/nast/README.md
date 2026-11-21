@@ -86,3 +86,28 @@ $B/nast_wire_test $(find example -name "*.bgn")     # 線上の往復
 $B/nast_unparse_test $(find example -name "*.bgn")  # .bgn の往復
 $B/nast_coverage $(find example -name "*.bgn")      # 型の付き具合
 ```
+
+## Web Playground
+
+バックエンド (`nast2<lang>`) は wasm にして Playground に載る。組み込みは
+rebrgen の EBM と同じ仕組み: 各バックエンドの `--show-flags` から
+`nastwebgen.py` が worker と UI を生成し (UI 部分は `ebmwebgen.py` を共用)、
+Playground は `NAST_LANGUAGES` を `EBM_LANGUAGES` と同じく動的に登録する。
+言語 ID は `nast-<lang>`。nast は `.bgn` を自分で読むので src2json を通らず、
+import 先はエディタの extraSources として wasm の FS に置かれる。
+
+```sh
+# emscripten で建てる (futils は wasm-em の Release を使う)
+emcmake cmake -S src/core/nast -B src/core/nast/build/web -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release -DFUTILS_BUILD_TYPE=Release
+cmake --build src/core/nast/build/web -j 4
+# グルーを生成して Playground に置く (node が要る)
+python src/core/nast/nastwebgen.py src/core/nast/build/web/bin web/dev/src/lib/nast
+```
+
+CI では build-rebrgen-wasm が wasm を、build-rebrgen-glue がグルーを作り、
+`script/install_rebrgen_web.sh` が `web/dev/src/lib/nast` に置く。
+
+wasm32 では `size_t` が 32 ビットになる。値 (定数・リテラル) を `size_t` で
+持つと黙って切れる (64 ビット定数の比較が `< 0` になった実例がある)。
+nodes.json の値には `uint64` を使う。

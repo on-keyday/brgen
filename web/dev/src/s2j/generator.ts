@@ -10,6 +10,7 @@ import {ast2ts} from "ast2ts";
 import {ConfigKey} from "../common/types.js";
 import { BM_LANGUAGES, BM_LSP_LANGUAGES, generateBMCode } from "../lib/bmgen/bm_caller.js";
 import { EBM_LANGUAGES,EBM_LSP_LANGUAGES,generateEBMCode } from "../lib/bmgen/ebm_caller.js";
+import { NAST_LANGUAGES,NAST_LSP_LANGUAGES,generateNASTCode } from "../lib/nast/nast_caller.js";
 
 //import { compileCpp } from "./compiler-explorer/api";
 
@@ -305,6 +306,30 @@ export const handleEBM = async (ui :UIModel, s :JobResult,lang :string) => {
     }
 }
 
+// nast reads the .bgn itself, so this runs on the editor text before (and
+// instead of) src2json.
+export const handleNAST = async (ui :UIModel, id :TraceID, value :string, lang :string) => {
+    const res = await generateNASTCode(ui.getWorkerFactory(),ui,id,lang,value).catch((e :any) => {
+        if(isJobResult(e)) {
+            return e;
+        }
+        throw e;
+    }) as JobResult;
+    if(ui.getUpdateTracer().editorAlreadyUpdated(res)) {
+        return;
+    }
+    ui.debugLog(res);
+    if(res.code === 0 && res.stdout !== undefined && res.stdout !== "") {
+        ui.setGenerated(res.stdout,(NAST_LSP_LANGUAGES as Record<string,string>)[lang] ?? "plaintext");
+        return;
+    }
+    if(res.stderr !== undefined && res.stderr !== "") {
+        ui.setGenerated(res.stderr,"plaintext");
+        return;
+    }
+    ui.setGenerated(res.stdout || "(no output. maybe generator is crashed)","plaintext");
+}
+
 export const handleBM = async (ui :UIModel, s :JobResult,lang :string) => {
     return handleBinaryModuleBased(caller.getBinaryModule, ui,s,lang as Language,(BM_LSP_LANGUAGES as any)[lang],(factory,id,srcCode,_) :Promise<JobResult> =>{
         return generateBMCode(factory,ui,id,lang,srcCode);
@@ -324,6 +349,9 @@ export const updateGenerated = async (ui :UIModel,lang :Language) => {
     }
     if(lang === Language.JSON_DEBUG_AST) {
         return handleDebugAST(ui,traceID,value);
+    }
+    if(NAST_LANGUAGES.includes(lang)) {
+        return handleNAST(ui,traceID,value,lang);
     }
     const extraSources = ui.getExtraSources?.();
     const s = await caller.getAST(ui.getWorkerFactory(),traceID,value,

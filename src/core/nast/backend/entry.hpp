@@ -141,9 +141,16 @@ namespace brgen::nast::backend {
         // Context に登録されているものをそのまま並べる。バックエンドが自分の
         // フラグを足せば、何もしなくてもここに出る。
         //
-        // rebrgen の ebmcodegen::flag_description_json に当たる。あちらにある
-        // ui_lang_name / lsp_name / webworker_name / web_filtered は web 生成器
-        // (ebmwebgen.py) の都合なので、対応する消費側ができるまでは置かない。
+        // rebrgen の ebmcodegen::flag_description_json と同じ形にしてある。
+        // Web Playground への組み込み (nastwebgen.py) は ebmwebgen.py と同じく
+        // これを読んで worker と UI を生成するので、ui_lang_name / lsp_name /
+        // webworker_name / web_filtered もここで出す。
+        //
+        //   ui_lang_name    Playground の言語 ID。core の "go" 等とぶつからないよう
+        //                   既定は nast-<lang>
+        //   lsp_name        Monaco の言語 ID。既定は lang_name
+        //   webworker_name  wasm と worker の名前。実行ファイル名 nast2<lang>
+        //   web_filtered    Playground では出さないフラグ (入出力・道具用)
         inline auto flag_description_json(futils::cmdline::option::Context& ctx,
                                           const char* lang_name,
                                           std::string_view file_extension) {
@@ -151,10 +158,16 @@ namespace brgen::nast::backend {
             if (!file_extension.empty()) {
                 exts.push_back(file_extension);
             }
+            auto ui_lang_name = std::format("nast-{}", lang_name);
+            auto webworker_name = std::format("nast2{}", lang_name);
+            constexpr std::string_view web_filtered[] = {"help", "input", "output", "show-flags", "survey"};
             futils::json::Stringer<> str;
             str.set_indent("  ");
             auto root = str.object();
             root("lang_name", lang_name);
+            root("ui_lang_name", ui_lang_name);
+            root("lsp_name", lang_name);
+            root("webworker_name", webworker_name);
             root("file_extensions", exts);
             root("flags", [&](auto& s) {
                 auto arr = s.array();
@@ -164,7 +177,9 @@ namespace brgen::nast::backend {
                         obj("name", opt->mainname);
                         obj("help", opt->help);
                         obj("argdesc", opt->argdesc);
+                        obj("original_type", opt->type);
                         obj("type", opt->type);
+                        obj("web_filtered", std::ranges::find(web_filtered, std::string_view(opt->mainname)) != std::end(web_filtered));
                     });
                 }
             });
@@ -405,7 +420,24 @@ namespace brgen::nast::backend {
 //   using result_type = X;                         木を辿るときの戻り値 (既定 CodeWriter)
 //   std::string finish(X&&)                        X から出力を作る (X が文字列でないとき必須)
 //   IndentStyle indent_style()                     字下げ (既定 4 空白, IndentStyle::tab() など)
-#define NAST_BACKEND_ENTRY(LangConfig)                                                                \
+//
+// 実行ファイルの入口は NAST_BACKEND_MAIN。wasm (Web Playground) では引数を
+// URL エンコードして空白で区切った 1 本の文字列で受ける (src2json などと同じ)。
+#if defined(__EMSCRIPTEN__)
+#include <emscripten.h>
+#include <tool/common/em_main.h>
+#define NAST_BACKEND_MAIN()                                                       \
+    extern "C" int EMSCRIPTEN_KEEPALIVE emscripten_main(const char* cmdline) {    \
+        return em_main(cmdline, nast_backend_main);                               \
+    }
+#else
+#define NAST_BACKEND_MAIN()                   \
+    int main(int argc, char** argv) {         \
+        futils::wrap::U8Arg _(argc, argv);    \
+        return nast_backend_main(argc, argv); \
+    }
+#endif
+#define NAST_BACKEND_ENTRY(LangConfig)                                                               \
     using nast_result_t = ::brgen::nast::backend::lang_result_t<LangConfig>;                          \
     using LangContext = ::brgen::nast::backend::Context<nast_result_t, LangConfig>;                   \
     static ::brgen::nast::expected<void> nast_backend_setup(                                          \
@@ -451,10 +483,7 @@ namespace brgen::nast::backend {
             });                                                                                       \
     }                                                                                                 \
                                                                                                       \
-    int main(int argc, char** argv) {                                                                 \
-        futils::wrap::U8Arg _(argc, argv);                                                            \
-        return nast_backend_main(argc, argv);                                                         \
-    }                                                                                                 \
+    NAST_BACKEND_MAIN()                                                                               \
                                                                                                       \
     static ::brgen::nast::expected<void> nast_backend_setup(                                          \
         ::brgen::nast::backend::Context<nast_result_t, LangConfig>& ctx,                              \

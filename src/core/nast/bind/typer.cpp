@@ -489,7 +489,7 @@ namespace brgen::nast::bind {
         // 相手もリテラルなら、値が収まる最小のバイト境界幅の符号なし整数にする。
         // prefix_integer は 0x / 0b / 0o の前置も読む。
         auto d = lit.ref(a);
-        std::size_t value = 0;
+        std::uint64_t value = 0;
         auto raw = d->base.ref(a);
         if (!raw || !::futils::number::prefix_integer(raw->value, value)) {
             return t;

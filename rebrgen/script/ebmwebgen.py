@@ -2,6 +2,7 @@ import subprocess as sp
 import sys
 import os
 import json
+import re
 
 
 sys.path.append(os.path.dirname(__file__))
@@ -43,11 +44,17 @@ def get_tools():
 
 
 # 5. generate web glue code
+def ident_name(ui_lang_name: str) -> str:
+    """JS identifier part for a UI language name ("go3" -> "Go3", "nast-go" -> "NastGo")."""
+    parts = re.split(r"[^0-9A-Za-z]+", ui_lang_name)
+    return "".join(p[0].upper() + p[1:] for p in parts if p)
+
+
 def web_glue_names(tool: dict) -> dict:
     LSP_LANG = str(tool["flags"]["lsp_name"])
     WORKER_NAME = str(tool["flags"]["webworker_name"])
     UI_LANG_NAME = str(tool["flags"]["ui_lang_name"])
-    UPPER_LANG_NAME = UI_LANG_NAME[0].upper() + UI_LANG_NAME[1:]
+    UPPER_LANG_NAME = ident_name(UI_LANG_NAME)
     CALL_WORKER_FUNC = "generate" + UPPER_LANG_NAME
     CALL_UI_FUNC = "set" + UPPER_LANG_NAME + "UIConfig"
     CALL_UI_TO_OPT_FUNC = "convert" + UPPER_LANG_NAME + "UIConfigToOption"
@@ -133,7 +140,7 @@ const bmgenWorker = new EmWorkContext(ebmgenModule,requestCallback, () => {
 
 def ui_glue_code(web_glue: dict, tool: dict):
     ui_lang_name = web_glue["ui_lang_name"]
-    upper_ui_lang_name = ui_lang_name[0].upper() + ui_lang_name[1:]
+    upper_ui_lang_name = ident_name(ui_lang_name)
     worker_name = web_glue["worker_name"]
     flags = tool["flags"]["flags"]  # Access the 'flags' list from the tool dictionary
 
@@ -169,10 +176,14 @@ const convert{upper_ui_lang_name}OptionToFlags = (opt) => {{
     code += f"""    return flags;
 }};
 
-const generate{upper_ui_lang_name} = async (factory,traceID,opt,sourceCode) => {{
+const generate{upper_ui_lang_name} = async (factory,traceID,opt,sourceCode,extraSources) => {{
     const worker_mgr = factory.getWorker("{worker_name}");
     const req = worker_mgr.getRequest(traceID,"{ui_lang_name}",sourceCode);
     req.arguments = convert{upper_ui_lang_name}OptionToFlags(opt);
+    // other files the source imports (nast reads the .bgn itself)
+    if (extraSources && extraSources.length > 0) {{
+        req.extraSources = extraSources;
+    }}
     return worker_mgr.doRequest(req);
 }};
 

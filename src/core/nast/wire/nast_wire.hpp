@@ -554,13 +554,13 @@ namespace brgen::nast::wire {
     struct ConstantValueEntry{
         Ref key;
         EvalKind kind_eval_kind{};
-        std::uint32_t integer = 0;
+        std::uint64_t integer = 0;
         std::uint8_t is_negative = 0;
         std::uint8_t boolean = 0;
         Ref string;
         ::futils::error::Error<> encode(::futils::binary::writer& w) const ;
         ::futils::error::Error<> decode(::futils::binary::reader& r);
-        static constexpr size_t fixed_header_size = 15;
+        static constexpr size_t fixed_header_size = 19;
     };
     struct ConstantValueTable{
         std::uint32_t len = 0;
@@ -45511,8 +45511,8 @@ namespace brgen::nast::wire {
         if (!::futils::binary::write_num(w,static_cast<std::uint8_t>(tmp_191_) ,true)) {
             return ::futils::error::Error<>("encode: ConstantValueEntry::kind_eval_kind: write std::uint8_t failed",::futils::error::Category::lib);
         }
-        if (!::futils::binary::write_num(w,static_cast<std::uint32_t>((*this).integer) ,true)) {
-            return ::futils::error::Error<>("encode: ConstantValueEntry::integer: write std::uint32_t failed",::futils::error::Category::lib);
+        if (!::futils::binary::write_num(w,static_cast<std::uint64_t>((*this).integer) ,true)) {
+            return ::futils::error::Error<>("encode: ConstantValueEntry::integer: write std::uint64_t failed",::futils::error::Category::lib);
         }
         if (!::futils::binary::write_num(w,static_cast<std::uint8_t>((*this).is_negative) ,true)) {
             return ::futils::error::Error<>("encode: ConstantValueEntry::is_negative: write std::uint8_t failed",::futils::error::Category::lib);

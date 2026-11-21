@@ -11,7 +11,7 @@ namespace brgen::nast::bind {
 
     namespace {
         constexpr TypeSize fixed(std::uint64_t bits) {
-            return TypeSize{.kind = SizeKind::fixed, .bits = bits};
+            return TypeSize{.kind = SizeKind::fixed, .bits = static_cast<std::size_t>(bits)};
         }
         constexpr TypeSize dynamic(Node<Expr> e = nullref) {
             return TypeSize{.kind = SizeKind::dynamic, .bits_expr = e};

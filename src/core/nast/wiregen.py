@@ -24,6 +24,7 @@ nast_wire.hpp の作り方 (--use-error でフィールド名入りの診断に�
   string           -> Ref                       (文字列表への添字)
   bool             -> u8
   size / uint32    -> u32
+  uint64           -> u64
   lexer::Loc       -> format Loc
   enum             -> .bgn の enum そのまま
 
@@ -106,6 +107,8 @@ def wire_tag(t):
         return "u8"
     if t in ("size", "uint32"):
         return "u32"
+    if t == "uint64":
+        return "u64"
     if t == "lexer::Loc":
         return "loc"
     return snake(t)  # enum
@@ -147,6 +150,8 @@ def wire_type(t, name):
         return [name + " :u8"]
     if t in ("size", "uint32"):
         return [name + " :u32"]
+    if t == "uint64":
+        return [name + " :u64"]
     if t == "lexer::Loc":
         return [name + " :Loc"]
     return [name + " :" + t]  # enum
@@ -277,6 +282,8 @@ def stmt_to_wire(t, name, slot, dst, src, union, on_fail):
         expr = "std::uint8_t({s}.{n} ? 1 : 0)".format(s=src, n=name)
     elif t in ("size", "uint32"):
         expr = "std::uint32_t({s}.{n})".format(s=src, n=name)
+    elif t == "uint64":
+        expr = "std::uint64_t({s}.{n})".format(s=src, n=name)
     elif t == "lexer::Loc":
         expr = "loc_to_wire({s}.{n})".format(s=src, n=name)
     else:
@@ -304,6 +311,8 @@ def stmt_from_wire(t, name, slot, dst, src, union):
         rhs = "std::size_t(*p_)"
     elif t == "uint32":
         rhs = "std::uint32_t(*p_)"
+    elif t == "uint64":
+        rhs = "std::uint64_t(*p_)"
     elif t == "lexer::Loc":
         rhs = "loc_from_wire(*p_)"
     else:

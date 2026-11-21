@@ -133,6 +133,16 @@ jobs:
           USE_CCACHE=1 BUILD_OLD_BMGEN=1 EMSDK_DIR=$EMSDK/ FUTILS_DIR=./utils python script/build.py web Release
           cp README.md web/ || true
           cp LICENSE web/ || true
+      # nast (src/core/nast) backends for the Web Playground. Uses the same
+      # wasm-em futils as rebrgen; nastwebgen.py turns them into glue in
+      # build-rebrgen-glue, and install_rebrgen_web.sh puts them in lib/nast.
+      - name: Build nast WASM
+        run: |
+          source $EMSDK/emsdk_env.sh
+          emcmake cmake -S src/core/nast -B src/core/nast/build/web -G Ninja             -DCMAKE_BUILD_TYPE=Release -DFUTILS_DIR=$(pwd)/rebrgen/utils -DFUTILS_BUILD_TYPE=Release             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          cmake --build src/core/nast/build/web
+          mkdir -p rebrgen/web/nast-wasm
+          cp src/core/nast/build/web/bin/nast2*.js src/core/nast/build/web/bin/nast2*.wasm rebrgen/web/nast-wasm/
       - name: Upload Artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -168,6 +178,10 @@ jobs:
           chmod -R +x ./tool
           python script/bm/generate_web_glue.py
           python script/ebmwebgen.py
+      - name: Generate nast Glue
+        run: |
+          python src/core/nast/nastwebgen.py rebrgen/web/nast-wasm rebrgen/web/nast
+          rm -rf rebrgen/web/nast-wasm
       - name: Upload Artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

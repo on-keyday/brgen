@@ -237,7 +237,7 @@
                 },
                 {
                     "name": "integer",
-                    "type": "size"
+                    "type": "uint64"
                 },
                 {
                     "name": "is_negative",

@@ -611,7 +611,7 @@ format RequirementsTable:
 format ConstantValueEntry:
     key :Ref
     kind_eval_kind :EvalKind
-    integer :u32
+    integer :u64
     is_negative :u8
     boolean :u8
     string :Ref

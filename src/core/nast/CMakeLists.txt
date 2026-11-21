@@ -100,11 +100,17 @@ message(STATUS "nast: futils at ${FUTILS_DIR}")
 # FUTILS_BUILD_MODE で、shared 以外 (freestanding-static / kernel / gcc /
 # wasm-em) はそれぞれ別用途の成果物なので混ぜない。ここは shared だけを見る。
 # 別の場所を使いたいときは -DFUTILS_LIB=<path> で直に渡す。
+# emscripten (Web Playground 用の wasm) では wasm-em の静的ライブラリを使う。
 set(FUTILS_BUILD_TYPE "Debug" CACHE STRING "futils build type to link against")
+if(EMSCRIPTEN)
+    set(_futils_mode "wasm-em")
+else()
+    set(_futils_mode "shared")
+endif()
 find_library(FUTILS_LIB
     NAMES futils libfutils
-    PATHS "${FUTILS_DIR}/built/shared/${FUTILS_BUILD_TYPE}/lib"
-    NO_DEFAULT_PATH REQUIRED)
+    PATHS "${FUTILS_DIR}/built/${_futils_mode}/${FUTILS_BUILD_TYPE}/lib"
+    NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH REQUIRED)
 message(STATUS "nast: futils lib ${FUTILS_LIB}")
 
 add_library(futils_imported INTERFACE)
@@ -203,6 +209,23 @@ add_library(nast_core STATIC
 add_dependencies(nast_core nast_generate)
 target_include_directories(nast_core PUBLIC "${NAST_DIR}" "${REPO_ROOT}/src")
 target_link_libraries(nast_core PUBLIC futils_imported)
+
+# ---- wasm (Web Playground) -----------------------------------------------
+# emscripten で組むときはバックエンドだけを建てる。道具・計測・試験は手元で
+# 走らせるものなので wasm にしない。出力は ES module の factory
+# (web/dev の EmWorkContext が読む形、rebrgen の web ビルドと同じフラグ)。
+if(EMSCRIPTEN)
+    add_link_options(
+        "-sENVIRONMENT=worker,node" "-sINVOKE_RUN=0" "-sMODULARIZE=1" "-sEXPORT_ES6=1"
+        "-sEXIT_RUNTIME=0" "-sEXPORTED_RUNTIME_METHODS=[ccall,cwrap,FS]"
+        "-sALLOW_MEMORY_GROWTH=1" "-sSTACK_SIZE=16777216")
+    add_executable(nast2go "backends/go/main.cpp")
+    target_link_libraries(nast2go PRIVATE nast_core)
+    # install 先 (既定 build/web/bin) を web/dev/src/lib/nast に写すのは
+    # CI の役目。js と wasm は対で要る。
+    install(FILES "$<TARGET_FILE:nast2go>" "$<TARGET_FILE_DIR:nast2go>/nast2go.wasm" DESTINATION .)
+    return()
+endif()
 
 # ---- ツール --------------------------------------------------------------
 # 木を見て回るための道具。tool/ が道具、bench/ が計測、test/ が試験で、
