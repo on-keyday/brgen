@@ -46,12 +46,12 @@ jobs:
           | # see https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md
           echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
           cd astlib/ast2ts
-          tsc || true # allow error
+          npx tsc || true # allow error
           cd ../../web/public
           cd ../dev
           npm install
           npx vite dev --port 8080 &
           sleep 5
           npm install puppeteer
-          tsc || true # allow error
+          npx tsc || true # allow error
           TEST_ENV=github node test/puppet.mjs
