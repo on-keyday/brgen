@@ -11,7 +11,13 @@ runs:
       id: get-version
       shell: bash
       run: |
-        VERSION=$(curl -s https://api.github.com/repos/emscripten-core/emsdk/tags | jq -r '.[0].name')
+        # authenticated: the anonymous API limit is shared per runner IP and
+        # returns an error object (not the tag list) when exhausted
+        VERSION=$(curl -sf -H "Authorization: Bearer ${{ github.token }}" https://api.github.com/repos/emscripten-core/emsdk/tags | jq -r '.[0].name')
+        if [ -z "$VERSION" ] || [ "$VERSION" = "null" ]; then
+          echo "failed to get the latest emsdk version" >&2
+          exit 1
+        fi
         echo "version=$VERSION" >> $GITHUB_OUTPUT
 
     - name: Cache EMSDK

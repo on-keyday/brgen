@@ -17,7 +17,7 @@ namespace brgen::nast {
         }
 
         brgen::LocationError to_location_error(Arena& a) {
-            return LocationError{.src = src}.error(node.ref(a).loc(), message);
+            return LocationError{}.error(node.ref(a).loc(), message);
         }
     };
 
