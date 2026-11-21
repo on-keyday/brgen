@@ -1926,6 +1926,11 @@ NAST_BACKEND_ENTRY(GoConfig) {
         };
         std::vector<Decl> decls;
         std::set<std::string> seen;
+        std::vector<std::string> skipped;  // 外した宣言 (--unhandled error で失敗にする)
+        auto skip = [&](std::string msg) {
+            report(msg);
+            skipped.push_back(std::move(msg));
+        };
         auto each_decl = [&](auto&& self, Node<Body> b) -> void {
             for (auto& s : b.ref(a)->statements) {
                 std::string name(name_of(a, s));
@@ -2108,10 +2113,10 @@ NAST_BACKEND_ENTRY(GoConfig) {
                 });
             }
             if (cyclic) {
-                report(std::format("skipped constant {}: refers to itself", name));
+                skip(std::format("skipped constant {}: refers to itself", name));
             }
             else if (!text) {
-                report(std::format("skipped constant {}: {}", name, text.error().message));
+                skip(std::format("skipped constant {}: {}", name, text.error().message));
             }
             else {
                 // 三項 (即時の関数) は Go の定数にならないので var にする。
@@ -2126,8 +2131,17 @@ NAST_BACKEND_ENTRY(GoConfig) {
                 continue;
             }
             auto msg = std::format("skipped {}: {}", d.name, d.skipped);
-            report(msg);
-            body.writeln("// nast2go: ", msg);
+            skip(msg);
+            if (c.config().unhandled_mode == UnhandledMode::dummy) {
+                body.writeln("// nast2go: ", msg);
+            }
+        }
+        // 書けなかった宣言は丸ごと外す (書きかけを 1 つ混ぜると Go はパッケージ
+        // ごとコンパイルできなくなり、書けた宣言まで使えなくなる)。外したことの
+        // 扱いは --unhandled に従う: dummy は出力に理由を残す、ignore は残さない、
+        // error は失敗にする。理由はどれでも stderr に出す。
+        if (c.config().unhandled_mode == UnhandledMode::error && !skipped.empty()) {
+            return unexpect_loc_error(n, "{} declaration(s) could not be generated; the first: {}", skipped.size(), skipped.front());
         }
         // パッケージ直下には型と定数しか出さない。routine を置くと、生成した
         // ファイルを 2 つ同じパッケージに置いた時点で衝突する (ebm2go と同じ性質)。
