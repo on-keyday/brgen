@@ -1,0 +1,2162 @@
+{
+    "includes": [
+        "<span>",
+        "<algorithm>",
+        "<array>",
+        "<concepts>",
+        "<cstdint>",
+        "<optional>",
+        "<string_view>",
+        "<vector>",
+        "<string>",
+        "<type_traits>",
+        "\"../../lexer/token.h\"",
+        "<utility>",
+        "\"pool.h\""
+    ],
+    "types": {
+        "std::uint32_t": {
+            "init": "{}"
+        },
+        "bool": {
+            "init": "{}"
+        }
+    },
+    "structs": [
+        {
+            "name": "CommentRange",
+            "fields": [
+                {
+                    "name": "loc",
+                    "type": "lexer::Loc"
+                }
+            ]
+        }
+    ],
+    "backend_config": {
+        "$comment": [
+            "ノードに紐づかない設定。ノードごとのつまみは各ノードの knobs に書く。",
+            "ここに来るのは「どのハンドラの話でもない」ものだけで、今のところ",
+            "未対応ノードの扱い 1 つ。バックエンドが宣言するものではなく、",
+            "コマンドラインから来る実行時の設定である点も他の knob と違う。"
+        ],
+        "enums": [
+            {
+                "name": "UnhandledMode",
+                "underlying": "std::uint8_t",
+                "values": [
+                    "error",
+                    "dummy",
+                    "ignore"
+                ],
+                "description": "What to do at a node the backend has not handled"
+            }
+        ],
+        "knobs": [
+            {
+                "name": "unhandled_mode",
+                "type": "UnhandledMode",
+                "default": "UnhandledMode::dummy",
+                "description": "Set from --unhandled. dummy leaves a marker in the output, error stops at the node, ignore drops it"
+            }
+        ]
+    },
+    "side_tables": [
+        {
+            "name": "Resolution",
+            "over": "Ident",
+            "storage": "dense",
+            "fields": [
+                {
+                    "name": "target",
+                    "type": "Node<Statement>"
+                }
+            ]
+        },
+        {
+            "name": "InnerStruct",
+            "over": "BodyStatement",
+            "storage": "sparse",
+            "fields": [
+                {
+                    "name": "fields",
+                    "type": "vector<Node<Field>>"
+                },
+                {
+                    "name": "asserts",
+                    "type": "vector<Node<Assert>>"
+                }
+            ]
+        },
+        {
+            "name": "FormatState",
+            "over": "NamedBodyStatement",
+            "storage": "sparse",
+            "fields": [
+                {
+                    "name": "encode_kind",
+                    "type": "FormatKind"
+                },
+                {
+                    "name": "decode_kind",
+                    "type": "FormatKind"
+                },
+                {
+                    "name": "encode_custom",
+                    "type": "Node<Function>"
+                },
+                {
+                    "name": "decode_custom",
+                    "type": "Node<Function>"
+                },
+                {
+                    "name": "fields",
+                    "type": "vector<Node<Field>>"
+                },
+                {
+                    "name": "functions",
+                    "type": "vector<Node<Function>>",
+                    "description": "Functions defined inside the format (without custom encode/decode functions)"
+                },
+                {
+                    "name": "asserts",
+                    "type": "vector<Node<Assert>>",
+                    "description": "Asserts defined inside the format"
+                },
+                {
+                    "name": "nested_formats",
+                    "type": "vector<Node<Format>>"
+                },
+                {
+                    "name": "nested_enums",
+                    "type": "vector<Node<Enum>>"
+                }
+            ]
+        },
+        {
+            "name": "DocComment",
+            "over": "Statement",
+            "storage": "sparse",
+            "fields": [
+                {
+                    "name": "leading",
+                    "type": "lexer::Loc"
+                }
+            ]
+        },
+        {
+            "name": "IsMutated",
+            "over": "Field",
+            "storage": "flag"
+        },
+        {
+            "name": "UnionFields",
+            "over": "ConditionalExpr",
+            "storage": "sparse",
+            "fields": [
+                {
+                    "name": "fields",
+                    "type": "vector<Node<Field>>"
+                }
+            ]
+        },
+        {
+            "name": "ImportResolution",
+            "over": "Import",
+            "storage": "sparse",
+            "fields": [
+                {
+                    "name": "module",
+                    "type": "Node<Module>"
+                }
+            ]
+        },
+        {
+            "name": "Requirements",
+            "over": "Statement",
+            "storage": "sparse",
+            "fields": [
+                {
+                    "name": "decode_peek",
+                    "type": "bool"
+                },
+                {
+                    "name": "decode_backward",
+                    "type": "bool"
+                },
+                {
+                    "name": "decode_remain",
+                    "type": "bool"
+                },
+                {
+                    "name": "decode_offset",
+                    "type": "bool"
+                },
+                {
+                    "name": "decode_state_read",
+                    "type": "vector<Node<StateVariable>>"
+                },
+                {
+                    "name": "decode_state_write",
+                    "type": "vector<Node<StateVariable>>"
+                },
+                {
+                    "name": "encode_peek",
+                    "type": "bool"
+                },
+                {
+                    "name": "encode_backward",
+                    "type": "bool"
+                },
+                {
+                    "name": "encode_remain",
+                    "type": "bool"
+                },
+                {
+                    "name": "encode_offset",
+                    "type": "bool"
+                },
+                {
+                    "name": "encode_state_read",
+                    "type": "vector<Node<StateVariable>>"
+                },
+                {
+                    "name": "encode_state_write",
+                    "type": "vector<Node<StateVariable>>"
+                }
+            ]
+        },
+        {
+            "name": "ConstantValue",
+            "over": "Expr",
+            "storage": "sparse",
+            "fields": [
+                {
+                    "name": "kind",
+                    "type": "EvalKind"
+                },
+                {
+                    "name": "integer",
+                    "type": "uint64"
+                },
+                {
+                    "name": "is_negative",
+                    "type": "bool"
+                },
+                {
+                    "name": "boolean",
+                    "type": "bool"
+                },
+                {
+                    "name": "string",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "UnionLayout",
+            "over": "UnionType",
+            "storage": "sparse",
+            "fields": [
+                {
+                    "name": "member_types",
+                    "type": "vector<Node<Type>>"
+                },
+                {
+                    "name": "cluster_types",
+                    "type": "vector<Node<Type>>"
+                }
+            ]
+        },
+        {
+            "name": "FieldEndian",
+            "over": "Field",
+            "storage": "sparse",
+            "fields": [
+                {
+                    "name": "endian",
+                    "type": "Endian"
+                },
+                {
+                    "name": "dynamic",
+                    "type": "Node<SpecifyOrder>",
+                    "description": "Set when the byte order is decided at run time. Points at the assignment, not its expression: the expression is evaluated once there and every field reads that one value"
+                },
+                {
+                    "name": "bit_order",
+                    "type": "BitOrder",
+                    "description": "Bit order set by input.bit_order in effect here. unspec when none is: the order then follows the byte order (big reads from the msb, little from the lsb), which is what every existing generator does"
+                },
+                {
+                    "name": "bit_order_dynamic",
+                    "type": "Node<SpecifyOrder>",
+                    "description": "Set when the bit order is decided at run time, like dynamic"
+                }
+            ],
+            "description": "Byte order and bit order in effect where this field is read or written"
+        },
+        {
+            "name": "LoweredAvailable",
+            "over": "Available",
+            "storage": "sparse",
+            "fields": [
+                {
+                    "name": "expr",
+                    "type": "Node<Expr>"
+                }
+            ],
+            "description": "available(x) answered as an expression over the branch conditions that decide whether the field is there. Produced on demand by lowering/"
+        },
+        {
+            "name": "LoweredEnumIsDefined",
+            "over": "MemberAccess",
+            "storage": "sparse",
+            "fields": [
+                {
+                    "name": "expr",
+                    "type": "Node<Expr>"
+                }
+            ],
+            "description": "x.is_defined answered as a comparison against every member of the enum. Produced on demand by lowering/"
+        },
+        {
+            "name": "LoweredRangeCompare",
+            "over": "Binary",
+            "storage": "sparse",
+            "fields": [
+                {
+                    "name": "expr",
+                    "type": "Node<Expr>"
+                }
+            ],
+            "description": "Range membership comparison expanded into ordinary comparisons. Produced on demand by lowering/"
+        },
+        {
+            "name": "LoweredMatch",
+            "over": "Match",
+            "storage": "sparse",
+            "fields": [
+                {
+                    "name": "branch",
+                    "type": "Node<If>"
+                }
+            ],
+            "description": "If-chain form of a match, for targets without one. Produced on demand by lowering/"
+        },
+        {
+            "name": "LoweredEndianVariable",
+            "over": "SpecifyOrder",
+            "storage": "sparse",
+            "fields": [
+                {
+                    "name": "name",
+                    "type": "Node<Ident>"
+                },
+                {
+                    "name": "value",
+                    "type": "Node<Expr>"
+                }
+            ],
+            "description": "The variable holding a byte order decided at run time. The assignment is evaluated once, here, and every field that follows reads this"
+        },
+        {
+            "name": "LoweredCond",
+            "over": "Cond",
+            "storage": "sparse",
+            "fields": [
+                {
+                    "name": "temp_name",
+                    "type": "Node<Ident>"
+                },
+                {
+                    "name": "type",
+                    "type": "Node<Type>"
+                },
+                {
+                    "name": "branch",
+                    "type": "Node<If>"
+                },
+                {
+                    "name": "value",
+                    "type": "Node<Reference>"
+                }
+            ],
+            "description": "Statement form of a conditional expression, for targets without one. Produced on demand by lowering/"
+        },
+        {
+            "name": "TypeSize",
+            "over": "Type",
+            "storage": "sparse",
+            "fields": [
+                {
+                    "name": "kind",
+                    "type": "SizeKind"
+                },
+                {
+                    "name": "bits",
+                    "type": "size",
+                    "description": "Number of bits. Valid only when kind is fixed"
+                },
+                {
+                    "name": "bits_expr",
+                    "type": "Node<Expr>",
+                    "description": "Number of bits as an expression. Set when kind is dynamic and the width can be written as one. Synthesized by the size analysis"
+                }
+            ]
+        }
+    ],
+    "codec_roles": [
+        {
+            "name": "not_statement",
+            "description": "Never stands as a statement of a body: types, bodies, arguments, identifiers, and the parts of a branch (its arms) or a match"
+        },
+        {
+            "name": "field",
+            "description": "A field: read or written in the encode / decode order"
+        },
+        {
+            "name": "branch",
+            "description": "If / match: the arms are bodies of their own"
+        },
+        {
+            "name": "loop",
+            "description": "A loop: its body runs repeatedly"
+        },
+        {
+            "name": "flow",
+            "description": "break / continue / return: leaves the enclosing loop or function"
+        },
+        {
+            "name": "assign",
+            "description": "An assignment to an existing place"
+        },
+        {
+            "name": "define",
+            "description": "A local definition (x := value / x ::= value)"
+        },
+        {
+            "name": "check",
+            "description": "An assertion that must hold"
+        },
+        {
+            "name": "error",
+            "description": "error(...): stops with a failure"
+        },
+        {
+            "name": "directive",
+            "description": "Configures what follows (config.x = ..., input.endian = ...) without reading or writing"
+        },
+        {
+            "name": "declaration",
+            "description": "Declares something (format, enum, fn, state ...) without running in the encode / decode order"
+        },
+        {
+            "name": "expression",
+            "description": "An expression; as a statement it is evaluated for its value (an implicit assertion in encode / decode)"
+        }
+    ],
+    "header": {
+        "fields": [
+            {
+                "name": "type",
+                "type": "NodeType"
+            },
+            {
+                "name": "data_index",
+                "type": "uint32"
+            },
+            {
+                "name": "loc",
+                "type": "lexer::Loc"
+            }
+        ]
+    },
+    "enums": [
+        {
+            "name": "BinaryOp",
+            "layers": [
+                {
+                    "name": "mul",
+                    "enums": [
+                        {
+                            "name": "mul",
+                            "alt_names": [
+                                "*"
+                            ]
+                        },
+                        {
+                            "name": "div",
+                            "alt_names": [
+                                "/"
+                            ]
+                        },
+                        {
+                            "name": "mod",
+                            "alt_names": [
+                                "%"
+                            ]
+                        },
+                        {
+                            "name": "left_arithmetic_shift",
+                            "alt_names": [
+                                "<<<"
+                            ]
+                        },
+                        {
+                            "name": "right_arithmetic_shift",
+                            "alt_names": [
+                                ">>>"
+                            ]
+                        },
+                        {
+                            "name": "left_logical_shift",
+                            "alt_names": [
+                                "<<"
+                            ]
+                        },
+                        {
+                            "name": "right_logical_shift",
+                            "alt_names": [
+                                ">>"
+                            ]
+                        },
+                        {
+                            "name": "bit_and",
+                            "alt_names": [
+                                "&"
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "add",
+                    "enums": [
+                        {
+                            "name": "add",
+                            "alt_names": [
+                                "+"
+                            ]
+                        },
+                        {
+                            "name": "sub",
+                            "alt_names": [
+                                "-"
+                            ]
+                        },
+                        {
+                            "name": "bit_or",
+                            "alt_names": [
+                                "|"
+                            ]
+                        },
+                        {
+                            "name": "bit_xor",
+                            "alt_names": [
+                                "^"
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "compare",
+                    "enums": [
+                        {
+                            "name": "equal",
+                            "alt_names": [
+                                "=="
+                            ]
+                        },
+                        {
+                            "name": "not_equal",
+                            "alt_names": [
+                                "!="
+                            ]
+                        },
+                        {
+                            "name": "less",
+                            "alt_names": [
+                                "<"
+                            ]
+                        },
+                        {
+                            "name": "less_or_eq",
+                            "alt_names": [
+                                "<="
+                            ]
+                        },
+                        {
+                            "name": "grater",
+                            "alt_names": [
+                                ">"
+                            ]
+                        },
+                        {
+                            "name": "grater_or_eq",
+                            "alt_names": [
+                                ">="
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "logical_and",
+                    "enums": [
+                        {
+                            "name": "logical_and",
+                            "alt_names": [
+                                "&&"
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "logical_or",
+                    "enums": [
+                        {
+                            "name": "logical_or",
+                            "alt_names": [
+                                "||"
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "cond",
+                    "enums": [
+                        {
+                            "name": "cond_op1",
+                            "alt_names": [
+                                "?"
+                            ]
+                        },
+                        {
+                            "name": "cond_op2",
+                            "alt_names": [
+                                ":"
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "range",
+                    "enums": [
+                        {
+                            "name": "range_exclusive",
+                            "alt_names": [
+                                ".."
+                            ]
+                        },
+                        {
+                            "name": "range_inclusive",
+                            "alt_names": [
+                                "..="
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "assign",
+                    "enums": [
+                        {
+                            "name": "assign",
+                            "alt_names": [
+                                "="
+                            ]
+                        },
+                        {
+                            "name": "define_assign",
+                            "alt_names": [
+                                ":="
+                            ]
+                        },
+                        {
+                            "name": "const_assign",
+                            "alt_names": [
+                                "::="
+                            ]
+                        },
+                        {
+                            "name": "add_assign",
+                            "alt_names": [
+                                "+="
+                            ]
+                        },
+                        {
+                            "name": "sub_assign",
+                            "alt_names": [
+                                "-="
+                            ]
+                        },
+                        {
+                            "name": "mul_assign",
+                            "alt_names": [
+                                "*="
+                            ]
+                        },
+                        {
+                            "name": "div_assign",
+                            "alt_names": [
+                                "/="
+                            ]
+                        },
+                        {
+                            "name": "mod_assign",
+                            "alt_names": [
+                                "%="
+                            ]
+                        },
+                        {
+                            "name": "left_logical_shift_assign",
+                            "alt_names": [
+                                "<<="
+                            ]
+                        },
+                        {
+                            "name": "right_logical_shift_assign",
+                            "alt_names": [
+                                ">>="
+                            ]
+                        },
+                        {
+                            "name": "left_arithmetic_shift_assign",
+                            "alt_names": [
+                                "<<<="
+                            ]
+                        },
+                        {
+                            "name": "right_arithmetic_shift_assign",
+                            "alt_names": [
+                                ">>>="
+                            ]
+                        },
+                        {
+                            "name": "bit_and_assign",
+                            "alt_names": [
+                                "&="
+                            ]
+                        },
+                        {
+                            "name": "bit_or_assign",
+                            "alt_names": [
+                                "|="
+                            ]
+                        },
+                        {
+                            "name": "bit_xor_assign",
+                            "alt_names": [
+                                "^="
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "comma",
+                    "enums": [
+                        {
+                            "name": "comma",
+                            "alt_names": [
+                                ","
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "ignored",
+                    "enums": [
+                        {
+                            "name": "in_assign",
+                            "alt_names": [
+                                "in"
+                            ]
+                        },
+                        {
+                            "name": "append_assign",
+                            "alt_names": [
+                                "append"
+                            ]
+                        }
+                    ],
+                    "ignored": true
+                }
+            ],
+            "groups": [
+                {
+                    "name": "compare_op",
+                    "from": "equal",
+                    "to": "grater_or_eq"
+                },
+                {
+                    "name": "boolean_op",
+                    "from": "equal",
+                    "to": "logical_or"
+                },
+                {
+                    "name": "range_op",
+                    "from": "range_exclusive",
+                    "to": "range_inclusive"
+                },
+                {
+                    "name": "assign_op",
+                    "from": "assign",
+                    "to": "bit_xor_assign",
+                    "extra": [
+                        "append_assign"
+                    ]
+                },
+                {
+                    "name": "define_op",
+                    "members": [
+                        "define_assign",
+                        "const_assign",
+                        "in_assign"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "UnaryOp",
+            "enums": [
+                {
+                    "name": "not_",
+                    "alt_names": [
+                        "!"
+                    ]
+                },
+                {
+                    "name": "minus_sign",
+                    "alt_names": [
+                        "-"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "SpecialLiteralKind",
+            "enums": [
+                {
+                    "name": "input_",
+                    "alt_names": [
+                        "input"
+                    ]
+                },
+                {
+                    "name": "output_",
+                    "alt_names": [
+                        "output"
+                    ]
+                },
+                {
+                    "name": "config_",
+                    "alt_names": [
+                        "config"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "BitOrder",
+            "enums": [
+                {
+                    "name": "unspec"
+                },
+                {
+                    "name": "msb"
+                },
+                {
+                    "name": "lsb"
+                }
+            ]
+        },
+        {
+            "name": "Endian",
+            "enums": [
+                {
+                    "name": "unspec"
+                },
+                {
+                    "name": "big"
+                },
+                {
+                    "name": "little"
+                },
+                {
+                    "name": "native"
+                }
+            ]
+        },
+        {
+            "name": "FormatKind",
+            "enums": [
+                {
+                    "name": "as_is"
+                },
+                {
+                    "name": "custom"
+                }
+            ]
+        },
+        {
+            "name": "SizeKind",
+            "enums": [
+                {
+                    "name": "unknown"
+                },
+                {
+                    "name": "fixed"
+                },
+                {
+                    "name": "dynamic"
+                }
+            ]
+        },
+        {
+            "name": "EvalKind",
+            "enums": [
+                {
+                    "name": "integer"
+                },
+                {
+                    "name": "boolean"
+                },
+                {
+                    "name": "string"
+                }
+            ]
+        }
+    ],
+    "nodes": [
+        {
+            "name": "Statement",
+            "fields": [],
+            "abstract": true
+        },
+        {
+            "name": "Module",
+            "derive": "Statement",
+            "fields": [
+                {
+                    "name": "statements",
+                    "type": "vector<Node<Statement>>"
+                },
+                {
+                    "name": "struct_type",
+                    "type": "Node<StructType>"
+                }
+            ],
+            "codec_role": "not_statement"
+        },
+        {
+            "name": "NamedStatement",
+            "derive": "Statement",
+            "fields": [
+                {
+                    "name": "name",
+                    "type": "Node<Ident>"
+                }
+            ],
+            "abstract": true
+        },
+        {
+            "name": "NamedBodyStatement",
+            "derive": "NamedStatement",
+            "fields": [
+                {
+                    "name": "belong",
+                    "type": "Node<Statement>",
+                    "weak": true
+                },
+                {
+                    "name": "body",
+                    "type": "Node<Body>"
+                }
+            ],
+            "abstract": true
+        },
+        {
+            "name": "NamedStructTypedStatement",
+            "derive": "NamedBodyStatement",
+            "fields": [
+                {
+                    "name": "struct_type",
+                    "type": "Node<StructType>"
+                }
+            ],
+            "abstract": true
+        },
+        {
+            "name": "NamedTypeStatement",
+            "derive": "NamedStatement",
+            "fields": [
+                {
+                    "name": "type",
+                    "type": "Node<Type>"
+                }
+            ],
+            "abstract": true
+        },
+        {
+            "name": "BodyStatement",
+            "derive": "Statement",
+            "fields": [
+                {
+                    "name": "belong",
+                    "type": "Node<Statement>",
+                    "weak": true
+                },
+                {
+                    "name": "body",
+                    "type": "Node<Body>"
+                }
+            ],
+            "codec_role": "not_statement"
+        },
+        {
+            "name": "Expr",
+            "derive": "Statement",
+            "fields": [
+                {
+                    "name": "type",
+                    "type": "Node<Type>"
+                }
+            ],
+            "abstract": true,
+            "codec_role": "expression"
+        },
+        {
+            "name": "Field",
+            "derive": "NamedTypeStatement",
+            "fields": [
+                {
+                    "name": "belong",
+                    "type": "Node<Statement>",
+                    "weak": true,
+                    "description": "The format, state or function the field is declared in. A field belonging to a function is a local: it takes no receiver, and nothing else can name it. StateVariable and Parameter do not carry this because their owner is reachable already (the module, and the function's parameter list)"
+                },
+                {
+                    "name": "arguments",
+                    "type": "Node<Arguments>"
+                }
+            ],
+            "codec_role": "field"
+        },
+        {
+            "name": "StateVariable",
+            "derive": "NamedTypeStatement",
+            "fields": [
+                {
+                    "name": "arguments",
+                    "type": "Node<Arguments>"
+                }
+            ],
+            "codec_role": "declaration"
+        },
+        {
+            "name": "Format",
+            "derive": "NamedStructTypedStatement",
+            "fields": [],
+            "codec_role": "declaration"
+        },
+        {
+            "name": "GenericFormat",
+            "derive": "NamedBodyStatement",
+            "fields": [
+                {
+                    "name": "type_parameters",
+                    "type": "vector<Node<TypeParameter>>"
+                }
+            ],
+            "codec_role": "declaration"
+        },
+        {
+            "name": "Function",
+            "derive": "NamedBodyStatement",
+            "fields": [
+                {
+                    "name": "parameters",
+                    "type": "vector<Node<Parameter>>"
+                },
+                {
+                    "name": "return_type",
+                    "type": "Node<Type>"
+                }
+            ],
+            "codec_role": "declaration"
+        },
+        {
+            "name": "ConditionalExpr",
+            "abstract": true,
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "blocks",
+                    "type": "vector<Node<BodyStatement>>"
+                }
+            ],
+            "codec_role": "branch"
+        },
+        {
+            "name": "If",
+            "derive": "ConditionalExpr",
+            "fields": []
+        },
+        {
+            "name": "Match",
+            "derive": "ConditionalExpr",
+            "fields": [
+                {
+                    "name": "condition",
+                    "type": "Node<Expr>"
+                }
+            ]
+        },
+        {
+            "name": "Loop",
+            "derive": "BodyStatement",
+            "fields": [
+                {
+                    "name": "init",
+                    "type": "Node<Statement>"
+                },
+                {
+                    "name": "condition",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "step",
+                    "type": "Node<Statement>"
+                }
+            ],
+            "codec_role": "loop"
+        },
+        {
+            "name": "RangeLoop",
+            "derive": "BodyStatement",
+            "fields": [
+                {
+                    "name": "binding",
+                    "type": "Node<VariableDefinition>"
+                }
+            ],
+            "codec_role": "loop"
+        },
+        {
+            "name": "Assign",
+            "derive": "Statement",
+            "fields": [
+                {
+                    "name": "assignee",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "value",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "op",
+                    "type": "BinaryOp"
+                }
+            ],
+            "codec_role": "assign"
+        },
+        {
+            "name": "VariableDefinition",
+            "derive": "NamedStatement",
+            "fields": [
+                {
+                    "name": "value",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "op",
+                    "type": "BinaryOp"
+                }
+            ],
+            "codec_role": "define"
+        },
+        {
+            "name": "Metadata",
+            "derive": "Statement",
+            "fields": [
+                {
+                    "name": "name",
+                    "type": "string"
+                },
+                {
+                    "name": "arguments",
+                    "type": "Node<Arguments>"
+                }
+            ],
+            "codec_role": "directive"
+        },
+        {
+            "name": "SpecifyOrder",
+            "derive": "Statement",
+            "fields": [
+                {
+                    "name": "name",
+                    "type": "string"
+                },
+                {
+                    "name": "order",
+                    "type": "Node<Expr>"
+                }
+            ],
+            "codec_role": "directive"
+        },
+        {
+            "name": "Sizeof",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "target",
+                    "type": "Node<Expr>"
+                }
+            ]
+        },
+        {
+            "name": "Self",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "owner",
+                    "type": "Node<NamedStructTypedStatement>",
+                    "weak": true,
+                    "description": "Whose instance this is. The type comes from here, and a backend that stores branch fields in arms needs it to know where the path starts"
+                },
+                {
+                    "name": "is_explicit",
+                    "type": "bool",
+                    "description": "Written as self in the source, rather than materialized by bind/receiver. Unparse spells the explicit one and elides the other; an explicit self.x is an ordinary member access on the receiver, so it skips locals that shadow the name"
+                }
+            ],
+            "knobs": [
+                {
+                    "name": "spelling",
+                    "type": "std::string",
+                    "default": "{}",
+                    "description": "The receiver expression itself, dereferencing included: self in Rust and Python, this in Java, the receiver name in Go, (*this) in C++ so that the member separator stays a dot at every hop. Empty falls through to the unhandled marker"
+                }
+            ],
+            "description": "The value being encoded or decoded. Never written in .bgn: bind/receiver materializes one under every field reference, so a bare name and a qualified one stay distinguishable after binding"
+        },
+        {
+            "name": "WithReceiver",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "receiver",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "expr",
+                    "type": "Node<Expr>"
+                }
+            ],
+            "description": "Read expr with the receiver replaced: a Self inside it means receiver, not the enclosing format. Never written in .bgn; lowering builds one when a condition that names another format's fields has to be answered about a particular instance"
+        },
+        {
+            "name": "BitCast",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "target",
+                    "type": "Node<Expr>"
+                }
+            ],
+            "description": "Reinterpret the operand's bits as this expression's own type. Distinct from Cast, which converts the value: a float and the integer holding its bits are the same bits and different numbers"
+        },
+        {
+            "name": "IsLittleEndian",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "order",
+                    "type": "Node<SpecifyOrder>",
+                    "weak": true,
+                    "description": "The assignment whose value decides the order at run time. Null means the order is the target platform's, which only the target's compiler knows"
+                }
+            ],
+            "knobs": [
+                {
+                    "name": "native_endian_check",
+                    "type": "std::string",
+                    "default": "{}",
+                    "description": "How the target spells 'the platform is little endian': cfg!(target_endian = \"little\") in Rust, (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__) in C, sys.byteorder == 'little' in Python. Left empty, the node falls through to the unhandled marker rather than guessing"
+                },
+                {
+                    "name": "little_endian_value",
+                    "type": "std::string",
+                    "default": "{}",
+                    "description": "What a stored byte order is compared against to mean little endian. Used only when order is set"
+                }
+            ],
+            "description": "Whether the byte order in effect is little endian. Synthesized by lowering; the spelling is the backend's (cfg!(target_endian) and the like)"
+        },
+        {
+            "name": "BitSizeof",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "target",
+                    "type": "Node<Expr>"
+                }
+            ],
+            "description": "Width of the operand in bits. sizeof is byte valued and cannot describe a field that is not a whole number of bytes"
+        },
+        {
+            "name": "Available",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "target",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "selected_type",
+                    "type": "Node<TypeLiteral>"
+                }
+            ]
+        },
+        {
+            "name": "ExplicitError",
+            "derive": "Statement",
+            "fields": [
+                {
+                    "name": "message",
+                    "type": "Node<StrLiteral>"
+                },
+                {
+                    "name": "extra_arguments",
+                    "type": "Node<Arguments>"
+                }
+            ],
+            "codec_role": "error"
+        },
+        {
+            "name": "Binary",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "op",
+                    "type": "BinaryOp"
+                },
+                {
+                    "name": "left",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "right",
+                    "type": "Node<Expr>"
+                }
+            ]
+        },
+        {
+            "name": "Unary",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "op",
+                    "type": "UnaryOp"
+                },
+                {
+                    "name": "target",
+                    "type": "Node<Expr>"
+                }
+            ]
+        },
+        {
+            "name": "Call",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "callee",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "arguments",
+                    "type": "Node<Arguments>"
+                }
+            ]
+        },
+        {
+            "name": "Reference",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "name",
+                    "type": "Node<Ident>"
+                }
+            ]
+        },
+        {
+            "name": "MemberAccess",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "base",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "member",
+                    "type": "Node<Ident>"
+                }
+            ],
+            "knobs": [
+                {
+                    "name": "separator",
+                    "type": "std::string",
+                    "default": "\".\"",
+                    "description": "What goes between a value and its member. The same at every hop, however deep the chain, so a pointer receiver does not belong here: -> as the separator would spell self->a->b. A dot nearly everywhere; a target whose receiver needs dereferencing folds that into Self.spelling instead"
+                }
+            ]
+        },
+        {
+            "name": "TypeLiteral",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "literal",
+                    "type": "Node<Type>"
+                }
+            ]
+        },
+        {
+            "name": "ConditionalStatement",
+            "derive": "BodyStatement",
+            "fields": [
+                {
+                    "name": "condition",
+                    "type": "Node<Expr>"
+                }
+            ],
+            "codec_role": "not_statement"
+        },
+        {
+            "name": "Parameter",
+            "derive": "NamedTypeStatement",
+            "fields": [],
+            "codec_role": "declaration"
+        },
+        {
+            "name": "Body",
+            "fields": [
+                {
+                    "name": "statements",
+                    "type": "vector<Node<Statement>>"
+                },
+                {
+                    "name": "end_loc",
+                    "type": "lexer::Loc"
+                }
+            ],
+            "codec_role": "not_statement"
+        },
+        {
+            "name": "Arguments",
+            "fields": [
+                {
+                    "name": "arguments",
+                    "type": "vector<Node<Argument>>"
+                },
+                {
+                    "name": "end_loc",
+                    "type": "lexer::Loc"
+                }
+            ],
+            "codec_role": "not_statement"
+        },
+        {
+            "name": "Argument",
+            "fields": [
+                {
+                    "name": "value",
+                    "type": "Node<Expr>"
+                }
+            ],
+            "codec_role": "not_statement"
+        },
+        {
+            "name": "NamedArgument",
+            "derive": "Argument",
+            "fields": [
+                {
+                    "name": "name",
+                    "type": "Node<Expr>"
+                }
+            ]
+        },
+        {
+            "name": "Ident",
+            "fields": [
+                {
+                    "name": "identifier",
+                    "type": "string"
+                }
+            ],
+            "codec_role": "not_statement"
+        },
+        {
+            "name": "Type",
+            "fields": [
+                {
+                    "name": "is_explicit",
+                    "type": "bool",
+                    "cosmetic": true
+                }
+            ],
+            "abstract": true,
+            "codec_role": "not_statement"
+        },
+        {
+            "name": "IntType",
+            "derive": "Type",
+            "fields": [
+                {
+                    "name": "bit_size",
+                    "type": "size"
+                },
+                {
+                    "name": "is_signed",
+                    "type": "bool"
+                },
+                {
+                    "name": "endian",
+                    "type": "Endian"
+                }
+            ]
+        },
+        {
+            "name": "Literal",
+            "derive": "Expr",
+            "fields": [],
+            "abstract": true
+        },
+        {
+            "name": "IntLiteral",
+            "derive": "Literal",
+            "fields": [
+                {
+                    "name": "value",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "BoolLiteral",
+            "derive": "Literal",
+            "fields": [
+                {
+                    "name": "value",
+                    "type": "bool"
+                }
+            ]
+        },
+        {
+            "name": "StrLiteral",
+            "derive": "Literal",
+            "fields": [
+                {
+                    "name": "value",
+                    "type": "string"
+                },
+                {
+                    "name": "binary_value",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "CharLiteral",
+            "derive": "Literal",
+            "fields": [
+                {
+                    "name": "value",
+                    "type": "string"
+                },
+                {
+                    "name": "code",
+                    "type": "uint32"
+                }
+            ]
+        },
+        {
+            "name": "RegexLiteral",
+            "derive": "Literal",
+            "fields": [
+                {
+                    "name": "value",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "SpecialLiteral",
+            "derive": "Literal",
+            "fields": [
+                {
+                    "name": "kind",
+                    "type": "SpecialLiteralKind"
+                }
+            ]
+        },
+        {
+            "name": "Paren",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "expr",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "end_loc",
+                    "type": "lexer::Loc"
+                }
+            ]
+        },
+        {
+            "name": "Index",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "base",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "index",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "end_loc",
+                    "type": "lexer::Loc"
+                }
+            ]
+        },
+        {
+            "name": "Cond",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "cond",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "then",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "els_loc",
+                    "type": "lexer::Loc"
+                },
+                {
+                    "name": "els",
+                    "type": "Node<Expr>"
+                }
+            ]
+        },
+        {
+            "name": "Range",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "start",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "end",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "op",
+                    "type": "BinaryOp"
+                }
+            ]
+        },
+        {
+            "name": "BadExpr",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "content",
+                    "type": "string"
+                },
+                {
+                    "name": "bad_expr",
+                    "type": "Node<Expr>"
+                }
+            ]
+        },
+        {
+            "name": "Assert",
+            "derive": "Statement",
+            "fields": [
+                {
+                    "name": "expr",
+                    "type": "Node<Expr>"
+                }
+            ],
+            "codec_role": "check"
+        },
+        {
+            "name": "FloatType",
+            "derive": "Type",
+            "fields": [
+                {
+                    "name": "bit_size",
+                    "type": "size"
+                },
+                {
+                    "name": "endian",
+                    "type": "Endian"
+                }
+            ]
+        },
+        {
+            "name": "BoolType",
+            "derive": "Type",
+            "fields": []
+        },
+        {
+            "name": "VoidType",
+            "derive": "Type",
+            "fields": []
+        },
+        {
+            "name": "WrapperType",
+            "abstract": true,
+            "derive": "Type",
+            "fields": [
+                {
+                    "name": "base",
+                    "type": "Node<Type>"
+                }
+            ]
+        },
+        {
+            "name": "IdentType",
+            "derive": "WrapperType",
+            "fields": [
+                {
+                    "name": "ident",
+                    "type": "Node<Ident>"
+                }
+            ]
+        },
+        {
+            "name": "ImportedType",
+            "derive": "WrapperType",
+            "fields": [
+                {
+                    "name": "import_ref",
+                    "type": "Node<MemberAccess>"
+                }
+            ]
+        },
+        {
+            "name": "IntLiteralType",
+            "derive": "Type",
+            "fields": [
+                {
+                    "name": "base",
+                    "type": "Node<IntLiteral>",
+                    "weak": true
+                }
+            ]
+        },
+        {
+            "name": "StrLiteralType",
+            "derive": "Type",
+            "fields": [
+                {
+                    "name": "base",
+                    "type": "Node<StrLiteral>",
+                    "weak": true
+                }
+            ]
+        },
+        {
+            "name": "RegexLiteralType",
+            "derive": "Type",
+            "fields": [
+                {
+                    "name": "base",
+                    "type": "Node<RegexLiteral>",
+                    "weak": true
+                }
+            ]
+        },
+        {
+            "name": "ArrayType",
+            "derive": "Type",
+            "fields": [
+                {
+                    "name": "length",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "end_loc",
+                    "type": "lexer::Loc"
+                },
+                {
+                    "name": "element_type",
+                    "type": "Node<Type>"
+                }
+            ]
+        },
+        {
+            "name": "StreamType",
+            "derive": "Type",
+            "fields": [
+                {
+                    "name": "kind",
+                    "type": "SpecialLiteralKind"
+                },
+                {
+                    "name": "length",
+                    "type": "Node<Expr>"
+                }
+            ]
+        },
+        {
+            "name": "FunctionType",
+            "derive": "Type",
+            "fields": [
+                {
+                    "name": "return_type",
+                    "type": "Node<Type>"
+                },
+                {
+                    "name": "parameters",
+                    "type": "vector<Node<Type>>"
+                }
+            ]
+        },
+        {
+            "name": "StructType",
+            "derive": "Type",
+            "fields": [
+                {
+                    "name": "base",
+                    "type": "Node<Statement>",
+                    "weak": true
+                }
+            ]
+        },
+        {
+            "name": "InlineStructType",
+            "derive": "Type",
+            "fields": [
+                {
+                    "name": "inlined_format",
+                    "type": "Node<Format>"
+                }
+            ]
+        },
+        {
+            "name": "StructUnionType",
+            "derive": "Type",
+            "fields": [
+                {
+                    "name": "base",
+                    "type": "Node<ConditionalExpr>",
+                    "weak": true
+                },
+                {
+                    "name": "candidates",
+                    "type": "vector<Node<StructUnionCandidate>>"
+                }
+            ]
+        },
+        {
+            "name": "StructUnionCandidate",
+            "fields": [
+                {
+                    "name": "cond",
+                    "type": "Node<Expr>",
+                    "weak": true
+                },
+                {
+                    "name": "inner_struct",
+                    "type": "Node<BodyStatement>",
+                    "weak": true
+                }
+            ],
+            "codec_role": "not_statement"
+        },
+        {
+            "name": "UnionType",
+            "derive": "Type",
+            "fields": [
+                {
+                    "name": "cond",
+                    "type": "Node<Expr>",
+                    "weak": true
+                },
+                {
+                    "name": "candidates",
+                    "type": "vector<Node<UnionCandidate>>"
+                },
+                {
+                    "name": "base_type",
+                    "type": "Node<StructUnionType>",
+                    "weak": true
+                },
+                {
+                    "name": "common_type",
+                    "type": "Node<Type>"
+                },
+                {
+                    "name": "is_strict_common_type",
+                    "type": "bool"
+                },
+                {
+                    "name": "member_candidates",
+                    "type": "vector<Node<Field>>"
+                }
+            ]
+        },
+        {
+            "name": "RangeType",
+            "derive": "Type",
+            "fields": [
+                {
+                    "name": "base_type",
+                    "type": "Node<Type>"
+                },
+                {
+                    "name": "range",
+                    "type": "Node<Range>",
+                    "weak": true
+                }
+            ]
+        },
+        {
+            "name": "EnumType",
+            "derive": "Type",
+            "fields": [
+                {
+                    "name": "base",
+                    "type": "Node<Enum>",
+                    "weak": true
+                }
+            ]
+        },
+        {
+            "name": "MetaType",
+            "derive": "Type",
+            "fields": []
+        },
+        {
+            "name": "OptionalType",
+            "derive": "Type",
+            "fields": [
+                {
+                    "name": "base_type",
+                    "type": "Node<Type>"
+                }
+            ]
+        },
+        {
+            "name": "GenericType",
+            "derive": "Type",
+            "fields": [
+                {
+                    "name": "base_type",
+                    "type": "Node<WrapperType>"
+                },
+                {
+                    "name": "type_arguments",
+                    "type": "vector<Node<Type>>"
+                }
+            ]
+        },
+        {
+            "name": "MatchBranch",
+            "derive": "Statement",
+            "fields": [
+                {
+                    "name": "belong",
+                    "type": "Node<Match>",
+                    "weak": true
+                },
+                {
+                    "name": "cond",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "sym_loc",
+                    "type": "lexer::Loc"
+                },
+                {
+                    "name": "then",
+                    "type": "Node<Statement>"
+                }
+            ],
+            "codec_role": "not_statement"
+        },
+        {
+            "name": "UnionCandidate",
+            "fields": [
+                {
+                    "name": "cond",
+                    "type": "Node<Expr>",
+                    "weak": true
+                },
+                {
+                    "name": "field",
+                    "type": "Node<Field>",
+                    "weak": true
+                }
+            ],
+            "codec_role": "not_statement"
+        },
+        {
+            "name": "Return",
+            "derive": "Statement",
+            "fields": [
+                {
+                    "name": "expr",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "related_function",
+                    "type": "Node<Function>",
+                    "weak": true
+                }
+            ],
+            "codec_role": "flow"
+        },
+        {
+            "name": "Break",
+            "derive": "Statement",
+            "fields": [
+                {
+                    "name": "related_loop",
+                    "type": "Node<Loop>",
+                    "weak": true
+                }
+            ],
+            "codec_role": "flow"
+        },
+        {
+            "name": "Continue",
+            "derive": "Statement",
+            "fields": [
+                {
+                    "name": "related_loop",
+                    "type": "Node<Loop>",
+                    "weak": true
+                }
+            ],
+            "codec_role": "flow"
+        },
+        {
+            "name": "Enum",
+            "derive": "NamedStatement",
+            "fields": [
+                {
+                    "name": "base_type",
+                    "type": "Node<Type>"
+                },
+                {
+                    "name": "members",
+                    "type": "vector<Node<EnumMember>>"
+                },
+                {
+                    "name": "enum_type",
+                    "type": "Node<EnumType>"
+                }
+            ],
+            "codec_role": "declaration"
+        },
+        {
+            "name": "EnumMember",
+            "derive": "NamedStatement",
+            "fields": [
+                {
+                    "name": "belong",
+                    "type": "Node<Enum>",
+                    "weak": true
+                },
+                {
+                    "name": "raw_expr",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "value",
+                    "type": "Node<Expr>"
+                },
+                {
+                    "name": "str_literal",
+                    "type": "Node<StrLiteral>"
+                }
+            ],
+            "codec_role": "declaration"
+        },
+        {
+            "name": "State",
+            "derive": "NamedStructTypedStatement",
+            "fields": [],
+            "codec_role": "declaration"
+        },
+        {
+            "name": "TypeParameter",
+            "derive": "NamedStatement",
+            "fields": [
+                {
+                    "name": "belong",
+                    "type": "Node<Statement>",
+                    "weak": true
+                }
+            ],
+            "codec_role": "declaration"
+        },
+        {
+            "name": "Identity",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "expr",
+                    "type": "Node<Expr>"
+                }
+            ]
+        },
+        {
+            "name": "Cast",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "base",
+                    "type": "Node<Call>"
+                },
+                {
+                    "name": "arguments",
+                    "type": "Node<Arguments>"
+                }
+            ]
+        },
+        {
+            "name": "OrCond",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "base",
+                    "type": "Node<Binary>"
+                },
+                {
+                    "name": "conds",
+                    "type": "vector<Node<Expr>>"
+                }
+            ]
+        },
+        {
+            "name": "Import",
+            "derive": "Expr",
+            "fields": [
+                {
+                    "name": "path",
+                    "type": "string"
+                }
+            ]
+        }
+    ]
+}

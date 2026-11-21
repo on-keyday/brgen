@@ -6,6 +6,7 @@ import { ExtraSourceFile, Language, JobResult } from "./msg";
 import { ConfigKey } from "../common/types";
 import { BM_LANGUAGES } from "../lib/bmgen/bm_caller.js";
 import { EBM_LANGUAGES } from "../lib/bmgen/ebm_caller.js";
+import { NAST_LANGUAGES } from "../lib/nast/nast_caller.js";
 
 /**
  * Result of a code generation request.
@@ -92,6 +93,13 @@ export class GeneratorService {
             loaders.push(
                 import("../lib/bmgen/ebm_workers.js").then(m => {
                     this.factory.addWorker(m.ebm_workers);
+                })
+            );
+        }
+        if (NAST_LANGUAGES.length > 0) {
+            loaders.push(
+                import("../lib/nast/nast_workers.js").then(m => {
+                    this.factory.addWorker(m.nast_workers);
                 })
             );
         }

@@ -5,7 +5,8 @@
  * Both the config store (browser) and language registry (server+browser) derive from this.
  *
  * BM/EBM options are not listed here; they are provided dynamically by
- * setBMUIConfig / setEBMUIConfig from the auto-generated bm_caller.js / ebm_caller.js.
+ * setBMUIConfig / setEBMUIConfig / setNASTUIConfig from the auto-generated
+ * bm_caller.js / ebm_caller.js / nast_caller.js.
  */
 
 export interface OptionDef {

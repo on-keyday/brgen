@@ -982,11 +982,13 @@ format FlowSpecComponentItems:
 format FlowSpecNLRILength:
     length :u16 
 
+    # RFC 8955 §4: under 240 (0xf0) octets the length is 1 octet; otherwise
+    # 2 octets 0xfnnn, a 12-bit length (up to 4095) under a 0xf nibble.
     fn encode():
         if length < 0xf0:
             output.put(u8(length))
-        elif length < 0xf000:
-            output.put(0xf0 | u8(length >> 16))
+        elif length < 0x1000:
+            output.put(0xf0 | u8(length >> 8))
             output.put(u8(length & 0xff))
         else:
             error("Length too big")
@@ -997,7 +999,7 @@ format FlowSpecNLRILength:
             length = u16(data)
         else:
             data2 ::= input.get(u8)
-            length = u16((data & 0xf) << 16 | data2)
+            length = (u16(data & 0xf) << 8) | u16(data2)
 
 format FlowSpecAddrPrefix:
     prefix_len :u8 # in bits

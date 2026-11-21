@@ -1,0 +1,113 @@
+# NAST - new AST
+
+`src/core/ast` (src2json が使う本番) を作り直す試作。両者は別物で共存している。
+
+## ディレクトリ
+
+| | |
+| --- | --- |
+| `node/` | ノードの定義とその上の道具。`nodes.json` が正本で、`nodegen.py` が `nodes.h` を生成する。走査 (`traverse.h`)、名前でのパス取得 (`access.h`)、比較 (`compare.{h,cpp}`)、表示 (`printer.h`)、アリーナ (`pool.h`)、JSON からの復元 (`from_json.h`)、組み込み型の綴り (`builtin.h`) |
+| `parse/` | 原文から木へ、木から原文へ。字句 (`stream.{h,cpp}`)、構文 (`parse.{h,cpp}`)、逆変換 (`unparse.{h,cpp}`) |
+| `bind/` | 解析の段。import 解決 → 束縛 → スコープ解決 → 型付け → 定数畳み込み → requires 推論 → union layout。結果はノードを書き換えず side table に置く |
+| `wire/` | 線上表現。`wiregen.py` が `nodes.json` から `nast_wire.bgn` を出し、brgen 自身 (`src2json` → `json2cpp2`) がそれを符号化器にする |
+| `tool/` | 実行するもの。単体テスト (`test.cpp`)、コーパス driver (`corpus.cpp`)、LSP 用ダンパ (`dump.cpp`)、線上往復 (`wire_test.cpp`)、逆変換往復 (`unparse_test.cpp`) |
+| `bench/` | 計測プログラム。測るときの約束は `bench/README.md` |
+| `gen/` | `nodegen.py` の各段 (C++ と TypeScript を出す) |
+| `docs/` | 設計の議論と測定の記録 |
+
+生成物は追跡しない: `node/nodes.h`、`wire/nast_wire_conv.hpp`、`build/`。
+`lsp/server/src/nast_nodes.ts` は追跡する (LSP のビルドに要るため)。
+
+## 建てる
+
+CMake + Ninja。brgen 本体の CMake からは独立していて、ここだけを configure
+できる (本体は C++20、nast は C++23)。
+
+`build.py` はその wrapper で、configure を毎回書かなくて済むようにするもの。
+コンパイルの仕方は持たない (それは `CMakeLists.txt` にある)。
+
+```sh
+python src/core/nast/build.py                 # 建てて単体テスト
+python src/core/nast/build.py --test          # ctest を全部
+python src/core/nast/build.py -t nast_corpus  # ターゲット指定
+python src/core/nast/build.py --release       # 最適化 (計測用)
+python src/core/nast/build.py --debug-info    # デバッガに乗せる版
+python src/core/nast/build.py --clean         # 建て直し
+```
+
+ツリーは構成ごとに分ける。どれも CMake + Ninja で、違うのは構成だけ。
+
+| | | |
+| --- | --- | --- |
+| `build/fast` | 既定 | デバッグ情報なし。ctest はここ |
+| `build/debug` | `--debug-info` | デバッガに乗せる版 (pdb を作るぶんリンクが遅い) |
+| `build/release` | `--release` | 最適化。`bench.py` が使う |
+
+直に呼んでもよい。
+
+```sh
+cmake -S src/core/nast -B src/core/nast/build/fast -G Ninja
+cmake --build src/core/nast/build/fast
+ctest --test-dir src/core/nast/build/fast --output-on-failure
+```
+
+実行ファイルは `build/fast/bin/` に出る。生成 (`node/nodes.h` /
+`wire/nast_wire.*` / lsp の `nast_nodes.ts`) はビルドの依存として走るので、
+`node/nodes.json` を直せば次のビルドで追随する。`wire/nast_wire.hpp` だけは
+brgen 本体の `src2json` / `json2cpp2` を要るので、建っていなければ既存の
+ものを残す。
+
+ソースを足したら `CMakeLists.txt` にも足す (glob は使っていない)。
+
+既定は **4 並列・デバッグ情報なし**。全コアで回すとこのマシンは熱で
+周波数が落ちる。デバッグ情報は 1 本 50MB 前後の pdb を作り、そのリンクに
+20 秒近くかかる (ライブラリを 1 つ触ると全ツールがリンクし直される)。
+
+```sh
+cmake --build src/core/nast/build/fast -j 8      # 並列数を上げる
+cmake -S ... -B ... -DNAST_DEBUG_INFO=ON          # デバッガに乗せる
+```
+
+計測は `bench.py`。src2json と並べて測るドライバで、ビルドは CMake の
+Release ツリー (`build/release`) に委ねる — 最適化の差がそのまま乗るので、
+ctest が使う Debug ツリーとは分けてある。
+
+```sh
+python src/core/nast/bench.py          # 建てて測る
+python src/core/nast/bench.py --tools  # -O2 で建てるだけ
+```
+
+ツールは `.bgn` を引数に取るものが多い。
+
+```sh
+B=src/core/nast/build/fast/bin
+$B/nast_corpus $(find example -name "*.bgn")        # parse と解析
+$B/nast_wire_test $(find example -name "*.bgn")     # 線上の往復
+$B/nast_unparse_test $(find example -name "*.bgn")  # .bgn の往復
+$B/nast_coverage $(find example -name "*.bgn")      # 型の付き具合
+```
+
+## Web Playground
+
+バックエンド (`nast2<lang>`) は wasm にして Playground に載る。組み込みは
+rebrgen の EBM と同じ仕組み: 各バックエンドの `--show-flags` から
+`nastwebgen.py` が worker と UI を生成し (UI 部分は `ebmwebgen.py` を共用)、
+Playground は `NAST_LANGUAGES` を `EBM_LANGUAGES` と同じく動的に登録する。
+言語 ID は `nast-<lang>`。nast は `.bgn` を自分で読むので src2json を通らず、
+import 先はエディタの extraSources として wasm の FS に置かれる。
+
+```sh
+# emscripten で建てる (futils は wasm-em の Release を使う)
+emcmake cmake -S src/core/nast -B src/core/nast/build/web -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release -DFUTILS_BUILD_TYPE=Release
+cmake --build src/core/nast/build/web -j 4
+# グルーを生成して Playground に置く (node が要る)
+python src/core/nast/nastwebgen.py src/core/nast/build/web/bin web/dev/src/lib/nast
+```
+
+CI では build-rebrgen-wasm が wasm を、build-rebrgen-glue がグルーを作り、
+`script/install_rebrgen_web.sh` が `web/dev/src/lib/nast` に置く。
+
+wasm32 では `size_t` が 32 ビットになる。値 (定数・リテラル) を `size_t` で
+持つと黙って切れる (64 ビット定数の比較が `< 0` になった実例がある)。
+nodes.json の値には `uint64` を使う。

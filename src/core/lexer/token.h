@@ -41,6 +41,13 @@ namespace brgen::lexer {
         Loc loc;
     };
 
+    // 本文を持たないトークン。本文は loc.pos と入力バッファから引く。
+    // Token が 88 バイト、こちらが 48 バイト。
+    struct LiteToken {
+        Tag tag = Tag::unknown;
+        Loc loc;
+    };
+
     constexpr void as_json(const Token& token, auto&& buf) {
         auto field = buf.object();
         field("tag", token.tag);

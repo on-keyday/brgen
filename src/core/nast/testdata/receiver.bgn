@@ -1,0 +1,18 @@
+# レシーバが付く参照と付かない参照。
+#
+#   format の field          -> 付く
+#   関数の中の field         -> 付かない (ローカル)
+#   関数の中の :=            -> 付かない (VariableDefinition)
+#   state variable           -> 付かない (引数で渡る)
+
+mode :u8
+
+format R:
+    k :u8
+    if k == 1:
+        v :u8
+
+    fn f() -> u8:
+        local :u8
+        bound := k + 1
+        return local + bound + v + mode

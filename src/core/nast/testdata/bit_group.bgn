@@ -1,0 +1,154 @@
+# ビット群 (lowering/bit_group) の切り方と組み方。
+
+enum Nib:
+    :u4
+    x = 1
+    y = 2
+
+# 1 バイトの群。enum と期待値つきが混ざる。
+format OneByte:
+    kind :Nib
+    reserved :u3(0)
+    flag :u1
+
+# 群の途中にバイト幅の field を挟む (4 + 8 + 4)。
+format Straddle:
+    hi :u4
+    mid :u8
+    lo :u4
+
+# 型幅の上限ちょうど (1 + 63 = 64)。
+format Exactly64:
+    top :u1
+    rest :u63
+
+# 上限を超える (4 + 64 + 4 = 72)。組めない。
+format Over64:
+    a :u4
+    b :u64
+    c :u4
+
+# 符号つき。符号拡張がまだなので組めない。
+format Signed:
+    s :i4
+    u :u4
+
+# 閉じる前に分岐に当たる。腕の中は閉じる前に Body が終わる。
+format Branch:
+    prefix :u2
+    if prefix == 0:
+        short :u6
+    else:
+        long :u14
+
+# 閉じる前に format が終わる。
+format Half:
+    a :u3
+    b :u1
+
+# リトルエンディアン。bit_order の指定が無ければ lsb から (対角)。
+# 1 バイトでも 2 バイトでも先頭の field が下位。
+format Little:
+    input.endian = config.endian.little
+    a :u4
+    b :u4
+    c :u4
+    d :u12
+
+# ビッグエンディアンに bit_order = lsb。1 バイトはバイト順が効かないので
+# bit_order だけで決まる。2 バイトは非対角 (BE×LSB) なので組めない。
+format BigLsb:
+    input.bit_order = config.bit_order.lsb
+    a :u2
+    b :u6
+    c :u4
+    d :u12
+
+# bit_order が実行時に決まる。
+format DynamicBitOrder:
+    sel :u8
+    input.bit_order = sel == 0 ? config.bit_order.lsb : config.bit_order.msb
+    a :u4
+    b :u4
+
+# 分岐を跨ぐ群。match は 0..3 を全部覆うので既定の腕が無くても抜け道は無い。
+format VarIntLike:
+    prefix :u2
+    match prefix:
+        0 => v :u6
+        1 => v :u14
+        2 => v :u30
+        3 => v :u62
+
+# 腕では閉じず、分岐の後で閉じる (腕の終わりから親へ戻る経路)。
+# どの腕でも幅が同じなので tail の位置は 1 つ。
+format ArmThenTail:
+    flag :u1
+    if flag == 1:
+        x :u3
+    else:
+        y :u3
+    tail :u4
+
+# else が無いと「何も読まない」経路があり、tail の位置が経路で変わる。
+format NoElse:
+    flag :u1
+    if flag == 1:
+        x :u3
+    tail :u4
+    pad :u3
+
+# lsb から。2 バイトの経路は LE で読む。
+format RoutedLittle:
+    input.endian = config.endian.little
+    sel :u4
+    if sel == 0:
+        a :u4
+    else:
+        b :u12
+
+# 群の途中の定義が入力を読む。素通りさせると読む順が変わるので群を閉じる。
+format IoInBetween:
+    a :u4
+    peeked := input.get()
+    b :u4
+
+# 入力に触れない定義は群を閉じない。
+format PureInBetween:
+    a :u4
+    twice := a * 2
+    b :u4
+
+# ループの中で break に当たる経路は閉じない。群ごと断る。
+format BreakInside:
+    for:
+        a :u4
+        if a == 0:
+            break
+        b :u4
+
+# 腕に入ると v で閉じ、その後 tail をバイト境界から読み直す。else の無い
+# 経路では tail が群の中の位置 2 にある。位置が 1 つに見えても組めない。
+format CloseThenTail:
+    prefix :u2
+    if prefix == 0:
+        v :u6
+    tail :u6
+    pad :u2
+
+# 群が閉じないと、後ろの field はバイト幅でも位置が分からない。
+format LostAfterOpen:
+    a :u4
+    peeked := input.get()
+    b :u4
+    c :u4
+    d :u8
+
+# 腕の中で位置が分からなくなると、分岐の後も分からない。
+format LostInArm:
+    sel :u8
+    if sel == 0:
+        a :u4
+        peeked := input.get()
+        b :u4
+    tail :u8

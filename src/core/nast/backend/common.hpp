@@ -1,0 +1,120 @@
+/*license*/
+#pragma once
+#include "../node/nodes.h"
+#include "config.hpp"
+#include "invoke.hpp"
+#include "lang.hpp"
+#include "../node/error.h"
+
+namespace brgen::nast::backend {
+    template <class R>
+    struct BaseContext;
+
+    template <class R, class Node>
+    struct DefaultHandler;
+    template <class R>
+    struct DefaultBehavior;
+    template <class R>
+    struct Knobs;
+    template <class R, class L>
+    struct Context;
+
+    template <class R>
+    struct BaseContext : Invoker<BaseContext<R>> {
+        using result_type = R;
+        Arena& a;
+        // 解析の結果はここにある。木だけ見ても分からないもの (Reference の
+        // 解決先、畳み込んだ定数、union の重ね合わせ、入出力の要求) は
+        // 全部 side table 側なので、バックエンドからも読めないと困る。
+        SideTables& t;
+        Knobs<R>& n;
+        DefaultBehavior<R> d;
+        CommonConfig c;
+        LanguageConfig l;
+        // WithReceiver が積む。Self はここが空でないならその先頭を綴る。
+        std::vector<R> receivers;
+        // 未対応で落ちたノード。--survey が種別ごとに数える。どのモードでも
+        // 未対応と判定した場所 (HANDLE_UNHANDLED / HANDLE_CODEGEN_DEFAULT) が積む
+        // ので、出力の目印を拾い直す必要がない。
+        std::vector<NodeAny> unhandled;
+
+        void note_unhandled(NodeAny n) {
+            unhandled.push_back(n);
+        }
+
+        expected<R> visit(NodeAny n) {
+            return Invoker<BaseContext<R>>::template invoke_custom<R>(n);
+        }
+
+        expected<R> visit_default(NodeAny n) {
+            if (c.inner_default) {
+                return unexpect_loc_error(n, "DO NOT invoke visit_default from default hook");
+            }
+            return Invoker<BaseContext<R>>::template invoke_default<R>(n);
+        }
+
+        template <class L>
+        Context<R, L> to_context(L& lc) {
+            l.set_language(lc);
+            return Context<R, L>{.b = *this, .l = lc};
+        }
+
+        Arena& arena() {
+            return a;
+        }
+
+        SideTables& tables() {
+            return t;
+        }
+
+        CommonConfig& config() {
+            return c;
+        }
+    };
+    template <class R, class L>
+    struct Context {
+        BaseContext<R>& b;
+        L& l;
+
+        expected<R> visit(NodeAny n) {
+            return b.visit(n);
+        }
+
+        // must be called from hook, not from default itself
+        expected<R> visit_default(NodeAny n) {
+            return b.visit_default(n);
+        }
+
+        Arena& arena() {
+            return b.arena();
+        }
+
+        SideTables& tables() {
+            return b.tables();
+        }
+
+        CommonConfig& config() {
+            return b.config();
+        }
+
+        void note_unhandled(NodeAny n) {
+            b.note_unhandled(n);
+        }
+
+        L& lang_config() {
+            return l;
+        }
+
+        template <class T>
+        constexpr auto as_ref(Node<T> n) {
+            return arena().as_ref(n);
+        }
+    };
+
+#define MAYBE(x, v)                                                      \
+    auto x##_nast_maybe = (v);                                           \
+    if (!x##_nast_maybe) {                                               \
+        return brgen::nast::unexpect(std::move(x##_nast_maybe.error())); \
+    }                                                                    \
+    auto x = std::move(*x##_nast_maybe);
+}  // namespace brgen::nast::backend

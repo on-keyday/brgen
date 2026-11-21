@@ -1,0 +1,16 @@
+# 順がここでは決まらない 2 つ。どちらも両方の形を出して選択子で選ぶ形に落ちる。
+#   native  ターゲット上の静的な値 (生成器には決められない)
+#   動的    実行時の値。代入の位置で 1 度だけ評価する
+state Order:
+    is_big :bool
+
+order :Order
+
+format NativeOrder:
+    input.endian = config.endian.native
+    a :u16
+    b :i32
+
+format RuntimeOrder:
+    input.endian = order.is_big ? config.endian.big : config.endian.little
+    c :u32

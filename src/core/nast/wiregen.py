@@ -1,0 +1,662 @@
+#!/usr/bin/env python3
+"""nodes.json から nast アリーナの線上表現と、その変換器を生成する。
+
+nast の状態 (アリーナ + side table) を brgen 自身で符号化するためのもの。
+EBM が extended_binary_module.bgn で自分を定義しているのと同じ形。
+
+  python src/core/nast/wiregen.py
+
+出力は 2 つ:
+
+  nast_wire.bgn       線上表現の定義。src2json -> json2cpp2 で nast_wire.hpp になる
+  nast_wire_conv.hpp  Arena/SideTables <-> nast_wire.hpp の NastModule
+
+nast_wire.hpp の作り方 (--use-error でフィールド名入りの診断になる):
+
+  ./tool/src2json src/core/nast/nast_wire.bgn > ignore/nast/nast_wire.json
+  ./tool/json2cpp2 -f ignore/nast/nast_wire.json --use-error > src/core/nast/nast_wire.hpp
+
+.bgn と生成された .hpp は EBM に倣って追跡する。中間の .json だけ ignore/ に置く。
+
+型の対応:
+  Node<X>          -> Ref                       (u32 の添字)
+  vector<Node<X>>  -> <name>_len :u32 + 配列
+  string           -> Ref                       (文字列表への添字)
+  bool             -> u8
+  size / uint32    -> u32
+  uint64           -> u64
+  lexer::Loc       -> format Loc
+  enum             -> .bgn の enum そのまま
+
+失われるもの: Node<Expr> と Node<Statement> はどちらも Ref になるので、
+phantom type による静的な取り違え防止は線上では効かない。読み戻すときに
+NodeHeader.type で検査する側の仕事になる。
+"""
+
+import argparse
+import io
+import json
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from gen import write_if_changed  # noqa: E402
+
+REPO = os.path.dirname(os.path.abspath(__file__))
+for _ in range(3):
+    REPO = os.path.dirname(REPO)
+
+
+# ---------------------------------------------------------------------------
+# schema の読み方
+# ---------------------------------------------------------------------------
+
+
+def enum_members(e):
+    """nast の enum は layers / enums / extra に分かれて入っている。"""
+    out = []
+    for layer in e.get("layers", []):
+        for m in layer.get("enums", []):
+            out.append(m["name"])
+    for m in e.get("enums", []):
+        out.append(m["name"])
+    for m in e.get("extra", []):
+        out.append(m if isinstance(m, str) else m["name"])
+    return out
+
+
+def concrete_nodes(schema):
+    """header に現れる種類。
+
+    「派生を持たない」ではない。Argument と BodyStatement は派生を持ちながら
+    それ自身も作られる。抽象かどうかは nodes.json の abstract で決まる。
+    """
+    return [n for n in schema["nodes"] if not n.get("abstract", False)]
+
+
+def field_lister(schema):
+    """継承したフィールドを含めて、宣言順に並べたものを返す関数。"""
+    by = {n["name"]: n for n in schema["nodes"]}
+
+    def all_fields(n):
+        out = []
+        if "derive" in n:
+            out += all_fields(by[n["derive"]])
+        return out + list(n.get("fields", []))
+
+    return all_fields
+
+
+def snake(name):
+    return name[0].lower() + "".join("_" + c.lower() if c.isupper() else c for c in name[1:])
+
+
+# ---------------------------------------------------------------------------
+# 線上での名前と型
+# ---------------------------------------------------------------------------
+
+
+def wire_tag(t):
+    """線上での型。同名フィールドがこれ違いで並ぶと json2cpp2 が accessor を出さない。"""
+    if t.startswith("vector<Node<"):
+        return "list"
+    if t.startswith("Node<") or t == "string":
+        return "ref"
+    if t == "bool":
+        return "u8"
+    if t in ("size", "uint32"):
+        return "u32"
+    if t == "uint64":
+        return "u64"
+    if t == "lexer::Loc":
+        return "loc"
+    return snake(t)  # enum
+
+
+def ambiguous_names(schema):
+    """線上の型が分岐によって食い違う名前。
+
+    json2cpp2 は union の全分岐を横断して名前ごとに accessor を出すので、
+    同じ名前が分岐によって違う型になっていると出力を諦める (診断は出ない)。
+    nast だと 3 つ該当する:
+
+      arguments  Node<Arguments> と vector<Node<Argument>>
+      value      Node<Expr> / string と bool
+      op         BinaryOp と UnaryOp
+    """
+    all_fields = field_lister(schema)
+    seen = {}
+    for n in concrete_nodes(schema):
+        for f in all_fields(n):
+            seen.setdefault(f["name"], set()).add(wire_tag(f["type"]))
+    for t in schema["side_tables"]:
+        for f in t.get("fields", []):
+            seen.setdefault(f["name"], set()).add(wire_tag(f["type"]))
+    return {k for k, v in seen.items() if len(v) > 1}
+
+
+def slot_name(name, t, ambiguous):
+    """線上でのフィールド名。食い違う名前だけ線上の型を後ろに付けて分ける。"""
+    return name + "_" + wire_tag(t) if name in ambiguous else name
+
+
+def wire_type(t, name):
+    if t.startswith("vector<Node<"):
+        return [name + "_len :u32", name + " :[" + name + "_len]Ref"]
+    if t.startswith("Node<") or t == "string":
+        return [name + " :Ref"]
+    if t == "bool":
+        return [name + " :u8"]
+    if t in ("size", "uint32"):
+        return [name + " :u32"]
+    if t == "uint64":
+        return [name + " :u64"]
+    if t == "lexer::Loc":
+        return [name + " :Loc"]
+    return [name + " :" + t]  # enum
+
+
+# ---------------------------------------------------------------------------
+# nast_wire.bgn
+# ---------------------------------------------------------------------------
+
+
+def generate_bgn(schema):
+    all_fields = field_lister(schema)
+    concrete = concrete_nodes(schema)
+    ambiguous = ambiguous_names(schema)
+
+    o = []
+    w = o.append
+    w("# Code generated by src/core/nast/wiregen.py from nodes.json; DO NOT EDIT.")
+    w('config.cpp.namespace = "brgen::nast::wire"')
+    w("")
+    w("format Ref:")
+    w("    id :u32")
+    w("")
+    w("format Loc:")
+    w("    begin :u32")
+    w("    end :u32")
+    w("    file :u32")
+    w("    line :u32")
+    w("    col :u32")
+    w("")
+    w("format StringEntry:")
+    w("    len :u32")
+    w("    data :[len]u8")
+    w("")
+
+    for e in schema["enums"]:
+        w("enum " + e["name"] + ":")
+        w("    :u8")
+        for m in enum_members(e):
+            w("    " + m)
+        w("")
+
+    w("enum NodeKind:")
+    w("    :u32")
+    for n in concrete:
+        w("    " + n["name"])
+    w("")
+
+    # 判別子は node_kind。kind にすると SpecialLiteral.kind の union getter と
+    # 名前が衝突して生成された C++ が通らない。
+    w("format Node:")
+    w("    node_kind :NodeKind")
+    w("    loc :Loc")
+    w("    match node_kind:")
+    for n in concrete:
+        fs = all_fields(n)
+        w("        NodeKind." + n["name"] + ":")
+        if not fs:
+            w("            ..")
+            continue
+        for f in fs:
+            for line in wire_type(f["type"], slot_name(f["name"], f["type"], ambiguous)):
+                w("            " + line)
+    w("")
+
+    # side table。アリーナと別に持っている解析結果も同じ規則で書ける。
+    # 各表は「キー (Ref) + 表の持つフィールド」の並び。フィールドを持たない
+    # flag 表 (IsMutated) はキーだけの列になる。
+    tables = []
+    for t in schema["side_tables"]:
+        name = t["name"]
+        tables.append(name)
+        w("format " + name + "Entry:")
+        w("    key :Ref")
+        fs = t.get("fields", [])
+        if not fs:
+            w("    ..")
+        for f in fs:
+            for line in wire_type(f["type"], slot_name(f["name"], f["type"], ambiguous)):
+                w("    " + line)
+        w("")
+        w("format " + name + "Table:")
+        w("    len :u32")
+        w("    entries :[len]" + name + "Entry")
+        w("")
+
+    w("")
+    w("format NastModule:")
+    w('    magic :"NAST"')
+    w("    version :u8")
+    w("    strings_len :u32")
+    w("    strings :[strings_len]StringEntry")
+    w("    nodes_len :u32")
+    w("    nodes :[nodes_len]Node")
+    w("    root :Ref")
+    for name in tables:
+        w("    " + snake(name) + " :" + name + "Table")
+    w("")
+    return o
+
+
+# ---------------------------------------------------------------------------
+# nast_wire_conv.hpp
+#
+# 名前で引く accessor しか無いので、for_each_field のような実行時の名前では
+# 呼べない。ノード種ごとに直接書き下した switch を生成する。
+# ---------------------------------------------------------------------------
+
+
+def stmt_to_wire(t, name, slot, dst, src, union, on_fail):
+    """アリーナ -> 線上。src.<name> を dst の <slot> に入れる 1 文。
+
+    union の中身は名前つき setter でしか触れないが、素の format (side table の
+    Entry) は普通のメンバなので直接代入する。可変長は長さと組なので、素の
+    format でも set_<name> を通す。
+    """
+    if t.startswith("vector<Node<"):
+        setter = "{sl}".format(sl=slot) if union else "set_{sl}".format(sl=slot)
+        return ("{{ std::vector<wire::Ref> v_; v_.reserve({s}.{n}.size());"
+                " for (auto& e_ : {s}.{n}) {{ v_.push_back(ref_of(e_)); }}"
+                " if (!{d}.{st}(v_)) {{ {f} }} }}").format(
+                    s=src, n=name, d=dst, st=setter, f=on_fail)
+    if t.startswith("Node<"):
+        expr = "ref_of({s}.{n})".format(s=src, n=name)
+    elif t == "string":
+        expr = "ref_of_id(pool.intern({s}.{n}))".format(s=src, n=name)
+    elif t == "bool":
+        expr = "std::uint8_t({s}.{n} ? 1 : 0)".format(s=src, n=name)
+    elif t in ("size", "uint32"):
+        expr = "std::uint32_t({s}.{n})".format(s=src, n=name)
+    elif t == "uint64":
+        expr = "std::uint64_t({s}.{n})".format(s=src, n=name)
+    elif t == "lexer::Loc":
+        expr = "loc_to_wire({s}.{n})".format(s=src, n=name)
+    else:
+        expr = "enum_to_wire({s}.{n})".format(s=src, n=name)
+    if not union:
+        return "{d}.{sl} = {e};".format(d=dst, sl=slot, e=expr)
+    return "if (!{d}.{sl}({e})) {{ {f} }}".format(d=dst, sl=slot, e=expr, f=on_fail)
+
+
+def stmt_from_wire(t, name, slot, dst, src, union):
+    """線上 -> アリーナ。union の中身は accessor がポインタを返すので剥がす。"""
+    get = "{s}.{sl}()".format(s=src, sl=slot) if union else "&{s}.{sl}".format(s=src, sl=slot)
+    if t.startswith("vector<Node<"):
+        elem = t[len("vector<Node<"):-2]
+        return ("{{ if (auto* p_ = {g}) {{ {d}.{n}.clear(); {d}.{n}.reserve(p_->size());"
+                " for (auto& e_ : *p_) {{ {d}.{n}.push_back(node_from<{i}>(kinds, e_)); }} }} }}"
+                ).format(g=get, d=dst, n=name, i=elem)
+    if t.startswith("Node<"):
+        rhs = "node_from<{i}>(kinds, *p_)".format(i=t[len("Node<"):-1])
+    elif t == "string":
+        rhs = "string_at(m, *p_)"
+    elif t == "bool":
+        rhs = "*p_ != 0"
+    elif t == "size":
+        rhs = "std::size_t(*p_)"
+    elif t == "uint32":
+        rhs = "std::uint32_t(*p_)"
+    elif t == "uint64":
+        rhs = "std::uint64_t(*p_)"
+    elif t == "lexer::Loc":
+        rhs = "loc_from_wire(*p_)"
+    else:
+        rhs = "enum_from_wire(*p_)"
+    return "if (auto* p_ = {g}) {{ {d}.{n} = {r}; }}".format(g=get, d=dst, n=name, r=rhs)
+
+
+def generate_conv(schema):
+    all_fields = field_lister(schema)
+    concrete = concrete_nodes(schema)
+    ambiguous = ambiguous_names(schema)
+
+    o = []
+    w = o.append
+    w("/*license*/")
+    w("// Code generated by src/core/nast/wiregen.py from nodes.json; DO NOT EDIT.")
+    w("//")
+    w("// アリーナと side table を nast_wire.hpp の符号化器に渡せる形へ移す / 戻す。")
+    w("//")
+    w("// id は線上に持たない。Arena::make は 1 から順に振るので、ノード表の i 番が")
+    w("// アリーナの id i+1 になる。戻すときも同じ順で make を呼べば id が一致する。")
+    w("// つまりノード表は歯抜けにできない。アリーナが密なので今は制約にならない。")
+    w("#pragma once")
+    # conv は wire/ に出る。ノード定義は隣の node/ にある。
+    w('#include "../node/nodes.h"')
+    w('#include "nast_wire.hpp"')
+    w("")
+    w("#include <error/error.h>")
+    w("#include <format>")
+    w("#include <map>")
+    w("#include <string>")
+    w("#include <utility>")
+    w("#include <vector>")
+    w("")
+    w("namespace brgen::nast::wire_conv {")
+    w("")
+    w("    namespace wire = ::brgen::nast::wire;")
+    w("")
+    w("    // 文字列表。0 番は空文字列に固定する。string は null を持たないので")
+    w("    // 0 を「無い」に使う必要が無く、添字をそのまま Ref に入れられる。")
+    w("    struct StringPool {")
+    w("        std::vector<std::string> strings;")
+    w("        std::map<std::string, std::uint32_t> index;")
+    w("        StringPool() { intern(std::string()); }")
+    w("        std::uint32_t intern(const std::string& s) {")
+    w("            auto it = index.find(s);")
+    w("            if (it != index.end()) { return it->second; }")
+    w("            auto id = static_cast<std::uint32_t>(strings.size());")
+    w("            strings.push_back(s);")
+    w("            index.emplace(s, id);")
+    w("            return id;")
+    w("        }")
+    w("    };")
+    w("")
+    w("    inline wire::Ref ref_of_id(std::uint32_t id) {")
+    w("        wire::Ref r;")
+    w("        r.id = id;")
+    w("        return r;")
+    w("    }")
+    w("")
+    w("    template <class T>")
+    w("    inline wire::Ref ref_of(Node<T> n) { return ref_of_id(n.id()); }")
+    w("")
+    w("    inline wire::Loc loc_to_wire(const lexer::Loc& l) {")
+    w("        wire::Loc o;")
+    w("        o.begin = static_cast<std::uint32_t>(l.pos.begin);")
+    w("        o.end = static_cast<std::uint32_t>(l.pos.end);")
+    w("        o.file = static_cast<std::uint32_t>(l.file);")
+    w("        o.line = static_cast<std::uint32_t>(l.line);")
+    w("        o.col = static_cast<std::uint32_t>(l.col);")
+    w("        return o;")
+    w("    }")
+    w("")
+    w("    inline lexer::Loc loc_from_wire(const wire::Loc& l) {")
+    w("        lexer::Loc o;")
+    w("        o.pos.begin = l.begin;")
+    w("        o.pos.end = l.end;")
+    w("        o.file = l.file;")
+    w("        o.line = l.line;")
+    w("        o.col = l.col;")
+    w("        return o;")
+    w("    }")
+    w("")
+    w("    // 失敗したところを言えないと、生成された 1900 行のどこで折れたか分からない。")
+    w("    // 隣の符号化器 (json2cpp2 --use-error) と同じく Error<> で返し、")
+    w("    // \"to_wire: Format::name: set failed (node #10)\" の形に揃える。")
+    w("    //")
+    w("    // カテゴリは型に持たせる。Error(T&&, Category, SubCategory, A&&) は")
+    w("    // アロケータ A が既定引数にしか現れず推論できないので、3 引数で呼ぶと")
+    w("    // 候補から落ちる。category() を持つ型なら 1 引数で同じ結果になる。")
+    w("    struct ConvError {")
+    w("        std::string message;")
+    w("        constexpr void error(auto&& pb) const {")
+    w("            ::futils::strutil::append(pb, message);")
+    w("        }")
+    w("        constexpr ::futils::error::Category category() const {")
+    w("            return ::futils::error::Category::lib;")
+    w("        }")
+    w("    };")
+    w("")
+    w("    // id 0 は「どのノードでもない」。付けると嘘の位置になるので落とす。")
+    w("    inline ::futils::error::Error<> fail_(const char* what, std::uint32_t id) {")
+    w("        return ::futils::error::Error<>(ConvError{")
+    w("            id ? std::format(\"{} (node #{})\", what, id) : std::string(what)});")
+    w("    }")
+    w("")
+    w("    inline std::string string_at(const wire::NastModule& m, const wire::Ref& r) {")
+    w("        if (r.id >= m.strings.size()) { return {}; }")
+    w("        auto& d = m.strings[r.id].data;")
+    w("        return std::string(reinterpret_cast<const char*>(d.data()), d.size());")
+    w("    }")
+    w("")
+
+    # enum は宣言順が同じでも値まで同じとは限らないので、名前で対応させる。
+    for e in schema["enums"]:
+        name = e["name"]
+        members = enum_members(e)
+        w("    inline wire::{0} enum_to_wire({0} v) {{".format(name))
+        w("        switch (v) {")
+        for mem in members:
+            w("        case {0}::{1}: return wire::{0}::{1};".format(name, mem))
+        w("        }")
+        w("        return wire::{0}{{}};".format(name))
+        w("    }")
+        w("")
+        w("    inline {0} enum_from_wire(wire::{0} v) {{".format(name))
+        w("        switch (v) {")
+        for mem in members:
+            w("        case wire::{0}::{1}: return {0}::{1};".format(name, mem))
+        w("        }")
+        w("        return {0}{{}};".format(name))
+        w("    }")
+        w("")
+
+    w("    // NodeType は抽象型も含み、値も詰まっていないので対応表を出す。")
+    w("    inline wire::NodeKind kind_of(NodeType t) {")
+    w("        switch (t) {")
+    for n in concrete:
+        w("        case NodeType::{0}: return wire::NodeKind::{0};".format(n["name"]))
+    w("        default: return wire::NodeKind{};")
+    w("        }")
+    w("    }")
+    w("")
+    w("    inline NodeType type_of(wire::NodeKind k) {")
+    w("        switch (k) {")
+    for n in concrete:
+        w("        case wire::NodeKind::{0}: return NodeType::{0};".format(n["name"]))
+    w("        }")
+    w("        return NodeType{};")
+    w("    }")
+    w("")
+    w("    // 線上の Ref をアリーナの Node に戻す。指す先の具体型は 1 周目で作った")
+    w("    // kinds から引く。Node は id と具体型の組でしか妥当にならない。")
+    w("    template <class T>")
+    w("    inline Node<T> node_from(const std::vector<NodeType>& kinds, const wire::Ref& r) {")
+    w("        if (r.id == 0 || r.id > kinds.size()) { return {}; }")
+    w("        return Node<T>::from_unique_id((std::uint64_t(kinds[r.id - 1]) << 32) | r.id);")
+    w("    }")
+    w("")
+
+    # ---- to_wire ----
+    w("    // アリーナと表を丸ごと線上表現に移す。root は書き出す木の根。")
+    w("    //")
+    w("    // pool は呼び出し側が持つ。wire::StringEntry::data は rvec (非所有) なので、")
+    w("    // 文字列の実体がここで死ぬと out の中身が全部ぶら下がる。out を encode し")
+    w("    // 終えるまで pool を生かしておくこと。")
+    w("    inline ::futils::error::Error<> to_wire(Arena& a, const SideTables& tables,")
+    w("                                            Node<Module> root, StringPool& pool,")
+    w("                                            wire::NastModule& out) {")
+    w("        std::vector<wire::Node> nodes;")
+    w("        nodes.reserve(a.node_count());")
+    w("        for (std::uint32_t id = 1; id <= a.node_count(); id++) {")
+    w("            auto* h = a.header_at(id);")
+    w("            if (!h) { return fail_(\"to_wire: missing header\", id); }")
+    w("            wire::Node n;")
+    w("            n.node_kind = kind_of(h->type);")
+    w("            n.loc = loc_to_wire(h->loc);")
+    w("            switch (h->type) {")
+    for n in concrete:
+        name = n["name"]
+        fs = all_fields(n)
+        w("            case NodeType::{0}: {{".format(name))
+        if fs:
+            w("                auto* d = a.data_at<{0}>(h->data_index);".format(name))
+            w('                if (!d) { return fail_("to_wire: missing data", id); }')
+            for f in fs:
+                slot = slot_name(f["name"], f["type"], ambiguous)
+                fail = 'return fail_("to_wire: {0}::{1}: set failed", id);'.format(
+                    name, f["name"])
+                w("                " + stmt_to_wire(f["type"], f["name"], slot, "n", "(*d)",
+                                                    True, fail))
+        w("                break;")
+        w("            }")
+    w("            default: return fail_(\"to_wire: abstract node type\", id);")
+    w("            }")
+    w("            nodes.push_back(std::move(n));")
+    w("        }")
+    w("")
+    w("        out = wire::NastModule{};")
+    w("        out.version = 1;")
+    w("        if (!out.set_nodes(nodes)) { return fail_(\"to_wire: too many nodes\", 0); }")
+    w("        out.root = ref_of(root);")
+    for t in schema["side_tables"]:
+        name = t["name"]
+        storage = t.get("storage", "sparse")
+        fs = t.get("fields", [])
+        w("        {")
+        w("            std::vector<wire::{0}Entry> es;".format(name))
+        w("            ::futils::error::Error<> err;")
+        if storage == "flag":
+            w("            tables.table<{0}>().for_each_entry([&](std::uint32_t key) {{"
+              .format(name))
+            w("                wire::{0}Entry e;".format(name))
+            w("                e.key = ref_of_id(key);")
+        else:
+            w("            tables.table<{0}>().for_each_entry("
+              "[&](std::uint32_t key, const {0}& v) {{".format(name))
+            w("                wire::{0}Entry e;".format(name))
+            w("                e.key = ref_of_id(key);")
+            for f in fs:
+                slot = slot_name(f["name"], f["type"], ambiguous)
+                # ラムダの中なので、その場で返せない。err に畳んで外で見る。
+                fail = ('err = fail_("to_wire: {0}::{1}: set failed", key);'
+                        .format(name, f["name"]))
+                w("                " + stmt_to_wire(f["type"], f["name"], slot, "e", "v",
+                                                    False, fail))
+        w("                es.push_back(std::move(e));")
+        w("            });")
+        w("            if (err) { return err; }")
+        w("            if (!out.{0}.set_entries(es)) {{".format(snake(name)))
+        w("                return fail_(\"to_wire: {0}Table::entries: too many entries\", 0);"
+          .format(name))
+        w("            }")
+        w("        }")
+    w("")
+    w("        // 文字列表は表の変換でも増えるので、全部済んでから入れる。")
+    w("        std::vector<wire::StringEntry> strings;")
+    w("        strings.reserve(pool.strings.size());")
+    w("        for (auto& s : pool.strings) {")
+    w("            wire::StringEntry e;")
+    w("            if (!e.set_data(::futils::view::rvec(s.data(), s.size()))) {")
+    w("                return fail_(\"to_wire: StringEntry::data: too long\", 0);")
+    w("            }")
+    w("            strings.push_back(e);")
+    w("        }")
+    w("        if (!out.set_strings(strings)) {")
+    w("            return fail_(\"to_wire: NastModule::strings: too many strings\", 0);")
+    w("        }")
+    w("        return {};")
+    w("    }")
+    w("")
+
+    # ---- from_wire ----
+    w("    // 空のアリーナに戻す。id を並びで合わせるので、既に何か入っていると狂う。")
+    w("    inline ::futils::error::Error<> from_wire(const wire::NastModule& m, Arena& a,")
+    w("                                              SideTables& tables, Node<Module>& root) {")
+    w("        if (a.node_count() != 0) {")
+    w("            return fail_(\"from_wire: arena is not empty\", 0);")
+    w("        }")
+    w("        // 1 周目: 種別と位置だけでノードを作る。id が線上の並びと一致する。")
+    w("        std::vector<NodeType> kinds;")
+    w("        kinds.reserve(m.nodes.size());")
+    w("        for (auto& n : m.nodes) {")
+    w("            auto loc = loc_from_wire(n.loc);")
+    w("            switch (n.node_kind) {")
+    for n in concrete:
+        w("            case wire::NodeKind::{0}: a.make<{0}>(loc); break;".format(n["name"]))
+    w("            default: return fail_(\"from_wire: unknown node kind\", 0);")
+    w("            }")
+    w("            kinds.push_back(type_of(n.node_kind));")
+    w("        }")
+    w("")
+    w("        // 2 周目: 参照先が全部できてからフィールドを埋める。")
+    w("        for (std::uint32_t i = 0; i < m.nodes.size(); i++) {")
+    w("            auto& n = m.nodes[i];")
+    w("            auto* h = a.header_at(i + 1);")
+    w("            if (!h) { return fail_(\"from_wire: missing header\", i + 1); }")
+    w("            switch (n.node_kind) {")
+    for n in concrete:
+        name = n["name"]
+        fs = all_fields(n)
+        w("            case wire::NodeKind::{0}: {{".format(name))
+        if fs:
+            w("                auto* d = a.data_at<{0}>(h->data_index);".format(name))
+            w('                if (!d) { return fail_("from_wire: missing data", i + 1); }')
+            for f in fs:
+                slot = slot_name(f["name"], f["type"], ambiguous)
+                w("                " + stmt_from_wire(f["type"], f["name"], slot, "(*d)", "n", True))
+        w("                break;")
+        w("            }")
+    w("            default: return fail_(\"from_wire: unknown node kind\", i + 1);")
+    w("            }")
+    w("        }")
+    w("        root = node_from<Module>(kinds, m.root);")
+    w("")
+    for t in schema["side_tables"]:
+        name = t["name"]
+        over = t["over"]
+        storage = t.get("storage", "sparse")
+        fs = t.get("fields", [])
+        w("        for (auto& e : m.{0}.entries) {{".format(snake(name)))
+        w("            auto key = node_from<{0}>(kinds, e.key);".format(over))
+        w("            if (!key) {")
+        w("                return fail_(\"from_wire: {0}Entry::key: dangling\", e.key.id);"
+          .format(name))
+        w("            }")
+        if storage == "flag":
+            w("            tables.table<{0}>().set(key);".format(name))
+        else:
+            w("            {0} v;".format(name))
+            for f in fs:
+                slot = slot_name(f["name"], f["type"], ambiguous)
+                w("            " + stmt_from_wire(f["type"], f["name"], slot, "v", "e", False))
+            w("            tables.table<{0}>().set(key, std::move(v));".format(name))
+        w("        }")
+    w("        return {};")
+    w("    }")
+    w("")
+    w("}  // namespace brgen::nast::wire_conv")
+    w("")
+    return o
+
+
+def main():
+    here = os.path.join(REPO, "src", "core", "nast")
+    p = argparse.ArgumentParser()
+    p.add_argument("--schema", default=os.path.join(here, "node", "nodes.json"))
+    p.add_argument("-o", "--output", default=os.path.join(here, "wire", "nast_wire.bgn"))
+    p.add_argument("--conv", default=os.path.join(here, "wire", "nast_wire_conv.hpp"))
+    args = p.parse_args()
+
+    schema = json.load(io.open(args.schema, encoding="utf-8"))
+
+    # 中身が変わったときだけ書く。無条件に書くと mtime が動き、
+    # nast_wire_conv.hpp を読む側が毎回コンパイルし直しになる。
+    lines = generate_bgn(schema)
+    if write_if_changed(args.output, "\n".join(lines)):
+        print("{}: {} lines, {} node kinds".format(
+            args.output, len(lines), len(concrete_nodes(schema))))
+
+    conv = generate_conv(schema)
+    if write_if_changed(args.conv, "\n".join(conv)):
+        print("{}: {} lines".format(args.conv, len(conv)))
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,12 @@
+{
+    "runners": [
+        {
+            "file": "$WORK_DIR/../src/core/nast/backends/go/unictest_runner.json"
+        }
+    ],
+    "inputs": [
+        {
+            "file": "$WORK_DIR/test/inputs.json"
+        }
+    ]
+}

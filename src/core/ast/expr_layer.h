@@ -68,8 +68,11 @@ namespace brgen::ast {
     }
 
     constexpr bool is_range_op(BinaryOp op) {
-        constexpr auto begin = int(BinaryOp::range_inclusive);
-        constexpr auto end = int(BinaryOp::range_exclusive);
+        // range_exclusive(..) が range_inclusive(..=) より先に定義されているので、
+        // begin/end をこの順にしないと範囲が空になり常に false を返す。
+        constexpr auto begin = int(BinaryOp::range_exclusive);
+        constexpr auto end = int(BinaryOp::range_inclusive);
+        static_assert(begin <= end, "range must not be empty");
         return begin <= int(op) && int(op) <= end;
     }
 

@@ -149,6 +149,7 @@
     ".\\testkit\\rust\\Cargo.toml"
   ],
   "brgen-lsp.src2json": "./tool/src2json.exe",
+  "brgen-lsp.nastDump": "./src/core/nast/build/nast_dump.exe",
   //"go.buildTags": "linux",
   "yaml.schemas": {
     "https://ultra-supara/homebrew-sisakulint/settings.json": "/.github/workflows/*.{yml,yaml}"

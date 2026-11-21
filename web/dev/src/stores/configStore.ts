@@ -3,6 +3,7 @@ import { Language } from "../s2j/msg";
 import { ConfigKey } from "../common/types";
 import { setBMUIConfig } from "../lib/bmgen/bm_caller.js";
 import { setEBMUIConfig } from "../lib/bmgen/ebm_caller.js";
+import { setNASTUIConfig } from "../lib/nast/nast_caller.js";
 import { coreOptionDefs } from "../common/option_defs";
 
 const STORAGE_KEY = "lang_specific_option";
@@ -92,6 +93,15 @@ function buildDefaultConfig(): Record<string, Record<string, ConfigEntry>> {
 
     // EBM-based languages
     setEBMUIConfig({
+        set_flags: (lang: string, setter: (nest: (name: string, elem: ConfigEntry) => void) => void) => {
+            const langConfig: Record<string, ConfigEntry> = { ...common() };
+            setter((name, elem) => { langConfig[name] = elem; });
+            config[lang] = langConfig;
+        },
+    });
+
+    // nast-based languages
+    setNASTUIConfig({
         set_flags: (lang: string, setter: (nest: (name: string, elem: ConfigEntry) => void) => void) => {
             const langConfig: Record<string, ConfigEntry> = { ...common() };
             setter((name, elem) => { langConfig[name] = elem; });

@@ -1,0 +1,310 @@
+/*license*/
+#pragma once
+#include "nodes.h"
+#include "traverse.h"
+
+#include <number/prefix.h>
+
+#include <optional>
+#include <string>
+#include <string_view>
+
+// 木を歩くときの小物。段をまたいで使うものだけをここに置く。
+//
+// 置く基準は「複数の段から使われていること」だけで、便利そうだから足す場所
+// ではない。解析の結果を要るもの (型付けや解決の結果を見て判断するもの) は
+// ここに来ない — それは表を持っている側 (bind/) の仕事で、ここはノードの
+// 形だけで決まることに限る。
+//
+// rebrgen の ebmcodegen が同じ層 (stub/util.hpp) を持っており、そこでは
+// 粗い API を残しつつ細かい版を足す運用になっている (ADR 0029)。
+// 同じように、ここも「ちょうどの粒度」を狙わず、要るものを足していく。
+
+namespace brgen::nast {
+
+    // アリーナにある型 T のノードを順に渡す。木からは辿れないものも含む
+    // (合成したノード、パーサが先読みで捨てた個体)。
+    //
+    // 走査の範囲は先に固定する。中でノードを足す使い方 (解析が式を合成する
+    // など) があり、足した分まで歩くと終わらない。
+    // 範囲を明示する形。走査を何本かに分けるとき、途中で足したノードを
+    // 後続の走査が拾わないよう、始める前の node_count を共有する。
+    template <class T>
+    void each_node(Arena& a, std::uint32_t last, auto&& fn) {
+        for (std::uint32_t id = 1; id <= last; id++) {
+            auto* h = a.header_at(id);
+            if (!h) {
+                continue;
+            }
+            auto any = NodeAny::from_unique_id((std::uint64_t(h->type) << 32) | id);
+            if (auto n = any.template as_any<T>()) {
+                fn(n);
+            }
+        }
+    }
+
+    template <class T>
+    void each_node(Arena& a, auto&& fn) {
+        each_node<T>(a, a.node_count(), fn);
+    }
+
+    // 合成した変数の名前。由来のノードから決まる。
+    //
+    // **名付けを引く仕組みは要らない。** 由来が決まれば名前も決まるので、
+    // 後から「その変数は何という名前だったか」を知りたい側は同じ関数を呼べば
+    // よい (EBM は ctx.identifier(ref) という登録簿でこれをやっている)。
+    // 同じ木の中で id は一意なので衝突もしない。
+    //
+    //   tmp<id>     三項の文形式が使う一時変数 (lowering/conditional)
+    //   endian<id>  実行時に決まるバイト順を入れる変数 (lowering/endian_variable)
+    //   i<id>       配列を回す添字 (lowering/field_io)
+    //   b<id>       バイトを並べる添字 (lowering/stream_io)
+    //   bits<id>    ビット群をまとめて読んだ値 (lowering/bit_group)
+    inline std::string derived_name(std::string_view prefix, NodeAny origin) {
+        return std::string(prefix) + std::to_string(origin.id());
+    }
+
+    // 名前を持つ文の綴り。持たない文 (無名 field / 分岐が合成した Field など)
+    // では空を返す。ノードが無いときも空。
+    inline std::string_view name_of(Arena& a, Node<Statement> s) {
+        if (auto n = s.as_any<NamedStatement>()) {
+            if (auto id = n.ref(a)->name.ref(a)) {
+                return id->identifier;
+            }
+        }
+        return {};
+    }
+
+    inline std::string_view ident_text(Arena& a, Node<Ident> name) {
+        if (auto d = name.ref(a)) {
+            return d->identifier;
+        }
+        return {};
+    }
+
+    // 配列の包みを外して要素の型を出す。[N][M]T のように重なっていても
+    // 最後まで剥がす。配列でなければそのまま返す。
+    //
+    // 「その型が指している実体は何か」を見たいときに使う。長さは codec 側の
+    // 情報で、実体の判定には効かない。
+    inline Node<Type> strip_arrays(Arena& a, Node<Type> t) {
+        while (auto arr = t.as_any<ArrayType>()) {
+            t = arr.ref(a)->element_type;
+        }
+        return t;
+    }
+
+    // 名前の包みを外す。`header :UDPHeader` の型は IdentType で、指している
+    // struct はその base にある。ImportedType など WrapperType の系列は全部
+    // 同じ形なのでまとめて剥がす。
+    //
+    // 型で分岐する側 (typer の as_struct、バックエンドの型対応) は、書かれ方
+    // ではなく指している実体を見たいので普通こちらが要る。
+    inline Node<Type> strip_wrappers(Arena& a, Node<Type> t) {
+        while (auto w = t.as_any<WrapperType>()) {
+            auto base = w.ref(a)->base;
+            if (!base) {
+                break;  // 解決に失敗した名前。剥がせないのでそのまま返す。
+            }
+            t = base;
+        }
+        return t;
+    }
+
+    // 括弧を剥がす。綴りの都合で付いているだけなので、式の中身で分岐する
+    // 側は剥がしてから見る。
+    inline Node<Expr> strip_paren(Arena& a, Node<Expr> e) {
+        while (auto p = e.as_any<Paren>()) {
+            auto inner = p.ref(a)->expr;
+            if (!inner) {
+                break;
+            }
+            e = inner;
+        }
+        return e;
+    }
+
+    // その式が非負の整数として決まるならその値。
+    //
+    // 「長さが定数か」「回数が定数か」は解析でも lowering でも同じ問い。
+    //
+    // 表 (ConstantValue) を見た後に整数リテラルも直に見るのは、**合成した
+    // リテラルが表に載らない**ため。表を埋めるのは evaluator の段で、lowering
+    // が後から作ったノードはそこを通っていない。綴りの解釈は evaluator と
+    // 同じ prefix_integer に任せる (0x / 0b / 0o が付く)。
+    inline std::optional<std::uint64_t> const_uint(Arena& a, SideTables& tables, Node<Expr> e) {
+        if (!e) {
+            return std::nullopt;
+        }
+        if (auto* v = tables.table<ConstantValue>().get(e);
+            v && v->kind == EvalKind::integer && !v->is_negative) {
+            return v->integer;
+        }
+        if (auto lit = e.as_any<IntLiteral>()) {
+            std::uint64_t value = 0;
+            if (futils::number::prefix_integer(lit.ref(a)->value, value)) {
+                return value;
+            }
+        }
+        return std::nullopt;
+    }
+
+    // 並びに現れる field か。
+    //
+    // binder は分岐に対して 2 種類の field を作る: 分岐そのものを表す 1 つ
+    // (型は StructUnionType) と、分岐をまたぐ同名の field ごとに 1 つ
+    // (型は UnionType)。後者は「その名前がどの宣言を指すか」を一意にする
+    // ための人工物で、**読み書きの対象ではない** — 実際に読むのは分岐の中に
+    // 並んでいる field のほう。並びとして数えるときも前者に含まれている
+    // (両方数えると二重計上になる)。
+    inline bool is_layout_field(Arena& a, Node<Field> f) {
+        return !f.ref(a)->type.as_any<UnionType>();
+    }
+
+    // field に書かれた引数の内訳。位置で書かれたもの (`f :T(期待値)`) と
+    // 名前つきのもの (`input = ..` / `len = 8`) は綴りが同じ括弧の中に並ぶが
+    // 意味が別なので分けて返す。
+    //
+    //   位置    その位置を読んだ値がこれと等しいことを言う制約。読み書きを
+    //           組む側は assert に落とす (lowering/field_io)
+    //   名前つき 読む先の付け替え (`input =`) と、呼ぶ先の state への代入。
+    //           どちらも読み書きの材料そのものを差し替えるので、field_io の
+    //           「バッファと位置は呼ぶ側が用意する」という線引きの外にある
+    struct FieldArgs {
+        Node<Expr> expected;  // 位置引数。2 つ以上あるときは最初のもの
+        std::size_t positional = 0;
+        std::size_t named = 0;
+    };
+
+    inline FieldArgs field_args(Arena& a, Node<Field> f) {
+        FieldArgs r;
+        auto d = f.ref(a);
+        if (!d) {
+            return r;
+        }
+        auto args = d->arguments.ref(a);
+        if (!args) {
+            return r;
+        }
+        for (auto& arg : args->arguments) {
+            if (arg.as_any<NamedArgument>()) {
+                r.named++;
+                continue;
+            }
+            if (!r.positional) {
+                r.expected = arg.ref(a)->value;
+            }
+            r.positional++;
+        }
+        return r;
+    }
+
+    // 分岐の条件が「既定」を表しているか。if/elif の else は条件なしの
+    // BodyStatement で来るが、match の `..` は両端が空の Range で来る
+    // (parse.cpp は match の全分岐を条件付きの ConditionalStatement にする)。
+    // 表し方が 2 通りあるので、判定を 1 か所にまとめる。
+    inline bool is_default_cond(Arena& a, Node<Expr> cond) {
+        if (!cond) {
+            return true;
+        }
+        if (auto r = cond.as_any<Range>()) {
+            auto d = r.ref(a);
+            return !d->start && !d->end;
+        }
+        return false;
+    }
+
+    // その式を「評価しないで済ませてよい」か。畳み込みが条件ごと式を捨てる
+    // とき (`c ? true : true` を true にする)、捨てても外から観測できないこと
+    // を確かめる。
+    //
+    // 副作用を持ちうるのは呼び出しだけ。ただし `<u8>(x)` の型変換も木の上では
+    // Call なので (parse.cpp の parse_call_or_cast)、callee が TypeLiteral の
+    // ものは除く。代入は式の位置には来ないが、来たなら捨てられない。
+    //
+    // 判定は「安全と分かるものだけ真」に倒す。知らないノードが増えたときに
+    // 黙って捨てる側に倒れると、間違いが出力にしか現れない。
+    inline bool is_side_effect_free(Arena& a, NodeAny e) {
+        bool ok = true;
+        visit_all(a, e, [&](NodeAny n) {
+            if (!ok) {
+                return false;
+            }
+            if (auto call = n.as_any<Call>()) {
+                if (!call.ref(a)->callee.as_any<TypeLiteral>()) {
+                    ok = false;
+                    return false;
+                }
+            }
+            if (auto bin = n.as_any<Binary>()) {
+                if (is_assign_op(bin.ref(a)->op)) {
+                    ok = false;
+                    return false;
+                }
+            }
+            return true;
+        });
+        return ok;
+    }
+
+    // 名前を指している式から、その名前。裸の参照と、bind/receiver が
+    // 実体化したレシーバ越しの参照 (`self.x`) の両方で同じ答えを返す。
+    // 実体化の前後で形が変わるので、名前で引く側はこちらを通す。
+    inline Node<Ident> referenced_name(Arena& a, Node<Expr> e) {
+        if (auto ref = e.as_any<Reference>()) {
+            return ref.ref(a)->name;
+        }
+        if (auto ma = e.as_any<MemberAccess>()) {
+            auto d = ma.ref(a);
+            if (d->base.as_any<Self>()) {
+                return d->member;
+            }
+        }
+        return nullref;
+    }
+
+    // 代入の左辺の根まで降りる。`sstate.isA` や `arr[i].x` から `sstate` /
+    // `arr` を、`input.endian` から `input` を出す。メンバアクセスと添字だけを
+    // 辿る (括弧は parse が代入の左辺として弾くので通らない)。
+    //
+    // **実体化したレシーバは越えない。** `self.x` の根は `self` ではなく
+    // `self.x` 自身 — 原文の `x` に当たるものがそれで、そこから先に降りると
+    // 「どの変数への書き込みか」が全部 self になる。
+    inline Node<Expr> assign_root(Arena& a, Node<Expr> e) {
+        for (;;) {
+            if (auto ma = e.as_any<MemberAccess>()) {
+                if (ma.ref(a)->base.as_any<Self>()) {
+                    break;
+                }
+                e = ma.ref(a)->base;
+                continue;
+            }
+            if (auto idx = e.as_any<Index>()) {
+                e = idx.ref(a)->base;
+                continue;
+            }
+            break;
+        }
+        return e;
+    }
+
+    // 代入の左辺として書ける形か。根が名前 (ident / メンバアクセス / 添字) か、
+    // input / output / config のいずれか。parse の検査 (check_assignment) と
+    // 解析側の「どの変数への書き込みか」の判定は、同じこの規則で決まる。
+    // ref が渡されていて根が裸の参照なら、それを入れて返す。
+    inline bool is_assignable(Arena& a, Node<Expr> e, Node<Reference>* ref = nullptr) {
+        auto root = assign_root(a, e);
+        if (auto r = root.as_any<Reference>()) {
+            if (ref) {
+                *ref = r;
+            }
+            return true;
+        }
+        // `self.x = ..`。assign_root はレシーバを越えないので根はこの形で来る。
+        if (referenced_name(a, root)) {
+            return true;
+        }
+        return bool(root.as_any<SpecialLiteral>());
+    }
+
+}  // namespace brgen::nast

@@ -1,0 +1,96 @@
+/*license*/
+#pragma once
+#include "lowering.hpp"
+
+// field 1 つを読む / 書く形。int_bytes の外側で、型に応じて組み立てる。
+//
+//   整数     int_bytes をそのまま
+//   enum     下地の整数として読み書きし、値を enum に落とす / 下地へ上げる
+//            (EBM の ENUM_UNDERLYING_TO_INT)
+//   配列     要素を回す。要素の読み書きは同じ規則を再帰で使う
+//            (EBM の ARRAY_FOR_EACH)
+//
+// **offset を進めるところは組まない。** 何バイト読んだかをどう持つかは IO の
+// 表し方と密に結びついていて、IR で一意にできないと EBM が一度撤回している
+// (ADR 0008)。ここは「この位置から読む」形までを返し、位置の管理は呼ぶ側。
+// 配列の要素の位置は要素幅が固定のときだけ組める (`offset + i * 幅`) ので、
+// 要素が可変幅の配列は組めない — 進みながら読む形になり、上と同じ理由で
+// 呼ぶ側の領分になる。
+//
+// バッファと位置は呼ぶ側が用意する。int_bytes と同じ線引き。
+//
+// **分岐が合成した同名 field (型が UnionType) は対象ではない。** あれは名前
+// 解決のための人工物で、実際に読むのは分岐の中に並んでいる field のほう
+// (`node/util.h` の `is_layout_field`)。渡されても組まない。
+//
+// **field の引数** (`node/util.h` の `field_args`) は 2 通りに分かれる。
+//
+// 位置で書かれた `f :T(期待値)` は「その位置を読んだ値がこれと等しいこと」で、
+// 読む側は読んだ後に、書く側は書く前に assert を置く。書いてから検査しても
+// 失敗した時点でバッファは汚れているし、期待値を黙って代入して直す形にすると
+// 呼ぶ側が入れた値を上書きする。配列の field に付いたときは**要素と比べる** —
+// `[20]u8(0)` は 20 要素すべてが 0 の意味 (原実装が repeat mapping と呼ぶ)。
+// 期待値そのものが配列なら全体と比べる。書かれ方では決まらないので期待値の型
+// で分ける。位置指定が 2 つ以上ある `u8(7,128..255)` は「どれかに一致」で、
+// 比較 1 つには落ちないので組めない。
+//
+// 名前つきの引数は 5 種類 (`input =` / `input.align` / `input.peek` /
+// `config.type` / 呼ぶ先の state への代入)。どれもバッファと位置そのものを
+// 差し替えるので上の線引きの外にあり、付いていたら組めない扱いにする。
+// 内訳は docs/size_and_lowering.md にある。
+
+namespace brgen::nast::lowering {
+
+    // ---- データの形 ----
+    //
+    // バイト境界に乗る 1 つの値 (整数 / enum / 浮動小数点) を何として読み書き
+    // するか。下の lower_field_* はこれを文 (combine_int / split_int の代入) に
+    // するが、言語が整数の読み書きを native に持っているならこの材料から直に
+    // 綴れる (Go の binary.BigEndian.Uint16、Python の int.from_bytes)。
+    struct ScalarShape {
+        enum class Kind : std::uint8_t {
+            int_,
+            enum_,   // 下地の整数として読み、enum に落とす
+            float_,  // 同じ幅の整数として読み、ビット列のまま浮動小数点にする
+        };
+        Kind kind = Kind::int_;
+        Node<Type> type;     // 値の型 (enum / float ならそれ自体)
+        Node<IntType> io;    // 読み書きする整数の型
+        std::size_t bytes = 0;
+        bool is_signed = false;
+        // big / little。ターゲット (native) か実行時 (dynamic) に決まるときは
+        // unspec で、dynamic はその代入の位置。
+        Endian order = Endian::big;
+        bool native_order = false;
+        Node<SpecifyOrder> dynamic_order;
+    };
+
+    // type はその field の型か、配列の要素の型。field は FieldEndian を引くため。
+    // バイト境界に乗る整数 / enum / 浮動小数点でなければ空。
+    std::optional<ScalarShape> scalar_shape(Context& c, Node<Field> f, Node<Type> type);
+
+    // field の名前つきの引数のうち `input = input.subrange(n)` の n。読む先を
+    // 長さ n の部分範囲に付け替える (その field はその範囲の中で読み、外側は
+    // n バイト進む)。typer が値の型 (StreamType) に長さとして載せたものを返す。
+    // 無ければ null。
+    Node<Expr> subrange_length(Context& c, Node<Field> f);
+
+    // field の名前つきの引数 `input.xor = key` の key。読んだバイト列を key で
+    // (key の長さで巡回して) XOR したものが値 (書くときも同じ)。無ければ null。
+    Node<Expr> xor_key(Context& c, Node<Field> f);
+
+    // 組めなければ null。今のところ組めないもの:
+    //   要素が可変幅の配列 / 末尾までの配列 / 入れ子 format /
+    //   バイト境界に乗らない幅 / 名前つきの引数が付いた field
+    Node<Body> lower_field_decode(Context& c, Node<Field> f, Node<Expr> target, Node<Expr> bytes,
+                                  Node<Expr> offset);
+
+    Node<Body> lower_field_encode(Context& c, Node<Field> f, Node<Expr> target, Node<Expr> bytes,
+                                  Node<Expr> offset);
+
+    // `f :T(期待値)` の期待値を assert にして body に足す。読む側は読んだ後、
+    // 書く側は書く前。expected が無ければ body をそのまま返す。
+    Node<Body> add_expected_check(Context& c, Node<Expr> target, Node<Body> body,
+                                  Node<Expr> expected, bool decode);
+
+}  // namespace brgen::nast::lowering

@@ -931,6 +931,10 @@ namespace ebmgen {
                 cout << "ebmgen> ";
                 line.clear();
                 cin >> line;
+                if (line.empty() && cin.eof()) {
+                    cout << "\n";
+                    break;
+                }
                 auto res = run_line();
                 if (res == ExecutionResult::Exit) {
                     break;

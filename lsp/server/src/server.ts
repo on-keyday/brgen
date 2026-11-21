@@ -23,6 +23,8 @@ import { Range, TextDocument } from 'vscode-languageserver-textdocument';
 import {execFile, spawn} from "child_process";
 import * as url from "url";
 import { ast2ts,analyze } from "ast2ts";
+import * as nast from "./nast_nodes";
+import * as nastAnalyze from "./nast_analyze";
 
 
 
@@ -170,6 +172,10 @@ class DocumentInfo {
     prevFile :ast2ts.AstFile| null = null;
     prevNode :ast2ts.ParseResult | null = null;
     prevText :string | null = null;
+    // nast_dump の結果。nastText が今の本文と一致する間は使い回す。
+    nastText :string | null = null;
+    nastDump :nast.Dump | null = null;
+    nastReach :Set<number> | null = null;
 
     constructor(uri :string){
         this.uri = uri;
@@ -267,6 +273,40 @@ const ensureParsed = async (doc: TextDocument): Promise<DocumentInfo> => {
     return docInfo;
 };
 
+const isNastDumpJSON = (x :any): x is nast.DumpJSON => {
+    return typeof x === "object" && x !== null && typeof x.ok === "boolean";
+};
+
+const nastDumpCommand = (path :string) => ["--stdin-name", path, "--interpret-mode", "utf16"];
+
+// nast_dump を回して arena + side tables を手に入れる。設定が無ければ null。
+const ensureNastDump = async (doc :TextDocument): Promise<DocumentInfo | null> => {
+    const settings = await getDocumentSettings(doc.uri);
+    const exe = settings.nastDump;
+    if (exe === undefined || exe === null || exe === "") {
+        return null;
+    }
+    const docInfo = getOrCreateDocumentInfo(doc);
+    const text = doc.getText();
+    if (docInfo.nastDump !== null && docInfo.nastText === text) {
+        return docInfo;
+    }
+    const path = url.fileURLToPath(doc.uri);
+    try {
+        const json = await execSrc2JSON(exe, nastDumpCommand(path), text, isNastDumpJSON);
+        docInfo.nastDump = nast.loadDump(json);
+        docInfo.nastReach = nastAnalyze.reachOf(docInfo.nastDump);
+        docInfo.nastText = text;
+        return docInfo;
+    } catch (e :any) {
+        console.log(`nast_dump failed: ${e}`);
+        docInfo.nastDump = null;
+        docInfo.nastReach = null;
+        docInfo.nastText = null;
+        return null;
+    }
+};
+
 connection.onRequest("textDocument/semanticTokens/full",async (params)=>{
     console.log(`textDocument/semanticTokens/full: ${JSON.stringify(params)}`);
     const doc = documents.get(params?.textDocument?.uri);
@@ -287,11 +327,24 @@ const hover = async (params :HoverParams)=>{
     const pos = doc.offsetAt(params.position);
     console.log("target pos: %d",pos)
     const docInfo = await ensureParsed(doc);
-    if(docInfo.prevNode===null) {
-        console.log("prevNode is null");
-        return null;
+    const base = docInfo.prevNode !== null ? await analyze.analyzeHover(docInfo.prevNode,pos) : null;
+    // nast の見立てを併記する。src2json 側の型と食い違えばそこが nast の穴。
+    const nastInfo = await ensureNastDump(doc);
+    if (nastInfo !== null && nastInfo.nastDump !== null && nastInfo.nastReach !== null) {
+        const nh = nastAnalyze.hoverAt(nastInfo.nastDump, nastInfo.nastReach, pos);
+        if (nh !== null) {
+            const section = `#### nast\n\n${nh.markdown}`;
+            if (base === null || base === undefined) {
+                return { contents: { kind: "markdown", value: section } } as const;
+            }
+            const contents = base.contents as { kind :"markdown", value :string };
+            return {
+                ...base,
+                contents: { kind: "markdown", value: `${contents.value}\n\n---\n\n${section}` },
+            } as const;
+        }
     }
-    return analyze.analyzeHover(docInfo.prevNode,pos);
+    return base;
 }
 
 connection.onHover(hover)
@@ -361,11 +414,18 @@ connection.onDocumentSymbol(async (params) =>{
 // The example settings
 interface BrgenLSPSettings {
     src2json :string;
+    // nast_dump のパス。空なら nast の情報は出さない。
+    nastDump? :string;
 }
 
 // Parse --src2json <path> from CLI args (for non-VSCode clients like Claude Code)
 const cliSrc2json = (() => {
     const idx = process.argv.indexOf('--src2json');
+    return idx !== -1 ? process.argv[idx + 1] : null;
+})();
+
+const cliNastDump = (() => {
+    const idx = process.argv.indexOf('--nast-dump');
     return idx !== -1 ? process.argv[idx + 1] : null;
 })();
 
@@ -375,7 +435,10 @@ const claudeMode = process.argv.includes('--claude');
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
 // Please note that this is not the case when using this server with the client provided in this example
 // but could happen with other clients.
-const defaultSettings: BrgenLSPSettings = { src2json: cliSrc2json ?? `./tool/src2json${(process.platform === "win32" ? ".exe" : "")}` };
+const defaultSettings: BrgenLSPSettings = {
+    src2json: cliSrc2json ?? `./tool/src2json${(process.platform === "win32" ? ".exe" : "")}`,
+    nastDump: cliNastDump ?? "",
+};
 let globalSettings: BrgenLSPSettings = defaultSettings;
 
 // Cache the settings of all open documents

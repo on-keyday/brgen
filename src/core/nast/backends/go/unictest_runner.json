@@ -1,0 +1,32 @@
+{
+    "name": "nast2go",
+    "source_setup_command": [
+        "python",
+        "$WORK_DIR/script/unictest_setup.py",
+        "setup",
+        "nast2go"
+    ],
+    "run_command": [
+        "python",
+        "$WORK_DIR/script/unictest_setup.py",
+        "test",
+        "nast2go"
+    ],
+    "option_sets": [
+        {
+            "name": "std-io",
+            "setup_options": [],
+            "run_options": []
+        },
+        {
+            "name": "slice-io",
+            "setup_options": [],
+            "run_options": []
+        },
+        {
+            "name": "append-io",
+            "setup_options": [],
+            "run_options": []
+        }
+    ]
+}

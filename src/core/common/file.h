@@ -26,6 +26,49 @@ namespace brgen {
             return lexer::parse_one<TokenBuf>(*static_cast<futils::Sequencer<T>*>(ptr), file, opt);
         }
 
+        template <class T>
+        static std::optional<lexer::LiteToken> do_parse_no_text(void* ptr, std::uint64_t file, lexer::Option opt,
+                                                                std::string* err) {
+            return lexer::parse_one_no_text(*static_cast<futils::Sequencer<T>*>(ptr), file, opt, err);
+        }
+
+        // トークンの本文を ASCII の文字列と比べる。要素型はここでしか分からない。
+        // 比べる相手は記号とキーワードで、どれも ASCII なので、utf16 / utf32 の
+        // バッファでも 1 文字が 1 要素に対応する。変換は要らない。
+        template <class T>
+        static bool token_equal(void* ptr, lexer::Pos pos, std::string_view ascii) {
+            auto& seq = *static_cast<futils::Sequencer<T>*>(ptr);
+            if (pos.len() != ascii.size()) {
+                return false;
+            }
+            for (std::size_t i = 0; i < ascii.size(); i++) {
+                if (seq.buf.buffer[pos.begin + i] != decltype(seq.buf.buffer[0])(ascii[i])) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // トークンの本文を std::string で取り出す。バッファがバイト列でなければ
+        // ここで変換する。parse_one が全トークンに対してやっていたことを、
+        // 本文が要るトークンにだけやる形。
+        template <class TokenBuf, class T>
+        static bool token_text(void* ptr, lexer::Pos pos, std::string& out) {
+            auto& seq = *static_cast<futils::Sequencer<T>*>(ptr);
+            TokenBuf buf;
+            buf.resize(pos.len());
+            for (std::size_t i = 0; i < pos.len(); i++) {
+                buf[i] = seq.buf.buffer[pos.begin + i];
+            }
+            if constexpr (std::is_same_v<TokenBuf, std::string>) {
+                out = std::move(buf);
+                return true;
+            }
+            else {
+                return bool(futils::utf::convert<0, 1>(buf, out, false, false));
+            }
+        }
+
         template <class DumpBuf, class T>
         static std::pair<std::string, futils::code::SrcLoc> dump_source(void* ptr, lexer::Pos pos) {
             auto& seq = *static_cast<futils::Sequencer<T>*>(ptr);
@@ -47,6 +90,10 @@ namespace brgen {
         fs::path file_name;
         std::shared_ptr<void> ptr;
         std::optional<lexer::Token> (*parse_)(void* seq, std::uint64_t file, lexer::Option opt) = nullptr;
+        std::optional<lexer::LiteToken> (*parse_no_text_)(void* seq, std::uint64_t file, lexer::Option opt,
+                                                          std::string* err) = nullptr;
+        bool (*token_equal_)(void* seq, lexer::Pos pos, std::string_view ascii) = nullptr;
+        bool (*token_text_)(void* seq, lexer::Pos pos, std::string& out) = nullptr;
         std::pair<std::string, futils::code::SrcLoc> (*dump_)(void* seq, lexer::Pos pos) = nullptr;
 
         futils::view::rvec (*direct)(void* seq) = nullptr;
@@ -65,6 +112,9 @@ namespace brgen {
             using U = std::decay_t<T>;
             ptr = std::make_unique<futils::Sequencer<U>>(std::forward<T>(t));
             parse_ = do_parse<Buf, U>;
+            parse_no_text_ = do_parse_no_text<U>;
+            token_equal_ = token_equal<U>;
+            token_text_ = token_text<Buf, U>;
             dump_ = dump_source<Buf, U>;
             direct = direct_source<U>;
         }
@@ -86,6 +136,28 @@ namespace brgen {
         std::optional<lexer::Token> parse(lexer::Option option) {
             if (parse_) {
                 return parse_(ptr.get(), file, option);
+            }
+            return std::nullopt;
+        }
+
+        // トークンの本文を ASCII 文字列と比べる。source() が空でも使える。
+        bool token_equal(lexer::Pos pos, std::string_view ascii) {
+            return token_equal_ ? token_equal_(ptr.get(), pos, ascii) : false;
+        }
+
+        // トークンの本文。バッファがバイト列でなければ変換する。
+        std::string token_text(lexer::Pos pos) {
+            std::string out;
+            if (token_text_) {
+                token_text_(ptr.get(), pos, out);
+            }
+            return out;
+        }
+
+        // err には Tag::error のときだけメッセージが入る。
+        std::optional<lexer::LiteToken> parse_no_text(lexer::Option option, std::string* err = nullptr) {
+            if (parse_no_text_) {
+                return parse_no_text_(ptr.get(), file, option, err);
             }
             return std::nullopt;
         }
@@ -154,16 +226,31 @@ namespace brgen {
             if (input_mode == interpret_mode) {
                 switch (input_mode) {
                     case UtfMode::utf8:
-                        assert(sizeof(buffer[1]) == 1);
-                        make_file_from_text<std::string>(f, std::forward<decltype(buffer)>(buffer));
+                        if constexpr (sizeof(buffer[1]) == 1) {
+                            make_file_from_text<std::string>(f, std::forward<decltype(buffer)>(buffer));
+                        }
+                        else {
+                            assert(false);
+                            __builtin_unreachable();
+                        }
                         break;
                     case UtfMode::utf16:
-                        assert(sizeof(buffer[1]) == 2);
-                        make_file_from_text<std::u16string>(f, std::forward<decltype(buffer)>(buffer));
+                        if constexpr (sizeof(buffer[1]) == 2) {
+                            make_file_from_text<std::u16string>(f, std::forward<decltype(buffer)>(buffer));
+                        }
+                        else {
+                            assert(false);
+                            __builtin_unreachable();
+                        }
                         break;
                     case UtfMode::utf32:
-                        assert(sizeof(buffer[1]) == 4);
-                        make_file_from_text<std::u32string>(f, std::forward<decltype(buffer)>(buffer));
+                        if constexpr (sizeof(buffer[1]) == 4) {
+                            make_file_from_text<std::u32string>(f, std::forward<decltype(buffer)>(buffer));
+                        }
+                        else {
+                            assert(false);
+                            __builtin_unreachable();
+                        }
                         break;
                     default:
                         assert(false);
@@ -172,47 +259,62 @@ namespace brgen {
                 return;
             }
             else if (input_mode == UtfMode::utf8) {
-                assert(sizeof(buffer[1]) == 1);
-                switch (interpret_mode) {
-                    case UtfMode::utf16:
-                        make_file_from_text<std::u16string>(f, futils::utf::U16View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
-                        break;
-                    case UtfMode::utf32:
-                        make_file_from_text<std::u32string>(f, futils::utf::U32View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
-                        break;
-                    default:
-                        assert(false);
-                        __builtin_unreachable();
+                if constexpr (sizeof(buffer[1]) != 1) {
+                    assert(false);
+                    __builtin_unreachable();
+                }
+                else {
+                    switch (interpret_mode) {
+                        case UtfMode::utf16:
+                            make_file_from_text<std::u16string>(f, futils::utf::U16View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
+                            break;
+                        case UtfMode::utf32:
+                            make_file_from_text<std::u32string>(f, futils::utf::U32View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
+                            break;
+                        default:
+                            assert(false);
+                            __builtin_unreachable();
+                    }
                 }
                 return;
             }
             else if (input_mode == UtfMode::utf16le || input_mode == UtfMode::utf16be) {
-                assert(sizeof(buffer[1]) == 2);
-                switch (interpret_mode) {
-                    case UtfMode::utf8:
-                        make_file_from_text<std::string>(f, futils::utf::U8View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
-                        break;
-                    case UtfMode::utf32:
-                        make_file_from_text<std::u32string>(f, futils::utf::U32View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
-                        break;
-                    default:
-                        assert(false);
-                        __builtin_unreachable();
+                if constexpr (sizeof(buffer[1]) != 2) {
+                    assert(false);
+                    __builtin_unreachable();
+                }
+                else {
+                    switch (interpret_mode) {
+                        case UtfMode::utf8:
+                            make_file_from_text<std::string>(f, futils::utf::U8View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
+                            break;
+                        case UtfMode::utf32:
+                            make_file_from_text<std::u32string>(f, futils::utf::U32View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
+                            break;
+                        default:
+                            assert(false);
+                            __builtin_unreachable();
+                    }
                 }
                 return;
             }
             else if (input_mode == UtfMode::utf32le || input_mode == UtfMode::utf32be) {
-                assert(sizeof(buffer[1]) == 4);
-                switch (interpret_mode) {
-                    case UtfMode::utf8:
-                        make_file_from_text<std::string>(f, futils::utf::U8View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
-                        break;
-                    case UtfMode::utf16:
-                        make_file_from_text<std::u16string>(f, futils::utf::U16View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
-                        break;
-                    default:
-                        assert(false);
-                        __builtin_unreachable();
+                if constexpr (sizeof(buffer[1]) != 4) {
+                    assert(false);
+                    __builtin_unreachable();
+                }
+                else {
+                    switch (interpret_mode) {
+                        case UtfMode::utf8:
+                            make_file_from_text<std::string>(f, futils::utf::U8View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
+                            break;
+                        case UtfMode::utf16:
+                            make_file_from_text<std::u16string>(f, futils::utf::U16View<std::decay_t<decltype(buffer)>>(std::forward<decltype(buffer)>(buffer)));
+                            break;
+                        default:
+                            assert(false);
+                            __builtin_unreachable();
+                    }
                 }
                 return;
             }

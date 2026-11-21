@@ -1,0 +1,28 @@
+# field の読み書きを組む対象。整数 / enum / 固定長配列 / 式長配列。
+enum Kind:
+    :u8
+    a = 1
+    b = 2
+
+format Fields:
+    scalar :u16
+    kind :Kind
+    fixed :[4]u32
+    count :u8
+    varying :[count]u16
+
+format Floats:
+    single :f32
+    double :f64
+
+# 位置で書かれた引数は期待値。読み書きの前後に assert が付く。
+format Expected:
+    magic :u16(0xcafe)
+    tag :Kind(Kind.b)
+    # 配列にスカラの期待値。全要素がその値、の意味 (原実装の repeat mapping)。
+    zeros :[3]u8(0)
+
+# 名前つきの引数は読む先の付け替え。field_io の外なので断られる。
+format NamedArg:
+    len :u8
+    body :[2]u8(input = input.subrange(len))
