@@ -96,6 +96,12 @@ Playground は `NAST_LANGUAGES` を `EBM_LANGUAGES` と同じく動的に登録�
 言語 ID は `nast-<lang>`。nast は `.bgn` を自分で読むので src2json を通らず、
 import 先はエディタの extraSources として wasm の FS に置かれる。
 
+バックエンドのほかに `nast-ir` (`tool/ir.cpp` → `nast2ir`) を載せている。ebm の
+"ebm" に当たる中間表現の表示で、`--mode` で出すものを選ぶ: `tree` (解析済みの木と
+side table) / `json` (nast_dump と同じ中身) / `unparse` / `unparse-self` (木を
+.bgn に戻す。後者は暗黙のレシーバも綴る) / `size` / `endian` / `lower` / `bits`
+(nast_probe の各モード)。載せる道具は `nastwebgen.py` の `EXTRA_TOOLS`。
+
 ```sh
 # emscripten で建てる (futils は wasm-em の Release を使う)
 emcmake cmake -S src/core/nast -B src/core/nast/build/web -G Ninja \

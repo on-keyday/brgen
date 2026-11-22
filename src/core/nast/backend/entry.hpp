@@ -148,12 +148,13 @@ namespace brgen::nast::backend {
         //
         //   ui_lang_name    Playground の言語 ID。core の "go" 等とぶつからないよう
         //                   既定は nast-<lang>
-        //   lsp_name        Monaco の言語 ID。既定は lang_name
+        //   lsp_name        Monaco の言語 ID。既定は lang_name (引数で上書きできる)
         //   webworker_name  wasm と worker の名前。実行ファイル名 nast2<lang>
         //   web_filtered    Playground では出さないフラグ (入出力・道具用)
         inline auto flag_description_json(futils::cmdline::option::Context& ctx,
                                           const char* lang_name,
-                                          std::string_view file_extension) {
+                                          std::string_view file_extension,
+                                          std::string_view lsp_name = {}) {
             std::vector<std::string_view> exts;
             if (!file_extension.empty()) {
                 exts.push_back(file_extension);
@@ -166,7 +167,7 @@ namespace brgen::nast::backend {
             auto root = str.object();
             root("lang_name", lang_name);
             root("ui_lang_name", ui_lang_name);
-            root("lsp_name", lang_name);
+            root("lsp_name", lsp_name.empty() ? std::string_view(lang_name) : lsp_name);
             root("webworker_name", webworker_name);
             root("file_extensions", exts);
             root("flags", [&](auto& s) {

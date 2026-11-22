@@ -210,6 +210,15 @@ add_dependencies(nast_core nast_generate)
 target_include_directories(nast_core PUBLIC "${NAST_DIR}" "${REPO_ROOT}/src")
 target_link_libraries(nast_core PUBLIC futils_imported)
 
+# 中間表現を印字する道具 (Web Playground の nast-ir)。probe の各モードを使う。
+set(NAST_IR_SOURCES
+    "tool/ir.cpp"
+    "tool/probe/size.cpp"
+    "tool/probe/endian.cpp"
+    "tool/probe/lower.cpp"
+    "tool/probe/bits.cpp"
+)
+
 # ---- wasm (Web Playground) -----------------------------------------------
 # emscripten で組むときはバックエンドだけを建てる。道具・計測・試験は手元で
 # 走らせるものなので wasm にしない。出力は ES module の factory
@@ -221,9 +230,12 @@ if(EMSCRIPTEN)
         "-sALLOW_MEMORY_GROWTH=1" "-sSTACK_SIZE=16777216")
     add_executable(nast2go "backends/go/main.cpp")
     target_link_libraries(nast2go PRIVATE nast_core)
+    add_executable(nast2ir ${NAST_IR_SOURCES})
+    target_link_libraries(nast2ir PRIVATE nast_core)
     # install 先 (既定 build/web/bin) を web/dev/src/lib/nast に写すのは
     # CI の役目。js と wasm は対で要る。
-    install(FILES "$<TARGET_FILE:nast2go>" "$<TARGET_FILE_DIR:nast2go>/nast2go.wasm" DESTINATION .)
+    install(FILES "$<TARGET_FILE:nast2go>" "$<TARGET_FILE_DIR:nast2go>/nast2go.wasm"
+                  "$<TARGET_FILE:nast2ir>" "$<TARGET_FILE_DIR:nast2ir>/nast2ir.wasm" DESTINATION .)
     return()
 endif()
 
@@ -252,6 +264,8 @@ add_executable(nast2wirespec "backends/wirespec/main.cpp")
 target_link_libraries(nast2wirespec PRIVATE nast_core)
 add_executable(nast2go "backends/go/main.cpp")
 target_link_libraries(nast2go PRIVATE nast_core)
+add_executable(nast2ir ${NAST_IR_SOURCES})
+target_link_libraries(nast2ir PRIVATE nast_core)
 
 # ---- 計測 ----------------------------------------------------------------
 foreach(b coverage fn_fallible lex_split parse_split token_cost)
@@ -305,7 +319,7 @@ if(WIN32)
         COMMENT "copying libfutils.dll next to the tools"
         VERBATIM)
     # どのツールも起動に要るので、実行ファイル全部から依存させる。
-    foreach(t nast2wirespec nast2go nast_test nast_corpus nast_dump nast_unparse_test nast_wire_test nast_backend
+    foreach(t nast2wirespec nast2go nast2ir nast_test nast_corpus nast_dump nast_unparse_test nast_wire_test nast_backend
               nast_coverage nast_fn_fallible nast_lex_split nast_parse_split nast_token_cost)
         if(TARGET ${t})
             add_dependencies(${t} nast_runtime_dll)

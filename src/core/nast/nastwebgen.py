@@ -50,9 +50,15 @@ process.stdout.write(out);
 """
 
 
+# backends/ のほかに Playground に載せる道具。nast2ir は中間表現の印字
+# (tool/ir.cpp、ebm の "ebm" に当たる)。
+EXTRA_TOOLS = ["ir"]
+
+
 def backend_names() -> list[str]:
     root = os.path.join(NAST_DIR, "backends")
-    return sorted(d for d in os.listdir(root) if os.path.isdir(os.path.join(root, d)))
+    names = sorted(d for d in os.listdir(root) if os.path.isdir(os.path.join(root, d)))
+    return EXTRA_TOOLS + names
 
 
 def get_tools(wasm_dir: str) -> list[dict]:
