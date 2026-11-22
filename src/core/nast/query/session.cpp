@@ -52,7 +52,7 @@ namespace brgen::nast::query {
             out += std::format(" @{}:{}", h->loc.line, h->loc.col);
         }
         if (!reachable.contains(id)) {
-            out += " (孤児)";
+            out += " (orphan)";
         }
         auto n = node_at(id);
         if (auto st = n.as_any<Statement>(); st && !name_of(a, st).empty()) {
@@ -85,7 +85,7 @@ namespace brgen::nast::query {
     std::string Session::source_at(std::uint32_t id) const {
         auto* h = p.arena.header_at(id);
         if (!h || !h->loc.line) {
-            return "(位置なし)\n";
+            return "(no location)\n";
         }
         // 診断と同じ体裁で出す。原文の行と桁の指し示しは FileSet が持っている。
         auto entry = const_cast<FileSet&>(p.files).error("", h->loc);
@@ -326,7 +326,7 @@ namespace brgen::nast::query {
             }
             auto it = parent.find(id);
             if (it == parent.end()) {
-                out += "(親なし。Module か、木から外れたノード)\n";
+                out += "(no parent: the Module, or a node outside the tree)\n";
                 return true;
             }
             out += headline(it->second) + "\n";
@@ -383,7 +383,7 @@ namespace brgen::nast::query {
             for (auto n : hit) {
                 out += headline(n) + "\n";
             }
-            out += std::format("{} 件\n", hit.size());
+            out += std::format("{} hit(s)\n", hit.size());
             return true;
         }
         if (cmd == "lower") {
@@ -391,7 +391,7 @@ namespace brgen::nast::query {
                 return true;
             }
             auto lowered = lower_of(const_cast<Program&>(p), node_at(id));
-            out += lowered.text.empty() ? "(この種に当てはまる規則は無い)\n" : lowered.text;
+            out += lowered.text.empty() ? "(no lowering rule applies to this kind)\n" : lowered.text;
             // 作ったノードの id。そのまま p / u で追える。
             for (auto& [label, made] : lowered.made) {
                 if (made) {

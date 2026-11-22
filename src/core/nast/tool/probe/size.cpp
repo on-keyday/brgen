@@ -15,7 +15,7 @@ namespace brgen::nast::probe {
         each_node<ArrayType>(a, [&](Node<ArrayType> at) {
             auto* es = t.table<TypeSize>().get(at.ref(a)->element_type);
             if (es && es->kind == SizeKind::dynamic) {
-                hist["  (配列: 要素が dynamic = 畳み込みが要る)"]++;
+                hist["  (arrays whose element is dynamic = need a fold)"]++;
             }
         });
         each_node<Format>(a, [&](Node<Format> f) {
@@ -26,7 +26,7 @@ namespace brgen::nast::probe {
             const char* k = s->kind == SizeKind::fixed     ? "fixed"
                             : s->kind == SizeKind::dynamic ? "dynamic"
                                                            : "unknown";
-            hist[s->kind == SizeKind::dynamic ? (s->bits_expr ? "dynamic (式あり)" : "dynamic (式なし)") : k]++;
+            hist[s->kind == SizeKind::dynamic ? (s->bits_expr ? "dynamic (with expression)" : "dynamic (no expression)") : k]++;
             if (detail) {
                 std::string tail;
                 if (s->kind == SizeKind::fixed) {

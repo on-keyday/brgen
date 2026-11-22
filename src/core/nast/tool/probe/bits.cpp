@@ -22,18 +22,18 @@ namespace brgen::nast::probe {
             using C = lowering::BitGroup::Close;
             switch (c) {
                 case C::flat:
-                    return "平ら (Body 内で閉じる)";
+                    return "flat (closes inside the Body)";
                 case C::branch:
-                    return "閉じる前に分岐";
+                    return "a branch before it closes";
                 case C::other_statement:
-                    return "閉じる前に分岐以外の文";
+                    return "a non-branch statement before it closes";
                 case C::variable_width:
-                    return "閉じる前に可変幅";
+                    return "a variable width before it closes";
                 case C::body_end:
                     // format の Body の終わりで開いたままの群は、親の側で前後の
                     // field と合わさって閉じる (format の境界を跨ぐ)。分岐の腕で
                     // 開いたままのものは経路の続きで閉じる。解き方が違う。
-                    return format_body ? "閉じる前に format の終わり" : "閉じる前に分岐の腕などの終わり";
+                    return format_body ? "the format ends before it closes" : "a branch arm (or similar) ends before it closes";
             }
             return "?";
         }
@@ -41,17 +41,17 @@ namespace brgen::nast::probe {
             using E = lowering::BitRoute::End;
             switch (e) {
                 case E::closed:
-                    return "閉じた";
+                    return "closed";
                 case E::variable_width:
-                    return "可変幅";
+                    return "variable width";
                 case E::loop:
-                    return "ループ";
+                    return "loop";
                 case E::other_statement:
-                    return "分岐以外の文";
+                    return "non-branch statement";
                 case E::body_end:
-                    return "最初の Body の終わり";
+                    return "end of the first Body";
                 case E::too_long:
-                    return "64 ビット超";
+                    return "over 64 bits";
             }
             return "?";
         }
@@ -88,30 +88,30 @@ namespace brgen::nast::probe {
             if (!all_closed) {
                 std::string why;
                 for (auto& [k, v] : ends) {
-                    if (k != "閉じた") {
+                    if (k != end_name(lowering::BitRoute::End::closed)) {
                         why += (why.empty() ? "" : ", ") + k;
                     }
                 }
-                hist["経路: 閉じない経路がある"]++;
-                hist["  閉じない理由: " + why]++;
+                hist["routes: some route does not close"]++;
+                hist["  why a route does not close: " + why]++;
             }
             else {
                 bool one_offset = true;
                 for (auto& [_, set] : offsets) {
                     one_offset = one_offset && set.size() == 1;
                 }
-                hist[std::format("経路: 全部閉じる ({}, {})", lengths.size() == 1 ? "長さ同じ" : "長さ違う",
-                                 one_offset ? "位置が 1 つ" : "位置が経路で変わる")]++;
+                hist[std::format("routes: all close ({}, {})", lengths.size() == 1 ? "same length" : "lengths differ",
+                                 one_offset ? "one position per field" : "positions vary by route")]++;
             }
             const char* why = nullptr;
             auto routed = lowering::routed_bit_group(c, body, start, &why);
-            hist[routed ? "分岐を跨ぐ群: 組めた" : "分岐を跨ぐ群: 組めない"]++;
+            hist[routed ? "routed group: built" : "routed group: refused"]++;
             if (!routed) {
-                hist[std::format("  分岐を跨ぐ群の組めない理由: {}", why ? why : "(理由なし)")]++;
+                hist[std::format("  why a routed group is refused: {}", why ? why : "(no reason)")]++;
             }
             if (detail) {
                 auto pos = g.fields.front().ref(a).loc();
-                print_line("{}:{}  経路 {} 本", pos.line + 1, pos.col + 1, routes.size());
+                print_line("{}:{}  {} route(s)", pos.line + 1, pos.col + 1, routes.size());
                 for (auto& r : routes) {
                     std::string names;
                     for (auto f : r.fields) {
@@ -120,20 +120,20 @@ namespace brgen::nast::probe {
                     print_line("    {} bits  {}  [{}]", r.bits, end_name(r.end), names);
                 }
                 if (!routed) {
-                    print_line("  (組めない: {})", why ? why : "理由なし");
+                    print_line("  (refused: {})", why ? why : "no reason");
                     return;
                 }
-                print_line("  {} bytes まで、{}", routed->max_bytes, routed->lsb ? "lsb から" : "msb から");
+                print_line("  up to {} bytes, {}", routed->max_bytes, routed->lsb ? "from lsb" : "from msb");
                 Builder b{a, pos};
                 for (std::size_t i = 0; i < routed->fields.size(); i++) {
                     auto& f = routed->fields[i];
                     auto target = lowering::field_ref(c, f.field);
                     auto dec = lowering::lower_routed_bit_decode(c, *routed, i, target, b.ref("buf"), b.ref("o"));
                     auto enc = lowering::lower_routed_bit_encode(c, *routed, i, target, b.ref("buf"), b.ref("o"));
-                    print_line("  --- {} @{} :{} bits  読む前に [{}, {})  書いた後に [{}, {})", name_of(a, f.field), f.offset, f.bits,
+                    print_line("  --- {} @{} :{} bits  fetch before reading [{}, {})  flush after writing [{}, {})", name_of(a, f.field), f.offset, f.bits,
                                f.fetch_from, f.fetch_to, f.flush_from, f.flush_to);
-                    print_text("  decode:\n{}\n  encode:\n{}\n", dec ? unparse_node(a, dec) : "(組めない)",
-                               enc ? unparse_node(a, enc) : "(組めない)");
+                    print_text("  decode:\n{}\n  encode:\n{}\n", dec ? unparse_node(a, dec) : "(refused)",
+                               enc ? unparse_node(a, enc) : "(refused)");
                 }
             }
         }
@@ -155,14 +155,14 @@ namespace brgen::nast::probe {
             auto l = lowering::bit_layout(c, f);
             for (auto& [id, pl] : l.places) {
                 placed[id] = pl.kind == lowering::BitPlace::Kind::flat     ? nullptr
-                             : pl.kind == lowering::BitPlace::Kind::routed ? "分岐を跨ぐ群の一員"
+                             : pl.kind == lowering::BitPlace::Kind::routed ? "member of a routed group"
                                                                           : pl.why;
             }
         });
         each_node<Body>(a, last, [&](Node<Body> body) {
             for (auto& g : lowering::bit_groups(c, body)) {
                 auto how = close_name(g.close, format_bodies.contains(body.id()));
-                hist[std::string("群: ") + how]++;
+                hist[std::string("group: ") + how]++;
                 auto pos = g.fields.front().ref(a).loc();
                 if (g.close == lowering::BitGroup::Close::branch) {
                     count_routes(c, body, g, detail, hist);
@@ -180,26 +180,26 @@ namespace brgen::nast::probe {
                 }
                 auto dec = lowering::lower_bit_group_decode(c, g, targets, b.ref("buf"), b.ref("o"));
                 auto enc = lowering::lower_bit_group_encode(c, g, targets, b.ref("buf"), b.ref("o"));
-                hist[dec && enc ? "平らな群: 組めた" : "平らな群: 組めない"]++;
+                hist[dec && enc ? "flat group: built" : "flat group: refused"]++;
                 if (dec && enc) {
                     auto it = placed.find(g.fields.front().id());
                     if (it == placed.end() || it->second) {
-                        auto why = it == placed.end() ? "表に無い" : it->second;
-                        hist[std::format("  Body ごとには組めたが表では外れる: {}", why)]++;
+                        auto why = it == placed.end() ? "not in the table" : it->second;
+                        hist[std::format("  built per Body but left out of the table: {}", why)]++;
                         if (detail) {
-                            print_line("{}:{}  Body ごとには組めたが表では外れる: {}", pos.line + 1, pos.col + 1, why);
+                            print_line("{}:{}  built per Body but left out of the table: {}", pos.line + 1, pos.col + 1, why);
                         }
                     }
                 }
                 if (!dec || !enc) {
                     auto why = lowering::bit_group_refusal(c, g);
-                    hist[std::format("  組めない理由: {}", why ? why : "(理由なし)")]++;
+                    hist[std::format("  why refused: {}", why ? why : "(no reason)")]++;
                 }
                 if (detail) {
                     print_line("{}:{}  {} field, {} bits  {}", pos.line + 1, pos.col + 1, g.fields.size(), g.bits, how);
                     if (!dec || !enc) {
                         auto why = lowering::bit_group_refusal(c, g);
-                        print_line("  (組めない: {})", why ? why : "理由なし");
+                        print_line("  (refused: {})", why ? why : "no reason");
                         continue;
                     }
                     print_text("decode:\n{}\nencode:\n{}\n", unparse_node(a, dec), unparse_node(a, enc));
@@ -211,23 +211,23 @@ namespace brgen::nast::probe {
         each_node<Format>(a, last, [&](Node<Format> f) {
             auto l = lowering::bit_layout(c, f);
             if (l.places.empty()) {
-                hist["表 format: 群なし"]++;
+                hist["table format: no group"]++;
                 return;
             }
-            hist[l.complete() ? "表 format: 全部載る" : "表 format: 組めない field あり"]++;
-            hist["表 群: 平ら"] += l.flat.size();
-            hist["表 群: 分岐を跨ぐ"] += l.routed.size();
+            hist[l.complete() ? "table format: every field placed" : "table format: some field refused"]++;
+            hist["table group: flat"] += l.flat.size();
+            hist["table group: routed"] += l.routed.size();
             for (auto& [_, pl] : l.places) {
                 switch (pl.kind) {
                     case lowering::BitPlace::Kind::flat:
-                        hist["表 field: 平らな群"]++;
+                        hist["table field: flat group"]++;
                         break;
                     case lowering::BitPlace::Kind::routed:
-                        hist["表 field: 分岐を跨ぐ群"]++;
+                        hist["table field: routed group"]++;
                         break;
                     case lowering::BitPlace::Kind::refused:
-                        hist["表 field: 組めない"]++;
-                        hist[std::format("  表 field の組めない理由: {}", pl.why ? pl.why : "(理由なし)")]++;
+                        hist["table field: refused"]++;
+                        hist[std::format("  why a table field is refused: {}", pl.why ? pl.why : "(no reason)")]++;
                         break;
                 }
             }

@@ -36,14 +36,14 @@ namespace brgen::nast::probe {
             // 入るが、名前つきが付いた field は組めない。次に何を足すかの目安。
             auto args = field_args(a, f);
             if (args.positional) {
-                hist["field 引数: 位置指定 (期待値)"]++;
+                hist["field arg: positional (expected value)"]++;
                 // 期待値は assert に落ちるが、落とせるのは読み書きが組める
                 // field だけ。型で内訳を出す。
                 auto at = strip_wrappers(a, ty);
-                hist[std::format("  期待値の型: {}", at ? to_string(at.type()) : "(型なし)")]++;
+                hist[std::format("  expected value type: {}", at ? to_string(at.type()) : "(no type)")]++;
             }
             if (args.named) {
-                hist["field 引数: 名前つき"]++;
+                hist["field arg: named"]++;
                 // 何が名前つきで来るのか。左辺の綴りで数える。
                 if (auto all = f.ref(a)->arguments.ref(a)) {
                     for (auto& arg : all->arguments) {
@@ -51,7 +51,7 @@ namespace brgen::nast::probe {
                         if (!na) {
                             continue;
                         }
-                        hist[std::format("  名前つきの左辺: {}",
+                        hist[std::format("  named argument: {}",
                                          unparse_node(a, na.ref(a)->name))]++;
                     }
                 }
@@ -62,19 +62,19 @@ namespace brgen::nast::probe {
             auto off = b.ref("o");
             auto target = lowering::field_ref(c, f);
             if (lowering::lower_field_decode(c, f, target, buf, off)) {
-                hist["field: 組めた"]++;
+                hist["field: built"]++;
                 if (args.positional) {
-                    hist["  うち期待値の assert つき"]++;
+                    hist["  of which with an expected-value assert"]++;
                 }
                 return;
             }
             if (args.named || args.positional > 1) {
-                hist["field: 組めない (引数)"]++;
+                hist["field: refused (arguments)"]++;
                 return;
             }
             auto stripped = strip_wrappers(a, ty);
-            auto kind = stripped ? to_string(stripped.type()) : "(型なし)";
-            hist[std::format("field: 組めない ({})", kind)]++;
+            auto kind = stripped ? to_string(stripped.type()) : "(no type)";
+            hist[std::format("field: refused ({})", kind)]++;
         }
 
     }  // namespace
@@ -105,20 +105,20 @@ namespace brgen::nast::probe {
         each_node<Available>(a, last, [&](Node<Available> av) {
             auto e = lowering::lower_available(c, av);
             if (!e) {
-                hist["available (組めない)"]++;
+                hist["available (refused)"]++;
                 if (detail) {
                     print_text("{}", query::lower_text(p, av));
                 }
                 return;
             }
-            hist["available -> 式"]++;
+            hist["available -> expression"]++;
             if (detail) {
                 print_text("{}", query::lower_text(p, av));
             }
         });
         each_node<MemberAccess>(a, last, [&](Node<MemberAccess> ma) {
             if (auto e = lowering::lower_enum_is_defined(c, ma)) {
-                hist["is_defined -> 比較"]++;
+                hist["is_defined -> comparison"]++;
                 if (detail) {
                     print_text("{}", query::lower_text(p, ma));
                 }
@@ -126,7 +126,7 @@ namespace brgen::nast::probe {
         });
         each_node<Binary>(a, last, [&](Node<Binary> bin) {
             if (auto e = lowering::lower_range_compare(c, bin)) {
-                hist["範囲比較 -> 比較"]++;
+                hist["range compare -> comparison"]++;
                 if (detail) {
                     print_text("{}", query::lower_text(p, bin));
                 }
@@ -135,13 +135,13 @@ namespace brgen::nast::probe {
         each_node<Cond>(a, last, [&](Node<Cond> cond) {
             auto* low = lowering::lower_conditional(c, cond);
             if (!low) {
-                hist["三項 (型が無く落とせない)"]++;
+                hist["ternary (no type, cannot lower)"]++;
                 if (detail) {
                     print_text("{}", query::lower_text(p, cond));
                 }
                 return;
             }
-            hist["三項 -> if"]++;
+            hist["ternary -> if"]++;
             if (detail) {
                 print_text("{}", query::lower_text(p, cond));
             }

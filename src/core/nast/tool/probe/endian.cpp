@@ -20,7 +20,7 @@ namespace brgen::nast::probe {
             hist[k]++;
             if (detail) {
                 auto name = name_of(a, f);
-                print_line("{:<24} {}{}", name.empty() ? "(無名)" : std::string(name), k,
+                print_line("{:<24} {}{}", name.empty() ? "(unnamed)" : std::string(name), k,
                              e->dynamic ? "  " + unparse_node(a, e->dynamic.ref(a)->order) : "");
             }
         });
@@ -33,7 +33,7 @@ namespace brgen::nast::probe {
             for (auto& fld : st->fields) {
                 auto* e = p.tables.table<FieldEndian>().get(fld);
                 if (e && e->dynamic) {
-                    hist["  (動的な順を含む format)"]++;
+                    hist["  (formats with a runtime byte order)"]++;
                     return;
                 }
             }
