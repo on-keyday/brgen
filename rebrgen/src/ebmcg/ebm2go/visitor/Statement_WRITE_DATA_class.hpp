@@ -92,6 +92,15 @@ DEFINE_VISITOR(Statement_WRITE_DATA) {
         return w;
     }
     if (auto cand = is_bytes_type(wctx, wctx.write_data.data_type)) {
+        if (ctx.config().io_strategy.is_count()) {
+            // EncodedSize: every write is eventually a bytes write; count it, write nothing
+            MAYBE(size_str, get_size_str(wctx, wctx.write_data.size));
+            auto io_ = wctx.identifier(wctx.write_data.io_ref);
+            CodeWriter w;
+            w.writeln(io_, " += int(", size_str, ")");
+            ebmcodegen::util::append_runtime_offset(ctx, ctx.write_data.io_ref, w, size_str);
+            return w;
+        }
         MAYBE(target, wctx.visit(wctx.write_data.target));
         MAYBE(size_str, get_size_str(wctx, wctx.write_data.size));
         auto io_ = wctx.identifier(wctx.write_data.io_ref);

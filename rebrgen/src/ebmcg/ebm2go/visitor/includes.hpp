@@ -39,6 +39,7 @@ namespace ebm2go {
         bool slice_io = false;
         bool std_io = false;
         bool bytes_io = false;
+        bool encoded_size = false;  // EncodedSize (the Count pass)
     };
 
     enum class IOKind {
@@ -46,6 +47,10 @@ namespace ebm2go {
         Append,   // []byte append mode
         BytesIO,  // *bytes.Buffer (encode) / *bytes.Reader (decode)
         StdIO,    // io.Writer (encode) / io.Reader (decode)
+        // encode only: count the encoded bytes without writing (EncodedSize).
+        // Shaped like Append with an int in place of the []byte: it takes the count
+        // so far and returns the updated count, so nothing is allocated.
+        Count,
     };
 
     struct IOStrategy {
@@ -55,8 +60,30 @@ namespace ebm2go {
             return kind == IOKind::BytesIO || kind == IOKind::StdIO;
         }
 
+        // no offset parameter, fixed-size arrays, RESERVE_DATA is a no-op
         bool is_reader_writer_append() const {
-            return is_reader_writer() || kind == IOKind::Append;
+            return is_reader_writer() || kind == IOKind::Append || kind == IOKind::Count;
+        }
+
+        bool is_count() const {
+            return kind == IOKind::Count;
+        }
+
+        // the encode function returns (io, error): Append returns the buffer, Count the count
+        bool returns_io() const {
+            return kind == IOKind::Append || kind == IOKind::Count;
+        }
+
+        // what goes before the error in a return statement
+        const char* error_return_prefix() const {
+            switch (kind) {
+                case IOKind::Append:
+                    return "nil, ";
+                case IOKind::Count:
+                    return "0, ";
+                default:
+                    return "";
+            }
         }
 
         bool is_bytes_io() const {

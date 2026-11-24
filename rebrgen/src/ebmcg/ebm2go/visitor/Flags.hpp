@@ -33,5 +33,6 @@ DEFINE_STRING_FLAG(package_name, "", "package", "Package name for generated Go c
 DEFINE_BOOL_FLAG(no_slice_io, false, "no-slice-io", "No sliced based io");
 DEFINE_BOOL_FLAG(no_std_io, false, "no-std-io", "No standard io based io");
 DEFINE_BOOL_FLAG(bytes_io, false, "bytes-io", "Generates *bytes.Buffer based io");
+DEFINE_BOOL_FLAG(no_encoded_size, false, "no-encoded-size", "No EncodedSize (the encoded byte count, computed without writing)");
 CONFIG_MAP("config.go.package", package_name);
 DEFINE_BOOL_FLAG(visitor, false, "visitor", "Generates visitor pattern for each field");
