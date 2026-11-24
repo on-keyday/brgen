@@ -115,7 +115,8 @@ DEFINE_VISITOR(Statement_SUB_BYTE_RANGE) {
             w.writeln(offset_var(io_), " := &", offset_var(io_), "Base");
             w.writeln(offset_ref(parent_io_), " += int(", length_str.to_writer(), ")");
         }
-        else if (ctx.config().io_strategy.is_append()) {
+        else if (ctx.config().io_strategy.returns_io()) {
+            // Append: the child appends to the parent's buffer; Count: to its count
             w.writeln(io_, " := ", parent_io_);
         }
         else {
@@ -137,7 +138,14 @@ DEFINE_VISITOR(Statement_SUB_BYTE_RANGE) {
         end_offset_window();
 
         if (ctx.sub_byte_range.stream_type == ebm::StreamType::OUTPUT) {
-            if (ctx.config().io_strategy.is_append()) {
+            if (ctx.config().io_strategy.is_count()) {
+                w.writeln("if ", io_, " - ", parent_io_, " != int(", length_str.to_writer(), ") {");
+                ctx.config().imports.insert("fmt");
+                w.indent_writeln("return 0, fmt.Errorf(\"subrange length mismatch: expected %d, got %d\", int(", length_str.to_writer(), "), ", io_, " - ", parent_io_, ")");
+                w.writeln("}");
+                w.writeln(parent_io_, " = ", io_);
+            }
+            else if (ctx.config().io_strategy.is_append()) {
                 w.writeln("if len(", io_, ") - len(", parent_io_, ") != int(", length_str.to_writer(), ") {");
                 ctx.config().imports.insert("fmt");
                 w.indent_writeln("return nil, fmt.Errorf(\"subrange length mismatch: expected %d, got %d\", int(", length_str.to_writer(), ") , len(", io_, ") - len(", parent_io_, "))");

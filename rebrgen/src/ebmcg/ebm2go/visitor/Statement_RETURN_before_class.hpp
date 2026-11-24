@@ -25,7 +25,8 @@
 DEFINE_VISITOR(Statement_RETURN_before) {
     using namespace CODEGEN_NAMESPACE;
     /*here to write the hook*/
-    if (ctx.config().io_strategy.is_append()) {
+    // Append and Count return the io (buffer / count) with the error
+    if (ctx.config().io_strategy.returns_io()) {
         if (ctx.is(ebm::ExpressionKind::CALL, ctx.value)) {
             return pass;
         }

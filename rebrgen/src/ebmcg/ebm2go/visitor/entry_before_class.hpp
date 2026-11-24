@@ -115,6 +115,21 @@ namespace CODEGEN_NAMESPACE {
             w.writeln("}");
         }
 
+        // Emit EncodedSize: the byte count the encoders would produce, from the
+        // Count pass (inner_fn), without writing or allocating. Only the public form:
+        // a nested format's size is taken through inner_fn[_impl] directly.
+        void write_encoded_size(CodeWriter& w, std::string_view inner_fn) {
+            auto params = conv_def().to_string();
+            if (!params.empty() && params.front() == ',') {
+                params.erase(0, 1);
+            }
+            w.writeln("// EncodedSize returns how many bytes encoding this value produces, without");
+            w.writeln("// encoding it (so a buffer can be allocated once). It fails where encoding would.");
+            w.writeln("func (s *", name, ") EncodedSize(", params, ") (int, error) {");
+            w.indent_writeln("return s.", inner_fn, "(0", conv_use(), ")");
+            w.writeln("}");
+        }
+
         // Emit DecodeExact*[_impl]: checks for remaining bytes
         void write_decode_exact_wrapper(CodeWriter& w, std::string_view exact_fn, std::string_view inner_fn) {
             if (has_wrapper) {
@@ -353,6 +368,7 @@ DEFINE_VISITOR(entry_before) {
     ctx.config().io_mode.slice_io = !ctx.flags().no_slice_io;
     ctx.config().io_mode.std_io = !ctx.flags().no_std_io;
     ctx.config().io_mode.bytes_io = ctx.flags().bytes_io;
+    ctx.config().io_mode.encoded_size = !ctx.flags().no_encoded_size;
     ctx.config().array_type_wrapper = [&](Context_Type_ARRAY& ctx) -> expected<Result> {
         MAYBE(elem_type, ctx.visit(ctx.element_type));
         if (!ctx.config().io_strategy.is_reader_writer_append() && ctx.array_annotation != ebm::ArrayAnnotation::none) {
@@ -554,6 +570,18 @@ DEFINE_VISITOR(entry_before) {
             w.write(std::move(enc2.to_writer()));
             sctx.config().encoder_return_type = "error";
             h.write_must_append_wrapper(w, "Append");
+        }
+        if (sctx.config().io_mode.encoded_size) {
+            sctx.config().encoder_input_type = "int";
+            sctx.config().encoder_return_type = "(int,error)";
+            sctx.config().encode_fn_name = "encodedSize";
+            sctx.config().io_strategy = IOStrategy{IOKind::Count};
+            // memoized expression text may embed strategy-specific IO access; drop it on strategy switch
+            sctx.config().expression_memoization_config.memoized_items.clear();
+            MAYBE(enc3, sctx.visit(encode_fn));
+            w.write(std::move(enc3.to_writer()));
+            sctx.config().encoder_return_type = "error";
+            h.write_encoded_size(w, "encodedSize");
         }
         return w;
     };
@@ -781,12 +809,7 @@ DEFINE_VISITOR(entry_before) {
             w.writeln("break");
             w.writeln("}");
         }
-        if (ctx.config().io_strategy.is_append()) {
-            w.writeln("return nil,", err_expr.to_writer());
-        }
-        else {
-            w.writeln("return ", err_expr.to_writer());
-        }
+        w.writeln("return ", ctx.config().io_strategy.error_return_prefix(), err_expr.to_writer());
         return w;
     };
     ctx.config().error_report_visitor = [&](Context_Statement_ERROR_REPORT& rptctx) -> expected<Result> {
@@ -794,12 +817,7 @@ DEFINE_VISITOR(entry_before) {
         auto escaped_msg = futils::escape::escape_str<std::string>(err_expr.body.data);
         CodeWriter w;
         rptctx.config().imports.insert("errors");
-        if (ctx.config().io_strategy.is_append()) {
-            w.writeln("return nil, errors.New(\"", escaped_msg, "\")");
-        }
-        else {
-            w.writeln("return errors.New(\"", escaped_msg, "\")");
-        }
+        w.writeln("return ", ctx.config().io_strategy.error_return_prefix(), "errors.New(\"", escaped_msg, "\")");
         return w;
     };
     ctx.config().variable_type_separator = "";
@@ -887,7 +905,7 @@ DEFINE_VISITOR(entry_before) {
             w.writeln("if !ok {");
             {
                 auto scope = w.indent_scope();
-                std::string nil = ictx.config().io_strategy.is_append() ? "nil," : "";
+                std::string nil = ictx.config().io_strategy.error_return_prefix();
                 if (ictx.init_check.init_check_type == ebm::InitCheckType::union_init_encode && !empty_variant) {
                     ictx.config().imports.insert("errors");
                     w.writeln("return ", nil, "errors.New(\"invalid union type for encoding\")");
@@ -1110,10 +1128,7 @@ DEFINE_VISITOR(entry_before) {
     ctx.config().length_mismatch_wrapper = [](Context_Statement_LENGTH_CHECK& lctx, Result target, Result expected_len, std::string layer_str) -> expected<Result> {
         layer_str = "\\\"" + layer_str + "\\\"";
         lctx.config().imports.insert("fmt");
-        std::string nil_prefix;
-        if (lctx.config().io_strategy.is_append()) {
-            nil_prefix = "nil, ";
-        }
+        std::string nil_prefix = lctx.config().io_strategy.error_return_prefix();
         CodeWriter w;
         w.writeln("if ", target.to_writer(), " != int(", expected_len.to_writer(), ") {");
         w.indent_writeln("return ", nil_prefix, "fmt.Errorf(\"size mismatch when writing field ", layer_str, ": expected %d, got %d\", int(", expected_len.to_writer(), "), ", target.to_writer(), ")");

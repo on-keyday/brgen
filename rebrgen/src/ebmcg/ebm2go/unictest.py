@@ -262,6 +262,12 @@ func main() {{
 		os.Exit(20)
 	}}
 
+	// EncodedSize (the Count pass) must count exactly what the encoder wrote
+	if size, sizeErr := target.EncodedSize(); sizeErr != nil || size != len(outputData) {{
+		fmt.Fprintf(os.Stderr, "EncodedSize mismatch: got %d (err %v), encoded %d bytes\\n", size, sizeErr, len(outputData))
+		os.Exit(40)
+	}}
+
 	// Write output file
 	err = os.WriteFile(outputPath, outputData, 0644)
 	if err != nil {{
@@ -343,7 +349,7 @@ def build_and_run(proj_dir, TEST_TARGET_FORMAT, INPUT_FILE, OUTPUT_FILE):
         print(f"Test executable failed with exit code {proc.returncode}")
         # The harness (main.go) prints "Decode error: X" / "Encode error: X"
         # and exits 10 / 20; 30 is a very_slow_bit_ops differential divergence.
-        phase = {10: "decode", 20: "encode", 30: "vslow-diff"}.get(proc.returncode, "run")
+        phase = {10: "decode", 20: "encode", 30: "vslow-diff", 40: "encoded-size"}.get(proc.returncode, "run")
         unictest_report.fail(phase, proc.stderr, code=proc.returncode)
 
     sys.exit(proc.returncode)
