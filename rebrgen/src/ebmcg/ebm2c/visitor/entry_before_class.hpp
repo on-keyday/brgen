@@ -183,6 +183,12 @@ DEFINE_VISITOR(entry_before) {
         if (!ctx.config().on_destructor_generation()) return pass;
         auto lw = ctx.write_data.lowered_statement();
         if (!lw) return pass;
+        // A string-literal field holds a constant: nothing to free. The common hook
+        // would otherwise follow its lowered block (build the constant into a
+        // reserved output buffer), which a free function has no output for.
+        if (lw->lowering_type == ebm::LoweringIOType::STRING_FOR_EACH) {
+            return CODELINE("// WRITE_DATA skipped in free function generation");
+        }
         // bytes型はbytes_io_wrapperに委ねる（destructor modeのEBM_FREE_VECTOR/no-opはそちらで処理）
         if (is_bytes_type(ctx, ctx.write_data.data_type)) return pass;
         if (lw->lowering_type == ebm::LoweringIOType::VECTORIZED_IO) {
