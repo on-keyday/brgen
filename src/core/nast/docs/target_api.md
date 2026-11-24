@@ -57,6 +57,9 @@
 - encode: `AppendBinary(b []byte) ([]byte, error)` (Go 1.24 の `encoding.BinaryAppender`) /
   `MarshalBinary() ([]byte, error)` / `WriteTo(w io.Writer) (int64, error)`
   (`io.WriterTo`。field ごとに流す)
+- 事前のサイズ: `EncodedSize() (int, error)`。書かずに数える (walker の 4 つ目の
+  口)。`AppendBinary` の前に `make([]byte, 0, n)` で確保を 1 回にできる。error は
+  encode が失敗する値 (長さの不一致など) をここでも同じ理由で断るため
 - エラー: `error`。field の場所を持つ型 (`*DecodeError{Field string; Err error}`) を
   返し、`errors.Is(err, io.ErrUnexpectedEOF)` で元を辿れる
 - 並べて置く: パッケージ直下に補助を出さない (その場に展開)
@@ -216,7 +219,22 @@ ADR 0049 のとおり、構文は Go、IO とエラーは C の形 (呼ぶ側の
   状態遷移が出力
 - **Z3**: 正しいメッセージの制約。実行時の API は無い
 
+## 決めたこと (2026-11-18)
+
+- **借りるか所有するか**: 両方。用途で選べるようにする
+- **Go の標準 interface**: 既定で足す (`UnmarshalBinary` / `AppendBinary` / `WriteTo`)。
+  既存の名前 (`Decode` / `Append` / `Write` など) は既存のプロジェクトの後方互換の
+  ために残す。gob は使っていないので `MarshalBinary` 系との衝突は気にしなくてよい
+- **decode の形**: 両方 (新しい値を返す形と、既存の値に読む形)
+- **事前のサイズの API**: 必須。walker の 4 つ目の IO の口 (数えるだけ) として作る。
+  Go では `EncodedSize()` (2026-11-24、Go の節に抜けていたのを補った)
+- **可変を既定にする** (不変は「既存の値に読む」形と相容れない)
+
 ## 未決 (決めてもらうこと)
+
+残っているのは 4 (C の確保) だけ。1 / 2 / 3 / 5 は上の「決めたこと」に移した。
+記録として元の問いは残す。
+
 
 1. **借りるか所有するか** (Rust / C++ / C#)。借りる型だけにすると zero-copy だが
    値を入力より長く持てない。両方出すと型が倍になる
