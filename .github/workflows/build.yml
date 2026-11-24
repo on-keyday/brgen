@@ -830,7 +830,10 @@ jobs:
 
   deploy:
     needs: puppeteer-test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # workflow_dispatch too: the Pages artifact is uploaded by the deploy job
+    # itself, so re-running a failed deploy in the same run always finds two of
+    # them; a fresh dispatched run on main is the way to redeploy.
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     uses: ./.github/workflows/deploy.yml
     permissions:
       contents: read
