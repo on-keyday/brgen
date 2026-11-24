@@ -46,7 +46,10 @@ DEFINE_VISITOR(Statement_READ_DATA) {
     using namespace CODEGEN_NAMESPACE;
     auto& rctx = ctx;
     if (auto low = rctx.read_data.lowered_statement()) {
-        if (low->lowering_type == ebm::LoweringIOType::VECTORIZED_IO) {
+        // STRING_FOR_EACH: a string-literal field is read and then compared with
+        // its constant by the lowered block; the bytes path below would only copy it.
+        if (low->lowering_type == ebm::LoweringIOType::VECTORIZED_IO ||
+            low->lowering_type == ebm::LoweringIOType::STRING_FOR_EACH) {
             return rctx.visit(low->io_statement.id);
         }
         if (low->lowering_type == ebm::LoweringIOType::SCAN_UNTIL) {

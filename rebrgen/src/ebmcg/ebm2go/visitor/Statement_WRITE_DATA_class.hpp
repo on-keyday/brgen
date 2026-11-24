@@ -48,7 +48,10 @@ DEFINE_VISITOR(Statement_WRITE_DATA) {
     auto& wctx = ctx;
     ctx.config().current_io = wctx.write_data.io_ref;
     if (auto low = wctx.write_data.lowered_statement()) {
-        if (low->lowering_type == ebm::LoweringIOType::VECTORIZED_IO) {
+        // STRING_FOR_EACH: the constant of a string-literal field is written by the
+        // lowered block; the bytes path below would write the struct field instead.
+        if (low->lowering_type == ebm::LoweringIOType::VECTORIZED_IO ||
+            low->lowering_type == ebm::LoweringIOType::STRING_FOR_EACH) {
             return wctx.visit(low->io_statement.id);
         }
     }

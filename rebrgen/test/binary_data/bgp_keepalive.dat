@@ -1,0 +1,6 @@
+# BGP KEEPALIVE message (example/bgp.bgn BGPPacket): header only.
+# The match arm `BGPType.keepalive => header.length == 19` has no field, only
+# an assertion; encoding it must still succeed.
+FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF # marker
+00 13 # length = 19 (header only)
+04    # type = keepalive

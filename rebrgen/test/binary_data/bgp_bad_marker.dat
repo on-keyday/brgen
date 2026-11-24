@@ -1,0 +1,6 @@
+# BGP KEEPALIVE with a wrong marker: decoding must fail.
+# marker is the constant "\xFF" x 16 (a string-literal field); a reader that
+# only copies the bytes without comparing them accepts this.
+00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 # marker (wrong)
+00 13 # length = 19
+04    # type = keepalive

@@ -50,7 +50,9 @@ DEFINE_VISITOR(Statement_READ_DATA) {
         lowered && (lowered->lowering_type == ebm::LoweringIOType::VECTORIZED_IO ||
                     lowered->lowering_type == ebm::LoweringIOType::SCAN_UNTIL ||
                     lowered->lowering_type == ebm::LoweringIOType::BIT_FIELD_TO_BIT_SHIFT ||
-                    lowered->lowering_type == ebm::LoweringIOType::MULTI_REPRESENTATION)) {
+                    lowered->lowering_type == ebm::LoweringIOType::MULTI_REPRESENTATION ||
+                    // a string-literal field: read, then compare with the constant
+                    lowered->lowering_type == ebm::LoweringIOType::STRING_FOR_EACH)) {
         return ctx.visit(lowered->io_statement.id);
     }
     if (ctx.read_data.size.unit == ebm::SizeUnit::BYTE_FIXED &&

@@ -49,10 +49,13 @@ DEFINE_VISITOR(Statement_READ_DATA) {
     if (ctx.config().read_data_custom) {
         CALL_OR_PASS(read_data, ctx.config().read_data_custom(ctx));
     }
-    // Common: VECTORIZED_IO は lowered statement へ委譲
+    // Common: VECTORIZED_IO / SCAN_UNTIL / STRING_FOR_EACH は lowered statement へ委譲。
+    // STRING_FOR_EACH (定数文字列の field) は型がバイト列なので、ここで委譲しないと
+    // bytes_io_wrapper が素のコピーにしてしまい、lowered 側の検査 (assert) が消える。
     if (auto low = ctx.read_data.lowered_statement()) {
         if (low->lowering_type == ebm::LoweringIOType::VECTORIZED_IO ||
-            low->lowering_type == ebm::LoweringIOType::SCAN_UNTIL) {
+            low->lowering_type == ebm::LoweringIOType::SCAN_UNTIL ||
+            low->lowering_type == ebm::LoweringIOType::STRING_FOR_EACH) {
             return ctx.visit(low->io_statement.id);
         }
     }

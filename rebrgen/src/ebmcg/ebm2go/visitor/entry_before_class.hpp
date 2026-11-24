@@ -877,13 +877,18 @@ DEFINE_VISITOR(entry_before) {
             auto tmpname = std::format("tmp{}", get_id(type));
             MAYBE(type_txt, ictx.visit(type));
             // tmp,ok := field_txt.(*type_txt)
+            // An arm with no field (`Kind.b => length == 0`) has an empty variant.
+            // A value built by hand has no way to set it (there is no setter), and
+            // nothing in it can be wrong, so encoding creates it like decoding does.
+            auto variant_fields = ictx.get_field<"body.id.struct_decl.fields">(type);
+            bool empty_variant = variant_fields && variant_fields->container.empty();
             CodeWriter w;
             w.writeln(tmpname, ", ok := ", field_txt.to_writer(), ".(*", type_txt.to_writer(), ")");
             w.writeln("if !ok {");
             {
                 auto scope = w.indent_scope();
                 std::string nil = ictx.config().io_strategy.is_append() ? "nil," : "";
-                if (ictx.init_check.init_check_type == ebm::InitCheckType::union_init_encode) {
+                if (ictx.init_check.init_check_type == ebm::InitCheckType::union_init_encode && !empty_variant) {
                     ictx.config().imports.insert("errors");
                     w.writeln("return ", nil, "errors.New(\"invalid union type for encoding\")");
                 }
