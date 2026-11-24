@@ -49,9 +49,12 @@ DEFINE_VISITOR(Statement_WRITE_DATA) {
     if (ctx.config().write_data_custom) {
         CALL_OR_PASS(write_data, ctx.config().write_data_custom(ctx));
     }
-    // Common: VECTORIZED_IO は lowered statement へ委譲
+    // Common: VECTORIZED_IO / STRING_FOR_EACH は lowered statement へ委譲。
+    // STRING_FOR_EACH (定数文字列の field) は型がバイト列なので、ここで委譲しないと
+    // bytes_io_wrapper が field をそのまま書き、lowered 側の定数が書かれない。
     if (auto low = ctx.write_data.lowered_statement()) {
-        if (low->lowering_type == ebm::LoweringIOType::VECTORIZED_IO) {
+        if (low->lowering_type == ebm::LoweringIOType::VECTORIZED_IO ||
+            low->lowering_type == ebm::LoweringIOType::STRING_FOR_EACH) {
             return ctx.visit(low->io_statement.id);
         }
     }

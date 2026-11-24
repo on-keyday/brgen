@@ -341,9 +341,18 @@ namespace ebmgen {
         MAYBE(io_size, make_fixed_size(candidate.size(), ebm::SizeUnit::BYTE_FIXED));
         io_desc.size = io_size;
         EBM_WRITE_DATA(write_ref, make_io_data(io_desc.io_ref, from_weak(io_desc.field), buffer, u8_n_array, io_desc.attribute, io_size));
+        // A write_temporary buffer must be reserved before it is filled, as in
+        // encode_multi_byte_int_with_fixed_array: backends that write in place
+        // (ebm2go's slice IO) bind the buffer to the output there, and filling an
+        // unbound buffer indexes an empty slice.
+        ebm::ReserveData reserve_data;
+        reserve_data.write_data = to_weak(write_ref);
+        reserve_data.size = io_size;
+        EBM_RESERVE_DATA(reserve, reserve_data);
 
         ebm::Block block;
         append(block, buffer_def);
+        append(block, reserve);
         MAYBE_VOID(ok, construct_string_array(ctx, block, buffer, candidate));
         append(block, write_ref);
         EBM_BLOCK(block_ref, std::move(block));

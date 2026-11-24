@@ -446,16 +446,14 @@ namespace ebmgen {
     expected<void> DecoderConverter::decode_str_literal_type(ebm::IOData& io_desc, const std::shared_ptr<ast::StrLiteralType>& typ, ebm::ExpressionRef base_ref) {
         MAYBE(candidate, decode_base64(typ->strong_ref));
 
-        EBMU_U8_N_ARRAY(u8_n_array, candidate.size(), ebm::ArrayAnnotation::read_temporary);
-        // EBM_DEFAULT_VALUE(new_obj_ref, u8_n_array);
-        //  EBM_DEFINE_ANONYMOUS_VARIABLE(buffer, u8_n_array, new_obj_ref);
-
         MAYBE(io_size, make_fixed_size(candidate.size(), ebm::SizeUnit::BYTE_FIXED));
         io_desc.size = io_size;
-        EBM_READ_DATA(read_ref, make_io_data(io_desc.io_ref, from_weak(io_desc.field), base_ref, u8_n_array, io_desc.attribute, io_size));
+        // Read straight into the field, so the read has the field's own type. A
+        // read_temporary array type here told backends the target was a temporary
+        // they may alias (ebm2go assigned a slice to the [N]uint8 field).
+        EBM_READ_DATA(read_ref, make_io_data(io_desc.io_ref, from_weak(io_desc.field), base_ref, io_desc.data_type, io_desc.attribute, io_size));
 
         ebm::Block block;
-        // append(block, buffer_def);
         append(block, read_ref);
         MAYBE_VOID(ok, compare_string_array(ctx, block, base_ref, candidate));
         EBM_BLOCK(block_ref, std::move(block));

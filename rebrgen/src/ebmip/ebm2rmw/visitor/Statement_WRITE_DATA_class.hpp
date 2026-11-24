@@ -50,7 +50,9 @@ DEFINE_VISITOR(Statement_WRITE_DATA) {
     if (auto lowered = ctx.write_data.lowered_statement();
         lowered && (lowered->lowering_type == ebm::LoweringIOType::VECTORIZED_IO ||
                     lowered->lowering_type == ebm::LoweringIOType::BIT_FIELD_TO_BIT_SHIFT ||
-                    lowered->lowering_type == ebm::LoweringIOType::MULTI_REPRESENTATION)) {
+                    lowered->lowering_type == ebm::LoweringIOType::MULTI_REPRESENTATION ||
+                    // a string-literal field: write the constant, not the struct field
+                    lowered->lowering_type == ebm::LoweringIOType::STRING_FOR_EACH)) {
         return ctx.visit(lowered->io_statement.id);
     }
     if (ctx.write_data.size.unit == ebm::SizeUnit::BYTE_FIXED &&

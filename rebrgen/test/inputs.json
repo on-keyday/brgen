@@ -280,6 +280,22 @@
         "hex": true
     },
     {
+        "name": "bgp_keepalive",
+        "binary": "$WORK_DIR/test/binary_data/bgp_keepalive.dat",
+        "format_name": "BGPPacket",
+        "source": "$WORK_DIR/../example/bgp.bgn",
+        "failure_case": false,
+        "hex": true
+    },
+    {
+        "name": "bgp_bad_marker",
+        "binary": "$WORK_DIR/test/binary_data/bgp_bad_marker.dat",
+        "format_name": "BGPPacket",
+        "source": "$WORK_DIR/../example/bgp.bgn",
+        "failure_case": true,
+        "hex": true
+    },
+    {
         "name": "tcp_options_syn",
         "binary": "$WORK_DIR/test/binary_data/tcp_options_syn.dat",
         "format_name": "TCPSegment",

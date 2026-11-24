@@ -496,14 +496,17 @@ namespace ebmgen {
             // where backends emit an IO node natively, the clone must replace at that
             // node. Scalar IO is emitted through its lowered chain (ADR 0045), so the
             // chain end is the surface; bytes IO is emitted natively at the node
-            // itself unless the lowering is a delegation type (VECTORIZED/SCAN).
+            // itself unless the lowering is a delegation type (VECTORIZED/SCAN, and
+            // STRING_FOR_EACH: a string-literal field is read-and-compared /
+            // built-and-written by its lowered block, which backends visit first).
             bool replace_at_this_node(const ebm::IOData& io) {
                 auto low = io.lowered_statement();
                 if (!low) {
                     return true;
                 }
                 if (low->lowering_type == ebm::LoweringIOType::VECTORIZED_IO ||
-                    low->lowering_type == ebm::LoweringIOType::SCAN_UNTIL) {
+                    low->lowering_type == ebm::LoweringIOType::SCAN_UNTIL ||
+                    low->lowering_type == ebm::LoweringIOType::STRING_FOR_EACH) {
                     return false;  // delegated to the lowered chain; replace inside it
                 }
                 return is_u8_bytes_type(io.data_type);
