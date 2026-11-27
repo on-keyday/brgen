@@ -12,7 +12,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "vscode-languageclient": "^11.0.0"
+    "vscode-languageclient": "^12.0.0"
   },
   "devDependencies": {
     "@types/node": "^26.0.0"
